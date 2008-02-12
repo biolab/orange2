@@ -484,17 +484,21 @@ public:
   int weightID;
 
   float eval, **f, **p, *betas, *priorBetas;
+  bool *isExampleFixed;
   PFloatList avgProb, avgPriorProb;
-  PIntList *ruleIndices;
+  PIntList *ruleIndices, frontRules;
 
   TLogitClassifierState(PRuleList, PExampleTable, const int &);
   TLogitClassifierState(PRuleList,const PDistributionList &,PExampleTable,const int &);
   ~TLogitClassifierState();
   void updateExampleP(int);
   void computePs(int);
+  void setFixed(int);
+  void updateFixedPs(int);
+  void setFrontRule(int);
   void computeAvgProbs();
   void computePriorProbs();
-  void clone(PLogitClassifierState &);
+  void copyTo(PLogitClassifierState &);
   void newBeta(int, float);
   void newPriorBeta(int, float);
 };
@@ -508,24 +512,24 @@ public:
   PFloatList ruleBetas; //P Rule betas
   PFloatList priorProbBetas; //P Prior probabilitiy betas
   float minStep; //P minimal step value
-
-  float minBeta; //P minimum beta value of a rule, if lower, rule is set to have beta 0. 
-  PClassifier priorClassifier;
-  PLogitClassifierState currentState, tempState, oldState;
-  PFloatList wsd, wavgCov; // standard deviations of rule quality
+  float minSignificance; //P minimum requested significance for betas. 
+  int priorBetaType; //P 0=priorbeta equals 0, 1=priorBeta equals prior probability, 2=optimize as good as possible
+  PClassifier priorClassifier; //P prior classifier used if provided
+  PLogitClassifierState currentState;
+  PFloatList wsd, wavgCov, wSatQ, wsig; // standard deviations of rule quality
+  PRuleList frontRules; //P rules that trigger before logit sum.
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL);
+  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, const int &priorProbType = 2);
 
   void initialize(const PDistributionList &);
   void updateRuleBetas(float & step);
-  void evaluate(PLogitClassifierState &);
-  void distortPriorBetas(float & step);
+  void optimizeBetas();
+  void setBestFrontRule();
+  void evaluate();
   void correctPriorBetas(float & step);
-  void cutOptimisticBetasAndEvaluate(float & step, int rule_index);
-  bool acceptedImprovement(PLogitClassifierState & oldState, PLogitClassifierState & newState);
+  void stabilizeAndEvaluate(float & step, int rule_index);
   float getRuleLoss(int &);
-  float selectiveOptimism(int rule_index);
   
   void addPriorClassifier(const TExample &, double *);
   virtual PDistribution classDistribution(const TExample &ex);
