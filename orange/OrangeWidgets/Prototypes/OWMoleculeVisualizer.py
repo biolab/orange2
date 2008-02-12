@@ -1,7 +1,7 @@
 """<name>Molecule Visualizer</name>
 <description>Rendering of 2D structure of molecules based on their SMILES description.</description>
 <icon>icons/MoleculeVisualizer.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)gmail.com)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>2015</priority>
 """
 
@@ -191,7 +191,7 @@ class MolImage(QLabel):
             self.pix.fill()
             painter=QPainter(self.pix)
             #painter.begin(self.pix)
-            painter.drawText(6, self.height()/2-4, "Unable to load")
+            painter.drawText(6, self.context.size/2-4, "Unable to load")
             painter.end()
             #print "Failed to load "+filename
         self.resize(self.pix.width(), self.pix.height())
@@ -236,10 +236,11 @@ class ScrollView(QScrollView):
 class OWMoleculeVisualizer(OWWidget):
     settingsList=["colorFragmets","showFragments", "serverPassword"]
     contextHandlers={"":DomainContextHandler("", [ContextField("moleculeTitleAttributeList",
-                                                    DomainContextHandler.List + DomainContextHandler.SelectedRequired,
+                                                    DomainContextHandler.List + DomainContextHandler.SelectedRequired + DomainContextHandler.IncludeMetaAttributes,
                                                     selected="selectedMoleculeTitleAttrs"),
-                                                  ContextField("moleculeSmilesAttr", DomainContextHandler.Required + DomainContextHandler.IncludeMetaAttributes)])}
+                                                  ContextField("moleculeSmilesAttr", DomainContextHandler.Required + DomainContextHandler.IncludeMetaAttributes)], maxAttributesToPickle=10000)} ##maxAttributesToPickle=10000 some bug in Context handler 
     serverPwd = ""
+    uniqueWidgetImageId = 0
     def __init__(self, parent=None, signalManager=None, name="Molecule visualizer"):
         apply(OWWidget.__init__,(self, parent, signalManager, name))
         self.inputs=[("Molecules", ExampleTable, self.setMoleculeTable), ("Molecule subset", ExampleTable, self.setMoleculeSubset), ("Fragments", ExampleTable, self.setFragmentTable)]
@@ -323,9 +324,10 @@ class OWMoleculeVisualizer(OWWidget):
             except:
                 pass
         if self.imageprefix:
-            self.imageprefix+="\molimages\image"
+            self.imageprefix+="\molimages\imageW"+str(self.uniqueWidgetImageId)+"_"
         else:
-            self.imageprefix="molimages\image"
+            self.imageprefix="molimages\imageW"+str(self.uniqueWidgetImageId)+"_"
+        OWMoleculeVisualizer.uniqueWidgetImageId+=1
         self.imageWidgets=[]
         self.candidateMolSmilesAttr=[]
         self.candidateMolTitleAttr=[None]
@@ -358,17 +360,22 @@ class OWMoleculeVisualizer(OWWidget):
                     self.molSubset=self.molSubset.select(self.molData.domain)
                 except:
                     self.molSubset=[]
-
-            print "open"
+##            tmp=self.moleculeTitleAttributeList
             self.openContext("",data)
+##            if len(tmp)>=100 and not self.moleculeTitleAttributeList:
+##                self.moleculeTitleAttributeList=tmp
             self.showImages()
         else:
             self.moleculeSmilesCombo.clear()
             self.moleculeTitleListBox.clear()
+            self.moleculeSmilesAttr=0
+            self.moleculeTitleAttributeList=[]
+            self.selectedMoleculeTitleAttrs=[]
             self.defFragmentSmiles=[]
             if not self.fragmentSmilesAttr:
                 self.listBox.clear()
             self.destroyImageWidgets()
+            self.openContext("",data)
             self.send("Selected Molecules", None)
         
 
@@ -463,7 +470,8 @@ class OWMoleculeVisualizer(OWWidget):
             return
         #selected=filter(lambda (i,attr):self.moleculeTitleListBox.isSelected(i), list(enumerate(self.candidateMolTitleAttr))[1:])
         smilesAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
-        selected=[self.molData.domain[i] for i in self.selectedMoleculeTitleAttrs]
+        attrs = self.molData.domain.variables+self.molData.domain.getmetas().values()
+        selected=[attrs[i] for i in self.selectedMoleculeTitleAttrs]
         for widget, example in zip(self.imageWidgets, filter(lambda e:not e[smilesAttr].isSpecial(),self.molData)):
             text=" / ".join(map(str, [example[attr] for attr in selected]))
             widget.label.setText(text)
@@ -533,9 +541,11 @@ class OWMoleculeVisualizer(OWWidget):
             molSmiles=[(str(e[sAttr]), e) for e in self.molData if not e[sAttr].isSpecial()]
             correctedNumColumns=fixNumColumns(len(molSmiles), self.numColumns)
             self.progressBarInit()
+            if self.colorFragments and self.selectedFragment:
+                fMap=map_fragments([self.selectedFragment], [t[0] for t  in molSmiles])
             for i,((molecule, example), title) in enumerate(zip(molSmiles, titleList or [""]*len(molSmiles))):
                 #imagename=self.imageprefix+str(i)+".bmp"
-                if self.colorFragments:
+                if self.colorFragments and self.selectedFragment and fMap[molecule][self.selectedFragment]:
                     context=DrawContext(molecule=molecule, fragment=self.selectedFragment, size=self.imageSize, title=title, grayedBackground=example in self.molSubset, useCached=useCached)
                     #vis.moleculeFragment2BMP(molecule, self.selectedFragment, imagename, self.imageSize)
                 else:
@@ -743,7 +753,7 @@ def colorSubset(view, mol, match):
 
     for matchbasem in match:
         for mpair in matchbase.GetBonds():
-            style=view.BStyle(mpair.target.GetIdx())            
+            style=view.BStyle(mpair.target.GetIdx())
             #set style
             style.r=255
             style.g=0
@@ -850,10 +860,13 @@ if not localOpenEye:
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
+    from pywin.debugger import set_trace
+##    set_trace()
     w=OWMoleculeVisualizer()
     app.setMainWidget(w)
     w.show()
     data=orange.ExampleTable("E://chem/chemdata/BCMData_growth_frag.tab")
+    
     w.setMoleculeTable(data)
 ##    data=orange.ExampleTable("E://chem//new//sf.tab")
 ##    w.setFragmentTable(data)
