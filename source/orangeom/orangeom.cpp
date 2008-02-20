@@ -23,7 +23,6 @@
 #include "cls_orange.hpp"
 
 #include "mds.hpp"
-#include "som.hpp"
 
 
 bool initorangeomExceptions()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="orangeom"
 	ProjectGUID="{1DD56474-1110-413B-80B8-707E8EE28EC6}"
 	RootNamespace="orangeom"
@@ -206,10 +206,6 @@
 				>
 			</File>
 			<File
-				RelativePath="som.cpp"
-				>
-			</File>
-			<File
 				RelativePath="triangulate.cpp"
 				>
 			</File>
@@ -302,34 +298,6 @@
 				</File>
 				<File
 					RelativePath=".\qhull\user.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="som"
-				>
-				<File
-					RelativePath="som\datafile.c"
-					>
-				</File>
-				<File
-					RelativePath="som\fileio.c"
-					>
-				</File>
-				<File
-					RelativePath="som\labels.c"
-					>
-				</File>
-				<File
-					RelativePath="som\lvq_pak.c"
-					>
-				</File>
-				<File
-					RelativePath="som\som_rout.c"
-					>
-				</File>
-				<File
-					RelativePath="som\version.c"
 					>
 				</File>
 			</Filter>
