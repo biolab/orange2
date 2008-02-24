@@ -157,7 +157,8 @@ def proportionTest(learners, examples, learnProp, times=10,
         else:
             values = None
             baseValue = -1
-        testResults = ExperimentResults(times, [l.name for l in learners], values, weight!=0, baseValue)
+
+    testResults = ExperimentResults(times, [l.name for l in learners], values, weight!=0, basevalue)
 
         # 
         # testResults = ExperimentResults(times, [l.name for l in learners],
