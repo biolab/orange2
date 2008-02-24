@@ -1,18 +1,18 @@
-['young', 'myope', 'no', 'reduced', 'none'] soft
-['young', 'myope', 'no', 'normal', 'soft'] none
-['young', 'myope', 'yes', 'reduced', 'none'] soft
-['young', 'myope', 'yes', 'normal', 'hard'] none
-['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'reduced', 'none'] none
+['young', 'myope', 'no', 'normal', 'soft'] soft
+['young', 'myope', 'yes', 'reduced', 'none'] none
+['young', 'myope', 'yes', 'normal', 'hard'] soft
+['young', 'hypermetrope', 'no', 'reduced', 'none'] none
 
-['young', 'myope', 'no', 'reduced', 'none'] soft
-['young', 'myope', 'no', 'normal', 'soft'] none
-['young', 'myope', 'yes', 'reduced', 'none'] soft
-['young', 'myope', 'yes', 'normal', 'hard'] none
-['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'reduced', 'none'] none
+['young', 'myope', 'no', 'normal', 'soft'] soft
+['young', 'myope', 'yes', 'reduced', 'none'] none
+['young', 'myope', 'yes', 'normal', 'hard'] soft
+['young', 'hypermetrope', 'no', 'reduced', 'none'] none
 
-['young', 'myope', 'no', 'reduced', 'none'] soft
-['young', 'myope', 'no', 'normal', 'soft'] none
-['young', 'myope', 'yes', 'reduced', 'none'] soft
-['young', 'myope', 'yes', 'normal', 'hard'] none
-['young', 'hypermetrope', 'no', 'reduced', 'none'] hard
+['young', 'myope', 'no', 'reduced', 'none'] none
+['young', 'myope', 'no', 'normal', 'soft'] soft
+['young', 'myope', 'yes', 'reduced', 'none'] none
+['young', 'myope', 'yes', 'normal', 'hard'] soft
+['young', 'hypermetrope', 'no', 'reduced', 'none'] none
 

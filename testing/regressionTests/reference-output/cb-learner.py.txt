@@ -1,7 +1,7 @@
 EnumVariable 'tear_rate'
-<reduced, normal>
-<none, soft, none>
-<<1.000, 0.000, 0.000>, <0.250, 0.417, 0.333>, <0.625, 0.208, 0.167>>
+<normal, reduced>
+<soft, none, none>
+<<0.250, 0.333, 0.417>, <1.000, 0.000, 0.000>, <0.625, 0.167, 0.208>>
 ['young', 'myope', 'no', 'reduced', 'none'] ---> none
 ['young', 'myope', 'no', 'normal', 'soft'] ---> soft
 ['young', 'myope', 'yes', 'reduced', 'none'] ---> none

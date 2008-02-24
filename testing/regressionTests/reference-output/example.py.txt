@@ -1,11 +1,11 @@
-age <young, pre-presbyopic, presbyopic>
-prescription <myope, hypermetrope>
+age <pre-presbyopic, presbyopic, young>
+prescription <hypermetrope, myope>
 astigmatic <no, yes>
-tear_rate <reduced, normal>
-lenses <none, soft, hard>
+tear_rate <normal, reduced>
+lenses <none, hard, soft>
 ['?', '?', '?', '?', '?']
 ['young', 'myope', 'yes', 'reduced', 'soft']
-['young', 'myope', 'yes', 'reduced', 'soft']
+['young', 'hypermetrope', 'yes', 'reduced', 'soft']
 ['young', 'soft']
 young
 young
