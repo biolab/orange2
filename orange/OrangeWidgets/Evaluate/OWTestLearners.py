@@ -203,7 +203,10 @@ class OWTestLearners(OWWidget):
         for (i, l) in enumerate(learners):
             if l.scores:
                 for j in range(len(self.stat)):
-                    self.tab.setText(i, j+1, prec % l.scores[j])
+                    if l.scores[j] <> None:
+                        self.tab.setText(i, j+1, prec % l.scores[j])
+                    else:
+                        self.tab.setText(i, j+1, "N/A")
             else:
                 for j in range(len(self.stat)):
                     self.tab.setText(i, j+1, "")
