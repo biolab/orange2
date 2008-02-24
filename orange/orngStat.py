@@ -697,7 +697,10 @@ def F1(confm):
     else:
         p = precision(confm)
         r = recall(confm)
-        return 2. * p * r / (p + r)
+        if (p + r) != 0:
+            return 2. * p * r / (p + r)
+        else:
+            return None
 
 def Falpha(confm, alpha=1.0):
     if type(confm) == list:
