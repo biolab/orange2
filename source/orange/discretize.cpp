@@ -474,14 +474,22 @@ void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, c
   float inthis = 0, prevel = -1; // initialized to avoid warnings
   float inone = N/toGo;
 
-  for(map<float, float>::const_iterator db(distr.begin()), di(db), de(distr.end()); (toGo>1) && (di!=de); di++) {
+  for(map<float, float>::const_iterator db(distr.begin()), di(db), de(distr.end()), ni; (toGo>1) && (di!=de); di++) {
     inthis += (*di).second;
     if ((inthis<inone) || (di==db))
       prevel = (*di).first;
     else {
-      discretizer->points->push_back((prevel+(*di).first)/2);
-      N -= inthis;
-      inthis = 0;
+      ni = di; ni++;
+      if ((ni!=de) && (inthis - inone < (*di).second / 2)) {
+        discretizer->points->push_back( ((*ni).first + (*di).first) /2);
+        N -= inthis;
+        inthis = 0;
+      }
+      else {
+        discretizer->points->push_back( (prevel + (*di).first) / 2);
+        N -= (inthis - ((*di).second));
+        inthis = (*di).second;
+      }
       if (--toGo) 
         inone = N/toGo;
     }
