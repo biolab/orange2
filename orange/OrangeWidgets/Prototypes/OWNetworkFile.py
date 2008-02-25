@@ -40,23 +40,22 @@ class OWNetworkFile(OWWidget):
         print self.recentFiles
         
         #GUI
-        self.box = QHGroupBox("Graph File", self.controlArea)
-        self.filecombo = QComboBox(self.box)
+        self.controlArea.layout().setMargin(4)
+        self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "horizontal")
+        self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
-        button.setMaximumWidth(25)
+        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
 
-        self.databox = QHGroupBox("Data File", self.controlArea)
-        self.datacombo = QComboBox(self.databox)
+        self.databox = OWGUI.widgetBox(self.controlArea, box = "Data File", orientation = "horizontal")
+        self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
         self.datacombo.setMinimumWidth(250)
-        button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0)
-        button.setMaximumWidth(25)
+        button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0, width=25)
 
         # info
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No graph loaded.', box)
-        self.infob = QLabel('', box)
-        self.infoc = QLabel('', box)          
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
+        self.infoc = OWGUI.widgetLabel(box, ' ')
         
         self.resize(150,100)
         self.activateLoadedSettings()
@@ -65,21 +64,21 @@ class OWNetworkFile(OWWidget):
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
+            self.filecombo.addItem("(none)")
         for file in self.recentFiles:
             if file == "(none)":
-                self.filecombo.insertItem("(none)")
+                self.filecombo.addItem("(none)")
             else:
-                self.filecombo.insertItem(os.path.split(file)[1])
+                self.filecombo.addItem(os.path.split(file)[1])
         
         self.datacombo.clear()
         if not self.recentDataFiles:
-            self.datacombo.insertItem("(none)")
+            self.datacombo.addItem("(none)")
         for file in self.recentDataFiles:
             if file == "(none)":
-                self.datacombo.insertItem("(none)")
+                self.datacombo.addItem("(none)")
             else:
-                self.datacombo.insertItem(os.path.split(file)[1])
+                self.datacombo.addItem(os.path.split(file)[1])
         
         self.filecombo.updateGeometry()
         self.datacombo.updateGeometry()
@@ -179,12 +178,11 @@ class OWNetworkFile(OWWidget):
             if sys.platform == "darwin":
                 startfile = user.home
             else:
-                startfile="."
+                startfile = "."
         else:
             startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(startfile, 'Pajek files (*.net)\nAll files(*.*)', None,'Open a Graph File'))
-    
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Graph File', startfile, "Pajek files (*.net)\nAll files (*.*)"))
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
@@ -232,10 +230,10 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
-        graph, table = network.readNetwork(fn)
+        network.readNetwork(fn)
         
         self.infoc.setText("Data generated and added automatically.")
-        return graph
+        return network.graph
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
