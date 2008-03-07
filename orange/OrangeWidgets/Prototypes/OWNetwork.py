@@ -5,15 +5,13 @@
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>2040</priority>
 """
-from OWWidget import *
-
 import OWGUI
-from qwt import *
-from qt import *
+import OWToolbars
+
+from OWWidget import *
 from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
-import OWToolbars
 from statc import mean
 
 dir = os.path.dirname(__file__) + "/../icons/"
@@ -350,6 +348,7 @@ class OWNetwork(OWWidget):
    
     
     def setGraph(self, graph):
+        print "setting"
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."

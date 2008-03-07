@@ -567,127 +567,127 @@ class OWNetworkCanvas(OWGraph):
               
           self.addCurve("radius", fillColor, Qt.green, 1, style = QwtCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
       
-      self.insertCurve(self.networkCurve)
+      #self.insertCurve(self.networkCurve)
       
-#      xData = []
-#      yData = []
+      xData = []
+      yData = []
       # draw edges
-#      for e in range(self.nEdges):
-#          (key, i, j) = self.edges[e]
-#          
-#          if i in self.hiddenNodes or j in self.hiddenNodes:
-#              continue  
-#          
-#          x1 = self.visualizer.coors[0][i]
-#          x2 = self.visualizer.coors[0][j]
-#          y1 = self.visualizer.coors[1][i]
-#          y2 = self.visualizer.coors[1][j]
-#
-#          #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
-#          #self.edges[e] = (key,i,j)
-#          xData.append(x1)
-#          xData.append(x2)
-#          yData.append(y1)
-#          yData.append(y2)
-#          # append edges to vertex descriptions
-#          self.edges[e] = (edgesCount, i, j)
-#          (key, neighbours) = self.vertices[i]
-#          if edgesCount not in neighbours:
-#              neighbours.append(edgesCount)
-#          self.vertices[i] = (key, neighbours)
-#          (key, neighbours) = self.vertices[j]
-#          if edgesCount not in neighbours:
-#              neighbours.append(edgesCount)
-#          self.vertices[j] = (key, neighbours)
-#          
-#          edgesCount += 1
-#      
-#      edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192, 192, 192)), xData, yData)
-#      edgesCurveObject.xData = xData
-#      edgesCurveObject.yData = yData
-#      self.edgesKey = self.insertCurve(edgesCurveObject)
-#      
-#      selectionX = []
-#      selectionY = []
-#      self.nodeColor = []
-#
-#      # draw vertices
-#      for v in range(self.nVertices):
-#          if self.colorIndex > -1:
-#              if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
-#                  newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
-#                  fillColor = newColor
-#              elif self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Discrete:
-#                  newColor = self.discPalette[self.colorIndices[self.visualizer.graph.items[v][self.colorIndex].value]]
-#                  fillColor = newColor
-#                  edgeColor = newColor
-#          else: 
-#              newcolor = Qt.blue
-#              fillColor = newcolor
-#              
-#          if self.insideview and len(self.selection) == 1:
-#                  if not (v in self.visualizer.graph.getNeighbours(self.selection[0]) or v == self.selection[0]):
-#                      fillColor = fillColor.light(155)
-#          
-#          # This works only if there are no hidden vertices!    
-#          self.nodeColor.append(fillColor)
-#          
-#          if v in self.hiddenNodes:
-#              continue
-#                  
-#          x1 = self.visualizer.coors[0][v]
-#          y1 = self.visualizer.coors[1][v]
-#          
-#          selectionX.append(x1)
-#          selectionY.append(y1)
-#          key = self.addCurve(str(v), fillColor, edgeColor, self.getVertexSize(v), xData = [x1], yData = [y1], showFilledSymbols = False)
-#          
-#          if v in self.selection:
-#              if self.insideview and len(self.selection) == 1:
-#                  self.selectionStyles[v] = str(newcolor.name())
-#                  
-#              selColor = QColor(self.selectionStyles[v])
-#              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(selColor), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.getVertexSize(v) + 4))
-#              self.setCurveSymbol(key, newSymbol)
-#          
-#          (tmp, neighbours) = self.vertices[v]
-#          self.vertices[v] = (key, neighbours)
-#          self.indexPairs[key] = v
-#      
-#      #self.addCurve('vertices', fillColor, edgeColor, 6, xData=selectionX, yData=selectionY)
-#      
-#      # mark nodes
-#      redColor = self.markWithRed and Qt.red
-#      
-#      for m in self.markedNodes:
-#          (key, neighbours) = self.vertices[m]
-#          markedSize = self.markWithRed and self.getVertexSize(v) + 3 or self.getVertexSize(v)
-#          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
-#          self.setCurveSymbol(key, newSymbol)        
-#      
-#      # draw labels
-#      self.drawLabels()
-#      
-#      # add ToolTips
-#      self.tooltipData = []
-#      self.tooltipKeys = {}
-#      self.tips.removeAll()
-#      if len(self.tooltipText) > 0:
-#          for v in range(self.nVertices):
-#              if v in self.hiddenNodes:
-#                  continue
-#              
-#              x1 = self.visualizer.coors[0][v]
-#              y1 = self.visualizer.coors[1][v]
-#              lbl = ""
-#              for ndx in self.tooltipText:
-#                  values = self.visualizer.graph.items[v]
-#                  lbl = lbl + str(values[ndx]) + "\n"
-#      
-#              if lbl != '':
-#                  lbl = lbl[:-1]
-#                  self.tips.addToolTip(x1, y1, lbl)
-#                  self.tooltipKeys[v] = len(self.tips.texts) - 1
+      for e in range(self.nEdges):
+          (key, i, j) = self.edges[e]
+          
+          if i in self.hiddenNodes or j in self.hiddenNodes:
+              continue  
+          
+          x1 = self.visualizer.coors[0][i]
+          x2 = self.visualizer.coors[0][j]
+          y1 = self.visualizer.coors[1][i]
+          y2 = self.visualizer.coors[1][j]
+
+          #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
+          #self.edges[e] = (key,i,j)
+          xData.append(x1)
+          xData.append(x2)
+          yData.append(y1)
+          yData.append(y2)
+          # append edges to vertex descriptions
+          self.edges[e] = (edgesCount, i, j)
+          (key, neighbours) = self.vertices[i]
+          if edgesCount not in neighbours:
+              neighbours.append(edgesCount)
+          self.vertices[i] = (key, neighbours)
+          (key, neighbours) = self.vertices[j]
+          if edgesCount not in neighbours:
+              neighbours.append(edgesCount)
+          self.vertices[j] = (key, neighbours)
+          
+          edgesCount += 1
+      
+      edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192, 192, 192)), xData, yData)
+      edgesCurveObject.xData = xData
+      edgesCurveObject.yData = yData
+      self.edgesKey = self.insertCurve(edgesCurveObject)
+      
+      selectionX = []
+      selectionY = []
+      self.nodeColor = []
+
+      # draw vertices
+      for v in range(self.nVertices):
+          if self.colorIndex > -1:
+              if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
+                  newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
+                  fillColor = newColor
+              elif self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Discrete:
+                  newColor = self.discPalette[self.colorIndices[self.visualizer.graph.items[v][self.colorIndex].value]]
+                  fillColor = newColor
+                  edgeColor = newColor
+          else: 
+              newcolor = Qt.blue
+              fillColor = newcolor
+              
+          if self.insideview and len(self.selection) == 1:
+                  if not (v in self.visualizer.graph.getNeighbours(self.selection[0]) or v == self.selection[0]):
+                      fillColor = fillColor.light(155)
+          
+          # This works only if there are no hidden vertices!    
+          self.nodeColor.append(fillColor)
+          
+          if v in self.hiddenNodes:
+              continue
+                  
+          x1 = self.visualizer.coors[0][v]
+          y1 = self.visualizer.coors[1][v]
+          
+          selectionX.append(x1)
+          selectionY.append(y1)
+          key = self.addCurve(str(v), fillColor, edgeColor, self.getVertexSize(v), xData = [x1], yData = [y1], showFilledSymbols = False)
+          
+          if v in self.selection:
+              if self.insideview and len(self.selection) == 1:
+                  self.selectionStyles[v] = str(newcolor.name())
+                  
+              selColor = QColor(self.selectionStyles[v])
+              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(selColor), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.getVertexSize(v) + 4))
+              self.setCurveSymbol(key, newSymbol)
+          
+          (tmp, neighbours) = self.vertices[v]
+          self.vertices[v] = (key, neighbours)
+          self.indexPairs[key] = v
+      
+      #self.addCurve('vertices', fillColor, edgeColor, 6, xData=selectionX, yData=selectionY)
+      
+      # mark nodes
+      redColor = self.markWithRed and Qt.red
+      
+      for m in self.markedNodes:
+          (key, neighbours) = self.vertices[m]
+          markedSize = self.markWithRed and self.getVertexSize(v) + 3 or self.getVertexSize(v)
+          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
+          self.setCurveSymbol(key, newSymbol)        
+      
+      # draw labels
+      self.drawLabels()
+      
+      # add ToolTips
+      self.tooltipData = []
+      self.tooltipKeys = {}
+      self.tips.removeAll()
+      if len(self.tooltipText) > 0:
+          for v in range(self.nVertices):
+              if v in self.hiddenNodes:
+                  continue
+              
+              x1 = self.visualizer.coors[0][v]
+              y1 = self.visualizer.coors[1][v]
+              lbl = ""
+              for ndx in self.tooltipText:
+                  values = self.visualizer.graph.items[v]
+                  lbl = lbl + str(values[ndx]) + "\n"
+      
+              if lbl != '':
+                  lbl = lbl[:-1]
+                  self.tips.addToolTip(x1, y1, lbl)
+                  self.tooltipKeys[v] = len(self.tips.texts) - 1
                   
   def updateDataSpecial(self, oldXY):
       self.removeDrawingCurves(removeLegendItems = 0)

@@ -232,10 +232,10 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
-        graph, table = network.readNetwork(fn)
+        network.readNetwork(fn)
         
         self.infoc.setText("Data generated and added automatically.")
-        return graph
+        return network.graph
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
