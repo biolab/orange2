@@ -70,6 +70,9 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.loadSettings()
 
+        #solves problem with too small icons on Linux and MacOS
+        QIconSet.setIconSize(QIconSet.Small, QSize(32,32))
+
         self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
 
