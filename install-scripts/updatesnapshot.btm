@@ -85,7 +85,8 @@ REM    set ERRORS=%errorlevel
 
   REM ### Genomics Add-On
   set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
-  move /Z %WEBDIR\Genomics\dist\Genomics-*.win32-py%npver.exe %OUTNAME
+REM  move /Z %WEBDIR\Genomics\dist\Genomics-*.win32-py%npver.exe %OUTNAME
+  move /Z %WEBDIR\Genomics\dist\Genomics-*.win32.exe %OUTNAME  
   if %errorlevel != 0 (
 REM    set ERRORS=%errorlevel
     echo "ignore error"
