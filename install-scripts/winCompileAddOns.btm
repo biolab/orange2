@@ -3,15 +3,15 @@ pushd
 rem ######
 rem # compile orngText
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- orngText
+
+del /sye orngText
+rmdir /sq orngText
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A orngText
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
 
 cdd %WEBDIR\orngText
-
-del /sye dist 
-del /sye build
 
 for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
@@ -57,15 +57,15 @@ for %ver in (%PYTHONVERSIONS) (
 rem ######
 rem # compile Genomics
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- Genomics
+
+del /sye Genomics
+rmdir /sq Genomics
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A Genomics
 
 rem set PATH=%PATH;c:\MinGW\bin
 rem set SWIGLIB=C:\swigwin-1.3.31\Lib
 
 cdd %WEBDIR\Genomics
-
-del /sye dist 
-del /sye build
 
 for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
