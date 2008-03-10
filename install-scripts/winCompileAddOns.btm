@@ -54,4 +54,31 @@ for %ver in (%PYTHONVERSIONS) (
   rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
 )
 
+rem ######
+rem # compile Genomics
+cdd %WEBDIR
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- Genomics
+
+rem set PATH=%PATH;c:\MinGW\bin
+rem set SWIGLIB=C:\swigwin-1.3.31\Lib
+
+cdd %WEBDIR\Genomics
+
+del /sye dist 
+del /sye build
+
+for %ver in (%PYTHONVERSIONS) (
+  set PYTHON=%pythonbase%%ver
+  set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-Genomics-%ver.log
+
+  cdd %WEBDIR\Genomics
+
+  echo *** Compiling Genomics %ver
+  echo %COMPILELOG
+  if exist %COMPILELOG del %COMPILELOG
+  del /sye %SNAPSHOTDIR\%ver
+  %PYTHON\python setup.py build bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+)
+
 popd

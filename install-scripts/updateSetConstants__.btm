@@ -19,7 +19,7 @@ set /r %WEBDOWNLOAD\filenames.set
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 
 set WIN_SNAPSHOT=orange-snapshot-%daystr
-set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics-%daystr
+set WIN_GENOMICS_SNAPSHOT=orangeAddOn-snapshot-genomics-%daystr
 set WIN_TEXTMINING_SNAPSHOT=orangeAddOn-snapshot-textmining-%daystr
 set WIN_GOLIB_SNAPSHOT=GOlib-snapshot-%daystr
 set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
