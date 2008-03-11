@@ -152,10 +152,10 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
   if (distributions) {
     if (valDistribution.abs) {
       TValueList::iterator vi(lookupTable->begin());
-      valDistribution[distributions->size()-1];
-      TDiscDistribution::iterator di(valDistribution.begin());
+      //valDistribution[distributions->size()-1];
+      TDiscDistribution::iterator di(valDistribution.begin()), de(valDistribution.end());
       for(TDistributionList::iterator dvi(distributions->begin()), dve(distributions->end());
-          dvi!=dve;
+          (dvi!=dve) && (di!=de);
           dvi++, vi++, di++)
         if (!(*vi).isSpecial()) {
           const TDiscDistribution &tdi = CAST_TO_DISCDISTRIBUTION(*dvi);
