@@ -34,6 +34,7 @@ class ORANGE_API TIGNode {
 public:
   PExample example;
   TDiscDistribution incompatibility, compatibility;
+  int randint;
 
   TIGNode();
   TIGNode(PExample);

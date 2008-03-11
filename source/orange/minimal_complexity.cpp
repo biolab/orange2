@@ -191,6 +191,10 @@ PIG TIGBySorting::operator()(PExampleGenerator gen, TVarList &aboundSet, const i
   PDomain graphDomain = PDomain(mlnew TDomain(PVariable(), aboundSet));
   PIG graph = mlnew TIG();
   graph->nodes = vector<TIGNode>(sorted.maxIndex+1);
+  TRandomGenerator rgen(sorted.size());
+  ITERATE(vector<TIGNode>, in, graph->nodes)
+    in->randint = rgen.randint();
+    
   ITERATE(TSortedExamples_nodeIndices, ni, sorted) {
     TIGNode &gnode = graph->nodes[(*ni).nodeIndex];
     if (!gnode.example)
@@ -312,24 +316,21 @@ PExampleSets TColoredIG::exampleSets(const float &) const
 class T__LessConnected {
 public:
   PIG graph;
-  PRandomGenerator rgen;
 
-  T__LessConnected(PIG gr, PRandomGenerator argen)
-  : graph(gr),
-    rgen(argen)
+  T__LessConnected(PIG gr)
+  : graph(gr)
   {}
 
   bool operator()(const int &n1, const int &n2) const
   { float ab1 = graph->nodes[n1].incompatibility.abs,
           ab2 = graph->nodes[n2].incompatibility.abs;
-    return (ab1<ab2) || ((ab1==ab2) && const_cast<PRandomGenerator &>(rgen)->randbool()); }
+    return (ab1<ab2) || ((ab1==ab2) && (graph->nodes[n1].randint < graph->nodes[n2].randint)); 
+  }
 };
 
 
 PColoredIG TColorIG_MCF::operator()(PIG graph)
 { 
-  PRandomGenerator rgen = mlnew TRandomGenerator(graph->nodes.size());
-
   graph->removeEmpty();
   PColoredIG colored(mlnew TColoredIG(graph));
 
@@ -343,7 +344,7 @@ PColoredIG TColorIG_MCF::operator()(PIG graph)
      to the number of its edges
   */
   typedef priority_queue<int, vector<int>, T__LessConnected> cpq;
-  T__LessConnected lcg(graph, rgen);
+  T__LessConnected lcg(graph);
   cpq orderedNodes = cpq(lcg);
   for(int ni = 0, nr = graph->nodes.size(); ni<nr; ni++)
     orderedNodes.push(ni);
