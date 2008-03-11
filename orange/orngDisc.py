@@ -57,5 +57,7 @@ class DiscretizedLearner_Class:
 class DiscretizedClassifier:
   def __init__(self, **kwds):
     self.__dict__ = kwds
+    self.classVar = self.classifier.classVar
+    
   def __call__(self, example, resultType = orange.GetValue):
     return self.classifier(example, resultType)
