@@ -25,7 +25,7 @@ move /q catalog\default-chm.htm catalog\default.htm
 
 pushd
 cdd %SNAPSHOTDIR\orange\orangeCanvas
-python xmlParse.py
+python orngRegistry.py
 popd
 
 ..\widgetCatalogs.py html %SNAPSHOTDIR\orange\orangeCanvas\widgetRegistry.xml catalog >> catalog/default.htm
