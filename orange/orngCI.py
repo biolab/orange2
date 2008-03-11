@@ -455,7 +455,7 @@ class HINTClass:
   def __call__(self, data, weight=0):
     import orngWrap
     
-    type=getattr(self, "type", "auto")
+    dtype=getattr(self, "type", "auto")
 
     if hasattr(self, "boundsize"):
       if type(self)==int:
@@ -466,23 +466,23 @@ class HINTClass:
         subgen=orange.SubsetsGenerator_constSize(B = 2)
         
 
-    if type=="auto":
+    if dtype=="auto":
       im=orange.IMBySorting(data, [])
       if im.fuzzy():
-        type="error"
+        dtype="error"
       else:
-        type="complexity"
+        dtype="complexity"
 
     inducer=StructureInducer(removeDuplicates = 1,
                              redundancyRemover = AttributeRedundanciesRemover(),
                              learnerForUnknown = orange.MajorityLearner()
                            )
 
-    if type=="complexity":
+    if dtype=="complexity":
       inducer.featureInducer = FeatureByMinComplexity()
       return inducer(data, weight)
 
-    elif type=="error":
+    elif dtype=="error":
       ms=getattr(self, "m", orange.frange(0.1)+orange.frange(1.2, 3.0, 0.2)+orange.frange(4.0, 10.0, 1.0))
     
       inducer.redundancyRemover.inducer=inducer.featureInducer = FeatureByMinError()
