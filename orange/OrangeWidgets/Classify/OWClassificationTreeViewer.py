@@ -36,11 +36,11 @@ class OWClassificationTreeViewer(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.dataLabels = (('Majority class', 'Class'), 
-                  ('Probability of majority class', 'P(Class)'), 
-                  ('Probability of target class', 'P(Target)'), 
-                  ('Number of instances', '# Inst'), 
-                  ('Relative distribution', 'Distribution (rel)'), 
+        self.dataLabels = (('Majority class', 'Class'),
+                  ('Probability of majority class', 'P(Class)'),
+                  ('Probability of target class', 'P(Target)'),
+                  ('Number of instances', '# Inst'),
+                  ('Relative distribution', 'Distribution (rel)'),
                   ('Absolute distribution', 'Distribution (abs)'))
 
         self.callbackDeposit = []
@@ -135,12 +135,12 @@ class OWClassificationTreeViewer(OWWidget):
                 p_tarclass = f % float(dist[self.targetClass]/a)
             except:
                 p_tarclass = "NA"
-            
-            colf = (str(ncl.defaultValue), 
-                    p_majclass, 
-                    p_tarclass, 
-                    "%d" % dist.cases, 
-                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA", 
+
+            colf = (str(ncl.defaultValue),
+                    p_majclass,
+                    p_tarclass,
+                    "%d" % dist.cases,
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA",
                     len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "NA"
                    )
 
@@ -223,7 +223,7 @@ class OWClassificationTreeViewer(OWWidget):
     def setTarget(self):
         def updatetarget(listviewitem):
             dist = self.nodeClassDict[listviewitem].distribution
-            listviewitem.setText(targetindex, f % (dist[self.targetClass]/dist.abs))
+            listviewitem.setText(targetindex, f % (dist[self.targetClass]/max(1,dist.abs)))
 
             child = listviewitem.firstChild()
             while child:
@@ -257,7 +257,7 @@ class OWClassificationTreeViewer(OWWidget):
         expandTree0(self.v.firstChild(), lev)
 
     # signal processing
-    
+
     def viewSelectionChanged(self, item):
         """handles click on the tree"""
         self.handleSelectionChanged(item)
