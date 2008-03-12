@@ -473,6 +473,7 @@ class SchemaDoc(QMainWindow):
 
         # set cursor
         qApp.setOverrideCursor(Qt.WaitCursor)
+        failureText = ""
 
         try:
             #load the data ...
@@ -646,7 +647,7 @@ import sys, os, cPickle, orange, orngSignalManager, OWGUI
         if asTabs:
             guiText = "OWGUI.createTabPage(self.tabs, caption, widget)"
         else:
-            guiText = "OWGUI.button(self, self, caption, callback = widget.reshow)"
+            guiText = "OWGUI.button(self.box, self, caption, callback = widget.reshow)"
 
 
         handlerFuncts = """

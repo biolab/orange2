@@ -15,18 +15,19 @@
 #   - 2003/10/28: project initiated
 #   - 2003/11/20: returning the parameters of the transform
 
-import Numeric,LinearAlgebra,mathutil
+import numpy, mathutil
+import numpy.linalg as LinearAlgebra
 
 # before running PCA, it is helpful to apply the transformation
 # operators on individual vectors.
 class PCA:
     def __init__(self, data, components=1):
-        (u,d,v) = LinearAlgebra.singular_value_decomposition(data)
+        (u,d,v) = LinearAlgebra.svd(data)
         self.loading = u                # transformed data points
         self.variance = d               # principal components' variance
         self.factors = v                # the principal basis
-        d2 = Numeric.power(d,2)
-        s = Numeric.sum(d2)
+        d2 = numpy.power(d,2)
+        s = numpy.sum(d2)
         if s > 1e-6:
             s = d2/s
         else:
@@ -34,9 +35,9 @@ class PCA:
         self.R_squared = s # percentage of total variance explained by individual components
 
 def Centering(vector, m = None, inverse=0):
-    assert(len(Numeric.shape(vector))==1) # this must be a vector
+    assert(len(numpy.shape(vector))==1) # this must be a vector
     if m == None:
-        m = Numeric.average(vector)
+        m = numpy.average(vector)
     if inverse==0:
         return (vector-m,m)
     else:
@@ -56,7 +57,7 @@ def MaxScaling(vector, param = None):
 def VarianceScaling(vector,param=None,inverse=0):
     if param == None:
         (v,m) = Centering(vector)
-        s = Numeric.sqrt(Numeric.average(Numeric.power(v,2)))
+        s = numpy.sqrt(numpy.average(numpy.power(v,2)))
         if s > 1e-6:
             s = 1.0/s
     else:
@@ -72,19 +73,19 @@ def VarianceScaling(vector,param=None,inverse=0):
 
 def _BC(vector,lambd):
     if lambd != 0.0:
-        return (Numeric.power(vector,lambd)-1)/lambd
+        return (numpy.power(vector,lambd)-1)/lambd
     else:
-        return Numeric.log(vector)
+        return numpy.log(vector)
 
 class _BCskewness:
     def __init__(self,vector):
         self.v = vector
     def __call__(self,lambd):
         nv = _BC(self.v,lambd)
-        mean = Numeric.average(nv)
+        mean = numpy.average(nv)
         cv = nv-mean
-        skewness = Numeric.average(Numeric.power(cv,3))/Numeric.power(Numeric.average(Numeric.power(cv,2)),1.5)
-        # kurtosis = Numeric.average(Numeric.power(cv,4))/Numeric.power(Numeric.average(Numeric.power(cv,2)),2)-3
+        skewness = numpy.average(numpy.power(cv,3))/numpy.power(numpy.average(numpy.power(cv,2)),1.5)
+        # kurtosis = numpy.average(numpy.power(cv,4))/numpy.power(numpy.average(numpy.power(cv,2)),2)-3
         return skewness**2
 
 def BoxCoxTransform(vector,lambd=None):
@@ -97,9 +98,9 @@ def BoxCoxTransform(vector,lambd=None):
     return _BC(v,lambd)
 
 def RankConversion(vector,reverse=0):
-    assert(len(Numeric.shape(vector))==1) # this must be a vector
+    assert(len(numpy.shape(vector))==1) # this must be a vector
 
-    newv = Numeric.zeros(Numeric.size(vector),Numeric.Float)
+    newv = numpy.zeros(numpy.size(vector),numpy.float)
     l = []
     for x in xrange(len(vector)):
         l.append((vector[x],x))
@@ -127,7 +128,7 @@ def RankConversion(vector,reverse=0):
     return newv
 
 if __name__== "__main__":
-    v = Numeric.array([6, 6, 6, 6, 4, 6, 12, 12, 12, 4, 4, 4, 6, 6, 8, 6, 8, 8, 8, 4, 4, 8, 8, 8, 6, 6, 6, 6, 6, 6, 8, 8, 6, 6, 8, 6, 6, 8, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 6, 6, 8, 6, 6, 4, 4, 8, 8, 8, 6, 6, 6, 6, 6, 6, 4, 6, 8, 8, 8, 8, 8, 8, 8, 8, 4, 6, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 8, 6, 6, 4, 6, 6, 6, 8, 8, 8, 5, 5, 6, 6, 10, 8, 12, 12, 12, 8, 6, 6, 8, 8, 6, 4, 8, 8, 6, 6, 6, 8, 8, 8, 8, 4, 4, 4, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 8, 8, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4, 3, 6, 6, 4, 8, 8, 4, 4, 4, 4, 4, 4, 4, 6, 6, 8, 6, 6, 6, 8, 8, 6, 6, 6, 4, 4, 8, 6, 8, 8, 8, 6, 6, 6, 4, 4, 4, 6, 6, 4, 4, 12, 8, 6, 8, 6, 6, 8, 8, 6, 6, 8, 8, 6, 8, 8, 6, 8, 8, 8, 8, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 6, 8, 6, 6, 6, 6, 8, 6, 8, 8, 4, 8, 8, 6, 6, 6, 4, 6, 4, 4, 4, 4, 4, 6, 6, 4, 6, 4, 6, 6, 6, 6, 4, 6, 4, 4, 8, 6, 6, 8, 6, 6, 6, 6, 6, 6, 6, 4, 4, 6, 6, 6, 8, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 6, 4, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 8, 6, 4, 6, 6, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 5, 6, 4, 5, 5, 5],Numeric.Float)
+    v = numpy.array([6, 6, 6, 6, 4, 6, 12, 12, 12, 4, 4, 4, 6, 6, 8, 6, 8, 8, 8, 4, 4, 8, 8, 8, 6, 6, 6, 6, 6, 6, 8, 8, 6, 6, 8, 6, 6, 8, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 6, 6, 8, 6, 6, 4, 4, 8, 8, 8, 6, 6, 6, 6, 6, 6, 4, 6, 8, 8, 8, 8, 8, 8, 8, 8, 4, 6, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 8, 6, 6, 4, 6, 6, 6, 8, 8, 8, 5, 5, 6, 6, 10, 8, 12, 12, 12, 8, 6, 6, 8, 8, 6, 4, 8, 8, 6, 6, 6, 8, 8, 8, 8, 4, 4, 4, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 8, 8, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4, 3, 6, 6, 4, 8, 8, 4, 4, 4, 4, 4, 4, 4, 6, 6, 8, 6, 6, 6, 8, 8, 6, 6, 6, 4, 4, 8, 6, 8, 8, 8, 6, 6, 6, 4, 4, 4, 6, 6, 4, 4, 12, 8, 6, 8, 6, 6, 8, 8, 6, 6, 8, 8, 6, 8, 8, 6, 8, 8, 8, 8, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 6, 8, 6, 6, 6, 6, 8, 6, 8, 8, 4, 8, 8, 6, 6, 6, 4, 6, 4, 4, 4, 4, 4, 6, 6, 4, 6, 4, 6, 6, 6, 6, 4, 6, 4, 4, 8, 6, 6, 8, 6, 6, 6, 6, 6, 6, 6, 4, 4, 6, 6, 6, 8, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 6, 4, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 8, 6, 4, 6, 6, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 5, 6, 4, 5, 5, 5], numpy.float)
     print "original:"
     print v
     print "rank-transformed:"

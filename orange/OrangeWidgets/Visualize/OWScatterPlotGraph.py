@@ -51,6 +51,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         self.oldShowColorLegend = -1
 
+        self.enableWheelZoom = 1
+
+
     def setData(self, data, subsetData = None, **args):
         OWGraph.setData(self, data)
         orngScaleScatterPlotData.setData(self, data, subsetData, **args)
@@ -159,8 +162,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
             data = numpy.transpose(numpy.array([scX, scY, clsData]))
             data = numpy.compress(validData, data, axis = 0)
-            #self.potentialsClassifier = orange.P2NN(domain, data, None, None, None, None)
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawData]])), None, None, None, None)
+            self.potentialsClassifier = orange.P2NN(domain, data, None, None, None, None)
+            #self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawData]])), None, None, None, None)
             self.xmin = xmin; self.xmax = xmax
             self.ymin = ymin; self.ymax = ymax
 
@@ -382,9 +385,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 y = yVarMin + i*yVar/float(count)
                 col = self.contPalette[i/float(count)]
                 col.setAlpha(self.alphaValue)
-                curve = PolygonCurve(self, QPen(col), QBrush(col))
-                newCurveKey = self.insertCurve(curve)
-                self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
+                curve = PolygonCurve(QPen(col), QBrush(col))
+                curve.setData(xs, [y,y, y+height, y+height])
+                curve.attach(self)
+                
 
             # add markers for min and max value of color attribute
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]

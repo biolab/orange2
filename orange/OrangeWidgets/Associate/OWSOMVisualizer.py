@@ -168,7 +168,7 @@ class SOMCanvasView(QCanvasView):
     def buildBubble(self, node):
         b=CanvasBubbleInfo(node,None,self.canvas())
         b.setZ(20)
-        s="Items: "+str(len(node.examples))
+        s="Items: %i" % len(node.examples)
         b.addTextLine(s)
 
         if self.includeCodebook:
@@ -584,11 +584,11 @@ class OWSOMVisualizer(OWWidget):
 #        tabW.addTab(histTab, "Histogram Coloring")
         self.backgroundBox = OWGUI.widgetBox(mainTab, "Background")
         #OWGUI.checkBox(self.backgroundBox, self, "backgroundCheck","Show background", callback=self.setBackground)
-        b=OWGUI.radioButtonsInBox(self.backgroundBox, self, "canvas.drawMode", ["None", "U-Matrix", "Component Planes"], callback=self.setBackground)
+        b=OWGUI.radioButtonsInBox(self.backgroundBox, self, "canvas.drawMode", ["None", "U-Matrix", "Component planes"], callback=self.setBackground)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.componentCombo=OWGUI.comboBox(b,self,"canvas.component", callback=self.setBackground)
         self.componentCombo.setEnabled(self.canvas.drawMode==2)
-        OWGUI.checkBox(self.backgroundBox, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
+        OWGUI.checkBox(self.backgroundBox, self, "canvas.showGrid", "Show grid", callback=self.canvas.updateAll)
         #b=OWGUI.widgetBox(mainTab, "Histogram")
         OWGUI.separator(mainTab)
 
@@ -606,7 +606,7 @@ class OWSOMVisualizer(OWWidget):
 
         OWGUI.separator(b1)
 
-        b1=OWGUI.widgetBox(b1, "Bubble Info")
+        b1=OWGUI.widgetBox(b1, "Bubble info")
         OWGUI.checkBox(b1, self, "canvasView.showBubbleInfo","Show")
         OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))

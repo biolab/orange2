@@ -1,5 +1,5 @@
 import orange
-import stats
+import statc
 
 class OutlierDetection:
   
@@ -71,29 +71,7 @@ class OutlierDetection:
       takelimit = min(len(dist)-1, knn)
       copy.sort()
       return copy[:takelimit]
-              
-  def zValues(self):
-    #stats.lzs crashes if all values are 
-    list = self.averageMeans()
-    if (self.allsame(list)):
-      return self.listzero(len(list))
-    else:
-      return stats.lzs(list)
-   
-  def allsame(self, list):
-    firstel = None
-    for el in list:
-      if firstel == None:
-        firstel = el
-      else:
-        if (firstel <> el):
-          return 0
-    return 1
- 
-  def listzero(self, length):
-    ret = []
-    for el in range(length):
-      ret.append(0.0)
-    return ret
     
- 
+  def zValues(self):
+    list = self.averageMeans()
+    return [statc.z(list, e) for e in list]

@@ -1,8 +1,8 @@
 import orange
 import orngCI
 import math, os
-from Numeric import *
-from LinearAlgebra import *
+from numpy import *
+from numpy.linalg import *
 
 
 #######################
@@ -30,84 +30,8 @@ def printOUT(classifier):
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.continuizedDomain.attributes)):
-        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
+        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1]))
         
-
-
-##########################
-## LEARNER improvements ##
-##########################
-#construct "continuous" attributes from discrete attributes
-def createNoDiscDomain(domain, data):
-    attributes = []
-    #iterate through domain
-    for at in domain.attributes:
-        #if att is discrete, create (numOfValues)-1 new ones and set getValueFrom
-        if at.varType == orange.VarTypes.Discrete:
-            # get major attribute value
-            mod = orange.Distribution(at, data).modus()
-            for ival in range(len(at.values)):
-                # continue at first value 
-                if at.values[ival] == mod:
-                    continue
-                # create attribute
-                newVar = orange.FloatVariable(at.name+"="+at.values[ival])
-                newVar.setattr("originValue", at.values[ival])
-                
-                # create classifier
-                vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
-                vals.append("?")
-                cl = orange.ClassifierByLookupTable(newVar, at, vals)                
-                newVar.getValueFrom=cl
-
-                # append newVariable                
-                attributes.append(newVar)
-        else:
-            # add original attribute
-            attributes.append(at)
-    if domain.classVar:
-        attributes.append(domain.classVar)
-    retDomain = orange.Domain(attributes)
-    for k in domain.getmetas().keys():
-        retDomain.addmeta(orange.newmetaid(), domain.getmetas()[k])
-    return retDomain
-
-def createFullNoDiscDomain(domain):
-    attributes = []
-    #iterate through domain
-    for at in domain.attributes:
-        #if att is discrete, create (numOfValues)-1 new ones and set getValueFrom
-        if at.varType == orange.VarTypes.Discrete:
-            for ival in range(len(at.values)):
-                # create attribute
-                newVar = orange.FloatVariable(at.name+"="+at.values[ival])
-                
-                # create classifier
-                vals = [orange.Value(float(ival==i)) for i in range(len(at.values))]
-                vals.append("?")
-                #print (vals)
-                cl = orange.ClassifierByLookupTable(newVar, at, vals)                
-                newVar.getValueFrom=cl
-
-                # append newVariable                
-                attributes.append(newVar)
-        else:
-            # add original attribute
-            attributes.append(at)
-    if domain.classVar:
-        attributes.append(domain.classVar)
-    return orange.Domain(attributes)
-                
-# returns data set without discrete values. 
-def createNoDiscTable(olddata):
-    newdomain = createNoDiscDomain(olddata.domain, olddata)
-    return olddata.select(newdomain)
-
-def createFullNoDiscTable(olddata):
-    newdomain = createFullNoDiscDomain(olddata.domain)
-    #print newdomain
-    return olddata.select(newdomain)
-    
 
 def hasDiscreteValues(domain):
     for at in domain.attributes:
@@ -134,19 +58,23 @@ class LogRegLearnerClass:
             examples = orange.Preprocessor_dropMissing(examples)
 ##        if hasDiscreteValues(examples.domain):
 ##            examples = createNoDiscTable(examples)
+        if not len(examples):
+            return None
         if getattr(self, "stepwiseLR", 0):
-            addCrit = getattr(self, "addcrit", 0.2)
+            addCrit = getattr(self, "addCrit", 0.2)
             removeCrit = getattr(self, "removeCrit", 0.3)
             numAttr = getattr(self, "numAttr", -1)
             attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numAttr = numAttr)
-            examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
-
+            tmpDomain = orange.Domain(attributes, examples.domain.classVar)
+            tmpDomain.addmetas(examples.domain.getmetas())
+            examples = examples.select(tmpDomain)
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
-            
+        if imputer:
+            examples = self.imputer(examples)(examples)
+        examples = orange.Preprocessor_dropMissing(examples)
         if self.fitter:
             learner.fitter = self.fitter
-
         if self.removeSingular:
             lr = learner.fitModel(examples, weight)
         else:
@@ -529,20 +457,12 @@ class bayesianFitter(orange.LogRegFitter):
         self.anch_examples = anch_examples
         self.tau = tau
 
-##    def getInitialBeta(self, X, y, indices):
-##        A = array([X[i,:len(indices)] for i in indices])
-##        b = array([y[i] for i in indices])
-##        print A
-##        print b
-##        return solve_linear_equations(A,b) # A*beta = b
-
     def createArrayData(self,data):
         if not len(data):
             return (array([]),array([]))
         # convert data to numeric
         ml = data.native(0)
-        for i in range(len(data.domain.attributes)):
-          a = data.domain.attributes[i]
+        for i,a in enumerate(data.domain.attributes):
           if a.varType == orange.VarTypes.Discrete:
             for m in ml:
               m[i] = a.values.index(m[i])
@@ -563,18 +483,40 @@ class bayesianFitter(orange.LogRegFitter):
         (X_anch,y_anch)=self.createArrayData(exTable)
 
         betas = array([0.0] * (len(data.domain.attributes)+1))
-##        initial_beta = self.getInitialBeta(X,y,self.anch_examples)
-##        for i,b in enumerate(initial_beta):
-##            betas[i] = b
-        N = len(y)
 
         likelihood,betas = self.estimateBeta(X,y,betas,[0]*(len(betas)),X_anch,y_anch)
+
+        # get attribute groups atGroup = [(startIndex, number of values), ...)
+        ats = data.domain.attributes
+        atVec=reduce(lambda x,y: x+[(y,not y==x[-1][0])], [a.getValueFrom and a.getValueFrom.whichVar or a for a in ats],[(ats[0].getValueFrom and ats[0].getValueFrom.whichVar or ats[0],0)])[1:]
+        atGroup=[[0,0]]
+        for v_i,v in enumerate(atVec):
+            if v[1]==0: atGroup[-1][1]+=1
+            else:       atGroup.append([v_i,1])
+        
+        # compute zero values for attributes
+        sumB = 0.
+        for ag in atGroup:
+            X_temp = concatenate((X[:,:ag[0]+1],X[:,ag[0]+1+ag[1]:]),1)
+            if X_anch:
+                X_anch_temp = concatenate((X_anch[:,:ag[0]+1],X_anch[:,ag[0]+1+ag[1]:]),1)
+            else: X_anch_temp = X_anch
+##            print "1", concatenate((betas[:i+1],betas[i+2:]))
+##            print "2", betas
+            likelihood_temp,betas_temp=self.estimateBeta(X_temp,y,concatenate((betas[:ag[0]+1],betas[ag[0]+ag[1]+1:])),[0]+[1]*(len(betas)-1-ag[1]),X_anch_temp,y_anch)
+            print "finBetas", betas, betas_temp
+            print "betas", betas[0], betas_temp[0]
+            sumB += betas[0]-betas_temp[0]
+        apriori = orange.Distribution(data.domain.classVar, data)
+        aprioriProb = apriori[0]/apriori.abs
+        
+        print "koncni rezultat", sumB, math.log((1-aprioriProb)/aprioriProb), betas[0]
+            
         beta = []
         beta_se = []
         print "likelihood2", likelihood
         for i in range(len(betas)):
             beta.append(betas[i])
-#            beta_se.append(diXWX[i])
             beta_se.append(0.0)
         return (self.OK, beta, beta_se, 0)
 
@@ -584,11 +526,11 @@ class bayesianFitter(orange.LogRegFitter):
         N,N_anch = len(y),len(y_anch)
         r,r_anch = array([dot(X[i], betas) for i in range(N)]),\
                    array([dot(X_anch[i], betas) for i in range(N_anch)])
-        p = array([Pr_bx(ri) for ri in r])
+        p    = array([Pr_bx(ri) for ri in r])
         X_sq = X*X
 
-        max_delta = [1.]*len(const_betas)
-        likelihood = -1.e+10
+        max_delta      = [1.]*len(const_betas)
+        likelihood     = -1.e+10
         likelihood_new = -1.e+9
         while abs(likelihood - likelihood_new)>0.01 and max(max_delta)>0.01:
             likelihood = likelihood_new
@@ -601,12 +543,9 @@ class bayesianFitter(orange.LogRegFitter):
                     dl += self.penalty*x[j]*(y_anch[xi] - Pr_bx(r_anch[xi]*self.penalty))
 
                 ddl = matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
-                #print "zacetek ddl", ddl
                 for xi,x in enumerate(X_anch):
                     ddl += self.penalty*x[j]*Pr_bx(r[xi]*self.penalty)*(1-Pr_bx(r[xi]*self.penalty))
-                #print "ddl", ddl
-                #print "dl", dl
-                #print "dv", dl/max(ddl,1e-6)
+
                 if j==0:
                     dv = dl/max(ddl,1e-6)
                 elif betas[j] == 0: # special handling due to non-defined first and second derivatives
@@ -620,9 +559,7 @@ class bayesianFitter(orange.LogRegFitter):
                     dv = dl/max(ddl,1e-6)
                     if not sign(betas[j] + dv) == sign(betas[j]):
                         dv = -betas[j]
-##                dv = matrixmultiply(X[:,j],transpose(y-p))/matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
                 dv = min(max(dv,-max_delta[j]),max_delta[j])
-                #print "dv2", dv
                 r+= X[:,j]*dv
                 p = array([Pr_bx(ri) for ri in r])
                 if N_anch:
@@ -664,7 +601,7 @@ def StepWiseFSS(examples = None, **kwds):
     """
 
     fss = apply(StepWiseFSS_class, (), kwds)
-    if examples:
+    if examples is not None:
         return fss(examples)
     else:
         return fss
@@ -679,7 +616,7 @@ def getLikelihood(fitter, examples):
     else:
        return -100*len(examples)
         
-    
+
 
 class StepWiseFSS_class:
   def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
@@ -722,13 +659,13 @@ class StepWiseFSS_class:
 
                 tempAttr = filter(lambda x: x!=at, attr)
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
+                tempDomain.addmetas(examples.domain.getmetas())
                 # domain, calculate P for LL improvement.
                 tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
-#                tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+
                 ll_Delete = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
                 length_Delete = float(len(tempData))
-                # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
                 length_Avg = (length_Delete + length_Old)/2.0
 
                 G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old)
@@ -769,8 +706,8 @@ class StepWiseFSS_class:
         for at in remain_attr:
             tempAttr = attr + [at]
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
+            tempDomain.addmetas(examples.domain.getmetas())
             # domain, calculate P for LL improvement.
-#            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
             ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
@@ -778,7 +715,6 @@ class StepWiseFSS_class:
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
 
             # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-
             length_avg = (length_New + length_Old)/2
             G=-2*length_avg*(ll_Old/length_Old-ll_New/length_New);
             if G>maxG:
@@ -804,9 +740,6 @@ class StepWiseFSS_class:
         if (P>self.addCrit and nodeletion) or (bestAt == worstAt):
             stop = 1
 
-    #print "Likelihood is:"
-    #print ll_Old
-    #return examples.select(orange.Domain(attr,examples.domain.classVar))
     return attr
 
 
@@ -816,7 +749,7 @@ def StepWiseFSS_Filter(examples = None, **kwds):
     """
 
     filter = apply(StepWiseFSS_Filter_class, (), kwds)
-    if examples:
+    if examples is not None:
         return filter(examples)
     else:
         return filter

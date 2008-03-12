@@ -40,7 +40,7 @@ class ImputeListboxItem(QListWidgetItem):
 
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
-    contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False, matchValues = DomainContextHandler.MatchValuesAttributes)}
+    contextHandlers = {"": PerfectDomainContextHandler("", ["methods"], matchValues = DomainContextHandler.MatchValuesAttributes)}
     indiShorts = ["", "leave", "avg", "model", "random", ""]
 
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
@@ -159,22 +159,23 @@ class OWImpute(OWWidget):
 
 
     def indiMethodChanged(self):
-        attr = self.data.domain[self.selectedAttr]
-        attrName = attr.name
-        if self.indiType:
-            if self.indiType == 5:
-                if attr.varType == orange.VarTypes.Discrete:
-                    self.methods[attrName] = 5, self.indiValCom
+        if self.data:
+            attr = self.data.domain[self.selectedAttr]
+            attrName = attr.name
+            if self.indiType:
+                if self.indiType == 5:
+                    if attr.varType == orange.VarTypes.Discrete:
+                        self.methods[attrName] = 5, self.indiValCom
+                    else:
+                        self.methods[attrName] = 5, str(self.indiValue)
                 else:
-                    self.methods[attrName] = 5, str(self.indiValue)
+                    self.methods[attrName] = self.indiType, None
             else:
-                self.methods[attrName] = self.indiType, None
-        else:
-            if self.methods.has_key(attrName):
-                del self.methods[attrName]
-        self.attrList.triggerUpdate(True)
-        self.setBtAllToDefault()
-        self.sendIf()
+                if self.methods.has_key(attrName):
+                    del self.methods[attrName]
+            self.attrList.triggerUpdate(True)
+            self.setBtAllToDefault()
+            self.sendIf()
 
 
     def lineEditChanged(self):
@@ -205,11 +206,13 @@ class OWImpute(OWWidget):
         self.closeContext()
 
         self.methods = {}
-        if not data:
+        if not data or not len(data.domain):
             self.indibox.setDisabled(True)
             self.attrList.clear()
+            # here's the trick: send the data on, even if it doesn't have any attributes
+            # but set self.data to None to disable the widget
             self.data = None
-            self.send("Examples", None)
+            self.send("Examples", data)
         else:
             self.indibox.setDisabled(False)
             if not self.data or data.domain != self.data.domain:
@@ -229,6 +232,7 @@ class OWImpute(OWWidget):
                     self.attrList.setCurrentRow(self.selectedAttr)
                 else:
                     self.attrList.setCurrentRow(0)
+                    self.selectedAttr = 0
 
         self.openContext("", data)
         self.setBtAllToDefault()

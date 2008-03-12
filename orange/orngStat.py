@@ -72,8 +72,6 @@ def statisticsByFolds(stats, foldN, reportSE, iterationIsOuter):
     else:
         return [statc.mean(x) for x in stats]
     
-#### Statistics
-
 def ME(res, **argkw):
     MEs = [0.0]*res.numberOfLearners
 
@@ -92,7 +90,143 @@ def ME(res, **argkw):
 
 MAE = ME
 
+#########################################################################
+# PERFORMANCE MEASURES:
+# Scores for evaluation of numeric predictions
+
+def checkArgkw(dct, lst):
+    """checkArgkw(dct, lst) -> returns true if any items have non-zero value in dct"""
+    return reduce(lambda x,y: x or y, [dct.get(k, 0) for k in lst])
+
+def regressionError(res, **argkw):
+    """regressionError(res) -> regression error (default: MSE)"""
+    if argkw.get("SE", 0) and res.numberOfIterations > 1:
+        # computes the scores for each iteration, then averages
+        scores = [[0.0] * res.numberOfIterations for i in range(res.numberOfLearners)]
+        if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
+            norm = [0.0] * res.numberOfIterations
+
+        nIter = [0]*res.numberOfIterations       # counts examples in each iteration
+        a = [0]*res.numberOfIterations           # average class in each iteration
+        for tex in res.results:
+            nIter[tex.iterationNumber] += 1
+            a[tex.iterationNumber] += float(tex.actualClass)
+        a = [a[i]/nIter[i] for i in range(res.numberOfIterations)]
+
+        if argkw.get("unweighted", 0) or not res.weights:
+            # iterate accross test cases
+            for tex in res.results:
+                ai = float(tex.actualClass)
+                nIter[tex.iterationNumber] += 1
+
+                # compute normalization, if required
+                if argkw.get("norm-abs", 0):
+                    norm[tex.iterationNumber] += abs(ai - a[tex.iterationNumber])
+                elif argkw.get("norm-sqr", 0):
+                    norm[tex.iterationNumber] += (ai - a[tex.iterationNumber])**2
+
+                # iterate accross results of different regressors
+                for i, cls in enumerate(tex.classes):
+                    if argkw.get("abs", 0):
+                        scores[i][tex.iterationNumber] += abs(float(cls) - ai)
+                    else:
+                        scores[i][tex.iterationNumber] += (float(cls) - ai)**2
+        else: # unweighted<>0
+            raise SystemError, "weighted error scores with SE not implemented yet"
+
+        if argkw.get("norm-abs") or argkw.get("norm-sqr"):
+            scores = [[x/n for x, n in zip(y, norm)] for y in scores]
+        else:
+            scores = [[x/ni for x, ni in zip(y, nIter)] for y in scores]
+
+        if argkw.get("R2"):
+            scores = [[1.0 - x for x in y] for y in scores]
+
+        if argkw.get("sqrt", 0):
+            scores = [[math.sqrt(x) for x in y] for y in scores]
+
+        return [(statc.mean(x), statc.std(x)) for x in scores]
+        
+    else: # single iteration (testing on a single test set)
+        scores = [0.0] * res.numberOfLearners
+        norm = 0.0
+
+        if argkw.get("unweighted", 0) or not res.weights:
+            a = sum([tex.actualClass for tex in res.results]) \
+                / len(res.results)
+            for tex in res.results:
+                if argkw.get("abs", 0):
+                    scores = map(lambda res, cls, ac = float(tex.actualClass):
+                                 res + abs(float(cls) - ac), scores, tex.classes)
+                else:
+                    scores = map(lambda res, cls, ac = float(tex.actualClass):
+                                 res + (float(cls) - ac)**2, scores, tex.classes)
+
+                if argkw.get("norm-abs", 0):
+                    norm += abs(tex.actualClass - a)
+                elif argkw.get("norm-sqr", 0):
+                    norm += (tex.actualClass - a)**2
+            totweight = gettotsize(res)
+        else:
+            # UNFINISHED
+            for tex in res.results:
+                MSEs = map(lambda res, cls, ac = float(tex.actualClass),
+                           tw = tex.weight:
+                           res + tw * (float(cls) - ac)**2, MSEs, tex.classes)
+            totweight = gettotweight(res)
+
+        if argkw.get("norm-abs", 0) or argkw.get("norm-sqr", 0):
+            scores = [s/norm for s in scores]
+        else: # normalize by number of instances (or sum of weights)
+            scores = [s/totweight for s in scores]
+
+        if argkw.get("R2"):
+            scores = [1.0 - s for s in scores]
+
+        if argkw.get("sqrt", 0):
+            scores = [math.sqrt(x) for x in scores]
+
+        return scores
+
 def MSE(res, **argkw):
+    """MSE(res) -> mean-squared error"""
+    return regressionError(res, **argkw)
+    
+def RMSE(res, **argkw):
+    """RMSE(res) -> root mean-squared error"""
+    argkw.setdefault("sqrt", True)
+    return regressionError(res, **argkw)
+
+def MAE(res, **argkw):
+    """MAE(res) -> mean absolute error"""
+    argkw.setdefault("abs", True)
+    return regressionError(res, **argkw)
+
+def RSE(res, **argkw):
+    """RSE(res) -> relative squared error"""
+    argkw.setdefault("norm-sqr", True)
+    return regressionError(res, **argkw)
+
+def RRSE(res, **argkw):
+    """RRSE(res) -> root relative squared error"""
+    argkw.setdefault("norm-sqr", True)
+    argkw.setdefault("sqrt", True)
+    return regressionError(res, **argkw)
+
+def RAE(res, **argkw):
+    """RAE(res) -> relative absolute error"""
+    argkw.setdefault("abs", True)
+    argkw.setdefault("norm-abs", True)
+    return regressionError(res, **argkw)
+
+def R2(res, **argkw):
+    """R2(res) -> R-squared"""
+    argkw.setdefault("norm-sqr", True)
+    argkw.setdefault("R2", True)
+    return regressionError(res, **argkw)
+
+def MSE_old(res, **argkw):
+    """MSE(res) -> mean-squared error"""
     if argkw.get("SE", 0) and res.numberOfIterations > 1:
         MSEs = [[0.0] * res.numberOfIterations for i in range(res.numberOfLearners)]
         nIter = [0]*res.numberOfIterations
@@ -126,10 +260,15 @@ def MSE(res, **argkw):
             MSEs = [math.sqrt(x) for x in MSEs]
         return [x/totweight for x in MSEs]
 
-def RMSE(res, **argkw):
+def RMSE_old(res, **argkw):
+    """RMSE(res) -> root mean-squared error"""
     argkw.setdefault("sqrt", 1)
-    return MSE(res, **argkw)
+    return MSE_old(res, **argkw)
 
+
+#########################################################################
+# PERFORMANCE MEASURES:
+# Scores for evaluation of classifiers
 
 def CA(res, reportSE = False, **argkw):
     if res.numberOfIterations==1:
@@ -205,12 +344,11 @@ def AP(res, reportSE = False, **argkw):
             APsByFold[tex.iterationNumber] = map(lambda res, probs: res + probs[tex.actualClass] * tex.weight, APsByFold[tex.iterationNumber], tex.probabilities)
             foldN[tex.iterationNumber] += tex.weight
 
-    return statisticsByFolds(APsByFold, foldN, reportSE, True)    
-        
-        
+    return statisticsByFolds(APsByFold, foldN, reportSE, True)
 
 
 def BrierScore(res, reportSE = False, **argkw):
+    """Computes Brier score"""
     # Computes an average (over examples) of sum_x(t(x) - p(x))^2, where
     #    x is class,
     #    t(x) is 0 for 'wrong' and 1 for 'correct' class
@@ -259,8 +397,6 @@ def BrierScore(res, reportSE = False, **argkw):
         return [(x+1.0, y) for x, y in stats]
     else:
         return [x+1.0 for x in stats]
-    
-
 
 def BSS(res, **argkw):
     return [1-x/2 for x in apply(BrierScore, (res, ), argkw)]
@@ -318,8 +454,6 @@ def BSS(res, **argkw):
 ##        return [(statc.mean(cas), statc.sterr(cas)) for cas in newFolds]
 ##
 
-
-
 def IS_ex(Pc, P):
     "Pc aposterior probability, P aprior"
     if (Pc>=P):
@@ -327,8 +461,6 @@ def IS_ex(Pc, P):
     else:
         return -(-log2(1-P)+log2(1-Pc))
     
-
-
 def IS(res, apriori=None, reportSE = False, **argkw):
     if not apriori:
         apriori = classProbabilitiesFromRes(res)
@@ -388,6 +520,7 @@ def Friedman(res, statistics, **argkw):
     F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
     return F, statc.chisqprob(F, k-1)
     
+
 def Wilcoxon(res, statistics, **argkw):
     res1, res2 = [], []
     for ri in splitByIterations(res):
@@ -542,6 +675,7 @@ def PPV(confm):
             return -1
         return confm.TP/tot
 
+
 def precision(confm):
     return PPV(confm)
 
@@ -557,13 +691,21 @@ def NPV(confm):
             return -1
         return confm.TP/tot
 
-def fmeasure(confm):
+def F1(confm):
     if type(confm) == list:
-        return [fmeasure(cm) for cm in confm]
+        return [F1(cm) for cm in confm]
     else:
         p = precision(confm)
         r = recall(confm)
         return 2. * p * r / (p + r)
+
+def Falpha(confm, alpha=1.0):
+    if type(confm) == list:
+        return [Falpha(cm, alpha=alpha) for cm in confm]
+    else:
+        p = precision(confm)
+        r = recall(confm)
+        return (1. + alpha) * p * r / (alpha * p + r)
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
@@ -1478,7 +1620,6 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
                         td=abs(wanted-t)
                         if td<best[0]:
                             best=(td, t)
-                    #print wanted, best
                     if not best[1] in newn:
                         newn.append(best[1])
                 newn.sort()

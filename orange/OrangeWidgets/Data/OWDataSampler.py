@@ -1,4 +1,4 @@
-"""
+r"""
 <name>Data Sampler</name>
 <description>Selects a subset of instances from the data set.</description>
 <icon>icons/DataSampler.png</icon>
@@ -11,6 +11,9 @@ import OWGUI
 import random
 
 class OWDataSampler(OWWidget):
+    settingsList=["Stratified", "Repeat", "UseSpecificSeed", "RandomSeed",
+    "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases", "selPercentage", "LOO",
+    "CVFolds", "CVFoldsInternal", "nGroups", "pGroups", "GroupText"]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleData', wantMainArea = 0)
 
@@ -57,41 +60,38 @@ class OWDataSampler(OWWidget):
 
         # Sampling Type Box
         self.s = [None, None, None, None]
-        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling Type")
+        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling type")
         self.sBox.buttons = []
 
         # Random Sampling
         self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Random sampling')
         # repeat checkbox
-        self.h1Box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(self.h1Box)
+        self.h1Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.checkBox(self.h1Box, self, 'Repeat', 'Repeated sampling')
 
         # specified number of elements checkbox
-        self.h2Box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(self.h2Box)
+        self.h2Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=self.uCases)
+        OWGUI.rubber(self.h2Box)
+        
         # percentage slider
-        self.h3Box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(self.h3Box)
+        self.h3Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.widgetLabel(self.h3Box, "Sample size:")
-        self.slidebox = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(self.slidebox)
+        self.slidebox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
 
         # Cross Validation
         self.s[1] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Cross validation')
-        box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(box)
+        box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=self.changeCombo)
+        OWGUI.rubber(box)
 
         # Leave-One-Out
         self.s[2] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Leave-one-out')
 
         # Multiple Groups
         self.s[3] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Multiple subsets')
-        gbox = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
-        OWGUI.separator(gbox)
+        gbox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
 
         # Output Group Box
@@ -113,6 +113,9 @@ class OWDataSampler(OWWidget):
 
         # final touch
         self.resize(200, 275)
+
+    def test(self):
+        print "taqeasdf"
 
     # CONNECTION TRIGGER AND GUI ROUTINES
     # enables RadioButton switching
@@ -194,11 +197,11 @@ class OWDataSampler(OWWidget):
             self.ind = self.indices(self.data, p0 = self.pGroups[self.outFold-1])
             sample = self.data.select(self.ind, 0)
             remainder = self.data.select(self.ind, 1)
-            self.infoc.setText('Output: subset %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: subset %(outFold)d of %(folds)d, %(instances)d instance(s).' % {"outFold": self.outFold, "folds": self.Folds, "instances": len(sample)})
         else:
             sample = self.data.select(self.ind, self.outFold-1)
             remainder = self.data.select(self.ind, self.outFold-1, negate=1)
-            self.infoc.setText('Output: fold %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: fold %(outFold)d of %(folds)d, %(instances)d instance(s).' % {"outFold": self.outFold, "folds": self.Folds, "instances": len(sample)})
         # set name (by PJ)
         if sample:
             sample.name = self.data.name

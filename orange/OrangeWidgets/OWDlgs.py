@@ -33,9 +33,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif isinstance(graph, QGraphicsScene):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
 
-        #self.printButton =     OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        self.saveImageButton = OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
-        self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
+        #self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.saveImageButton =      OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph as matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
             self.connect(butt, SIGNAL("clicked()"), self.accept)        # also connect the button to accept so that we close the dialog
@@ -52,8 +52,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         (fil,ext) = os.path.splitext(filename)
         ext = ext[1:].upper()
         if ext == "" or ext not in ("BMP", "GIF", "PNG") :
-        	ext = "PNG"  	# if no format was specified, we choose png
-        	filename = filename + ".png"
+            ext = "PNG"      # if no format was specified, we choose png
+            filename = filename + ".png"
 
         if not size:
             size = self.getSize()
@@ -104,7 +104,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 sortedList.sort()   # sort items by z value
 
                 for (z, item) in sortedList:
-                    if not item.visible(): continue
+                    # a little compatibility for QT 3.3 (on Mac at least)
+                    if hasattr(item, "isVisible"):
+                        if not item.isVisible(): continue
+                    elif not item.visible(): continue
                     if item.__class__ in [QCanvasEllipse, QCanvasLine, QCanvasPolygon and QCanvasRectangle]:
                         penc, penAlpha  = self._getColorFromObject(item.pen())
                         brushc, brushAlpha = self._getColorFromObject(item.brush())
@@ -143,15 +146,16 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     # ############################################################
     # EXTRA FUNCTIONS ############################################
     def getQGraphicsSceneBoundaries(self):
-        source = None
-        for item in self.graph.items():
-            if item.isVisible():
-                if source == None: source = item.boundingRect().translated(item.pos())
-                else:              source = source.united(item.boundingRect().translated(item.pos()))
-        if source == None:
-            source = QRectF(0,0,10,10)
+        source = self.graph.itemsBoundingRect()
+#        source = None
+#        for item in self.graph.items():
+#            if item.isVisible():
+#                if source == None: source = item.boundingRect().translated(item.pos())
+#                else:              source = source.united(item.boundingRect().translated(item.pos()))
+#        if source == None:
+#            source = QRectF(0,0,10,10)
 
-        source.adjust(-10, -10, 10, 10)
+        source.adjust(-15, -15, 15, 15)
         return source.left(), source.right(), source.top(), source.bottom()
 
 

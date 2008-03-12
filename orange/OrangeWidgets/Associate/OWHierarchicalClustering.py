@@ -33,16 +33,16 @@ class OWHierarchicalClustering(OWWidget):
         self.callbackDeposit=[]
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
-        self.linkage=[("Single ", orange.HierarchicalClustering.Single),
-                        ("Average", orange.HierarchicalClustering.Average),
-                        ("Complete", orange.HierarchicalClustering.Complete)]
+        self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
+                        ("Average linkage", orange.HierarchicalClustering.Average),
+                        ("Complete linkage", orange.HierarchicalClustering.Complete)]
         self.Linkage=0
         self.OverwriteMatrix=0
         self.Annotation=0
         self.Brightness=5
         self.PrintDepthCheck=0
         self.PrintDepth=100
-        self.HDSize=500         #initial horizontal and vertical dendogram size
+        self.HDSize=500         #initial horizontal and vertical dendrogram size
         self.VDSize=800
         self.FitToWindow=0
         self.AutoResize=0
@@ -83,61 +83,62 @@ class OWHierarchicalClustering(OWWidget):
                 box="Annotation", items=["None"],tooltip="Choose label attribute",
                 callback=self.updateLabel)
 
-        #Dendogram graphics settings
+        #Dendrogram graphics settings
         dendogramBox = OWGUI.widgetBox(self.settingsTab, "Dendogram setings")
-        #OWGUI.spin(dendogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
-        OWGUI.checkWithSpin(dendogramBox, self, "Print depth", 1, 100, "PrintDepthCheck",
+        #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
+        OWGUI.checkWithSpin(dendrogramBox, self, "Print depth", 1, 100, "PrintDepthCheck",
                 "PrintDepth")
-        #OWGUI.spin(dendogramBox, self, "VDSize", label="Vertical size", min=100,
+        #OWGUI.spin(dendrogramBox, self, "VDSize", label="Vertical size", min=100,
         #        max=10000, step=10)
-        self.hSizeBox=OWGUI.spin(dendogramBox, self, "HDSize", label="Horizontal size", min=200,
+        self.hSizeBox=OWGUI.spin(dendrogramBox, self, "HDSize", label="Horizontal size", min=200,
                 max=10000, step=10)
-        OWGUI.checkBox(dendogramBox, self, "FitToWindow","Fit hor. size to window",
+        OWGUI.checkBox(dendrogramBox, self, "FitToWindow","Fit hor. size to window",
                 callback=lambda:self.hSizeBox.setDisabled(self.FitToWindow))
         self.hSizeBox.setDisabled(self.FitToWindow)
-        #OWGUI.checkBox(dendogramBox, self, "FitToWindow", "Fit horizontal size")
-        #OWGUI.checkBox(dendogramBox, self, "AutoResize", "Auto resize")
-        OWGUI.spin(dendogramBox, self, "TextSize", label="Text font size",
+        #OWGUI.checkBox(dendrogramBox, self, "FitToWindow", "Fit horizontal size")
+        #OWGUI.checkBox(dendrogramBox, self, "AutoResize", "Auto resize")
+        OWGUI.spin(dendrogramBox, self, "TextSize", label="Text font size",
                         min=5, max=15, step=1)
-        OWGUI.spin(dendogramBox,self, "LineSpacing", label="Line spacing",
+        OWGUI.spin(dendrogramBox,self, "LineSpacing", label="Line spacing",
                         min=2,max=8,step=1)
-        OWGUI.button(dendogramBox, self, "&Apply",self.applySettings)
+        OWGUI.button(dendrogramBox, self, "&Apply",self.applySettings)
 
         #Selection options
         OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line",
               callback=self.updateCutOffLine)
         self.classificationBox = OWGUI.widgetBox(self.selectionTab, box = 1)
         #self.classificationBox.setTitle("Classification")
-        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected","Classify selected examples")
-        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name")
+        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected", "Classify selected examples", callback=self.selectionChange)
+        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name", callback=self.selectionChange)
         #selectionBox=QVGroupBox(self.selectionTab)
         commitBox = OWGUI.widgetBox(self.selectionTab, "Commit settings")
-        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change")
+        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change", callback=self.selectionChange)
+
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
-        OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph, debuggingEnabled = 0)
+        OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
-        #self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
-        scale = QCanvas(self)
-        self.headerView = ScaleCanvas(self, scale, self.mainArea)
-        self.footerView = ScaleCanvas(self, scale, self.mainArea)
+        self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
+        scale=QCanvas(self)
+        self.headerView=ScaleCanvas(self, scale, self.mainArea)
+        self.footerView=ScaleCanvas(self, scale, self.mainArea)
         self.dendogram = Dendogram(self)
         self.dendogramView = DendogramView(self.dendogram, self.mainArea)
-
+    
         self.mainArea.layout().addWidget(self.headerView)
         self.mainArea.layout().addWidget(self.dendogramView)
         self.mainArea.layout().addWidget(self.footerView)
 
-        self.dendogram.header=self.headerView
-        self.dendogram.footer=self.footerView
+        self.dendrogram.header=self.headerView
+        self.dendrogram.footer=self.footerView
 
-        self.connect(self.dendogramView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
+        self.connect(self.dendrogramView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
                 self.footerView.horizontalScrollBar().setValue)
-        self.connect(self.dendogramView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
+        self.connect(self.dendrogramView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
                 self.headerView.horizontalScrollBar().setValue)
-        self.dendogram.resize(self.HDSize,self.VDSize)
-        self.dendogram.update()
+        self.dendrogram.resize(self.HDSize,self.VDSize)
+        self.dendrogram.update()
 
 
     def dataset(self, data):
@@ -145,7 +146,7 @@ class OWHierarchicalClustering(OWWidget):
         if not self.matrix:
             self.rootCluster=None
             self.selectedExamples=None
-            self.dendogram.clear()
+            self.dendrogram.clear()
             self.footerView.clear()
             self.labelCombo.clear()
             self.send("Selected Examples", None)
@@ -189,6 +190,10 @@ class OWHierarchicalClustering(OWWidget):
         self.constructTree()
 
     def updateLabel(self):
+#        self.rootCluster.mapping.setattr("objects", self.matrix.items)
+#        self.dendrogram.updateLabel()
+#        return
+    
         items=self.matrix.items
         if self.Annotation==0:
             self.rootCluster.mapping.setattr("objects",
@@ -211,7 +216,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.rootCluster.mapping.setattr("objects", [getattr(a, "name", "") for a in items])
             else:
                 self.rootCluster.mapping.setattr("objects", [getattr(a, "strain", "") for a in items])
-        self.dendogram.updateLabel()
+        self.dendrogram.updateLabel()
 
     def constructTree(self):
         if self.matrix:
@@ -221,12 +226,12 @@ class OWHierarchicalClustering(OWWidget):
                 overwriteMatrix=self.OverwriteMatrix,
                 progressCallback=self.progressBarSet)
             self.progressBarFinished()
-            self.dendogram.displayTree(self.rootCluster)
+            self.dendrogram.displayTree(self.rootCluster)
             self.updateLabel()
 
     def applySettings(self):
-        self.dendogram.resize(self.HDSize, self.VDSize)
-        self.dendogram.displayTree(self.rootCluster)
+        self.dendrogram.resize(self.HDSize, self.VDSize)
+        self.dendrogram.displayTree(self.rootCluster)
 
     def progressBarSet(self, value, a):
         OWWidget.progressBarSet(self, value*100)
@@ -245,19 +250,23 @@ class OWHierarchicalClustering(OWWidget):
 
     def updateCutOffLine(self):
         if self.SelectionMode:
-            self.dendogram.cutOffLine.show()
+            self.dendrogram.cutOffLine.show()
             self.footerView.canvas().marker.show()
-    	else:
-            self.dendogram.cutOffLine.hide()
+        else:
+            self.dendrogram.cutOffLine.hide()
             self.footerView.canvas().marker.hide()
-        self.dendogram.update()
+        self.dendrogram.update()
         self.footerView.canvas().update()
 
     def updateSelection(self, selection):
         if self.matrixSource=="Attribute Distance":
             return
         self.selectionList=selection
-        if self.CommitOnChange and self.dendogram.cutOffLineDragged==False:
+        if self.CommitOnChange and self.dendrogram.cutOffLineDragged==False:
+            self.commitData()
+
+    def selectionChange(self):
+        if self.CommitOnChange:
             self.commitData()
 
     def commitData(self):
@@ -272,11 +281,11 @@ class OWHierarchicalClustering(OWWidget):
             return
         if self.matrixSource=="Example Distance":
             if self.ClassifySelected:
-                classVar=orange.EnumVariable(self.ClassifyName ,
+                classVar=orange.EnumVariable(str(self.ClassifyName) ,
                             values=[str(i) for i in range(len(maps))])
                 domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
+                domain.addmetas(self.matrix.items.domain.getmetas())
                 if self.matrix.items.domain.classVar:
-                    domain.addmetas(self.matrix.items.domain.getmetas())
                     id=orange.newmetaid()
                     domain.addmeta(id, self.matrix.items.domain.classVar)
                 table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
@@ -303,7 +312,7 @@ class OWHierarchicalClustering(OWWidget):
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
-        dSize= self.dendogram.size()
+        dSize= self.dendrogram.size()
         sSize= self.footerView.canvas().size()
         buffer = QPixmap(dSize.width(),dSize.height()+2*sSize.height()) # any size can do, now using the window size
         bufferTmp= QPixmap(dSize)
@@ -312,7 +321,7 @@ class OWHierarchicalClustering(OWWidget):
 
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
         painterTmp.fillRect(bufferTmp.rect(), QBrush(QColor(255, 255, 255)))
-        self.dendogramView.drawContents(painterTmp,0,0,dSize.width(), dSize.height())
+        self.dendrogramView.drawContents(painterTmp,0,0,dSize.width(), dSize.height())
         painterTmp.end()
         self.headerView.drawContents(painter,0,0,sSize.width(),sSize.height())
         self.footerView.drawContents(painter,0,dSize.height()+scaleHeight, sSize.width(),
@@ -328,7 +337,7 @@ bottomMargin=10
 polyOffset=5
 scaleHeight=20
 
-class DendogramView(QCanvasView):
+class DendrogramView(QCanvasView):
     def __init__(self,*args):
         apply(QCanvasView.__init__, (self,)+args)
         self.parent=args[0]
@@ -350,7 +359,7 @@ class DendogramView(QCanvasView):
             self.canvas().displayTree(self.canvas().rootCluster)
         #self.updateContents()
 
-class Dendogram(QCanvas):
+class Dendrogram(QCanvas):
     def __init__(self, *args):
         apply(QCanvas.__init__, (self,)+args)
         self.parent=args[0]
@@ -380,13 +389,13 @@ class Dendogram(QCanvas):
         self.rootCluster=root
         if not self.rootCluster:
             return
-        if self.parent.FitToWindow:
-            width=self.parent.dendogramView.size().width()
-            self.resize(width,self.height())
-            self.textAreaWidth=100
-        else:
-            self.textSize=self.parent.TextSize
-            self.textAreaWidth=100 #self.textSize*10
+##        if self.parent.FitToWindow:
+        width=self.parent.dendrogramView.size().width()
+        self.resize(width,self.height())
+        self.textAreaWidth=100
+##        else:
+##            self.textSize=self.parent.TextSize
+##            self.textAreaWidth=100 #self.textSize*10
         self.textSize=self.parent.TextSize
         self.gTextPosInc=self.textSize+self.parent.LineSpacing
         self.gTextPos=topMargin
@@ -738,12 +747,12 @@ class ScaleCanvas(QCanvasView):
         self.marker.move(self.markerPos-3,0)
         self.markerDragged=True
         self.canvas().update()
-        self.parent.dendogram.setCutOffLine(e.pos().x())
+        self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def contentsMouseReleaseEvent(self, e):
         self.markerDragged=False
         self.parent.CommitOnChange=self.commitStatus
-        self.parent.dendogram.setCutOffLine(e.pos().x())
+        self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def contentsMouseMoveEvent(self, e):
         if e.pos().x()<0 or e.pos().x()>leftMargin+self.canvas().treeAreaW:
@@ -752,7 +761,7 @@ class ScaleCanvas(QCanvasView):
            self.markerPos=e.pos().x()+3
            self.marker.move(self.markerPos-3,0)
            self.canvas().update()
-           self.parent.dendogram.setCutOffLine(e.pos().x())
+           self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def moveMarker(self, x):
         self.canvas().marker.move(x,0)

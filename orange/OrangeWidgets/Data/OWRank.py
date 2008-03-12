@@ -7,12 +7,11 @@
 """
 import orngOrangeFoldersQt4
 from OWWidget import *
-from qttable import *
 import OWGUI
 
 class OWRank(OWWidget):
     settingsList =  ["nDecimals", "reliefK", "reliefN", "nIntervals", "sortBy", "nSelected", "selectMethod", "autoApply"]
-    measures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Gain"]
+    measures          = ["ReliefF", "Information gain", "Gain ratio", "Gini gain"]
     measuresShort     = ["ReliefF", "Inf. gain", "Gain ratio", "Gini"]
     measuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini"]
     estimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini]
@@ -34,6 +33,7 @@ class OWRank(OWWidget):
         self.selectMethod = 3
         self.nSelected = 5
         self.autoApply = True
+        self.data = None
 
         for meas in self.measuresAttrs:
             setattr(self, meas, True)
@@ -51,14 +51,14 @@ class OWRank(OWWidget):
                 OWGUI.spin(ibox, self, "reliefN", 20, 100, label="Examples", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
         OWGUI.separator(box)
 
-        OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ", items = ["No Sorting", "Attribute Name", "Number of Values"] + self.measures, orientation=0, valueType = int, callback=self.sortingChanged)
+        OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ", items = ["No sorting", "Attribute name", "Number of values"] + self.measures, orientation=0, valueType = int, callback=self.sortingChanged)
 
 
         box = OWGUI.widgetBox(self.controlArea, "Discretization", addSpace=True)
         OWGUI.spin(box, self, "nIntervals", 2, 20, label="Intervals", labelWidth=labelWidth, orientation=0, callback=self.discretizationChanged, callbackOnReturn = True)
 
         box = OWGUI.widgetBox(self.controlArea, "Precision", addSpace=True)
-        OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals", labelWidth=labelWidth, orientation=0, callback=self.decimalsChanged)
+        OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals", labelWidth=labelWidth, orientation=0, callback=self.reprint)
 
         OWGUI.rubber(self.controlArea)
 
@@ -71,22 +71,23 @@ class OWRank(OWWidget):
         autoApplyCB = OWGUI.checkBox(selMethBox, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.apply)
 
-        self.layout=QVBoxLayout(self.mainArea)
-        box = OWGUI.widgetBox(self.mainArea, orientation=0)
-        self.table = QTable(0, 6, self.mainArea)
-        self.table.setSelectionMode(QTable.Multi)
-        self.layout.add(self.table)
+        self.table = QTableView()
+        self.mainArea.layout().addWidget(self.table)
+        self.table.verticalHeader().setVisible(1)
+        self.table.horizontalHeader().setVisible(1)
+                        
+        self.table.setModel(RankTableModel(self, self))
+        self.table.setItemDelegate(RankTableItemDelgate(self))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.table.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
         self.topheader = self.table.horizontalHeader()
-        self.topheader.setLabel(0, "Attribute")
-        self.topheader.setLabel(1, "#")
-        self.table.setColumnWidth(1, 40)
-
+        
         self.activateLoadedSettings()
         self.resetInternals()
 
-        self.connect(self.topheader, SIGNAL("clicked(int)"), self.sortByColumn)
-        self.connect(self.table, SIGNAL("clicked(int,int,int,const QPoint &)"), self.selectRow)
-        self.connect(self.table.verticalHeader(), SIGNAL("clicked(int)"), self.selectRow)
+        self.connect(self.table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.headerClick)
+        self.connect(self.table, SIGNAL("clicked (const QModelIndex&)"), self.selectItem)
         self.resize(690,500)
 
 
@@ -101,23 +102,17 @@ class OWRank(OWWidget):
         self.measured = {}
         self.usefulAttributes = []
         self.dataChanged = False
-        self.adjustCol0 = True
         self.lastSentAttrs = None
-
-        self.table.setNumRows(0)
-        self.table.adjustSize()
 
 
     def selectMethodChanged(self):
         if self.selectMethod == 0:
             self.selected = []
-            self.reselect()
         elif self.selectMethod == 1:
             self.selected = self.attributeOrder[:]
-            self.reselect()
         elif self.selectMethod == 3:
             self.selected = self.attributeOrder[:self.nSelected]
-            self.reselect()
+        self.table.model().reset()
         self.applyIf()
 
 
@@ -126,26 +121,14 @@ class OWRank(OWWidget):
         self.selectMethodChanged()
 
 
-    def sendSelected(self):
-        attrs = self.data and [attr for i, attr in enumerate(self.attributeOrder) if self.table.isRowSelected(i)]
-        if not attrs:
-            self.send("ExampleTable Attributes", None)
-            return
-
-        self.send("ExampleTable Attributes", orange.ExampleTable(orange.Domain(attrs, self.data.domain.classVar), self.data))
-
-
     def setData(self,data):
         self.resetInternals()
 
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         if self.data:
-            self.adjustCol0 = True
             self.usefulAttributes = filter(lambda x:x.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous], self.data.domain.attributes)
-            self.table.setNumRows(len(self.data.domain.attributes))
-            self.reprint()
-            self.table.adjustSize()
-
+        
+        self.reprint()
         self.resendAttributes()
         self.applyIf()
 
@@ -183,40 +166,16 @@ class OWRank(OWWidget):
                     self.applyIf()
 
 
-    def sortingChanged(self):
-        self.reprint()
-        self.resendAttributes()
-        if self.selectMethod == 3:
-            self.applyIf()
-
-
     def setMeasures(self):
         self.selectedMeasures = [i for i, ma in enumerate(self.measuresAttrs) if getattr(self, ma)]
-        self.table.setNumCols(2 + len(self.selectedMeasures))
-        for col, meas_idx in enumerate(self.selectedMeasures):
-            self.topheader.setLabel(col+2, self.measuresShort[meas_idx])
-            self.table.setColumnWidth(col+2, 80)
+        self.reprint()
 
 
     def measuresChanged(self):
         self.setMeasures()
         if self.data:
-            self.reprint(True)
+            self.reprint(False)
             self.resendAttributes()
-#            self.repaint()
-        self.table.adjustSize()
-
-
-    def sortByColumn(self, col):
-        if col < 2:
-            self.sortBy = 1 + col
-        else:
-            self.sortBy = 3 + self.selectedMeasures[col-2]
-        self.sortingChanged()
-
-
-    def decimalsChanged(self):
-        self.reprint(True)
 
 
     def getMeasure(self, meas_idx):
@@ -264,39 +223,21 @@ class OWRank(OWWidget):
         return mdict
 
 
-    def reprint(self, noSort = False):
+    def reprint(self, sort = True):
         if not self.data:
+            self.table.model().reset()
             return
 
-        prec = " %%.%df" % self.nDecimals
-
-        if not noSort:
+        if sort:
             self.resort()
 
-        for row, attr in enumerate(self.attributeOrder):
-            self.table.setText(row, 0, attr.name)
-            self.table.setText(row, 1, attr.varType==orange.VarTypes.Continuous and "C" or str(len(attr.values)))
+        #for col, meas_idx in enumerate(self.selectedMeasures):
+        #    mdict = self.getMeasure(meas_idx)
 
-        if self.adjustCol0:
-            self.table.adjustColumn(0)
-            if self.table.columnWidth(0) < 80:
-                self.table.setColumnWidth(0, 80)
-            self.adjustCol0 = False
-
-        for col, meas_idx in enumerate(self.selectedMeasures):
-            mdict = self.getMeasure(meas_idx)
-            for row, attr in enumerate(self.attributeOrder):
-                self.table.setText(row, col+2, mdict[attr] != None and prec % mdict[attr] or "NA")
-
-        self.reselect()
-
-        if self.sortBy < 3:
-            self.topheader.setSortIndicator(self.sortBy-1, False)
-        elif self.sortBy-3 in self.selectedMeasures:
-            self.topheader.setSortIndicator(2 + self.selectedMeasures.index(self.sortBy-3))
-        else:
-            self.topheader.setSortIndicator(-1)
-
+        self.table.model().reset()
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
+        
 
     def resendAttributes(self):
         if not self.data:
@@ -315,38 +256,35 @@ class OWRank(OWWidget):
         self.send("ExampleTable Attributes", attrData)
 
 
-    def selectRow(self, i, *foo):
-        if i < 0:
-            return
-
-        attr = self.attributeOrder[i]
+    def selectItem(self, index):
+        row = index.row()
+        attr = self.data.domain[str(self.table.model().data(self.table.model().createIndex(row, 0)).toString())]
         if attr in self.selected:
             self.selected.remove(attr)
         else:
             self.selected.append(attr)
-        self.reselect()
+        self.table.model().reset()
         self.applyIf()
+        
 
-
-    def reselect(self):
-        self.table.clearSelection()
-
-        if not self.data:
-            return
-
-        for attr in self.selected:
-            sel = QTableSelection()
-            i = self.attributeOrder.index(attr)
-            sel.init(i, 0)
-            sel.expandTo(i, self.table.numCols()-1)
-            self.table.addSelection(sel)
-
-        if self.selectMethod == 2 or self.selectMethod == 3 and self.selected == self.attributeOrder[:self.nSelected]:
-            pass
-        elif self.selected == self.attributeOrder:
-            self.selectMethod = 1
+    def headerClick(self, index):
+        if index < 0: return
+        
+        if index < 2:
+            self.sortBy = 1 + index
         else:
-            self.selectMethod = 2
+            self.sortBy = 3 + self.measuresShort.index(str(self.table.horizontalHeader().model().headerData(index, Qt.Horizontal).toString()))
+        self.sortingChanged()
+        
+
+    def sortingChanged(self):
+        self.table.horizontalHeader().setSortIndicatorShown(self.sortBy > 0)
+        self.table.horizontalHeader().setSortIndicator(self.sortBy-1, Qt.AscendingOrder)
+        
+        self.reprint()
+        self.resendAttributes()
+        if self.selectMethod == 3:
+            self.applyIf()
 
 
     def resort(self):
@@ -356,18 +294,25 @@ class OWRank(OWWidget):
             if self.sortBy == 1:
                 st = [(attr, attr.name) for attr in self.attributeOrder]
                 st.sort(lambda x,y: cmp(x[1], y[1]))
+                
             elif self.sortBy == 2:
                 st = [(attr, attr.varType == orange.VarTypes.Continuous and 1e30 or len(attr.values)) for attr in self.attributeOrder]
                 st.sort(lambda x,y: cmp(x[1], y[1]))
-                self.topheader.setSortIndicator(1, False)
+                #self.topheader.setSortIndicatorShown(False)
             else:
                 st = [(m, a == None and -1e20 or a) for m, a in self.getMeasure(self.sortBy-3).items()]
                 st.sort(lambda x,y: -cmp(x[1], y[1]) or cmp(x[0], y[0]))
 
             self.attributeOrder = [attr for attr, meas in st]
+#        else:
+#            self.topheader.setSortIndicatorShown(False)
 
         if self.selectMethod == 3:
             self.selected = self.attributeOrder[:self.nSelected]
+        
+        #self.table.update()
+        self.applyIf()
+                                    
 
 
     def applyIf(self):
@@ -387,14 +332,80 @@ class OWRank(OWWidget):
 
         self.dataChanged = False
 
+class RankTableItemDelgate(QItemDelegate):
+    def __init__(self, parent = None):
+        QItemDelegate.__init__(self, parent)
+        self.widget = parent
+  
+    def paint(self, painter, option, index):
+        col = index.column()
+        row = index.row()
+        
+        attr = self.widget.attributeOrder[row]
+
+        myOption = QStyleOptionViewItem(option)
+        s = [n.name for n in self.widget.selected]
+        if attr in self.widget.selected:
+            myOption.state |= QStyle.State_Selected 
+        else:
+            myOption.state &= ~QStyle.State_Selected
+        myOption.state |= QStyle.State_Active        # show as active although other controls have focus
+        QItemDelegate.paint(self, painter, myOption, index)
+        
+    
+
+class RankTableModel(QAbstractTableModel):
+    def __init__(self, widget, parent=None):
+        QAbstractTableModel.__init__(self, parent)
+        self.widget = widget
+
+    def rowCount(self, parent):
+        if self.widget.data:
+            return len(self.widget.data.domain.attributes)
+        else:
+            return 0
+
+    def columnCount(self, parent):
+        if self.widget.data:
+            return 2 + len(self.widget.selectedMeasures)
+        else:
+            return 0
+
+    def headerData(self, section, orientation, role = Qt.DisplayRole):
+        if role != Qt.DisplayRole:
+            return QVariant()
+        if orientation == Qt.Vertical:
+            return QVariant(str(section+1))
+        
+        if section == 0:   return QVariant("Attribute")
+        elif section == 1: return QVariant("#")
+        else:              return QVariant(self.widget.measuresShort[self.widget.selectedMeasures[section-2]])
+
+    def data(self, index, role = Qt.DisplayRole):
+        if not index.isValid() or role != Qt.DisplayRole:
+            return QVariant()
+
+        col = index.column()
+        row = index.row()
+        if col == 0: 
+            return QVariant(self.widget.attributeOrder[row].name) 
+        elif col == 1:
+            attr =  self.widget.attributeOrder[row]
+            return QVariant(attr.varType == orange.VarTypes.Continuous and "C" or str(len(attr.values)))
+        else: 
+            attr =  self.widget.attributeOrder[row]
+            prec = " %%.%df" % self.widget.nDecimals
+            mdict = self.widget.getMeasure(col-2)
+            return QVariant(mdict[attr] != None and prec % mdict[attr] or "NA")
+
+ 
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWRank()
-    a.setMainWidget(ow)
-    ow.setData(orange.ExampleTable("../../doc/datasets/iris.tab"))
+    #ow.setData(orange.ExampleTable("../../doc/datasets/wine.tab"))
+    ow.setData(orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab"))
     ow.show()
-    a.exec_loop()
-
+    a.exec_()
     ow.saveSettings()
 

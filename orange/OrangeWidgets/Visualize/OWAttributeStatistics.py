@@ -17,7 +17,7 @@ from OWDlgs import OWChooseImageSizeDlg
 import OWQCanvasFuncts
 
 class OWAttributeStatistics(OWWidget):
-    contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"], findImperfect = True)}
+    contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"])}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
@@ -25,7 +25,7 @@ class OWAttributeStatistics(OWWidget):
         self.callbackDeposit = []
 
         #set default settings
-        self.cwbias = 300 # canvas_width = widget_width - 300 pixels
+        self.cwbias = 250 # canvas_width = widget_width - 300 pixels
         self.chbias = 30
 
         self.cw = self.width()-self.cwbias
@@ -129,15 +129,18 @@ class DisplayStatistics (QGraphicsScene):
             self.removeItem(item)
 
         attr = data.domain[ind]
-        attr_name = OWQCanvasFuncts.OWCanvasText(self, attr.name, 10, 10, )
-
+        attr_name = OWQCanvasFuncts.OWCanvasText(self, attr.name, 10, 10)
+        if not dist[ind] or not dist[ind].items():
+            if not dist[ind]:
+                attr_name.setPlainText("The widget cannot show distributions for attributes of this type.")
+            else:
+                attr_name.setPlainText("This attribute has no defined values.")
+            return
+        
         title_str = "Category"
         if attr.varType == orange.VarTypes.Continuous:
             title_str = "Values"
         category = OWQCanvasFuncts.OWCanvasText(self, title_str, self.hbias-20, 30, Qt.AlignRight)
-
-        if dist[ind].items() == []:
-            return
 
         if attr.varType == orange.VarTypes.Discrete:
             totalvalues = OWQCanvasFuncts.OWCanvasText(self, "Total Values", self.hbias+30, 30)
@@ -152,7 +155,7 @@ class DisplayStatistics (QGraphicsScene):
                         bar_len=1
                     r = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, bar_len, rect_width-2, pen = QPen(Qt.NoPen), brushColor = QColor(0,0,254))
 
-                    t1 = OWQCanvasFuncts.OWCanvasText(self, str(dist[ind][v]), self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias, Qt.AlignLeft)
+                    t1 = OWQCanvasFuncts.OWCanvasText(self, "%i   (%2.1f %%)" % (dist[ind][v], 100*dist[ind][v]/(len(data) or 1)), self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias, Qt.AlignLeft)
                     self.vbias+=rect_width
                 if self.vbias > self.canvasH:
                     self.canvasH = self.vbias+50

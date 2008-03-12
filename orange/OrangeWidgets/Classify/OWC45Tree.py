@@ -38,7 +38,7 @@ class OWC45Tree(OWWidget):
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
 
-        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name',
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
@@ -70,7 +70,7 @@ class OWC45Tree(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
+        OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
 
 
     def activateLoadedSettings(self):

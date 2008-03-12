@@ -60,15 +60,8 @@ class OWWidget(OWBaseWidget):
             #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-blue.png"))
             self._warningWidget = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-orange.png"))
             self._errorWidget = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-red.png"))
-        else:
-            self.widgetStatusArea = None
-
-        if wantMainArea:
-            self.resize(640,480)
-        else:
-            self.resize(200,200)
         
-
+        
 
     # status bar handler functions
     def createPixmapWidget(self, parent, iconName):
@@ -82,9 +75,10 @@ class OWWidget(OWBaseWidget):
 
     def setState(self, stateType, id, text):
         stateChanged = OWBaseWidget.setState(self, stateType, id, text)
-        if not stateChanged or self.widgetStatusArea == None:
+        if not stateChanged or not hasattr(self, "widgetStatusArea"):
             return
 
+        print self.widgetStatusArea
         iconsShown = 0
         #for state, widget, icon, use in [("Info", self._infoWidget, self._owInfo), ("Warning", self._warningWidget, self._owWarning), ("Error", self._errorWidget, self._owError)]:
         for state, widget, use in [("Warning", self._warningWidget, self._owWarning), ("Error", self._errorWidget, self._owError)]:
@@ -112,11 +106,12 @@ class OWWidget(OWBaseWidget):
         #qApp.processEvents()
 
     def updateStatusBarState(self):
-        return
-#        if self._owShowStatus and (self.widgetState["Warning"] != {} or self.widgetState["Error"] != {}):
-#            self.widgetStatusArea.show()
-#        else:
-#            self.widgetStatusArea.hide()
+        if not hasattr(self, "widgetStatusArea"):
+            return
+        if self._owShowStatus and (self.widgetState["Warning"] != {} or self.widgetState["Error"] != {}):
+            self.widgetStatusArea.show()
+        else:
+            self.widgetStatusArea.hide()
 
     def setStatusBarText(self, text):
         self.statusBarTextArea.setText(" " + text)
@@ -125,10 +120,11 @@ class OWWidget(OWBaseWidget):
         if self.reportData:
             print "Cannot open a new report when an old report is still active"
             return False
-        self.reportData = "<H1>%s</H1>\n" % name
+        self.reportName = name
+        self.reportData = ""
         if needDirectory:
             import OWReport
-            return OWReport.createDirectory()
+            return OWReport.reportFeeder.createDirectory()
         else:
             return True
 
@@ -169,7 +165,7 @@ class OWWidget(OWBaseWidget):
 
     def finishReport(self):
         import OWReport
-        OWReport.feed(self.reportData or "")
+        OWReport.reportFeeder(self.reportName, self.reportData or "")
         self.reportData = None
 
 if __name__ == "__main__":

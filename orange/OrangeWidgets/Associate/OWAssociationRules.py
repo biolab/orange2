@@ -11,13 +11,13 @@ from OWWidget import *
 import OWGUI
 
 class OWAssociationRules(OWWidget):
+    settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
+    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRules", wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
-
-        self.settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
 
         self.useSparseAlgorithm = 0
         self.classificationRules = 0
@@ -28,26 +28,24 @@ class OWAssociationRules(OWWidget):
 
         self.dataset = None
 
-        box = OWGUI.widgetBox(self.space, "Algorithm")
+        box = OWGUI.widgetBox(self.space, "Algorithm", addSpace = True)
         self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm', 'Use algorithm for sparse data', tooltip="Use original Agrawal's algorithm", callback = self.checkSparse)
-        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classifaction rules")
-        OWGUI.separator(self.space, 0, 8)
+        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classification rules")
+        self.checkSparse()
 
-        box = OWGUI.widgetBox(self.space, "Pruning")
+        box = OWGUI.widgetBox(self.space, "Pruning", addSpace = True)
         OWGUI.widgetLabel(box, "Minimal support [%]")
-        OWGUI.hSlider(box, self, 'minSupport', minValue=10, maxValue=100, ticks=10, step = 1)
+        OWGUI.hSlider(box, self, 'minSupport', minValue=1, maxValue=100, ticks=10, step = 1)
         OWGUI.separator(box, 0, 0)
         OWGUI.widgetLabel(box, 'Minimal confidence [%]')
-        OWGUI.hSlider(box, self, 'minConfidence', minValue=10, maxValue=100, ticks=10, step = 1)
+        OWGUI.hSlider(box, self, 'minConfidence', minValue=1, maxValue=100, ticks=10, step = 1)
         OWGUI.separator(box, 0, 0)
         OWGUI.widgetLabel(box, 'Maximal number of rules')
         OWGUI.hSlider(box, self, 'maxRules', minValue=10000, maxValue=100000, step=10000, ticks=10000, debuggingEnabled = 0)
-        OWGUI.separator(self.space, 0, 8)
 
-        # Generate button
-        self.btnGenerate = OWGUI.button(self.space, self, "&Build rules", callback = self.generateRules)
+        OWGUI.button(self.space, self, "&Build rules", self.generateRules)
 
-        self.resize(150,180)
+        self.adjustSize()
 
 
     def generateRules(self):
@@ -70,13 +68,12 @@ class OWAssociationRules(OWWidget):
         else:
             self.send("Association Rules", None)
 
+
     def checkSparse(self):
-        state = self.cbSparseAlgorithm.isChecked()
-        if state:
-            self.cbClassificationRules.setEnabled(0)
+        self.cbClassificationRules.setEnabled(not self.useSparseAlgorithm)
+        if self.useSparseAlgorithm:
             self.cbClassificationRules.setChecked(0)
-        else:
-            self.cbClassificationRules.setEnabled(1)
+
 
     def setData(self,dataset):
         self.dataset = dataset
@@ -85,10 +82,9 @@ class OWAssociationRules(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRules()
-
+    a.setMainWidget(ow)
 ##    data = orange.ExampleTable("car")
 ##    ow.setData(data)
-
     ow.show()
     a.exec_()
     ow.saveSettings()

@@ -184,35 +184,36 @@ class orngScaleData:
         scaledData = numpy.zeros(originalData.shape, numpy.float)
 
         # see if the values for discrete attributes have to be resorted
-        for index in range(len(data.domain)):
-            attr = data.domain[index]
+        if data != None:
+            for index in range(len(data.domain)):
+                attr = data.domain[index]
 
-            if attr.varType == orange.VarTypes.Discrete:
-                variableValueIndices = getVariableValueIndices(data, index, sortValuesForDiscreteAttrs)
-                for i in range(len(attr.values)):
-                    if i != variableValueIndices[attr.values[i]]:
-                        line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                        indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
-                        for i in range(len(attr.values)):
-                            numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
-                        arr[index] = line   # save the changed array
-                        break
+                if attr.varType == orange.VarTypes.Discrete:
+                    variableValueIndices = getVariableValueIndices(data, index, sortValuesForDiscreteAttrs)
+                    for i in range(len(attr.values)):
+                        if i != variableValueIndices[attr.values[i]]:
+                            line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
+                            indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
+                            for i in range(len(attr.values)):
+                                numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
+                            arr[index] = line   # save the changed array
+                            break
 
-                arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
-                scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
-            else:
-                arr[index] = ((arr[index] - self.offsets[index]) / self.normalizers[index])
-
-                if self.jitterContinuous:
-                    line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
-                    line = numpy.absolute(line)       # fix values below zero
-
-                    # fix values above 1
-                    ind = numpy.where(line > 1.0, 1, 0)
-                    numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
-                    scaledData[index] = line
+                    arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
+                    scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
                 else:
-                    scaledData[index] = arr[index]
+                    arr[index] = ((arr[index] - self.offsets[index]) / self.normalizers[index])
+
+                    if self.jitterContinuous:
+                        line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
+                        line = numpy.absolute(line)       # fix values below zero
+
+                        # fix values above 1
+                        ind = numpy.where(line > 1.0, 1, 0)
+                        numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
+                        scaledData[index] = line
+                    else:
+                        scaledData[index] = arr[index]
 
         self.originalData = originalData[:,:lenData]; self.originalSubsetData = originalData[:,lenData:]
         self.scaledData = scaledData[:,:lenData]; self.scaledSubsetData = scaledData[:,lenData:]
@@ -349,7 +350,11 @@ class orngScaleData:
     def getValidList(self, indices):
         if self.validDataArray == None or len(self.validDataArray) == 0:
             return numpy.array([], numpy.bool)
-        selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+        try:
+            selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+        except:
+            print indices
+            print self.validDataArray
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 

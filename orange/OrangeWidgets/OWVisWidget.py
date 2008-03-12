@@ -15,9 +15,9 @@ class OWVisWidget(OWWidget):
         self.hiddenAttributes = []
         self.selectedHidden = []
 
-        self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown Attributes " )
+        self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown attributes " )
         self.addRemoveGroup = OWGUI.widgetBox(placementTab, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden Attributes ")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden attributes ")
 
         hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListWidget.ExtendedSelection)
@@ -54,6 +54,7 @@ class OWVisWidget(OWWidget):
         if self.data and self.hiddenAttributes and self.data.domain.classVar and self.hiddenAttributes[0][0] != self.data.domain.classVar.name:
             self.showAllCB.setChecked(0)
 
+
     def moveAttrSelection(self, labels, selection, dir):
         self.graph.insideColors = None
         self.graph.clusterClosure = None
@@ -67,6 +68,7 @@ class OWVisWidget(OWWidget):
             setattr(self, labels, labs[:mini] + [labs[maxi]] + labs[mini:maxi] + labs[maxi+1:])
         setattr(self, selection, map(lambda x:x+dir, sel))
 
+        self.resetAttrManipulation()
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
         if self.updateCallbackFunction:

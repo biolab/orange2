@@ -37,8 +37,8 @@ def getDiff(d):
         mnum = d/pow(10, math.floor(math.log10(d)))
     else:
         mnum = d
-
-    if d==0:
+        
+    if d<1e-6:
         return 0
     if str(mnum)[0]>'4':
         return math.pow(10,math.floor(math.log10(d))+1)
@@ -523,7 +523,7 @@ class AttrLine:
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.maxValue-self.minValue)/max((max_mapped-min_mapped),aproxZero)
-        for xc in numpy.arange(self.minValue, self.maxValue+d, d):
+        for xc in numpy.arange(self.minValue, self.maxValue+d, max(d, aproxZero)):
             atLine.addAttValue(AttValue("", xc))
 
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -651,7 +651,7 @@ class AttrLineCont(AttrLine):
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/max(max_mapped-min_mapped,aproxZero)
-        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, max(d, aproxZero)):
             atLine.addAttValue(AttValue("", xc))
 
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -955,9 +955,9 @@ class BasicNomogramFooter(QGraphicsScene):
         self.initVars(nomogram, parent)
 
     def logit(self, val):
-        return math.exp(val)/(1+math.exp(val))
-
-    def invLogit(self, p):
+            return math.exp(val)/(1+math.exp(val))
+    
+    def invLogit(self, p):    
         return math.log(p/max(1-p,aproxZero))
 
     def convertToPercent(self, atLine):
@@ -1316,7 +1316,7 @@ class BasicNomogram(QGraphicsScene):
         self.update()
 
     def printOUT(self):
-        print "constant:", str(self.constant.betaValue)
+        print "Constant:", str(self.constant.betaValue)
         for a in self.attributes:
             print a.toString()
 
@@ -1445,7 +1445,7 @@ def createSetOfVisibleValues(min, max, dif):
     upper = max-min+1.8*dif
 #    add = round((min-dif)/dif)*dif
     add = math.ceil((min-0.9*dif)/dif)*dif
-
+        
     dSum = numpy.arange(0, upper, dif)
     dSum = map(lambda x:x+add, dSum)
     return dSum
@@ -1748,7 +1748,7 @@ class Mapper_Linear_Left:
         else:
             conv = lambda x:x
 
-        k = self.max_difference/self.maxLinearValue
+        k = self.max_difference/(self.maxLinearValue or 1)        
 
         headerLine = AttrLine("", canvas)
         for at in range(len(dSum)):

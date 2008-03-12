@@ -37,7 +37,7 @@ class OWMDS(OWWidget):
 
         self.StressFunc=3
         self.minStressDelta=1e-5
-        self.maxIterations=50
+        self.maxIterations=5000
         self.maxImprovment=10
         self.autoSendSelection=0
         self.toolbarSelection=0
@@ -46,7 +46,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=1
         self.RefreshMode=0
-        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix)]
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
@@ -83,7 +83,7 @@ class OWMDS(OWWidget):
         OWGUI.button(init, self, "Torgerson", self.torgerson)
         opt=OWGUI.widgetBox(mds, "Optimization")
 
-        self.startButton=OWGUI.button(opt, self, "Start", self.testStart)
+        self.startButton=OWGUI.button(opt, self, "Optimize", self.testStart)
         OWGUI.button(opt, self, "LSMT", self.LSMT)
         OWGUI.button(opt, self, "Step", self.smacofStep)
         #OWGUI.button(opt, self, "Stop", self.stop)
@@ -98,7 +98,7 @@ class OWMDS(OWWidget):
         stress=OWGUI.widgetBox(self.stopping, "Min. Avg. Stress Delta")
         OWGUI.comboBox(self.stopping, self, "StressFunc", box="Stress Function", items=[a[0] for a in self.stressFunc], callback=self.updateStress)
         OWGUI.qwtHSlider(stress, self, "minStressDelta", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=100)
+        OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=5000)
         #OWGUI.spin(stopping, self, "maxImprovment", box="Max. improvment of a run", min=0, max=100, postfix="%")
 
         #self.controlArea.setMinimumWidth(250)
@@ -110,6 +110,9 @@ class OWMDS(OWWidget):
         self.resize(800,700)
 
         self.done=True
+        self.data=None
+        self.selectedInputExamples=[]
+        self.selectedInput=[]
 
     def cmatrix(self, matrix=None):
         self.closeContext()
@@ -136,9 +139,15 @@ class OWMDS(OWWidget):
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
             if data and type(data) == orange.ExampleTable:
                 self.openContext("",self.data)
-            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names)
+            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
         else:
             self.graph.clear()
+
+    def cselected(self, selected=[]):
+        self.selectedInputExamples=selected and selected or[]
+        if self.data and type(self.data)==orange.ExampleTable:
+            self.setExampleTable(self.data)
+            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
 
     def setExampleTable(self, data):
         self.colorCombo.clear()
@@ -166,34 +175,48 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse]*(len(discAttributes)+1) for i in range(len(data))]
         self.sizes=[[5]*(len(contAttributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
+        try:
+            selectedInput=self.selectedInputExamples.select(data.domain)
+        except:
+            selectedInput=[]
+        self.selectedInput=map(lambda d: selectedInput and (d in selectedInput) or not selectedInput, data)
         contI=discI=attrI=1
+        def check(ex, a):
+            try:
+                ex[a]
+            except:
+                return False
+            return not ex[a].isSpecial()
+        
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
                 c=OWGraphTools.ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
-                    self.colors[i][attrI]= data[i][attr].isSpecial()  and Qt.black or c[int(data[i][attr])]
-                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
-                    self.names[i][attrI]=" "+str(data[i][attr])
+                    self.colors[i][attrI]= check(data[i],attr)  and c[int(data[i][attr])] or Qt.black
+##                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
+                    self.shapes[i][discI]= check(data[i],attr) and self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)] or self.graph.shapeList[0]
+                    self.names[i][attrI]= check(data[i],attr) and " "+str(data[i][attr]) or ""
                     #self.sizes[i][contI]=5
                 attrI+=1
                 discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
-                c=OWGraphTools.ColorPaletteHSV(-1)
-                val=[e[j] for e in data if not e[j].isSpecial()]
-                minVal=min(val)
-                maxVal=max(val)
+                c=OWGraphTools.ColorPaletteHSV(-1)                
+                #val=[e[attr] for e in data if not e[attr].isSpecial()]
+                val=[e[attr] for e in data if check(e, attr)]
+                minVal=min(val or [0])
+                maxVal=max(val or [1])
                 for i in range(len(data)):
-                    self.colors[i][attrI]=data[i][attr].isSpecial() and Qt.black or c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6))
+                    self.colors[i][attrI]=check(data[i],attr) and c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6)) or Qt.black 
                     #self.shapes[i][discI]=self.graph.shapeList[0]
-                    self.names[i][attrI]=" "+str(data[i][attr])
-                    self.sizes[i][contI]=data[i][attr].isSpecial() and 5 or int(self.data[i][attr]/maxVal*9)+1
+                    self.names[i][attrI]=check(data[i],attr) and " "+str(data[i][attr]) or ""
+                    self.sizes[i][contI]=check(data[i],attr) and int(self.data[i][attr]/maxVal*9)+1 or 5
                 contI+=1
                 attrI+=1
             else:
                 for i in range(len(data)):
                     self.colors[i][attrI]=Qt.black
                     #self.shapes[i][j+1]=self.graph.shapeList[0]
-                    self.names[i][attrI]=" "+str(data[i][attr])
+                    self.names[i][attrI]= check(data[i],attr) and " "+str(data[i][attr]) or ""
                     #self.sizes[i][j+1]=5
                 attrI+=1
 
@@ -210,6 +233,7 @@ class OWMDS(OWWidget):
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
+        self.selectedInput=[False]*len(data)
 
         if type(data[0]) in [str, unicode]:
             self.names = [("", di, "", "") for di in data]
@@ -239,6 +263,7 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
         self.names=[[""]*4 for i in range(len(data))]
+        self.selectedInput=[False]*len(data)
         try:
             c=OWGraphTools.ColorPaletteHSV(len(data))
             for i, d in enumerate(data):
@@ -340,7 +365,7 @@ class OWMDS(OWWidget):
             self.progressBarSet(int(pcur))
 
             oldStress=stress
-        self.startButton.setText("Start")
+        self.startButton.setText("Optimize")
         self.progressBarFinished()
         #if not self.ReDraw:
         self.graph.updateData()
@@ -354,7 +379,7 @@ class OWMDS(OWWidget):
             self.done=True
             return
         self.done=False
-        self.startButton.setText("Stop")
+        self.startButton.setText("Stop Optimization")
         self.stopping.setDisabled(1)
         self.progressBarInit()
         self.iterNum=0
@@ -362,7 +387,7 @@ class OWMDS(OWWidget):
         self.mds.mds.optimize(self.maxIterations, self.stressFunc[self.StressFunc][1], self.minStressDelta)
         if self.iterNum%(math.pow(10,self.RefreshMode)):
             self.graph.updateData()
-        self.startButton.setText("Start")
+        self.startButton.setText("Optimize")
         self.stopping.setDisabled(0)
         self.progressBarFinished()
         self.done=True
@@ -425,6 +450,29 @@ class OWMDS(OWWidget):
             self.send("Example Table", selection)
 
     def sendList(self, selectedInd):
+        if self.data and type(self.data[0]) == str:
+            xAttr=orange.FloatVariable("X")
+            yAttr=orange.FloatVariable("Y")
+            nameAttr=  orange.StringVariable("name")
+            if self.selectionOptions == 1:
+                domain = orange.Domain([xAttr, yAttr, nameAttr])
+                selection = orange.ExampleTable(domain)
+                for i in range(len(selectedInd)):
+                    selection.append(list(self.mds.points[selectedInd[i]]) + [self.data[i]])
+            else:
+                domain = orange.Domain([nameAttr])
+                if self.selectionOptions:
+                    domain.addmeta(orange.newmetaid(), xAttr)
+                    domain.addmeta(orange.newmetaid(), yAttr)
+                selection = orange.ExampleTable(domain)
+                for i in range(len(selectedInd)):
+                    selection.append([self.data[i]])
+                    if self.selectionOptions:
+                        selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
+                        selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
+            self.send("Example Table", selection)
+            return
+               
         if not selectedInd:
             self.send("Structured Data Files", None)
         else:
@@ -453,11 +501,12 @@ class MDSGraph(OWGraph):
         self.ShowStress=False
         self.NumStressLines=10
         self.ShowName=True
-        self.curveKeys=[]
+        #self.curveKeys=[]
         self.pointKeys=[]
         self.points=[]
         self.lines=[]
         self.lineKeys=[]
+        self.distanceLineKeys=[]
         self.colors=[]
         self.sizes=[]
         self.shapeList=[QwtSymbol.Ellipse,
@@ -471,7 +520,7 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.Cross,
                                 QwtSymbol.XCross ]
 
-    def setData(self, mds, colors, sizes, shapes, names):
+    def setData(self, mds, colors, sizes, shapes, names, showFilled):
         if 1:
 #        if mds:
             self.mds=mds
@@ -480,21 +529,42 @@ class MDSGraph(OWGraph):
             self.sizes=sizes
             self.shapes=shapes
             self.names=names
-
+            self.showFilled=showFilled #map(lambda d: not d, showFilled)
             self.updateData()
 
     def updateData(self):
 #        if self.mds:
         if 1:
             self.clear()
-            self.setPoints()
             if self.ShowStress:
-                self.setLines(True)
+                self.updateDistanceLines()
+            self.setPoints()
+                #self.setLines(True)
         for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
             self.setAxisAutoScale(axis)
         self.updateAxes()
         self.repaint()
 
+    def updateDistanceLines(self):
+        for k in self.distanceLineKeys:
+            self.removeCurve(k)
+
+        matrix = self.mds.originalDistances
+        mindist = min([min(r) for r in matrix])
+        maxdist = max([max(r) for r in matrix])
+        diff = maxdist - mindist
+# DBLP
+#        maxdist = 0.85 * (mindist + diff)
+        maxdist = 0.5 * (mindist + diff)
+        k = 10 / diff
+        if self.mds:
+            black = QColor(192,192,192)
+            for i, pti in enumerate(self.mds.points):
+                for j, ptj in enumerate(self.mds.points):
+                    dist =  matrix[i, j]
+                    if dist < maxdist:
+                        self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = (maxdist - dist) * k))
+                    
     def updateLines(self):
         if self.mds:
             self.setLines()
@@ -521,17 +591,22 @@ class MDSGraph(OWGraph):
                     dict[hsv]=[i]
             for color in set:
                 #print len(dict[color.getHsv()]), color.name()
-                X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()]]
-                Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()]]
+                X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
+                Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
                 self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
-            return
+                
+                X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
+                Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
+                self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y, showFilledSymbols=False)
+            return 
         for i in range(len(self.colors)):
             self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
-                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]])
+                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
             if self.NameAttr!=0:
                 self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
-
-
+        self.update()
+            
+                               
     def setLines(self, reset=False):
         if reset:
             #for k in self.lineKeys:

@@ -97,7 +97,7 @@ class DiscGraph(OWGraph):
             m.detach()
         self.cutMarkerKeys = []
 
-        self.update()
+        self.replot()
 
 
     def setData(self, attr, data):
@@ -142,7 +142,7 @@ class DiscGraph(OWGraph):
         self.plotCutLines()
 
         self.updateLayout()
-        self.update()
+        self.replot()
 
 
     def plotRug(self, noUpdate = False):
@@ -185,7 +185,7 @@ class DiscGraph(OWGraph):
                 self.rugKeys.append(c)
 
         if not noUpdate:
-            self.update()
+            self.replot()
 
 
     def plotBaseCurve(self, noUpdate = False):
@@ -204,7 +204,7 @@ class DiscGraph(OWGraph):
             self.baseCurveKey.setYAxis(QwtPlot.yLeft)
 
         if not noUpdate:
-            self.update()
+            self.replot()
 
 
     def plotLookaheadCurve(self, noUpdate = False):
@@ -220,7 +220,7 @@ class DiscGraph(OWGraph):
             #self.lookaheadCurveKey.setVisible(1)
 
         if not noUpdate:
-            self.update()
+            self.replot()
 
 
     def plotProbCurve(self, noUpdate = False):
@@ -234,7 +234,7 @@ class DiscGraph(OWGraph):
             self.probCurveKey.setYAxis(QwtPlot.yRight)
 
         if not noUpdate:
-            self.update()
+            self.replot()
 
 
     def plotCutLines(self):
@@ -291,7 +291,8 @@ class DiscGraph(OWGraph):
 
         self.mouseCurrentlyPressed = 1
 
-        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        canvasPos = self.canvas().mapFrom(self, e.pos())
+        cut = self.invTransform(QwtPlot.xBottom, canvasPos.x())
         curve = self.getCutCurve(cut)
         if not curve and self.master.snap:
             curve = self.getCutCurve(round(cut, self.snapDecimals))
@@ -307,7 +308,7 @@ class DiscGraph(OWGraph):
         else:
             self.selectedCutPoint=self.addCutPoint(cut)
             self.plotCutLines()
-            self.update()
+            self.replot()
 
         self.baseCurveX = None
         self.plotBaseCurve()
@@ -318,9 +319,12 @@ class DiscGraph(OWGraph):
         if not self.data:
             return
 
+        canvasPos = self.canvas().mapFrom(self, e.pos())
+
         if self.mouseCurrentlyPressed:
             if self.selectedCutPoint:
-                pos = self.invTransform(QwtPlot.xBottom, e.x())
+                canvasPos = self.canvas().mapFrom(self, e.pos())
+                pos = self.invTransform(QwtPlot.xBottom, canvasPos.x())
                 if self.master.snap:
                     pos = round(pos, self.snapDecimals)
 
@@ -338,12 +342,12 @@ class DiscGraph(OWGraph):
 
                 self.computeLookaheadScore(pos)
                 self.plotLookaheadCurve()
-                self.update()
+                self.replot()
 
                 self.master.synchronizeIf()
 
 
-        elif self.getCutCurve(self.invTransform(QwtPlot.xBottom, e.x())):
+        elif self.getCutCurve(self.invTransform(QwtPlot.xBottom, canvasPos.x())):
             self.canvas().setCursor(Qt.SizeHorCursor)
         else:
             self.canvas().setCursor(Qt.ArrowCursor)
@@ -361,7 +365,7 @@ class DiscGraph(OWGraph):
         self.master.synchronizeIf()
         if self.lookaheadCurveKey and self.lookaheadCurveKey:
             self.lookaheadCurveKey.setVisible(0)
-        self.update()
+        self.replot()
 
 
     def targetClassChanged(self):
@@ -383,19 +387,19 @@ class ListItemWithLabel(QListWidgetItem):
         self.master = master
         self.labelIdx = labelIdx
 
-    def paint(self, painter):
-        btext = str(self.text())
-        self.setText(btext + self.master.indiLabels[self.labelIdx])
-        QListWidgetItem.paint(self, painter)
-        self.setText(btext)
+#    def paint(self, painter):
+#        btext = str(self.text())
+#        self.setText(btext + self.master.indiLabels[self.labelIdx])
+#        QListWidgetItem.paint(self, painter)
+#        self.setText(btext)
 
 
 class OWDiscretize(OWWidget):
     settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize"]
-    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
+    contextHandlers = {"": PerfectDomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
                                                      "indiDiscretization", "intervals", "classIntervals", "indiIntervals",
                                                      "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals",
-                                                     "selectedAttr", "customSplits", "customClassSplits"], False, False, False, False)}
+                                                     "selectedAttr", "customSplits", "customClassSplits"])}
 
     callbackDeposit=[]
 
@@ -447,10 +451,9 @@ class OWDiscretize(OWWidget):
         self.classDiscretizationMethods=["Equal-frequency discretization", "Equal-width discretization"]
         self.indiDiscretizationMethods=["Default", "Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove attribute"]
 
-        self.mainVBox =  OWGUI.widgetBox(self.mainArea)
-        self.mainHBox =  OWGUI.widgetBox(self.mainVBox, orientation=0)
+        self.mainHBox =  OWGUI.widgetBox(self.mainArea, orientation=0)
 
-        vbox = OWGUI.widgetBox(self.mainHBox)
+        vbox = self.controlArea
         box = OWGUI.radioButtonsInBox(vbox, self, "discretization", self.discretizationMethods[:-1], "Default discretization", callback=[self.clearLineEditFocus, self.defaultMethodChanged])
         self.needsDiscrete.append(box.buttons[1])
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -488,26 +491,28 @@ class OWDiscretize(OWWidget):
         OWGUI.widgetLabel(box, "(Widget always uses discretized class internally.)")
 
         OWGUI.separator(vbox)
-        OWGUI.rubber(vbox)
+        #OWGUI.rubber(vbox)
 
         box = OWGUI.widgetBox(vbox, "Commit")
         applyButton = OWGUI.button(box, self, "Commit", callback = self.commit)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically", callback=[self.clearLineEditFocus])
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.commit)
+        OWGUI.rubber(vbox)
 
-        self.mainSeparator = OWGUI.separator(self.mainHBox, width=25)
+        #self.mainSeparator = OWGUI.separator(self.mainHBox, width=25)        # space between control and main area
         self.mainIABox =  OWGUI.widgetBox(self.mainHBox, "Individual attribute settings")
         self.mainBox = OWGUI.widgetBox(self.mainIABox, orientation=0)
         OWGUI.separator(self.mainIABox)#, height=30)
-
         graphBox = OWGUI.widgetBox(self.mainIABox, "", orientation=0)
+        
+        
 #        self.needsDiscrete.append(graphBox)
         graphOptBox = OWGUI.widgetBox(graphBox)
         OWGUI.separator(graphBox, width=10)
         self.graph = DiscGraph(self, graphBox)
         graphBox.layout().addWidget(self.graph)
 
-        graphOptBox.layout().setSpacing(4)
+        #graphOptBox.layout().setSpacing(4)
         box = OWGUI.widgetBox(graphOptBox, "Split gain measure", addSpace=True)
         self.measureCombo=OWGUI.comboBox(box, self, "measure", orientation=0, items=[e[0] for e in self.measures], callback=[self.clearLineEditFocus, self.graph.invalidateBaseScore, self.graph.plotBaseCurve])
         OWGUI.checkBox(box, self, "showBaseLine", "Show discretization gain", callback=[self.clearLineEditFocus, self.graph.plotBaseCurve])
@@ -535,29 +540,30 @@ class OWDiscretize(OWWidget):
 
         OWGUI.separator(self.mainBox, width=10)
         box = OWGUI.radioButtonsInBox(OWGUI.widgetBox(self.mainBox), self, "indiDiscretization", [], callback=[self.clearLineEditFocus, self.indiMethodChanged])
-        hbbox = OWGUI.widgetBox(box)
-        hbbox.layout().setSpacing(4)
+        #hbbox = OWGUI.widgetBox(box)
+        #hbbox.layout().setSpacing(4)
         for meth in self.indiDiscretizationMethods[:-1]:
-            OWGUI.appendRadioButton(box, self, "discretization", meth, insertInto = hbbox)
+            OWGUI.appendRadioButton(box, self, "indiDiscretization", meth)
         self.needsDiscrete.append(box.buttons[2])
-        self.indiInterBox = OWGUI.widgetBox(OWGUI.indentedBox(hbbox))
-        OWGUI.widgetLabel(self.indiInterBox, "Number of intervals")
-        OWGUI.separator(self.indiInterBox, height=4)
-        self.indiIntervalSlider=OWGUI.hSlider(OWGUI.indentedBox(self.indiInterBox), self, "indiIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.indiMethodChanged])
-        OWGUI.appendRadioButton(box, self, "discretization", self.indiDiscretizationMethods[-1], insertInto = hbbox)
-        OWGUI.rubber(hbbox)
-        OWGUI.separator(box)
-        hbbox = OWGUI.widgetBox(box)
+        self.indiInterBox = OWGUI.indentedBox(box, orientation = "horizontal")
+        OWGUI.widgetLabel(self.indiInterBox, "Num. of intervals: ")
+        self.indiIntervalSlider = OWGUI.hSlider(self.indiInterBox, self, "indiIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.indiMethodChanged], width = 100)
+        OWGUI.rubber(self.indiInterBox) 
+        OWGUI.appendRadioButton(box, self, "indiDiscretization", self.indiDiscretizationMethods[-1])
+        #OWGUI.rubber(hbbox)
+        #OWGUI.separator(box)
+        #hbbox = OWGUI.widgetBox(box)
         for i in range(3):
-            hbox = OWGUI.widgetBox(hbbox, orientation = 0)
-            OWGUI.appendRadioButton(box, self, "discretization", "Custom %i" % (i+1) + " ", insertInto = hbox)
+            hbox = OWGUI.widgetBox(box, orientation = "horizontal")
+            OWGUI.appendRadioButton(box, self, "indiDiscretization", "Custom %i" % (i+1) + " ", insertInto = hbox)
             le = OWGUI.lineEdit(hbox, self, "", callback = lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
             le.setFixedWidth(110)
             self.customLineEdits.append(le)
             OWGUI.button(hbox, self, "CC", width=30, callback = lambda w=i: self.copyToCustom(w))
-        OWGUI.rubber(hbbox)
+            OWGUI.rubber(hbox)
+        OWGUI.rubber(box)
 
-        self.controlArea.setFixedWidth(0)
+        #self.controlArea.setFixedWidth(0)
 
         self.contAttrIcon =  self.createAttributeIconDict()[orange.VarTypes.Continuous]
 
@@ -773,14 +779,12 @@ class OWDiscretize(OWWidget):
 
     def showHideIndividual(self):
         if not self.resetIndividuals:
-                self.mainIABox.hide()
-                self.mainSeparator.hide()
-        elif self.mainIABox.isHidden():
+                self.mainArea.hide()
+        elif self.mainArea.isHidden():
             self.graph.plotBaseCurve()
-            self.mainIABox.show()
-            self.mainSeparator.show()
+            self.mainArea.show()
         qApp.processEvents()
-        self.adjustSize()
+        QTimer.singleShot(0, self.adjustSize)
 
     def setAllIndividuals(self):
         self.showHideIndividual()
@@ -805,7 +809,7 @@ class OWDiscretize(OWWidget):
                 else:
                     self.computeDiscretizer(i, idx)
 
-        #self.attrList.triggerUpdate(0)
+        self.attrList.reset()
         self.commitIf()
 
 
@@ -816,7 +820,7 @@ class OWDiscretize(OWWidget):
         idx = self.continuousIndices[self.selectedAttr]
         le = self.customLineEdits[which]
 
-        content = str(le.text()).replace(":", " ").replace(",", " ").replace("-", " ").split()
+        content = str(le.text()).replace(":", " ").replace(",", " ").split()
         content = dict.fromkeys(content).keys()  # remove duplicates (except 8.0, 8.000 ...)
         try:
             content.sort(lambda x, y:cmp(float(x), float(y)))
@@ -859,7 +863,8 @@ class OWDiscretize(OWWidget):
 #        self.customSelected(which)
 
 
-    shortDiscNames = ("", " (leave continuous)", " (entropy)", " (equal frequency)", " (equal width)", " (removed)", " (custom 1)", " (custom 2)", " (custom 3)")
+    # This weird construction of the list is needed for easier translation into other languages
+    shortDiscNames = [""] + [" (%s)" % x for x in ["leave continuous", "entropy", "equal frequency", "equal width", "removed"] + ["custom %i" % x for x in range(1, 4)]] 
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
         attr = self.data.domain[idx]
@@ -920,8 +925,7 @@ class OWDiscretize(OWWidget):
             points = discretizer.getValueFrom.transformer.points
             discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
         self.indiLabels[i] = discInts + discName
-
-        #self.attrList.triggerUpdate(0)
+        self.attrList.reset()
 
         if i == self.selectedAttr:
             self.graph.setSplits(discretizer and discretizer.getValueFrom.transformer.points or [])
@@ -1021,7 +1025,7 @@ class OWDiscretize(OWWidget):
         self.discretizers[idx] = discretizer
 
         self.indiLabels[self.selectedAttr] = ": " + splitsTxt + self.shortDiscNames[self.indiDiscretization]
-        #self.attrList.triggerUpdate(0)
+        self.attrList.reset()
 
         self.pointsChanged = False
         self.commitIf()

@@ -168,24 +168,34 @@ class SVMLearnerClassEasy(SVMLearnerClass):
         del best["error"]
         for name, val in best.items():
             setattr(self.learner, name, val)
-        return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain)
+        return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain, examples)
 
 class SVMLearnerSparseClassEasy(SVMLearnerClassEasy, SVMLearnerSparseClass):
     def __init__(self, **kwds):
         SVMLearnerSparseClass.__init__(self, **kwds)
         
 class SVMClassifierClassEasyWrapper:
-    def __init__(self, classifier, domain=None, transformer=None):
+    def __init__(self, classifier, domain=None, oldexamples=None):
         self.classifier=classifier
         self.domain=domain
+        self.oldexamples=oldexamples
     def __call__(self,example, getBoth=orange.GetValue):
-        example=orange.Example(self.domain, example)
+        example=orange.ExampleTable([example]).translate(self.domain)[0] #orange.Example(self.domain, example)
         return self.classifier(example, getBoth)
     def __getattr__(self, name):
         if name in ["supportVectors", "nSV", "coef", "rho", "examples", "kernelFunc"]:
             return getattr(self.__dict__["classifier"], name)
         else:
-            return object.__getattr__(self, name)
+            raise AttributeError(name)
+    def __setstate__(self, state):
+        print state
+        self.__dict__.update(state)
+        transformer=orange.DomainContinuizer()
+        transformer.multinominalTreatment=orange.DomainContinuizer.NValues
+        transformer.continuousTreatment=orange.DomainContinuizer.NormalizeBySpan
+        transformer.classTreatment=orange.DomainContinuizer.Ignore
+        print self.examples
+        self.domain=transformer(self.oldexamples)
 
 def getLinearSVMWeights(classifier):
     """returns list of weights for linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ..."""

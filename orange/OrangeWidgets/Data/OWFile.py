@@ -6,42 +6,109 @@
 <priority>10</priority>
 """
 
-#
-# OWFile.py
-# The File Widget
-# A widget for opening orange data files
-#
+# Don't move this - the line number of the call is important
+def call(f,*args,**keyargs):
+    return f(*args, **keyargs)
 
 import orngOrangeFoldersQt4
 from OWWidget import *
-import OWGUI, string, os.path, user, sys
+import OWGUI, string, os.path, user, sys, warnings
 
-class OWSubFile(OWWidget):
-    settingsList=["recentFiles"]
-    allFileWidgets = []
+warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
-    def __init__(self, parent=None, signalManager = None, name = "File"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
-        OWSubFile.allFileWidgets.append(self)
-        self.filename = ""
 
-    def destroy(self, destroyWindow, destroySubWindows):
-        OWSubFile.allFileWidgets.remove(self)
-        OWWidget.destroy(self, destroyWindow, destroySubWindows)
+class FileNameContextHandler(ContextHandler):
+    def match(self, context, imperfect, filename):
+        return context.filename == filename and 2
+        
+
+class OWFile(OWWidget):
+    settingsList=["recentFiles", "createNewOn"]
+    contextHandlers = {"": FileNameContextHandler()}
+
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "File")
+
+        self.inputs = []
+        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+
+        #set default settings
+        self.recentFiles=["(none)"]
+        self.symbolDC = "?"
+        self.symbolDK = "~"
+        self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
+        self.domain = None
+        self.loadedFile = ""
+        #get settings from the ini file, if they exist
+        self.loadSettings()
+
+        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=0)
+        self.filecombo = QComboBox(box)
+        self.filecombo.setMinimumWidth(150)
+        box.layout().addWidget(self.filecombo)
+        button = OWGUI.button(box, self, '...', callback = self.browseFile, width = 25, disabled=0)
+        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload, width = 50)
+
+        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
+        OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
+        
+        hbox = OWGUI.indentedBox(box)
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        #OWGUI.separator(hbox, 16, 0)
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
+
+        OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
+                       label = "Create a new attribute when existing attribute(s) ...",
+                       btnLabels = ["Have mismatching order of values",
+                                    "Have no common values with the new (recommended)",
+                                    "Miss some values of the new attribute",
+                                    "... Always create a new attribute"
+                               ])
+
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
+        self.warnings = OWGUI.widgetLabel(box, ' ')
+
+        self.adjustSize()
+
+    # set the file combo box
+    def setFileList(self):
+        self.filecombo.clear()
+        if not self.recentFiles:
+            self.filecombo.addItem("(none)")
+        for file in self.recentFiles:
+            if file == "(none)":
+                self.filecombo.addItem("(none)")
+            else:
+                self.filecombo.addItem(os.path.split(file)[1])
+        self.filecombo.addItem("Browse documentation data sets...")
+        
+
+    def reload(self):
+        if self.recentFiles:
+            return self.openFile(self.recentFiles[0], 1, self.symbolDK, self.symbolDC)
 
     def activateLoadedSettings(self):
         # remove missing data set names
-        self.recentFiles=filter(os.path.exists,self.recentFiles)
+        self.recentFiles=filter(os.path.exists, self.recentFiles)
         self.setFileList()
 
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
-            self.openFile(self.recentFiles[0])
+            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
+    def settingsFromWidgetCallback(self, handler, context):
+        context.filename = self.loadedFile
+        context.symbolDC, context.symbolDK = self.symbolDC, self.symbolDK
+
+    def settingsToWidgetCallback(self, handler, context):
+        self.symbolDC, self.symbolDK = context.symbolDC, context.symbolDK
+
     # user selected a file from the combo box
-    def selectFile(self,n):
+    def selectFile(self, n):
         if n < len(self.recentFiles) :
             name = self.recentFiles[n]
             self.recentFiles.remove(name)
@@ -51,7 +118,7 @@ class OWSubFile(OWWidget):
 
         if len(self.recentFiles) > 0:
             self.setFileList()
-            self.openFile(self.recentFiles[0])
+            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
     # user pressed the "..." button to manually select a file to load
     def browseFile(self, inDemos=0):
@@ -94,143 +161,119 @@ class OWSubFile(OWWidget):
             else:
                 startfile=self.recentFiles[0]
 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, "",
-        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)'))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile,
+        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)'))
 
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
         self.setFileList()
-        self.openFile(self.recentFiles[0])
 
-    def setInfo(self, info):
-        for (i, s) in enumerate(info):
-            self.info[i].setText(s)
+        self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
-    # checks whether any file widget knows of any variable from the current domain
-    def attributesOverlap(self, domain):
-        for fw in OWSubFile.allFileWidgets:
-            if fw != self and getattr(fw, "dataDomain", None):
-                for var in domain:
-                    if var in fw.dataDomain:
-                        return True
-        return False
 
     # Open a file, create data from it and send it over the data channel
-    def openFileBase(self,fn, throughReload = 0, DK=None, DC=None):
-        dontCheckStored = throughReload and self.resetDomain
-        self.resetDomain = self.domain != None
-        oldDomain = getattr(self, "dataDomain", None)
-        if fn != "(none)":
-            fileExt=lower(os.path.splitext(fn)[1])
-            argdict = {"dontCheckStored": dontCheckStored, "use": self.domain}
-            if fileExt in (".txt",".tab",".xls"):
-                preloader, loader = orange.ExampleGenerator, orange.ExampleTable
-                if DK:
-                    argdict["DK"] = DK
-                if DC:
-                    argdict["DC"] = DC
-            elif fileExt in (".c45",):
-                preloader = loader = orange.C45ExampleGenerator
-            else:
-                return
+    def openFile(self, fn, throughReload, DK=None, DC=None):
+        self.error()
+        self.warning()
 
-            if dontCheckStored:
-                data = loader(fn, **argdict)
-            else:
-                # Load; if the domain is the same and there is no other file widget which
-                # uses any of the same attributes like this one, reload
-                # If the loader for a particular format cannot load the examle generator
-                # (i.e. if it always returns an example table), the data is loaded twice.
-                data = preloader(fn, **argdict)
-                if oldDomain == data.domain and not self.attributesOverlap(data.domain):
-                    argdict["dontCheckStored"] = 1
-                    data = loader(fn, **argdict)
-                elif not isinstance(data, orange.ExampleTable):
-                    data = loader(fn, **argdict)
-
-            self.dataDomain = data.domain
-
-            # update data info
-            def sp(l):
-                n = len(l)
-                if n <> 1: return n, 's'
-                else: return n, ''
-
-            self.infoa.setText('%d example%s, ' % sp(data) + '%d attribute%s, ' % sp(data.domain.attributes) + '%d meta attribute%s.' % sp(data.domain.getmetas()))
-            cl = data.domain.classVar
-            if cl:
-                if cl.varType == orange.VarTypes.Continuous:
-                    self.infob.setText('Regression; Numerical class.')
-                elif cl.varType == orange.VarTypes.Discrete:
-                    self.infob.setText('Classification; Discrete class with %d value%s.' % sp(cl.values))
-                else:
-                    self.infob.setText("Class neither descrete nor continuous.")
-            else:
-                self.infob.setText('Classless domain')
-
-            # make new data and send it
-            fName = os.path.split(fn)[1]
-            if "." in fName:
-                data.name = string.join(string.split(fName, '.')[:-1], '.')
-            else:
-                data.name = fName
-            self.send("Examples", data)
-            self.send("Attribute Definitions", data.domain)
-        else:
+        self.closeContext()
+        self.loadedFile = ""
+        
+        if fn == "(none)":
             self.send("Examples", None)
             self.send("Attribute Definitions", None)
+            self.infoa.setText("No data loaded")
+            self.infob.setText("")
+            self.warnings.setText("")
+            return
+            
+        self.symbolDK = self.symbolDC = ""
+        self.openContext("", fn)
 
+        self.loadedFile = ""
 
+        argdict = {"createNewOn": 3-self.createNewOn}
+        if DK:
+            argdict["DK"] = str(DK)
+        if DC:
+            argdict["DC"] = str(DC)
 
-class OWFile(OWSubFile):
-    def __init__(self,parent=None, signalManager = None):
-        OWSubFile.__init__(self, parent, signalManager, "File")
+        data = None
+        try:
+            data = call(orange.ExampleTable, fn, **argdict)
+            self.loadedFile = fn
+        except Exception, (errValue):
+            if "is being loaded as" in str(errValue):
+                try:
+                    data = orange.ExampleTable(fn, **argdict)
+                    self.warning(0, str(errValue))
+                except:
+                    pass
+            if data is None:
+                self.error(str(errValue))
+                self.dataDomain = None
+                self.infoa.setText('No data loaded due to an error')
+                self.infob.setText("")
+                self.warnings.setText("")
+                return
+                        
+        self.dataDomain = data.domain
 
-        self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
-
-        #set default settings
-        self.recentFiles=["(none)"]
-        self.domain = None
-        #get settings from the ini file, if they exist
-        self.loadSettings()
-
-        #GUI
-        self.controlArea.layout().setMargin(4)
-        self.box = OWGUI.widgetBox(self.controlArea, box = "Data File", orientation = "horizontal")
-        self.filecombo = OWGUI.comboBox(self.box, self, "filename")
-        self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
-
-        # info
-        box = OWGUI.widgetBox(self.controlArea, "Info")
-        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
-        self.infob = OWGUI.widgetLabel(box, ' ')
-
-        self.resize(150,100)
-
-    # set the file combo box
-    def setFileList(self):
-        self.filecombo.clear()
-        if not self.recentFiles:
-            self.filecombo.addItem("(none)")
+        self.infoa.setText('%d example(s), ' % len(data) + '%d attribute(s), ' % len(data.domain.attributes) + '%d meta attribute(s).' % len(data.domain.getmetas()))
+        cl = data.domain.classVar
+        if cl:
+            if cl.varType == orange.VarTypes.Continuous:
+                    self.infob.setText('Regression; Numerical class.')
+            elif cl.varType == orange.VarTypes.Discrete:
+                    self.infob.setText('Classification; Discrete class with %d value(s).' % len(cl.values))
+            else:
+                self.infob.setText("Class neither descrete nor continuous.")
         else:
-            self.filecombo.addItems([os.path.split(file)[1] for file in self.recentFiles])
-        self.filecombo.addItem("Browse documentation data sets...")
-        #self.filecombo.adjustSize() #doesn't work properly :(
-        #self.filecombo.updateGeometry()
+            self.infob.setText("Data without a dependent variable.")
 
+        warnings = ""
+        metas = data.domain.getmetas()
+        for status, messageUsed, messageNotUsed in [
+                                (orange.Variable.MakeStatus.Incompatible,
+                                 "",
+                                 "The following attributes already existed but had a different order of values, so new attributes needed to be created"),
+                                (orange.Variable.MakeStatus.NoRecognizedValues,
+                                 "The following attributes were reused although they share no common values with the existing attribute of the same names",
+                                 "The following attributes were not reused since they share no common values with the existing attribute of the same names"),
+                                (orange.Variable.MakeStatus.MissingValues,
+                                 "The following attribute(s) were reused although some values needed to be added",
+                                 "The following attribute(s) were not reused since they miss some values")
+                                ]:
+            if self.createNewOn > status:
+                message = messageUsed
+            else:
+                message = messageNotUsed
+            if not message:
+                continue
+            attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
+                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
+            if attrs:
+                warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
 
-    def openFile(self,fn, throughReload = 0):
-        self.openFileBase(fn, throughReload=throughReload)
+        self.warnings.setText(warnings)
+        qApp.processEvents()
+        self.adjustSize()
 
+        # make new data and send it
+        fName = os.path.split(fn)[1]
+        if "." in fName:
+            data.name = fName[:fName.rfind('.')]
+        else:
+            data.name = fName
 
+        self.send("Examples", data)
+        self.send("Attribute Definitions", data.domain)
 
 if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    owf=OWFile()
-    owf.activateLoadedSettings()
-    owf.show()
-    sys.exit(a.exec_())
-    owf.saveSettings()
+    a = QApplication(sys.argv)
+    ow = OWFile()
+    ow.activateLoadedSettings()
+    ow.show()
+    a.exec_()
+    ow.saveSettings()

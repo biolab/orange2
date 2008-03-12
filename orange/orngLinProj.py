@@ -82,6 +82,7 @@ class FreeViz:
 
     def randomAnchors(self):
         if not self.graph.rawData: return
+        attrList = self.getShownAttributeList()
 
         if self.restrain == 0:
             def ranch(i, label):
@@ -97,10 +98,10 @@ class FreeViz:
         else:
             def ranch(i, label):
                 r = 0.3+0.7*random.random()
-                phi = 2*math.pi * i / n
+                phi = 2*math.pi * i / max(1, len(attrList))
                 return (r*math.cos(phi), r*math.sin(phi), label)
 
-        anchors = [ranch(*a) for a in enumerate(self.getShownAttributeList())]
+        anchors = [ranch(*a) for a in enumerate(attrList)]
 
         if not self.restrain == 1:
             maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
@@ -123,6 +124,7 @@ class FreeViz:
         if self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
             return
 
+        if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
         if singleStep: steps = 1
         if self.implementation == SLOW_IMPLEMENTATION:  impl = self.optimize_SLOW_Separation
         elif self.implementation == LDA_IMPLEMENTATION: impl = self.optimize_LDA_Separation
@@ -134,7 +136,7 @@ class FreeViz:
             for i in range(steps):
                 if self.__class__ != FreeViz and self.cancelOptimization == 1: return
                 self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
-            if self.graph.__class__ != orngScaleLinProjData:
+            if self.graph.__class__ != FreeViz:
                 qApp.processEvents()
                 self.graph.updateData()
             #self.recomputeEnergy()
@@ -155,6 +157,7 @@ class FreeViz:
         data = numpy.compress(validData, self.graph.noJitteringScaledData, axis=1)
         data = numpy.transpose(data).tolist()
         classes = [int(x.getclass()) for i,x in enumerate(self.graph.rawData) if validData[i]]
+        if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
 
         while 1:
             self.graph.anchorData = optimizer(data, classes, self.graph.anchorData, attrIndices,
@@ -165,7 +168,7 @@ class FreeViz:
                                               mirrorSymmetry = self.mirrorSymmetry)
             neededSteps += steps
 
-            if self.graph.__class__ != orngScaleLinProjData:
+            if self.graph.__class__ != FreeViz:
                 qApp.processEvents()
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
@@ -375,6 +378,7 @@ class FreeViz:
             vizrank = orngVizRank.VizRank(orngVizRank.LINEAR_PROJECTION)
         vizrank.qualityMeasure = orngVizRank.AVERAGE_CORRECT
         vizrank.setData(self.rawData)
+        if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
 
         if self.autoSetParameters:
             results = {}

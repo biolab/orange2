@@ -352,7 +352,7 @@ class updateOrangeDlg(QMainWindow):
                 self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
                 vf.close()
             except:
-                res = QMessageBox.information(self, 'Update Orange', "The 'whatsdown.txt' file if missing (most likely because you downloaded Orange from CVS).\nThis file contains information about versions of your local Orange files.\n\nIf you press 'Replace Local Files' you will not replace only updated files, but will \noverwrite all your local Orange files with the latest versions from the web.\n", 'Replace Local Files', "Cancel", None, 0, 1)
+                res = QMessageBox.information(self, 'Update Orange', "The 'whatsdown.txt' file if missing (most likely because you downloaded Orange from CVS).\nThis file contains information about versions of your local Orange files.\n\nIf you press 'Replace Local Files' you will not replace only updated files, but will \noverwrite all your local Orange files with the latest versions from the web.\n", 'Replace Local Files', "Cancel", "", 0, 1)
                 if res != 0: return
 
             itms = upstuff.items()

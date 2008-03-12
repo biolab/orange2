@@ -14,6 +14,7 @@ import OWGUI, OWToolbars, OWDlgs
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
+import orngText
 
 textCorpusModul = 1
 
@@ -28,10 +29,10 @@ import os
 def checkFromText(data):
 
     if not isinstance(data, orange.ExampleTable):
-        return False
-    if len(data.domain.attributes) < 10 and len(data.domain.getmetas()) > 15:
+        return False        
+    if len(data.domain.attributes) < 10 and len(data.domain.getmetas(orngText.TEXTMETAID)) > 15:
         return True
-    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
+    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas(orngText.TEXTMETAID)):
         return True
     return False
 
@@ -47,7 +48,7 @@ class OWCorrAnalysis(OWWidget):
         self.callbackDeposit = []
 
         self.inputs = [("Data", ExampleTable, self.dataset)]
-        self.outputs = []
+        self.outputs = [("Selected data", ExampleTable)]
         self.recentFiles=[]
 
         self.data = None
@@ -67,7 +68,7 @@ class OWCorrAnalysis(OWWidget):
         # GUI
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
+        self.SettingsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
@@ -88,12 +89,12 @@ class OWCorrAnalysis(OWWidget):
 
         #col attribute
         self.attrCol = ""
-        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column Table Attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
 
         # row attribute
         self.attrRow = ""
-        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row Table Attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
-
+        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+       
         #x principal axis
         self.attrX = 0
         self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " Principal axis X ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
@@ -103,9 +104,9 @@ class OWCorrAnalysis(OWWidget):
         self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
 
         contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
-        self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis 1: 10%')
-        self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis 2: 10%')
-
+        self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (1, 10))
+        self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (2, 10))
+        
         sliders = QVGroupBox('Percentage of points', self.GeneralTab)
         OWGUI.widgetLabel(sliders, 'Row points')
         self.percRow = 100
@@ -132,12 +133,12 @@ class OWCorrAnalysis(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
-
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
+        
         # general graph settings
-        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
-        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
+        box4 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X-axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y-axis title', callback = self.updateGraph)
 ##        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
@@ -151,7 +152,7 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         #browsing radius
-        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing Curve Size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
+        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing curve size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
 
         #font size
         OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box=' Set font size for labels ', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
@@ -336,41 +337,62 @@ class OWCorrAnalysis(OWWidget):
               data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
             else:
               data = self.data
-            metas = data.domain.getmetas()
+            metas = data.domain.getmetas(orngText.TEXTMETAID)
             lenMetas = len(metas)
             caList = []
             for ex in data:
                 cur = [0] * lenMetas
                 for i, m in zip(range(lenMetas), metas.keys()):
                     try:
-                        cur[i] = ex[m].native()
+                        cur[i] = float(ex[m].native())
                     except:
                         cur[i] = 0
                 caList.append(cur)
             if not self.CAloaded:
                 self.CA = orngCA.CA(caList)
+            hasNameAttribute = 'name' in [i.name for i in data.domain.attributes]
+            hasCategoryAttribute = 'category' in [i.name for i in data.domain.attributes]
+            if not hasCategoryAttribute:
+                if not hasNameAttribute:
+                    self.tipsR = [ex['text'].value[:35] for ex in data]
+                    self.rowCategories = [(ex['text'].value[:35], "Row points") for ex in data] 
+                    self.catColors = {"Row points": 0}
+                else:
+                    self.tipsR = [ex['name'].native() for ex in data]
+                    self.rowCategories = [(ex['name'].native(), "Row points") for ex in data]
+                    self.catColors = {"Row points": 0}
             try:
-                self.tipsR = [ex['name'].native() for ex in data]
-                self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
-                self.catColors = {}
-                col = 0
-                colors = [0, 2, 3, 5, 6, 12]
-                for ex in data:
-                    if ex['category'].native() not in self.catColors.keys():
-                        self.catColors[ex['category'].native()] = colors[col]
-                        col = (col + 1) % len(colors)
+                if hasCategoryAttribute:
+                    if not hasNameAttribute:
+                        self.tipsR = [ex['text'].value[:35] for ex in data]
+                        self.rowCategories = [(ex['text'].value[:35], ex['category'].native()) for ex in data]
+                    else:
+                        self.tipsR = [ex['name'].native() for ex in data]
+                        self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
+                    self.catColors = {}
+                    col = 0
+                    colors = [0, 2, 3, 5, 6, 12]
+                    for ex in data:
+                        if ex['category'].native() not in self.catColors.keys():
+                            self.catColors[ex['category'].native()] = colors[col]
+                            col = (col + 1) % len(colors)
             except:
-                self.tipsR = [ex.name for ex in data]
-                self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
-                self.catColors = {}
-                col = 0
-                colors = [0, 2, 3, 5, 6, 12]
-                for ex in data:
-                    if ex['category'].native() not in self.catColors.keys():
-                        self.catColors[ex['category'].native()] = colors[col]
-                        col = (col + 1) % len(colors)
-            self.tipsC = [a.name for a in data.domain.getmetas().values()]
-        else:
+                if hasCategoryAttribute:
+                    if not hasNameAttribute:
+                        self.tipsR = [ex['text'].value[:35] for ex in data]
+                        self.rowCategories = [(ex['text'].value[:35], ex[-1].native()) for ex in data]
+                    else:
+                        self.tipsR = [ex.name for ex in data]
+                        self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
+                    self.catColors = {}
+                    col = 0
+                    colors = [0, 2, 3, 5, 6, 12]
+                    for ex in data:
+                        if ex['category'].native() not in self.catColors.keys():
+                            self.catColors[ex['category'].native()] = colors[col]
+                            col = (col + 1) % len(colors)
+            self.tipsC = [a.name for a in data.domain.getmetas(orngText.TEXTMETAID).values()]
+        else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
             caList = [[col for col in row] for row in ca]
             if not self.CAloaded:
@@ -428,6 +450,7 @@ class OWCorrAnalysis(OWWidget):
         self.zoomSelectToolbar.buttonZoom.setOn(1)
         self.updateGraph()
         self.apply = False
+
     def updateGraph(self):
         self.graph.zoomStack = []
         if not self.data:
@@ -488,7 +511,25 @@ class OWCorrAnalysis(OWWidget):
     def sendSelections(self, e):
         self.docs = self.graph.docs
         self.features = self.graph.features
-
+        hasNameAttribute = 'name' in [i.name for i in self.data.domain.attributes]
+        examples = []
+        if not hasNameAttribute:
+            for ex in self.data:
+                if ex['text'].value[:35] in self.docs:
+                    examples.append(ex)
+        else:
+            for ex in self.data:
+                if ex['name'].native() in self.docs:
+                    examples.append(ex)
+        newMetas = {}
+        for ex in examples:
+            for k, v in ex.getmetas(orngText.TEXTMETAID).items():
+                if k not in newMetas.keys():
+                    newMetas[k] = self.data.domain[k]
+        newDomain = orange.Domain(self.data.domain.attributes, 0)
+        newDomain.addmetas(newMetas, orngText.TEXTMETAID)
+        newdata = orange.ExampleTable(newDomain, examples)
+        self.send("Selected data", newdata)
 
     def replotCurves(self):
         for key in self.graph.curveKeys():
@@ -511,13 +552,13 @@ class OWCorrAnalysis(OWWidget):
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
+        c = OWDlgs.ColorPalette(self, "Color palette")
+        c.createDiscretePalette(" Discrete palette ")
         c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
-        c.createColorButton(box, "Canvas", "Canvas color", QColor(QColor(Qt.white)))
+        box = c.createBox("otherColors", " Other colors ")
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.addSpace(5)
-        c.createColorButton(box, "Grid", "Grid color", QColor(QColor(Qt.black)))
+        c.createColorButton(box, "Grid", "Grid color", QColor(Qt.black))
         box.addSpace(5)
         box.adjustSize()
         c.setColorSchemas(self.colorSettings)
@@ -598,7 +639,7 @@ if __name__=="__main__":
     #t1 = orngText.extractWordNGram(t1, stopwords = stop, measure = 'MI', threshold = 10, n=3)
     #t1 = orngText.extractNamedEntities(t, stopwords = stop)
     #t1 = orngText.bagOfWords(t1, stopwords = stop)
-    print len(t1.domain.getmetas())
+    print len(t1.domain.getmetas(orngText.TEXTMETAID))
     print 'Done with extracting'
     #t2 = orngText.FSS(t1, 'TF', 'MIN', 0.98)
     #print len(t2.domain.getmetas())

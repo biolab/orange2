@@ -35,7 +35,7 @@ class OWKMeans(OWWidget):
         # GUI definition
         # settings
         OWGUI.qwtHSlider(self.controlArea, self, "K", box="Number of Clusters", label="K: ", minValue=1, maxValue=30, step=1, callback=self.settingsChanged)
-        OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manthattan"], tooltip=None, callback=self.settingsChanged)
+        OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
         QWidget(self.controlArea).setFixedSize(0, 8)
         self.applyBtn = OWGUI.button(self.controlArea, self, "Apply Settings", callback = self.cluster)
         self.applyBtn.setDisabled(TRUE)

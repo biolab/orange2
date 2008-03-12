@@ -7,6 +7,8 @@
 """
 import orngOrangeFoldersQt4
 from OWTreeViewer2D import *
+import re
+import sets
 
 class RegressionNode(CanvasNode):
     def __init__(self, attrVal, *args):
@@ -62,8 +64,7 @@ class RegressionNode(CanvasNode):
             self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
         self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
 
-import re
-import sets
+
 def parseRules(rules):
     def joinCont(rule1, rule2):
         int1, int2=["(",-1e1000,1e1000,")"], ["(",-1e1000,1e1000,")"]
@@ -135,7 +136,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
-
+        
         self.canvas = TreeCanvas(self)
         self.canvasView = TreeCanvasView(self, self.canvas, self.mainArea, "CView")
         self.mainArea.layout().addWidget(self.canvasView)
@@ -155,7 +156,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.setMouseTracking(True)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info On")
-        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviance', 'Error', 'Number of instances']
+        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation', 'Error', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
@@ -166,7 +167,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviance', 'Error'], box='Node Color',
                                 callback=self.toggleNodeColor)
-
+        
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
@@ -213,6 +214,10 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.canvas.update()
         self.treeNav.leech()
 
+    def ctree(self, tree=None):
+        self.send("Examples", None)
+        OWTreeViewer2D.ctree(self, tree)
+
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
         node=RegressionNode(attrVal, tree, parent or self.canvas, self.canvas)
         if tree.branches:
@@ -237,7 +242,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
             text="THEN "+str(node.defVal)
         b.addTextLine(text)
         b.addTextLine()
-        text="Instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        text="#instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
         b.addTextLine(text)
         b.addTextLine()
         b.addTextLine((node.tree.branches and "Partition on %s" % node.name) or "(leaf)")

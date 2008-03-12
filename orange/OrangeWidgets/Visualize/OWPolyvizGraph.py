@@ -594,7 +594,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                         for attrOrder in attrReverse:
                             if self.kNNOptimization.isOptimizationCanceled():
                                 secs = time.time() - startTime
-                                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
                                 self.polyvizWidget.progressBarFinished()
                                 return
                             permutationIndex += 1
@@ -617,7 +617,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": order})
 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
         self.polyvizWidget.progressBarFinished()
 
 
@@ -694,7 +694,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                             for attrOrder in attrReverse:
                                 if self.kNNOptimization.isOptimizationCanceled():
                                     secs = time.time() - startTime
-                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
                                     return
                                 permutationIndex += 1
 
@@ -734,7 +734,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         # variables and domain for the table
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
-        classListFull = numpy.transpose(self.rawData.toNumarray("c")[0])[0]
+        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
         allAttrReverse = {}
 
         optimizedProjection = 1
@@ -811,8 +811,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                         listOfCanditates.append((acc, attrList, reverse))
                         if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
                     else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), orngVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
-                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
+                       self.kNNOptimization.setStatusBarText("Evaluated %(n)s projections (attribute %(attra)s/%(attrb)s). Last accuracy was: %2.2(acc)f%%" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "attra": orngVisFuncts.createStringFromNumber(attrIndex), "attrb": strTotalAtts, "acc": acc})
+                       if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 
 

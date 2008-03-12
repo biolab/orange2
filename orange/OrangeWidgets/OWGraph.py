@@ -245,37 +245,34 @@ class OWGraph(QwtPlot):
 
     def setShowMainTitle(self, b):
         self.showMainTitle = b
-        if (self.showMainTitle <> 0):
+        if self.showMainTitle:
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(None)
-        #self.updateLayout()
+            self.setTitle(QwtText())
         self.repaint()
 
     def setMainTitle(self, t):
         self.mainTitle = t
-        if (self.showMainTitle <> 0):
+        if self.showMainTitle:
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(None)
-        #self.updateLayout()
+            self.setTitle(QwtText())
         self.repaint()
 
     def setShowXaxisTitle(self, b = -1):
         if b == self.showXaxisTitle: return
         if b != -1:
             self.showXaxisTitle = b
-        if (self.showXaxisTitle <> 0):
+        if self.showXaxisTitle and self.XaxisTitle:
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.xBottom, QwtText())
-        #self.updateLayout()
         self.repaint()
 
     def setXaxisTitle(self, title):
         if title == self.XaxisTitle: return
         self.XaxisTitle = title
-        if (self.showXaxisTitle <> 0):
+        if self.showXaxisTitle and self.XaxisTitle:
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.xBottom, QwtText())
@@ -286,7 +283,7 @@ class OWGraph(QwtPlot):
         if b == self.showYLaxisTitle: return
         if b != -1:
             self.showYLaxisTitle = b
-        if (self.showYLaxisTitle <> 0):
+        if self.showYLaxisTitle and self.YLaxisTitle:
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yLeft, QwtText())
@@ -296,7 +293,7 @@ class OWGraph(QwtPlot):
     def setYLaxisTitle(self, title):
         if title == self.YLaxisTitle: return
         self.YLaxisTitle = title
-        if (self.showYLaxisTitle <> 0):
+        if self.showYLaxisTitle and self.YLaxisTitle:
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yLeft, QwtText())
@@ -307,7 +304,7 @@ class OWGraph(QwtPlot):
         if b == self.showYRaxisTitle: return
         if b != -1:
             self.showYRaxisTitle = b
-        if self.showYRaxisTitle != 0:
+        if self.showYRaxisTitle and self.YRaxisTitle:
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yRight, QwtText())
@@ -317,7 +314,7 @@ class OWGraph(QwtPlot):
     def setYRaxisTitle(self, title):
         if title == self.YRaxisTitle: return
         self.YRaxisTitle = title
-        if self.showYRaxisTitle != 0:
+        if self.showYRaxisTitle and self.YRaxisTitle:
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yRight, QwtText())
@@ -538,7 +535,6 @@ class OWGraph(QwtPlot):
 
         xs = self.axisScaleDiv(QwtPlot.xBottom)
         x = self.invTransform(QwtPlot.xBottom, e.x())
-        print "omp", xs.lBound(), xs.hBound(), x
 
         # ####
         # ZOOM

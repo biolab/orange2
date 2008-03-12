@@ -51,11 +51,11 @@ class OWNaiveBayes(OWWidget):
         OWGUI.separator(self.controlArea)
 
         glay = QGridLayout()
-        box = OWGUI.widgetBox(self.controlArea, 'Probability Estimation', orientation = glay)
+        box = OWGUI.widgetBox(self.controlArea, 'Probability estimation', orientation = glay)
 
         #glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
 
-        glay.addWidget(OWGUI.widgetLabel(box, "Unconditional"), 1, 0)
+        glay.addWidget(OWGUI.widgetLabel(box, "Prior"), 1, 0)
 
         glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
                         1, 2)
@@ -115,18 +115,18 @@ class OWNaiveBayes(OWWidget):
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
             self.warning(0, "Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
-
+    
         else:
             self.learner = orange.BayesLearner(name = self.name, adjustThreshold = self.adjustThreshold)
             self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
             if self.condProbEstimation:
                 self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
-            self.learner.conditionalEstimatorConstructorContinuous = orange.ConditionalProbabilityEstimatorConstructor_loess(
-               windowProportion = self.windowProportion, nPoints = self.loessPoints)
-
-        self.send("Learner", self.learner)
-        self.applyData()
-        self.changed = False
+                self.learner.conditionalEstimatorConstructorContinuous = orange.ConditionalProbabilityEstimatorConstructor_loess(
+                   windowProportion = self.windowProportion, nPoints = self.loessPoints)
+    
+            self.send("Learner", self.learner)
+            self.applyData()
+            self.changed = False
 
 
     def applyData(self):

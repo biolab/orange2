@@ -26,55 +26,56 @@ class ColumnCallback:
 def checkColumn(widget, master, text, value):
     wa = QCheckBox(text, widget)
     widget.layout().addWidget(wa)
-    wa.setChecked(getattr(master,value))
+    wa.setChecked(getattr(master, value))
     master.connect(wa, SIGNAL("toggled(bool)"), ColumnCallback(master, value))
     return wa
 
 class OWClassificationTreeViewer(OWWidget):
     settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "adist", "expslider", "sliderValue"]
+    contextHandlers = {"": DomainContextHandler("", ["targetClass"], matchValues=1)}
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.dataLabels = (('Majority class', 'Class'),
-                  ('Probability of majority class', 'P(Class)'),
-                  ('Probability of target class', 'P(Target)'),
-                  ('Number of instances', '#Inst'),
-                  ('Relative distribution', 'Rel. distr.'),
-                  ('Absolute distribution', 'Abs. distr.'))
+        self.dataLabels = (('Majority class', 'Class'), 
+                  ('Probability of majority class', 'P(Class)'), 
+                  ('Probability of target class', 'P(Target)'), 
+                  ('Number of instances', '# Inst'), 
+                  ('Relative distribution', 'Distribution (rel)'), 
+                  ('Absolute distribution', 'Distribution (abs)'))
 
         self.callbackDeposit = []
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.setClassificationTree), ("Target Class Value", int, self.setTarget)]
+        self.inputs = [("Classification Tree", orange.TreeClassifier, self.setClassificationTree)]
         self.outputs = [("Examples", ExampleTable)]
 
         # Settings
         for s in self.settingsList[:6]:
             setattr(self, s, 1)
         self.expslider = 5
+        self.targetClass = 0
         self.loadSettings()
 
-        self.tar = 0
         self.tree = None
         self.sliderValue = 5
-
-        self.precision = 0
-        self.precFrmt = "%%.%if" % self.precision
+        self.precision = 3
+        self.precFrmt = "%%2.%if" % self.precision
 
         # GUI
         # parameters
 
-        self.dBox = OWGUI.widgetBox(self.controlArea, 'Show Data')
+        self.dBox = OWGUI.widgetBox(self.controlArea, 'Displayed information')
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
 
         OWGUI.separator(self.controlArea)
-
-        self.slider = OWGUI.hSlider(self.controlArea, self, "sliderValue", box = 'Expand/Shrink to Level', minValue = 1, maxValue = 9, step = 1, callback = self.sliderChanged)
+                
+        self.slider = OWGUI.hSlider(self.controlArea, self, "sliderValue", box = 'Expand/shrink to level', minValue = 1, maxValue = 9, step = 1, callback = self.sliderChanged)
 
         OWGUI.separator(self.controlArea)
+        self.targetCombo=OWGUI.comboBox(self.controlArea, self, "targetClass", items=[], box="Target class", callback=self.setTarget)
 
-        self.infBox = OWGUI.widgetBox(self.controlArea, 'Tree Size Info')
+        self.infBox = OWGUI.widgetBox(self.controlArea, 'Tree size')
         self.infoa = OWGUI.widgetLabel(self.infBox, 'No tree.')
         self.infob = OWGUI.widgetLabel(self.infBox, ' ')
 
@@ -99,7 +100,7 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.resize(800,400)
 
-        self.connect(self.v, SIGNAL("itemSelectionChanged()"), self.viewSelectionChanged)
+        self.resize(830, 400)
 
     def getTreeItemSibling(self, item):
             parent = item.parent()
@@ -118,15 +119,27 @@ class OWClassificationTreeViewer(OWWidget):
 
         def walkupdate(listviewitem):
             node = self.nodeClassDict[listviewitem]
+            if not node: return
             ncl = node.nodeClassifier
             dist = node.distribution
-            a = dist.abs/100
-            colf = (str(ncl.defaultValue),
-                    f % (dist[int(ncl.defaultVal)]/a),
-                    f % (dist[self.tar]/a),
-                    f % dist.cases,
-                    reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist]),
-                    reduce(lambda x,y: x+':'+y, [self.precFrmt % x for x in dist])
+            a = dist.abs
+            if a < 1e-20:
+                a = 1
+            try:
+                p_majclass = f % float(dist[int(ncl.defaultVal)]/a)
+            except:
+                p_majclass = "NA"
+            try:
+                p_tarclass = f % float(dist[self.targetClass]/a)
+            except:
+                p_tarclass = "NA"
+            
+            colf = (str(ncl.defaultValue), 
+                    p_majclass, 
+                    p_tarclass, 
+                    "%d" % dist.cases, 
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA", 
+                    len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "NA"
                    )
 
             col = 1
@@ -139,6 +152,7 @@ class OWClassificationTreeViewer(OWWidget):
                 walkupdate(listviewitem.child(i))
 
         def walkcreate(node, parent):
+            if not node: return
             if node.branchSelector:
                 for i in range(len(node.branches)):
                     if node.branches[i]:
@@ -179,6 +193,7 @@ class OWClassificationTreeViewer(OWWidget):
     # slots: handle input signals
 
     def setClassificationTree(self, tree):
+        self.closeContext()
         if tree and (not tree.classVar or tree.classVar.varType != orange.VarTypes.Discrete):
             self.error("This viewer only shows trees with discrete classes.\nThere is another viewer for regression trees")
             self.tree = None
@@ -189,26 +204,30 @@ class OWClassificationTreeViewer(OWWidget):
         self.setTreeView()
         self.sliderChanged()
 
+        self.targetCombo.clear()
         if tree:
-            self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
-            self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
+            self.infoa.setText('Number of nodes: %i' % orngTree.countNodes(tree))
+            self.infob.setText('Number of leaves: %i' % orngTree.countLeaves(tree))
+            for name in tree.tree.examples.domain.classVar.values:
+                self.targetCombo.insertItem(name)
+            self.targetClass = 0
+            self.openContext("", tree.domain)
         else:
             self.infoa.setText('No tree.')
             self.infob.setText('')
+            self.openContext("", None)
 
-    def setTarget(self, target):
+    def setTarget(self):
         def updatetarget(listviewitem):
             dist = self.nodeClassDict[listviewitem].distribution
-            listviewitem.setText(targetindex, f % (dist[self.tar]/dist.abs*100))
+            listviewitem.setText(targetindex, f % (dist[self.targetClass]/dist.abs))
 
             child = listviewitem.firstChild()
             while child:
                 updatetarget(child)
                 child = self.getTreeItemSibling(child)
 
-        if self.ptarget and (self.tar <> target):
-            self.tar = target
-
+        if self.ptarget:
             targetindex = 1
             for st in range(5):
                 if self.settingsList[st] == "ptarget":
@@ -221,7 +240,8 @@ class OWClassificationTreeViewer(OWWidget):
 
     def expandTree(self, lev):
         def expandTree0(listviewitem, lev):
-            if not listviewitem: return
+            if not listviewitem:
+                return
             if not lev:
                 listviewitem.setExpanded(0)
             else:
@@ -233,11 +253,10 @@ class OWClassificationTreeViewer(OWWidget):
         expandTree0(self.v.invisibleRootItem().child(0), lev)
 
     # signal processing
-    def viewSelectionChanged(self):
-        items = self.v.selectedItems()
-        if len(items) == 0: return
-        item = items[0]
-
+    
+    def viewSelectionChanged(self, item):
+        """handles click on the tree"""
+        self.handleSelectionChanged(item)
         if self.tree:
             data = self.nodeClassDict[item].examples
             self.send("Examples", data)
@@ -257,12 +276,15 @@ class OWClassificationTreeViewer(OWWidget):
             classLabel = str(nodeclsfr.defaultValue)
             className = str(nodeclsfr.classVar.name)
             if tx:
-                self.rule.setText("IF %s\nTHEN %s = %s" % (tx, className, classLabel))
+                self.rule.setText("IF %(tx)s\nTHEN %(className)s = %(classLabel)s" % vars())
             else:
-                self.rule.setText("%s = %s" % (className, classLabel))
+                self.rule.setText("%(className)s = %(classLabel)s" % vars())
         else:
             self.send("Examples", None)
             self.rule.setText("")
+
+    def handleSelectionChanged(self, item):
+        pass
 
     def sliderChanged(self):
         self.expandTree(self.sliderValue)
@@ -275,9 +297,10 @@ class OWClassificationTreeViewer(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWClassificationTreeViewer()
-    ow.show()
-    #data = orange.ExampleTable(r'../adult_sample')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\adult_sample.tab")
+    a.setMainWidget(ow)
+
+    data = orange.ExampleTable(r'../../doc/datasets/adult_sample')
+
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.setClassificationTree(tree)
     a.exec_()

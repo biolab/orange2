@@ -654,23 +654,24 @@ class OWROC(OWWidget):
         self.generalTab = OWGUI.createTabPage(self.tabs, "General")
 
         ## target class
-        self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target Class', items=[], callback=self.target)
+        self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target class', items=[], callback=self.target)
         #self.classCombo.setMaximumSize(150, 20)
 
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
         self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
-        self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select all", callback = self.SUAclassifiersQLB)
+        self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select All", callback = self.SUAclassifiersQLB)
 
         # show convex ROC curves and show ROC convex hull
-        self.convexCurvesQCB = OWGUI.checkBox(self.generalTab, self, 'ShowConvexCurves', 'Show Convex ROC Curves', tooltip='', callback=self.setShowConvexCurves)
-        OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show ROC Convex Hull', tooltip='', callback=self.setShowConvexHull)
+        self.convexCurvesQCB = OWGUI.checkBox(self.generalTab, self, 'ShowConvexCurves', 'Show convex ROC curves', tooltip='', callback=self.setShowConvexCurves)
+        OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show ROC convex hull', tooltip='', callback=self.setShowConvexHull)
+        
 
         # performance analysis
         self.performanceTab = OWGUI.createTabPage(self.tabs, "Analysis")
         self.performanceTabCosts = OWGUI.widgetBox(self.performanceTab, box = 1)
-        OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show Performance Line', tooltip='', callback=self.setShowPerformanceAnalysis)
-        OWGUI.checkBox(self.performanceTabCosts, self, 'DefaultThresholdPoint', 'Default Threshold (0.5) Point', tooltip='', callback=self.setShowDefaultThresholdPoint)
+        OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show performance line', tooltip='', callback=self.setShowPerformanceAnalysis)
+        OWGUI.checkBox(self.performanceTabCosts, self, 'DefaultThresholdPoint', 'Default threshold (0.5) point', tooltip='', callback=self.setShowDefaultThresholdPoint)
 
         ## FP and FN cost ranges
         mincost = 1; maxcost = 1000; stepcost = 5;
@@ -687,18 +688,18 @@ class OWROC(OWWidget):
         ## test set selection (testSetsQLB)
         self.testSetsQVGB = OWGUI.widgetBox(self.performanceTab, "Test sets")
         self.testSetsQLB = OWGUI.listBox(self.testSetsQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.testSetsSelectionChange)
-        self.unselectAllTestSetsQLB = OWGUI.button(self.testSetsQVGB, self, "(Un)select all", callback = self.SUAtestSetsQLB)
+        self.unselectAllTestSetsQLB = OWGUI.button(self.testSetsQVGB, self, "(Un)select All", callback = self.SUAtestSetsQLB)
 
         # settings tab
         self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
         OWGUI.radioButtonsInBox(self.settingsTab, self, 'AveragingMethodIndex', ['Merge (expected ROC perf.)', 'Vertical', 'Threshold', 'None'], box='Averaging ROC curves', callback=self.selectAveragingMethod)
-        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point Width', minValue=3, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
-        OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='ROC Curve Width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
-        OWGUI.hSlider(self.settingsTab, self, 'ConvexCurveWidth', box='ROC Convex Curve Width', minValue=1, maxValue=5, step=1, callback=self.setConvexCurveWidth, ticks=1)
-        OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='ROC Convex Hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
-        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show Diagonal ROC Line', tooltip='', callback=self.setShowDiagonal)
+        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=3, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='ROC curve width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'ConvexCurveWidth', box='ROC convex curve width', minValue=1, maxValue=5, step=1, callback=self.setConvexCurveWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='ROC convex hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal ROC line', tooltip='', callback=self.setShowDiagonal)
         self.settingsTab.layout().addStretch(100)
-
+      
         self.resize(800, 600)
 
     def saveToFile(self):
@@ -895,7 +896,7 @@ class OWROC(OWWidget):
             graph.pChanged(float(self.pvalueList[index]) / float(self.maxp))
 
     def setDefaultPValues(self):
-        if self.defaultPerfLinePValues:
+        if self.defaultPerfLinePValues and self.targetClass != None:
             self.pvaluesList = [v for v in self.defaultPerfLinePValues]
             self.pvalue = self.pvaluesList[self.targetClass]
             self.pvaluesUpdated()
@@ -929,7 +930,7 @@ class OWROC(OWWidget):
             for i in range(self.numberOfClasses):
                 self.FPcostList.append( 500)
                 self.FNcostList.append( 500)
-                graph = singleClassROCgraph(self.mainArea, "", "Predicted Class: " + self.dres.classValues[i])
+                graph = singleClassROCgraph(self.mainArea, "", "Predicted class: " + self.dres.classValues[i])
                 self.graphs.append( graph )
                 self.classCombo.addItem(self.dres.classValues[i])
 

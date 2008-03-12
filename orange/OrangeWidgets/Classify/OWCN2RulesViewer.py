@@ -131,6 +131,7 @@ class OWCN2RulesViewer(OWWidget):
         OWGUI.button(self.controlArea,self,"&Save rules to file",callback=self.saveRules, debuggingEnabled = 0)
 
         self.examples=None
+        self.text = []
         self.obj=[]
         self.selRect=[]
         self.rectObj=[]

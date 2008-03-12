@@ -75,7 +75,7 @@ class OWCN2(OWWidget):
         b1 = QRadioButton("Laplace", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b1)
         g = OWGUI.widgetBox(self.ruleQualityBG, orientation = "horizontal");
         b2 = QRadioButton("m-estimate", g); g.layout().addWidget(b2)
-        self.mSpin = OWGUI.doubleSpin(g, self, "m", 0, 100)
+        self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
 
         b3 = QRadioButton("WRACC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b3)
         self.ruleQualityBG.buttons = [b1, b2, b3]
@@ -88,7 +88,7 @@ class OWCN2(OWWidget):
                 tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="How different (significance) is class distribution from examples\ncovered by a rule and covered by a parent rule")
+                tooltip="Required significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
@@ -116,7 +116,7 @@ class OWCN2(OWWidget):
             self.connect(button, SIGNAL("clicked()"), lambda v=i: self.coveringAlgButtonPressed(v))
 
         OWGUI.separator(self.controlArea)
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applySettings)
 
         self.Alpha=float(self.Alpha)
         self.stepAlpha=float(self.stepAlpha)
@@ -192,7 +192,8 @@ class OWCN2(OWWidget):
         self.progressBarFinished()
 
     def dataset(self, data):
-        self.data=data
+        #self.data=data
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.setLearner()
 
     def qualityButtonPressed(self, id=0):

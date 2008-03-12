@@ -23,7 +23,10 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         self.parentWidget = parentWidget
         self.parentName = parentName
-        self.setCaption("Qt FreeViz Optimization Dialog")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("FreeViz Optimization Dialog")
+        else:
+            self.setCaption("Qt FreeViz Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
         self.cancelOptimization = 0
         self.forceRelation = 5
@@ -51,12 +54,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         # ###########################
         # MAIN TAB
-        OWGUI.comboBox(self.MainTab, self, "implementation", box = "FreeViz Implementation", items = ["Fast (C) implementation", "Slow (Python) implementation", "LDA"])
+        OWGUI.comboBox(self.MainTab, self, "implementation", box = "FreeViz implementation", items = ["Fast (C) implementation", "Slow (Python) implementation", "LDA"])
 
-        box = OWGUI.widgetBox(self.MainTab, "Gradient Optimization")
+        box = OWGUI.widgetBox(self.MainTab, "Optimization")
 
         self.optimizeButton = OWGUI.button(box, self, "Optimize Separation", callback = self.optimizeSeparation)
-        self.stopButton = OWGUI.button(box, self, "Stop optimization", callback = self.stopOptimization)
+        self.stopButton = OWGUI.button(box, self, "Stop Optimization", callback = self.stopOptimization)
         self.singleStepButton = OWGUI.button(box, self, "Single Step", callback = self.singleStepOptimization)
         f = self.optimizeButton.font(); f.setBold(1)
         self.optimizeButton.setFont(f)
@@ -64,13 +67,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(box, self, "stepsBeforeUpdate", "Number of steps before updating graph: ", tooltip = "Set the number of optimization steps that will be executed before the updated anchor positions will be visualized", items = [1, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300], sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, "mirrorSymmetry", "Keep mirror symmetry", tooltip = "'Rotational' keeps the second anchor upside")
 
-        vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
+        vbox = OWGUI.widgetBox(self.MainTab, "Set anchor positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        OWGUI.button(hbox1, self, "Normal", callback = self.radialAnchors)
+        OWGUI.button(hbox1, self, "Circle", callback = self.radialAnchors)
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setCheckable(1)
-        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors:", orientation = "horizontal", items = ["Unrestrained", "Fixed length", "Fixed angle"], callback = self.setRestraints)
+        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors:", orientation = "horizontal", items = ["Unrestrained", "Fixed Length", "Fixed Angle"], callback = self.setRestraints)
 
         box2 = OWGUI.widgetBox(self.MainTab, "Forces", orientation = "vertical")
 
@@ -87,14 +90,14 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         box2.layout().addSpacing(20)
 
         self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive  ",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
-        self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing", tooltip="If set, the forces are normalized so that the total sums of the\nrepulsive and attractive are in the above proportion.")
+        self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing", tooltip="Normalize the forces so that the total sums of the\nrepulsive and attractive are in the above proportion.")
 
         box2.layout().addSpacing(20)
 
         self.cbDisableAttractive = OWGUI.checkBox(box2, self, "disableAttractive", "Disable attractive forces", callback = self.setDisableAttractive)
         self.cbDisableRepulsive = OWGUI.checkBox(box2, self, "disableRepulsive", "Disable repulsive forces", callback = self.setDisableRepulsive)
 
-        box = OWGUI.widgetBox(self.MainTab, "Show Anchors")
+        box = OWGUI.widgetBox(self.MainTab, "Show anchors")
         OWGUI.checkBox(box, self, 'graph.showAnchors', 'Show attribute anchors', callback = self.parentWidget.updateGraph)
         OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.parentWidget.updateGraph)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
@@ -123,11 +126,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
             pcaBox = OWGUI.widgetBox(self.LinearTransformationTab, "Principal Component Analysis")
-            OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
+            #OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
             OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
             OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
             plsBox = OWGUI.widgetBox(self.LinearTransformationTab, "Partial Least Squares")
             OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
+
 
         # ###########################
         self.statusBar = QStatusBar(self)

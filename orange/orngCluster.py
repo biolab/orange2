@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Oct 04, 2007 by 
+
 # ORANGE CLUSTERING
 #    by Alex Jakulin (jakulin@acm.org)
 #
@@ -18,7 +20,7 @@
 #       - added conversion functions: diss ragged list <-> Numeric.array
 #       - fixed bug: DMClustering for k = len(diss) + 1
 
-import math, Numeric, MA, statc
+import math, numpy.oldnumeric as Numeric, MA, statc
 import orngCRS
 
 class HClustering:
@@ -364,7 +366,7 @@ def _bicMA(ma2d, mapping, medoids, K):
                 return -1e20
         numFreePar = (M+1) * K * math.log(R, 2) / 2
         Ri = [0] * K
-        sumdiffsq = MA.zeros(len(mapping0), MA.Float)
+        sumdiffsq = MA.zeros(len(mapping0), Numeric.Float)
         for i,c in enumerate(mapping0):
             Ri[c] += 1
             sumdiffsq[i] = MA.add.reduce((ma2d[i] - ma2d[medoids0[c]])**2)
@@ -372,7 +374,7 @@ def _bicMA(ma2d, mapping, medoids, K):
         s2 = MA.add.reduce(sumdiffsq) / float(R-K)
         # log-likelihood of the vectors = ld + logf
         logf = R * (-0.5*math.log(2.*math.pi,2) + M/-2.*math.log(s2,2))         # sigma**(-M) == sigma**2**(-M/2)
-        ld = MA.zeros(len(mapping0), MA.Float)
+        ld = MA.zeros(len(mapping0), Numeric.Float)
         for i,c in enumerate(mapping0):
             ld[i] = math.log(float(Ri[c]) / R, 2) - sumdiffsq[i] / (2 * s2)
         return MA.add.reduce(ld) + logf - numFreePar
@@ -420,7 +422,7 @@ def raggedList2mtrx(raggedList):
 
 
 if __name__ == "__main__":
-        import RandomArray
+        import numpy.oldnumeric.random_array as RandomArray
         vecta1 = RandomArray.random((10,2))
         vect1 = vecta1.tolist()
         K = 8

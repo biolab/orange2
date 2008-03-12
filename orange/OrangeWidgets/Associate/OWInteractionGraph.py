@@ -16,12 +16,16 @@ import os
 from re import *
 from math import floor, ceil
 from orngCI import FeatureByCartesianProduct
+import OWGUI
 
 class IntGraphView(QGraphicsView):
     def __init__(self, parent, name, *args):
         apply(QGraphicsView.__init__,(self,) + args)
         self.parent = parent
         self.name = name
+
+    def sizeHint(self):
+        return QSize(200,200)
 
     # mouse button was pressed
     def mousePressEvent(self, ev):

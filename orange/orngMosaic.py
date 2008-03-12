@@ -95,9 +95,12 @@ class orngMosaic:
         self.clsTopProjCount = 10       # number of top projections considered in classification
         self.classConfidence = 90       # parameter in the combining way of classification
 
-        self.timeLimit = 10
+        self.timeLimit = 0              # if greater than 0 then this is the number of minutes that VizRank will use to evaluate projections
+        self.projectionLimit = 0        # if greater than 0 then this is the number of projections that will be evaluated with VizRank
+        self.evaluatedProjectionsCount = 0
+
         self.evaluatedAttributes = None   # save last evaluated attributes
-        self.stopOptimization = 0           # used to stop attribute and value order
+        self.cancelOptimization = 0           # used to stop attribute and value order
         self.cancelEvaluation = 0
         self.cancelTreeBuilding = 0        # used in mosaic tree building
 
@@ -206,16 +209,27 @@ class orngMosaic:
 
     def isEvaluationCanceled(self):
         if self.cancelEvaluation:  return 1
-        if self.timeLimit > 0:
-            return (time.time() - self.startTime) / 60 >= self.timeLimit
-        else:
-            return 1
+
+        stop = 0
+        if self.timeLimit > 0: stop = (time.time() - self.startTime) / 60 >= self.timeLimit
+        if self.projectionLimit > 0: stop = stop or self.evaluatedProjectionsCount >= self.projectionLimit
+        return stop
+
+    def isOptimizationCanceled(self):
+        if self.cancelOptimization:  return 1
+
+        stop = 0
+        if self.timeLimit > 0: stop = (time.time() - self.startTime) / 60 >= self.timeLimit
+        if self.projectionLimit > 0: stop = stop or self.evaluatedProjectionsCount >= self.projectionLimit
+        return stop
+
 
     #
     # PROJECTIONS EVALUATION
     #
     def evaluateProjections(self):
         self.cancelEvaluation = 0
+        self.evaluatedProjectionsCount = 0
         if not self.data or not self.classVals: return
         fullData = self.data
 
@@ -298,11 +312,6 @@ class orngMosaic:
                             if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
 
                             val = self._Evaluate(attrs)
-
-                            if self.isEvaluationCanceled():
-                                self.data = fullData
-                                self.finishEvaluation(triedPossibilities)
-                                return
                             ind = self.findTargetIndex(val, max)
                             start = ind
                             if ind > 0 and self.results[ind-1][0] == val:
@@ -313,12 +322,18 @@ class orngMosaic:
                                 ind += 1
 
                             self.insertItem(val, attrs, ind, triedPossibilities)
+                            self.evaluatedProjectionsCount += 1
 
                             if self.__class__.__name__ == "OWMosaicOptimization":
                                 self.mosaicWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
                                 self.setStatusBarText("Evaluated %s/%s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities), totalStr))
                             if hasattr(self, "qApp"):
                                 self.qApp.processEvents()        # allow processing of other events
+
+                            if self.isEvaluationCanceled():
+                                self.data = fullData
+                                self.finishEvaluation(triedPossibilities)
+                                return
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
@@ -797,29 +812,29 @@ class orngMosaic:
             valueOrder = [valuePerms[attrs[i]][triedIndices[i]] for i in range(len(attrs))]
             possibleOrders.append(valueOrder)           # list of orders that we will evaluate
             triedIndices[0] += 1
-            if self.stopOptimization: break
+            if self.cancelOptimization: break
             for i in range(len(attrs)-1):
                 if triedIndices[i] >= maxVals[i]:
                     triedIndices[i+1] += 1
                     triedIndices[i] = 0
 
         bestPlacements = []
-        current = 0
         total = len(attrPerms) * len(possibleOrders)
         strCount = orngVisFuncts.createStringFromNumber(total)
+        self.evaluatedProjectionsCount = 0
         for attrPerm in attrPerms:                      # for all attribute permutations
             currAttrs = [attrs[i] for i in attrPerm]
-            if self.stopOptimization: break
+            if self.cancelOptimization: break
             tempPerms = []
             for order in possibleOrders:                # for all permutations of attribute values
                 currValueOrder = [order[i] for i in attrPerm]
                 val = self.evaluateAttributeOrder(currAttrs, currValueOrder, conditions, map(attrPerm.index, range(len(attrPerm))), domain)
                 tempPerms.append((val*100, currAttrs, currValueOrder))
-                current += 1
-                if current % 10 == 0 and self.__class__.__name__ == "OWMosaicOptimization":
-                    self.setStatusBarText("Evaluated %s/%s attribute orders..." % (orngVisFuncts.createStringFromNumber(current), strCount))
-                    self.mosaicWidget.progressBarSet(100*current/float(total))
-                    if self.stopOptimization: break
+                self.evaluatedProjectionsCount += 1
+                if self.evaluatedProjectionsCount % 10 == 0 and self.__class__.__name__ == "OWMosaicOptimization":
+                    self.setStatusBarText("Evaluated %s/%s attribute orders..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
+                    self.mosaicWidget.progressBarSet(100*self.evaluatedProjectionsCount/float(total))
+                    if self.isOptimizationCanceled(): break
             bestPlacements.append(max(tempPerms))
 
         if self.__class__.__name__ == "OWMosaicOptimization":

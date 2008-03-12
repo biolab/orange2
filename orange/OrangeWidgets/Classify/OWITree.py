@@ -7,7 +7,6 @@
 """
 import orngOrangeFoldersQt4
 from OWWidget import *
-from OWFile import *
 from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree
 
@@ -21,6 +20,7 @@ class FixedTreeLearner(orange.Learner):
 
 class OWITree(OWClassificationTreeViewer):
     settingsList = OWClassificationTreeViewer.settingsList
+    contextHandlers = OWClassificationTreeViewer.contextHandlers
 
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
@@ -29,11 +29,13 @@ class OWITree(OWClassificationTreeViewer):
 
         self.attridx = 0
         self.cutoffPoint = 0.0
+        self.targetClass = 0
         self.loadSettings()
 
         self.data = None
         self.treeLearner = None
         self.tree = None
+        self.learner = None
 
         OWGUI.separator(self.controlArea, height=40)
         box = OWGUI.widgetBox(self.controlArea, "Split selection")
@@ -43,8 +45,8 @@ class OWITree(OWClassificationTreeViewer):
         OWGUI.button(box, self, "Split", callback=self.btnSplitClicked)
 
         OWGUI.separator(self.controlArea)
-        box = OWGUI.widgetBox(self.controlArea, "Modify Tree")
-        self.btnPrune = OWGUI.button(box, self, "Cut", callback = self.btnPruneClicked)
+        box = OWGUI.widgetBox(self.controlArea, "Prune or grow tree")
+        self.btnPrune = OWGUI.button(box, self, "Cut", callback = self.btnPruneClicked, disabled = 1)
         self.btnBuild = OWGUI.button(box, self, "Build", callback = self.btnBuildClicked)
 
         OWGUI.rubber(self.controlArea)
@@ -90,9 +92,9 @@ class OWITree(OWClassificationTreeViewer):
         sitem = sitems != [] and sitems[0] or None
         if not sitem and (1 or exhaustively):
             sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.invisibleRootItem().child(0))
-            if sitem.childCount():
+            if not sitem or sitem.childCount():
                 return
-        return sitem and self.nodeClassDict[sitem]
+        return sitem and self.nodeClassDict.get(sitem, None)
 
     def btnSplitClicked(self):
         node = self.findCurrentNode(1)
@@ -125,15 +127,22 @@ class OWITree(OWClassificationTreeViewer):
         self.updateTree()
 
     def btnPruneClicked(self):
-        self.cutNode(node = self.findCurrentNode())
-        self.updateTree()
+        node = self.findCurrentNode()
+        if node:
+            self.cutNode(node)
+            self.updateTree()
 
     def btnBuildClicked(self):
         node = self.findCurrentNode()
-        if not node:
+        if not node or not len(node.examples):
             return
 
-        newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
+        try:
+            newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
+
+        except:
+            return
+        
         if not hasattr(newtree, "tree"):
             QMessageBox.critical( None, "Invalid Learner", "The learner on the input built a classifier which is not a tree.", QMessageBox.Ok)
 
@@ -142,13 +151,14 @@ class OWITree(OWClassificationTreeViewer):
         self.updateTree()
 
     def setData(self, data):
+        self.closeContext()
         if self.data and data and data.domain.checksum() == self.data.domain.checksum():
             return
 
         self.attrsCombo.clear()
-
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
-
+        
+        self.targetCombo.clear()
         if self.data:
             self.attrsCombo.addItems([str(a) for a in data.domain.attributes])
             self.basstat = orange.DomainBasicAttrStat(data)
@@ -158,10 +168,16 @@ class OWITree(OWClassificationTreeViewer):
             self.tree = orange.TreeClassifier(domain = data.domain)
             self.tree.descender = orange.TreeDescender_UnknownMergeAsBranchSizes()
             self.tree.tree = self.newTreeNode(self.data)
+            # set target class combo
+            for name in self.tree.tree.examples.domain.classVar.values:
+                self.targetCombo.insertItem(name)
+            self.targetClass = 0
+            self.openContext("", self.tree.domain)
         else:
             self.tree = None
             self.send("Classifier", self.tree)
             self.send("Tree Learner", self.learner)
+            self.openContext("", None)
 
         self.send("Examples", None)
         self.updateTree()
@@ -170,14 +186,18 @@ class OWITree(OWClassificationTreeViewer):
     def setLearner(self, learner):
         self.treeLearner = learner
 
+    def handleSelectionChanged(self, item):
+        """called when new node in the tree is selected"""
+        if self.nodeClassDict.has_key(item):
+            Prune.setEnabled(self.nodeClassDict[item].branchSelector <> None)
+        
+
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owi=OWITree()
-
-#    d = orange.ExampleTable('d:\\ai\\orange\\test\\iris')
-    #d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
-    d = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    a.setMainWidget(owi)
+    d = orange.ExampleTable(r'../../doc/datasets/iris')
     owi.setData(d)
     owi.show()
     a.exec_()

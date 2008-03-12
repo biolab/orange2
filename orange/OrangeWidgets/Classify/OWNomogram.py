@@ -25,13 +25,13 @@ aproxZero = 0.0001
 
 def getStartingPoint(d, min):
     if min<0:
-        curr_num = Numeric.arange(-min+d, step=d)
+        curr_num = numpy.arange(-min+d, step=d)
         curr_num = curr_num[len(curr_num)-1]
         curr_num = -curr_num
     elif min - d <= 0:
         curr_num = 0
     else:
-        curr_num = Numeric.arange(min-d, step=d)
+        curr_num = numpy.arange(min-d, step=d)
         curr_num = curr_num[len(curr_num)-1]
     return curr_num
 
@@ -54,9 +54,9 @@ class OWNomogram(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Nomogram", 1)
 
-        #self.setWindowFlags(Qt.WResizeNoErase | Qt.WRepaintNoErase) #this works like magic.. no flicker during repaint!
+        #self.setWFlags(Qt.WResizeNoErase | Qt.WRepaintNoErase) #this works like magic.. no flicker during repaint!
         self.parent = parent
-#        self.setWindowFlags(self.getWFlags()+Qt.WStyle_Maximize)
+#        self.setWFlags(self.getWFlags()+Qt.WStyle_Maximize)
 
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.alignType = 0
@@ -312,67 +312,68 @@ class OWNomogram(OWWidget):
         except:
             aprox_prior_error = 0
 
-        for at in cl.continuizedDomain.attributes:
-            at.setattr("visited",0)
+        if cl.continuizedDomain:
+            for at in cl.continuizedDomain.attributes:
+                at.setattr("visited",0)
 
-        for at in cl.continuizedDomain.attributes:
-            if at.getValueFrom and at.visited==0:
-                name = at.getValueFrom.variable.name
-                var = at.getValueFrom.variable
-                if var.ordered:
-                    a = AttrLineOrdered(name, self.bnomogram)
-                else:
-                    a = AttrLine(name, self.bnomogram)
-                listOfExcludedValues = []
-                for val in var.values:
-                    foundValue = False
-                    for same in cl.continuizedDomain.attributes:
-                        if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
-                            same.setattr("visited",1)
-                            a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
-                            foundValue = True
-                    if not foundValue:
-                        listOfExcludedValues.append(val)
-                if len(listOfExcludedValues) == 1:
-                    a.addAttValue(AttValue(listOfExcludedValues[0], 0, error = aprox_prior_error))
-                elif len(listOfExcludedValues) == 2:
-                    a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
-                elif len(listOfExcludedValues) > 2:
-                    a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
-                # if there are more than 1 value in the attribute, add it to the nomogram
-                if len(a.attValues)>1:
-                    self.bnomogram.addAttribute(a)
-
-
-            elif at.visited==0:
-                name = at.name
-                var = at
-                a = AttrLineCont(name, self.bnomogram)
-                if self.data:
-                    bas = orange.DomainBasicAttrStat(self.data)
-                    maxAtValue = bas[var].max
-                    minAtValue = bas[var].min
-                else:
-                    maxAtValue = 1.
-                    minAtValue = -1.
-                numOfPartitions = 50.
-                d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-
-                # get curr_num = starting point for continuous att. sampling
-                curr_num = getStartingPoint(d, minAtValue)
-                rndFac = getRounding(d)
-
-                while curr_num<maxAtValue+d:
-                    if abs(mult*curr_num*cl.beta[at])<aproxZero:
-                        a.addAttValue(AttValue("0.0", 0))
+            for at in cl.continuizedDomain.attributes:
+                if at.getValueFrom and at.visited==0:
+                    name = at.getValueFrom.variable.name
+                    var = at.getValueFrom.variable
+                    if var.ordered:
+                        a = AttrLineOrdered(name, self.bnomogram)
                     else:
-                        a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
-                    curr_num += d
-                a.continuous = True
-                at.setattr("visited", 1)
-                # if there are more than 1 value in the attribute, add it to the nomogram
-                if len(a.attValues)>1:
-                    self.bnomogram.addAttribute(a)
+                        a = AttrLine(name, self.bnomogram)
+                    listOfExcludedValues = []
+                    for val in var.values:
+                        foundValue = False
+                        for same in cl.continuizedDomain.attributes:
+                            if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
+                                same.setattr("visited",1)
+                                a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
+                                foundValue = True
+                        if not foundValue:
+                            listOfExcludedValues.append(val)
+                    if len(listOfExcludedValues) == 1:
+                        a.addAttValue(AttValue(listOfExcludedValues[0], 0, error = aprox_prior_error))
+                    elif len(listOfExcludedValues) == 2:
+                        a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
+                    elif len(listOfExcludedValues) > 2:
+                        a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
+                    # if there are more than 1 value in the attribute, add it to the nomogram
+                    if len(a.attValues)>1:
+                        self.bnomogram.addAttribute(a)
+
+
+                elif at.visited==0:
+                    name = at.name
+                    var = at
+                    a = AttrLineCont(name, self.bnomogram)
+                    if self.data:
+                        bas = orange.DomainBasicAttrStat(self.data)
+                        maxAtValue = bas[var].max
+                        minAtValue = bas[var].min
+                    else:
+                        maxAtValue = 1.
+                        minAtValue = -1.
+                    numOfPartitions = 50.
+                    d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
+    
+                    # get curr_num = starting point for continuous att. sampling
+                    curr_num = getStartingPoint(d, minAtValue)
+                    rndFac = getRounding(d)
+    
+                    while curr_num<maxAtValue+d:
+                        if abs(mult*curr_num*cl.beta[at])<aproxZero:
+                            a.addAttValue(AttValue("0.0", 0))
+                        else:
+                            a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
+                        curr_num += d
+                    a.continuous = True
+                    at.setattr("visited", 1)
+                    # if there are more than 1 value in the attribute, add it to the nomogram
+                    if len(a.attValues)>1:
+                        self.bnomogram.addAttribute(a)
 
         self.alignRadio.setDisabled(True)
         self.alignType = 0
@@ -382,7 +383,6 @@ class OWNomogram(OWWidget):
     def svmClassifier(self, cl):
         import orngLR_Jakulin
 
-        import Numeric
         import orngLinVis
 
         self.error(0)
@@ -407,8 +407,8 @@ class OWNomogram(OWWidget):
             self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
 
         # get maximum and minimum values in visualizer.m
-        maxMap = reduce(Numeric.maximum, visualizer.m)
-        minMap = reduce(Numeric.minimum, visualizer.m)
+        maxMap = reduce(numpy.maximum, visualizer.m)
+        minMap = reduce(numpy.minimum, visualizer.m)
 
         coeff = 0 #
         at_num = 1
@@ -497,7 +497,7 @@ class OWNomogram(OWWidget):
 
         self.error(1)
         if not len(self.data.domain.classVar.values) == 2:
-            self.error(1, "Only two class domains can be used for rules!")
+            self.error(1, "Rules require binary classes")
         classVal = cl.domain.classVar
         att = cl.domain.attributes
 
@@ -544,7 +544,7 @@ class OWNomogram(OWWidget):
 
         self.error(2)
         if self.data and self.data.domain and not self.data.domain.classVar:
-            self.error(2, "This domain has no class attribute!")
+            self.error(2, "Classless domain")
             return
 
         self.openContext("", self.data)
@@ -571,8 +571,9 @@ class OWNomogram(OWWidget):
         def setNone():
             for view in [self.footer, self.header, self.graph]:
                 scene = view.scene()
-                for item in scene.items():
-                    scene.removeItem(item)
+                if scene:
+                    for item in scene.items():
+                        scene.removeItem(item)
 
         if self.data and self.cl: # and not type(self.cl) == orngLR_Jakulin.MarginMetaClassifier:
             #check domains
@@ -596,15 +597,14 @@ class OWNomogram(OWWidget):
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
-            for at in self.cl.continuizedDomain.attributes:
-                if not at.getValueFrom:
-                    cont = True
+            if self.cl.continuizedDomain:
+                for at in self.cl.continuizedDomain.attributes:
+                    if not at.getValueFrom:
+                        cont = True
             if self.data or not cont:
                 self.lrClassifier(self.cl)
             else:
                 setNone()
-        elif type(self.cl) == orange.RuleClassifier_logit or type(self.cl) == orange.RuleClassifier_logit_bestRule:
-            self.ruleClassifier(self.cl)
         else:
             setNone()
         if self.sort_type>0:
@@ -634,7 +634,7 @@ class OWNomogram(OWWidget):
             self.bnomogram.attributes.sort(compare_to_ordering_in_rules)
         elif self.sort_type == 0 and self.data:
             self.bnomogram.attributes.sort(compare_to_ordering_in_data)
-        elif self.sort_type == 0 and self.cl.domain:
+        elif self.sort_type == 0 and self.cl and self.cl.domain:
             self.bnomogram.attributes.sort(compare_to_ordering_in_domain)
         if self.sort_type == 1:
             self.bnomogram.attributes.sort(compate_beta_difference)
@@ -810,10 +810,8 @@ if __name__=="__main__":
 
     a=QApplication(sys.argv)
     ow=OWNomogram()
-    ow.show()
-    
-    #data = orange.ExampleTable("heart_disease.tab")
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
+    a.setMainWidget(ow)
+    data = orange.ExampleTable("../../doc/datasets/heart_disease.tab")
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)

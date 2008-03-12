@@ -86,11 +86,9 @@ class OWLinProj(OWVisWidget):
         #load settings
         self.loadSettings()
 
-        # freeviz dialog
-        self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
-        if name.lower() == "linear projection":
-            self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
-            self.send("FreeViz Learner", self.freeVizLearner)
+##        # cluster dialog
+##        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, name)
+##        self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
         if name.lower() == "radviz":
@@ -119,7 +117,23 @@ class OWLinProj(OWVisWidget):
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
         self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
-        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
+        self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
+
+        # freeviz dialog
+        if name.lower() in ["linear projection", "radviz"]:
+            self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
+            self.wdChildDialogs.append(self.freeVizDlg)
+            self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
+            if name.lower() == "linear projection":
+                self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
+                self.send("FreeViz Learner", self.freeVizLearner)
+                
+##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
+##        self.vizrankButton.setMaximumWidth(63)
+##        self.clusterDetectionDlgButton.setMaximumWidth(63)
+##        self.freeVizDlgButton.setMaximumWidth(63)
+##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
+##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.graph.selectionChangedCallback = self.selectionChanged
@@ -131,7 +145,7 @@ class OWLinProj(OWVisWidget):
         self.extraTopBox = OWGUI.widgetBox(self.SettingsTab, orientation = "vertical")
         self.extraTopBox.hide()
 
-        pointBox = OWGUI.widgetBox(self.SettingsTab, "Point Properties")
+        pointBox = OWGUI.widgetBox(self.SettingsTab, "Point properties")
         OWGUI.hSlider(pointBox, self, 'graph.pointWidth', label = "Size: ", minValue=1, maxValue=20, step=1, callback = self.updateGraph)
         OWGUI.hSlider(pointBox, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.updateGraph)
 
@@ -175,7 +189,7 @@ class OWLinProj(OWVisWidget):
         box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
         box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
 
-        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
         OWGUI.rubber(box5)
 
@@ -187,7 +201,7 @@ class OWLinProj(OWVisWidget):
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
 
-        OWGUI.button(box8, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
+        OWGUI.button(box8, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
         self.SettingsTab.layout().addStretch(100)
 
         self.icons = self.createAttributeIconDict()
@@ -199,7 +213,7 @@ class OWLinProj(OWVisWidget):
         self.resize(900, 700)
 
     def saveToFile(self):
-        self.graph.saveToFile([("Save PixTex", self.graph.savePicTeX)])
+        self.graph.saveToFile([("Save PicTex", self.graph.savePicTeX)])
 
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
@@ -280,7 +294,9 @@ class OWLinProj(OWVisWidget):
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.data = data
         self.vizrank.setData(data)
-        self.freeVizDlg.setData(data)
+##        self.clusterDlg.setData(data)
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.setData(data)
         self.classificationResults = None
         self.outlierValues = None
 
@@ -377,11 +393,11 @@ class OWLinProj(OWVisWidget):
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
+        c = OWDlgs.ColorPalette(self, "Color palette")
+        c.createDiscretePalette(" Discrete palette ")
         c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
-        c.createColorButton(box, "Canvas", "Canvas color", QColor(QColor(Qt.white)))
+        box = c.createBox("otherColors", " Other colors ")
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         box.layout().addSpacing(5)
         #box.adjustSize()
@@ -390,12 +406,14 @@ class OWLinProj(OWVisWidget):
     def saveSettings(self):
         OWWidget.saveSettings(self)
         self.vizrank.saveSettings()
-        self.freeVizDlg.saveSettings()
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.saveSettings()
 
     def hideEvent(self, ce):
         self.vizrank.hide()
-        self.freeVizDlg.hide()
-        QDialog.hideEvent(self, ce)
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.hide()
+        OWVisWidget.destroy(self, dw, dsw)
 
 
 #test widget appearance
@@ -403,8 +421,6 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLinProj()
     ow.show()
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
-    ow.setData(data)
-    ow.handleNewSignals()
-    a.exec_()
+    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo.tab"))
+    a.exec_loop()
 

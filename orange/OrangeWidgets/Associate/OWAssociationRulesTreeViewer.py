@@ -66,7 +66,10 @@ class OWAssociationRulesTreeViewer(OWWidget):
     def setWholeRules(self):
         d = self.showWholeRules and 1 or 2
         for line in self.wrlist:
-            line[0].setText(0,line[d])
+            try:
+                line[0].setText(0,line[d])
+            except:
+                print line
 
 
     def showHideColumn(self):
@@ -114,7 +117,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
 
     def buildLayer(self, parent, rulesLC, n):
         if n==0:
-           self.printRules(parent, rulesLC)
+            self.printRules(parent, rulesLC)
         elif n>0:
             children = []
             for rule in rulesLC:                                 # for every rule
@@ -147,7 +150,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
             for s in rule[0]:                                   # with the rest of the antecedeses
                 restOfRule=restOfRule+"  "+s
 
-            item=QTreeWidgetItem(parent, ["", str('%.3f' %rule[1][1]),str('%.3f' %rule[1][2]),str('%.3f' %rule[1][3]),str('%.3f' %rule[1][4]),str('%.3f' %rule[1][5]),str('%.3f' %rule[1][6])])             # add a branch with the text
+            item = QTreeWidgetItem(parent, ["", str('%.3f' %rule[1][1]),str('%.3f' %rule[1][2]),str('%.3f' %rule[1][3]),str('%.3f' %rule[1][4]),str('%.3f' %rule[1][5]),str('%.3f' %rule[1][6])])             # add a branch with the text
             self.wrlist.append([item, startOfRule + restOfRule+"  ->   "+rule[1][0] , restOfRule+"  ->   "+rule[1][0]])
 
 
@@ -171,8 +174,8 @@ if __name__=="__main__":
     ow=OWAssociationRulesTreeViewer()
 
     #dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
-    dataset = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\car.tab")
-    rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
+    dataset = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
+    rules=orange.AssociationRulesInducer(dataset, support = 0.5, maxItemSets=10000)
     ow.arules(rules)
 
     ow.show()

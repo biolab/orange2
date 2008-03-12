@@ -125,6 +125,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         subsetReferencesToDraw.remove(self.rawData[i].reference())
             else:
                 curves[1].append(curve)
+                newColor.setAlpha(self.alphaValue)
 
             curve.setPen(QPen(newColor, 1))
             ys = [self.scaledData[index][i] for index in indices]
@@ -147,6 +148,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curve.setItemAttribute(QwtPlotItem.Legend, 0)
                 if self.useAntiAliasing:
                     curve.setRenderHint(QwtPlotItem.RenderAntialiased)
+
                 if not self.rawSubsetData.domain.classVar or self.rawSubsetData[i].getclass().isSpecial():
                     newColor = QColor(blackColor)
                 elif continuousClass:

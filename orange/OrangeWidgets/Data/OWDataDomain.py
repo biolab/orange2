@@ -13,15 +13,15 @@ import OWGUI
 
 class OWDataDomain(OWWidget):
     contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedChosen", reservoir="inputAttributes"),
                                                      ContextField("classAttribute",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedClass", reservoir="inputAttributes"),
                                                      ContextField("metaAttributes",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedMeta", reservoir="inputAttributes")
-                                                     ])}
+                                                     ], syncWithGlobal = False)}
 
 
     def __init__(self,parent = None, signalManager = None):
@@ -177,7 +177,7 @@ class OWDataDomain(OWWidget):
             for meta in self.metaAttributes:
                 domain.addmeta(orange.newmetaid(), self.data.domain[meta[0]])
 
-            newdata = orange.ExampleTable(domain, self.data)
+            newdata = orange.ExampleTable(domain, self.data, filterMetas=1)
             newdata.name = self.data.name
             self.send("Examples", newdata)
         else:
@@ -259,6 +259,7 @@ class OWDataDomain(OWWidget):
             self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), self.allAttributes)
         else:
             self.inputAttributes = []
+        self.updateInterfaceState()
 
     def removeFromUsed(self, attributes):
         for attr in attributes:

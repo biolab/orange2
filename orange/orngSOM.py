@@ -1,5 +1,6 @@
 import orangeom
 from orangeom import SOMLearner, SOMClassifier, SOMMap
+import numpy
 
 def SOMLearner(examples=None, weightID=0, parameters=None, **argkw):
     learner=orangeom.SOMLearner()
@@ -18,24 +19,21 @@ def SOMLearner(examples=None, weightID=0, parameters=None, **argkw):
         return learner(examples, weightID)
     return learner
 
-#import Numeric
-import numpy
 def getUMat(som):
     dim1=som.xDim*2-1
     dim2=som.yDim*2-1
-    
-    #a=Numeric.resize(Numeric.array(.0), [dim1, dim2])
+
     a=numpy.zeros((dim1, dim2))
     if som.topology==orangeom.SOMLearner.HexagonalTopology:
         return __fillHex(a, som)
     else:
         return __fillRect(a, som)
-    
+
 def __fillHex(array, som):
     d={}
     for n in som.nodes:
         d[(n.x,n.y)]=n
-    check=lambda x,y:x>=0 and x<(som.xDim*2-1) and y>=0 and y<(som.yDim*2-1)            
+    check=lambda x,y:x>=0 and x<(som.xDim*2-1) and y>=0 and y<(som.yDim*2-1)
     dx=[1,0,-1]
     dy=[0,1, 1]
     for i in range(0,som.xDim*2,2):
@@ -49,13 +47,13 @@ def __fillHex(array, som):
         for j in range(0,som.yDim*2,2):
             l=[array[i+ddx,j+ddy] for ddx,ddy in zip(dx,dy) if check(i+ddx, j+ddy)]
             array[i][j]=sum(l)/len(l)
-    return array 
-            
+    return array
+
 def __fillRect(array, som):
     d={}
     for n in som.nodes:
         d[(n.x,n.y)]=n
-    check=lambda x,y:x>=0 and x<som.xDim*2-1 and y>=0 and y<som.yDim*2-1            
+    check=lambda x,y:x>=0 and x<som.xDim*2-1 and y>=0 and y<som.yDim*2-1
     dx=[1,0,1]
     dy=[0,1,1]
     for i in range(0,som.xDim*2,2):
@@ -69,6 +67,6 @@ def __fillRect(array, som):
         for j in range(0,som.yDim*2,2):
             l=[array[i+ddx,j+ddy] for ddx,ddy in zip(dx,dy) if check(i+ddx, j+ddy)]
             array[i][j]=sum(l)/len(l)
-    return array 
-    
-    
+    return array
+
+

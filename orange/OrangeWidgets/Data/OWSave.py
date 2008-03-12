@@ -40,7 +40,7 @@ class OWSave(OWWidget):
         browse = OWGUI.button(rfbox, self, "...", callback = self.browseFile, width=25)
 
         fbox = OWGUI.widgetBox(vb, "Save")
-        self.save = OWGUI.button(fbox, self, "&Save current data", callback = self.saveFile)
+        self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile)
         self.save.setDisabled(1)
 
         #self.adjustSize()
@@ -51,8 +51,7 @@ class OWSave(OWWidget):
 
     savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
               ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
-              ".rda": orange.saveRetis, ".rdo": orange.saveRetis,
-              ".csv": orange.saveCsv#, ".dat": orange.saveAssistant
+              ".csv": orange.saveCsv
               }
 
     re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
@@ -88,9 +87,14 @@ class OWSave(OWWidget):
         self.addFileToList(str(filename))
         self.saveFile()
 
-    def saveFile(self):
-        if self.data:
-            filename = self.recentFiles[self.filecombo.currentItem()]
+    def saveFile(self, *index):
+        self.error()
+        if self.data is not None:
+            combotext = str(self.filecombo.currentText())
+            if combotext == "(none)":
+                QMessageBox.information( None, "Error saving data", "Unable to save data. Select first a file name by clicking the '...' button.", QMessageBox.Ok + QMessageBox.Default)
+                return
+            filename = self.recentFiles[self.filecombo.currentIndex()]
             fileExt = lower(os.path.splitext(filename)[1])
             if fileExt == "":
                 fileExt = ".tab"

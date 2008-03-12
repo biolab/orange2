@@ -32,7 +32,7 @@
 #       fixed an ugly bug in dep-dissimilarity matrix processing
 
 import orange
-import orngContingency, Numeric
+import orngContingency, numpy
 import warnings, math, string, copy
 
 def _nicefloat(f,sig):
@@ -47,7 +47,7 @@ def _nicefloat(f,sig):
         if f < 0:
             s += '-'
         s += '%d'%abs(i) + ('%f'%fp)[1:2+n]
-        
+
     return s
 
 
@@ -58,7 +58,7 @@ class InteractionMatrix:
         # attributes or missing values
 
         ### DISCRETIZE VARIABLES ###
-        
+
         newatt = []
         oldatt = []
         entroD = orange.EntropyDiscretization()
@@ -76,9 +76,9 @@ class InteractionMatrix:
                 oldatt.append(i)
         if len(newatt) > 0:
             t = t.select(oldatt+newatt+[t.domain.classVar])
-        
+
         ### FIX MISSING VALUES ###
-            
+
         special_attributes = []
 
         # 2006-08-23: fixed by PJ: append classVar only if it exists
@@ -126,7 +126,7 @@ class InteractionMatrix:
                 exs.append(orange.Example(newd,nex))
             t = orange.ExampleTable(exs)
         return t
-        
+
     def __init__(self, t, save_data=1, interactions_too = 1, dependencies_too=0, prepare=1, pvalues = 0, simple_too=0,iterative_scaling=0,weighting=None):
         if prepare:
             t = self._prepare(t)
@@ -137,9 +137,11 @@ class InteractionMatrix:
 
         # Attribute Preparation
         NA = len(t.domain.attributes)
-        
+
         self.names = []
-        self.labelname = t.domain.classVar.name
+        self.labelname = ""
+        if t.domain.classVar:
+            self.labelname = t.domain.classVar.name
         self.gains = []
         self.freqs = []
         self.way2 = {}
@@ -207,7 +209,7 @@ class InteractionMatrix:
                     if weighting != None:
                         c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar,wid=weighting)
                     else:
-                        c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar)                    
+                        c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar)
                     self.way3[(j,i,-1)] = c
                     igv = c.InteractionInformation()
                     line.append(igv)
@@ -252,7 +254,7 @@ class InteractionMatrix:
         positive_int = min(positive_int,len(self.list))
         absolute_int = min(absolute_int,len(self.list))
         negative_int = min(negative_int,len(self.list))
-        
+
         # select the top interactions
         ins = []
         if positive_int > 0:
@@ -278,10 +280,10 @@ class InteractionMatrix:
             oins = ins
             ins = []
             for y in oins:
-                (ig,i,j) = y[1] 
+                (ig,i,j) = y[1]
                 if self.plut[(i,j,-1)] < pcutoff:
                     ins.append(y)
-
+        
         ints = []
         max_igain = -1e6
         min_gain = 1e6 # lowest information gain of involved attributes
@@ -329,7 +331,7 @@ class InteractionMatrix:
                 f.write("\tnode [ shape=%s, label = \"%s\"] %d;\n"%(shap,t,i))
             else:
                 f.write("\tnode [ shape=%s, URL = \"%d\", label = \"%s\"] %d;\n"%(shap,i,t,i))
-            
+
         ### EDGE DRAWING ###
 
         for (ig,i,j) in ints:
@@ -338,7 +340,7 @@ class InteractionMatrix:
             if self.entropy > 1e-6:
                 mc = _nicefloat(100.0*ig/self.entropy,significant_digits)+"%"
             else:
-                mc = _nicefloat(0.0,significant_digits)                
+                mc = _nicefloat(0.0,significant_digits)
             if len(self.plist) > 0 and pcutoff < 1:
                 mc += "\\nP\<%.3f"%self.plut[(i,j,-1)]
             if postscript:
@@ -352,7 +354,7 @@ class InteractionMatrix:
                 else:
                     style = 'style=dashed,'
                     dir = 'none'
-            else:            
+            else:
                 if ig > 0:
                     if widget_coloring:
                         color = "green"
@@ -371,7 +373,7 @@ class InteractionMatrix:
                 f.write("\t%d -> %d [URL=\"%d-%d\",dir=%s,%scolor=%s,label=\"%s\",weight=%d];\n"%(i,j,min(i,j),max(i,j),dir,style,color,mc,(perc/30+1)))
 
         f.write("}\n")
-        
+
     def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1, color_coding = 0, color_gains = 0, jaccard=0, noclass=0):
         NA = self.NA
 
@@ -397,7 +399,7 @@ class InteractionMatrix:
             labels.append(t)
 
         ### CREATE THE DISSIMILARITY MATRIX ###
-        
+
         if jaccard:
             # create the lookup of 3-entropies
             ent3 = {}
@@ -424,7 +426,7 @@ class InteractionMatrix:
                         e /= self.ents[(i,-1)]
                     else:
                         e = 0.0
-                    ent3[(i,)] = e 
+                    ent3[(i,)] = e
                     maxx = max(maxx,e)
         else:
             maxx = self.abslist[-1][0]
@@ -434,8 +436,8 @@ class InteractionMatrix:
             if maxx > 1e-6:
                 cgains = [0.5*(1-i/maxx) for i in self.gains]
             else:
-                cgains = [0.0 for i in self.gains]                
-        diss = []        
+                cgains = [0.0 for i in self.gains]
+        diss = []
         for i in range(1,NA):
             newl = []
             for j in range(i):
@@ -651,7 +653,7 @@ class InteractionMatrix:
                 if labelled:
                     if diagonal:
                         ct = self.way2[(min(i,j),max(i,j))]
-                        (ni,nj) = Numeric.shape(ct.m)
+                        (ni,nj) = numpy.shape(ct.m)
                         cc = 0.0
                         if ni==nj:
                             for x in range(ni):
@@ -710,7 +712,7 @@ class InteractionMatrix:
                     print 'maximum intersection is %3d percent.'%(maxx*100.0)
                 else:
                     print 'maximum intersection is %f bits.'%maxx
-        diss = []        
+        diss = []
         pett = range(1,NA)
         if include_label:
             pett.append(-1)
@@ -782,8 +784,8 @@ class InteractionMatrix:
 if __name__== "__main__":
     t = orange.ExampleTable('d_zoo.tab')
     im = InteractionMatrix(t,save_data=0, pvalues = 1,iterative_scaling=0)
-    
-    # interaction graph    
+
+    # interaction graph
     f = open('zoo.dot','w')
     im.exportGraph(f,significant_digits=3,pcutoff = 0.01,absolute_int=1000,best_attributes=100,widget_coloring=0,black_white=1)
     f.close()

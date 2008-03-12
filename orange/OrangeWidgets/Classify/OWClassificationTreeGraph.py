@@ -5,7 +5,7 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWTreeViewer2D import *
 import OWGraphTools
 
@@ -22,7 +22,7 @@ class ClassificationNode(CanvasNode):
         self.majClassProb=maxInst/self.dist.cases
         self.tarClassProb=self.dist.items()[0][1]/self.dist.cases
         self.numInst=self.dist.cases
-        self.title=QCanvasText(attrVal,self.canvas())
+        self.title = QGraphicsTextItem(attrVal, self, self.scene())
         self.texts=[self.majClassName, "%.3f" % self.majClassProb, "%.3f" % self.tarClassProb, "%.1f" % self.numInst]
         self.name = (self.tree.branches and self.tree.branchSelector.classVar.name) or self.majClassName
         self.textAdvance=12
@@ -32,7 +32,7 @@ class ClassificationNode(CanvasNode):
         self.addTextLine(fitSquare=False)
         self.addTextLine(self.name, fitSquare=False)
 
-        self.rule=(isinstance(self.parent, QCanvasRectangle) and self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
+        self.rule=(isinstance(self.parent, QGraphicsRectItem) and self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
 
         #print self.rule
         #self.textObj.extend([self.title, self.name]+self.textList)
@@ -43,16 +43,18 @@ class ClassificationNode(CanvasNode):
         startAngle=0
         for i in range(len(self.dist)):
             angle=360/distSum*self.dist[i]*16
-            e=QCanvasEllipse(self.height()*0.8,self.height()*0.8,startAngle,angle,self.canvas())
+            e=QGraphicsEllipseItem(self.height()/2, self.width(), self.height()*0.8, self.height()*0.8, None, self.canvas())
+            e.setStartAngle(startAngle)
+            e.setSpanAngle(angle)
             e.setBrush(QBrush(color[i]))
-            e.move(self.height()/2,self.width())
-            e.setZ(0)
+            e.setZValue(0)
             startAngle+=angle
             self.pieObj.append(e)
-        e=QCanvasEllipse(self.height()*0.8+4,self.height()*0.8+4,0,360*16,self.canvas())
+        e = QGraphicsEllipseItem(self.height(), self.width(), self.height()*0.8+4, self.height()*0.8+4, None, self.canvas())
+        e.setStartAngle(0)
+        e.setSpanAngle(360*16)
         e.setBrush(QBrush(Qt.black))
-        e.move(self.height(), self.width())
-        e.setZ(-1)
+        e.setZValue(-1)
         self.pieObj.append(e)
         self.canvasObj.extend(self.pieObj)
         self.isPieShown=True
@@ -60,15 +62,14 @@ class ClassificationNode(CanvasNode):
     def setSize(self,w,h):
         CanvasNode.setSize(self,w,h)
         self.updateText()
-        for e in self.pieObj:
-            e.setSize(h*0.8,h*0.8)
-            e.move(self.x()+self.width(),self.y()+self.height()/2)
-        self.pieObj[-1].setSize(h*0.8+2,h*0.8+2)
+        for e in self.pieObj[:-1]:
+            e.setRect(self.x()+self.width(), self.y()+self.height()/2, h*0.8,h*0.8)
+        self.pieObj[-1].setRect(self.x()+self.width(), self.y()+self.height()/2, h*0.8+2,h*0.8+2)
 
     def setBrush(self, brush):
         CanvasTextContainer.setBrush(self, brush)
         if self.textObj:
-            self.textObj[0].setColor(Qt.black)
+            self.textObj[0].setPen(QPen((Qt.black)))
 
     def show(self):
         CanvasNode.show(self)
@@ -105,8 +106,8 @@ class ClassificationNode(CanvasNode):
         self.textOffset=startOffset
         x,y=self.x(),self.y()
         for i in range(4):
-            self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
-        self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
+            self.textObj[i].setPos(x+1, y+(i-1)*self.textAdvance)
+        self.spliterObj[0].setPos(x, y+self.height()-self.textAdvance)
 
 import re
 import sets
@@ -235,7 +236,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             self.NodeInfoSorted=list(self.NodeInfo)
             self.NodeInfoSorted.sort()
             self.NodeInfoMethod=id
-        #print self.NodeInfoSorted
         for n in self.canvas.nodeList:
             n.setText(self.NodeInfoSorted)
         self.canvas.update()
@@ -252,16 +252,28 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             if self.NodeColorMethod == 0:   # default
                 node.setBrush(QBrush(BodyColor_Default))
             elif self.NodeColorMethod == 1: # instances in node
-                light = 400 - 300*node.tree.distribution.cases/self.tree.distribution.cases
+                div = self.tree.distribution.cases
+                if div > 1e-6:
+                    light = 400 - 300*node.tree.distribution.cases/div
+                else:
+                    light = 100
                 node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
             elif self.NodeColorMethod == 2: # majority class probability
                 light=400- 300*node.majClassProb
                 node.setBrush(QBrush(self.ClassColors[node.majClass[0]].light(light)))
             elif self.NodeColorMethod == 3: # target class probability
-                light=400-300*node.dist[self.TargetClassIndex]/node.dist.cases
+                div = node.dist.cases
+                if div > 1e-6:
+                    light=400-300*node.dist[self.TargetClassIndex]/div
+                else:
+                    light = 100
                 node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
             elif self.NodeColorMethod == 4: # target class distribution
-                light=200 - 100*node.dist[self.TargetClassIndex]/self.tree.distribution[self.TargetClassIndex]
+                div = self.tree.distribution[self.TargetClassIndex]
+                if div > 1e-6:
+                    light=200 - 100*node.dist[self.TargetClassIndex]/div
+                else:
+                    light = 100
                 node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
         self.canvas.update()
         self.treeNav.leech()
@@ -281,6 +293,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.canvas.update()
 
     def ctree(self, tree=None):
+        self.send("Examples", None)
         self.closeContext()
         self.targetCombo.clear()
         if tree:
@@ -304,9 +317,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
     def classificationBubbleConstructor(self, node, pos, canvas):
         b=CanvasBubbleInfo(node, pos,canvas)
         rule=list(node.rule)
-        #print node.rule, rule
-        #rule.sort(lambda:a,b:a[0]<b[0])
-        # merge
         if rule:
             try:
                 rule=parseRules(list(rule))
@@ -317,21 +327,24 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             text="THEN "+node.majClassName
         b.addTextLine(text)
         b.addTextLine()
-        text="Instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        text="Instances: %(ninst)s (%(prop).1f%%)" % {"ninst": str(node.numInst), "prop": node.numInst/self.tree.distribution.cases*100}
         b.addTextLine(text)
         b.addTextLine()
         for i,d in enumerate(node.dist.items()):
             if d[1]!=0:
                 b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)",self.ClassColors[i])
         b.addTextLine()
-        b.addTextLine((node.tree.branches and "Partition on: "+node.name) or "(leaf)")
+        b.addTextLine((node.tree.branches and "Partition on: %(nodename)s" % {"nodename": node.name}) or "(leaf)")
         b.show()
         return b
 
-    def saveGraph(self):
-        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)")
-        fileName = str(qfileName)
-        if fileName == "": return
+    def saveGraph(self, fileName = None):
+        if not fileName:
+            qfileName = QFileDialog.getSaveFileName(None, "Save to..", "tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)")
+            fileName = str(qfileName)
+            if not fileName:
+                return
+        
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
@@ -347,12 +360,19 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         painter.end()
         buffer.save(fileName, ext)
 
+#    def sendReport(self):
+#        directory = self.startReport("Classification Tree", True)
+#        self.saveGraph(directory + "\\tree.png")
+#        self.reportImage(directory + "\\tree.png")
+#        self.finishReport()
+        
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWClassificationTreeGraph()
     a.setMainWidget(ow)
 
-    data = orange.ExampleTable('../../doc/datasets/voting.tab')
+    #data = orange.ExampleTable('../../doc/datasets/voting.tab')
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.ctree(tree)
 

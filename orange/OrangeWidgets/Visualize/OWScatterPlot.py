@@ -29,7 +29,9 @@ class OWScatterPlot(OWWidget):
                     "colorSettings", "selectedSchemaIndex", "VizRankLearnerName", "showProbabilitiesDetails"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
-    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
+    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY",
+                                                     (["attrColor", "attrShape", "attrSize"], DomainContextHandler.Optional),
+                                                     ("attrLabel", DomainContextHandler.Optional + DomainContextHandler.IncludeMetaAttributes)])}
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Scatter Plot", TRUE)
@@ -70,16 +72,16 @@ class OWScatterPlot(OWWidget):
 
         #x attribute
         self.attrX = ""
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", "X Axis Attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", "X-axis attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # y attribute
         self.attrY = ""
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", "Y Axis Attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", "Y-axis attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # coloring
         self.showColorLegend = 0
         self.attrColor = ""
-        box = OWGUI.widgetBox(self.GeneralTab, "Color Attribute")
+        box = OWGUI.widgetBox(self.GeneralTab, "Colors")
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
         self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same color)")
 
@@ -89,14 +91,14 @@ class OWScatterPlot(OWWidget):
 
         # shaping
         self.attrShape = ""
-        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", "Shape Attribute", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same shape)")
+        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", "Shape", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same shape)")
 
         # sizing
         self.attrSize = ""
-        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", "Size Attribute", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same size)")
+        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", "Size", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same size)")
 
-        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
-        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
+        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes", debuggingEnabled = 0)
 
         # zooming / selection
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -105,20 +107,20 @@ class OWScatterPlot(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        pointBox = OWGUI.widgetBox(self.SettingsTab, "Point Properties")
-        OWGUI.hSlider(pointBox, self, 'graph.pointWidth', label = "Point size:   ", minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
+        pointBox = OWGUI.widgetBox(self.SettingsTab, "Point properties")
+        OWGUI.hSlider(pointBox, self, 'graph.pointWidth', label = "Symbol size:   ", minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
         OWGUI.hSlider(pointBox, self, 'graph.alphaValue', label = "Transparency: ", minValue=0, maxValue=255, step=10, callback = self.alphaChange)
 
         # #####
         # jittering options
-        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
         self.jitterLabel = OWGUI.widgetLabel(box3, 'Jittering size (% of size): ')
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
         # general graph settings
-        box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
+        box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General graph settings", self, "boxGeneral")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
@@ -137,7 +139,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         box7 = OWGUI.widgetBox(box4, orientation = "horizontal")
-        OWGUI.separator(box7, 20)
+        OWGUI.separator(box7, 17)
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
 
@@ -146,10 +148,10 @@ class OWScatterPlot(OWWidget):
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
-        box5 = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
-        OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        box5 = OWGUI.widgetBox(self.SettingsTab, "Tooltips settings")
+        OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't Show Tooltips", "Show Visible Attributes", "Show All Attributes"], callback = self.updateGraph)
 
-        OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes")
         self.graph.selectionChangedCallback = self.setAutoSendSelection
 
         self.GeneralTab.layout().addStretch(100)
@@ -159,6 +161,7 @@ class OWScatterPlot(OWWidget):
         self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]
         self.activateLoadedSettings()
         self.resize(700, 550)
+        self.wdChildDialogs = [self.vizrank]        # used when running widget debugging
 
 
     def activateLoadedSettings(self):
@@ -231,7 +234,7 @@ class OWScatterPlot(OWWidget):
             self.warning(10)
         except:
             subsetData = None
-            self.warning(10, data and "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data." or "")
+            self.warning(10, data and "'Examples' and 'Example Subset' data do not have compatible domains. Unable to draw 'Example Subset' data." or "")
 
         self.subsetData = subsetData
         self.vizrank.setSubsetData(subsetData)
@@ -258,7 +261,7 @@ class OWScatterPlot(OWWidget):
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
-            self.classificationResults = (self.classificationResults, "Probability of correct classificatioin = %.2f%%")
+            self.classificationResults = (self.classificationResults, "Probability of correct classification = %.2f%%")
 
         self.updateGraph()
 
@@ -418,7 +421,7 @@ class OWScatterPlot(OWWidget):
         c = OWDlgs.ColorPalette(self, "Color Palette")
         c.createDiscretePalette("Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
-        box = c.createBox("otherColors", "Other Colors")
+        box = c.createBox("otherColors", "Other colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.layout().addSpacing(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)
@@ -441,7 +444,9 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWScatterPlot()
     ow.show()
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
-    ow.setData(data)
+    ow.setData(orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab"))
+    #ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
     ow.handleNewSignals()
-    a.exec_()
+    a.exec_loop()
+    #save settings
+    ow.saveSettings()

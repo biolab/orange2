@@ -11,6 +11,7 @@ from OWTools import *
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
+import orngDebugging
 from string import *
 from orngSignalManager import *
 import OWGUI
@@ -73,6 +74,20 @@ def unisetattr(self, name, value, grandparent):
             contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
 
 
+
+class ControlledAttributesDict(dict):
+    def __init__(self, master):
+        self.master = master
+
+    def __setitem__(self, key, value):
+        if not self.has_key(key):
+            dict.__setitem__(self, key, [value])
+        else:
+            dict.__getitem__(self, key).append(value)
+        self.master.setControllers(self.master, key, self.master, "")
+
+
+
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 class ExampleTable(orange.ExampleTable):
@@ -103,15 +118,13 @@ class OWBaseWidget(QDialog):
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
 
-        #  , self.captionTitle, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize
-        QDialog.__init__(self, parent)
+        QDialog.__init__(self, parent, Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
 
         title = title.replace("&","")
         self.setCaption(title) # used for widget caption
-        self.loadContextSettings()
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
@@ -330,33 +343,22 @@ class OWBaseWidget(QDialog):
 
                 contextHandlers = getattr(self, "contextHandlers", {})
                 for contextHandler in contextHandlers.values():
+                    localName = contextHandler.localContextName
+
+                    structureVersion, dataVersion = settings.get(localName+"Version", (0, 0))
+                    if (structureVersion < contextStructureVersion or dataVersion < contextHandler.contextDataVersion) \
+                       and settings.has_key(localName):
+                        del settings[localName]
+                        delattr(self, localName)
+                        contextHandler.initLocalContext(self)
+
                     if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
-                        contexts = settings.get(contextHandler.localContextName, False)
+                        contexts = settings.get(localName, False)
                         if contexts != False:
                             contextHandler.globalContexts = contexts
                     else:
                         if contextHandler.syncWithGlobal:
-                            setattr(self, contextHandler.localContextName, contextHandler.globalContexts)
-
-
-
-
-    def loadContextSettings(self, file = None):
-        if not hasattr(self.__class__, "savedContextSettings"):
-            file = self.getSettingsFile(file)
-            if file:
-                try:
-                    settings = cPickle.load(file)
-                except:
-                    settings = None
-
-                # can't close everything into one big try-except since this would mask all errors in the below code
-                if settings:
-                    if settings.has_key("savedContextSettings"):
-                        self.__class__.savedContextSettings = settings["savedContextSettings"]
-                        return
-
-            self.__class__.savedContextSettings = {}
+                            setattr(self, localName, contextHandler.globalContexts)
 
 
     def saveSettings(self, file = None):
@@ -366,6 +368,7 @@ class OWBaseWidget(QDialog):
         for contextHandler in contextHandlers.values():
             contextHandler.mergeBack(self)
             settings[contextHandler.localContextName] = contextHandler.globalContexts
+            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
 
         if settings:
             if file==None:
@@ -384,8 +387,15 @@ class OWBaseWidget(QDialog):
 
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
-            if settings.has_key(contextHandler.localContextName):
-                setattr(self, contextHandler.localContextName, settings[contextHandler.localContextName])
+            localName = contextHandler.localContextName
+            if settings.has_key(localName):
+                structureVersion, dataVersion = settings.get(localName+"Version", (0, 0))
+                if structureVersion < contextStructureVersion or dataVersion < contextHandler.contextDataVersion:
+                    del settings[localName]
+                    delattr(self, localName)
+                    contextHandler.initLocalContext(self)
+                else:
+                    setattr(self, localName, settings[localName])
 
     # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
@@ -395,6 +405,7 @@ class OWBaseWidget(QDialog):
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
             settings[contextHandler.localContextName] = getattr(self, contextHandler.localContextName)
+            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
 
         return cPickle.dumps(settings)
 
@@ -437,9 +448,17 @@ class OWBaseWidget(QDialog):
         #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
 
 
-    def disconnect(self, control, signal, method):
+    def disconnect(self, control, signal, method=None):
         wrapper = self.connections[(control, signal)]
         QDialog.disconnect(control, signal, wrapper)
+
+
+    def getConnectionMethod(self, control, signal):
+        if (control, signal) in self.connections:
+            wrapper = self.connections[(control, signal)]
+            return wrapper.method
+        else:
+            return None
 
 
     def signalIsOnlySingleConnection(self, signalName):
@@ -486,38 +505,44 @@ class OWBaseWidget(QDialog):
 
         return None
 
+
     def handleNewSignals(self):
+        # this is called after all new signals have been handled
+        # implement this in your widget if you want to process something only after you received multiple signals
         pass
 
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
+        newSignal = 0        # did we get any new signals
 
         # we define only a way to handle signals that have defined a handler function
-        #for key in self.linksIn.keys():
-        for input in self.inputs:
-            key = input[0]
-            for i in range(len(self.linksIn.get(key, []))):
-                (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
-                if not (handler and dirty): continue
+        for signal in self.inputs:        # we go from the first to the last defined input
+            key = signal[0]
+            if self.linksIn.has_key(key):
+                for i in range(len(self.linksIn[key])):
+                    (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
+                    if not (handler and dirty): continue
+                    newSignal = 1
 
-                qApp.setOverrideCursor(Qt.WaitCursor)
-                try:
-                    for (value, id, nameFrom) in signalData:
-                        if self.signalIsOnlySingleConnection(key):
-                            self.printEvent("ProcessSignals: Calling %s with %s" % (handler, value), eventVerbosity = 2)
-                            handler(value)
-                        else:
-                            self.printEvent("ProcessSignals: Calling %s with %s (%s, %s)" % (handler, value, nameFrom, id), eventVerbosity = 2)
-                            handler(value, (widgetFrom, nameFrom, id))
-                except:
-                    type, val, traceback = sys.exc_info()
-                    sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
+                    qApp.setOverrideCursor(Qt.WaitCursor)
+                    try:
+                        for (value, id, nameFrom) in signalData:
+                            if self.signalIsOnlySingleConnection(key):
+                                self.printEvent("ProcessSignals: Calling %s with %s" % (handler, value), eventVerbosity = 2)
+                                handler(value)
+                            else:
+                                self.printEvent("ProcessSignals: Calling %s with %s (%s, %s)" % (handler, value, nameFrom, id), eventVerbosity = 2)
+                                handler(value, (widgetFrom, nameFrom, id))
+                    except:
+                        type, val, traceback = sys.exc_info()
+                        sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
 
                 qApp.restoreOverrideCursor()
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
-        self.handleNewSignals()
+        if hasattr(self, "handleNewSignals") and newSignal == 1:
+            self.handleNewSignals()
 
         if self.processingHandler:
             self.processingHandler(self, 0)    # remove focus from this widget
@@ -722,17 +747,27 @@ class OWBaseWidget(QDialog):
         if len(self._guiElements) == 0: return
 
         try:
-            index = random.randint(0, len(self._guiElements)-1)
-            elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
-
-            if elementType == "qwtPlot":
-                widget.randomChange()
-                return
-
-            if not widget.isEnabled(): return
             newValue = ""
             callback = None
-            if elementType == "checkBox":
+
+            #index = random.randint(0, len(self._guiElements)-1)
+            index = random.randint(0, len(self._guiElements))
+            if index == len(self._guiElements):
+                elementType = "signalChange"
+                widget = None
+            else:
+                elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
+                if not widget.isEnabled(): return
+
+            if elementType == "signalChange":
+                if len(self.outputs) > 0:
+                    output = self.outputs[random.randint(0, len(self.outputs)-1)][0]
+                    self.send(output, None)
+                    newValue = "Sending None to output signal " + output
+            elif elementType == "qwtPlot":
+                widget.randomChange()
+                newValue = "Random change in qwtPlot"
+            elif elementType == "checkBox":
                 elementType, widget, value, callback = self._guiElements[index]
                 newValue = "Changing checkbox %s to %s" % (value, not self.getdeepattr(value))
                 setattr(self, value, not self.getdeepattr(value))
@@ -790,14 +825,15 @@ class OWBaseWidget(QDialog):
                 else:
                     callback()
         except:
-            sys.stderr.write("------------------\n")
-            if newValue != "":
-                sys.stderr.write("Widget %s. %s\n" % (str(self.windowTitle()), newValue))
-            eType, val, traceback = sys.exc_info()
-            sys.excepthook(eType, val, traceback)  # print the exception
-            sys.stderr.write("Widget settings are:\n")
-            for i, setting in enumerate(getattr(self, "settingsList", [])):
-                sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
+            excType, value, tracebackInfo = sys.exc_info()
+            if not self.signalManager.exceptionSeen(type, value, tracebackInfo):
+                sys.stderr.write("------------------\n")
+                if newValue != "":
+                    sys.stderr.write("Widget %s. %s\n" % (str(self.windowTitle()), newValue))
+                sys.excepthook(excType, value, tracebackInfo)  # print the exception
+                sys.stderr.write("Widget settings are:\n")
+                for i, setting in enumerate(getattr(self, "settingsList", [])):
+                    sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
 
 
 if __name__ == "__main__":

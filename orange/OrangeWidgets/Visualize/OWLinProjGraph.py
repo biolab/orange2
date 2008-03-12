@@ -90,7 +90,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.tooltipMarkers = []
 
         self.__dict__.update(args)
-        if not labels: labels = [anchor[2] for anchor in self.anchorData]
+        if labels == None: labels = [anchor[2] for anchor in self.anchorData]
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
         self.valueLineCurves = [{}, {}]    # dicts for x and y set of coordinates for unconnected lines
@@ -285,7 +285,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                             newColor = self.contPalette.getRGB(self.scaleExampleValue(self.rawSubsetData[i], classNameIndex))
 
                     if self.useDifferentSymbols and hasDiscreteClass and not self.rawSubsetData[i].getclass().isSpecial():
-                        curveSymbol = self.curveSymbols[classValueIndices[self.rawSubsetData[i].getclass().value]]
+                            curveSymbol = self.curveSymbols[classValueIndices[self.rawSubsetData[i].getclass().value]]
                     else: curveSymbol = self.curveSymbols[0]
 
                     if not xPointsToAdd.has_key((newColor, curveSymbol, 1)):

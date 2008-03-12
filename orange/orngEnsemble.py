@@ -166,6 +166,7 @@ class RandomForestLearner(orange.Learner):
             return self
 
     def __init__(self, learner=None, trees=100, attributes=None, name='Random Forest', rand=None, callback=None):
+        """random forest learner"""
         self.trees = trees
         self.name = name
         self.learner = learner
@@ -200,7 +201,9 @@ class RandomForestLearner(orange.Learner):
             data = examples.getitems(selection)
             # build the model from the bootstrap sample
             classifiers.append(self.learner(data))
-            if self.callback: self.callback((i+1.)/self.trees)
+            if self.callback:
+                self.callback()
+            # if self.callback: self.callback((i+1.)/self.trees)
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name, domain=examples.domain, classVar=examples.domain.classVar)
         

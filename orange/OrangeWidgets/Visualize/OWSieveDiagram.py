@@ -55,24 +55,33 @@ class OWSieveDiagram(OWWidget):
         self.canvasView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         #GUI
-        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = "Shown Attributes")
+        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = "Shown attributes")
 
-        self.attrXCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrX", "X Attribute:", tooltip = "Select an attribute to be shown on the X axis", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, labelWidth = 70)
-        self.attrYCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrY", "Y Attribute:", tooltip = "Select an attribute to be shown on the Y axis", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, labelWidth = 70)
+        self.attrXCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrX", "X attribute:", tooltip = "Select an attribute to be shown on the X axis", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, labelWidth = 70)
+        self.attrYCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrY", "Y attribute:", tooltip = "Select an attribute to be shown on the Y axis", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
+        OWGUI.separator(self.controlArea)
+        
         self.conditionGroup = OWGUI.widgetBox(self.controlArea, box = "Condition")
         self.attrConditionCombo      = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrCondition", "Attribute:", callback = self.updateConditionAttr, sendSelectedValue = 1, valueType = str, labelWidth = 70)
         self.attrConditionValueCombo = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrConditionValue", "Value:", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
-
-        box2 = OWGUI.widgetBox(self.controlArea, box = "Visual Settings")
-        OWGUI.checkBox(box2, self, "showLines", "Show Lines", callback = self.updateGraph)
+        OWGUI.separator(self.controlArea)
+        
+        box2 = OWGUI.widgetBox(self.controlArea, box = "Visual settings")
+        OWGUI.checkBox(box2, self, "showLines", "Show lines", callback = self.updateGraph)
         hbox = OWGUI.widgetBox(box2, orientation = "horizontal")
-        OWGUI.checkBox(hbox, self, "showCases", "Show Data Examples...", callback = self.updateGraph)
-        OWGUI.checkBox(hbox, self, "showInColor", "...In Color", callback = self.updateGraph)
+        OWGUI.checkBox(hbox, self, "showCases", "Show data examples...", callback = self.updateGraph)
+        OWGUI.checkBox(hbox, self, "showInColor", "...in color", callback = self.updateGraph)
 
-        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = "Interesting Attribute Pairs")
-
+        box2 = OWGUI.widgetBox(self.controlArea, box = "Visual settings")
+        OWGUI.checkBox(box2, self, "showLines", "Show lines", callback = self.updateGraph)
+        hbox = OWGUI.widgetBox(box2, orientation = "horizontal")
+        OWGUI.checkBox(hbox, self, "showCases", "Show data examples...", callback = self.updateGraph)
+        OWGUI.checkBox(hbox, self, "showInColor", "...in color", callback = self.updateGraph)
+        
+        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = "Interesting attribute pairs")
+        
         self.calculateButton = OWGUI.button(self.interestingGroupBox, self, "Calculate Chi Squares", callback = self.calculatePairs)
         self.stopCalculateButton = OWGUI.button(self.interestingGroupBox, self, "Stop Evaluation", callback = self.stopCalculateClick)
         self.stopCalculateButton.hide()
@@ -212,9 +221,9 @@ class OWSieveDiagram(OWWidget):
 
         if not xAttr: xAttr = self.attrX
         if not yAttr: yAttr = self.attrY
-        if not (xAttr and yAttr): return
-
-        if self.attrCondition == "[None]":
+        if not (xAttr and yAttr): return        
+        
+        if self.attrCondition == "(None)":
             data = self.data.select([xAttr, yAttr])
         else:
             data = orange.Preprocessor_dropMissing(self.data.select([xAttr, yAttr, self.attrCondition]))
@@ -226,8 +235,8 @@ class OWSieveDiagram(OWWidget):
     # new conditional attribute was set - update graph
     def updateConditionAttr(self):
         self.attrConditionValueCombo.clear()
-
-        if self.attrCondition == "[None]":
+        
+        if self.attrCondition == "(None)":
             self.updateGraph()
             return
 
@@ -240,8 +249,8 @@ class OWSieveDiagram(OWWidget):
     def initCombos(self):
         self.attrXCombo.clear()
         self.attrYCombo.clear()
-        self.attrConditionCombo.clear()
-        self.attrConditionCombo.addItem("[None]")
+        self.attrConditionCombo.clear()        
+        self.attrConditionCombo.addItem("(None)")
         self.attrConditionValueCombo.clear()
 
         if not self.data: return
@@ -322,7 +331,7 @@ class OWSieveDiagram(OWWidget):
         self.canvasView.setSceneRect(0, 0, self.canvasView.width(), self.canvasView.height())
 
         # print graph name
-        if self.attrCondition == "[None]":
+        if self.attrCondition == "(None)":
             name  = "P(%s, %s) =\\= P(%s)*P(%s)" %(self.attrX, self.attrY, self.attrX, self.attrY)
         else:
             name = "P(%s, %s | %s = %s) =\\= P(%s | %s = %s)*P(%s | %s = %s)" %(self.attrX, self.attrY, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue), self.attrX, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue), self.attrY, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue))
@@ -424,7 +433,7 @@ class OWSieveDiagram(OWWidget):
     ##################################################
     # add lines
     def addLines(self, x,y,w,h, diff, pen):
-        if self.showLines == 0: return
+        if not self.showLines: return
         if diff == 0: return
 
         # create lines

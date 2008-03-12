@@ -22,8 +22,8 @@ import OWGUI
 class OWSurveyPlot(OWVisWidget):
     settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend",
                     "graph.tooltipKind", "showAllAttributes", "colorSettings", "selectedSchemaIndex"]
-    attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
-    attributeDiscOrder = ["None","ReliefF","GainRatio"]
+    attributeContOrder = ["Unordered","ReliefF", "Fisher discriminant"]
+    attributeDiscOrder = ["Unordered","ReliefF","GainRatio"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
@@ -43,8 +43,8 @@ class OWSurveyPlot(OWVisWidget):
         self.graph.exampleTracking = 0
         self.graph.enabledLegend = 1
         self.graph.tooltipKind = 1
-        self.attrDiscOrder = "None"
-        self.attrContOrder = "None"
+        self.attrDiscOrder = "Unordered"
+        self.attrContOrder = "Unordered"
         self.attributeSelectionList = None
         self.graphCanvasColor = str(QColor(Qt.white).name())
         self.primaryAttribute = "(None)"
@@ -72,14 +72,14 @@ class OWSurveyPlot(OWVisWidget):
         # survey plot settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
         OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global value scaling", callback = self.setGlobalValueScaling)
-        OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateGraph)
+        OWGUI.checkBox(box, self, "graph.exampleTracking", "Example tracking", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateGraph)
 
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = "Continuous attribute ordering", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = "Discrete attribute ordering", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Tooltips settings")
-        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't Show Tooltips", "Show Visible Attributes", "Show All Attributes"], callback = self.updateGraph)
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
@@ -89,7 +89,7 @@ class OWSurveyPlot(OWVisWidget):
 
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
-        self.resize(700,700)
+        self.resize(750,700)
 
 
 

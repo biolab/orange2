@@ -1,6 +1,6 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import qwt
+import PyQt4.Qwt5 as qwt
 import math
 from OWWidget import *
 import OWGUI
@@ -23,31 +23,38 @@ colorButtonSize = 15
 specialColorLabelWidth = 160
 paletteInterpolationColors = 250
 
-import sys
-if sys.platform == "darwin":
-    def signedColor(long):
-        if type(long) == int:
-            return long
-        elif long > 0xFFFFFFFF:
-            long &= 0xFFFFFFFF
+# On Mac OS X there are problems with QRgb and whether it is long or int and even whether
+# it is positive or negative number (there is corelation between those)
+# Color can be stored in 32 bit unsigned int but Python does not have unsigned int explicitly
+# So Python on Mac sometimes uses long where it should use int (when the highest bit is set and
+# it sees the number as positive - so it cannot be stored as positive number in 31 bits) and sometimes
+# it needs unsigned number and so uses long and does not want a signed int
 
-        if long & 0x80000000:
-            return int(-((long ^ 0xFFFFFFFF) + 1))
-        else:
-            return int(long)
+try:
+    qRed(-1)
+    wantsPositiveColor = False
+except:
+    wantsPositiveColor = True
 
-    def positiveColor(color):
-        if color < 0:
-            return (-color - 1) ^ 0xFFFFFFFF
-        else:
-            return color
+def signedColor(long):
+    if type(long) == int:
+        return long
+    
+    long &= 0xFFFFFFFF
+    
+    if long & 0x80000000:
+        return int(-((long ^ 0xFFFFFFFF) + 1))
+    else:
+        return int(long)
 
-    def signedPalette(palette):
-        return [signedColor(color) for color in palette]
+def positiveColor(color):
+    if wantsPositiveColor and color < 0:
+        return (-color - 1) ^ 0xFFFFFFFF
+    else:
+        return color
 
-else:
-    signedColor = positiveColor = signedPalette = lambda x:x
-
+def signedPalette(palette):
+    return [signedColor(color) for color in palette]
 
 class ColorPalette(QWidget):
     def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):

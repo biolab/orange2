@@ -62,7 +62,7 @@ class OWRegressionTree(OWWidget):
 
         OWGUI.separator(self.controlArea)
         self.postPBox=OWGUI.widgetBox(self.controlArea, "Post-Pruning")
-        OWGUI.checkWithSpin(self.postPBox, self, "Prunning with m-estimate, m:", 0, 1000, 'PostMPCheck', 'PostMPVal')
+        OWGUI.checkWithSpin(self.postPBox, self, "Pruning with m-estimate, m:", 0, 1000, 'PostMPCheck', 'PostMPVal')
 
         OWGUI.button(self.controlArea, self, "&Apply settings",callback=self.setLearner)
         self.setLearner()
@@ -95,7 +95,7 @@ class OWRegressionTree(OWWidget):
 
     def dataset(self, data):
         self.data=data
-        if data:
+        if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
             self.setLearner()
         else:
             self.send("Learner",None)

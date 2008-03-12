@@ -63,7 +63,7 @@ class OWSVM(OWWidget):
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy")
 
-        OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
+        OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
         #self.adjustSize()
         self.loadSettings()
@@ -161,7 +161,8 @@ class OWSVM(OWWidget):
             raise UnhandledException()
 
     def finishSearch(self):
-        del self.best["error"]
+        if self.best.has_key("error"):
+            del self.best["error"]
         for key in self.best.keys():
             self.__setattr__(key, self.best[key])
         self.progressBarFinished()

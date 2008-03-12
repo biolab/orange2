@@ -23,7 +23,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     settingsList = ["optimizationType", "attributeCount", "attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
                     "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation",
                     "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod",
-                    "classificationMethod", "classConfidence", "lastSaveDirName"]
+                    "classificationMethod", "classConfidence", "lastSaveDirName",
+                    "projectionLimit", "useProjectionLimit"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -45,6 +46,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.optimizeAttributeOrder = 0
         self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
+        self.useTimeLimit = 0
+        self.useProjectionLimit = 0
 
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
@@ -75,8 +78,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting Projections First")
-        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, "Attribute and Value Order")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection list, most interesting projections first")
+        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, "Attribute and value order")
         self.optimizeOrderSubBox = OWGUI.widgetBox(self.optimizeOrderBox, orientation = "horizontal")
         self.buttonsBox = OWGUI.widgetBox(self.MainTab, box = 1)
 
@@ -87,7 +90,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections", callback = self.evaluateProjections)
         f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
-        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopEvaluationClick)
+        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop Evaluation", callback = self.stopEvaluationClick)
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
 
@@ -101,19 +104,22 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of projection interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore Small Cells" )
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore small cells" )
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
 
-        self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing Method")
+        self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing method")
         self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
 
-        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for Ranking Attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for ranking attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
-        self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
-        self.SettingsTab.layout().addStretch(100)
+        self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing method used for optimizing attribute orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
+
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to stop evaluation or optimization?")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
         # ##########################
         # ARGUMENTATION TAB
@@ -124,29 +130,29 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
 
-        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, "Show Arguments For Class:", orientation = "horizontal")
+        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, "Show arguments for class:", orientation = "horizontal")
         self.classValueCombo = OWGUI.comboBox(self.argumentsClassBox, self, "argumentationClassValue", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
         self.logitLabel = OWGUI.widgetLabel(self.argumentsClassBox, " ", labelWidth = 100)
 
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments/Odds Ratios For The Selected Class Value")
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments/Odds ratios for the selected class value")
         self.argumentList = OWGUI.listBox(self.argumentBox, self, callback = self.argumentSelected)
         self.argumentList.setMinimumHeight(200)
-        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown Details in Arguments List" , orientation = "horizontal")
-        self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% Confidence Interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
+        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown details in arguments list" , orientation = "horizontal")
+        self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% confidence interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
 
         # ##########################
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
-        probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability Estimation")
+        probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability estimation")
         self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"], callback = self.updateMEstimateComboState)
 
         self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = QDoubleValidator(0,10000,1, self))
 
-        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluating Time", orientation = "horizontal")
+        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluation time")
         OWGUI.checkWithSpin(b, self, "Use time limit:    ", 1, 1000, "useTimeLimit", "timeLimit", "(minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        classBox = OWGUI.widgetBox(self.ClassificationTab, "For Classification Use...")
+        classBox = OWGUI.widgetBox(self.ClassificationTab, "Class prediction settings")
         classMethodsCombo = OWGUI.comboBox(classBox, self, "classificationMethod", items = ["Top-ranked projections", "Semi-naive Bayes", "Naive Bayes with combining attribute values"], callback = self.updateClassMethodsCombo)
 
         # top projection settings
@@ -204,13 +210,13 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         OWGUI.checkBox(explorerBox, self, 'showDataSubset', 'Show unselected data as example subset', tooltip = "This option determines what to do with the examples that are not selected in the projection.\nIf checked then unselected examples will be visualized in the same way as examples that are received through the 'Example Subset' signal.")
 
         self.mosaic = orngMosaic()
-        autoBuildTreeBox = OWGUI.widgetBox(self.TreeTab, "Mosaic Tree", orientation = "vertical")
+        autoBuildTreeBox = OWGUI.widgetBox(self.TreeTab, "Mosaic tree", orientation = "vertical")
         autoBuildTreeButtonBox = OWGUI.widgetBox(autoBuildTreeBox, orientation = "horizontal")
         self.autoBuildTreeButton = OWGUI.button(autoBuildTreeButtonBox, self, "Build Tree", callback = self.mtMosaicAutoBuildTree, tooltip = "Evaluate different mosaic diagrams and automatically build a tree of mosaic diagrams with clear class separation", debuggingEnabled = 0)
         OWGUI.button(autoBuildTreeButtonBox, self, "Visualize Tree", callback = self.mtVisualizeMosaicTree, tooltip = "Visualize a tree where each node is a mosaic diagram", debuggingEnabled = 0)
         OWGUI.lineEdit(autoBuildTreeBox, self, "mosaicSize", "Size of individual mosaic diagrams: ", orientation = "horizontal", tooltip = "What are the X and Y dimensions of individual mosaics in the tree?", valueType = int, validator = QIntValidator(self))
 
-        loadSaveBox = OWGUI.widgetBox(self.TreeTab, "Load/Save Mosaic Tree", orientation = "horizontal")
+        loadSaveBox = OWGUI.widgetBox(self.TreeTab, "Load/Save mosaic tree", orientation = "horizontal")
         OWGUI.button(loadSaveBox, self, "Load", callback = self.mtLoadTree, tooltip = "Load a tree from a file", debuggingEnabled = 0)
         OWGUI.button(loadSaveBox, self, "Save", callback = self.mtSaveTree, tooltip = "Save tree to a file", debuggingEnabled = 0)
 
@@ -223,9 +229,9 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         # ##########################
         # SAVE TAB
-        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of concurrently visualized attributes")
         self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage Projections")
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage projections")
 
         self.attrLenList = OWGUI.listBox(self.visualizedAttributesBox, self, selectionMode = QListWidget.MultiSelection, callback = self.attrLenListChanged)
         self.attrLenList.setMinimumHeight(60)
@@ -246,6 +252,16 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
 
         # ###########################
+        self.statusBar = QStatusBar(self)
+        self.controlArea.layout().addWidget(self.statusBar)
+        
+        # reset some parameters if we are debugging so that it won't take too much time
+        if orngDebugging.orngDebuggingEnabled:
+            self.useTimeLimit = 1
+            self.timeLimit = 0.3
+            self.useProjectionLimit = 1
+            self.projectionLimit = 100
+
         self.updateMEstimateComboState()
         self.updateClassMethodsCombo()
         self.updateGUI()
@@ -277,7 +293,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     def optimizeCurrentAttributeOrder(self, attrs = None, updateGraph = 1):
         if str(self.optimizeOrderButton.text()) == "Optimize Current Attribute Order":
-            self.stopOptimization = 0
+            self.cancelOptimization = 0
             self.optimizeOrderButton.setText("Stop Optimization")
 
             if not attrs:
@@ -293,7 +309,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             self.optimizeOrderButton.setText("Optimize Current Attribute Order")
             return bestPlacements
         else:
-            self.stopOptimization = 1
+            self.cancelOptimization = 1
             return []
 
 
@@ -424,7 +440,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentIndex(0)
 
         if showClassification:
-            s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), max(dist)*100. / float(sum(dist)))
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": str(classValue), "prob": max(dist)*100. / float(sum(dist))}
             for key in values:
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)

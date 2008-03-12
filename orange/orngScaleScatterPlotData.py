@@ -8,7 +8,7 @@ class orngScaleScatterPlotData(orngScaleData):
 
         xData = self.scaledData[xAttrIndex].copy()
         yData = self.scaledData[yAttrIndex].copy()
-
+        
         if self.rawData.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawData.domain[xAttrIndex].values)) - 1.0) / 2.0
         else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
 
@@ -67,4 +67,50 @@ class orngScaleScatterPlotData(orngScaleData):
         data = numpy.transpose(data)
         return data
 
+
+    def getOptimalClusters(self, attributeNameOrder, addResultFunct):
+        if not self.rawData.domain.classVar or self.rawData.domain.classVar.varType == orange.VarTypes.Continuous:
+            return
+        
+        jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+
+        self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
+        startTime = time.time()
+        count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2
+        testIndex = 0
+
+        for i in range(len(attributeNameOrder)):
+            for j in range(i):
+                try:
+                    attr1 = self.attributeNameIndex[attributeNameOrder[j]]
+                    attr2 = self.attributeNameIndex[attributeNameOrder[i]]
+                    testIndex += 1
+                    if self.clusterOptimization.isOptimizationCanceled():
+                        secs = time.time() - startTime
+                        self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
+                        self.scatterWidget.progressBarFinished()
+                        return
+
+                    data = self.createProjectionAsExampleTable([attr1, attr2], domain = domain, jitterSize = jitterSize)
+                    graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+
+                    allValue = 0.0
+                    classesDict = {}
+                    for key in valueDict.keys():
+                        addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attributeNameOrder[i], attributeNameOrder[j]], int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
+                        classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
+                        allValue += valueDict[key]
+                    addResultFunct(allValue, closureDict, polygonVerticesDict, [attributeNameOrder[i], attributeNameOrder[j]], classesDict, enlargedClosureDict, otherDict)     # add all the clusters
+                    
+                    self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
+                    self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
+                    del data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict
+                except:
+                    type, val, traceback = sys.exc_info()
+                    sys.excepthook(type, val, traceback)  # print the exception
+        
+        secs = time.time() - startTime
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
+        self.scatterWidget.progressBarFinished()
 
