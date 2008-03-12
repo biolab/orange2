@@ -929,7 +929,8 @@ def connectControlSignal(master, control, signal, f):
         control, signal = signal
     master.connect(control, SIGNAL(signal), f)
 
-def connectValueControl(control, master, value, signal, cfront, cback = None, fvcb = None):
+
+def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
     cback = cback or value and ValueCallback(master, value, fvcb)
     if cback:
         if signal:
@@ -937,10 +938,6 @@ def connectValueControl(control, master, value, signal, cfront, cback = None, fv
         cback.opposite = cfront
         if value and cfront and hasattr(master, "controlledAttributes"):
             master.controlledAttributes[value] = cfront
-    return cback
-
-def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
-    cback = connectValueControl(control, master, value, signal, cfront, cback, fvcb)
 
     cfunc = cfunc or f and FunctionCallback(master, f)
     if cfunc:
