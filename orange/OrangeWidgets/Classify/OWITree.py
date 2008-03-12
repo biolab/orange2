@@ -141,7 +141,7 @@ class OWITree(OWClassificationTreeViewer):
 
         except:
             return
-        
+
         if not hasattr(newtree, "tree"):
             QMessageBox.critical( None, "Invalid Learner", "The learner on the input built a classifier which is not a tree.", QMessageBox.Ok)
 
@@ -156,7 +156,7 @@ class OWITree(OWClassificationTreeViewer):
 
         self.attrsCombo.clear()
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
-        
+
         self.targetCombo.clear()
         if self.data:
             for attr in data.domain.attributes:
@@ -189,8 +189,8 @@ class OWITree(OWClassificationTreeViewer):
     def handleSelectionChanged(self, item):
         """called when new node in the tree is selected"""
         if self.nodeClassDict.has_key(item):
-            Prune.setEnabled(self.nodeClassDict[item].branchSelector <> None)
-        
+            self.btnPrune.setEnabled(self.nodeClassDict[item].branchSelector <> None)
+
 
 
 if __name__ == "__main__":
