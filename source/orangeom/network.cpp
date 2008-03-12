@@ -345,14 +345,15 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 
       return WrapNewOrange(network, type);
     }
-    else if (PyArg_ParseTuple(args, "ii|i:Network", &nVertices, &directed, &nEdgeTypes))
+    
+    PyErr_Clear();
+    
+    if (PyArg_ParseTuple(args, "ii|i:Network", &nVertices, &directed, &nEdgeTypes))
     {
 		  return WrapNewOrange(mlnew TNetwork(nVertices, nEdgeTypes, directed != 0), type);
     }
-    else
-    {
-      PYERROR(PyExc_TypeError, "Network.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
-    }
+
+    PYERROR(PyExc_TypeError, "Network.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 	  
 	PyCATCH
 }
