@@ -121,8 +121,7 @@ Section ""
 		MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO installpython
 				Quit
-		installpython:
-
+	installpython:
 		SetOutPath $DESKTOP
 		!if ${PYVER} == 23
 			File 3rdparty-23\Python-2.3.5.exe
@@ -131,9 +130,9 @@ Section ""
 		!else
 			File 3rdparty-${PYVER}\${PYFILENAME}
 			${If} $AdminInstall == 1
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation ALLUSERS=1 /Qb-' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 /Qb-' $0
 			${Else}
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation /Qb-' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk /Qb-' $0
 			${EndIf}
 			Delete "$DESKTOP\${PYFILENAME}"
 		!endif
@@ -142,7 +141,7 @@ Section ""
 		StrCmp $PythonDir "" 0 have_python
 			MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
 			Quit
-		have_python:
+	have_python:
 
 
 		IfFileExists $PythonDir\lib\site-packages\PythonWin have_pythonwin
@@ -155,24 +154,29 @@ Section ""
 			File 3rdparty-${PYVER}\${PYWINFILENAME}
 			ExecWait "$DESKTOP\${PYWINFILENAME}"
 			Delete "$DESKTOP\${PYWINFILENAME}"
-		have_pythonwin:
+	have_pythonwin:
 
 
 		SetOutPath $PythonDir\lib\site-packages
 		IfFileExists $PythonDir\lib\site-packages\qt.py have_pyqt
 			File /r 3rdparty-${PYVER}\pyqt\*.*
-		have_pyqt:
+	have_pyqt:
 
 
 		IfFileExists $PythonDir\lib\site-packages\qwt\*.* have_pyqwt
 			File /r 3rdparty-${PYVER}\qwt
-		have_pyqwt:
+	have_pyqwt:
 
 
 		IfFileExists $PythonDir\lib\site-packages\Numeric\*.* have_numeric
 			File /r 3rdparty-${PYVER}\numeric
 			File various\Numeric.pth
-        have_numeric:
+	have_numeric:
+
+
+		IfFileExists $PythonDir\lib\site-packages\numpy\*.* have_numpy
+			File /r 3rdparty-${PYVER}\numpy
+	have_numpy:
 
 
 		IfFileExists "$PythonDir\lib\site-packages\qt-mt230nc.dll" have_qt
