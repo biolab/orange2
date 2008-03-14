@@ -1,4 +1,8 @@
-call updateSetConstants__.btm
+rem call updateSetConstants__.btm
+
+set DOWNLOADDIR=C:\Inetpub\wwwUsers\orange\download
+set UPDATEDIR=C:\Inetpub\wwwUsers\orange\download\update
+set SCRIPTDIR=C:\Inetpub\wwwUsers\orange\scripts
 
 rem ************************************************
 rem *** update snapshot
@@ -8,19 +12,11 @@ if errorlevel == 0 goto changedirok2
 cancel
 
 :changedirok2
-cd ..
-cvs -d :sspi:cvso@localhost:/CVS checkout -r snapshot -f -d update orange
-cd update
-if not exist OrangeWidgets mkdir OrangeWidgets
-cd OrangeWidgets
-cvs -d :sspi:cvso@localhost:/CVS -Q checkout -r snapshot -f Genomics
-rem cvs -d :sspi:cvso@localhost:/CVS -Q checkout -kb -r snapshot source -d orange\source
-cdd %UPDATEDIR
-copy ..\orange.chm doc
+svn checkout http://www.ailab.si/svn/orange/trunk/orange .
+copy ..\..\doc\*.chm doc
 
 rem ************************************************
 REM *** build whatsup.txt list
 cdd %SCRIPTDIR
 c:\python23\python whatsUp.py %UPDATEDIR %DOWNLOADDIR
-
 exit
