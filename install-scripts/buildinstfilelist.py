@@ -69,9 +69,10 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
 
                     whatsDownEntries = {}
                     for ent in SVNclient.status(root_dir+here_dir, recurse=0):
-                            fname, version = ent.entry.name, ent.entry.commit_revision.number
-                            whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
-                    entriesfile.close()
+                        if ent.entry.node_kind <> pysvn.node_kind.file:
+                            continue
+                        fname, version = ent.entry.name, ent.entry.commit_revision.number
+                        whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
 
                 if whatsDownEntries.has_key(fle):
                     if mac:
