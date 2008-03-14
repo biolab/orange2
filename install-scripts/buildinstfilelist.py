@@ -1,4 +1,5 @@
 import os, re, sys, md5
+import pysvn
 
 basedir = sys.argv[1]
 fileprefix = sys.argv[2]
@@ -41,6 +42,8 @@ down = ""
 def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
     global outfs, hass, down
     
+    SVNclient = pysvn.Client()
+
     if not os.path.exists(root_dir+here_dir):
         return
     
@@ -48,7 +51,7 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
     directories = []
     for fle in os.listdir(root_dir+here_dir):
         tfle = root_dir+here_dir+fle
-        if fle == "CVS" or excluded("orange\\"+there_dir+fle):
+        if fle == ".svn" or excluded("orange\\"+there_dir+fle):
             continue
         if os.path.isdir(tfle):
             if recursive:
@@ -64,12 +67,9 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
                         else:
                             hass += 'FileWrite $WhatsDownFile "+%s$\\r$\\n"\n' % there_dir[14:-1]
 
-                    entriesfile = open(root_dir+here_dir+"CVS\\Entries", "rt")
                     whatsDownEntries = {}
-                    for line in entriesfile:
-                        ma = file_re.match(line)
-                        if ma:
-                            fname, version, date = ma.groups()
+                    for ent in SVNclient.status(root_dir+here_dir, recurse=0):
+                            fname, version = ent.entry.name, ent.entry.revision.number
                             whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
                     entriesfile.close()
 
@@ -116,10 +116,10 @@ buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING)|(c45.dll))
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
 buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(pyw)|(png))\\Z", "canvas")
 
-buildLists([(basedir, "genomics\\", "OrangeWidgets\\Genomics\\", ".*[.]py\\Z", 0),
-            (basedir, "genomics\\GO\\", "OrangeWidgets\\Genomics\\GO\\", "", 0),
-            (basedir, "genomics\\Annotation\\", "OrangeWidgets\\Genomics\\Annotation\\", "", 0),
-            (basedir, "genomics\\Genome Map\\", "OrangeWidgets\\Genomics\\Genome Map\\", "", 0)], "genomics")
+# buildLists([(basedir, "genomics\\", "OrangeWidgets\\Genomics\\", ".*[.]py\\Z", 0),
+#            (basedir, "genomics\\GO\\", "OrangeWidgets\\Genomics\\GO\\", "", 0),
+#            (basedir, "genomics\\Annotation\\", "OrangeWidgets\\Genomics\\Annotation\\", "", 0),
+#            (basedir, "genomics\\Genome Map\\", "OrangeWidgets\\Genomics\\Genome Map\\", "", 0)], "genomics")
 
 buildLists([(basedir, "orange\\doc\\", "doc\\", "", 0), 
             (basedir, "orange\\doc\\datasets\\", "doc\\datasets\\", "", 0),

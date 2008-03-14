@@ -6,7 +6,7 @@ cdd %WEBDIR
 
 del /sye orngText
 rmdir /sq orngText
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A orngText
+svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/orngText orngText
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
@@ -30,15 +30,15 @@ for %ver in (%PYTHONVERSIONS) (
 rem ######
 rem # compile GOlib
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- GOlib
+
+del /sye GOlib
+rmdir /sq GOlib
+svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/Golib GOlib
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
 
 cdd %WEBDIR\GOlib
-
-del /sye dist 
-del /sye build
 
 for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
@@ -60,7 +60,7 @@ cdd %WEBDIR
 
 del /sye Genomics
 rmdir /sq Genomics
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A Genomics
+svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/Genomics Genomics
 
 rem set PATH=%PATH;c:\MinGW\bin
 rem set SWIGLIB=C:\swigwin-1.3.31\Lib

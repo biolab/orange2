@@ -1,6 +1,8 @@
 pushd
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -A -- source
+rem del /sye source
+rem rmdir /sq source
+svn checkout http://www.ailab.si/svn/orange/trunk/source source
 
 cd source
 call _pyxtract.bat

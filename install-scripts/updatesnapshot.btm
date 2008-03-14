@@ -7,11 +7,10 @@ call winCompile.btm
 call winCompileAddOns.btm
 
 cdd %SNAPSHOTDIR
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -r HEAD orange
+rem del /sye orange
+rem rmdir /sq orange
+svn checkout http://www.ailab.si/svn/orange/trunk/orange orange
 break_on_error
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -r HEAD genomics
-break_on_error
-
 
 cdd %SCRIPTDIR
 buildInstFileList.py %SNAPSHOTDIR snapshotfiles
