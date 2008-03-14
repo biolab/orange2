@@ -41,5 +41,4 @@ def listfiles(baseurl, basedir, subdir):
 outf = open(destdir+r"\whatsup.txt", "wt")
 
 listfiles("./", "orange/", "")
-listfiles("./OrangeWidgets/Genomics/", "orange/OrangeWidgets/Genomics/", "")
 outf.close()
