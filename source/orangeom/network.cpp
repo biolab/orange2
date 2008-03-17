@@ -19,7 +19,6 @@
     Contact: miha.stajdohar@fri.uni-lj.si
 */
 
-
 #include "ppp/network.ppp"
 
 TNetwork::TNetwork(TGraphAsList *graph)
@@ -325,10 +324,16 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 	PyTRY
 		int nVertices, directed, nEdgeTypes = 1;
     PyObject *pygraph;
-
+    
     if (PyArg_ParseTuple(args, "O:Network", &pygraph))
     {
-      TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+      if (!PyOrGraphAsList_Check(pygraph))
+      {
+        PyErr_Format(PyExc_TypeError, "Network.__new__: an instance of GraphAsList expected got '%s'", pygraph->ob_type->tp_name);
+        return PYNULL;
+      }
+
+      TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
 
       TNetwork *network = mlnew TNetwork(graph);
 
@@ -341,7 +346,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
         network->items = &dynamic_cast<TExampleTable &>(PyOrange_AsOrange(items).getReference());
       }
 
-	    Py_DECREF(strItems);
+	  Py_DECREF(strItems);
 
       return WrapNewOrange(network, type);
     }
@@ -354,7 +359,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
     }
 
     PYERROR(PyExc_TypeError, "Network.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
-	  
+	
 	PyCATCH
 }
 
