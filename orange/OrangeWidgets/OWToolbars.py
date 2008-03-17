@@ -103,7 +103,7 @@ class ZoomSelectToolbar(QHButtonGroup):
     def actionPolygonSelection(self): self.action(4)
     
     
-class NavigateSelectToolbar(QGroupBox):
+class NavigateSelectToolbar(QVBox):
 #                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)
                  
     IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
