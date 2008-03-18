@@ -479,7 +479,6 @@ class CanvasOptionsDlg(QDialog):
         generalBox = QVGroupBox(GeneralTab)
         generalBox.setTitle("General Options")
         self.snapToGridCB = QCheckBox("Snap widgets to grid", generalBox)
-        self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", generalBox)
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", generalBox)
         self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
         self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
