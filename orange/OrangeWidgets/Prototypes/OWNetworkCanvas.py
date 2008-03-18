@@ -161,7 +161,7 @@ class OWNetworkCanvas(OWGraph):
                   (key, neighbours) = self.vertices[int(v)]
                   color = self.curve(key).symbol().pen().color().name()
                   self.selectionStyles[int(v)] = color
-                  newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.vertexSize + 4))
+                  newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.getVertexSize(v) + 4))
                   self.setCurveSymbol(key, newSymbol)
                   self.selection.append(v);
                   change = True
@@ -895,7 +895,7 @@ class OWNetworkCanvas(OWGraph):
 #            self.vertices[j] = (key, neighbours)
           
           self.nEdges += 1
-      print visualizer.coors[0]
+      #print visualizer.coors[0]
           
       self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
       

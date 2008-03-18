@@ -149,10 +149,10 @@ class OWNetwork(OWWidget):
         QToolTip.add(btnM2S, "Add Marked to Selection")
         btnS2M = OWGUI.button(ib, self, "",callback = self.markedFromSelection)
         btnS2M.setPixmap(QPixmap(dlg_sel2mark))
-        QToolTip.add(btnS2M, "Remove Marked from Selection")
+        QToolTip.add(btnS2M, "Add Selection to Marked")
         btnSIM = OWGUI.button(ib, self, "", callback = self.setSelectionToMarked)
         btnSIM.setPixmap(QPixmap(dlg_selIsmark))
-        QToolTip.add(btnSIM, "Set Selection to Marked")
+        QToolTip.add(btnSIM, "Set Selection is Marked")
         
         self.hideBox = QHGroupBox("Hide vertices", self.markTab)
         btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
@@ -255,7 +255,7 @@ class OWNetwork(OWWidget):
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
             self.graph.setMarkedNodes([i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])])
-            print [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            #print [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
             return
         
         elif hubs == 2:
@@ -348,7 +348,7 @@ class OWNetwork(OWWidget):
    
     
     def setGraph(self, graph):
-        print "setting"
+        #print "setting"
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."
@@ -603,12 +603,16 @@ class OWNetwork(OWWidget):
     
     
     def markedFromSelection(self):
-        self.graph.removeSelection(self.graph.markedNodes)
+        tomark = self.graph.markedNodes
+        tomark |= set(self.graph.selection)
+        self.graph.removeSelection(None, False)
+        self.graph.setMarkedNodes(tomark)
     
     
     def setSelectionToMarked(self):
+        toselect = self.graph.markedNodes
         self.graph.removeSelection(None, False)
-        self.graph.addSelection(self.graph.markedNodes)
+        self.graph.addSelection(toselect)
         
         
     def showDegreeDistribution(self):
