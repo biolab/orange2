@@ -4,3 +4,6 @@ sql2.py
 sql3.py
 sql4.py
 pade.py
+network_constructor.py
+network_optimization.py
+network_read.py
