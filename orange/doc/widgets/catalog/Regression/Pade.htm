@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>Pade</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Pade</h1>
+
+<img class="screenshot" src="../icons/Pade.png">
+<p>Replaces a continuous class with a derivative or a MQC by one or more continuous attributes.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>Input data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>Output data set.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>This widget implements several techniques for assessing partial derivatives of the class variable for the given set of examples. The derivative is appended to the example table as a new class attribute. The widget can compute either quantitative derivative by a chosen continuous attribute or a qualitative derivative by one or more attributes.</p>
+
+<P>The widget is implemented to cache some data. After, for instance, computing the derivatives by <code>x</code>and <code>y</code> separatelly, the widget has already stored all the data to produce the derivatives by both in a moment.</P>
+
+<table>
+<tr><td valign="top">
+<img class="screenshot" src="Pade.png" align="left">
+</td>
+<td valign="top">
+<p>The <b>Attributes</b> box lists all continuous attributes and lets the user select the attribute by which she wants to compute the qualitative derivative. The selection is important only when the widget actually outputs a qualitative derivative (this depends on other settings, described below). Buttons <b>All</b> and <b>None</b> select the entire list or nothing.</p>
+
+<P>Derivatives by more than one attribute are mathematically questionable, and computing by many attributes can be slow and messy. Methods that are based on triangulation will include all attributes in the triangulation, regardless of the selection, but then compute only the selected derivatives.</P>
+
+<P>Box <b>Method</b> determines the used method and its settings. Available methods are <b>First triangle</b>, <b>Star Regression</b>, <b>Univariate Star Regression</b> and <b>Tube Regression</b>. First triangle is unsuitable for data with non-negligible noise. Star regression seems to perform rather poor; the quantitative derivatives it computes are even theoretically wrong. Univariate Star Regression will handle noise well, but also work well for very complex functions (like sin(x)sin(y) across several periods). Tube regression is very noise resistant, which can lead it to oversimplify the model, yet it is the only method that does not use the triangulation and is thus capable of handling discrete attributes, unknown values and large number of dimensions. It may be slow when the number of examples is very large. Detailed description of these methods can be found in Zabkar and Demsar's papers.</P>
+
+<P><b>Ignore differences below</b> lets the user set a threshold for qualitative derivatives
+
+
+<b>Multinominal attributes</b>, defines the treatment of multivalued discrete attributes. Say that we have a discrete attribute <em>status</em> with values <em>low</em>, <em>middle</em> and <em>high</em>, listed in that order. Options for its transformation are</p>
+<ul>
+<li><b>Target or First value as base</b>: the attribute will be transformed into two continuous attributes, <em>status=middle</em> with values 0 or 1 signifying whether the original attribute had value <em>middle</em> on a particular example, and similarly, <em>status=high</em>. Hence, a three-valued attribute is transformed into two continuous attributes, corresponding to all except the first value of the attribute.</li>
+
+<li><b>Most frequent value as base</b>: similar to the above, except that the data is analyzed and the most frequent value is used as a base. So, if most examples have the value <em>middle</em>, the two newly constructed continuous attributes will be <em>status=low</em> and <em>status=high</em>.</li>
+
+<li><b>One attribute per value</b>: this would construct three continuous attributes out of a three-valued discrete one.</li>
+
+<li><b>Ignore multinominal attributes</b>: removes the multinominal attributes from the data.</li>
+
+<li><b>Treat as ordinal:</b> converts the attribute into a continuous attribute with values 0, 1, and 2.</li>
+
+<li><b>Divide by number of values:</b> same as above, except that the values are normalized into range 0-1. So, our case would give values 0, 0.5 and 1.</li>
+</ul>
+
+<P>Next box defines the treatment of continuous attributes. You will usually prefer <b>Leave as is</b> option. The alternative is <b>Normalize by span</b> which will subtract the lowest value found in the data and divide by the span, so all values will fit into [0, 1]. Finally, <b>Normalize by variance</b> subtracts the average and divides by the variance.</P>
+
+<P>Finally, you can decide what happens with the class if it is discrete. Besides leaving it as it is, there are also the options which are available for multinominal attributes, except for those options which split the attribute into more than one attribute - this obviously cannot be supported since you cannot have more than one class attribute. Additionally, you can <b>specify a target value</b>; this will transform the class into a continuous attribute with value 1 if the value of the original attribute equals the target and 0 otherwise.</P>
+
+<P>With <B>value range</B>, you can define the values of the new attributes. In the above text we supposed the range <b>from 0 to 1</b>. You can change it to <b>from -1 to 1</b>.</P>
+
+<P>If <b>Send automatically</b> is set, the data set is committed on any change. Otherwise, you have to press <b>Send data</b> after each change.</P>
+</td></tr></table>
+
+
+<h2>Examples</h2>
+
+<P>The schema below shows a typical use of this widget: in order to properly plot linear projection of the data, discrete attributes need to be converted to continuous, therefore we put the data through Continuize widget before drawing it. Attribute "chest pain" originally had four values and was transformed into three continuous attributes; similar happened to gender, which was transformed into a single attribute gender=female.</P>
+
+<img src="Continuize-Schema.png">
+
+
+</body>
+</html>
