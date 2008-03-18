@@ -10,7 +10,7 @@ from orngSignalManager import InputSignal, OutputSignal
 from xml.dom.minidom import Document, parse
 
 class DirectionButton(QToolButton):
-    def __init__(self, parent, leftDirection = 1, useLargeIcons = 0):
+    def __init__(self, parent, leftDirection = 1):
         apply(QToolButton.__init__,(self, parent))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.parent = parent
@@ -21,7 +21,7 @@ class DirectionButton(QToolButton):
         if self.leftDirection:     self.setIconSet(QIconSet(QPixmap(self.parent.parent().canvasDlg.move_left)))
         else:                    self.setIconSet(QIconSet(QPixmap(self.parent.parent().canvasDlg.move_right)))
         
-        if useLargeIcons == 1:
+        if parent.canvasDlg.settings["useLargeIcons"]:
             self.setUsesBigPixmap(True)
             self.setMaximumSize(40, 80)
             self.setMinimumSize(40, 80)
@@ -40,7 +40,7 @@ class WidgetButton(QToolButton):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.shiftPressed = 0
 
-    def setValue(self, name, nameKey, tabs, canvasDlg, useLargeIcons):
+    def setValue(self, name, nameKey, tabs, canvasDlg):
         self.widgetTabs = tabs
         self.name = name
         self.nameKey = nameKey
@@ -72,12 +72,23 @@ class WidgetButton(QToolButton):
         QToolTip.add( self, tooltipText)
 
         self.canvasDlg = canvasDlg
+
+#        # split long names into two lines - doesn't work well since qtoolbutton does not show it well
+#        import string
+#        numSpaces = string.count(name, " ")
+#        if numSpaces == 1: name = string.replace(name, " ", "\n")
+#        elif numSpaces > 1: 
+#            mid = len(name)/2; i = 0
+#            while "\n" not in name:
+#                if name[mid + i] == " ": name = name[:mid + i] + '\n' + name[:mid + i + 1]
+#                elif name[mid - i] == " ": name = name[:mid - i] + '\n' + name[:mid - i + 1]
+#                i+=1    
         self.setTextLabel(name, False)
         
         self.setIconSet(QIconSet(QPixmap(self.getFullIconName())))
         
-        if useLargeIcons == 1:
-            self.setUsesTextLabel (True)
+        if canvasDlg.settings["useLargeIcons"]:
+            self.setUsesTextLabel(True)
             self.setUsesBigPixmap(True)
             self.setMaximumSize(80, 80)
             self.setMinimumSize(80, 80)
@@ -229,14 +240,15 @@ class WidgetButton(QToolButton):
         QToolButton.mouseReleaseEvent(self, e)
             
 class WidgetTab(QWidget):
-    def __init__(self, useLargeIcons = 0, *args):
+    def __init__(self, canvasDlg, *args):
         apply(QWidget.__init__,(self,)+ args)
+        self.canvasDlg = canvasDlg
         self.HItemBox = QHBoxLayout(self)
         self.widgets = []
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.widgetIndex = 0
-        self.left  = DirectionButton(self, 1, useLargeIcons = useLargeIcons)
-        self.right = DirectionButton(self, 0, useLargeIcons = useLargeIcons)
+        self.left  = DirectionButton(self, 1)
+        self.right = DirectionButton(self, 0)
         self.HItemBox.addWidget(self.left)
         self.HItemBox.addWidget(self.right)
         
@@ -309,13 +321,12 @@ class WidgetTabs(QTabWidget):
         self.tabs = []
         self.canvasDlg = None
         self.allWidgets = []
-        self.useLargeIcons = False
         self.tabDict = {}
         self.setMinimumWidth(10)    # this way the < and > button will show if tab dialog is too small
         self.widgetInfo = widgetInfo
         
     def insertWidgetTab(self, name):
-        tab = WidgetTab(self.useLargeIcons, self, name)
+        tab = WidgetTab(self.canvasDlg, self, name)
         self.tabs.append(tab)
         self.insertTab(tab, name)
         self.tabDict[name] = tab
@@ -325,11 +336,10 @@ class WidgetTabs(QTabWidget):
         self.canvasDlg = canvasDlg
 
     # read the xml registry and show all installed widgets
-    def readInstalledWidgets(self, registryFileName, widgetDir, picsDir, defaultPic, useLargeIcons):
+    def readInstalledWidgets(self, registryFileName, widgetDir, picsDir, defaultPic):
         self.widgetDir = widgetDir
         self.picsDir = picsDir
         self.defaultPic = defaultPic
-        self.useLargeIcons = useLargeIcons
         doc = parse(registryFileName)
         orangeCanvas = doc.firstChild
         categories = orangeCanvas.getElementsByTagName("widget-categories")[0]
@@ -408,7 +418,7 @@ class WidgetTabs(QTabWidget):
         for i in range(len(priorityList)):            
             button = WidgetButton(tab)
             self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
-            button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
+            button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg)
             self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
             if exIndex != priorityList[i] / 1000:
                 for k in range(priorityList[i]/1000 - exIndex):
