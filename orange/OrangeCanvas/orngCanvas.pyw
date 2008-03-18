@@ -63,7 +63,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
 
         self.rebuildSignals()    # coloring of signals - unused!
-        self.useLargeIcons = False
         self.snapToGrid = True
         self.menuSaveSettingsID = -1
         self.menuSaveSettings = 1
@@ -74,7 +73,6 @@ class OrangeCanvasDlg(QMainWindow):
         if (int(qVersion()[0]) >= 3):
                QIconSet.setIconSize(QIconSet.Small, QSize(32,32))
 
-        self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
 
         self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
@@ -92,6 +90,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.file_open = os.path.join(canvasPicsDir, "open.png")
         self.file_save = os.path.join(canvasPicsDir, "save.png")
         self.file_print= os.path.join(canvasPicsDir, "print.png")
+        self.text_icon = os.path.join(canvasPicsDir, "text.png")
         self.file_exit = os.path.join(canvasPicsDir, "exit.png")
         self.move_left = os.path.join(canvasPicsDir, "moveleft.png")
         self.move_right= os.path.join(canvasPicsDir, "moveright.png")
@@ -103,7 +102,12 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolOpen = QToolButton(QIconSet(QPixmap(self.file_open)), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema')
         self.toolSave = QToolButton(QIconSet(QPixmap(self.file_save)), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
         self.toolbar.addSeparator()
+        self.toolText = QToolButton(QIconSet(QPixmap(self.text_icon)), "Show widgets using large icons and text" ,QString.null, self.toggleLargeIcons, self.toolbar, 'large icons')
+        self.toolText.setToggleButton(1)
+        self.toolText.setOn(self.settings["useLargeIcons"]) 
+        self.toolbar.addSeparator()
         toolPrint = QToolButton(QIconSet(QPixmap(self.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
+        
 
         # qt version compatibility
         if hasattr(self, "addDockWindow"): self.addDockWindow(self.toolbar, "Toolbar", Qt.DockTop, True)
@@ -220,7 +224,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.tabs.insertWidgetTab(tab)
 
         # read widget registry file and create tab with buttons
-        self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
+        self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic)
 
         # store order to settings list
         widgetTabList = []
@@ -544,7 +548,8 @@ class OrangeCanvasDlg(QMainWindow):
                     widget.repaintAllLines()
                 win.canvas.update()
 
-    def updateUseLargeIcons(self):
+    def toggleLargeIcons(self):
+        self.settings["useLargeIcons"] = not self.settings["useLargeIcons"]
         self.createWidgetsToolbar(0)
 
     def menuItemEnableAll(self):
@@ -700,7 +705,6 @@ class OrangeCanvasDlg(QMainWindow):
 
         # set general options settings
         dlg.snapToGridCB.setChecked(self.snapToGrid)
-        dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
         #dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
@@ -745,11 +749,6 @@ class OrangeCanvasDlg(QMainWindow):
                 self.snapToGrid = dlg.snapToGridCB.isChecked()
                 self.settings["snapToGrid"] = self.snapToGrid
                 self.updateSnapToGrid()
-
-            if self.useLargeIcons != dlg.useLargeIconsCB.isChecked():
-                self.useLargeIcons = dlg.useLargeIconsCB.isChecked()
-                self.settings["useLargeIcons"] = self.useLargeIcons
-                self.updateUseLargeIcons()
 
             # save exceptions settings
             #self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
