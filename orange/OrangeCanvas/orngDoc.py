@@ -20,7 +20,7 @@ class SchemaDoc(QMainWindow):
         self.canSave = 0
         self.resize(700,500)
         self.showNormal()
-        self.setCaption("Schema "+ str(self.canvasDlg.iDocIndex))
+        self.setCaption("Schema"+" " + str(self.canvasDlg.iDocIndex))
         self.autoSaveName = os.path.join(self.canvasDlg.outputDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
 
