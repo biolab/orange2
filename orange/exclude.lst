@@ -11,7 +11,4 @@ orange/orangeWidgets/Classify/OWLearner.py
 orange/orangeWidgets/Classify/OWCalibratedClassifier.py
 orange/orangeWidgets/Visualize/OWLinVizGraph.py
 orange/orangeWidgets/Other/OWITree.py
-orange/orangeWidgets/Genomics/OWRules.py
-orange/orangeWidgets/Genomics/OWDisplayMotifs.py
-orange/orangeWidgets/Genomics/OWApproxProfiles.py
 orange/doc/style.css
