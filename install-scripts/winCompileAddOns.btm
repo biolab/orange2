@@ -33,7 +33,7 @@ cdd %WEBDIR
 
 del /sye GOlib
 rmdir /sq GOlib
-svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/Golib GOlib
+svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/GOLib GOlib
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
