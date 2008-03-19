@@ -877,7 +877,7 @@ class OWNetworkCanvas(OWGraph):
       #dodajanje vozlisc
       #print "OWNeteorkCanvas/addVisualizer: adding vertices..."
       self.vertices = {}
-      for v in range(0, self.nVertices):
+      for v in range(0, self.nVertices): 
           self.vertices[v] = (None, [])
       #print "done."
       
