@@ -79,7 +79,7 @@ for %ver in (%PYTHONVERSIONS) (
   echo %COMPILELOG
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
-  %PYTHON\python setup_whenCombinedWithGOLib.py build bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  %PYTHON\python setup_whenCombinedWithGOLib.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   rem  %PYTHON\python setup_whenCombinedWithGOLib.py install --skip-build --prefix %SNAPSHOTDIR\%ver
 )
 
