@@ -56,14 +56,16 @@ for %ver in (%PYTHONVERSIONS) (
 
 rem ######
 rem # compile Genomics
+rem # merge it with GOLib
 cdd %WEBDIR
 
 del /sye Genomics
 rmdir /sq Genomics
-svn checkout http://www.ailab.si/svn/orange/trunk/add-ons/Genomics Genomics
+svn export --force http://www.ailab.si/svn/orange/trunk/add-ons/GOLib Genomics
+svn export --force http://www.ailab.si/svn/orange/trunk/add-ons/Genomics Genomics
 
-rem set PATH=%PATH;c:\MinGW\bin
-rem set SWIGLIB=C:\swigwin-1.3.31\Lib
+set PATH=%PATH;c:\MinGW\bin
+set SWIGLIB=C:\swigwin-1.3.31\Lib
 
 cdd %WEBDIR\Genomics
 
@@ -77,8 +79,8 @@ for %ver in (%PYTHONVERSIONS) (
   echo %COMPILELOG
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
-  %PYTHON\python setup.py build bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
-  rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+  %PYTHON\python setup_whenCombinedWithGOLib.py build bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  rem  %PYTHON\python setup_whenCombinedWithGOLib.py install --skip-build --prefix %SNAPSHOTDIR\%ver
 )
 
 popd
