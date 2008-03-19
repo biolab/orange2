@@ -615,8 +615,9 @@ class OWNetworkCanvas(OWGraph):
       for v in range(self.nVertices):
           if self.colorIndex > -1:
               if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
-                  newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
-                  fillColor = newColor
+                  #newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
+                  #fillColor = newColor
+                  pass
               elif self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Discrete:
                   newColor = self.discPalette[self.colorIndices[self.visualizer.graph.items[v][self.colorIndex].value]]
                   fillColor = newColor
@@ -871,6 +872,7 @@ class OWNetworkCanvas(OWGraph):
       self.nVertices = visualizer.graph.nVertices
       self.nEdges = 0
       self.vertexDegree = []
+      self.colorIndex = -1
       
       #dodajanje vozlisc
       #print "OWNeteorkCanvas/addVisualizer: adding vertices..."
