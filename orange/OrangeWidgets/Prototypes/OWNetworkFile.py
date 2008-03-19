@@ -37,7 +37,7 @@ class OWNetworkFile(OWWidget):
         self.graph = None
         #get settings from the ini file, if they exist
         self.loadSettings()
-        print self.recentFiles
+        #print self.recentFiles
         
         #GUI
         self.box = QHGroupBox("Graph File", self.controlArea)
@@ -60,6 +60,10 @@ class OWNetworkFile(OWWidget):
         
         self.resize(150,100)
         self.activateLoadedSettings()
+        
+        # connecting GUI to code
+        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
+        self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
          
         # set the file combo box
     def setFileList(self):
@@ -95,10 +99,6 @@ class OWNetworkFile(OWWidget):
             
         if len(self.recentDataFiles) > 0 and os.path.exists(self.recentDataFiles[0]):
             self.addDataFile(self.recentDataFiles[0])
-            
-        # connecting GUI to code
-        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
-        self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
 
     # user selected a graph file from the combo box
     def selectFile(self, n):
@@ -133,6 +133,7 @@ class OWNetworkFile(OWWidget):
         
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
+            self.infoc.setText("No data file specified.")
             return
          
         table = ExampleTable(fn)
