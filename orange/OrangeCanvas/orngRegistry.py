@@ -236,16 +236,16 @@ def __getDirectoryNames():
         try: os.mkdir(widgetSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
-    outputDir = os.path.join(outputDir, "OrangeCanvas")
-    if not os.path.exists(outputDir):
-        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
- 
     bufferDir = os.path.join(outputDir, "buffer")
     if not os.path.exists(bufferDir):
         try: os.mkdir(bufferDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
+    outputDir = os.path.join(outputDir, "OrangeCanvas")
+    if not os.path.exists(outputDir):
+        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
+ 
 
     registryFileName = os.path.join(outputDir, "widgetregistry.xml")
     if not os.path.exists(registryFileName):
