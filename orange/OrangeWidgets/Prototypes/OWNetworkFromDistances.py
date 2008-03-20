@@ -3,7 +3,7 @@
 <description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
 <icon>icons/Outlier.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2030</priority>
+<priority>3012</priority>
 """
 
 #

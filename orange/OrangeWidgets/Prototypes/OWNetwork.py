@@ -3,7 +3,7 @@
 <description>Network Widget visualizes graphs.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2040</priority>
+<priority>3011</priority>
 """
 import OWGUI
 import OWToolbars
