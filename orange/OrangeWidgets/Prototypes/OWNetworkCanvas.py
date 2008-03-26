@@ -15,14 +15,14 @@ from Numeric import *
 from orngScaleScatterPlotData import *
 from OWGraphTools import UnconnectedLinesCurve
 
-class NetworkVertex():
+class NetworkVertex:
   def __init__(self):
     self.index = -1
     
     self.pen = QPen(Qt.black, 1)
     self.brushColor = Qt.black
     
-class NetworkEdge():
+class NetworkEdge:
   def __init__(self):
     self.u = -1
     self.v = -1
