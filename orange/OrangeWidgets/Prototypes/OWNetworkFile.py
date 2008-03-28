@@ -19,6 +19,7 @@ from orngNetwork import *
 from orange import Graph
 from orange import GraphAsList
 from orange import ExampleTable
+from orangeom import Network
 
 class OWNetworkFile(OWWidget):
     
@@ -28,7 +29,7 @@ class OWNetworkFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network File")
 
         self.inputs = []
-        self.outputs = [("Graph with ExampleTable", Graph)]
+        self.outputs = [("Network", Network)]
     
         #set default settings
         self.recentFiles = ["(none)"]
@@ -150,7 +151,7 @@ class OWNetworkFile(OWWidget):
         
         self.graph.setattr("items", table)
         self.infoc.setText("Data file added.")
-        self.send("Graph with ExampleTable", self.graph)
+        self.send("Network", self.graph)
         
     def browseDataFile(self, inDemos=0):
         if self.graph == None:
@@ -223,13 +224,13 @@ class OWNetworkFile(OWWidget):
                 
             #print "nVertices graph: " + str(data.nVertices)
             self.graph = data
-            self.send("Graph with ExampleTable", data)
+            self.send("Network", data)
 #            drawer = OWGraphDrawer()
 #            drawer.setGraph(data)
 #            drawer.show()
         else:
             print "None"
-            self.send("Graph with ExampleTable", None)
+            self.send("Network", None)
 
     def readNetFile(self, fn):
         network = NetworkOptimization()

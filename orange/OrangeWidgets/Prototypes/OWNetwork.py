@@ -13,6 +13,7 @@ from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
 from statc import mean
+from orangeom import Network
 
 dir = os.path.dirname(__file__) + "/../icons/"
 dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
@@ -30,7 +31,7 @@ class OWNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
 
-        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
+        self.inputs = [("Network", Network, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.markerAttributes = []
@@ -391,7 +392,7 @@ class OWNetwork(OWWidget):
         #print "done."
     
     def setExampleSubset(self, subset):
-        if self.graph == None:
+        if self.graph.visualizer == None:
             return
         
         hiddenNodes = []
