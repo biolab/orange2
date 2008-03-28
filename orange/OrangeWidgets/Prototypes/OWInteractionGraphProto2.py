@@ -1,9 +1,9 @@
 """
-<name>Interaction Graph</name>
+<name>Interaction Graph Prototype 2</name>
 <description>Interaction graph construction and viewer.</description>
 <icon>icons/InteractionGraph.png</icon>
 <contact>Aleks Jakulin</contact>
-<priority>4000</priority>
+<priority>4010</priority>
 """
 # InteractionGraph.py
 #
@@ -12,45 +12,46 @@
 from OWWidget import *
 from qt import *
 from qtcanvas import *
-import orngInteract
+import orngInteract, OWQCanvasFuncts
 import statc
 import os
 from re import *
 from math import floor, ceil
 from orngCI import FeatureByCartesianProduct
 import OWGUI
+from orangeom import Network
 
 class IntGraphView(QCanvasView):
     def __init__(self, parent, name, *args):
         apply(QCanvasView.__init__,(self,) + args)
         self.parent = parent
         self.name = name
-        self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
+
+    def sizeHint(self):
+        return QSize(200,200)
 
     # mouse button was pressed
-    def contentsMousePressEvent(self, ev):
+    def mousePressEvent(self, ev):
         self.parent.mousePressed(self.name, ev)
-
-    def contentsMoving(self, x,y):
-        self.parent.contentsMoving(x,y)
 
 
 ###########################################################################################
 ##### WIDGET : Interaction graph
 ###########################################################################################
-class OWInteractionGraph(OWWidget):
+class OWInteractionGraphProto2(OWWidget):
     settingsList = ["onlyImportantInteractions"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list)]
+        self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list), ("Network", Network)]
 
 
         #set default settings
         self.originalData = None
         self.data = None
+        self.graph = None
         self.dataSize = 1
         self.rest = None
         self.interactionMatrix = None
@@ -59,16 +60,30 @@ class OWInteractionGraph(OWWidget):
         self.lines = []         # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
         self.interactionRects = []
         self.rectItems = []
-        self.viewXPos = 0       # next two variables are used at setting tooltip position
-        self.viewYPos = 0       # inside canvasView
 
-        self.onlyImportantInteractions = 1
+        self.shownAttributes = []
+        self.selectedShown = []
+        self.hiddenAttributes = []
+        self.selectedHidden = []
         self.mergeAttributes = 0
+        self.onlyImportantInteractions = 0
 
         #load settings
         self.loadSettings()
 
         # add a settings dialog and initialize its values
+#        self.splitter = QSplitter(Qt.Horizontal, self.mainArea)
+#        self.mainArea.layout().addWidget(self.splitter)
+#
+#        self.canvasL = QGraphicsScene()
+#        self.canvasViewL = IntGraphView(self, "interactions", self.canvasL, self)
+#        self.splitter.addWidget(self.canvasViewL)
+#        self.canvasViewL.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+#
+#        self.canvasR = QGraphicsScene()
+#        self.canvasViewR = IntGraphView(self, "graph", self.canvasR, self)
+#        self.splitter.addWidget(self.canvasViewR)
+
         self.splitCanvas = QSplitter(self.mainArea)
 
         self.canvasL = QCanvas(2000, 2000)
@@ -79,64 +94,40 @@ class OWInteractionGraph(OWWidget):
         self.canvasViewR = IntGraphView(self, "graph", self.canvasR, self.splitCanvas)
         self.canvasViewR.show()
 
-
         #GUI
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = QVGroupBox(self.space)
-        self.addRemoveGroup = QHButtonGroup(self.space)
-        self.hiddenAttribsGroup = QVGroupBox(self.space)
-        self.shownAttribsGroup.setTitle("Selected attributes")
-        self.hiddenAttribsGroup.setTitle("Unselected attributes")
+        self.shownAttribsGroup = OWGUI.widgetBox(self.controlArea, "Selected Attributes" )
+        self.addRemoveGroup = OWGUI.widgetBox(self.controlArea, 1, orientation = "horizontal" )
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.controlArea, "Unselected Attributes")
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
+        self.shownAttribsLB = OWGUI.listBox(self.shownAttribsGroup, self, "selectedShown", "shownAttributes", selectionMode = QListBox.Extended)
 
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttributeClick, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.dirname(__file__) + "/../icons/Dlg_up2.png"))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttributeClick, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.dirname(__file__) + "/../icons/Dlg_down2.png"))
 
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", selectionMode = QListBox.Extended)
 
-        OWGUI.separator(self.space)
+        settingsBox = OWGUI.widgetBox(self.controlArea, "Settings")
+        self.mergeAttributesCB = OWGUI.checkBox(settingsBox, self, "mergeAttributes", 'Merge attributes', callback = self.mergeAttributesEvent, tooltip = "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with a right mouse click inside interaction rectangles in the left graph.\nA merged attribute is then created as a cartesian product of corresponding attributes \nand added to the list of attributes.")
+        self.importantInteractionsCB = OWGUI.checkBox(settingsBox, self, "onlyImportantInteractions", 'Show only important interactions', callback = self.showImportantInteractions)
 
-        self.mergeAttributesCB = QCheckBox('Merge attributes', self.space)
-        self.importantInteractionsCB = QCheckBox('Show only important interactions', self.space)
-        QToolTip.add(self.mergeAttributesCB, "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with right mouse click inside attribute rectangle.\nMerged attribute is then built as cartesian product of corresponding attribute pair\nand added to the list of possible attributes")
+        self.selectionButton = OWGUI.button(self.controlArea, self, "Show selection", callback = self.selectionClick, tooltip = "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
 
-        OWGUI.separator(self.space)
-
-        self.selectionButton = QPushButton("Show selection", self.space)
-        QToolTip.add(self.selectionButton, "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
-
-
-        self.saveLCanvas = QPushButton("Save left canvas", self.space)
-        self.saveRCanvas = QPushButton("Save right canvas", self.space)
-        self.connect(self.saveLCanvas, SIGNAL("clicked()"), self.saveToFileLCanvas)
-        self.connect(self.saveRCanvas, SIGNAL("clicked()"), self.saveToFileRCanvas)
-
-        #connect controls to appropriate functions
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttributeClick)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttributeClick)
-        self.connect(self.selectionButton, SIGNAL("clicked()"), self.selectionClick)
-        self.connect(self.mergeAttributesCB, SIGNAL("toggled(bool)"), self.mergeAttributesEvent)
-        self.connect(self.importantInteractionsCB, SIGNAL("toggled(bool)"), self.showImportantInteractions)
+        self.saveLCanvas = OWGUI.button(self.controlArea, self, "Save left canvas", callback = self.saveToFileLCanvas)
+        self.saveRCanvas = OWGUI.button(self.controlArea, self, "Save right canvas", callback = self.saveToFileRCanvas)
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.activateLoadedSettings()
 
-    def mergeAttributesEvent(self, b):
-        self.mergeAttributes = b
-        if b == 0:
-            self.updateNewData(self.originalData)
 
+    def mergeAttributesEvent(self):
+        self.updateNewData(self.originalData)
 
-    def showImportantInteractions(self, b):
-        self.onlyImportantInteractions = b
+    def showImportantInteractions(self):
         self.showInteractionRects(self.data)
-
-    def activateLoadedSettings(self):
-        self.importantInteractionsCB.setChecked(self.onlyImportantInteractions)
 
     # did we click inside the rect rectangle
     def clickInside(self, rect, point):
@@ -152,35 +143,33 @@ class OWInteractionGraph(OWWidget):
 
     # if we clicked on edge label send "wiew" signal, if clicked inside rectangle select/unselect attribute
     def mousePressed(self, name, ev):
-        if ev.button() == QMouseEvent.LeftButton and name == "graph":
+        pos = QPointF(ev.pos())
+        if ev.button() == Qt.LeftButton and name == "graph":
             for name in self.rectNames:
-                clicked = self.clickInside(self.rectNames[name].rect(), ev.pos())
-                if clicked == 1:
+                if self.rectNames[name].contains(pos):
                     self._setAttrVisible(name, not self.getAttrVisible(name))
                     self.showInteractionRects(self.data)
-                    self.canvasR.update()
+                    #self.canvasR.update()
                     return
             for (attr1, attr2, rect) in self.lines:
-                clicked = self.clickInside(rect.rect(), ev.pos())
-                if clicked == 1:
+                if rect.contains(pos):
                     self.send("Attribute Pair", [attr1, attr2])
                     return
-        elif ev.button() == QMouseEvent.LeftButton and name == "interactions":
+        elif ev.button() == Qt.LeftButton and name == "interactions":
             self.rest = None
-            for (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
-                if self.clickInside(tooltipRect, ev.pos()) == 1:
-                    self.send("Attribute Pair", [str(text1.text()), str(text2.text())])
+            for rects in self.interactionRects:
+                if 1 in [item.contains(pos) for item in rects]:
+                    (rect1, rect2, rect3, nbrect, text1, text2) = rects
+                    self.send("Attribute Pair", [str(text1.toPlainText()), str(text2.toPlainText())])
 
-        elif ev.button() == QMouseEvent.RightButton and name == "interactions":
-            if not self.mergeAttributes == 1: return
-
-            found = 0; i = 0
-            while not found and i < len(self.interactionRects):
-                (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) = self.interactionRects[i]
-                if self.clickInside(tooltipRect, ev.pos()) == 1:
-                    attr1 = str(text1.text()); attr2 = str(text2.text())
+        elif ev.button() == Qt.RightButton and name == "interactions" and self.mergeAttributes:
+            found = 0
+            for rects in self.interactionRects:
+                (rect1, rect2, rect3, nbrect, text1, text2) = rects
+                if 1 in [item.contains(pos) for item in rects]:
+                    attr1 = str(text1.toPlainText()); attr2 = str(text2.toPlainText())
                     found = 1
-                i+=1
+                    break
             if not found: return
 
             data = self.interactionMatrix.discData
@@ -211,25 +200,11 @@ class OWInteractionGraph(OWWidget):
             self.updateNewData(newData)
 
 
-    # we catch mouse release event so that we can send the "view" signal
-    def onMouseReleased(self, e):
-        for i in range(len(self.graphs)):
-            if self.graphs[i].blankClick == 1:
-                (attr1, attr2, className, string) = self.graphParameters[i]
-                self.send("Attribute Pair", [attr1, attr2])
-                self.graphs[i].blankClick = 0
-
     # click on selection button
     def selectionClick(self):
         if self.data == None: return
-        l = []
-        for i in range(self.shownAttribsLB.count()):
-            l.append(str(self.shownAttribsLB.text(i)))
+        l = [str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())]
         self.send("Selected Attributes List", l)
-
-    def resizeEvent(self, e):
-        if hasattr(self, "splitCanvas"):
-            self.splitCanvas.resize(self.mainArea.size())
 
 
     # receive new data and update all fields
@@ -279,6 +254,8 @@ class OWInteractionGraph(OWWidget):
         self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
         f.flush()
         f.close()
+        
+        self.graph = self.interactionMatrix.exportNetwork(significant_digits=3,positive_int=8,negative_int=8,absolute_int=0)
 
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
@@ -294,39 +271,35 @@ class OWInteractionGraph(OWWidget):
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
-            print "-----------------------------"
-            print "Error. This widget needs graphviz software package installed. You can find it on the internet."
-            print "-----------------------------"
-            return
-
-        # create a picture
+            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
+        
+         # create a picture
         pixmap = QPixmap()
         pixmap.loadFromData(textPng)
         canvasPixmap = QCanvasPixmap(pixmap, QPoint(0,0))
         width = canvasPixmap.width()
         height = canvasPixmap.height()
-
-        # hide all rects
-        for rectInd in self.rectIndices.keys():
-            self.rectIndices[rectInd].hide()
-
+        
         self.canvasR.setTiles(pixmap, 1, 1, width, height)
         self.canvasR.resize(width, height)
+
+        # hide all rects
+        for rects in self.rectIndices.values():
+            rects.hide()
 
         self.rectIndices = {}       # QRect rectangles
         self.rectNames   = {}       # info about rectangle names (attributes)
         self.lines = []             # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
 
-
         self.parseGraphData(data, textPlainList, width, height)
         self.initLists(data)   # add all attributes found in .dot file to shown list
         self.showInteractionRects(data) # use interaction matrix to fill the left canvas with rectangles
 
-        self.canvasL.update()
-        self.canvasR.update()
+        #self.canvasL.update()
+        #self.canvasR.update()
 
         self.send("Examples", data)
-
+        self.send("Network", self.graph)
 
     #########################################
     # do we want to show interactions between attrIndex1 and attrIndex2
@@ -359,18 +332,13 @@ class OWInteractionGraph(OWWidget):
 
         ################################
         # hide all interaction rectangles
-        for (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
-            rect1.hide()
-            rect2.hide()
-            rect3.hide()
-            nbrect.hide()
-            text1.hide()
-            text2.hide()
-            QToolTip.remove(self.canvasViewL, tooltipRect)
+        for (rect1, rect2, rect3, nbrect, text1, text2) in self.interactionRects:
+            for item in [rect1, rect2, rect3, nbrect, text1, text2]:
+                self.canvasL.removeItem(item)
         self.interactionRects = []
 
         for item in self.rectItems:
-            item.hide()
+            self.canvasL.removeItem(item)
         self.rectItems = []
 
         ################################
@@ -378,11 +346,9 @@ class OWInteractionGraph(OWWidget):
         xOff = 0
         for ((total, (gain1, gain2, attrIndex1, attrIndex2))) in self.interactionList:
             if not self.showInteractionPair(attrIndex1, attrIndex2): continue
-            if gain1 > gain2: text = QCanvasText(data.domain[attrIndex1].name, self.canvasL)
-            else:             text = QCanvasText(data.domain[attrIndex2].name, self.canvasL)
-            rect = text.boundingRect()
-            if xOff < rect.width():
-                xOff = rect.width()
+            if gain1 > gain2: text = OWQCanvasFuncts.OWCanvasText(self.canvasL, data.domain[attrIndex1].name, show = 0)
+            else:             text = OWQCanvasFuncts.OWCanvasText(self.canvasL, data.domain[attrIndex2].name, show = 0)
+            xOff = max(xOff, text.boundingRect().width())
 
         xOff += 10;  yOff = 40
         index = 0
@@ -392,22 +358,21 @@ class OWInteractionGraph(OWWidget):
 
         ################################
         # print scale
-        line = QCanvasRectangle(xOff, yOff - 4, xscale, 1, self.canvasL)
-        line.show()
-        tick1 = QCanvasRectangle(xOff, yOff-10, 1, 6, self.canvasL);              tick1.show()
-        tick2 = QCanvasRectangle(xOff + (xscale/2), yOff-10, 1, 6, self.canvasL); tick2.show()
-        tick3 = QCanvasRectangle(xOff + xscale-1, yOff-10, 1, 6,  self.canvasL);  tick3.show()
+        line = OWQCanvasFuncts.OWCanvasLine(self.canvasL, xOff, yOff - 4, xOff+xscale, yOff-4)
+        tick1 = OWQCanvasFuncts.OWCanvasLine(self.canvasL, xOff, yOff-10, xOff, yOff-4)
+        tick2 = OWQCanvasFuncts.OWCanvasLine(self.canvasL, xOff + (xscale/2), yOff-10, xOff + (xscale/2), yOff-4)
+        tick3 = OWQCanvasFuncts.OWCanvasLine(self.canvasL, xOff + xscale-1, yOff-10, xOff + xscale-1, yOff-4)
         self.rectItems = [line, tick1, tick2, tick3]
         for i in range(10):
-            tick = QCanvasRectangle(xOff + xscale * (float(i)/10.0), yOff-8, 1, 5, self.canvasL);
-            tick.show()
+            x = xOff + xscale * (float(i)/10.0)
+            tick = OWQCanvasFuncts.OWCanvasLine(self.canvasL, x, yOff-8, x, yOff-4)
             self.rectItems.append(tick)
 
-        text1 = QCanvasText("0%", self.canvasL);   text1.setTextFlags(Qt.AlignHCenter); text1.move(xOff, yOff - 23); text1.show()
-        text2 = QCanvasText("50%", self.canvasL);  text2.setTextFlags(Qt.AlignHCenter); text2.move(xOff + xscale/2, yOff - 23); text2.show()
-        text3 = QCanvasText("100%", self.canvasL); text3.setTextFlags(Qt.AlignHCenter); text3.move(xOff + xscale, yOff - 23); text3.show()
-        text4 = QCanvasText("Class entropy removed", self.canvasL); text4.setTextFlags(Qt.AlignHCenter); text4.move(xOff + xscale/2, yOff - 36); text4.show()
-        self.rectItems.append(text1); self.rectItems.append(text2); self.rectItems.append(text3); self.rectItems.append(text4)
+        text1 = OWQCanvasFuncts.OWCanvasText(self.canvasL, "0%", x = xOff, y = yOff - 23, alignment = Qt.AlignHCenter)
+        text2 = OWQCanvasFuncts.OWCanvasText(self.canvasL, "50%", x = xOff + xscale/2, y = yOff - 23, alignment = Qt.AlignHCenter)
+        text3 = OWQCanvasFuncts.OWCanvasText(self.canvasL, "100%", x = xOff + xscale, y = yOff - 23, alignment = Qt.AlignHCenter)
+        text4 = OWQCanvasFuncts.OWCanvasText(self.canvasL, "Class entropy removed", x = xOff + xscale/2, y = yOff - 36, alignment = Qt.AlignHCenter)
+        self.rectItems += [text1, text2, text3, text4]
 
         ################################
         #create rectangles
@@ -428,25 +393,25 @@ class OWInteractionGraph(OWWidget):
 
             x1 = round(xOff)
             if interaction < 0:
-                x2 = floor(xOff + xscale*(gain1+interaction))
-                x3 = ceil(xOff + xscale*gain1)
+                x2 = xOff + xscale*(gain1+interaction)
+                x3 = xOff + xscale*gain1
             else:
-                x2 = floor(xOff + xscale*gain1)
-                x3 = ceil(xOff + xscale*(total-gain2))
-            x4 = ceil(xOff + xscale*total)
+                x2 = xOff + xscale*gain1
+                x3 = xOff + xscale*(total-gain2)
+            x4 = xOff + xscale*total
 
             # compute nbgain position
-            nb_x1 = min(xOff, floor(xOff + 0.5*xscale*nbgain))
-            nb_x2 = max(xOff, floor(xOff + 0.5*xscale*nbgain))
-            nbrect = QCanvasRectangle(nb_x1, rectsYOff-3, nb_x2-nb_x1+1, 2, self.canvasL)
+            nb_x1 = min(xOff, xOff + 0.5*xscale*nbgain)
+            nb_x2 = max(xOff, xOff + 0.5*xscale*nbgain)
 
+            tooltipText = "%s : <b>%.1f%%</b><br>%s : <b>%.1f%%</b><br>Interaction : <b>%.1f%%</b><br>Total entropy removed: <b>%.1f%%</b>" %(data.domain[attrIndex1].name, gain1*100, data.domain[attrIndex2].name, gain2*100, interaction*100, total*100)
 
-            rect2 = QCanvasRectangle(x2, rectsYOff,   x3-x2+1, rectHeight, self.canvasL)
-            rect1 = QCanvasRectangle(x1, rectsYOff, x2-x1+1, rectHeight, self.canvasL)
+            nbrect = OWQCanvasFuncts.OWCanvasRectangle(self.canvasL, nb_x1, rectsYOff-4, nb_x2-nb_x1+1, 2, brushColor = Qt.black)
+            rect2 = OWQCanvasFuncts.OWCanvasRectangle(self.canvasL, x2, rectsYOff,   x3-x2+1, rectHeight)#, tooltip = tooltipText)
+            rect1 = OWQCanvasFuncts.OWCanvasRectangle(self.canvasL, x1, rectsYOff, x2-x1+1, rectHeight)#, tooltip = tooltipText)
+            rect3 = OWQCanvasFuncts.OWCanvasRectangle(self.canvasL, x3, rectsYOff, x4-x3, rectHeight)#, tooltip = tooltipText)
 
-            rect3 = QCanvasRectangle(x3, rectsYOff, x4-x3, rectHeight, self.canvasL)
             if interaction < 0.0:
-                #color = QColor(255, 128, 128)
                 color = QColor(200, 0, 0)
                 style = Qt.DiagCrossPattern
             else:
@@ -460,22 +425,10 @@ class OWInteractionGraph(OWWidget):
             rect1.setBrush(brush1); rect1.setPen(QPen(QColor(Qt.blue)))
             rect2.setBrush(brush2); rect2.setPen(QPen(color))
             rect3.setBrush(brush3); rect3.setPen(QPen(QColor(Qt.blue)))
-            rect1.show(); rect2.show();  rect3.show(); nbrect.show()
 
             # create text labels
-            text1 = QCanvasText(data.domain[attrIndex1].name, self.canvasL)
-            text2 = QCanvasText(data.domain[attrIndex2].name, self.canvasL)
-            text1.setTextFlags(Qt.AlignRight)
-            text2.setTextFlags(Qt.AlignLeft)
-            text1.move(xOff - 5, rectsYOff + 3)
-            text2.move(xOff + xscale*total + 5, rectsYOff + 3)
-
-            text1.show()
-            text2.show()
-
-            tooltipRect = QRect(x1-self.viewXPos, rectsYOff-self.viewYPos, x4-x1, rectHeight)
-            tooltipText = "%s : <b>%.1f%%</b><br>%s : <b>%.1f%%</b><br>Interaction : <b>%.1f%%</b><br>Total entropy removed: <b>%.1f%%</b>" %(data.domain[attrIndex1].name, gain1*100, data.domain[attrIndex2].name, gain2*100, interaction*100, total*100)
-            QToolTip.add(self.canvasViewL, tooltipRect, tooltipText)
+            text1 = OWQCanvasFuncts.OWCanvasText(self.canvasL, data.domain[attrIndex1].name, x = xOff - 5, y = rectsYOff + 3, alignment = Qt.AlignRight)
+            text2 = OWQCanvasFuncts.OWCanvasText(self.canvasL, data.domain[attrIndex2].name, x = xOff + xscale*total + 5, y = rectsYOff + 3, alignment = Qt.AlignLeft)
 
             # compute line width
             rect = text2.boundingRect()
@@ -486,28 +439,15 @@ class OWInteractionGraph(OWWidget):
             if rectsYOff + rectHeight + 10 > maxHeight:
                 maxHeight = rectsYOff + rectHeight + 10
 
-            self.interactionRects.append((rect1, rect2, rect3, nbrect, text1, text2, QRect(x1, rectsYOff, x4-x1, rectHeight), tooltipText))
+            self.interactionRects.append((rect1, rect2, rect3, nbrect, text1, text2))
             index += 1
 
         # resizing of the left canvas to update width
-        self.canvasViewL.setMaximumSize(QSize(maxWidth + 30, max(2000, maxHeight)))
-        self.canvasViewL.setMinimumWidth(maxWidth + 10)
-        self.canvasL.resize(maxWidth + 10, maxHeight)
-        self.canvasViewL.setMinimumWidth(0)
+        #self.canvasViewL.setMaximumSize(QSize(maxWidth + 30, max(2000, maxHeight)))
+        #self.canvasL.resize(maxWidth + 10, maxHeight)
+        #self.canvasViewL.setMinimumWidth(0)
+        #self.canvasL.update()
 
-        self.canvasL.update()
-
-    #########################################
-    # if we scrolled in the left canvas then we have to update tooltip positions
-    def contentsMoving(self, x,y):
-        for (rect1, rect2, rect3, nbrect, text1, text2, rect, tooltipText) in self.interactionRects:
-            oldrect = QRect(rect.left()-self.viewXPos, rect.top()-self.viewYPos, rect.width(), rect.height())
-            QToolTip.remove(self.canvasViewL, oldrect)
-            newrect = QRect(rect.left()-x, rect.top()-y, rect.width(), rect.height())
-            QToolTip.add(self.canvasViewL, newrect, tooltipText)
-
-        self.viewXPos = x
-        self.viewYPos = y
 
     #########################################
     # parse info from plain file. picWidth and picHeight are sizes in pixels
@@ -520,10 +460,7 @@ class OWInteractionGraph(OWWidget):
                 topLeftRectStr = list[1]
                 bottomRightRectStr = list[2]
                 attrIndex = list[3]
-
-                isAttribute = 0     # does rectangle represent attribute
-                if attrIndex.find("-") < 0:
-                    isAttribute = 1
+                isAttribute = "-" not in attrIndex     # does rectangle represent attribute
 
                 topLeftRectStr = topLeftRectStr.replace("(","")
                 bottomRightRectStr = bottomRightRectStr.replace("(","")
@@ -537,11 +474,7 @@ class OWInteractionGraph(OWWidget):
                 width = int(bottomRightRectList[0]) - xLeft
                 height = int(bottomRightRectList[1]) - yTop
 
-                rect = QCanvasRectangle(xLeft+2, yTop+2, width, height, self.canvasR)
-                pen = QPen(Qt.blue)
-                pen.setWidth(4)
-                rect.setPen(pen)
-                rect.hide()
+                rect = OWQCanvasFuncts.OWCanvasRectangle(self.canvasR, xLeft+2, yTop+2, width, height, penColor = Qt.blue, penWidth = 4, show = 0)
 
                 if isAttribute == 1:
                     name = data.domain[int(attrIndex)].name
@@ -551,8 +484,7 @@ class OWInteractionGraph(OWWidget):
                     attrs = attrIndex.split("-")
                     attr1 = data.domain[int(attrs[0])].name
                     attr2 = data.domain[int(attrs[1])].name
-                    pen.setStyle(Qt.NoPen)
-                    rect.setPen(pen)
+                    rect.setPen(QPen(Qt.NoPen))
                     self.lines.append((attr1, attr2, rect))
 
     ##################################################
@@ -575,16 +507,16 @@ class OWInteractionGraph(OWWidget):
 
         count = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from hidden
-            if str(self.hiddenAttribsLB.text(i)) == name:
-                self.hiddenAttribsLB.removeItem(i)
+            if str(self.hiddenAttribsLB.item(i).text()) == name:
+                self.hiddenAttribsLB.takeItem(i)
 
     def _hideAttribute(self, name):
-        self.hiddenAttribsLB.insertItem(name)    # add to hidden
+        self.hiddenAttribsLB.addItem(name)    # add to hidden
 
         count = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from shown
-            if str(self.shownAttribsLB.text(i)) == name:
-                self.shownAttribsLB.removeItem(i)
+            if str(self.shownAttribsLB.item(i).text()) == name:
+                self.shownAttribsLB.takeItem(i)
 
     ##########
     # add attribute to showList or hideList and show or hide its rectangle
@@ -598,12 +530,12 @@ class OWInteractionGraph(OWWidget):
 
     def getAttrVisible(self, name):
         for i in range(self.hiddenAttribsLB.count()):
-            if str(self.hiddenAttribsLB.text(i)) == name: return 0
+            if str(self.hiddenAttribsLB.item(i).text()) == name: return 0
 
         if self.mergeAttributes == 1:
             names = name.split("-")
             for i in range(self.hiddenAttribsLB.count()):
-                if str(self.hiddenAttribsLB.text(i)) in names: return 0
+                if str(self.hiddenAttribsLB.item(i).text()) in names: return 0
 
         return 1
 
@@ -613,8 +545,8 @@ class OWInteractionGraph(OWWidget):
     def addAttributeClick(self):
         count = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
-                name = str(self.hiddenAttribsLB.text(i))
+            if self.hiddenAttribsLB.item(i).isSelected():
+                name = str(self.hiddenAttribsLB.item(i).text())
                 self._setAttrVisible(name, 1)
         self.showInteractionRects(self.data)
         self.canvasL.update()
@@ -623,8 +555,8 @@ class OWInteractionGraph(OWWidget):
     def removeAttributeClick(self):
         count = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                name = str(self.shownAttribsLB.text(i))
+            if self.shownAttribsLB.item(i).isSelected():
+                name = str(self.shownAttribsLB.item(i).text())
                 self._setAttrVisible(name, 0)
         self.showInteractionRects(self.data)
         self.canvasL.update()
@@ -640,7 +572,7 @@ class OWInteractionGraph(OWWidget):
         self.saveCanvasToFile(self.canvasViewR, self.canvasR.size())
 
     def saveCanvasToFile(self, canvas, size):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
@@ -658,10 +590,10 @@ class OWInteractionGraph(OWWidget):
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWInteractionGraph()
-    a.setMainWidget(ow)
+    ow=OWInteractionGraphProto()
     ow.show()
-    a.exec_loop()
+    ow.setData(data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\monks-1_learn.tab"))
+    a.exec_()
 
     #save settings
     ow.saveSettings()
