@@ -330,8 +330,8 @@ class InteractionMatrix:
         
         table = []
         for (ig,i,j) in ints:
-            i = map[i]
             j = map[j]
+            i = map[i]
             
             perc = int(abs(ig)*100.0/max(max_igain,self.attlist[-1][0])+0.5)
             graph[i, j] = perc / 30 + 1
