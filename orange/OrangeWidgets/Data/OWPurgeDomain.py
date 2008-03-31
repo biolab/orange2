@@ -133,6 +133,7 @@ class OWPurgeDomain(OWWidget):
                 if attr.varType == orange.VarTypes.Continuous:
                     if orange.RemoveRedundantOneValue.hasAtLeastTwoValues(self.data, attr):
                         newattrs.append(attr)
+                    else:
                         self.removedAttrs += 1
                     continue
 
