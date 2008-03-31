@@ -306,10 +306,7 @@ class OWVizRank(VizRank, OWWidget):
     # it removes projections that don't have different at least two attributes in comparison with some better ranked projection
     def removeTooSimilarProjections(self, allowedPercentOfEqualAttributes = -1):
         if allowedPercentOfEqualAttributes == -1:
-            if (int(qVersion()[0]) >= 3):
-                (text, ok) = QInputDialog.getText('Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
-            else:
-                (text, ok) = QInputDialog.getText('Qt Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
+            (text, ok) = QInputDialog.getText('Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
             if not ok: return
             allowedPercentOfEqualAttributes = int(str(text))
 
@@ -607,10 +604,7 @@ class OWVizRank(VizRank, OWWidget):
     # ##############################################################
     # exporting multiple pictures
     def exportMultipleGraphs(self):
-        if (int(qVersion()[0]) >= 3):
-            (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
-        else:
-            (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
+        (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
@@ -619,7 +613,7 @@ class OWVizRank(VizRank, OWWidget):
         self.sizeDlg.saveMatplotlibButton.setEnabled(0)
         self.sizeDlg.disconnect(self.sizeDlg.saveImageButton, SIGNAL("clicked()"), self.sizeDlg.saveImage)
         self.sizeDlg.connect(self.sizeDlg.saveImageButton, SIGNAL("clicked()"), self.saveToFileAccept)
-        self.sizeDlg.exec_loop()
+        self.sizeDlg.exec_()
 
     def saveToFileAccept(self):
         fileName = self.sizeDlg.getFileName("Graph", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", ".png")
@@ -1517,10 +1511,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.evaluatedExamples = []
 
         if self.projectionCount == "Other...":
-            if (int(qVersion()[0]) >= 3):
-                (text, ok) = QInputDialog.getText('Projection Count', 'How many of the best projections do you wish to consider?')
-            else:
-                (text, ok) = QInputDialog.getText('Qt Projection Count', 'How many of the best projections do you wish to consider?')
+            (text, ok) = QInputDialog.getText('Projection Count', 'How many of the best projections do you wish to consider?')
             if ok and str(text).isdigit():
                 text = str(text)
                 if text not in self.projectionCountList:
@@ -1744,4 +1735,4 @@ if __name__=="__main__":
 ##    ow = OWGraphAttributeHistogram()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()

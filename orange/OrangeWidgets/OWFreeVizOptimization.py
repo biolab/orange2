@@ -23,10 +23,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         self.parentWidget = parentWidget
         self.parentName = parentName
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("FreeViz Optimization Dialog")
-        else:
-            self.setCaption("Qt FreeViz Optimization Dialog")
+        self.setCaption("FreeViz Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
         self.cancelOptimization = 0
         self.forceRelation = 5

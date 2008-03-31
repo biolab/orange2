@@ -5,7 +5,7 @@ import orange
 #import sys, traceback
 
 YesNo = NoYes = ("No", "Yes")
-groupBoxMargin = 6
+groupBoxMargin = 7
 
 import os.path
 
@@ -337,7 +337,7 @@ def lineEdit(widget, master, value,
     if validator:
         wa.setValidator(validator)
 
-    wa.cback = connectControl(wa, master, value, callback and callbackOnType, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
+    wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
 
     wa.box = b
     return wa
@@ -414,14 +414,11 @@ def getAttributeIcons():
                      orange.VarTypes.String: createAttributePixmap("S", Qt.black),
                      -1: createAttributePixmap("?", QColor(128, 128, 128))}
     return attributeIconDict
+    
 
-class OrangeListBox(QListWidget):
-    def sizeHint(self):
-        return QSize(150, 100)
-
-def listBox(widget, master, value = None, labels = None, box = None, tooltip = None, callback = None, selectionMode = QListWidget.SingleSelection, debuggingEnabled = 1):
+def listBox(widget, master, value = None, labels = None, box = None, tooltip = None, callback = None, selectionMode = QListWidget.SingleSelection, enableDragDrop = 0, dragDropCallback = None, dataValidityCallback = None, debuggingEnabled = 1):
     bg = box and widgetBox(widget, box, orientation = "horizontal") or widget
-    lb = OrangeListBox(bg)
+    lb = OrangeListBox(master, value, enableDragDrop, dragDropCallback, dataValidityCallback, bg)
     lb.box = bg
     lb.setSelectionMode(selectionMode)
     if bg.layout(): bg.layout().addWidget(lb)
@@ -637,6 +634,247 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("qwtHSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
+
+
+# list box where we can use drag and drop
+class OrangeListBox(QListWidget):
+    def __init__(self, widget, value = None, enableDragDrop = 0, dragDropCallback = None, dataValidityCallback = None, *args):
+        self.widget = widget
+        self.value = value
+        QListWidget.__init__(self, *args)
+        self.enableDragDrop = enableDragDrop
+        self.dragDopCallback = dragDropCallback
+        self.dataValidityCallback = dataValidityCallback
+        if enableDragDrop:
+            self.setDragEnabled(1)
+            self.setAcceptDrops(1)
+            self.setDropIndicatorShown(1)
+            #self.setDragDropMode(QAbstractItemView.DragDrop)
+            self.dragStartPosition = 0
+
+    def setAttributes(self, data, attributes):
+        if type(shownAttributes[0]) == tuple:
+            setattr(self.widget, self.ogLabels, attributes)
+        else:
+            domain = data.domain
+            setattr(self.widget, self.ogLabels, [(domain[a].name, domain[a].varType) for a in attributes])
+
+    def sizeHint(self):
+        return QSize(150, 100)
+    
+    
+    def startDrag(self, supportedActions):
+        if not self.enableDragDrop: return
+        
+        drag = QDrag(self)
+        mime = QMimeData()
+        selectedItems = getattr(self.widget, self.ogValue, [])
+        
+        mime.setText(str(selectedItems))
+        mime.source = self
+        drag.setMimeData(mime)
+        drag.start(Qt.MoveAction)
+        
+    
+#    def mousePressEvent(self, ev):
+#        QListWidget.mousePressEvent(self, ev)
+#        if not self.enableDragDrop: return
+#        
+#        if ev.button() == Qt.LeftButton: 
+#            self.dragStartPosition = QPoint(ev.pos())
+#        
+
+#            
+#    def mouseMoveEvent(self, ev):
+#        QListWidget.mouseMoveEvent(self, ev)
+#        if not self.enableDragDrop: return
+#        
+#        if int(ev.buttons() & Qt.LeftButton) and (ev.pos() - self.dragStartPosition).manhattanLength() > qApp.startDragDistance():
+#            drag = QDrag(self)
+#            mime = QMimeData()
+#            selectedItems = [i for i in range(self.count()) if self.item(i).isSelected()]
+#            
+#            mime.setText(str(selectedItems))
+#            mime.source = self
+#            drag.setMimeData(mime)
+#            drag.start(Qt.MoveAction)
+
+                        
+    def dragEnterEvent(self, ev):
+        if not self.enableDragDrop: return
+        if self.dataValidityCallback: return self.dataValidityCallback(ev)
+        
+        if ev.mimeData().hasText():
+            ev.accept()
+        else:
+            ev.ignore()
+            
+        
+    def dragMoveEvent(self, ev):
+        if not self.enableDragDrop: return
+        if self.dataValidityCallback: return self.dataValidityCallback(ev)
+        
+        if ev.mimeData().hasText():
+            ev.setDropAction(Qt.MoveAction)
+            ev.accept()
+        else:
+            ev.ignore()
+              
+    def dropEvent(self, ev):
+        if not self.enableDragDrop: return
+        if ev.mimeData().hasText():
+#            try:
+            item = self.itemAt(ev.pos())
+            if item:
+                index = self.indexFromItem(item).row()
+            else:
+                index = self.count()
+            
+            source = ev.mimeData().source
+            selectedItemIndices = eval(str(ev.mimeData().text()))
+            allSourceItems = getattr(source.widget, source.ogLabels, [])
+            selectedItems = [allSourceItems[i] for i in selectedItemIndices]
+            
+            allDestItems = getattr(self.widget, self.ogLabels, [])
+#            print "---- start ----- "
+#            print "source ogLabels: ", allSourceItems
+#            print "dest ogLabels: ", allDestItems
+#            print "source ogValues: ", getattr(source.widget, source.ogValue, [])
+#            print "dest ogValues: ", getattr(self.widget, self.ogValue, [])
+             
+            if source != self:
+                setattr(source.widget, source.ogLabels, [item for item in allSourceItems if item not in selectedItems])   # TODO: optimize this code. use the fact that the selectedItemIndices is a sorted list
+                setattr(self.widget, self.ogLabels, allDestItems[:index] + selectedItems + allDestItems[index:])
+                setattr(source.widget, source.ogValue, [])  # clear selection in the source widget
+            else:
+                items = [item for item in allSourceItems if item not in selectedItems]
+                if index < len(allDestItems):
+                    while index > 0 and  allDestItems[index] in selectedItems:      # if we are dropping items on a selected item, we have to select some previous unselected item as the drop target
+                        index -= 1
+                    destItem = allDestItems[index]
+                    index = items.index(destItem)
+                else:
+                    index -= len(selectedItems)
+                setattr(self.widget, self.ogLabels, items[:index] + selectedItems + items[index:])
+            
+            setattr(self.widget, self.ogValue, range(index, index+len(selectedItems)))
+        
+#            print "---- end ----- "
+#            print "source ogLabels: ", getattr(source.widget, source.ogLabels, [])
+#            print "dest ogLabels: ", getattr(self.widget, self.ogLabels, [])
+#            print "source ogValues: ", getattr(source.widget, source.ogValue, [])
+#            print "dest ogValues: ", getattr(self.widget, self.ogValue, [])
+            if self.dragDopCallback:        # call the callback
+                self.dragDopCallback()
+            ev.setDropAction(Qt.MoveAction)
+            ev.accept()   
+#            except:
+#                ev.ignore()
+        else:
+            ev.ignore()
+
+
+class SmallWidgetButton(QPushButton):
+    def __init__(self, widget, text = "", pixmap = None, box = None, orientation='vertical', tooltip = None):
+        #self.parent = parent
+        if pixmap != None:
+            import os
+            iconDir = os.path.join(os.path.dirname(__file__), "icons")
+            if type(pixmap) == str:
+                if os.path.exists(pixmap):
+                    name = pixmap
+                elif os.path.exists(os.path.join(iconDir, pixmap)):
+                    name = os.path.join(iconDir, pixmap)
+            elif type(pixmap) == QPixmap or type(pixmap) == QIcon:
+                name = pixmap
+            else:
+                name = os.path.join(iconDir, "arrow_down.png")
+            QPushButton.__init__(self, QIcon(name), text, widget)
+        else:
+            QPushButton.__init__(self, text, widget)
+        if widget.layout():
+            widget.layout().addWidget(self)
+        if tooltip != None:
+            self.setToolTip(tooltip)
+        # create autohide widget and set a layout
+        self.autohideWidget = self.widget = AutoHideWidget(None, Qt.Popup)
+        
+        if isinstance(orientation, QLayout):
+            self.widget.setLayout(orientation)
+        elif orientation == 'horizontal' or not orientation:
+            self.widget.setLayout(QHBoxLayout())
+        else:
+            self.widget.setLayout(QVBoxLayout())
+        #self.widget.layout().setMargin(groupBoxMargin)
+            
+        if box:
+            self.widget = widgetBox(self.widget, box, orientation)
+        #self.setStyleSheet("QPushButton:hover { background-color: #F4F2F0; }")
+        
+        self.autohideWidget.hide()
+
+    def mousePressEvent(self, ev):
+        QWidget.mousePressEvent(self, ev)
+        if self.autohideWidget.isVisible():
+            self.autohideWidget.hide()
+        else:
+            #self.widget.move(self.parent.mapToGlobal(QPoint(0, 0)).x(), self.mapToGlobal(QPoint(0, self.height())).y())
+            self.autohideWidget.move(self.mapToGlobal(QPoint(0, self.height())))
+            self.autohideWidget.show()
+
+
+class SmallWidgetLabel(QLabel):
+    def __init__(self, widget, text = "", pixmap = None, box = None, orientation='vertical', tooltip = None):
+        QLabel.__init__(self, widget)
+        if text != "":
+            self.setText("<font color=\"#C10004\">" + text + "</font>")
+        elif pixmap != None:
+            import os
+            iconDir = os.path.join(os.path.dirname(__file__), "icons")
+            if type(pixmap) == str:
+                if os.path.exists(pixmap):
+                    name = pixmap
+                elif os.path.exists(os.path.join(iconDir, pixmap)):
+                    name = os.path.join(iconDir, pixmap)
+            elif type(pixmap) == QPixmap or type(pixmap) == QIcon:
+                name = pixmap
+            else:
+                name = os.path.join(iconDir, "arrow_down.png")
+            self.setPixmap(QPixmap(name))
+        if widget.layout():
+            widget.layout().addWidget(self)
+        if tooltip != None:
+            self.setToolTip(tooltip)
+        self.autohideWidget = self.widget = AutoHideWidget(None, Qt.Popup)
+        
+        if isinstance(orientation, QLayout):
+            self.widget.setLayout(orientation)
+        elif orientation == 'horizontal' or not orientation:
+            self.widget.setLayout(QHBoxLayout())
+        else:
+            self.widget.setLayout(QVBoxLayout())
+            
+        if box:
+            self.widget = widgetBox(self.widget, box, orientation)
+        
+        self.autohideWidget.hide()
+
+    def mousePressEvent(self, ev):
+        QLabel.mousePressEvent(self, ev)
+        if self.autohideWidget.isVisible():
+            self.autohideWidget.hide()
+        else:
+            #self.widget.move(self.parent.mapToGlobal(QPoint(0, 0)).x(), self.mapToGlobal(QPoint(0, self.height())).y())
+            self.autohideWidget.move(self.mapToGlobal(QPoint(0, self.height())))
+            self.autohideWidget.show()
+
+
+class AutoHideWidget(QWidget):
+#    def __init__(self, parent = None):
+#        QWidget.__init__(self, parent, Qt.Popup)
+        
+    def leaveEvent(self, ev):
+        self.hide()
 
 
 
@@ -1381,7 +1619,7 @@ def tabWidget(widget):
 
 def createTabPage(tabWidget, name, widgetToAdd = None):
     if widgetToAdd == None:
-        widgetToAdd = widgetBox(tabWidget, addToLayout = 0, margin = 1)
+        widgetToAdd = widgetBox(tabWidget, addToLayout = 0, margin = 4)
     tabWidget.addTab(widgetToAdd, name)
     return widgetToAdd
 

@@ -34,12 +34,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         orngMosaic.__init__(self)
 
         self.resize(390,620)
-
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Mosaic Evaluation Dialog")
-        else:
-            self.setCaption("Qt Mosaic Evaluation Dialog")
-
+        self.setCaption("Mosaic Evaluation Dialog")
+        
         # loaded variables
         self.mosaicWidget = mosaicWidget
         self.showConfidence = 1
@@ -1139,4 +1135,4 @@ if __name__=="__main__":
     ow = OWMosaicOptimization()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()

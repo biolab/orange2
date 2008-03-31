@@ -257,8 +257,6 @@ class OWBaseWidget(QDialog):
         if self.parent != None and isinstance(self.parent, QTabWidget):
             self.parent.setTabText(self.parent.indexOf(self), caption)
         else:
-            if (int(qVersion()[0]) < 3) and caption[:2].upper() != "QT":      # if we want the widget to show the title then the title must start with "Qt"
-                caption = "Qt " + caption
             self.captionTitle = caption     # we have to save caption title in case progressbar will change it
             self.setWindowTitle(caption)
 

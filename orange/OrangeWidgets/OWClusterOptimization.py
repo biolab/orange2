@@ -61,10 +61,7 @@ class ClusterOptimization(OWBaseWidget):
 
         self.parentWidget = parentWidget
         self.parentName = parentName
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Cluster Dialog")
-        else:
-            self.setCaption("Qt Cluster Dialog")
+        self.setCaption("Cluster Dialog")
         self.controlArea = QVBoxLayout(self)
 
         self.graph = graph
@@ -415,10 +412,7 @@ class ClusterOptimization(OWBaseWidget):
             self.pointStability = numpy.zeros(len(self.rawData), numpy.float)
             self.pointStabilityCount = [0 for i in range(len(self.rawData.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
             
-            if (int(qVersion()[0]) >= 3):
-                (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
-            else:
-                (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you want to consider?')
+            (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
             if not ok: return
             nrOfProjections = int(str(text))
 
@@ -687,17 +681,14 @@ class ClusterOptimization(OWBaseWidget):
     # exporting multiple pictures
     # ##############################################################
     def exportMultipleGraphs(self):
-        if (int(qVersion()[0]) >= 3):
-            (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
-        else:
-            (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
+        (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
         self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
         self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
         self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
-        self.sizeDlg.exec_loop()
+        self.sizeDlg.exec_()
 
     def saveToFileAccept(self):
         fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to..."))
@@ -1631,4 +1622,4 @@ if __name__=="__main__":
     ow = ClusterOptimization()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()
