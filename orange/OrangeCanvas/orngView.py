@@ -209,7 +209,7 @@ class SchemaView(QGraphicsView):
             for item in self.getSelectedWidgets():
                 ex_pos = QPoint(item.x(), item.y())
                 item.setCoordsBy(point.x() - self.lastMousePosition.x(), point.y() - self.lastMousePosition.y())
-                if self.doc.canvasDlg.snapToGrid:
+                if self.doc.canvasDlg.settings["snapToGrid"]:
                     item.moveToGrid()
                 else:
                     item.setCoords(item.xPos, item.yPos)

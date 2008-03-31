@@ -11,14 +11,13 @@ from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle
 
-class SchemaDoc(QMainWindow):
+class SchemaDoc(QMdiSubWindow):
     def __init__(self, canvasDlg, *args):
-        apply(QMainWindow.__init__,(self,) + args)
+        QMdiSubWindow.__init__(self, *args)
         self.canvasDlg = canvasDlg
-        self.canvasDlg.workspace.addWindow(self)
         self.canSave = 0
-        self.resize(700,500)
-        self.showNormal()
+        #self.resize(700,500)
+        #self.showNormal()
         self.setWindowTitle("Schema " + str(self.canvasDlg.iDocIndex))
         self.autoSaveName = os.path.join(self.canvasDlg.canvasSettingsDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
@@ -37,7 +36,8 @@ class SchemaDoc(QMainWindow):
         self.loadedSettingsDict = {}
         self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
-        self.setCentralWidget(self.canvasView)
+        #self.setCentralWidget(self.canvasView)
+        self.setWidget(self.canvasView)
         self.canvasView.show()
 
 
@@ -45,7 +45,7 @@ class SchemaDoc(QMainWindow):
     # ask the user if he is sure
     def closeEvent(self,ce):
         newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
-        self.canSave = self.canSave or newSettings
+        self.canSave = self.canSave or bool(newSettings)
 
         self.synchronizeContexts()
         #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
@@ -67,10 +67,10 @@ class SchemaDoc(QMainWindow):
                 self.clear()
                 ce.accept()
             else:
-                ce.ignore()
+                ce.ignore()     # we pressed cancel - we don't want to close the document
                 return
 
-        QMainWindow.closeEvent(self, ce)
+        QMdiSubWindow.closeEvent(self, ce)
 
         # remove the temporary file if it exists
         if os.path.exists(self.autoSaveName):
@@ -766,7 +766,7 @@ class GUIApplication(OWBaseWidget):
         self.ctrlPressed = int(e.modifiers()) & Qt.ControlModifier != 0
         if e.key() > 127:
             #e.ignore()
-            QMainWindow.keyPressEvent(self, e)
+            QMdiSubWindow.keyPressEvent(self, e)
             return
 
         # the list could include (e.ShiftButton, "Shift") if the shift key didn't have the special meaning
@@ -778,4 +778,4 @@ class GUIApplication(OWBaseWidget):
                 self.addLine(self.widgets[-2], self.widgets[-1])
         else:
             #e.ignore()
-            QMainWindow.keyPressEvent(self, e)
+            QMdiSubWindow.keyPressEvent(self, e)

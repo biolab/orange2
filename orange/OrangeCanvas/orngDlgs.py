@@ -425,7 +425,6 @@ class CanvasOptionsDlg(QDialog):
         # GENERAL TAB
         generalBox = orngGui.widgetBox(GeneralTab, "General Options")
         self.snapToGridCB = orngGui.checkBox(generalBox, "Snap widgets to grid")
-        #self.useLargeIconsCB = orngGui.checkBox(generalBox, "Show widgets using large icons and text")
         self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of Output window to log file")
         self.showSignalNamesCB = orngGui.checkBox(generalBox, "Show signal names between widgets")
         self.dontAskBeforeCloseCB= orngGui.checkBox(generalBox, "Don't ask to save schema before closing")
@@ -436,10 +435,20 @@ class CanvasOptionsDlg(QDialog):
         validator = QIntValidator(self)
         validator.setRange(0,10000)
 
-        canvasSizeBox = orngGui.widgetBox(GeneralTab, "Default Size of Orange Canvas")
-        self.widthEdit = orngGui.lineEdit(canvasSizeBox, "Width:  ", orientation='horizontal', validator = validator )
-        self.heightEdit = orngGui.lineEdit(canvasSizeBox, "Height: ", orientation='horizontal', validator = validator)
+#        canvasSizeBox = orngGui.widgetBox(GeneralTab, "Default Size of Orange Canvas")
+#        self.widthEdit = orngGui.lineEdit(canvasSizeBox, "Width:  ", orientation='horizontal', validator = validator )
+#        self.heightEdit = orngGui.lineEdit(canvasSizeBox, "Height: ", orientation='horizontal', validator = validator)
+#
+#        stylesBox = orngGui.widgetBox(GeneralTab, "Styles")
 
+        hbox = orngGui.widgetBox(GeneralTab, orientation = "horizontal")
+        sizeBox = orngGui.widgetBox(hbox, "Orange Canvas Size")
+        looksBox = orngGui.widgetBox(hbox, "Looks")
+        self.widthEdit = orngGui.lineEdit(sizeBox, "Canvas width:  ", orientation='horizontal', validator = validator)
+        self.heightEdit = orngGui.lineEdit(sizeBox, "Canvas height: ", orientation='horizontal', validator = validator)
+        self.stylesCombo = orngGui.comboBox(looksBox, label = "Style:", orientation = "horizontal", items = [str(n) for n in QStyleFactory.keys()])
+        self.stylesPalette = orngGui.checkBox(looksBox, "Use style's standard palette")
+        
         colorsBox = orngGui.widgetBox(GeneralTab, "Set Colors")
         if canvasDlg:
             selectedWidgetBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
@@ -586,7 +595,7 @@ class KeyEdit(QLineEdit):
             del self.invdict[assigned.widget]
 
 # widget shortcuts dialog
-class WidgetRegistryDlg(QDialog):
+class WidgetShortcutDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         import orngTabs
 
@@ -601,15 +610,17 @@ class WidgetRegistryDlg(QDialog):
         invInvDict = {}
 
         self.tabs = QTabWidget(self)
-        for tab in canvasDlg.tabs.tabs:
+        
+        for tabName, show in canvasDlg.settings["WidgetTabs"]:
             scrollArea = QScrollArea()
-            self.tabs.addTab(scrollArea, str(canvasDlg.tabs.tabText(canvasDlg.tabs.indexOf(tab))))
+            self.tabs.addTab(scrollArea, tabName)
             #scrollArea.setWidgetResizable(1)       # you have to use this or set size to wtab manually - otherwise nothing gets shown
 
             wtab = QWidget(self.tabs)
             scrollArea.setWidget(wtab)
 
-            widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tab.widgets)
+            tabWidgets = canvasDlg.tabs.tabDict[tabName].widgets
+            widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tabWidgets)
             rows = (len(widgets)+2) / 3
             layout = QGridLayout(wtab)
 ##            for i in range(2, 9, 3):
@@ -628,7 +639,7 @@ class WidgetRegistryDlg(QDialog):
                 mainBox.setLayout(hlayout)
                 layout.addWidget(mainBox, y, x, Qt.AlignTop | Qt.AlignLeft)
                 label = QLabel(wtab)
-                label.setPixmap(w.icon().pixmap(w.icon().actualSize(QSize(50,50))))
+                label.setPixmap(w.pixmapWidget.pixmap())
                 hlayout.addWidget(label)
 
                 optionsw = QWidget(self)

@@ -10,16 +10,17 @@ from time import localtime
 import traceback
 import os.path, os
 
-class OutputWindow(QMainWindow):
+class OutputWindow(QMdiSubWindow):
     def __init__(self, canvasDlg, *args):
-        apply(QMainWindow.__init__,(self,) + args)
+        apply(QMdiSubWindow.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.canvasDlg.workspace.addWindow(self)
+        #self.canvasDlg.workspace.addWindow(self)
 
         self.textOutput = QTextEdit(self)
         self.textOutput.setReadOnly(1)
         self.textOutput.setCurrentFont(QFont('Courier New',10, QFont.Normal))
-        self.setCentralWidget(self.textOutput)
+        #self.setCentralWidget(self.textOutput)
+        self.setWidget(self.textOutput)
         self.setWindowTitle("Output Window")
         self.setWindowIcon(QIcon(canvasDlg.outputPix))
 
@@ -113,7 +114,7 @@ class OutputWindow(QMainWindow):
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
-            self.canvasDlg.workspace.cascade()    # cascade shown windows
+            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
             #self.logFile.write(str(text) + "<br>\n")
@@ -143,7 +144,7 @@ class OutputWindow(QMainWindow):
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
-            self.canvasDlg.workspace.cascade()    # cascade shown windows
+            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         text = ""
         if str(self.textOutput.toPlainText()) not in ["", "\n"]:

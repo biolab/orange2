@@ -47,7 +47,7 @@ def __getDirectoryNames():
         try: os.mkdir(widgetSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
-    canvasSettingsDir = os.path.join(outputDir, "OrangeCanvas")
+    canvasSettingsDir = os.path.join(outputDir, "OrangeCanvasQt4")
     if not os.path.exists(canvasSettingsDir):
         try: os.mkdir(canvasSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass

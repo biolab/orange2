@@ -96,7 +96,7 @@ def listBox(widget, box = None, tooltip = None, selectionMode = QListWidget.Sing
     return lb
 
 
-def comboBox(widget, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None):
+def comboBox(widget, box=None, label=None, labelWidth=None, orientation='horizontal', items=None, tooltip=None, callback=None):
     hb = widgetBox(widget, box, orientation)
     if label:
         l = widgetLabel(hb, label, labelWidth)

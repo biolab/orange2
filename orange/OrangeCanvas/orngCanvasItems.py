@@ -212,8 +212,12 @@ class CanvasWidget(QGraphicsRectItem):
         # save settings
         if (self.instance != None):
             if self.canvasDlg.menuSaveSettings == 1:        # save settings only if checked in the main menu
-                try:    self.instance.saveSettings()
-                except: print "Unable to successfully save settings for %s widget" % (self.instance.title)
+                try:    
+                    self.instance.saveSettings()
+                except: 
+                    print "Unable to successfully save settings for %s widget" % (self.instance.captionTitle)
+                    type, val, traceback = sys.exc_info()
+                    sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
             self.instance.close()
             del self.instance
 
