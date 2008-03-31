@@ -378,5 +378,5 @@ if __name__=="__main__":
 
     # here you can test setting some stuff
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()
