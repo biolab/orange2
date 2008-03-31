@@ -56,7 +56,7 @@ class OWDataDomain(OWWidget):
         boxAvail = OWGUI.widgetBox(self, 'Available Attributes', addToLayout = 0)
         grid.addWidget(boxAvail, 0,0,3,1)
 
-        self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
+        self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         vbAttr = OWGUI.widgetBox(self, addToLayout = 0)
         grid.addWidget(vbAttr, 0,1)
@@ -69,15 +69,15 @@ class OWDataDomain(OWWidget):
 
         boxAttr = OWGUI.widgetBox(self, 'Attributes', addToLayout = 0)
         grid.addWidget(boxAttr, 0,2)
-        self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
+        self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         self.classButton = OWGUI.button(self, self, ">", self.onClassButtonClicked, addToLayout = 0)
         self.classButton.setMaximumWidth(buttonWidth)
         grid.addWidget(self.classButton, 1,1)
         boxClass = OWGUI.widgetBox(self, 'Class', addToLayout = 0)
-        boxClass.setFixedHeight(46)
+        boxClass.setFixedHeight(55)
         grid.addWidget(boxClass, 1,2)
-        self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
+        self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton, dataValidityCallback = self.dataValidityCallback)
 
         vbMeta = OWGUI.widgetBox(self, addToLayout = 0)
         grid.addWidget(vbMeta, 2,1)
@@ -89,7 +89,7 @@ class OWDataDomain(OWWidget):
         self.metaButtonDown.setMaximumWidth(buttonWidth)
         boxMeta = OWGUI.widgetBox(self, 'Meta Attributes', addToLayout = 0)
         grid.addWidget(boxMeta, 2,2)
-        self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
+        self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal")
         grid.addWidget(boxApply, 3,0,3,3)
@@ -170,7 +170,7 @@ class OWDataDomain(OWWidget):
     def setOutput(self):
         if self.data:
             self.applyButton.setEnabled(False)
-
+            
             attributes = [self.data.domain[x[0]] for x in self.chosenAttributes]
             classVar = self.classAttribute and self.data.domain[self.classAttribute[0][0]] or None
             domain = orange.Domain(attributes, classVar)
@@ -198,6 +198,25 @@ class OWDataDomain(OWWidget):
         button.setText(dir)
         button.setEnabled(True)
 
+    # this callback is called when the user is dragging some listbox item(s) over class listbox
+    # and we need to check if the data contains a single item or more. if more, reject the data
+    def dataValidityCallback(self, ev):
+        ev.ignore()     # by default we will not accept items
+        if ev.mimeData().hasText() and self.classAttribute == []:
+            try:
+                selectedItemIndices = eval(str(ev.mimeData().text()))
+                if type(selectedItemIndices) == list and len(selectedItemIndices) == 1:
+                    ev.accept()
+                else:
+                    ev.ignore()
+            except:
+                pass
+            
+    # this is called when we have dropped some items into a listbox using drag and drop and we have to update interface
+    def updateInterfaceAndApplyButton(self):
+        self.updateInterfaceState()
+        self.applyButton.setEnabled(True)
+        
 
     def updateInterfaceState(self):
         if self.selectedInput:

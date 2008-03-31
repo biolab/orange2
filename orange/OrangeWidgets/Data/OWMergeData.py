@@ -318,7 +318,7 @@ if __name__=="__main__":
     signalManager.addLink(ow, dt, 'Merged Examples B+A', 'Examples', 1)
     signalManager.setFreeze(0)
     dt.show()
-    a.exec_loop()
+    a.exec_()
     """
     import sys
     a=QApplication(sys.argv)

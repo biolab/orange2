@@ -9,21 +9,22 @@ import orngOrangeFoldersQt4
 import OWGUI
 from OWWidget import *
 
-class ImputeListboxItem(QListWidgetItem):
-    def __init__(self, icon, name, master):
-        QListWidgetItem.__init__(self, icon, name)
-        self.master = master
 
-    def paint(self, painter):
-        btext = str(self.text())
-        meth, val = self.master.methods.get(btext, (0, None))
+class ImputeListItemDelegate(QItemDelegate):
+    def __init__(self, widget, parent = None):
+        QItemDelegate.__init__(self, parent)
+        self.widget = widget
+        
+    def drawDisplay(self, painter, option, rect, text):
+        text = str(text)
+        meth, val = self.widget.methods.get(text, (0, None))
         if meth:
             if meth == 2:
-                ntext = self.master.data.domain[btext].varType == orange.VarTypes.Discrete and "major" or "avg"
+                ntext = self.widget.data.domain[text].varType == orange.VarTypes.Discrete and "major" or "avg"
             elif meth < 5:
-                ntext = self.master.indiShorts[meth]
+                ntext = self.widget.indiShorts[meth]
             elif meth:
-                attr = self.master.data.domain[btext]
+                attr = self.widget.data.domain[text]
                 if attr.varType == orange.VarTypes.Discrete:
                     if val < len(attr.values):
                         ntext = attr.values[val]
@@ -31,12 +32,13 @@ class ImputeListboxItem(QListWidgetItem):
                         ntext = "?"
                 else:
                     ntext = str(val)
-            self.setText(btext + " -> " + ntext)
-        painter.font().setBold(meth)
-        QListWidgetItem.paint(self, painter)
-        if meth:
-            self.setText(btext)
-
+            rect.setWidth(self.widget.attrList.width())
+            QItemDelegate.drawDisplay(self, painter, option, rect, text + " -> " + ntext)
+        else:
+            QItemDelegate.drawDisplay(self, painter, option, rect, text)
+        #QItemDelegate.drawDisplay(self, painter, option, rect, text + " -> " + ntext)
+                                   
+        
 
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
@@ -73,14 +75,16 @@ class OWImpute(OWWidget):
 
         attrListBox = OWGUI.widgetBox(self.indibox)
         self.attrList = OWGUI.listBox(attrListBox, self, callback = self.individualSelected)
-        self.attrList.setFixedWidth(220)
+        self.attrList.setMinimumWidth(220)
+        self.attrList.setItemDelegate(ImputeListItemDelegate(self, self.attrList))
 
         indiMethBox = OWGUI.widgetBox(self.indibox)
+        indiMethBox.setFixedWidth(160)
         self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
         self.indiValueCtrlBox = OWGUI.indentedBox(self.indiButtons)
 
         self.indiValueLineEdit = OWGUI.lineEdit(self.indiValueCtrlBox, self, "indiValue", callback = self.lineEditChanged)
-        self.indiValueLineEdit.hide()
+        #self.indiValueLineEdit.hide()
         valid = QDoubleValidator(self)
         valid.setRange(-1e30, 1e30, 10)
         self.indiValueLineEdit.setValidator(valid)
@@ -90,7 +94,7 @@ class OWImpute(OWWidget):
         OWGUI.rubber(indiMethBox)
         self.btAllToDefault = OWGUI.button(indiMethBox, self, "Set All to Default", callback = self.allToDefault)
 
-        box = OWGUI.widgetBox(self.controlArea, "Settings")
+        box = OWGUI.widgetBox(self.controlArea, "Class Imputation")
         self.cbImputeClass = OWGUI.checkBox(box, self, "imputeClass", "Impute class values", callback=self.sendIf)
 
         snbox = OWGUI.widgetBox(self.controlArea, self, "Send data and imputer")
@@ -99,8 +103,7 @@ class OWImpute(OWWidget):
 
         self.activateLoadedSettings()
         self.resize(200,200)
-        #self.adjustSize()
-
+        
 
     def activateLoadedSettings(self):
         self.individualSelected(self.selectedAttr)
@@ -109,7 +112,7 @@ class OWImpute(OWWidget):
 
     def allToDefault(self):
         self.methods = {}
-        self.attrList.triggerUpdate(True)
+        self.attrList.reset()
         self.setBtAllToDefault()
         self.setIndiType()
         self.sendIf()
@@ -152,9 +155,9 @@ class OWImpute(OWWidget):
         else:
             if attr and self.methods.has_key(attrName):
                 self.indiValue = self.methods[attrName][1]
-            self.indiValueLineEdit.show()
             self.indiValueComboBox.hide()
-
+            self.indiValueLineEdit.show()
+            
         self.indiValueCtrlBox.update()
 
 
@@ -173,7 +176,7 @@ class OWImpute(OWWidget):
             else:
                 if self.methods.has_key(attrName):
                     del self.methods[attrName]
-            self.attrList.triggerUpdate(True)
+            self.attrList.reset()
             self.setBtAllToDefault()
             self.sendIf()
 
@@ -182,18 +185,16 @@ class OWImpute(OWWidget):
         if self.data:
             self.indiType = 5
             self.methods[self.data.domain[self.selectedAttr].name] = 5, str(self.indiValue)
-            self.attrList.triggerUpdate(True)
+            self.attrList.reset()
             self.setBtAllToDefault()
-            self.adjustSize()
             self.sendIf()
 
 
     def valueComboChanged(self):
         self.indiType = 5
         self.methods[self.data.domain[self.selectedAttr].name] = 5, self.indiValCom
-        self.attrList.triggerUpdate(True)
+        self.attrList.reset()
         self.setBtAllToDefault()
-        self.adjustSize()
         self.sendIf()
 
 
@@ -226,7 +227,7 @@ class OWImpute(OWWidget):
 
                 self.attrList.clear()
                 for i, attr in enumerate(self.data.domain):
-                    self.attrList.addItem(ImputeListboxItem(self.attrIcons[attr.varType], attr.name, self))
+                    self.attrList.addItem(QListWidgetItem(self.attrIcons[attr.varType], attr.name))
 
                 if self.selectedAttr < self.attrList.count():
                     self.attrList.setCurrentRow(self.selectedAttr)
@@ -361,8 +362,7 @@ class OWImpute(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWImpute()
-    #data = orange.ExampleTable("c:\\d\\ai\\orange\\doc\\datasets\\imports-85")
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\imports-85")
+    data = orange.ExampleTable(r'../../doc/datasets/imports-85')
     ow.show()
     ow.setData(data)
     a.exec_()

@@ -35,6 +35,9 @@ class OWDataTable(OWWidget):
         self.showDistributions = 1
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
+        self.locale = QLocale()
+        
+        self.loadSettings()
         
         # info box
         infoBox = OWGUI.widgetBox(self.controlArea, "Info")
@@ -68,7 +71,6 @@ class OWDataTable(OWWidget):
         self.table2id = {}  # key: table, value: widget id
         self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
         
-        self.loadSettings()
         self.updateColor()
         
     def changeColor(self):
@@ -191,19 +193,11 @@ class OWDataTable(OWWidget):
                 bgColor = white
          
             for i in range(numEx):
-#                item = QTableWidgetItem(QTableWidgetItem.Type)
-#                item.setData(Qt.DisplayRole, QVariant(data[i][key].native()))        # so that numbers will be sorted correctly!!
-#                item.setBackground(QBrush(bgColor))
-#                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-#                table.setItem(i,j, item)
                 OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
             
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
         
-        # adjust vertical header
-        #table.verticalHeader().setClickable(False)
-        #table.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
         self.connect(table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
         #table.verticalHeader().setMovable(False)
 
@@ -313,22 +307,28 @@ class TableItemDelegate(QItemDelegate):
         
         col = index.column()
         row = index.row()
-        
-        dist = self.table.dist[col]
-        if dist == None:        # discrete attribute
+                        
+        if col >= len(self.table.dist) or self.table.dist[col] == None:        # meta attributes and discrete attributes don't have a key
             QItemDelegate.paint(self, painter, option, index)
             return
-                    
-        #self.drawBackground(painter, option, index)
-        value, ok = index.model().data(index, Qt.DisplayRole).toDouble()
                 
+        dist = self.table.dist[col]    
+             
+        painter.save()
+        self.drawBackground(painter, option, index)
+        value, ok = index.data(Qt.DisplayRole).toDouble()
+                        
         if ok:        # in case we get "?" it is not ok
             smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
             painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
+            text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
+        else:
+            text = index.data(Qt.DisplayRole).toString()
         
-        self.drawDisplay(painter, option, option.rect, index.model().data(index, Qt.DisplayRole).toString())
+        self.drawDisplay(painter, option, option.rect, text)
+        painter.restore()
         
-            
+
         
 
 if __name__=="__main__":

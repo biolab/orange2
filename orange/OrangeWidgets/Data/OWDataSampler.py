@@ -45,13 +45,7 @@ class OWDataSampler(OWWidget):
         self.GroupText = '0.1,0.25,0.5'         # assigned to Groups Control (for internal use)
 
         # GUI
-        # Info Box
-        box1 = OWGUI.widgetBox(self.controlArea, "Information")
-        self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
-        self.infob = OWGUI.widgetLabel(box1, ' ')
-        self.infoc = OWGUI.widgetLabel(box1, ' ')
-        OWGUI.separator(self.controlArea)
-
+        
         # Options Box
         box2 = OWGUI.widgetBox(self.controlArea, 'Options')
         OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)')
@@ -103,6 +97,14 @@ class OWDataSampler(OWWidget):
         OWGUI.separator(self.controlArea)
         OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
         self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
+        OWGUI.separator(self.controlArea)
+        
+        # Info Box
+        box1 = OWGUI.widgetBox(self.controlArea, "Information")
+        self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
+        self.infob = OWGUI.widgetLabel(box1, ' ')
+        self.infoc = OWGUI.widgetLabel(box1, ' ')
+        
 
         # CONNECTIONS
         # set connections for RadioButton (SelectType)

@@ -66,13 +66,10 @@ class OWSave(OWWidget):
         else:
             startfile = "."
 
-        dlg = QFileDialog(None, "Orange Data File", startfile,
-                          'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)
-                          )
-
-        dlg.exec_()
-
-        filename = str(dlg.selectedFile())
+        filename = str(QFileDialog.getSaveFileName(self, 'Save Orange Data File', startfile,
+                        'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)
+                        ))
+        
         if not filename or not os.path.split(filename)[1]:
             return
 

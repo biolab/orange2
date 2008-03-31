@@ -27,7 +27,7 @@ class OWFile(OWWidget):
     contextHandlers = {"": FileNameContextHandler()}
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "File")
+        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0)
 
         self.inputs = []
         self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
@@ -48,8 +48,16 @@ class OWFile(OWWidget):
         box.layout().addWidget(self.filecombo)
         button = OWGUI.button(box, self, '...', callback = self.browseFile, width = 25, disabled=0)
         self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload, width = 50)
-
-        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Info", addSpace = True)
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
+        self.warnings = OWGUI.widgetLabel(box, ' ')
+        
+        box = OWGUI.widgetBox(self.controlArea, "Advanced Settings")
+        smallWidget = OWGUI.SmallWidgetButton(box, text = "Show advanced settings")
+        
+        box = OWGUI.widgetBox(smallWidget.widget, "Missing Value Symbols", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
         
         hbox = OWGUI.indentedBox(box)
@@ -57,7 +65,7 @@ class OWFile(OWWidget):
         #OWGUI.separator(hbox, 16, 0)
         OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
 
-        OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
+        OWGUI.radioButtonsInBox(smallWidget.widget, self, "createNewOn", box="New Attributes", addSpace=True,
                        label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
                                     "Have no common values with the new (recommended)",
@@ -65,12 +73,7 @@ class OWFile(OWWidget):
                                     "... Always create a new attribute"
                                ])
 
-        box = OWGUI.widgetBox(self.controlArea, "Info")
-        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
-        self.infob = OWGUI.widgetLabel(box, ' ')
-        self.warnings = OWGUI.widgetLabel(box, ' ')
-
-        self.adjustSize()
+        #self.adjustSize()
 
     # set the file combo box
     def setFileList(self):
@@ -258,7 +261,7 @@ class OWFile(OWWidget):
 
         self.warnings.setText(warnings)
         qApp.processEvents()
-        self.adjustSize()
+        #self.adjustSize()
 
         # make new data and send it
         fName = os.path.split(fn)[1]

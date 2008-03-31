@@ -217,15 +217,15 @@ class OWSelectData(OWWidget):
         self.setOutput()
 
 
-    def setLbAttr(self, filter=None):
+    def setLbAttr(self):
         self.lbAttr.clear()
-        if not filter:
+        if not self.attrSearchText:
             for v in self.varList:
                 self.lbAttr.addItem(QListWidgetItem(self.icons[v.varType], v.name))
         else:
-            flen = len(filter)
+            flen = len(self.attrSearchText)
             for v in self.varList:
-                if v.name[:flen] == filter:
+                if v.name[:flen].lower() == self.attrSearchText.lower():
                     self.lbAttr.addItem(QListWidgetItem(self.icons[v.varType], v.name))
 
         if self.lbAttr.count():
