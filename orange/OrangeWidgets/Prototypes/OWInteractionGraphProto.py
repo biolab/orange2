@@ -477,8 +477,8 @@ class OWInteractionGraphProto(OWWidget):
             rect3.setBrush(brush3); rect3.setPen(QPen(QColor(Qt.blue)))
 
             # create text labels
-            text1 = OWQCanvasFuncts.OWCanvasText(canvas, data.domain[attrIndex1].name, x = xOff - 5, y = rectsYOff + 3, alignment = Qt.AlignRight)
             text2 = OWQCanvasFuncts.OWCanvasText(canvas, data.domain[attrIndex2].name, x = xOff + xscale*total + 5, y = rectsYOff + 3, alignment = Qt.AlignLeft)
+            text1 = OWQCanvasFuncts.OWCanvasText(canvas, data.domain[attrIndex1].name, x = xOff - 5, y = rectsYOff + 3, alignment = Qt.AlignRight)
 
             # compute line width
             rect = text2.boundingRect()
