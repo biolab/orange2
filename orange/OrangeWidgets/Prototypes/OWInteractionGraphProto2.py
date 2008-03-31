@@ -71,19 +71,6 @@ class OWInteractionGraphProto2(OWWidget):
         #load settings
         self.loadSettings()
 
-        # add a settings dialog and initialize its values
-#        self.splitter = QSplitter(Qt.Horizontal, self.mainArea)
-#        self.mainArea.layout().addWidget(self.splitter)
-#
-#        self.canvasL = QGraphicsScene()
-#        self.canvasViewL = IntGraphView(self, "interactions", self.canvasL, self)
-#        self.splitter.addWidget(self.canvasViewL)
-#        self.canvasViewL.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-#
-#        self.canvasR = QGraphicsScene()
-#        self.canvasViewR = IntGraphView(self, "graph", self.canvasR, self)
-#        self.splitter.addWidget(self.canvasViewR)
-
         self.splitCanvas = QSplitter(self.mainArea)
 
         self.canvasL = QCanvas(2000, 2000)
@@ -111,7 +98,7 @@ class OWInteractionGraphProto2(OWWidget):
 
         settingsBox = OWGUI.widgetBox(self.controlArea, "Settings")
         self.mergeAttributesCB = OWGUI.checkBox(settingsBox, self, "mergeAttributes", 'Merge attributes', callback = self.mergeAttributesEvent, tooltip = "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with a right mouse click inside interaction rectangles in the left graph.\nA merged attribute is then created as a cartesian product of corresponding attributes \nand added to the list of attributes.")
-        self.importantInteractionsCB = OWGUI.checkBox(settingsBox, self, "onlyImportantInteractions", 'Show only important interactions', callback = self.showImportantInteractions)
+        self.importantInteractionsCB = OWGUI.checkBox(settingsBox, self, "onlyImportantInteractions", 'Important interactions only', callback = self.showImportantInteractions)
 
         self.selectionButton = OWGUI.button(self.controlArea, self, "Show selection", callback = self.selectionClick, tooltip = "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
 
@@ -122,6 +109,9 @@ class OWInteractionGraphProto2(OWWidget):
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.activateLoadedSettings()
 
+    def resizeEvent(self, e):
+        if hasattr(self, "splitCanvas"):
+            self.splitCanvas.resize(self.mainArea.size())
 
     def mergeAttributesEvent(self):
         self.updateNewData(self.originalData)
@@ -140,36 +130,54 @@ class OWInteractionGraphProto2(OWWidget):
         if rect.bottom() < y: return 0
 
         return 1
+    
+    # did we click inside the rect rectangle
+    def clickInside(self, rect, point):
+        x = point.x()
+        y = point.y()
+
+        if rect.left() > x: return 0
+        if rect.right() < x: return 0
+        if rect.top() > y: return 0
+        if rect.bottom() < y: return 0
+
+        return 1
+        
 
     # if we clicked on edge label send "wiew" signal, if clicked inside rectangle select/unselect attribute
     def mousePressed(self, name, ev):
-        pos = QPointF(ev.pos())
+        pos = ev.pos()
         if ev.button() == Qt.LeftButton and name == "graph":
             for name in self.rectNames:
-                if self.rectNames[name].contains(pos):
+                if self.clickInside(self.rectNames[name].rect(), ev.pos()) == 1:
+                    
                     self._setAttrVisible(name, not self.getAttrVisible(name))
                     self.showInteractionRects(self.data)
-                    #self.canvasR.update()
+                    self.canvasR.update()
                     return
+                
             for (attr1, attr2, rect) in self.lines:
-                if rect.contains(pos):
+                if self.clickInside(rect.rect(), ev.pos()) == 1:
                     self.send("Attribute Pair", [attr1, attr2])
                     return
+                
         elif ev.button() == Qt.LeftButton and name == "interactions":
             self.rest = None
             for rects in self.interactionRects:
-                if 1 in [item.contains(pos) for item in rects]:
+                (rect1, rect2, rect3, nbrect, text1, text2) = rects
+                if 1 in [self.clickInside(item.rect(), ev.pos()) for item in [rect1, rect2, rect3, nbrect]]:
                     (rect1, rect2, rect3, nbrect, text1, text2) = rects
-                    self.send("Attribute Pair", [str(text1.toPlainText()), str(text2.toPlainText())])
+                    self.send("Attribute Pair", [str(text1.text()), str(text2.text())])
 
         elif ev.button() == Qt.RightButton and name == "interactions" and self.mergeAttributes:
             found = 0
             for rects in self.interactionRects:
                 (rect1, rect2, rect3, nbrect, text1, text2) = rects
-                if 1 in [item.contains(pos) for item in rects]:
-                    attr1 = str(text1.toPlainText()); attr2 = str(text2.toPlainText())
+                if 1 in [self.clickInside(item.rect(), ev.pos()) for item in [rect1, rect2, rect3, nbrect]]:
+                    attr1 = str(text1.text()); attr2 = str(text2.text())
                     found = 1
                     break
+                
             if not found: return
 
             data = self.interactionMatrix.discData
@@ -295,8 +303,8 @@ class OWInteractionGraphProto2(OWWidget):
         self.initLists(data)   # add all attributes found in .dot file to shown list
         self.showInteractionRects(data) # use interaction matrix to fill the left canvas with rectangles
 
-        #self.canvasL.update()
-        #self.canvasR.update()
+        self.canvasL.update()
+        self.canvasR.update()
 
         self.send("Examples", data)
         self.send("Network", self.graph)
@@ -334,11 +342,13 @@ class OWInteractionGraphProto2(OWWidget):
         # hide all interaction rectangles
         for (rect1, rect2, rect3, nbrect, text1, text2) in self.interactionRects:
             for item in [rect1, rect2, rect3, nbrect, text1, text2]:
-                self.canvasL.removeItem(item)
+                #self.canvasL.removeItem(item)
+                item.hide()
         self.interactionRects = []
 
         for item in self.rectItems:
-            self.canvasL.removeItem(item)
+            #self.canvasL.removeItem(item)
+            item.hide()
         self.rectItems = []
 
         ################################
@@ -443,10 +453,10 @@ class OWInteractionGraphProto2(OWWidget):
             index += 1
 
         # resizing of the left canvas to update width
-        #self.canvasViewL.setMaximumSize(QSize(maxWidth + 30, max(2000, maxHeight)))
-        #self.canvasL.resize(maxWidth + 10, maxHeight)
-        #self.canvasViewL.setMinimumWidth(0)
-        #self.canvasL.update()
+        self.canvasViewL.setMaximumSize(QSize(maxWidth + 30, max(2000, maxHeight)))
+        self.canvasL.resize(maxWidth + 10, maxHeight)
+        self.canvasViewL.setMinimumWidth(0)
+        self.canvasL.update()
 
 
     #########################################
@@ -508,15 +518,15 @@ class OWInteractionGraphProto2(OWWidget):
         count = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from hidden
             if str(self.hiddenAttribsLB.item(i).text()) == name:
-                self.hiddenAttribsLB.takeItem(i)
+                self.hiddenAttribsLB.removeItem(i)
 
     def _hideAttribute(self, name):
-        self.hiddenAttribsLB.addItem(name)    # add to hidden
+        self.hiddenAttribsLB.insertItem(name)    # add to hidden
 
         count = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from shown
             if str(self.shownAttribsLB.item(i).text()) == name:
-                self.shownAttribsLB.takeItem(i)
+                self.shownAttribsLB.removeItem(i)
 
     ##########
     # add attribute to showList or hideList and show or hide its rectangle
