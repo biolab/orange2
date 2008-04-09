@@ -234,6 +234,7 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
+        print fn
         network.readNetwork(fn)
         
         self.infoc.setText("Data generated and added automatically.")
