@@ -207,7 +207,11 @@ class OWNetworkFile(OWWidget):
                 return
 
             data = self.readNetFile(fn)
-
+            
+            if data == None:
+                self.send("Network", None)
+                return
+                
             self.infoa.setText("%d nodes" % data.nVertices)
             
             if data.directed:
