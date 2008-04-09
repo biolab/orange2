@@ -234,10 +234,14 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
-        print fn
-        network.readNetwork(fn)
+        try:
+            network.readNetwork(fn)
+            self.infoc.setText("Data generated and added automatically.")
+        except:
+            self.infoa.setText("Could not read file.")
+            self.infob.setText("")
+            return None
         
-        self.infoc.setText("Data generated and added automatically.")
         return network.graph
 
 if __name__ == "__main__":
