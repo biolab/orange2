@@ -1,6 +1,6 @@
 # TODO: Popravi moznost izbire enrichanih termov. Namesto tresholda daj funkcijo.
 # TODO: Buffering za izbiro termov. Dodaj optimizacijo, ki uposteva vsebovanost.
-# TODO: Dodaj callback pri iskanju MeSH termov.
+# TODO: Dodaj callback pri iskanju MeSH termov  .
 
 import orange
 from xml.sax import make_parser
