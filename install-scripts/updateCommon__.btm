@@ -17,7 +17,7 @@ cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f -P -d
 break_on_error
 
 cdd %SCRIPTDIR
-rem call winCompile.btm
+call winCompile.btm
 
 cdd %SCRIPTDIR
 python buildInstFileList.py %STABLEDIR files
