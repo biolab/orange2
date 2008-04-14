@@ -47,7 +47,7 @@
 
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
-#include "numeric_interface.hpp"
+//#include "numeric_interface.hpp"
 #include "network.hpp"
 #include "stringvars.hpp"
 
@@ -92,7 +92,7 @@ public:
 	double width; 
 	double height; 
 	PyArrayObject *coors;
-  PyArrayObject *metaCoors;
+  	PyArrayObject *metaCoors;
 	TNetwork *graphStructure;
 
 	int nLinks;
@@ -100,7 +100,7 @@ public:
 	vector<int> links[2];
 	set<int> vertices;
 	double **pos;
-  double **metapos;
+  	double **metapos;
 	int *level;
 	double *kVector;
 	double *levelMin;

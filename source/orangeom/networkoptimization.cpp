@@ -25,7 +25,7 @@
 TNetworkOptimization::TNetworkOptimization()
 {
 	//cout << "constructor" << endl;
-	import_array();
+	//import_array();
 	
 	nVertices = 0;
 	nLinks = 0;
@@ -35,7 +35,7 @@ TNetworkOptimization::TNetworkOptimization()
 	width = 10000;
 	height = 10000;
 	pos = NULL;
-  tree = NULL;
+  	tree = NULL;
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
 }
