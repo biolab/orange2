@@ -83,8 +83,8 @@ class OWNomogram(OWWidget):
 
         self.loadSettings()
 
-        self.pointsName = ["Points","Log OR"]
-        self.totalPointsName = ["Total Points","Log OR Sum"]
+        self.pointsName = ["Points", "Log OR"]
+        self.totalPointsName = ["Total Points", "Log OR Sum"]
         self.bnomogram = None
 
 
@@ -103,7 +103,7 @@ class OWNomogram(OWWidget):
         self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log OR'], 'yAxis',
                                 tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
                                 callback=self.showNomogram)
-        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous',
+        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous attributes',
                                 tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
                                 callback=self.showNomogram)
 
@@ -112,13 +112,13 @@ class OWNomogram(OWWidget):
         self.targetCombo = OWGUI.comboBox(GeneralTab, self, "TargetClassIndex", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
 
         #self.yAxisRadio.setDisabled(True)
-        self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability','Show prediction',  tooltip='', callback = self.setProbability)
+        self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
         #self.probabilityCheck.setDisabled(True)
-        self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table','Show table',  tooltip='Show table of selected attribute values?')
+        self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table', 'Show table',  tooltip='Show table of selected attribute values?')
         self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
         self.tableCheck.setDisabled(True)
 
-        self.sortBox = OWGUI.comboBox(GeneralTab, self, "sort_type", box="Sorting", label="Criteria: ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram)
+        self.sortBox = OWGUI.comboBox(GeneralTab, self, "sort_type", box="Sorting", label="Criteria: ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
 
         self.tabs.insertTab(GeneralTab, "General")
 
@@ -126,7 +126,7 @@ class OWNomogram(OWWidget):
         NomogramStyleTab = QVGroupBox(self)
 
         self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 200, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
-        self.verticalSpacingContLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacingContinuous', 15, 200, box = 'Vertical spacing 2d.:',  tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+        self.verticalSpacingContLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacingContinuous', 15, 200, box = 'Vertical spacing (for cont.):',  tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
 ##        self.verticalSpacingLabel.setDisabled(True)
 ##        self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.', callback = self.showNomogram)
 ##        self.fontSizeLabel.setDisabled(True)
@@ -141,7 +141,7 @@ class OWNomogram(OWWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
 
         # objects/gui widgets in settings tab for showing and adjusting confidence intervals properties
-        self.CICheck, self.CILabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Confidence Interval (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+        self.CICheck, self.CILabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Confidence Interval (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
         self.CICheck.setChecked(False)
         self.CICheck.setDisabled(True)
         self.CILabel.setDisabled(True)
@@ -359,11 +359,11 @@ class OWNomogram(OWWidget):
                         minAtValue = -1.
                     numOfPartitions = 50.
                     d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-    
+
                     # get curr_num = starting point for continuous att. sampling
                     curr_num = getStartingPoint(d, minAtValue)
                     rndFac = getRounding(d)
-    
+
                     while curr_num<maxAtValue+d:
                         if abs(mult*curr_num*cl.beta[at])<aproxZero:
                             a.addAttValue(AttValue("0.0", 0))
@@ -666,7 +666,7 @@ class OWNomogram(OWWidget):
         sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()+EMPTY_SPACE
         size = QSize(sizeW, sizeH)
 
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName("graph.png", "Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, None, "Save to...")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
