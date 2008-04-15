@@ -154,7 +154,7 @@ class OWSelectData(OWWidget):
         self.criteriaTable.verticalHeader().setResizeEnabled(False,-1)
         hheader=self.criteriaTable.horizontalHeader()
         hheader.setClickEnabled(False)
-        hheader.setLabel(0, "Active      ")
+        hheader.setLabel(0, "Active")
         hheader.setLabel(1, "Condition")
         self.connect(self.criteriaTable, SIGNAL('currentChanged(int, int)'), self.currentCriteriaChange)
         self.criteriaTable.adjustColumn(0)
@@ -178,7 +178,7 @@ class OWSelectData(OWWidget):
         OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
         self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Commit on change", box=None)
-        btnUpdate = OWGUI.button(boxSettings, self, "Commit", self.setOutput)
+        btnUpdate = OWGUI.button(boxSettings, self, "&Commit", self.setOutput)
 
         self.icons = self.createAttributeIconDict()
         self.setData(None)
