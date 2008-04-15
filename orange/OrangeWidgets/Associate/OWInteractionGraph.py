@@ -108,7 +108,6 @@ class OWInteractionGraph(OWWidget):
         self.selectionButton = QPushButton("Show selection", self.space)
         QToolTip.add(self.selectionButton, "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
 
-
         self.saveLCanvas = QPushButton("Save left canvas", self.space)
         self.saveRCanvas = QPushButton("Save right canvas", self.space)
         self.connect(self.saveLCanvas, SIGNAL("clicked()"), self.saveToFileLCanvas)
