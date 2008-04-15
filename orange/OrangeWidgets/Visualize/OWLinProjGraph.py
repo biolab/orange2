@@ -98,7 +98,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.removeMarkers()
 
         self.__dict__.update(args)
-        if labels == None: labels = [anchor[2] for anchor in self.anchorData]
+        if labels is None: labels = [anchor[2] for anchor in self.anchorData]
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
         self.valueLineCurves = [{}, {}]    # dicts for x and y set of coordinates for unconnected lines
@@ -756,7 +756,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
     # update shown data. Set labels, coloring by className ....
     def savePicTeX(self):
         lastSave = getattr(self, "lastPicTeXSave", "C:\\")
-        qfileName = QFileDialog.getSaveFileName(lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)", None, "Save to..", "Save to..")
+        qfileName = QFileDialog.getSaveFileName(lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)", None, "Save to...", "Save to...")
         fileName = str(qfileName)
         if fileName == "":
             return
