@@ -998,7 +998,7 @@ class BasicNomogramFooter(QCanvas):
         self.initVars(nomogram, parent)
 
     def logit(self, val):
-            return math.exp(val)/(1+math.exp(val))
+        return math.exp(val)/(1+math.exp(val))
     
     def invLogit(self, p):    
         return math.log(p/max(1-p,aproxZero))
