@@ -64,7 +64,7 @@ class ClusterOptimization(OWBaseWidget):
         if (int(qVersion()[0]) >= 3):
             self.setCaption("Cluster Dialog")
         else:
-            self.setCaption("Qt Cluster Dialog")
+            self.setCaption("Qt "+"Cluster Dialog")
         self.controlArea = QVBoxLayout(self)
 
         self.graph = graph
@@ -136,7 +136,7 @@ class ClusterOptimization(OWBaseWidget):
         self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown details in projections list" , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
         self.label1 = QLabel('Projections with ', self.buttonBox)
-        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
+        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["  exactly  ", "  maximum  "] )
         self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCountIndex", items = [str(x) for x in range(3, 15)] + ["ALL"], tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes")
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
@@ -175,8 +175,8 @@ class ClusterOptimization(OWBaseWidget):
         OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of continuous attributes", items = [val for (val, m) in contMeasures])
         OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of discrete attributes", items = [val for (val, m) in discMeasures])
         
-        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
-        self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
+        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:"+"   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+        self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:"+"        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
 
         # ##########################
         # ARGUMENTATION tab        
@@ -194,13 +194,13 @@ class ClusterOptimization(OWBaseWidget):
 
         # ##########################
         # CLASSIFICATION TAB
-        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
-        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
-        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = 'Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection score when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
+        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ...", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
         self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster.")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "The maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, "Argument count")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"])
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "The maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"])
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -422,7 +422,7 @@ class ClusterOptimization(OWBaseWidget):
             if (int(qVersion()[0]) >= 3):
                 (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
             else:
-                (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you want to consider?')
+                (text, ok) = QInputDialog.getText('Qt '+'Projection count', 'How many of the best projections do you want to consider?')
             if not ok: return
             nrOfProjections = int(str(text)) 
 
@@ -624,7 +624,7 @@ class ClusterOptimization(OWBaseWidget):
         self.clearResults()
         self.clearArguments()
         if self.rawData == None:
-            QMessageBox.critical(None,'Load','There is no data. First load a data set and then load a cluster file',QMessageBox.Ok)
+            QMessageBox.critical(None, 'Load', 'There is no data. First load a data set and then load a cluster file', QMessageBox.Ok)
             return
                 
         name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting clusters (*.clu)", self, "", "Open Clusters")
@@ -650,7 +650,7 @@ class ClusterOptimization(OWBaseWidget):
         if -1 in selectedClasses: self.classesList.setSelected(self.classesList.count()-1, 1)
         checksum = eval(file.readline()[:-1])
         if self.rawData and self.rawData.checksum() != checksum:
-            cancel = QMessageBox.critical(None, "Load", "Currently loaded data set is different than the data set that was used for computing these projections. \nThere may be differences in the number of examples or in actual data values. \nThe shown clusters will therefore most likely show incorrect information. \nAre you sure you want to continue with loading?", 'Yes','No', '', 1,0)
+            cancel = QMessageBox.critical(None, "Load", "Currently loaded data set is different than the data set that was used for computing these projections. \nThere may be differences in the number of examples or in actual data values. \nThe shown clusters will therefore most likely show incorrect information. \nAre you sure you want to continue with loading?", 'Yes', 'No', '', 1,0)
             if cancel: return
 
         line = file.readline()[:-1];
@@ -694,7 +694,7 @@ class ClusterOptimization(OWBaseWidget):
         if (int(qVersion()[0]) >= 3):
             (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
         else:
-            (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
+            (text, ok) = QInputDialog.getText('Qt '+'Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
@@ -874,11 +874,11 @@ class ClusterOptimization(OWBaseWidget):
         classValue = self.rawData.domain.classVar[vals.index(max(vals))]
 
         # show classification results
-        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": classValue, "prob": dist[classValue]*100}
         for key in dist.keys():
             s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
         if foundArguments > argumentCount:
-            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, argumentCount)
+            s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": foundArguments, "ac": argumentCount}
         s = s[:-4]
         if showClassification:
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
@@ -958,7 +958,7 @@ class clusterClassifier(orange.Classifier):
 
         results = clusterOptimizationDlg.getAllResults()
         if firstTime and results != None and len(results) > 0:
-            computeProjections = QMessageBox.information(clusterOptimizationDlg, 'Cluster classifier', 'Do you want to classify examples based the projections that are currently in the projection list \n or do you want to compute new projections?','Current projections','Compute new projections', '', 0,1)
+            computeProjections = QMessageBox.information(clusterOptimizationDlg, 'Cluster classifier', 'Do you want to classify examples based the projections that are currently in the projection list \n or do you want to compute new projections?', 'Current projections', 'Compute new projections', '', 0,1)
             #computeProjections = 0
         elif results != None and len(results) > 0:
             computeProjections = 0
