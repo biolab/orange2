@@ -97,8 +97,8 @@ class OWParallelCoordinates(OWVisWidget):
 
         # SETTINGS tab
         boxX = OWGUI.widgetBox(self.SettingsTab, "Graph settings")
-        OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):  ', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
-        OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:  ', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "The minimum distance between two adjacent attribute axis", sendSelectedValue = 1, valueType = int)
+        OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "The minimum distance between two adjacent attribute axis", sendSelectedValue = 1, valueType = int)
 
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
@@ -453,10 +453,10 @@ class ParallelOptimization(OWBaseWidget):
         self.allAttributesRadio = QRadioButton("Order all attributes", self.optimizeBox)
         self.connect(self.allAttributesRadio, SIGNAL("clicked()"), self.setAllAttributeRadio)
         box = OWGUI.widgetBox(self.optimizeBox, orientation = "horizontal")
-        self.subsetAttributeRadio = QRadioButton("find subsets of      ", box)
+        self.subsetAttributeRadio = QRadioButton("find subsets of"+"      ", box)
         self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
-        label  = OWGUI.widgetLabel(box, "   attributes")
+        label  = OWGUI.widgetLabel(box, "   "+"attributes")
 
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, "Start Optimization", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
@@ -547,10 +547,10 @@ class ParallelOptimization(OWBaseWidget):
     # load projections from a file
     def loadProjections(self, name = None):
         self.projections = []
-        self.kNeighborsLabel.setText("Number of neighbors (k): " )
-        self.percentDataUsedLabel.setText("Percent of data used:" )
-        self.testingMethodLabel.setText("Testing method used:" )
-        self.qualityMeasureLabel.setText("Quality measure used:" )
+        self.kNeighborsLabel.setText("Number of neighbors (k):")
+        self.percentDataUsedLabel.setText("Percent of data used:")
+        self.testingMethodLabel.setText("Testing method used:")
+        self.qualityMeasureLabel.setText("Quality measure used:")
 
         if name == None:
             name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections"))
@@ -567,7 +567,7 @@ class ParallelOptimization(OWBaseWidget):
             return
 
         if type(eval(file.readline()[:-1])) != list:    # second line must contain a list of classes that we tried to separate
-            QMessageBox.critical(None,'Old version of projection file','This file was saved with an older version of k-NN Optimization Dialog. The new version of dialog offers \nsome additional functionality and therefore you have to compute the projection quality again.',QMessageBox.Ok)
+            QMessageBox.critical(None, 'Old version of projection file','This file was saved with an older version of k-NN Optimization Dialog. The new version of dialog offers \nsome additional functionality and therefore you have to compute the projection quality again.', QMessageBox.Ok)
             file.close()
             return
 
