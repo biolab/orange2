@@ -518,7 +518,7 @@ class CanvasOptionsDlg(QDialog):
 
         lineBox = QHBox(colorsBox)
         self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-        lineLabel = QLabel(" Lines", lineBox)
+        lineLabel = QLabel(" Connections", lineBox)
 
 
         # #################################################################
@@ -621,7 +621,7 @@ class CanvasOptionsDlg(QDialog):
 
     def removeCategory(self):
         curCat = str(self.tabOrderList.currentText())
-        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Yes, QMessageBox.No | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
+        if QMessageBox.warning(self, 'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Yes, QMessageBox.No | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
             self.removeTabs.append(curCat)
             self.tabOrderList.removeItem(self.tabOrderList.currentItem())
 
