@@ -282,7 +282,7 @@ class OWPredictions(OWWidget):
             ov = predictors[0].classVar
             for predictor in predictors[1:]:
                 if ov != predictor.classVar:
-                    self.warning(0, "Mismatch in class variable (e.g., predictors %s and %s)" % (predictors[0].name, predictor.name))
+                    self.warning(0, "Predictors %s and %s make predictions for different class variables" % (predictors[0].name, predictor.name))
                     return None
             return ov
 
