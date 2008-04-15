@@ -75,7 +75,7 @@ class SchemaView(QCanvasView):
         if ok and self.tempWidget != None and newName != exName:
             for widget in self.doc.widgets:
                 if widget.caption.lower() == newName.lower():
-                    QMessageBox.critical(self,'Orange Canvas','Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
+                    QMessageBox.critical(self, 'Orange Canvas', 'Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
                     return
             self.tempWidget.updateText(newName)
             self.tempWidget.updateTooltip()
@@ -88,7 +88,7 @@ class SchemaView(QCanvasView):
     # popMenuAction - user selected to delete active widget
     def removeActiveWidget(self):
         if self.doc.signalManager.signalProcessingInProgress:
-             QMessageBox.information( None, "Orange Canvas", "Unable to remove widgets while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+             QMessageBox.information( None, "Orange Canvas" , "Unable to remove widgets while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
              return
         if not self.bMultipleSelection:
             self.selWidgets = [self.tempWidget]
