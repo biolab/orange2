@@ -43,7 +43,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
         self.treeRules = QListView(self.mainArea)       #the rules and their properties are printed into this QListView
 #        self.treeRules.setMultiSelection (1)              #allow multiple selection
         self.treeRules.setAllColumnsShowFocus ( 1) 
-        self.treeRules.addColumn("Rules")        #column0
+        self.treeRules.addColumn("Rules")
 
         mbox = OWGUI.widgetBox(self.controlArea, "Shown measures")
         self.cbMeasures = []
