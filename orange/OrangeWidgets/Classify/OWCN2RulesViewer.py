@@ -103,14 +103,14 @@ class OWCN2RulesViewer(OWWidget):
         OWGUI.checkBox(box,self,"Coverage","Coverage",callback=self.drawRules)
         OWGUI.checkBox(box,self,"Class","Predicted class", callback=self.drawRules)
         OWGUI.checkBox(box,self,"Dist","Distribution", callback=self.drawRules)
-        OWGUI.checkBox(box,self,"DistBar","Distribution(Bar)",callback=self.drawRules)
+        OWGUI.checkBox(box,self,"DistBar","Distribution (Bar)",callback=self.drawRules)
 
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         self.sortBox=OWGUI.comboBox(box, self, "Sort", 
                                     items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
-                                           "Distribution","Rule"]
+                                           "Distribution", "Rule"]
                                     ,callback=self.drawRules)
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Output")
