@@ -323,7 +323,7 @@ class OWImpute(OWWidget):
                 msg = "The imputed values for some attributes (%s) are not specified." % ", ".join(missingValues)
             else:
                 msg = "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
-            self.warning(0, msg + "\nAverages and/or majority values are used instead.")
+            self.warning(0, msg + "\n"+"Averages and/or majority values are used instead.")
 
         if classVar and not imputeClass:
             imputerModels.append(lambda e, wei=0: None)
