@@ -237,7 +237,7 @@ class OWMergeData(OWWidget):
                 else:
                     etAreduced.append(orange.Example(domAreduced, exADK))
             etBA = orange.ExampleTable([self.dataB, etAreduced])
-            etBA.name = nameB + " (merged with %s)" % nameA
+            etBA.name = "%(nameB)s (merged with %(nameA)s)" % vars()
             self.send("Merged Examples B+A", etBA)
         else:
             self.send("Merged Examples A+B", None)
