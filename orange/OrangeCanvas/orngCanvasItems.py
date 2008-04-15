@@ -147,7 +147,8 @@ class CanvasLine(QCanvasLine):
         p2 = self.endPoint()
         signals = self.getSignals()
 
-        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
+        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>"
+        string += "Signals" + "<br>"
         for (outSignal, inSignal) in signals:
             string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
         string = string[:-4]
@@ -558,32 +559,40 @@ class CanvasWidget(QCanvasRectangle):
 
     def updateTooltip(self):
         self.removeTooltip()
-        string = "<nobr><b>" + self.caption + "</b></nobr><br><hr>Inputs:<br>"
+        string = "<nobr><b>" + self.caption + "</b></nobr><br>"
 
-        if self.widget.getInputs() == []: string += "&nbsp &nbsp None<br>"
+        inputs = self.widget.getInputs()
+        if not inputs:
+            string += "<hr>" + "Inputs:%sNone" % "<br>&nbsp &nbsp " + "<br>"
         else:
-            for signal in self.widget.getInputs():
+            sstring = ""
+            for signal in inputs:
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
-                    for i in range(len(widgets)-1):
-                        string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
-                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
+                    sstring += "<nobr> &nbsp &nbsp - " + ("<b>%s</b> (from %s)" % (
+                                                                self.canvasDlg.getChannelName(signal.name),
+                                                                ", ".join([self.view.doc.getWidgetCaption(widget) for widget in widgets])
+                                                                )) + "</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    sstring += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+            string += "<hr>" + "Inputs:%s%s" % ("<br>", sstring)
 
-        string += "<hr>Outputs:<br>"
-        if self.widget.getOutputs() == []: string += "&nbsp &nbsp None<br>"
+        outputs = self.widget.getOutputs()
+        if not outputs:
+            string += "<hr>" + "Outputs:%sNone" % "<br>&nbsp &nbsp " + "<br>"
         else:
-            for signal in self.widget.getOutputs():
+            sstring = ""
+            for signal in outputs:
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
-                    for i in range(len(widgets)-1):
-                        string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
-                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
+                    sstring += "<nobr> &nbsp &nbsp - " + ("<b>%s</b> (to %s)" % (
+                                                                 self.canvasDlg.getChannelName(signal.name),
+                                                                 ", ".join([self.view.doc.getWidgetCaption(widget) for widget in widgets])
+                                                                )) + "</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    sstring += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+            string += "<hr>" + "Outputs:%s%s" % ("<br>", sstring)
+
         string = string[:-4]
         self.lastRect = QRect(self.x()-self.view.contentsXPos, self.y()-self.view.contentsYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)
