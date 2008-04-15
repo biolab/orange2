@@ -298,10 +298,10 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
+#            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
+#        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
@@ -314,7 +314,7 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
+#            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         try:
             coverage = examples.domain.getmeta("Coverage")
         except:
@@ -323,7 +323,7 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
             examples.addMetaAttribute(coverage,0.0)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
+#        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 try:
