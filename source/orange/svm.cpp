@@ -3488,18 +3488,20 @@ svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0
 	int j=1;
 	int index=1;
 	if(useNonMeta)
-		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++)
+		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++){
 			if(i->isRegular() && i!=&ex.getClass()){
 				if(i->varType==TValue::FLOATVAR)
 					node->value=float(*i);
 				else
 					node->value=int(*i);
-				node->index=index++;
+				node->index=index;
 				if(node->value==numeric_limits<float>::signaling_NaN() || 
 					node->value==numeric_limits<int>::max())
 					node--;
 				node++;
 			}
+			index++;
+		}
 	for(TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end();i++,j++){
 		if(i->second.isRegular()){
 			if(i->second.varType==TValue::FLOATVAR)

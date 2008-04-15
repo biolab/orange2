@@ -1085,6 +1085,46 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
   PyCATCH
 }
 
+/************ Linear **********/
+#include "linear.hpp"
+C_CALL(LinearLearner, Learner, "([examples] -/-> Classifier)")
+C_NAMED(LinearClassifier, ClassifierFD, " ")
+
+PYCLASSCONSTANT_INT(LinearLearner, L2_LR, 0)
+PYCLASSCONSTANT_INT(LinearLearner, L2LOSS_SVM_DUAL, 1)
+PYCLASSCONSTANT_INT(LinearLearner, L2LOSS_SVM, 2)
+PYCLASSCONSTANT_INT(LinearLearner, L1LOSS_SVM_DUAL, 3)
+
+
+PyObject *LinearClassifier__reduce__(PyObject *self){
+  PyTRY
+	CAST_TO(TLinearClassifier, classifier);
+	string buff;
+	linear_save_model_alt(buff, classifier->getModel());
+	return Py_BuildValue("O(OOOs)N", getExportedFunction("__pickleLoaderLinearClassifier"),
+									self->ob_type,
+									WrapOrange(classifier->classVar),
+									WrapOrange(classifier->examples),
+									buff.c_str(),
+									packOrangeDictionary(self));
+  PyCATCH
+}
+
+PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
+{
+  PyTRY
+	PyTypeObject* type;
+    PVariable var;
+	PExampleTable examples;
+	char *pBuff;
+	if (!PyArg_ParseTuple(args, "OO&O&s", &type, cc_Variable, &var, cc_ExampleTable, &examples, &pBuff))
+		return NULL;
+	string buff(pBuff);
+	model *model = linear_load_model_alt(buff);
+	return WrapNewOrange(mlnew TLinearClassifier(var, examples, model), (PyTypeObject*)&PyOrLinearClassifier_Type);
+  PyCATCH
+}
+
 /************* SVM ************/
 
 #include "svm.hpp"
@@ -1092,7 +1132,6 @@ C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 C_CALL(SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
 C_NAMED(SVMClassifier, ClassifierFD," ")
 C_NAMED(SVMClassifierSparse, SVMClassifier," ")
-//N O _PICKLE(SVMClassifier)
 
 PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
 PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
@@ -1183,7 +1222,7 @@ PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VA
         return NULL;
     //TCharBuffer buf(pbuf);
     string buf(pbuf);
-    printf("loading model\n");
+    //printf("loading model\n");
     svm_model *model=svm_load_model_alt(buf);
 
     if (!model)
@@ -1242,7 +1281,7 @@ PyObject *__pickleLoaderSVMClassifierSparse(PyObject *, PyObject *args) PYARGS(M
         return NULL;
     //TCharBuffer buf(pbuf);
     string buf(pbuf);
-    printf("loading model\n");
+    //printf("loading model\n");
     svm_model *model=svm_load_model_alt(buf);
 
     if (!model)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="Orange"
 	ProjectGUID="{93B854DA-EC3F-4314-B801-58411F9713FD}"
 	RootNamespace="Orange"
@@ -47,6 +47,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="ORANGE_EXPORTS"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -63,6 +64,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orange.pyd"
 				AdditionalLibraryDirectories=""
+				GenerateDebugInformation="false"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -408,6 +410,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\linear.cpp"
+				>
+			</File>
+			<File
 				RelativePath="linreg.cpp"
 				>
 			</File>
@@ -587,6 +593,34 @@
 				RelativePath="vars.cpp"
 				>
 			</File>
+			<Filter
+				Name="blas"
+				>
+				<File
+					RelativePath=".\blas\blas.h"
+					>
+				</File>
+				<File
+					RelativePath=".\blas\blasp.h"
+					>
+				</File>
+				<File
+					RelativePath=".\blas\daxpy.c"
+					>
+				</File>
+				<File
+					RelativePath=".\blas\ddot.c"
+					>
+				</File>
+				<File
+					RelativePath=".\blas\dnrm2.c"
+					>
+				</File>
+				<File
+					RelativePath=".\blas\dscal.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -782,6 +816,10 @@
 			</File>
 			<File
 				RelativePath="lib_kernel.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\linear.hpp"
 				>
 			</File>
 			<File
