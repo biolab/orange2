@@ -133,7 +133,7 @@ class DisplayStatistics (QCanvas):
             if not dist[ind]:
                 msg = QCanvasText("The widget cannot show distributions for attributes of this type.", self)
             else:
-                msg = QCanvasText("This attribute has no defined values.", self)
+                msg = QCanvasText("The attribute has no defined values.", self)
             msg.move(20, 50)
             msg.show()
             return
