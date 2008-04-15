@@ -347,7 +347,7 @@ class OWGraph(QwtPlot):
     def getExampleTooltipText(self, data, example, indices = None):
         if not indices: indices = range(len(data.domain.attributes))
 
-        text = "<b>Attributes:</b><br>"
+        text = "<b>"+"Attributes:"+"</b><br>"
         for index in indices:
             if example[index].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain[index].name)
             else:                          text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[index].name, str(example[index]))
@@ -358,7 +358,7 @@ class OWGraph(QwtPlot):
             else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain.classVar.name, str(example.getclass().value))
 
         if len(self.rawData.domain.getmetas()) != 0:
-            text += "<hr><b>Meta attributes:</b><br>"
+            text += "<hr><b>"+"Meta attributes:"+"</b><br>"
             # show values of meta attributes
             for key in data.domain.getmetas():
                 try: text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[key].name, str(example[data.domain[key]]))
