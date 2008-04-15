@@ -111,7 +111,7 @@ class OWScatterPlot(OWWidget):
 
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
-        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog in which you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         
 ##        OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
@@ -131,7 +131,7 @@ class OWScatterPlot(OWWidget):
         # jittering options
         box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
-        self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
+        self.jitterLabel = QLabel('Jittering size (% of size)'+'  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
@@ -146,14 +146,14 @@ class OWScatterPlot(OWWidget):
 ##        OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
 
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
-        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
         rubb = OWGUI.rubber(box5)
         rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
 
         box6 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.separator(box6, width = 20)
-        OWGUI.label(box6, self, "Granularity:  ")
+        OWGUI.label(box6, self, "Granularity:"+"  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         box7 = OWGUI.widgetBox(box4, orientation = "horizontal")
