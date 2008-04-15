@@ -71,14 +71,14 @@ class OWMDS(OWWidget):
         self.shapeCombo=OWGUI.comboBox(graph, self, "graph.ShapeAttr", box="Shape", callback=self.graph.updateData)
         self.nameCombo=OWGUI.comboBox(graph, self, "graph.NameAttr", box="Label", callback=self.graph.updateData)
         OWGUI.checkWithSpin(graph, self, checked="graph.ShowStress", value="graph.NumStressLines",label="Show", min=0, max=1000,
-                            posttext="lines",spinCallback=self.graph.updateLines, checkCallback=self.graph.updateData)
+                            posttext="lines", spinCallback=self.graph.updateLines, checkCallback=self.graph.updateData)
 
         self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
         self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
         self.graph.autoSendSelectionCallback = lambda :self.autoSendSelection and self.sendSelections()
 
         OWGUI.checkBox(graph, self, "autoSendSelection", "Auto send selected")
-        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coord.", "Append coord. as meta"], box="Append coordinates") 
+        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coord.", "Append coord. as meta"], box="Append coordinates")
         
         mds=QVGroupBox(self)
         init=OWGUI.widgetBox(mds, "Initialization")
@@ -172,7 +172,7 @@ class OWMDS(OWWidget):
             self.sizeCombo.insertItem(name)
         for name in ["Same shape"]+map(lambda a: a.name, discAttributes):
             self.shapeCombo.insertItem(name)
-        for name in ["No  name"]+attrName:
+        for name in ["No name"]+attrName:
             self.nameCombo.insertItem(name)
             
         self.attributes=attributes
@@ -561,8 +561,6 @@ class MDSGraph(OWGraph):
         mindist = min([min(r) for r in matrix])
         maxdist = max([max(r) for r in matrix])
         diff = maxdist - mindist
-# DBLP
-#        maxdist = 0.85 * (mindist + diff)
         maxdist = 0.5 * (mindist + diff)
         k = 10 / diff
         if self.mds:
