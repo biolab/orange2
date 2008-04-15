@@ -482,7 +482,7 @@ class OWDiscretize(OWWidget):
         self.classIntervalsLabel = OWGUI.widgetLabel(box, "Current splits: ")
         OWGUI.separator(box)
         OWGUI.checkBox(box, self, "outputOriginalClass", "Output original class", callback = self.commitIf)
-        OWGUI.widgetLabel(box, "(Widget always uses discretized class internally.)")
+        OWGUI.widgetLabel(box, "("+"Widget always uses discretized class internally."+")")
 
         OWGUI.separator(vbox)
         OWGUI.rubber(vbox)
@@ -914,10 +914,10 @@ class OWDiscretize(OWWidget):
         elif discType == self.D_REMOVE:
             discInts = ""
         elif not discretizer:
-            discInts = ": <can't discretize>"
+            discInts = ": "+"<can't discretize>"
         else:
             points = discretizer.getValueFrom.transformer.points
-            discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
+            discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": "+"<removed>"
         self.indiLabels[i] = discInts + discName
 
         self.attrList.triggerUpdate(0)
