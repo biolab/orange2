@@ -14,7 +14,7 @@ class OrangeCanvasDlg(QMainWindow):
         if (int(qVersion()[0]) >= 3):
             self.setCaption("Orange Canvas")
         else:
-            self.setCaption("Qt Orange Canvas")
+            self.setCaption("Qt "+"Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
@@ -97,17 +97,16 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.initMenu()
 
-        self.toolNew  = QToolButton(QIconSet(QPixmap(self.file_new)), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
+        self.toolNew  = QToolButton(QIconSet(QPixmap(self.file_new)), "New Schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
         #self.toolNew.setUsesTextLabel (True)
-        self.toolOpen = QToolButton(QIconSet(QPixmap(self.file_open)), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema')
-        self.toolSave = QToolButton(QIconSet(QPixmap(self.file_save)), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
+        self.toolOpen = QToolButton(QIconSet(QPixmap(self.file_open)), "Open Schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema')
+        self.toolSave = QToolButton(QIconSet(QPixmap(self.file_save)), "Save Schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
         self.toolbar.addSeparator()
         self.toolText = QToolButton(QIconSet(QPixmap(self.text_icon)), "Show widgets using large icons and text" ,QString.null, self.toggleLargeIcons, self.toolbar, 'large icons')
         self.toolText.setToggleButton(1)
         self.toolText.setOn(self.settings["useLargeIcons"]) 
         self.toolbar.addSeparator()
         toolPrint = QToolButton(QIconSet(QPixmap(self.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
-        
 
         # qt version compatibility
         if hasattr(self, "addDockWindow"): self.addDockWindow(self.toolbar, "Toolbar", Qt.DockTop, True)
@@ -167,7 +166,7 @@ class OrangeCanvasDlg(QMainWindow):
         for fname in os.listdir(self.outputDir):
             if "TempSchema " in fname:
                 tempSchemaNames.append(os.path.join(self.outputDir, fname))
-        if tempSchemaNames != [] and QMessageBox.information(self,'Orange Canvas',"Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", 'Reload','New session', QString.null, 0, 1) == 0:
+        if tempSchemaNames != [] and QMessageBox.information(self,'Orange Canvas',"Your previous Orange Canvas session closed unexpectedly.\nYou can restore the last unsaved schema or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", 'Reload','New session', QString.null, 0, 1) == 0:
             loadedTempSchemas = True
             for fname in tempSchemaNames:
                 win = self.menuItemNewSchema()
@@ -633,7 +632,7 @@ class OrangeCanvasDlg(QMainWindow):
                 shf.write("%s: %s\n" % (k, v.nameKey))
 
     def menuItemDeleteWidgetSettings(self):
-        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schemas.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+        if QMessageBox.warning(self,'Orange Canvas','Delete all settings?\nNote that for a complete reset there should be no open schema with any widgets in it.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
             if os.path.exists(self.widgetSettingsDir):
                 for f in os.listdir(self.widgetSettingsDir):
                     if os.path.splitext(f)[1].lower() == ".ini":
