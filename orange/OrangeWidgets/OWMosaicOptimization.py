@@ -39,7 +39,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if (int(qVersion()[0]) >= 3):
             self.setCaption("Mosaic Evaluation Dialog")
         else:
-            self.setCaption("Qt Mosaic Evaluation Dialog")
+            self.setCaption("Qt "+"Mosaic Evaluation Dialog")
         self.controlArea = QVBoxLayout(self)
 
         # loaded variables
@@ -95,7 +95,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.buttonsBox = OWGUI.widgetBox(self.MainTab, box = 1)
 
         self.label1 = QLabel('Projections with ', self.buttonBox)
-        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
+        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["  exactly  ", "  maximum  "])
         self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(1, 5), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int)
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
@@ -119,20 +119,20 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # SETTINGS TAB
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of projection interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore small cells" )
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore small cells")
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
 
         self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing method")
-        self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
+        self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times"], tooltip = "Method for evaluating the class separation in the projection.")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
 
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for ranking attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing method used for optimizing attribute orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
-        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to stop evaluation or optimization?")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "Stopping evaluation or optimization")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:"+"                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:"+"  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
         # ##########################
         # ARGUMENTATION TAB
@@ -156,11 +156,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # ##########################
         # CLASSIFICATION TAB
-        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = 'Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
         probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability estimation")
-        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"], callback = self.updateMestimateComboState)
+        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-estimate"], callback = self.updateMestimateComboState)
 
         mValid = QDoubleValidator(self)
         mValid.setRange(0,10000,1)
@@ -433,7 +433,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             return None, None
 
         if not self.data:
-            QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
+            QMessageBox.critical(None, 'No data', 'There is no data or no class value is selected in the Manage tab.', QMessageBox.Ok)
             return None, None
 
         if example == None: example = self.mosaicWidget.subsetData[0]
@@ -511,7 +511,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def load(self, name = None, ignoreCheckSum = 0):
         self.setStatusBarText("Loading visualizations")
         if self.data == None:
-            QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
+            QMessageBox.critical(None, 'Load', 'There is no data. First load a data set and then load projection file', QMessageBox.Ok)
             return
 
         if name == None:
