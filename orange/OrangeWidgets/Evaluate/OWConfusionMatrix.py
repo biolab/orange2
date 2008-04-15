@@ -78,7 +78,7 @@ class OWConfusionMatrix(OWWidget):
         self.layout.addWidget(labpred, 0, 1, QWidget.AlignCenter)
         self.layout.addWidget(OWGUI.separator(self.mainArea),1, 0)
 
-        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class  ")
+        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class")
         self.layout.addWidget(labpred, 2, 0, QWidget.AlignCenter)
         self.layout.addMultiCellWidget(OWGUI.rubber(self.mainArea), 3, 3, 0, 2)
 
@@ -134,7 +134,7 @@ class OWConfusionMatrix(OWWidget):
 
     def learnerChanged(self):
         cm = self.matrix[self.selectedLearner[0]]
-        
+
         for r in reduce(add, cm):
             if int(r) != r:
                 self.isInteger = " %5.3f "
@@ -167,12 +167,12 @@ class OWConfusionMatrix(OWWidget):
                     if colSums[ci] > 1e-5:
                         item.setText(" %2.1f %%  " % (100 * c / colSums[ci]))
                     else:
-                        item.setText(" N/A ")
+                        item.setText(" %s " % "N/A")
                 elif self.shownQuantity == 3:
                     if rowSums[ri] > 1e-5:
                         item.setText(" %2.1f %%  " % (100 * c / rowSums[ri]))
                     else:
-                        item.setText(" N/A ")
+                        item.setText(" %s " % "N/A")
                 self.table.updateCell(ri, ci)
 
         for ci in range(len(cm)):
