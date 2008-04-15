@@ -39,7 +39,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.dataLabels = (('Majority class', 'Class'),
                   ('Probability of majority class', 'P(Class)'),
                   ('Probability of target class', 'P(Target)'),
-                  ('Number of instances', '# Inst'),
+                  ('Number of instances', '#Inst'),
                   ('Relative distribution', 'Distribution (rel)'),
                   ('Absolute distribution', 'Distribution (abs)'))
 
@@ -130,18 +130,18 @@ class OWClassificationTreeViewer(OWWidget):
             try:
                 p_majclass = f % float(dist[int(ncl.defaultVal)]/a)
             except:
-                p_majclass = "NA"
+                p_majclass = "N/A"
             try:
                 p_tarclass = f % float(dist[self.targetClass]/a)
             except:
-                p_tarclass = "NA"
+                p_tarclass = "N/A"
 
             colf = (str(ncl.defaultValue),
                     p_majclass,
                     p_tarclass,
                     "%d" % dist.cases,
-                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA",
-                    len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "NA"
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "N/A",
+                    len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "N/A"
                    )
 
             col = 1
@@ -216,7 +216,7 @@ class OWClassificationTreeViewer(OWWidget):
             self.targetClass = 0
             self.openContext("", tree.domain)
         else:
-            self.infoa.setText('No tree.')
+            self.infoa.setText('No tree on input')
             self.infob.setText('')
             self.openContext("", None)
 
