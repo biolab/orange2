@@ -102,11 +102,11 @@ class OWScatterPlotMatrix(OWWidget):
 
         # ####################################
         # settings tab
-        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point size', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
 
         box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
-        self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
+        self.jitterLabel = QLabel('Jittering size (% of size)'+'  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "jitterSize", callback = self.updateJitteringSettings, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.updateJitteringSettings, tooltip = "Does jittering apply also on continuous attributes?")
 
@@ -280,7 +280,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.sizeDlg.exec_loop()
 
     def saveToFileAccept(self):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to...")
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to...")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
