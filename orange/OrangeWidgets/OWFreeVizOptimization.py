@@ -94,7 +94,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         OWGUI.separator(box2, 20)
 
-        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive  ",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
+        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
         self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing", tooltip="Normalize the forces so that the total sums of the\nrepulsive and attractive are in the above proportion.")
 
         OWGUI.separator(box2, 20)
