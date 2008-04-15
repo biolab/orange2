@@ -118,24 +118,34 @@ SectionEnd
 
 Section ""
 		StrCmp $PythonDir "" 0 have_python
-		MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython
-			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO installpython
-				Quit
-	installpython:
+
 		SetOutPath $DESKTOP
 		!if ${PYVER} == 23
-			File 3rdparty-23\Python-2.3.5.exe
-			ExecWait "$DESKTOP\Python-2.3.5.exe"
-			Delete "$DESKTOP\Python-2.3.5.exe"
+			askpython23:
+				MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython23
+					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython23
+						Quit
+				File 3rdparty-23\Python-2.3.5.exe
+				ExecWait "$DESKTOP\Python-2.3.5.exe"
+				Delete "$DESKTOP\Python-2.3.5.exe"
+
 		!else
-			File 3rdparty-${PYVER}\${PYFILENAME}
-			${If} $AdminInstall == 1
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 /Qb-' $0
-			${Else}
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk /Qb-' $0
-			${EndIf}
-			Delete "$DESKTOP\${PYFILENAME}"
-		!endif
+		    StrCpy $0 ""
+			askpython:
+				MessageBox MB_YESNOCANCEL "Orange installer will first launch installation of Python ${NPYVER}.$\r$\nWould you like it to install automatically?$\r$\n(Press No for letting you set its options, Cancel to cancel installation of Orange." /SD IDYES IDYES installsilently IDNO installmanually
+					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
+						Quit
+			installsilently:
+				StrCpy $0 "/Qb-"
+			installpython:
+				File 3rdparty-${PYVER}\${PYFILENAME}
+				${If} $AdminInstall == 1
+					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 $0' $0
+				${Else}
+					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk $0' $0
+				${EndIf}
+				Delete "$DESKTOP\${PYFILENAME}"
+			!endif
 
 		!insertMacro GetPythonDir
 		StrCmp $PythonDir "" 0 have_python
