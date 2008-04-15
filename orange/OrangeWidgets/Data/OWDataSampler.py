@@ -96,7 +96,7 @@ class OWDataSampler(OWWidget):
 
         # Output Group Box
         OWGUI.separator(self.controlArea)
-        self.foldBox = QHGroupBox('Ouput Data for Fold / Group', self.controlArea)
+        self.foldBox = QHGroupBox('Output Data for Fold / Group', self.controlArea)
         QLabel('Fold / group:', self.foldBox)
         self.foldcombo = QComboBox(self.foldBox)
         # fill the combo box (later make it sensitive to number of folds)
