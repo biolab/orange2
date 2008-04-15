@@ -150,7 +150,10 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.navWidget.lay.addWidget(self.treeNav)
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        self.navWidget.setCaption("Qt Navigator")
+        if (int(qVersion()[0]) >= 3):
+            self.navWidget.setCaption("Navigator")
+        else:
+            self.navWidget.setCaption("Qt "+"Navigator")
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
@@ -163,7 +166,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                                nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviance', 'Error'], box='Node Color',                            
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviation', 'Error'], box='Node Color',
                                 callback=self.toggleNodeColor)
         
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
