@@ -1,7 +1,6 @@
 """
 <name>Test Learners</name>
-<description>Estimates the predictive performance of
-learners on a data set.</description>
+<description>Estimates the predictive performance of learners on a data set.</description>
 <icon>icons/TestLearners.png</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>200</priority>
@@ -45,7 +44,7 @@ class OWTestLearners(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["targetClass"])}
     callbackDeposit = []
 
-    cStatistics = [apply(Score,s) for s in [\
+    cStatistics = [Score(*s) for s in [\
         ('Classification accuracy', 'CA', 'CA(res)', True),
         ('Sensitivity', 'Sens', 'sens(cm)', True, True),
         ('Specificity', 'Spec', 'spec(cm)', True, True),
@@ -56,7 +55,7 @@ class OWTestLearners(OWWidget):
         ('Recall', 'Recall', 'recall(cm)', False, True),
         ('Brier score', 'Brier', 'BrierScore(res)', True)]]
 
-    rStatistics = [apply(Score,s) for s in [\
+    rStatistics = [Score(*s) for s in [\
         ("Mean squared error", "MSE", "MSE(res)", False),
         ("Root mean squared error", "RMSE", "RMSE(res)"),
         ("Mean absolute error", "MAE", "MAE(res)", False),
@@ -99,14 +98,14 @@ class OWTestLearners(OWWidget):
                                              btnLabels=self.resamplingMethods[:1],
                                              callback=self.newsampling)
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
-        OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1, label='Number of folds:  ',
+        OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1, label='Number of folds:',
                    callback=lambda p=0: self.conditionalRecompute(p))
 
         for i in range(1,3):
             OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[i])
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
         OWGUI.spin(ibox, self, 'pRepeat', 1, 100, step=1,
-                   label='Repeat train/test:  ',
+                   label='Repeat train/test:',
                    callback=lambda p=2: self.conditionalRecompute(p))
         OWGUI.separator(ibox)
         QLabel("Relative training set size:", ibox)
@@ -203,7 +202,7 @@ class OWTestLearners(OWWidget):
         for (i, l) in enumerate(learners):
             if l.scores:
                 for j in range(len(self.stat)):
-                    if l.scores[j] <> None:
+                    if l.scores[j] is not None:
                         self.tab.setText(i, j+1, prec % l.scores[j])
                     else:
                         self.tab.setText(i, j+1, "N/A")
