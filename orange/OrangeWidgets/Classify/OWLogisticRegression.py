@@ -51,8 +51,8 @@ class OWLogisticRegression(OWWidget):
 
         stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
         ibox = OWGUI.indentedBox(box)
-        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add threshold [%]", labelWidth=155, tooltip="Requested significance for adding an attribute.")
-        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove threshold [%]", labelWidth=155, tooltip="Requested significance for removing an attribute.")
+        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add threshold [%]", labelWidth=155, tooltip="Requested significance for adding an attribute")
+        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove threshold [%]", labelWidth=155, tooltip="Requested significance for removing an attribute")
         limitAttSpin = OWGUI.checkWithSpin(ibox, self, "Limit number of attributes to ", 1, 100, "limitNumAttr", "numAttr", step=1, labelWidth=155, tooltip="Maximum number of attributes. Algorithm stops when it selects specified number of attributes.")
         stepwiseCb.disables += [addCritSpin, remCritSpin, limitAttSpin]
         stepwiseCb.makeConsistent()
