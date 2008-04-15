@@ -60,7 +60,7 @@ class SchemaDoc(QMainWindow):
             ce.accept()
         else:
             #QMainWindow.closeEvent(self, ce)
-            res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','&Yes','&No','&Cancel',0)
+            res = QMessageBox.information(self,'Orange Canvas', 'Do you want to save changes made to schema?', '&Yes', '&No', '&Cancel', 0)
             if res == 0:
                 self.saveDocument()
                 ce.accept()
@@ -473,7 +473,7 @@ class SchemaDoc(QMainWindow):
     def loadDocument(self, filename, caption = None, freeze = 0, isTempSchema = 0):
         if not os.path.exists(filename):
             self.close()
-            QMessageBox.critical(self,'Orange Canvas','Unable to find file "%s"' % filename,  QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.critical(self, 'Orange Canvas', 'Unable to find file "%s"' % filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
         # set cursor
@@ -518,7 +518,7 @@ class SchemaDoc(QMainWindow):
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
                 if inWidget == None or outWidget == None:
-                    print 'Unable to connect etween widgets "%s" and "%s" due to a missing widget.' % (outCaption, inCaption)
+                    print 'Unable to connect widgets "%s" and "%s" due to a missing widget.' % (outCaption, inCaption)
                     continue
 
                 signalList = eval(signals)
