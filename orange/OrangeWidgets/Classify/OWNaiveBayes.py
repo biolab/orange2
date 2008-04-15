@@ -56,7 +56,7 @@ class OWNaiveBayes(OWWidget):
 
         glay.addWidget(OWGUI.widgetLabel(box, "Prior"), 1, 0)
 
-        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
+        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method for estimating the prior probability.'),
                         1, 2)
 
         glay.addWidget(OWGUI.widgetLabel(box, "Conditional (for discrete)"), 2, 0)
@@ -115,7 +115,7 @@ class OWNaiveBayes(OWWidget):
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
             self.warning(0, "Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
-    
+
         else:
             self.learner = orange.BayesLearner(name = self.name, adjustThreshold = self.adjustThreshold)
             self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
@@ -123,7 +123,7 @@ class OWNaiveBayes(OWWidget):
                 self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
                 self.learner.conditionalEstimatorConstructorContinuous = orange.ConditionalProbabilityEstimatorConstructor_loess(
                    windowProportion = self.windowProportion, nPoints = self.loessPoints)
-    
+
             self.send("Learner", self.learner)
             self.applyData()
             self.changed = False
