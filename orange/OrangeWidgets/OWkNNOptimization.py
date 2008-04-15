@@ -31,7 +31,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         if (int(qVersion()[0]) >= 3):
             self.setCaption("VizRank Optimization Dialog")
         else:
-            self.setCaption("Qt VizRank Optimization Dialog")
+            self.setCaption("Qt "+"VizRank Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
 
         self.resultListLen = 1000
@@ -94,7 +94,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         if visualizationMethod != SCATTERPLOT:
             self.label1 = QLabel('Projections with ', self.buttonBox)
-            self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
+            self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["  exactly  ", "  maximum  "] )
             self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 20), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
             self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
@@ -126,7 +126,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.checkBox(self.optimizationSettingsBox, self, 'clearPreviousProjections', 'Remove previously evaluated projections', tooltip = "Do you want to continue evaluation where it was stopped or do \nyou want to evaluate them from the start (by clearing the list of evaluated projections)?")
 
         if visualizationMethod == LINEAR_PROJECTION:
-            OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least square"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
+            OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least squares"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
         else:
             self.projOptimizationMethod = 0
 
@@ -161,8 +161,8 @@ class OWVizRank(VizRank, OWBaseWidget):
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.argumentCountEdit = OWGUI.lineEdit(self.argumentationBox , self, "argumentCount", "Number of best projections to consider:     ", orientation = "horizontal", tooltip = "How many of the top ranked projections do you wish to consider?", valueType = int, validator = QIntValidator(self))
 
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for Class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the Selected Class Value")
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the selected class value")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
@@ -337,7 +337,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             if (int(qVersion()[0]) >= 3):
                 (text, ok) = QInputDialog.getText('Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
             else:
-                (text, ok) = QInputDialog.getText('Qt Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
+                (text, ok) = QInputDialog.getText('Qt '+'Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
             if not ok: return
             allowedPercentOfEqualAttributes = int(str(text))
 
@@ -543,7 +543,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             QMessageBox.information( None, self.parentName, 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
             if self.qualityMeasure == CLASS_ACCURACY:
-                QMessageBox.information( None, self.parentName, 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+                QMessageBox.information( None, self.parentName, 'Classification accuracy of kNN model is %.2f %%' %(acc), QMessageBox.Ok + QMessageBox.Default)
             elif self.qualityMeasure == AVERAGE_CORRECT:
                 QMessageBox.information( None, self.parentName, 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
             elif self.qualityMeasure == AUC:
@@ -588,7 +588,7 @@ class OWVizRank(VizRank, OWBaseWidget):
     def loadProjections(self, name = None, ignoreCheckSum = 0, maxCount = -1):
         self.setStatusBarText("Loading projections")
         if self.data == None:
-            QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
+            QMessageBox.critical(None,'Load', 'There is no data. First load a data set and then load projection file' ,QMessageBox.Ok)
             return
 
         if name == None:
@@ -639,7 +639,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         if (int(qVersion()[0]) >= 3):
             (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
         else:
-            (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
+            (text, ok) = QInputDialog.getText('Qt '+'Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
@@ -830,7 +830,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.argumentSelected()
 
         if showClassification or (example.getclass() and example.getclass().value != classValue):
-            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
             for key in dist.keys(): s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
             QMessageBox.information(None, "Classification results", s[:-4], QMessageBox.Ok + QMessageBox.Default)
 
@@ -1520,12 +1520,12 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.loadSettings()
         self.projectionCountStr = str(self.projectionCount)
 
-        b1 = OWGUI.widgetBox(self.controlArea, 'Projection Count')
+        b1 = OWGUI.widgetBox(self.controlArea, 'Projection count')
         self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCountStr", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
 
         b2 = OWGUI.widgetBox(self.controlArea, 'Example index', orientation="horizontal")
         self.selectedExampleCombo = OWGUI.comboBox(b2, self, "selectedExampleIndex", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
-        butt = OWGUI.button(b2, self, "Get From Projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
+        butt = OWGUI.button(b2, self, "Get from Projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
 ##        butt.setMaximumWidth(60)
 
         b3 = OWGUI.widgetBox(self.controlArea, 'Graph settings')
@@ -1589,7 +1589,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
             if (int(qVersion()[0]) >= 3):
                 (text, ok) = QInputDialog.getText('Projection Count', 'How many of the best projections do you wish to consider?')
             else:
-                (text, ok) = QInputDialog.getText('Qt Projection Count', 'How many of the best projections do you wish to consider?')
+                (text, ok) = QInputDialog.getText('Qt '+'Projection Count', 'How many of the best projections do you wish to consider?')
             if ok and str(text).isdigit():
                 text = str(text)
                 if text not in self.projectionCountList:
