@@ -23,7 +23,7 @@ class OWConcatenate(OWWidget):
         self.additional = {}
         
         bg = self.bgMerge = OWGUI.radioButtonsInBox(self.controlArea, self, "mergeAttributes", [], "Domains merging", callback = self.apply)
-        OWGUI.widgetLabel(bg, "When there is no primary table, the domain should be")
+        OWGUI.widgetLabel(bg, "When there is no primary table, the domain should be:")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Union of attributes appearing in all tables")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Intersection of attributes in all tables")
         OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict betwen input classes.")
