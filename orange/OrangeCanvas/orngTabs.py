@@ -411,8 +411,8 @@ class WidgetTabs(QTabWidget):
                 outputList.insert(i, outputs)
             except:
                 print "Error at reading settings for %s widget." % (name)
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # print the exception
+                tpe, val, traceback = sys.exc_info()
+                sys.excepthook(tpe, val, traceback)  # print the exception
 
         exIndex = 0
         for i in range(len(priorityList)):            
