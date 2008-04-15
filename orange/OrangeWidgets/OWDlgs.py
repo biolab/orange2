@@ -42,8 +42,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif isinstance(graph, QCanvas):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
 
-        self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        self.saveImageButton =      OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        self.printButton =     OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.saveImageButton = OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
         self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph as matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
@@ -62,8 +62,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         (fil,ext) = os.path.splitext(filename)
         ext = ext[1:].upper()
         if ext == "" or ext not in ("BMP", "GIF", "PNG") :
-            ext = "PNG"      # if no format was specified, we choose png
-            filename = filename + ".png"
+        	ext = "PNG"  	# if no format was specified, we choose png
+        	filename = filename + ".png"
 
         if not size:
             size = self.getSize()
