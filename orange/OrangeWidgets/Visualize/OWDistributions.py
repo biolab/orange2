@@ -437,9 +437,9 @@ class OWDistributions(OWWidget):
         self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
         self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
 
-        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
+        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box="Bar size", minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
 
-        box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        box = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
         box.setMinimumWidth(180)
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(box2, self, 'showMainTitle', 'Show main title', callback = self.setShowMainTitle)
@@ -468,7 +468,7 @@ class OWDistributions(OWWidget):
         
         OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
 
-        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
+        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box='Line width', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
         
         #add controls to self.controlArea widget
         self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Variable", valueType = str, sendSelectedValue = True, callback=self.setVariable)
