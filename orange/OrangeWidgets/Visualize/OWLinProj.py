@@ -118,7 +118,7 @@ class OWLinProj(OWVisWidget):
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
-        self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
@@ -146,7 +146,7 @@ class OWLinProj(OWVisWidget):
         # #####
         self.extraTopBox = OWGUI.widgetBox(self.SettingsTab, orientation = "vertical")
         self.extraTopBox.hide()
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box='Point size', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
         box2 = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
@@ -169,7 +169,7 @@ class OWLinProj(OWVisWidget):
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of range):  ', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
-        OWGUI.qwtHSlider(box2, self, "graph.scaleFactor", minValue=1.0, maxValue= 10.0, step=0.1, label ='Inflate points by:     ', callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception")
+        OWGUI.qwtHSlider(box2, self, "graph.scaleFactor", minValue=1.0, maxValue= 10.0, step=0.1, label ='Inflate points by:'+'     ', callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception")
         valueScalingList = ["attribute range", "global range", "attribute variance"]
         if name.lower() in ["radviz", "polyviz"]:
             valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
@@ -178,7 +178,7 @@ class OWLinProj(OWVisWidget):
         #OWGUI.checkBox(box3, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         box33 = OWGUI.widgetBox(box3, orientation = "horizontal")
-        OWGUI.checkBox(box33, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
+        OWGUI.checkBox(box33, self, 'graph.showValueLines', 'Show value lines', callback = self.updateGraph)
         OWGUI.hSlider(box33, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, createLabel = 0)
         OWGUI.checkBox(box3, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
@@ -195,7 +195,7 @@ class OWLinProj(OWVisWidget):
         rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
 
         OWGUI.separator(box6, width=20)
-        OWGUI.label(box6, self, "Granularity:  ")
+        OWGUI.label(box6, self, "Granularity:"+"  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         OWGUI.separator(box7, width=20)
@@ -474,9 +474,9 @@ class OWLinProj(OWVisWidget):
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color palette")
-        c.createDiscretePalette(" Discrete palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other colors ")
+        c.createDiscretePalette("Discrete palette")
+        c.createContinuousPalette("contPalette", "Continuous palette")
+        box = c.createBox("otherColors", "Other colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         box.addSpace(5)
