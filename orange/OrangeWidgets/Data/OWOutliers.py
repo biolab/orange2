@@ -62,7 +62,7 @@ class OWOutliers(OWWidget):
                        callback=self.applySettings)
 
         OWGUI.separator(self.controlArea)
-   	  
+
         self.resize(100,100)
         self.applySettings()
 
