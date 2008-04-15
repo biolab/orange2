@@ -48,15 +48,12 @@ class OWFile(OWWidget):
         self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
         button.setMaximumWidth(25)
 
-#        OWGUI.rubber(self.controlArea)
-
-
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
         hbox = OWGUI.indentedBox(box, addSpace=True)
-        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' and 'NA'")
         OWGUI.separator(hbox, 16, 0)
-        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
+        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' and '*'")
         OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
                        label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
@@ -165,7 +162,7 @@ class OWFile(OWWidget):
 
         filename = str(QFileDialog.getOpenFileName(startfile,
         'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)',
-        None,'Open Orange Data File'))
+        None, 'Open Orange Data File'))
 
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
@@ -216,7 +213,7 @@ class OWFile(OWWidget):
             if data is None:
                 self.error(str(errValue))
                 self.dataDomain = None
-                self.infoa.setText('No data loaded due to an error')
+                self.infoa.setText('Data was not loaded due to an error.')
                 self.infob.setText("")
                 self.warnings.setText("")
                 return
@@ -231,9 +228,9 @@ class OWFile(OWWidget):
             elif cl.varType == orange.VarTypes.Discrete:
                     self.infob.setText('Classification; Discrete class with %d value(s).' % len(cl.values))
             else:
-                self.infob.setText("Class neither descrete nor continuous.")
+                self.infob.setText("Class is neither discrete nor continuous.")
         else:
-            self.infob.setText("Data without a dependent variable.")
+            self.infob.setText("Data has no dependent variable.")
 
         warnings = ""
         metas = data.domain.getmetas()
