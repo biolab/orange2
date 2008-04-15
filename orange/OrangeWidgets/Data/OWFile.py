@@ -29,7 +29,7 @@ class OWFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "File")
 
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+        self.outputs = [("Examples", ExampleTable)]
 
         #set default settings
         self.recentFiles=["(none)"]
