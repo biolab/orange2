@@ -163,7 +163,7 @@ class OWDataTable(OWWidget):
             else:
                 return str(n), 's'
         
-        if data == None:
+        if data is None:
             self.infoEx.setText('No data on input.')
             self.infoMiss.setText('')
             self.infoAttr.setText('')
@@ -181,7 +181,7 @@ class OWDataTable(OWWidget):
                 elif data.domain.classVar.varType == orange.VarTypes.Continuous:
                     self.infoClass.setText('Continuous class.')
                 else:
-                    self.infoClass.setText("Class neither discrete nor continuous.")
+                    self.infoClass.setText("Class is neither discrete nor continuous.")
             else:
                 self.infoClass.setText('Classless domain.')
 
