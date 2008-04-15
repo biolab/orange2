@@ -96,7 +96,7 @@ class OWHierarchicalClustering(OWWidget):
         #        max=10000, step=10)
         self.hSizeBox=OWGUI.spin(dendrogramBox, self, "HDSize", label="Horizontal size", min=200,
                 max=10000, step=10)
-        OWGUI.checkBox(dendrogramBox, self, "FitToWindow","Fit hor. size to window",
+        OWGUI.checkBox(dendrogramBox, self, "FitToWindow", "Fit hor. size to window",
                 callback=lambda:self.hSizeBox.setDisabled(self.FitToWindow))
         self.hSizeBox.setDisabled(self.FitToWindow)
         #OWGUI.checkBox(dendrogramBox, self, "FitToWindow", "Fit horizontal size")
@@ -161,7 +161,7 @@ class OWHierarchicalClustering(OWWidget):
         items=getattr(self.matrix, "items")
         if type(items)==orange.ExampleTable: #Example Table from Example Distance
 
-            self.labels=["None","Default"]+ \
+            self.labels=["None", "Default"]+ \
                          [a.name for a in items.domain.attributes]
             if items.domain.classVar:
                 self.labels.append(items.domain.classVar.name)
@@ -177,7 +177,7 @@ class OWHierarchicalClustering(OWWidget):
             self.Annotation=0
             self.matrixSource="Data Distance"
         else:   #From Attribute Distance
-            self.labels=["None","Attribute Name"]
+            self.labels=["None", "Attribute Name"]
             self.Annotation=0
             self.matrixSource="Attribute Distance"
         self.labelCombo.clear()
@@ -194,10 +194,6 @@ class OWHierarchicalClustering(OWWidget):
         self.constructTree()
 
     def updateLabel(self):
-#        self.rootCluster.mapping.setattr("objects", self.matrix.items)
-#        self.dendrogram.updateLabel()
-#        return
-    
         items=self.matrix.items
         if self.Annotation==0:
             self.rootCluster.mapping.setattr("objects",
