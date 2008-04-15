@@ -110,7 +110,6 @@ class OWDistanceMap(OWWidget):
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
-        
                          callback=[lambda f="CellWidth", t="CellHeight": self.adjustCellSize(f,t), self.drawDistanceMap, self.manageGrid])
         OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ',
                          labelWidth=38, minValue=1, maxValue=self.maxVSize,
@@ -118,7 +117,7 @@ class OWDistanceMap(OWWidget):
                          callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t), self.drawDistanceMap,self.manageGrid])
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares",
                          callback = [self.setSquares, self.drawDistanceMap])
-        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=min(self.CellWidth, self.CellHeight) <= c_smallcell)
+        OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
         OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1,
                          step=0.1, callback=self.drawDistanceMap)
@@ -163,9 +162,8 @@ class OWDistanceMap(OWWidget):
                        callback=self.drawDistanceMap)
 
         box = QVButtonGroup("Balloon", tab)
-        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon", callback=None)
-        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names",
-                       callback=None)
+        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon")
+        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names")
 
         box = QVButtonGroup("Select", tab)
         box2 = QHBox(box)
@@ -178,8 +176,7 @@ class OWDistanceMap(OWWidget):
 
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections',
                               self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
-        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release",
-                              callback=None)
+        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
 
         self.tabs.insertTab(tab, "Info")
 
@@ -193,8 +190,7 @@ class OWDistanceMap(OWWidget):
 
 
         #construct selector
-        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight,
-                                         self.canvas)
+        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZ(20)
@@ -292,8 +288,6 @@ class OWDistanceMap(OWWidget):
                 selected = orange.ExampleTable(items[0].domain, ex)
                 self.send("Examples", selected)
 
-
-    # callbacks (rutines called after some GUI event, like click on a button)
 
     def setColor(self):
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
