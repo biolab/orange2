@@ -71,12 +71,12 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionValueCombo = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrConditionValue", "Value:", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
         OWGUI.separator(self.controlArea)
-        
+
         box2 = OWGUI.widgetBox(self.controlArea, box = "Visual settings")
         OWGUI.checkBox(box2, self, "showLines", "Show lines", callback = self.updateData)
         hbox = OWGUI.widgetBox(box2, orientation = "horizontal")
         OWGUI.checkBox(hbox, self, "showCases", "Show data examples...", callback = self.updateData)
-        OWGUI.checkBox(hbox, self, "showInColor", "...in color", callback = self.updateData)
+        OWGUI.checkBox(hbox, self, "showInColor", "... in color", callback = self.updateData)
 
         OWGUI.separator(self.controlArea)
         
