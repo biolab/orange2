@@ -195,9 +195,9 @@ public:
 	PFloatListList weights;	//P Computed feature weights
 	PExampleTable examples;	//P Examples used to train the classificator
 
-	model *getModel(){ return model; }
+	model *getModel(){ return linmodel; }
 private:
-	model *model;
+	model *linmodel;
 };
 
 WRAPPER(LinearLearner)

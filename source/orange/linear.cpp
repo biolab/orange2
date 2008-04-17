@@ -1700,34 +1700,34 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 
 TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _examples, struct model *_model){
 	classVar = var;
-	model = _model;
+	linmodel = _model;
 	examples = _examples;
 	domain = examples->domain;
-	computesProbabilities = model->param.solver_type == L2_LR;
-	int nr_classifier = (model->nr_class==2)? 1 : model->nr_class;
+	computesProbabilities = linmodel->param.solver_type == L2_LR;
+	int nr_classifier = (linmodel->nr_class==2)? 1 : linmodel->nr_class;
 	weights = mlnew TFloatListList(nr_classifier);
 	for (int i=0; i<nr_classifier; i++){
-		weights->at(i) = mlnew TFloatList(model->nr_feature);
-		for (int j=0; j<model->nr_feature; j++)
-			weights->at(i)->at(j) = model->w[j*nr_classifier+i];
+		weights->at(i) = mlnew TFloatList(linmodel->nr_feature);
+		for (int j=0; j<linmodel->nr_feature; j++)
+			weights->at(i)->at(j) = linmodel->w[j*nr_classifier+i];
 	}
 }
 
 TLinearClassifier::~TLinearClassifier(){
-	if (model)
-		destroy_model(model);
+	if (linmodel)
+		destroy_model(linmodel);
 }
 
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
-	int numClass = get_nr_class(model);
+	int numClass = get_nr_class(linmodel);
 	set<int> indices;
 	feature_node *x = feature_nodeFromExample(example, indices, false);
 
 	int *labels = new int [numClass];
-	get_labels(model, labels);
+	get_labels(linmodel, labels);
 
 	double *prob_est = new double [numClass];
-	predict_probability(model, x, prob_est);
+	predict_probability(linmodel, x, prob_est);
 
 	PDistribution dist = TDistribution::create(example.domain->classVar);
 	for (int i=0; i<numClass; i++)
@@ -1740,11 +1740,11 @@ PDistribution TLinearClassifier::classDistribution(const TExample &example){
 }
 
 TValue TLinearClassifier::operator () (const TExample &example){
-	int numClass = get_nr_class(model);
+	int numClass = get_nr_class(linmodel);
 	set<int> indices;
 	feature_node *x = feature_nodeFromExample(example, indices, false);
 
-	int predict_label = predict(model ,x);
+	int predict_label = predict(linmodel ,x);
 	delete[] x;
 	return TValue(predict_label);
 }
