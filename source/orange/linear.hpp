@@ -158,6 +158,7 @@ private:
 #ifndef LINEAR_HPP
 #define LINEAR_HPP
 
+#include <map>
 #include "classify.hpp"
 #include "learn.hpp"
 #include "orange.hpp"
@@ -186,7 +187,7 @@ class ORANGE_API TLinearClassifier : public TClassifierFD{
 public:
 	__REGISTER_CLASS
 	TLinearClassifier() {};
-	TLinearClassifier(const PVariable &var, PExampleTable, model *);
+	TLinearClassifier(const PVariable &var, PExampleTable examples, model *_model, map<int, int> *indexMap=NULL);
 	~TLinearClassifier();
 
 	PDistribution classDistribution(const TExample &);
@@ -198,6 +199,7 @@ public:
 	model *getModel(){ return linmodel; }
 private:
 	model *linmodel;
+	map<int, int> *indexMap;
 };
 
 WRAPPER(LinearLearner)
