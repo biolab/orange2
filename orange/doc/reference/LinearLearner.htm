@@ -1,0 +1,32 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+<body>
+<index name="classifiers+logistic regresssion+linear">
+<h1>Linear Learner</h1>
+<p>orange.LinearLearner is a learner that uses the <a href="http://www.csie.ntu.edu.tw/~cjlin/liblinear/">LIBLINEAR library</a> as a backend. It is very fast on large datasets.</p>
+<h2>LinearLearner</h2>
+<p class=section>Attributes</p>
+<dl class=attributes>
+  <dt>solver_type</dt>
+  <dd>Specifiys whitch method to use. Can be one of the folowing:
+	<ul><li>orange.LinearLearner.L2_LR (L2-regularized logistic regression, default)</li>
+	<li>orange.LinearLearner.L2LOSS_SVM_DUAL</li>
+	<li>orange.LinearLearner.L2LOSS_SVM</li>
+	<li>orange.LinearLearner.L1LOSS_SVM_DUAL</li>
+	</ul>
+	Note that only L2_LR supports probabilty esstimations.</dd>
+  <dt>eps</dt>
+  <dd>Stopping criteria (default 0.01)</dd>
+  <dt>C</dt>
+  <dd>Regularization parameter (default 1.0)</dd>
+</dl>
+
+<h2>LinearClassifeir</h2>
+<p class=section> Attributes</p>
+<dl class=attributes>
+  <dt>weights</dt>
+  <dd>computed variable weights</dd>
+<dl>
