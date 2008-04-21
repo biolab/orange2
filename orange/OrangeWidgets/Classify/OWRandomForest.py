@@ -69,7 +69,7 @@ class OWRandomForest(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.doBoth, disabled=0)
 
         self.resize(100,200)
 
@@ -92,55 +92,69 @@ class OWRandomForest(OWWidget):
             #a = 1
             self.streesBox.setDisabled(True)
 
-    def setLearner(self):
-        pb = OWGUI.ProgressBar(self, iterations=self.trees)
-
-        if hasattr(self, "btnApply"):
-            self.btnApply.setFocus()
-
-        #assemble learner
+    def constructLearner(self):
         rand = random.Random(self.rseed)
 
         attrs = None
         if self.attributes: attrs = self.attributesP
 
-        self.learner = orngEnsemble.RandomForestLearner(trees = self.trees, rand=rand, attributes=attrs, callback=pb.advance)
+        learner = orngEnsemble.RandomForestLearner(trees = self.trees, rand=rand, attributes=attrs)
 
-        if self.preNodeInst: self.learner.learner.stop.minExamples = self.preNodeInstP 
-        else: self.learner.learner.stop.minExamples = 0
+        if self.preNodeInst: learner.learner.stop.minExamples = self.preNodeInstP 
+        else: learner.learner.stop.minExamples = 0
 
-        self.learner.learner.storeExamples = 1
-        self.learner.learner.storeNodeClassifier = 1
-        self.learner.learner.storeContingencies = 1
-        self.learner.learner.storeDistributions = 1
+        learner.learner.storeExamples = 1
+        learner.learner.storeNodeClassifier = 1
+        learner.learner.storeContingencies = 1
+        learner.learner.storeDistributions = 1
 
-        if self.limitDepth: self.learner.learner.maxDepth = self.limitDepthP
+        if self.limitDepth: learner.learner.maxDepth = self.limitDepthP
 
-        self.learner.name = self.name
+        learner.name = self.name
+        return learner
+
+
+    def setLearner(self):
+
+
+        if hasattr(self, "btnApply"):
+            self.btnApply.setFocus()
+
+        #assemble learner
+
+        self.learner = self.constructLearner()
         self.send("Learner", self.learner)
 
         self.error()
 
+    def setData(self, data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+        
+        #self.setLearner()
+
         if self.data:
+            learner = self.constructLearner()
+            pb = OWGUI.ProgressBar(self, iterations=self.trees)
+            learner.callback = pb.advance
             try:
-                self.classifier = self.learner(self.data)
+                self.classifier = learner(self.data)
                 self.classifier.name = self.name
                 self.streeEnabled(True)
             except Exception, (errValue):
                 self.error(str(errValue))
                 self.classifier = None
                 self.streeEnabled(False)
+            pb.finish()
         else:
             self.classifier = None
             self.streeEnabled(False)
 
-        pb.finish()
-
         self.send("Random Forest Classifier", self.classifier)
 
-    def setData(self,data):
-        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+    def doBoth(self):
         self.setLearner()
+        self.setData(self.data)
+
 
 
 ##############################################################################
