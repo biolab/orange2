@@ -281,7 +281,7 @@ data2 = orange.ExampleTable(d2, data)
 ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?', "name":'Joe'}
 </XMP>
 
-<P>The optional third argument tells whether the meta attribute is optional (<code>True</code>) or not (<code>False</code>). If omitted, the attribute is not optional.
+<P>The optional third argument tells whether the meta attribute is optional (when the value of the argument is non-zero) or not (when it is zero). Different non-zero values can be used for different kinds of non-optional attributes, if needed. These values are application dependent and Orange offers no corresponding registration facilities. If omitted, the attribute is not optional.
 </DD>
 
 <DT>addmetas(dict[, optional])</B></CODE></DT>
@@ -315,7 +315,7 @@ StringVariable 'name'
 </XMP>
 
 <DT>getmetas([optional])</B></CODE></DT>
-<DD>Returns a list of meta attributes as dictionary where id's are keys and descriptors are values. If the argument optional is given, the function will return only the optional or the non-optional meta attributes.</DD>
+<DD>Returns a list of meta attributes as dictionary where id's are keys and descriptors are values. If the argument optional is given, the function will return only the optional attributes with the same value of the argument, or the non-optional meta attributes, if zero.</DD>
 
 <DT>isOptionalMeta(name | descriptor | id)</B></CODE></DT>
 <DD>The function returns <code>True</code> if the meta attribute is optional and <code>False</code> if it's not.</DD>
