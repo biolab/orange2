@@ -182,7 +182,6 @@ class OWFile(OWWidget):
         
         if fn == "(none)":
             self.send("Examples", None)
-            self.send("Attribute Definitions", None)
             self.infoa.setText("No data loaded")
             self.infob.setText("")
             self.warnings.setText("")
@@ -268,7 +267,6 @@ class OWFile(OWWidget):
             data.name = fName
 
         self.send("Examples", data)
-        self.send("Attribute Definitions", data.domain)
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
