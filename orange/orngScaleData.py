@@ -143,7 +143,7 @@ class orngScaleData:
         averages = MA.average(arr, 1)
         self.averages = MA.filled(averages, 1)   # replace missing values with 1
         self.validDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-        arr = numpy.array(MA.filled(arr, -99999999))
+        arr = numpy.array(MA.filled(arr, orange.Illegal_Float))
         self.originalData = arr.copy()
         self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
 
