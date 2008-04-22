@@ -134,14 +134,17 @@ TTreeSplitConstructor_Attribute::TTreeSplitConstructor_Attribute(PMeasureAttribu
 {}
 
 
-// if there are less than two branches with at least minSubset examples, skip the attribute
-// also, skip it if all examples are in the same branch
+// rejects the split if there are less than two non-empty branches
+// or there is a non-empty branch with less then minSubset examples
 bool checkDistribution(const TDiscDistribution &dist, const float &minSubset)
 {
   int nonzero = 0;
-  for(TDiscDistribution::const_iterator dvi(dist.begin()), dve(dist.end()); (dvi!=dve) && (nonzero<2); dvi++)
-    if ((*dvi > 0) && (*dvi >= minSubset))
+  for(TDiscDistribution::const_iterator dvi(dist.begin()), dve(dist.end()); dvi!=dve; dvi++)
+    if (*dvi > 0) {
+      if  (*dvi < minSubset)
+        return false;
       nonzero++;
+    }
 
   return nonzero >= 2;
 }
