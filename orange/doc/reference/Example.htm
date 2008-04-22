@@ -283,8 +283,10 @@ TypeError: cannot convert 'yes' to a value of an unknown attribute
 <DT>setmeta(value), getmeta()</DT>
 <DD>Obsolete functions for setting and getting meta values.</DD>
 
-<dt>getmetas([key-type])</dt>
+<dt>getmetas([key-type]), getmetas(optional, [key-type])</dt>
 <dd>Returns example's meta values as a dictionary. Key type can be <code>int</code> (default), <code>str</code> or <code>orange.Variable</code>, and determines whether the keys in the dictionary will be meta-id's, attribute names or attribute descriptors. In the latter two cases, the function will only return the meta values that are registered in the domain (there are no descriptors/names associated with other values). In either case, the dictionary contains only a copy of the values: changing the dictionary won't affect the example's meta values.</p>
+
+<p>Argument 'optional' tells the method to return only the optional or the non-optional meta attributes. If absent, both types of attributes are returned.</p>
 
 <P>The below code will print out the dictionary with all four possible key-types.</P>
 
