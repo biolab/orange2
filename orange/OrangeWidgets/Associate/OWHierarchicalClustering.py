@@ -9,10 +9,14 @@
 import orngOrangeFoldersQt4
 from OWWidget import *
 from sets import Set
+from OWQCanvasFuncts import *
 import OWGUI
 import OWGraphTools
 import math
 import os
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 try:
     from OWDataFiles import DataFiles
@@ -70,7 +74,7 @@ class OWHierarchicalClustering(OWWidget):
         #################################
 
         #Tabs
-        self.tabs = OWGUI.tabWidget(self.controlArea,"tabWidget")
+        self.tabs = OWGUI.tabWidget(self.controlArea)
         self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
         self.selectionTab= OWGUI.createTabPage(self.tabs, "Selection")
 
@@ -84,7 +88,7 @@ class OWHierarchicalClustering(OWWidget):
                 callback=self.updateLabel)
 
         #Dendrogram graphics settings
-        dendogramBox = OWGUI.widgetBox(self.settingsTab, "Dendogram setings")
+        dendrogramBox = OWGUI.widgetBox(self.settingsTab, "Dendrogram setings")
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
         OWGUI.checkWithSpin(dendrogramBox, self, "Print depth", 1, 100, "PrintDepthCheck",
                 "PrintDepth")
@@ -119,17 +123,18 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
-        self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
-        scale=QCanvas(self)
-        self.headerView=ScaleCanvas(self, scale, self.mainArea)
-        self.footerView=ScaleCanvas(self, scale, self.mainArea)
-        self.dendogram = Dendogram(self)
-        self.dendogramView = DendogramView(self.dendogram, self.mainArea)
+        self.mainAreaLayout=QVBoxLayout()
+        scale=QGraphicsScene(self)
+        self.headerView=ScaleView(self, scale, self.mainArea)
+        self.footerView=ScaleView(self, scale, self.mainArea)
+        self.dendrogram = Dendrogram(self)
+        self.dendrogramView = DendrogramView(self.dendrogram, self.mainArea)
     
         self.mainArea.layout().addWidget(self.headerView)
-        self.mainArea.layout().addWidget(self.dendogramView)
+        self.mainArea.layout().addWidget(self.dendrogramView)
         self.mainArea.layout().addWidget(self.footerView)
-
+        self.mainArea.setLayout(self.mainAreaLayout)
+        
         self.dendrogram.header=self.headerView
         self.dendrogram.footer=self.footerView
 
@@ -137,7 +142,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.footerView.horizontalScrollBar().setValue)
         self.connect(self.dendrogramView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
                 self.headerView.horizontalScrollBar().setValue)
-        self.dendrogram.resize(self.HDSize,self.VDSize)
+        self.dendrogram.setSceneRect(0, 0, self.HDSize,self.VDSize)
         self.dendrogram.update()
 
 
@@ -230,7 +235,7 @@ class OWHierarchicalClustering(OWWidget):
             self.updateLabel()
 
     def applySettings(self):
-        self.dendrogram.resize(self.HDSize, self.VDSize)
+        self.dendrogram.setSceneRect(0, 0, self.HDSize, self.VDSize)
         self.dendrogram.displayTree(self.rootCluster)
 
     def progressBarSet(self, value, a):
@@ -251,12 +256,12 @@ class OWHierarchicalClustering(OWWidget):
     def updateCutOffLine(self):
         if self.SelectionMode:
             self.dendrogram.cutOffLine.show()
-            self.footerView.canvas().marker.show()
+            self.footerView.scene().marker.show()
         else:
             self.dendrogram.cutOffLine.hide()
-            self.footerView.canvas().marker.hide()
+            self.footerView.scene().marker.hide()
         self.dendrogram.update()
-        self.footerView.canvas().update()
+        self.footerView.scene().update()
 
     def updateSelection(self, selection):
         if self.matrixSource=="Attribute Distance":
@@ -313,7 +318,7 @@ class OWHierarchicalClustering(OWWidget):
         ext = ext.replace(".","")
         ext = ext.upper()
         dSize= self.dendrogram.size()
-        sSize= self.footerView.canvas().size()
+        sSize= self.footerView.scene().size()
         buffer = QPixmap(dSize.width(),dSize.height()+2*sSize.height()) # any size can do, now using the window size
         bufferTmp= QPixmap(dSize)
         painter = QPainter(buffer)
@@ -337,35 +342,24 @@ bottomMargin=10
 polyOffset=5
 scaleHeight=20
 
-class DendrogramView(QCanvasView):
+class DendrogramView(QGraphicsView):
     def __init__(self,*args):
-        apply(QCanvasView.__init__, (self,)+args)
-        self.parent=args[0]
+        apply(QGraphicsView.__init__, (self,)+args)
         self.viewport().setMouseTracking(True)
 
-    def contentsMousePressEvent(self, e):
-        if e.button()==Qt.LeftButton:
-            self.canvas().pressEvent(e)
-
-    def contentsMouseReleaseEvent(self, e):
-        self.canvas().releaseEvent(e)
-
-    def contentsMouseMoveEvent(self, e):
-        self.canvas().mouseMove(e)
-
     def resizeEvent(self, e):
-        QCanvasView.resizeEvent(self,e)
-        if self.canvas().parent.FitToWindow:
-            self.canvas().displayTree(self.canvas().rootCluster)
+        QGraphicsView.resizeEvent(self,e)
+        if self.scene().parent.FitToWindow:
+            self.scene().displayTree(self.scene().rootCluster)
         #self.updateContents()
 
-class Dendrogram(QCanvas):
+class Dendrogram(QGraphicsScene):
     def __init__(self, *args):
-        apply(QCanvas.__init__, (self,)+args)
+        apply(QGraphicsScene.__init__, (self,)+args)
         self.parent=args[0]
         self.rootCluster=None
         self.rootTree=None
-        self.highlighted=MyCanvasRect(None)
+        self.highlighted=None #MyCanvasRect(None)
         self.header=None
         self.footer=None
         self.cutOffLineDragged=False
@@ -378,11 +372,12 @@ class Dendrogram(QCanvas):
         self.rectObj=[]
         self.textObj=[]
         self.otherObj=[]
-        self.cutOffLine=QCanvasLine(self)
+        self.cutOffLine=QGraphicsLineItem(None, self)
         self.cutOffLine.setPen( QPen(QColor("black"),2))
-        self.bublerRect=BubbleRect(None)
-        self.setDoubleBuffering(True)
+        self.bubbleRect=BubbleRect(None)
+        #self.setDoubleBuffering(True)
         self.holdoff=False
+        #self.setMouseTrackingEnabled(True)
 
     def displayTree(self, root):
         self.clear()
@@ -391,7 +386,7 @@ class Dendrogram(QCanvas):
             return
 ##        if self.parent.FitToWindow:
         width=self.parent.dendrogramView.size().width()
-        self.resize(width,self.height())
+        self.setSceneRect(0, 0, width, self.height())
         self.textAreaWidth=100
 ##        else:
 ##            self.textSize=self.parent.TextSize
@@ -403,7 +398,7 @@ class Dendrogram(QCanvas):
         self.treeHeight=root.height
         self.treeAreaWidth=self.width()-leftMargin-self.textAreaWidth
         self.font.setPointSize(self.textSize)
-        self.header.canvas().resize(self.width()+20,scaleHeight)
+        self.header.scene().setSceneRect(0, 0, self.width()+20, scaleHeight)
         (self.rootGraphics,a)=self.drawTree(self.rootCluster,0)
         self.updateLabel()
         self.header.drawScale(self.treeAreaWidth, root.height)
@@ -412,11 +407,12 @@ class Dendrogram(QCanvas):
                 if new.cluster==old:
                     self.addSelection(new)
 
-        self.bubbleRect=BubbleRect(self)
+        self.bubbleRect=BubbleRect(None)
+        self.addItem(self.bubbleRect)
         self.otherObj.append(self.bubbleRect)
         fix=max([a.boundingRect().width() for a in self.textObj])
-        self.resize(leftMargin+self.treeAreaWidth+fix+rightMargin,2*topMargin+self.gTextPos)
-        self.cutOffLine.setPoints(0,0,0,self.height())
+        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+fix+rightMargin, 2*topMargin+self.gTextPos)
+        self.cutOffLine.setLine(0,0,0,self.height())
         self.update()
 
     def drawTree(self, cluster, l):
@@ -429,30 +425,32 @@ class Dendrogram(QCanvas):
                 self.treeAreaWidth*cluster.height/self.treeHeight
             rectW=self.width()-self.textAreaWidth-top
             rectH=low-hi
-            rect=MyCanvasRect(top, hi, rectW+2, rectH, self)
+            rect=MyCanvasRect(top, hi, rectW+2, rectH)
+            print top, hi, rectW+2, rectH
+            self.addItem(rect)
             rect.left=leftR
             rect.right=rightR
             rect.cluster=cluster
             rect.setBrush(self.brush)
             rect.setPen(self.pen)
-            rect.setZ(self.gZPos)
+            rect.setZValue(self.gZPos)
             self.gZPos-=1
             rect.show()
             self.rectObj.append(rect)
             return (rect, (hi+low)/2)
         else:
-            text=MyCanvasText(self)
+            text=MyCanvasText(self, font=self.font, alignment=Qt.AlignLeft)
             #if len(cluster)>1:
             #    text.setText("(%i items)" % len(cluster))
             #else:
             #    text.setText(str(cluster[0]))
-            text.setText(" ")
+            text.setPlainText(" ")
             text.cluster=cluster
-            text.setFont(self.font)
-            text.move(leftMargin+self.treeAreaWidth+5,math.ceil(self.gTextPos))
-            text.setTextFlags(Qt.AlignLeft)
-            text.setZ(1)
-            text.show()
+##            text.setFont(self.font)
+            text.setPos(leftMargin+self.treeAreaWidth+5,math.ceil(self.gTextPos))
+##            text.setTextFlags(Qt.AlignLeft)
+            text.setZValue(1)
+##            text.show()
             self.textObj.append(text)
             self.gTextPos+=self.gTextPosInc
             return (None, self.gTextPos-self.gTextPosInc/2)
@@ -460,18 +458,18 @@ class Dendrogram(QCanvas):
 
     def clear(self):
         for a in self.rectObj:
-            a.setCanvas(None)
+            self.removeItem(a)
         for a in self.textObj:
-            a.setCanvas(None)
+            self.removeItem(a)
         for a in self.otherObj:
-            a.setCanvas(None)
+            self.removeItem(a)
         self.rectObj=[]
         self.textObj=[]
         self.otherObj=[]
         self.rootGraphics=None
         self.rootCluster=None
         self.cutOffLine.hide()
-        self.cutOffLine.move(0,0)
+        self.cutOffLine.setPos(0,0)
         self.oldSelection=[a.rootCluster for a in self.selectionList]
         self.clearSelection()
         self.update()
@@ -481,10 +479,10 @@ class Dendrogram(QCanvas):
             return
         for a in self.textObj:
             if len(a.cluster)>1 and not self.parent.Annotation==0:
-                a.setText("(%i items)" % len(a.cluster))
+                a.setPlainText("(%i items)" % len(a.cluster))
             else:
-                a.setText(str(a.cluster[0]))
-        self.resize(leftMargin+self.treeAreaWidth+max([a.boundingRect().width() \
+                a.setPlainText(str(a.cluster[0]))
+        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+max([a.boundingRect().width() \
                 for a in self.textObj])+rightMargin, self.height())
         self.update()
 
@@ -521,35 +519,35 @@ class Dendrogram(QCanvas):
         self.parent.updateSelection(self.selectionList)
 
     def addSelection(self, obj):
-        new=SelectionPoly(self)
         vertList=[]
         ptr=obj
         while ptr:     #construct upper part of the polygon
             rect=ptr.rect()
             ptr=ptr.left
-            vertList.append(QPoint(rect.left()-polyOffset,rect.top()-polyOffset))
+            vertList.append(QPointF(rect.left()-polyOffset,rect.top()-polyOffset))
             if ptr:
-                vertList.append(QPoint(ptr.rect().left()-polyOffset, rect.top()-polyOffset))
+                vertList.append(QPointF(ptr.rect().left()-polyOffset, rect.top()-polyOffset))
             else:
-                vertList.append(QPoint(rect.right()+3, rect.top()-polyOffset))
+                vertList.append(QPointF(rect.right()+3, rect.top()-polyOffset))
 
         tmpList=[]
         ptr=obj
         while ptr:        #construct lower part of the polygon
             rect=ptr.rect()
             ptr=ptr.right
-            tmpList.append(QPoint(rect.left()-polyOffset,rect.bottom()+polyOffset))
+            tmpList.append(QPointF(rect.left()-polyOffset,rect.bottom()+polyOffset))
             if ptr:
-                tmpList.append(QPoint(ptr.rect().left()-polyOffset, rect.bottom()+polyOffset))
+                tmpList.append(QPointF(ptr.rect().left()-polyOffset, rect.bottom()+polyOffset))
             else:
-                tmpList.append(QPoint(rect.right()+3, rect.bottom()+polyOffset))
+                tmpList.append(QPointF(rect.right()+3, rect.bottom()+polyOffset))
         tmpList.reverse()
         vertList.extend(tmpList)
-        array=QPointArray(len(vertList))
-        for i in range(len(vertList)):
-            array.setPoint(i,vertList[i])
-        new.setPoints(array)
-        new.setCanvas(self)
+        new=SelectionPoly(QPolygonF(vertList))
+##        array=QPointArray(len(vertList))
+##        for i in range(len(vertList)):
+##            array.setPoint(i,vertList[i])
+##        new.setPoints(array)
+        self.addItem(new)
         new.rootCluster=obj.cluster
         new.rootGraphics=obj
         self.selectionList.append(new)
@@ -562,8 +560,8 @@ class Dendrogram(QCanvas):
         for el, col in zip(self.selectionList, colorPalette):
             brush=QBrush(col,Qt.SolidPattern)
             el.setBrush(brush)
-        new.setZ(self.gZPos-2)
-        #new.setZ(2)
+        new.setZValue(self.gZPos-2)
+        #new.setZValue(2)
         ##
         new.show()
         #self.parent.updateSelection(self.selectionList)
@@ -574,15 +572,15 @@ class Dendrogram(QCanvas):
         self.selectionList[i].clearGraphics()
         self.selectionList.pop(i)
 
-    def pressEvent(self, e):
-        if not self.rootCluster:
+    def mousePressEvent(self, e):
+        if not self.rootCluster or e.button()!=Qt.LeftButton:
             return
+        pos=e.scenePos()
         if self.parent.SelectionMode:
             self.cutOffLineDragged=True
-            self.setCutOffLine(e.pos().x())
+            self.setCutOffLine(pos.x())
             return
-        pos=e.pos()
-        objList=self.collisions(pos)
+        objList=self.items(pos.x(), pos.y(), 1, 1)
         if len(objList)==0 and not self.parent.ctrlPressed:
             self.clearSelection()
             self.update()
@@ -607,38 +605,39 @@ class Dendrogram(QCanvas):
             self.parent.updateSelection(self.selectionList)
             self.update()
 
-    def releaseEvent(self, e):
+    def mouseReleaseEvent(self, e):
         self.holdoff=False
         if not self.rootCluster:
             return
         if self.parent.SelectionMode and self.cutOffLineDragged:
             self.cutOffLineDragged=False
             self.bubbleRect.hide()
-            self.setCutOffLine(e.pos().x())
+            self.setCutOffLine(e.scenePos().x())
 
-    def mouseMove(self, e):
+    def mouseMoveEvent(self, e):
         if not self.rootCluster:
             return
         if self.parent.SelectionMode==1 and self.cutOffLineDragged:
-            self.setCutOffLine(e.pos().x())
+            self.setCutOffLine(e.scenePos().x())
             if not self.parent.DisableBubble:
                 self.bubbleRect.setText("Cut off height: \n %f" % self.cutOffHeight)
-                self.bubbleRect.move(e.pos().x(), e.pos().y())
+                self.bubbleRect.setPos(e.scenePos().x(), e.scenePos().y())
                 self.bubbleRect.show()
             self.update()
             return
-        objList=self.collisions(e.pos())
+        objList=self.items(e.scenePos())
         self.highlight(objList)
         if not self.parent.DisableBubble and self.highlighted:
             cluster=self.highlighted.cluster
             text= "Items: %i \nCluster height: %f" % (len(cluster), cluster.height)
             self.bubbleRect.setText(text)
-            self.bubbleRect.move(e.pos().x(),e.pos().y())
+            self.bubbleRect.setPos(e.scenePos().x(),e.scenePos().y())
             self.bubbleRect.show()
             self.update()
         else:
             self.bubbleRect.hide()
             self.update()
+        print objList
         if objList and objList[0].__class__==MyCanvasText and not self.parent.DisableBubble:
             head="Items: %i" %len(objList[0].cluster)
             body=""
@@ -648,7 +647,8 @@ class Dendrogram(QCanvas):
                     bodyItems=bodyItems[:20]+["..."]
                 body="\n"+"\n".join(bodyItems)
             self.bubbleRect.setText(head+body)
-            self.bubbleRect.move(e.pos().x(),e.pos().y())
+            self.bubbleRect.setPos(e.scenePos().x(),e.scenePos().y())
+            print head+body
             if body!="":
                 self.bubbleRect.show()
             self.update()
@@ -667,7 +667,7 @@ class Dendrogram(QCanvas):
             self.cutOffLinePos=x
             self.cutOffHeight=self.treeHeight- \
                 self.treeHeight/self.treeAreaWidth*(x-leftMargin)
-            self.cutOffLine.move(x,0)
+            self.cutOffLine.setPos(x,0)
             self.footer.moveMarker(x)
             self.cutOffLine.show()
             self.update()
@@ -677,100 +677,102 @@ class Dendrogram(QCanvas):
 
         else:
             self.cutOffLine.hide()
-            self.cutOffLine.move(x,0)
+            self.cutOffLine.setPos(x,0)
             self.update()
 
 
-class ScaleCanvas(QCanvasView):
+class ScaleView(QGraphicsView):
     def __init__(self, parent, *args):
-        apply(QCanvasView.__init__, (self,)+args)
+        apply(QGraphicsView.__init__, (self,)+args)
         self.parent=parent
         self.setFixedHeight(20)
-        self.setHScrollBarMode(QScrollView.AlwaysOff)
-        self.setVScrollBarMode(QScrollView.AlwaysOff)
-        self.canvas().obj=[]
-        self.canvas().marker=QCanvasRectangle(None)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scene().obj=[]
+        self.scene().marker=QGraphicsRectItem(None, self.scene())
         self.markerDragged=False
         self.markerPos=0
 
     def clear(self):
-        for a in self.canvas().obj:
-            a.setCanvas(None)
-        self.canvas().marker.setCanvas(None)
-        self.canvas().obj=[]
-        self.canvas().update()
+        for a in self.scene().obj:
+            self.scene().removeItem(a)
+        self.scene().removeItem(self.scene().marker)
+        self.scene().obj=[]
+##        self.scene().update()
 
     def drawScale(self, treeAreaW, height):
         self.clear()
-        self.canvas().treeAreaW=treeAreaW
-        self.canvas().treeHeight=height
+        self.scene().treeAreaW=treeAreaW
+        self.scene().treeHeight=height
         xPos=leftMargin+treeAreaW
         dist=0
         distInc=math.floor(height/5)/2
         if distInc==0:
             distInc=0.25
         while xPos>=leftMargin:
-            text=QCanvasText(str(dist),self.canvas())
-            text.move(xPos,9)
-            text.setZ(0)
-            text.setTextFlags(Qt.AlignCenter)
-            text.show()
-            line1=QCanvasLine(self.canvas())
-            line2=QCanvasLine(self.canvas())
-            line1.setPoints(xPos,0,xPos,2)
-            line1.setZ(0)
-            line1.show()
-            line2.setPoints(xPos,16,xPos,20)
-            line2.setZ(0)
-            line2.show()
-            self.canvas().obj.append(text)
-            self.canvas().obj.append(line1)
-            self.canvas().obj.append(line2)
+            text=OWCanvasText(self.scene(), str(dist), xPos, 9, Qt.AlignCenter)
+##            text.setPos(xPos,9)
+            text.setZValue(0)
+##            text.setTextFlags(Qt.AlignCenter)
+##            text.show()
+            line1=OWCanvasLine(self.scene(), xPos, 0, xPos, 2)
+            line2=OWCanvasLine(self.scene(), xPos, 16, xPos, 20)
+##            line1.setPoints(xPos,0,xPos,2)
+            line1.setZValue(0)
+##            line1.show()
+##            line2.setPoints(xPos,16,xPos,20)
+            line2.setZValue(0)
+##            line2.show()
+            self.scene().obj.append(text)
+            self.scene().obj.append(line1)
+            self.scene().obj.append(line2)
             xPos-=(distInc/height)*treeAreaW
             dist+=distInc
 
-        self.marker=QCanvasRectangle(self.markerPos-3,0,1,20,self.canvas())
-        self.marker.setBrush(QBrush(QColor("blue"),2))
-        self.marker.setZ(1)
-        self.marker.show()
-        self.canvas().obj.append(self.marker)
-        self.canvas().marker=self.marker
-        self.canvas().update()
+        self.marker=OWCanvasRectangle(self.scene(),self.markerPos-3,0,1,20, brushColor=QColor("blue"))
+        self.marker.setZValue(1)
+##        self.marker.show()
+        self.scene().obj.append(self.marker)
+        self.scene().marker=self.marker
+##        self.scene().update()
 
-    def contentsMousePressEvent(self, e):
-        if e.pos().x()<0 and e.pos().x()>leftMargin+self.canvas().treeAreaW:
+    def mousePressEvent(self, e):
+        if e.pos().x()<0 and e.pos().x()>leftMargin+self.scene().treeAreaW:
             return
         self.commitStatus=self.parent.CommitOnChange
         self.parent.CommitOnChange=False
-        self.marker=self.canvas().marker
+        self.marker=self.scene().marker
         self.markerPos=e.pos().x()+3
-        self.marker.move(self.markerPos-3,0)
+        self.marker.setPos(self.markerPos-3,0)
         self.markerDragged=True
-        self.canvas().update()
+##        self.scene().update()
         self.parent.dendrogram.setCutOffLine(e.pos().x())
 
-    def contentsMouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e):
         self.markerDragged=False
         self.parent.CommitOnChange=self.commitStatus
         self.parent.dendrogram.setCutOffLine(e.pos().x())
 
-    def contentsMouseMoveEvent(self, e):
-        if e.pos().x()<0 or e.pos().x()>leftMargin+self.canvas().treeAreaW:
+    def mouseMoveEvent(self, e):
+        if e.pos().x()<0 or e.pos().x()>leftMargin+self.scene().treeAreaW:
             return
         if self.markerDragged and e.pos():
            self.markerPos=e.pos().x()+3
-           self.marker.move(self.markerPos-3,0)
-           self.canvas().update()
+           self.marker.setPos(self.markerPos-3,0)
+##           self.scene().update()
            self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def moveMarker(self, x):
-        self.canvas().marker.move(x,0)
-        self.canvas().update()
+        self.scene().marker.setPos(x,0)
+##        self.scene().update()
 
-class MyCanvasRect(QCanvasRectangle):
+class MyCanvasRect(QGraphicsRectItem):
     left=None
     right=None
     cluster=None
+    def __init__(self, *args):
+        QGraphicsRectItem.__init__(self, *args)
+        print args
     def highlight(self, pen):
         if self.pen()==pen:
             return
@@ -780,60 +782,77 @@ class MyCanvasRect(QCanvasRectangle):
             self.right.highlight(pen)
         self.setPen(pen)
 
-    def drawShape(self, painter):
-        painter.drawLine(self.x(),self.y(),self.x(),self.y()+self.height())
+    #def drawShape(self, painter):
+    def paint(self, painter, option, widget=None):
+        rect=self.rect()
+        painter.drawLine(rect.x(),rect.y(),rect.x(),rect.y()+rect.height())   
         if self.left:
-            painter.drawLine(self.x(),self.y(),self.left.x(),self.y())
+            rectL=self.left.rect()
+            painter.drawLine(rect.x(),rect.y(),rectL.x(),rect.y())
         else:
-            painter.drawLine(self.x(),self.y(),self.x()+self.width(),self.y())
+            painter.drawLine(rect.x(),rect.y(),rect.x()+rect.width(),rect.y())
         if self.right:
-            painter.drawLine(self.x(),self.y()+self.height(),self.right.x(),
-                self.y()+self.height())
+            rectR=self.right.rect()
+            painter.drawLine(rect.x(),rect.y()+rect.height(),rectR.x(),
+                rect.y()+rect.height())
         else:
-            painter.drawLine(self.x(),self.y()+self.height(),self.x()+self.width(),
-                self.y()+self.height())
+            painter.drawLine(rect.x(),rect.y()+rect.height(),rect.x()+rect.width(),
+                rect.y()+rect.height())
+##        if self.left:
+##            painter.drawLine(self.x(),self.y(),self.left.x(),self.y())
+##        else:
+##            painter.drawLine(self.x(),self.y(),self.x()+self.rect().width(),self.y())
+##        if self.right:
+##            painter.drawLine(self.x(),self.y()+self.rect().height(),self.right.x(),
+##                self.y()+self.rect().height())
+##        else:
+##            painter.drawLine(self.x(),self.y()+self.rect().height(),self.x()+self.rect().width(),
+##                self.y()+self.rect().height())
+        
 
-class MyCanvasText(QCanvasText):
+class MyCanvasText(OWCanvasText):
     cluster=None
 
-class SelectionPoly(QCanvasPolygon):
+class SelectionPoly(QGraphicsPolygonItem):
     rootCluster=None
     rootGraphics=None
     def __init__(self, *args):
-        apply(QCanvasPolygon.__init__, (self,)+args)
-        self.setZ(20)
+        apply(QGraphicsPolygonItem.__init__, (self,)+args)
+        self.setZValue(20)
 
     def clearGraphics(self):
-        #self.rootGraphics.setBrush(self.canvas().brush)
-        self.setCanvas(None)
+        self.scene().removeItem(self)
 
-class BubbleRect(QCanvasRectangle):
+class BubbleRect(QGraphicsRectItem):
     def __init__(self,*args):
-        apply(QCanvasRectangle.__init__, (self,)+args)
+        apply(QGraphicsRectItem.__init__, (self,)+args)
         self.setBrush(QBrush(Qt.white))
-        self.text=QCanvasText(self.canvas())
-        self.setZ(30)
-        self.text.setZ(31)
+        self.text=QGraphicsTextItem(self)
+        self.text.setPos(5, 5)
+##        self.setZValue(30)
+##        self.text.setZValue(31)
 
     def setText(self, text):
-        self.text.setText(text)
-        self.setSize(self.text.boundingRect().width()+6,self.text.boundingRect().height()+6)
+        self.text.setPlainText(text)
+        self.setRect(0, 0, self.text.boundingRect().width()+6,self.text.boundingRect().height()+6)
+##        self.rect().setWidth(self.text.boundingRect().width())
+##        self.rect().setHeight(self.text.boundingRect().height())
 
-    def show(self):
-        QCanvasRectangle.show(self)
-        self.text.show()
+##    def show(self):
+##        QGraphicsRectItem.show(self)
+##        self.text.show()
+##
+##    def hide(self):
+##        QGraphicsRectItem.hide(self)
+##        self.text.hide()
 
-    def hide(self):
-        QCanvasRectangle.hide(self)
-        self.text.hide()
-
-    def move(self, x, y):
-        if self.canvas().onCanvas(x+self.width(),y):
-            QCanvasRectangle.move(self, x+5, y+5)
-            self.text.move(x+6,y+6)
+    def setPos(self, x, y):
+        if self.scene().sceneRect().contains(x+self.rect().width(),y):
+            QGraphicsRectItem.setPos(self, x+5, y+5)
+##            self.text.move(x+6,y+6)
         else:
-            QCanvasRectangle.move(self, x-self.width()-5, y+5)
-            self.text.move(x-self.width()-3,y+6)
+            QGraphicsRectItem.setPos(self, x-self.rect().width()-5, y+5)
+##            self.text.move(x-self.width()-3,y+6)
         #if not self.canvas().onCanvas(1,y+self.height()):
         #    self.move(x,y-self.height())
             #if not self.canvas().onCanvas(self.x(),self.y()) and  \
@@ -843,9 +862,9 @@ class BubbleRect(QCanvasRectangle):
             #    self.move(self.x(),self.y())
 
 
-    def setCanvas(self, canvas):
-        QCanvasRectangle.setCanvas(self,canvas)
-        self.text.setCanvas(canvas)
+##    def setCanvas(self, canvas):
+##        QCanvasRectangle.setCanvas(self,canvas)
+##        self.text.setCanvas(canvas)
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
