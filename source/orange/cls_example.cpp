@@ -381,11 +381,25 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
 PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "([key-type]) -> dictionary with a copy of example's meta attributes")
 {
   PyTRY
+    PyObject *pyoptional = NULL;
     PyTypeObject *keytype = &PyInt_Type;
     int optional = ILLEGAL_INT;
-    if (!PyArg_ParseTuple(args, "|iO:Example.getmetas", &optional, &keytype))
+    if (!PyArg_ParseTuple(args, "|OO:Example.getmetas", &pyoptional, &keytype))
       return NULL;
 
+    if (!keytype && PyType_Check(pyoptional)) {
+      keytype = (PyTypeObject *)pyoptional;
+      pyoptional = NULL;
+    }
+    
+    if (pyoptional) {
+      if (!PyInt_Check(pyoptional)) {
+        PyErr_Format(PyExc_TypeError, "invalid type for argument 'optional' (expected int, got '%s')", pyoptional->ob_type->tp_name);
+        return NULL;
+      }
+      optional = PyInt_AsLong(pyoptional);
+    }
+    
     if ((keytype != &PyInt_Type) && (keytype != &PyString_Type) && (keytype != (PyTypeObject *)&PyOrVariable_Type))
       PYERROR(PyExc_TypeError, "invalid key type (should be nothing, int, str, or orange.Variable)", NULL);
       
