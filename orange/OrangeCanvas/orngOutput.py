@@ -32,12 +32,12 @@ class OutputWindow(QMainWindow):
         #self.printExtraOutput = 0
         self.unfinishedText = ""
         self.verbosity = 0
-        
+
         #sys.excepthook = self.exceptionHandler
         #sys.stdout = self
         #self.textOutput.setText("")
         #self.setFocusPolicy(QWidget.NoFocus)
-        
+
         self.resize(700,500)
         self.showNormal()
 
@@ -69,7 +69,7 @@ class OutputWindow(QMainWindow):
 
     def setFocusOnException(self, focusOnCatchException):
         self.focusOnCatchException = focusOnCatchException
-        
+
     def setFocusOnOutput(self, focusOnCatchOutput):
         self.focusOnCatchOutput = focusOnCatchOutput
 
@@ -84,10 +84,10 @@ class OutputWindow(QMainWindow):
 
     def clear(self):
         self.textOutput.setText("")
-    
+
     # print text produced by warning and error widget calls
     def widgetEvents(self, text, eventVerbosity = 1):
-        if self.verbosity >= eventVerbosity: 
+        if self.verbosity >= eventVerbosity:
             if text != None:
                 self.write(str(text))
             self.canvasDlg.setStatusBarEvent(QString(text))
@@ -102,7 +102,7 @@ class OutputWindow(QMainWindow):
         text = text.replace("(i)", "<i>").replace("(/i)", "</i>")
         text = text.replace("(hr)", "<hr>")
         text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
-        #text = "<nobr>" + text + "</nobr>"  
+        #text = "<nobr>" + text + "</nobr>"
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
@@ -110,17 +110,17 @@ class OutputWindow(QMainWindow):
 
         if self.writeLogFile:
             self.logFile.write(text)
-            
+
         self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        
+
         if text[-1:] == "\n":
             if self.printOutput:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
             self.unfinishedText = ""
         else:
             self.unfinishedText += text
-        
+
     def writelines(self, lines):
         for line in lines:
             self.write(line)
@@ -139,7 +139,7 @@ class OutputWindow(QMainWindow):
 
         text = ""
         t = localtime()
-        text += "<hr><nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+        text += "<hr><nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type).replace("<", "(").replace(">", ")") , t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
@@ -161,7 +161,7 @@ class OutputWindow(QMainWindow):
                 totalSpace += space
 
         value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
+        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type).replace("<", "(").replace(">", ")") + "</b></nobr><br>"
         text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><br><hr>"
         self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())

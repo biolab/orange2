@@ -104,7 +104,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addSeparator()
         self.toolText = QToolButton(QIconSet(QPixmap(self.text_icon)), "Show widgets using large icons and text" ,QString.null, self.toggleLargeIcons, self.toolbar, 'large icons')
         self.toolText.setToggleButton(1)
-        self.toolText.setOn(self.settings["useLargeIcons"]) 
+        self.toolText.setOn(self.settings["useLargeIcons"])
         self.toolbar.addSeparator()
         toolPrint = QToolButton(QIconSet(QPixmap(self.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
 
@@ -347,9 +347,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuHelp.insertItem("Orange Online Help", self.menuOpenOnlineOrangeHelp)
         #self.menuHelp.insertItem("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
 
-        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
-            self.menuHelp.insertSeparator()
-            self.menuHelp.insertItem("Check for Updates...", self.menuCheckForUpdates)
+#        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
+#            self.menuHelp.insertSeparator()
+#            self.menuHelp.insertItem("Check for Updates...", self.menuCheckForUpdates)
 
         #self.menuHelp.insertSeparator()
         #self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
@@ -663,7 +663,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange")
+        webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser

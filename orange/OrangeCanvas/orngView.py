@@ -74,7 +74,7 @@ class SchemaView(QCanvasView):
         newName = str(newName)
         if ok and self.tempWidget != None and newName != exName:
             for widget in self.doc.widgets:
-                if widget.caption.lower() == newName.lower():
+                if widget != self.tempWidget and widget.caption == newName:
                     QMessageBox.critical(self, 'Orange Canvas', 'Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
                     return
             self.tempWidget.updateText(newName)
