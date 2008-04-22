@@ -2,7 +2,7 @@
 <name>Hierarchical Clustering</name>
 <description>Hierarchical clustering based on distance matrix, and a dendrogram viewer.</description>
 <icon>HierarchicalClustering.png</icon>
-<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <prority>1550</priority>
 """
 
@@ -27,6 +27,7 @@ class OWHierarchicalClustering(OWWidget):
                 "PrintDepth", "HDSize", "VDSize", "FitToWindow","AutoResize",
                 "TextSize", "LineSpacing", "ZeroOffset", "SelectionMode", "DisableHighlights",
                 "DisableBubble", "ClassifySelected", "CommitOnChange", "ClassifyName"]
+    contextHandlers={"":DomainContextHandler("", [ContextField("Annotation", DomainContextHandler.Required)])}
     def __init__(self, parent=None, signalManager=None):
         #OWWidget.__init__(self, parent, 'Hierarchical Clustering')
         OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering')
@@ -147,6 +148,7 @@ class OWHierarchicalClustering(OWWidget):
 
     def dataset(self, data):
         self.matrix=data
+        self.closeContext()
         if not self.matrix:
             self.rootCluster=None
             self.selectedExamples=None
@@ -190,7 +192,8 @@ class OWHierarchicalClustering(OWWidget):
             self.classificationBox.setDisabled(False)
         else:
             self.classificationBox.setDisabled(True)
-
+        if self.matrixSource=="Example Distance":
+            self.openContext("", items)
         self.constructTree()
 
     def updateLabel(self):
