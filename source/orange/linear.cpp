@@ -1316,7 +1316,7 @@ void TRON::tron(double *w)
 		else
 			delta = max(delta, min(alpha*snorm, sigma3*delta));
 
-		printf("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
+		//printf("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
 
 		if (actred > eta0*prered)
 		{
@@ -1383,7 +1383,7 @@ int TRON::trcg(double delta, double *g, double *s, double *r)
 		daxpy_(&n, &alpha, d, &inc, s, &inc);
 		if (dnrm2_(&n, s, &inc) > delta)
 		{
-			printf("cg reaches trust region boundary\n");
+			//printf("cg reaches trust region boundary\n");
 			alpha = -alpha;
 			daxpy_(&n, &alpha, d, &inc, s, &inc);
 
@@ -1615,7 +1615,10 @@ feature_node *feature_nodeFromExample(const TExample &ex, map<int, int> &indexMa
 	if (includeRegular){
 		for (TExample::iterator i=ex.begin(); i!=ex.end(); i++){
 			if ((i->varType==TValue::INTVAR || i->varType==TValue::FLOATVAR) && i->isRegular() && i!=&ex.getClass()){
-				ptr->value = (float) *i;
+				if (i->varType==TValue::INTVAR)
+					ptr->value = (int) *i;
+				else
+					ptr->value = (float) *i;
 				ptr->index = index;
 				if (indexMap.find(index)==indexMap.end()){
 					ptr->index = featureIndex;

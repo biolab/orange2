@@ -194,14 +194,24 @@ public:
 	TValue operator()(const TExample&);
 
 	PFloatListList weights;	//P Computed feature weights
-	PExampleTable examples;	//P Examples used to train the classificator
+	PExampleTable examples;	//P Examples used to train the classifier
 
 	model *getModel(){ return linmodel; }
 private:
 	model *linmodel;
 	map<int, int> *indexMap;
 };
+/*
+class O_RANGE_API TLinearClassifierSparse : public TLinearClassifier{
+public:
+	__R_EGISTER_CLASS
+	TLinearClassifierSparse() {};
+	TLinearClassifier(const PVariable &var, PExampleTable examples, model *_model, map<int, int> *indexMap=NULL);
+	~TLinearClassifier();
 
+	PDistribution classDistribution(const TExample &);
+	TValue operator()(const TExample&);
+};*/
 WRAPPER(LinearLearner)
 WRAPPER(LinearClassifier)
 
