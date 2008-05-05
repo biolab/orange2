@@ -1707,6 +1707,7 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	}
 	//cout << "trainig" << endl;
 	model *model = train(prob, param);
+	destroy_problem(prob);
 
 	return PClassifier(mlnew TLinearClassifier(examples->domain->classVar, examples, model, indexMap));
 }
