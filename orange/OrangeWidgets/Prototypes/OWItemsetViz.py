@@ -3,7 +3,7 @@
 <description>Itemset visualizer Widget visualizes itemsets.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2050</priority>
+<priority>3013</priority>
 """
 import OWGUI
 
