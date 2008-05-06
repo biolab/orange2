@@ -3,18 +3,17 @@
 <description>Network Widget visualizes graphs.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2040</priority>
+<priority>3011</priority>
 """
 from OWWidget import *
 
 import OWGUI
-from qwt import *
-from qt import *
 from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
 import OWToolbars
 from statc import mean
+from orangeom import Network
 
 dir = os.path.dirname(__file__) + "/../icons/"
 dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
@@ -24,14 +23,15 @@ dlg_selected = dir + "Dlg_SelectedNodes.png"
 dlg_unselected = dir + "Dlg_UnselectedNodes.png"
 
 class OWNetwork(OWWidget):
-    
+    settingsList = ["autoSendSelection", 
+                    "spinExplicit", 
+                    "spinPercentage"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
         
-        self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage"] 
-        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
+        #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
+        self.inputs = [("Network", Network, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
         self.outputs = [("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.markerAttributes = []
@@ -327,6 +327,9 @@ class OWNetwork(OWWidget):
             return
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkOptimization(graph, self)
+        print self.visualize.coors
+        print self.visualize.coors[0]
+        
         self.nVertices = len(graph)
         self.nShown = len(graph)
         self.nEdges = len(graph.getEdges())

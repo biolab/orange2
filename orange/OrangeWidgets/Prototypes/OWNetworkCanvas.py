@@ -11,7 +11,7 @@ MOVE_SELECTION = 100
 import copy
 
 from OWGraph import *
-from Numeric import *
+from numpy import *
 from orngScaleScatterPlotData import *
 from OWGraphTools import UnconnectedLinesCurve
 
@@ -677,6 +677,7 @@ class OWNetworkCanvas(OWGraph):
       self.nVertices = visualizer.graph.nVertices
       self.nEdges = 0
       self.vertexDegree = []
+      self.colorIndex = -1
       
       #dodajanje vozlisc
       #print "OWNeteorkCanvas/addVisualizer: adding vertices..."
@@ -703,7 +704,8 @@ class OWNetworkCanvas(OWGraph):
           self.edges.append(edge)
           self.nEdges += 1
           
-      self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
+      #self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
+      print "new"
       self.networkCurve.coors = visualizer.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
