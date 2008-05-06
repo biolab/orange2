@@ -41,27 +41,32 @@ class SchemaView(QGraphicsView):
 
     # popMenuAction - user selected to show active widget
     def openActiveWidget(self):
-        if not self.tempWidget or self.tempWidget.instance == None: return
-        self.tempWidget.instance.reshow()
-        if self.tempWidget.instance.isMinimized():  # if widget is minimized, show its normal size
-            self.tempWidget.instance.showNormal()
+        #if not self.tempWidget or self.tempWidget.instance == None: return
+        widgets = self.getSelectedWidgets()
+        if len(widgets) != 1: return
+        widget = widgets[0]
+        widget.instance.reshow()
+        if widget.instance.isMinimized():  # if widget is minimized, show its normal size
+            widget.instance.showNormal()
 
     # popMenuAction - user selected to rename active widget
     def renameActiveWidget(self):
-        if not self.tempWidget:
-            return
-        exName = str(self.tempWidget.caption)
+        widgets = self.getSelectedWidgets()
+        if len(widgets) != 1: return
+        widget = widgets[0]
+        
+        exName = str(widget.caption)
         (newName ,ok) = QInputDialog.getText(self, "Rename Widget", "Enter new name for the \"" + exName + "\" widget:", QLineEdit.Normal, exName)
         newName = str(newName)
-        if ok and self.tempWidget != None and newName != exName:
-            for widget in self.doc.widgets:
-                if widget.caption.lower() == newName.lower():
+        if ok and newName != exName:
+            for w in self.doc.widgets:
+                if w != widget and w.caption == newName:
                     QMessageBox.information(self, 'Orange Canvas', 'Unable to rename widget. An instance with that name already exists.')
                     return
-            self.tempWidget.updateText(newName)
-            self.tempWidget.updateTooltip()
-            self.tempWidget.updateLinePosition()
-            self.tempWidget.instance.setCaption(newName)
+            widget.updateText(newName)
+            widget.updateTooltip()
+            widget.updateLinePosition()
+            widget.instance.setCaption(newName)
             self.doc.enableSave(True)
 
     # popMenuAction - user selected to delete active widget
@@ -79,6 +84,7 @@ class SchemaView(QGraphicsView):
 
         self.scene().update()
         self.tempWidget = None
+        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
     # ###########################################
     # POPUP MENU - LINKS actions
@@ -123,6 +129,8 @@ class SchemaView(QGraphicsView):
     def unselectAllWidgets(self):
         for item in self.doc.widgets:
             item.setSelected(0)
+        self.tempWidget = None
+        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
     # ###########################################
     # MOUSE events
@@ -193,6 +201,7 @@ class SchemaView(QGraphicsView):
 
         self.scene().update()
         self.lastMousePosition = self.mapToScene(ev.pos())
+        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
 
     # mouse button was pressed and mouse is moving ######################
@@ -295,6 +304,7 @@ class SchemaView(QGraphicsView):
         self.bWidgetDragging = False
         self.bLineDragging = False
         self.bMultipleSelection = False
+        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
     def mouseDoubleClickEvent(self, ev):
         point = self.mapToScene(ev.pos())
@@ -353,9 +363,5 @@ class SchemaView(QGraphicsView):
 
     # find and return all items of type "type"
     def findAllItemType(self, items, Type):
-        ret = []
-        for item in items:
-            if type(item) == Type:
-                ret.append(item)
-        return ret
+        return [item for item in items if type(item) == Type]
 
