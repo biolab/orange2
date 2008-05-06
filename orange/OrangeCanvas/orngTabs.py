@@ -14,41 +14,61 @@ WB_TOOLBOX = 0
 WB_TABBAR_NO_TEXT = 1
 WB_TABBAR_TEXT = 2
 
+# we have to use a custom class since QLabel by default ignores the mouse
+# events if it is showing text (it does not ignore events if it's showing an icon)
+class OrangeLabel(QLabel):
+    def mousePressEvent(self, e):
+        pos = self.mapToParent(e.pos())
+        ev = QMouseEvent(e.type(), pos, e.button(), e.buttons(), e.modifiers())
+        self.parent().mousePressEvent(ev)
+
+    def mouseMoveEvent(self, e):
+        pos = self.mapToParent(e.pos())
+        ev = QMouseEvent(e.type(), pos, e.button(), e.buttons(), e.modifiers())
+        self.parent().mouseMoveEvent(ev)
+
+    def mouseReleaseEvent(self, e):
+        pos = self.mapToParent(e.pos())
+        ev = QMouseEvent(e.type(), pos, e.button(), e.buttons(), e.modifiers())
+        self.parent().mouseReleaseEvent(ev)
+
 class WidgetButton(QFrame):
     def __init__(self, parent, buttonType = 2, size=30):
-        QFrame.__init__(self, parent)
+        QFrame.__init__(self)
         self.shiftPressed = 0
         self.buttonType = buttonType
         self.iconSize = size
         self.setLayout(buttonType == WB_TOOLBOX and QHBoxLayout() or QVBoxLayout())
         self.pixmapWidget = QLabel(self)
-        
-        self.textWidget = QLabel(self)
+
+        self.textWidget = OrangeLabel(self)
         if buttonType == WB_TABBAR_NO_TEXT:
             self.textWidget.hide()
-            
+
         self.layout().setMargin(3)
         if buttonType != WB_TOOLBOX:
             self.layout().setSpacing(0)
-        
-        
+
+    # we need to handle context menu event, otherwise we get a popup when pressing the right button on one of the icons
+    def contextMenuEvent(self, ev):
+        ev.accept()
+
     def setData(self, name, nameKey, tabs, canvasDlg):
         self.widgetTabs = tabs
         self.name = name
         self.nameKey = nameKey
         self.canvasDlg = canvasDlg
-                        
+
         self.pixmapWidget.setPixmap(QPixmap(self.getFullIconName()))
         self.pixmapWidget.setScaledContents(1)
         self.pixmapWidget.setFixedSize(QSize(self.iconSize, self.iconSize))
-
 
         #split long names into two lines
         buttonName = name
         if self.buttonType == WB_TABBAR_TEXT:
             numSpaces = count(buttonName, " ")
             if numSpaces == 1: buttonName = replace(buttonName, " ", "<br>")
-            elif numSpaces > 1: 
+            elif numSpaces > 1:
                 mid = len(buttonName)/2; i = 0
                 found = 0
                 while "<br>" not in buttonName:
@@ -57,17 +77,17 @@ class WidgetButton(QFrame):
                     i+=1
             else:
                 buttonName += "<br>"
-        
+
         self.layout().addWidget(self.pixmapWidget)
         self.layout().addWidget(self.textWidget)
-        
+
         if self.buttonType != WB_TOOLBOX:
             self.textWidget.setText("<div align=\"center\">" + buttonName + "</div>")
             self.layout().setAlignment(self.pixmapWidget, Qt.AlignHCenter)
             self.layout().setAlignment(self.textWidget, Qt.AlignHCenter)
         else:
             self.textWidget.setText(name)
-                     
+
         # build the tooltip
         inputs = self.getInputs()
         if len(inputs) == 0:
@@ -88,7 +108,7 @@ class WidgetButton(QFrame):
         tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList[:-4], formatedOutList[:-4])
         self.setToolTip(tooltipText)
 
-        
+
     def getFileName(self):
         return str(self.widgetTabs.widgetInfo[self.nameKey]["fileName"])
 
@@ -154,7 +174,7 @@ class WidgetButton(QFrame):
     def getCategory(self):
         return self.nameKey[:self.nameKey.index("-")].strip()
 
-    
+
     def mouseMoveEvent(self, e):
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
@@ -163,44 +183,47 @@ class WidgetButton(QFrame):
         win = self.canvasDlg.workspace.activeSubWindow()
         if not isinstance(win, orngDoc.SchemaDoc):
             return
-        
+
         self.busy = 1
-                
+
         vrect = QRectF(win.visibleRegion().boundingRect())
         inside = win.canvasView.rect().contains(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())))
         p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0,0)))
-       
+
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         if dinwin and (dinwin != win or not inside):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
              dinwin.canvasView.scene().update()
-       
+
         if inside:
             if not widget:
                 widget = win.addWidget(self, p.x(), p.y())
                 self.widgetDragging = win, widget
-            
+
             # in case we got an exception when creating a widget instance
             if widget == None:
                 delattr(self, "busy")
                 return
-            
+
             widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
             win.canvasView.scene().update()
-            
+
             import orngCanvasItems
             items = win.canvas.collidingItems(widget)
             widget.invalidPosition = widget.selected = (win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
-            
+
         delattr(self, "busy")
 
     def mousePressEvent(self, e):
         self.setFrameShape(QFrame.StyledPanel)
+        self.layout().setMargin(self.layout().margin()-2)
 
 
     def mouseReleaseEvent(self, e):
+        self.layout().setMargin(self.layout().margin()+2)
         self.setFrameShape(QFrame.NoFrame)
+
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         self.shiftPressed = e.modifiers() & Qt.ShiftModifier
         if widget:
@@ -210,15 +233,12 @@ class WidgetButton(QFrame):
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
-        else:  # not dragging, just a click
-            if e.button() == Qt.RightButton:
-                self.clicked(True)
-        QWidget.mouseReleaseEvent(self, e)
-        
+
+
         # we say that we clicked the button only if we released the mouse inside the button
         if e.pos().x() >= 0 and e.pos().x() < self.width() and e.pos().y() > 0 and e.pos().y() < self.height():
-            self.clicked()
-        
+            self.clicked(e.button() == Qt.RightButton)
+
     def clicked(self, rightClick = False):
         win = self.canvasDlg.workspace.activeSubWindow()
         if (win and isinstance(win, orngDoc.SchemaDoc)):
@@ -253,7 +273,7 @@ class WidgetListBase:
         self.allWidgets = []
         self.tabDict = {}
         self.tabs = []
-        
+
     # read the xml registry and show all installed widgets
     def readInstalledWidgets(self, registryFileName, widgetTabList, widgetDir, picsDir, defaultPic):
         self.widgetDir = widgetDir
@@ -264,7 +284,7 @@ class WidgetListBase:
         categories = orangeCanvas.getElementsByTagName("widget-categories")[0]
         if (categories == None):
             return
-        
+
         categoryList = categories.getElementsByTagName("category")
         categoryNames = [str(cat.getAttribute("name")) for cat in categoryList]
 
@@ -272,7 +292,7 @@ class WidgetListBase:
         for tab in widgetTabList:
             if tab[0] in categoryNames:        # add a category only if there are some widgets in the folder
                 self.insertWidgetTab(tab[0], tab[1])
-        
+
         # now insert widgets into tabs + create additional tabs
         for category in categoryList:
             self.insertWidgetsToTab(category)
@@ -287,15 +307,15 @@ class WidgetListBase:
                 self.tabs.remove(self.tabs[i])
             else:
                 self.tabs[i][2].adjustSize()
-        
+
 
     # add all widgets inside the category to the tab
     def insertWidgetsToTab(self, category):
         strCategory = str(category.getAttribute("name"))
-        
-        if self.tabDict.has_key(strCategory): 
+
+        if self.tabDict.has_key(strCategory):
             tab = self.tabDict[strCategory]
-        else:    
+        else:
             tab = self.insertWidgetTab(strCategory)
 
         tab.builtIn = not category.hasAttribute("directory")
@@ -355,17 +375,17 @@ class WidgetListBase:
             button = WidgetButton(tab, widgetTypeList, iconSize)
             self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
             button.setData(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg)
-            
+
             if exIndex != priorityList[i] / 1000:
                 for k in range(priorityList[i]/1000 - exIndex):
                     tab.layout().addSpacing(10)
                 exIndex = priorityList[i] / 1000
-            
+
             tab.layout().addWidget(button)
             tab.widgets.append(button)
             self.allWidgets.append(button)
-   
-      
+
+
 
 class WidgetTabs(WidgetListBase, QTabWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
@@ -373,11 +393,12 @@ class WidgetTabs(WidgetListBase, QTabWidget):
         apply(QTabWidget.__init__,(self,) + args)
         self.setMinimumWidth(10)    # this way the < and > button will show if tab dialog is too small
 
+
     def insertWidgetTab(self, name, show = 1):
         tab = WidgetScrollArea(self)
         tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         tab.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
         widgetSpace = QWidget(self)
         widgetSpace.setLayout(QHBoxLayout())
         widgetSpace.layout().setSpacing(0)
@@ -385,25 +406,25 @@ class WidgetTabs(WidgetListBase, QTabWidget):
         widgetSpace.tab = tab
         widgetSpace.widgets = []
         tab.setWidget(widgetSpace)
-        
+
         self.tabDict[name] = widgetSpace
-        
+
         if show:
             self.addTab(tab, name)
             self.tabs.append((name, 2, widgetSpace))
         else:
             tab.hide()
             self.tabs.append((name, 0, widgetSpace))
-                
+
         return widgetSpace
-    
-               
-               
+
+
+
 class MyQToolBox(QToolBox):
     def __init__(self, size, parent):
         QToolBox.__init__(self, parent)
         self.desiredSize = size
-        
+
     def sizeHint(self):
         return QSize(self.desiredSize, 100)
 
@@ -413,10 +434,10 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
         QDockWidget.__init__(self, "Widgets")
         self.toolbox = MyQToolBox(canvasDlg.settings["toolboxWidth"], self)
-        self.toolbox.setFocusPolicy(Qt.ClickFocus)    # this is needed otherwise the document window will sometimes strangely lose focus and the output window will be focused 
+        self.toolbox.setFocusPolicy(Qt.ClickFocus)    # this is needed otherwise the document window will sometimes strangely lose focus and the output window will be focused
         self.toolbox.layout().setSpacing(0)
         self.setWidget(self.toolbox)
-    
+
 
     def insertWidgetTab(self, name, show = 1):
         sa = QScrollArea(self.toolbox)
@@ -432,13 +453,13 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
         tab.layout().setSpacing(0)
         tab.layout().setContentsMargins(6, 6, 6, 6)
         self.tabDict[name] = tab
-        
-        
+
+
         if show:
             self.toolbox.addItem(sa, name)
             self.tabs.append((name, 2, tab))
         else:
             sa.hide()
             self.tabs.append((name, 0, tab))
-        
+
         return tab
