@@ -1,8 +1,6 @@
 import math
 import random
-
 import numpy
-
 import orange
 import orangeom
 
