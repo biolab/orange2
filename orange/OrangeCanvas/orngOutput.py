@@ -18,8 +18,7 @@ class OutputWindow(QMdiSubWindow):
 
         self.textOutput = QTextEdit(self)
         self.textOutput.setReadOnly(1)
-        self.textOutput.setCurrentFont(QFont('Courier New',10, QFont.Normal))
-        #self.setCentralWidget(self.textOutput)
+
         self.setWidget(self.textOutput)
         self.setWindowTitle("Output Window")
         self.setWindowIcon(QIcon(canvasDlg.outputPix))
@@ -33,7 +32,6 @@ class OutputWindow(QMdiSubWindow):
         self.writeLogFile = 1
 
         self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.htm"), "w") # create the log file
-        #self.printExtraOutput = 0
         self.unfinishedText = ""
         self.verbosity = 0
 
@@ -87,7 +85,7 @@ class OutputWindow(QMdiSubWindow):
         self.writeLogFile = write
 
     def clear(self):
-        self.textOutput.setHtml("")
+        self.textOutput.clear()
 
     # print text produced by warning and error widget calls
     def widgetEvents(self, text, eventVerbosity = 1):
@@ -123,7 +121,8 @@ class OutputWindow(QMdiSubWindow):
         cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
         self.textOutput.setTextCursor(cursor)                             # existing text
-        self.textOutput.insertHtml(text)                                  # then append the text
+        if text == " ": self.textOutput.insertHtml("&nbsp;")
+        else:           self.textOutput.insertHtml(text)                                  # then append the text
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
         self.textOutput.setTextCursor(cursor)
 
@@ -150,7 +149,7 @@ class OutputWindow(QMdiSubWindow):
         if str(self.textOutput.toPlainText()) not in ["", "\n"]:
             text += "<hr>"
         t = localtime()
-        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type).replace("<", "(").replace(">", ")") , t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
@@ -172,7 +171,7 @@ class OutputWindow(QMdiSubWindow):
                 totalSpace += space
 
         value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
+        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type).replace("<", "(").replace(">", ")") + "</b></nobr><br>"
         text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><hr>"
         text = text.replace("<br>","<br>\n")
 
