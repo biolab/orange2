@@ -72,7 +72,7 @@ public:
 	TNetworkHierarchy(vector<int> &topVertices);
 	~TNetworkHierarchy();
 	void setTop(vector<int> &vertices);
-  void addToNewMeta(vector<int> &vertices);
+	void addToNewMeta(vector<int> &vertices);
   void expandMeta(int meta);
   void printChilds(TNetworkHierarchyNode *node);
   int getNextMetaIndex();
@@ -102,6 +102,7 @@ public:
   void showAll();
 
   PExampleTable items; //P ExampleTable of vertices data
+  PExampleTable links; //P ExampleTable of edges data
   TNetworkHierarchy hierarchy;
   set<int> optimize;
 }; 

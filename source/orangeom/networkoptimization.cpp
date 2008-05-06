@@ -25,7 +25,7 @@
 TNetworkOptimization::TNetworkOptimization()
 {
 	//cout << "constructor" << endl;
-	//import_array();
+	import_array();
 	
 	nVertices = 0;
 	nLinks = 0;
@@ -38,6 +38,7 @@ TNetworkOptimization::TNetworkOptimization()
   	tree = NULL;
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
+	//cout << "constructor end" << endl;
 }
 
 #ifdef _MSC_VER
@@ -53,7 +54,7 @@ TNetworkOptimization::~TNetworkOptimization()
 	//cout << "destructor" << endl;
 	free_Carrayptrs(pos);
 	Py_DECREF(coors);
-  Py_DECREF(metaCoors);
+	Py_DECREF(metaCoors);
 }
 
 void TNetworkOptimization::dumpCoordinates()
@@ -914,17 +915,21 @@ PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *
 
 	if (PyArg_ParseTuple(args, "O:NetworkOptimization", &pygraph))
 	{
+		cout << "0" << endl;
 		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
 		if (graph->nVertices < 2)
 		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
 
 		//return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
+		cout << "1" << endl;
 		return WrapNewOrange(new TNetworkOptimization(), type);
 	}
 	else
 	{
+		cout << "2" << endl;  
 		return WrapNewOrange(new TNetworkOptimization(), type);
+		cout << "3" << endl;
 	}
   PyCATCH
 }

@@ -105,7 +105,7 @@ public:
 	double *kVector;
 	double *levelMin;
 	double *levelMax;
-  TGraphAsTree *tree;
+  	TGraphAsTree *tree;
   
 };
 
