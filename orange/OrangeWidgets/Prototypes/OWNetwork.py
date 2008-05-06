@@ -349,7 +349,6 @@ class OWNetwork(OWWidget):
    
     
     def setGraph(self, graph):
-        #print "setting"
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."
@@ -389,7 +388,6 @@ class OWNetwork(OWWidget):
         if self.frSteps > 1500: self.frSteps = 1500;
         
         self.random()
-        #print "done."
     
     def setExampleSubset(self, subset):
         if self.graph.visualizer == None:
@@ -618,7 +616,7 @@ class OWNetwork(OWWidget):
         
     def showDegreeDistribution(self):
         from matplotlib import rcParams
-        rcParams['text.fontname'] = 'cmr10'
+        #rcParams['text.fontname'] = 'cmr10'
         import pylab as p
         
         x = self.visualize.graph.getDegrees()

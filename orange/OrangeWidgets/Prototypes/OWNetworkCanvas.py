@@ -1,6 +1,6 @@
-CIRCLE=0
-SQUARE=1
-ROUND_RECT=2
+CIRCLE = 0
+SQUARE = 1
+ROUND_RECT = 2
 
 NOTHING = 0
 ZOOMING = 1
@@ -11,7 +11,7 @@ MOVE_SELECTION = 100
 import copy
 
 from OWGraph import *
-from Numeric import *
+from numpy import *
 from orngScaleScatterPlotData import *
 from OWGraphTools import UnconnectedLinesCurve
 
