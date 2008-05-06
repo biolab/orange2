@@ -8,10 +8,6 @@ import os, sys
 ERROR = 0
 WARNING = 1
 
-widgetWidth = 68
-widgetHeight = 68
-
-
 class TempCanvasLine(QGraphicsLineItem):
     def __init__(self, canvasDlg, canvas):
         QGraphicsLineItem.__init__(self, None, canvas)
@@ -122,6 +118,14 @@ class CanvasLine(QGraphicsLineItem):
         self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
 
 
+IOBoxWidth = 11
+IOBoxHeight = 22
+WidgetIconHeight = 48
+WidgetIconWidth = 48
+WidgetWidth = WidgetIconWidth + 2*IOBoxWidth + 2
+WidgetHeight = WidgetIconHeight + 2 + 14
+RectWidth = 3
+
 
 # #######################################
 # # CANVAS WIDGET
@@ -149,11 +153,10 @@ class CanvasWidget(QGraphicsRectItem):
         self.canvasDlg = canvasDlg
         self.image = QPixmap(widget.getFullIconName())
 
-        self.imageEdge = None
-        if os.path.exists(os.path.join(canvasDlg.picsDir,"WidgetEdge.png")):
-            self.imageEdge = QPixmap(os.path.join(canvasDlg.picsDir,"WidgetEdge.png"))
+        self.imageLeftEdge = QPixmap(os.path.join(canvasDlg.picsDir,"leftEdge.png"))
+        self.imageRightEdge = QPixmap(os.path.join(canvasDlg.picsDir,"rightEdge.png"))
 
-        self.setRect(0,0, widgetWidth, widgetHeight)
+        self.setRect(0,0, WidgetWidth, WidgetHeight)
         self.selected = False
         self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
@@ -212,9 +215,9 @@ class CanvasWidget(QGraphicsRectItem):
         # save settings
         if (self.instance != None):
             if self.canvasDlg.menuSaveSettings == 1:        # save settings only if checked in the main menu
-                try:    
+                try:
                     self.instance.saveSettings()
-                except: 
+                except:
                     print "Unable to successfully save settings for %s widget" % (self.instance.captionTitle)
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
@@ -242,11 +245,11 @@ class CanvasWidget(QGraphicsRectItem):
         self.warningIcon.hide()
         self.errorIcon.hide()
 
-        yPos = self.y() - 27 - self.progressBarShown * 20
+        yPos = self.y() - 18 - self.progressBarShown * 23
         iconNum = sum([widgetState.get("Info", {}).values() != [],  widgetState.get("Warning", {}).values() != [], widgetState.get("Error", {}).values() != []])
 
         if self.canvasDlg.settings["ocShow"]:        # if show icons is enabled in canvas options dialog
-            startX = self.x() + (self.rect().width()/2) - (iconNum*self.canvasDlg.widgetIcons["Info"].width()/2)
+            startX = self.x() + (self.rect().width()/2) - ((iconNum*(self.canvasDlg.widgetIcons["Info"].width()+2))/2)
             off  = 0
             if len(widgetState.get("Info", {}).values()) > 0 and self.canvasDlg.settings["ocInfo"]:
                 off  = self.updateWidgetStateIcon(self.infoIcon, startX, yPos, widgetState["Info"])
@@ -260,7 +263,7 @@ class CanvasWidget(QGraphicsRectItem):
         icon.setPos(x,y)
         icon.show()
         icon.setToolTip(reduce(lambda x,y: x+'<br>'+y, stateDict.values()))
-        return icon.pixmap().width()
+        return icon.pixmap().width() + 3
 
     def isSelected(self):
         return self.selected
@@ -292,7 +295,7 @@ class CanvasWidget(QGraphicsRectItem):
     def mouseInsideLeftChannel(self, pos):
         if self.widget.getInputs() == []: return False
 
-        LBox = QRectF(self.x(), self.y()+18,8,16)
+        LBox = QRectF(self.x(), self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth, IOBoxHeight)
         if isinstance(pos, QPointF) and LBox.contains(pos): return True
         elif isinstance(pos, QRectF) and LBox.intersects(pos): return True
         else: return False
@@ -301,7 +304,7 @@ class CanvasWidget(QGraphicsRectItem):
     def mouseInsideRightChannel(self, pos):
         if self.widget.getOutputs() == []: return False
 
-        RBox = QRectF(self.x() + 60, self.y()+18,8,16)
+        RBox = QRectF(self.x() + IOBoxWidth + WidgetIconWidth + 2, self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth, IOBoxHeight)
         if isinstance(pos, QPointF) and RBox.contains(pos): return True
         elif isinstance(pos, QRectF) and RBox.intersects(pos): return True
         else: return False
@@ -311,55 +314,49 @@ class CanvasWidget(QGraphicsRectItem):
     # inside which one it was
     def getEdgePoint(self, pos):
         if self.mouseInsideLeftChannel(pos):
-            return QPoint(self.x(), self.y() + 26)
+            return QPoint(self.x() + IOBoxWidth/2, self.y() + WidgetIconHeight/2 + RectWidth)
         elif self.mouseInsideRightChannel(pos):
-            return QPoint(self.x()+ 68, self.y() + 26)
+            return QPoint(self.x()+ IOBoxWidth + WidgetIconWidth + 2 + IOBoxWidth/2, self.y() + WidgetIconHeight/2 + RectWidth)
 
 
     def getLeftEdgePoint(self):
-        return QPoint(self.x(), self.y() + 26)
+        return QPoint(self.x(), self.y() + WidgetIconHeight/2 + RectWidth)
 
     def getRightEdgePoint(self):
-        return QPoint(self.x()+ 68, self.y() + 26)
+        return QPoint(self.x()+ IOBoxWidth + WidgetIconWidth + 2 + IOBoxWidth/2, self.y() + WidgetIconHeight/2 + RectWidth)
 
     # draw the widget
     def paint(self, painter, option, widget = None):
         if self.isProcessing:
-            painter.setPen(QPen(self.canvasDlg.widgetActiveColor))
-            painter.setBrush(QBrush(self.canvasDlg.widgetActiveColor))
-            #painter.drawRect(8, 0, 52, 52)
-            painter.drawRect(7, 0, 54, 54)
+            color = self.canvasDlg.widgetActiveColor
         elif self.selected:
             if self.invalidPosition: color = Qt.red
             else:                    color = self.canvasDlg.widgetSelectedColor
+
+        if self.isProcessing or self.selected:
             painter.setPen(QPen(color))
             painter.setBrush(QBrush(color))
-            painter.drawRect(7, 0, 54, 54)
+            painter.drawRect(IOBoxWidth+1-RectWidth, 0, WidgetIconWidth+2*RectWidth, WidgetIconHeight+2*RectWidth)
 
-        painter.drawPixmap(2+8, 3, self.image)
+        painter.drawPixmap(IOBoxWidth + 1, RectWidth, self.image)
 
-        if self.imageEdge != None:
-            if self.widget.getInputs() != []:    painter.drawPixmap(0, 18, self.imageEdge)
-            if self.widget.getOutputs() != []:   painter.drawPixmap(widgetWidth-8, 18, self.imageEdge)
-        else:
-            painter.setBrush(QBrush(QColor(0,0,255)))
-            if self.widget.getInputs() != []:    painter.drawRect(0, 18, 8, 16)
-            if self.widget.getOutputs() != []:   painter.drawRect(widgetWidth-8, 18, 8, 16)
+        if self.widget.getInputs() != []:    painter.drawPixmap(0, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageLeftEdge)
+        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth + 2, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageRightEdge)
 
         # draw the label
         painter.setPen(QPen(QColor(0,0,0)))
-        midX, midY = widgetWidth/2., self.image.height()+7
+        midX, midY = WidgetWidth/2., 2 + WidgetIconHeight + 5
         painter.drawText(midX-200/2, midY, 200, 20, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
         yPos = -20
         if self.progressBarShown:
-            rect = QRectF(8, yPos, widgetWidth-16, 16)
+            rect = QRectF(IOBoxWidth, yPos, WidgetIconWidth+2, 16)
             painter.setPen(QPen(QColor(0,0,0)))
             painter.setBrush(QBrush(QColor(255,255,255)))
             painter.drawRect(rect)
 
             painter.setBrush(QBrush(QColor(0,128,255)))
-            painter.drawRect(QRectF(8, -20, (widgetWidth-16)*self.progressBarValue/100., 16))
+            painter.drawRect(QRectF(IOBoxWidth, -20, (WidgetIconWidth+2)*self.progressBarValue/100., 16))
             painter.drawText(rect, Qt.AlignCenter, "%d %%" % (self.progressBarValue))
 
 
