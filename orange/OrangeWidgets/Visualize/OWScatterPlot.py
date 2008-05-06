@@ -112,7 +112,7 @@ class OWScatterPlot(OWWidget):
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog in which you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
-        
+
 ##        OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
@@ -255,10 +255,11 @@ class OWScatterPlot(OWWidget):
 
     # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
     def setSubsetData(self, data):
+        self.warning(10)
+
         # if we haven't yet received the main data we just remember this data and return
         if not self.data:
             self.unprocessedSubsetData = data
-            self.warning(10)
             return
 
         # check if the new data set is the same as the old one
@@ -267,7 +268,6 @@ class OWScatterPlot(OWWidget):
 
         try:
             subsetData = data.select(self.data.domain)
-            self.warning(10)
         except:
             subsetData = None
             self.warning(10, data and "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data." or "")
