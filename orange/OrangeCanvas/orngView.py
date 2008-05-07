@@ -129,8 +129,7 @@ class SchemaView(QGraphicsView):
     def unselectAllWidgets(self):
         for item in self.doc.widgets:
             item.setSelected(0)
-        self.tempWidget = None
-        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+        
 
     # ###########################################
     # MOUSE events
