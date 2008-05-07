@@ -113,13 +113,9 @@ PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
 
   PClassifier wclassifier(classifier);
 
-  if (adjustThreshold) {
-    if (gen->domain->classVar.AS(TEnumVariable)->values->size() != 2)
-      raiseWarning("threshold can only be optimized for binary classes");
-    else {
-      float optCA;
-      classifier->threshold = TThresholdCA()(wclassifier, gen, weight, optCA);
-    }
+  if (adjustThreshold && (gen->domain->classVar.AS(TEnumVariable)->values->size() == 2)) {
+    float optCA;
+    classifier->threshold = TThresholdCA()(wclassifier, gen, weight, optCA);
   }
 
   return wclassifier;
