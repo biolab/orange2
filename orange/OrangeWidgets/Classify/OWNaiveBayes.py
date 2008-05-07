@@ -12,7 +12,6 @@ from exceptions import Exception
 
 import warnings
 warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
-warnings.filterwarnings("ignore", "'BayesLearner': threshold can only be optimized for binary classes", orange.KernelWarning, ".*OWNaiveBayes", 136)
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
