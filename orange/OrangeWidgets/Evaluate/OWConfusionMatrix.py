@@ -147,6 +147,9 @@ class OWConfusionMatrix(OWWidget):
 
 
     def reprint(self):
+        if not self.res:
+            return
+        
         cm = self.matrix[self.selectedLearner[0]]
 
         dim = len(cm)
@@ -156,7 +159,8 @@ class OWConfusionMatrix(OWWidget):
         rowPriors = [r/total for r in rowSums]
         colPriors = [r/total for r in colSums]
 
-        for ri, r in enumerate(cm):
+        try:
+          for ri, r in enumerate(cm):
             for ci, c in enumerate(r):
                 item = self.table.item(ri+1, ci+1)
                 if self.shownQuantity == 0:
@@ -174,6 +178,13 @@ class OWConfusionMatrix(OWWidget):
                     else:
                         item.setText(" %s " % "N/A")
                 self.table.updateCell(ri, ci)
+        except:
+            print ri, ci
+            print dim
+            print self.table.numRows(), self.table.numCols()
+            print cm
+            print self.res.classValues
+            
 
         for ci in range(len(cm)):
             self.table.setText(dim+1, ci+1, self.isInteger % colSums[ci])
