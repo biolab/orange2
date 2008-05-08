@@ -143,8 +143,8 @@ class NavigateSelectToolbar(QWidget):
         if parent.layout():
             parent.layout().addWidget(self)
                 
-        self.navigate = OWGUI.widgetBox(self, "Navigate", orientation = "horizontal")
-        self.navigate = OWGUI.widgetBox(self, "Select", orientation = "horizontal")
+        self.navigate = OWGUI.widgetBox(self, "Nav", orientation = "vertical")
+        self.select = OWGUI.widgetBox(self, "Sel", orientation = "vertical")
         
         self.graph = graph # save graph. used to send signals
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
@@ -152,12 +152,15 @@ class NavigateSelectToolbar(QWidget):
         self.functions = [type(f) == int and self.builtinFunctions[f] or f for f in buttons]
         for b, f in enumerate(self.functions):
             if not f:
-                self.layout().addSpacing(10)
+                #self.layout().addSpacing(10)
+                pass
             elif f[0] == "" or f[1] == "" or f[2] == "":
                 if f[6] == "navigate":
-                    OWGUI.separator(self.navigate, 10, 10)
+                    #OWGUI.separator(self.navigate, 10, 10)
+                    pass
                 elif f[6] == "select":
-                    OWGUI.separator(self.select, 10, 10)
+                    #OWGUI.separator(self.select, 10, 10)
+                    pass
             else:
                 if f[6] == "navigate":
                     button = createButton(self.navigate, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
