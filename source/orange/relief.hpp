@@ -90,6 +90,7 @@ public:
 
     float k; //P number of neighbours
     float m; //P number of reference examples
+    bool checkCachedData; //P tells whether to check the checksum of the data before reusing the cached neighbours
 
     TMeasureAttribute_relief(int ak=5, int am=100);
     virtual float operator()(PVariable var, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID=0);
@@ -106,7 +107,7 @@ public:
     void reset();
 
     vector<float> measures;
-    int prevExamples, prevWeight;
+    int prevExamples, prevWeight, prevChecksum;
 
     // the first int the index of the reference example
     // the inner int-float pairs are indices of neighbours and the corresponding weights

@@ -1002,8 +1002,10 @@ TMeasureAttribute_relief::TMeasureAttribute_relief(int ak, int am)
 : TMeasureAttribute(Generator, true, false), 
   k(ak),
   m(am),
+  checkCachedData(true),
   prevExamples(-1),
-  prevWeight(0)
+  prevWeight(0),
+  prevChecksum(0)
 {}
 
 
@@ -1176,11 +1178,23 @@ void TMeasureAttribute_relief::checkNeighbourhood(PExampleGenerator gen, const i
   if (!gen->domain->classVar)
     raiseError("class-less domain");
 
-  if ((prevExamples != gen->version) || (weightID != prevWeight))  {
+  int newChecksum;
+  bool renew = false;
+  if ((prevExamples != gen->version) || (weightID != prevWeight)) {
+    newChecksum = gen->checkSum(true);
+    renew = true;
+  }
+  else if (checkCachedData) {
+    newChecksum = gen->checkSum(true);
+    renew = newChecksum != prevChecksum;
+  }
+
+  if (renew)  {
     measures.clear();
     prepareNeighbours(gen, weightID);
     prevExamples = gen->version;
     prevWeight = weightID;
+    prevChecksum = newChecksum;
   }
 }
 
