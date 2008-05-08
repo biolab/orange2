@@ -915,21 +915,17 @@ PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *
 
 	if (PyArg_ParseTuple(args, "O:NetworkOptimization", &pygraph))
 	{
-		cout << "0" << endl;
 		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
 		if (graph->nVertices < 2)
 		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
 
 		//return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
-		cout << "1" << endl;
 		return WrapNewOrange(new TNetworkOptimization(), type);
 	}
 	else
 	{
-		cout << "2" << endl;  
 		return WrapNewOrange(new TNetworkOptimization(), type);
-		cout << "3" << endl;
 	}
   PyCATCH
 }

@@ -24,7 +24,6 @@
 TNetwork::TNetwork(TGraphAsList *graph)
 : TGraphAsList(graph->nVertices, graph->nEdgeTypes, graph->directed)
 {
-	cout << "TNetwork constructor" << endl;
   optimize.clear();
   vector<int> vertices;
   vector<int> neighbours;
