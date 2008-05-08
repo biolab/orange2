@@ -107,7 +107,7 @@ public:
     void reset();
 
     vector<float> measures;
-    int prevExamples, prevWeight, prevChecksum;
+    int prevExamples, prevWeight, prevChecksum, prevK, prevM;
 
     // the first int the index of the reference example
     // the inner int-float pairs are indices of neighbours and the corresponding weights

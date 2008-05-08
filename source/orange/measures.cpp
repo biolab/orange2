@@ -1005,7 +1005,9 @@ TMeasureAttribute_relief::TMeasureAttribute_relief(int ak, int am)
   checkCachedData(true),
   prevExamples(-1),
   prevWeight(0),
-  prevChecksum(0)
+  prevChecksum(0),
+  prevK(-1),
+  prevM(-1)
 {}
 
 
@@ -1180,7 +1182,7 @@ void TMeasureAttribute_relief::checkNeighbourhood(PExampleGenerator gen, const i
 
   int newChecksum;
   bool renew = false;
-  if ((prevExamples != gen->version) || (weightID != prevWeight)) {
+  if ((prevExamples != gen->version) || (weightID != prevWeight) || (k != prevK) || (m != prevM)) {
     newChecksum = gen->checkSum(true);
     renew = true;
   }
@@ -1195,6 +1197,8 @@ void TMeasureAttribute_relief::checkNeighbourhood(PExampleGenerator gen, const i
     prevExamples = gen->version;
     prevWeight = weightID;
     prevChecksum = newChecksum;
+    prevK = k;
+    prevM = m;
   }
 }
 
