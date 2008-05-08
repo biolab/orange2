@@ -36,15 +36,16 @@ class NetworkEdge():
     self.arrowu = 0
     self.arrowv = 0
     
-    self.pen = QPen(Qt.gray, 1)
+    self.pen = QPen(Qt.lightGray, 1)
 
 class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
-      QwtPlotCurve.__init__(self, "NetworkCurve")
+      QwtPlotCurve.__init__(self, "Network Curve")
 
-      if xData != None and yData != None:
-          self.setRawData(xData, yData)
+      #if xData != None and yData != None:
+      #    self.setRawData(xData, yData)
 
+      #self.setData([0], [0])
       self.coors = None
       self.vertices = []
       self.edges = []
@@ -112,6 +113,9 @@ class NetworkCurve(QwtPlotCurve):
     for vertex in self.vertices:
       vertex.show = True
     
+  def changed(self):
+      self.itemChanged()
+    
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:
@@ -128,7 +132,6 @@ class NetworkCurve(QwtPlotCurve):
       if vertex.show:
         pX = xMap.transform(self.coors[0][vertex.index])   #dobimo koordinati v pikslih (tipa integer)
         pY = yMap.transform(self.coors[1][vertex.index])   #ki se stejeta od zgornjega levega kota canvasa
-        
         if vertex.selected:    
           painter.setPen(QPen(Qt.yellow, 3))
           painter.setBrush(vertex.color)
@@ -285,7 +288,6 @@ class OWNetworkCanvas(OWGraph):
       return False
       
   def removeSelection(self, replot = True):
-      print "remove selection"
       for vertex in self.vertices:
         vertex.selected = False
       
@@ -545,29 +547,22 @@ class OWNetworkCanvas(OWGraph):
       return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
   
   def updateData(self):
-      print "OWGraphDrawerCanvas/updateData..."
       self.removeDrawingCurves(removeLegendItems = 0)
       self.tips.removeAll()
       
       self.networkCurve.setData(self.visualizer.coors[0], self.visualizer.coors[1])
       
       selection = self.networkCurve.getSelectedVertices()
-      print "selection"
-      print selection
-      print "self.insideview"
-      print self.insideview
+      
       if self.insideview == 1 and len(selection) >= 1:
           visible = set()
           visible |= set(selection)
           visible |= self.getNeighboursUpTo(selection[0], self.insideviewNeighbours)
-          print "visible"
-          print visible
           self.networkCurve.setHiddenVertices(set(range(self.nVertices)) - visible)
 
       edgesCount = 0
       
       for r in self.circles:
-          print "r: " + str(r)
           step = 2 * pi / 64;
           fi = 0
           x = []
@@ -582,6 +577,7 @@ class OWNetworkCanvas(OWGraph):
       self.networkCurve.attach(self)
       self.drawLabels()
       self.drawToolTips()
+      self.zoomExtent()
  
   def drawToolTips(self):
     # add ToolTips
@@ -704,12 +700,12 @@ class OWNetworkCanvas(OWGraph):
           self.edges.append(edge)
           self.nEdges += 1
           
-      #self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
-      print "new"
+      self.networkCurve = NetworkCurve(self)
       self.networkCurve.coors = visualizer.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
-  
+      self.networkCurve.changed()
+      
   def updateCanvas(self):
       self.setAxisAutoScaled()
       self.updateData()

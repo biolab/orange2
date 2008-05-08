@@ -59,21 +59,39 @@ class OWNetwork(OWWidget):
         self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
         self.mainArea.layout().addWidget(self.graph)
         
-        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
+        
+        self.tabs = OWGUI.tabWidget(self.hcontroArea)
         self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
         self.protoTab = OWGUI.createTabPage(self.tabs, "Prototypes")
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
-        OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-        self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
-        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
-        #OWGUI.button(self.optimizeBox, self, "F-R Special", callback=self.frSpecial)
-        OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
-        OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
-        OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
-        OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
+        
+        OWGUI.label(self.optimizeBox, self, "Select layout optimization method:")
+        self.optMethod = 0
+        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
+        self.optCombo.addItem("Random")
+        self.optCombo.addItem("Fruchterman Reingold")
+        self.optCombo.addItem("Fruchterman Reingold Radial")
+        self.optCombo.addItem("Circular Crossing Reduction")
+        self.optCombo.addItem("Circular Original")
+        self.optCombo.addItem("Circular Random")
+        
+        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
+        self.stepsSpin.setEnabled(False)
+        
+        self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
+        
+#        OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
+#        self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
+#        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
+#        #OWGUI.button(self.optimizeBox, self, "F-R Special", callback=self.frSpecial)
+#        OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
+#        OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
+#        OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
+#        OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
 
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
         self.colorCombo.addItem("(none)")
@@ -141,7 +159,7 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
                 
         T = OWToolbars.NavigateSelectToolbar
-        self.zoomSelectToolbar = T(self, self.controlArea, self.graph, self.autoSendSelection,
+        self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
                                   buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
                                              ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
                                              T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
@@ -167,7 +185,8 @@ class OWNetwork(OWWidget):
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
         self.protoTab.layout().addStretch(1)
-        self.resize(850, 700)    
+        
+        self.resize(1000, 600)
 
     def collapse(self):
         print "collapse"
@@ -326,13 +345,12 @@ class OWNetwork(OWWidget):
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."
-        self.visualize = NetworkOptimization(graph, self)
-        print self.visualize.coors
-        print self.visualize.coors[0]
+        self.visualize = NetworkOptimization(graph)
         
-        self.nVertices = len(graph)
-        self.nShown = len(graph)
+        self.nVertices = graph.nVertices
+        self.nShown = graph.nVertices
         self.nEdges = len(graph.getEdges())
+        
         if self.nEdges > 0:
             self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
         else:
@@ -399,9 +417,9 @@ class OWNetwork(OWWidget):
         self.graph.showAllVertices()
                                
     def updateCanvas(self):
-        #ce imamo graf
+        # if network exists
         if self.visualize != None:
-            self.graph.updateCanvas()#self.visualize.xCoors, self.visualize.yCoors)
+            self.graph.updateCanvas()
               
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Control:
@@ -446,7 +464,31 @@ class OWNetwork(OWWidget):
     """
     Layout Optimization
     """
+    def optLayout(self):
+        if not self.optButton.isChecked():
+            return
+            
+        if self.optMethod == 0:
+            self.random()
+        elif self.optMethod == 1:
+            self.fr()
+        elif self.optMethod == 2:
+            self.frRadial()
+        elif self.optMethod == 3:
+            self.circularCrossingReduction()
+        elif self.optMethod == 4:
+            self.circularOriginal()
+        elif self.optMethod == 5:
+            self.circularRandom()
+            
+        self.optButton.setChecked(False)
     
+    def setOptMethod(self):
+        if self.optMethod == 1:
+            self.stepsSpin.setEnabled(True)
+        else:
+            self.stepsSpin.setEnabled(False)
+
     def random(self):
         #print "OWNetwork/random.."
         if self.visualize == None:   #grafa se ni
@@ -461,14 +503,14 @@ class OWNetwork(OWWidget):
         if self.visualize == None:   #grafa se ni
             return
               
-        if not self.frButton.isChecked():
+        if not self.optButton.isChecked():
           print "not"
           self.stopOptimization = 1
-          self.frButton.setChecked(False)
-          self.frButton.setText("Fruchterman Reingold")
+          self.optButton.setChecked(False)
+          self.optButton.setText("Optimize layout")
           return
         
-        self.frButton.setText("Stop")
+        self.optButton.setText("Stop")
         qApp.processEvents()
         self.stopOptimization = 0
         tolerance = 5
@@ -505,8 +547,8 @@ class OWNetwork(OWWidget):
                 qApp.processEvents()
                 self.updateCanvas()
                 
-        self.frButton.setChecked(False)
-        self.frButton.setText("Fruchterman Reingold")
+        self.optButton.setChecked(False)
+        self.optButton.setText("Optimize layout")
         
     def frSpecial(self):
         steps = 100
