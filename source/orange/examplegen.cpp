@@ -95,11 +95,11 @@ void TExampleGenerator::removeMetaAttribute(const int &)
 NOT_SUPPORTED(removeMetaAttribute)
 
 
-int TExampleGenerator::checkSum()
+int TExampleGenerator::checkSum(const bool includeMetas)
 { unsigned long crc;
   INIT_CRC(crc);
   for(TExampleIterator ei(begin()); ei; ++ei)
-    (*ei).addToCRC(crc);
+    (*ei).addToCRC(crc, includeMetas);
   FINISH_CRC(crc);
   return int(crc & 0x7fffffff);
 }

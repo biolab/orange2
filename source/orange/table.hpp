@@ -119,6 +119,7 @@ public:
   virtual void copyMetaAttribute(const int &id, const int &source, TValue &defaultVal);
   virtual void removeMetaAttribute(const int &id);
 
+  virtual int checkSum(const bool includeMetas = false);
   virtual int checkSum(const bool includeMetas = false) const;
   virtual bool hasMissing() const;
   virtual bool hasMissingClass() const;

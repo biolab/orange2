@@ -107,7 +107,7 @@ public:
   virtual void copyMetaAttribute(const int &id, const int &source, TValue &defaultVal);
   virtual void removeMetaAttribute(const int &id);
 
-  virtual int checkSum();
+  virtual int checkSum(const bool includeMetas=false);
 };
 
 
