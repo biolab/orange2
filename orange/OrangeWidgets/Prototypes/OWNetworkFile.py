@@ -39,20 +39,19 @@ class OWNetworkFile(OWWidget):
         self.graph = None
         #get settings from the ini file, if they exist
         self.loadSettings()
-        #print self.recentFiles
-        print "before gui"
+        
         #GUI
         self.controlArea.layout().setMargin(4)
         self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "horizontal")
         self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
-        print "info 1"
+        
         self.databox = OWGUI.widgetBox(self.controlArea, box = "Data File", orientation = "horizontal")
         self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
         self.datacombo.setMinimumWidth(250)
         button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0, width=25)
-        print "info 2"
+        
         # info
         box = OWGUI.widgetBox(self.controlArea, "Info")
         self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
@@ -60,14 +59,12 @@ class OWNetworkFile(OWWidget):
         self.infoc = OWGUI.widgetLabel(box, ' ')
         
         self.resize(150,100)
-        print "before activate"
         self.activateLoadedSettings()
-        print "before connect"
         # connecting GUI to code
-        #self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
-        #self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
-        print "after  gui"
-        # set the file combo box
+        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
+        self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
+        
+    # set the file combo box
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
@@ -125,16 +122,14 @@ class OWNetworkFile(OWWidget):
             self.addDataFile(self.recentDataFiles[0])
     
     def openFile(self, fn):
-        print "before openFileBase"
         self.openFileBase(fn)
-        print "after openFileBase"
+        
         if '(none)' in self.recentDataFiles: 
             self.recentDataFiles.remove('(none)')
             
         self.recentDataFiles.insert(0, '(none)')
-        print "before list"
+        
         self.setFileList()
-        print "after list"
         
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
@@ -236,13 +231,11 @@ class OWNetworkFile(OWWidget):
 #            drawer.setGraph(data)
 #            drawer.show()
         else:
-            print "None"
             self.send("Network", data)
 
     def readNetFile(self, fn):
-        print "in read net"
         network = NetworkOptimization()
-        print "network opt"
+        
         try:
             network.readNetwork(fn)
             self.infoc.setText("Data generated and added automatically.")
@@ -251,7 +244,6 @@ class OWNetworkFile(OWWidget):
             self.infob.setText("")
             return None
         
-        print "after read net"
         return network.graph
 
 if __name__ == "__main__":
