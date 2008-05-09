@@ -774,7 +774,7 @@ T erfc(const T &x)
 
 template<class T>
 T chisqprob(const T &x, const T &df)
-{ return gammq(df*0.5, x*0.5);
+{ return x > 1e-10 ? gammq(df*0.5, x*0.5) : T(1.0);
 }
 
 
