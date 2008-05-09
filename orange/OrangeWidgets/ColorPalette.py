@@ -34,17 +34,38 @@ try:
     wantsPositiveColor = False
 except:
     wantsPositiveColor = True
+    
+try:
+    QImage(chr(0), 1, 1, 1, [0,0xFFFFFFFF], 2, QImage.LittleEndian)
+    wantsIntPalette = False
+except:
+    wantsIntPalette = True
+
+try:
+    QImage(chr(0), 1, 1, 1, [0,-1], 2, QImage.LittleEndian)
+    wantsPositivePalette = False
+except:
+    wantsPositivePalette = True
 
 def signedColor(long):
+    # Maybe wantsIntPalette is true but we cannot do anything here than just try to convert it to positive color
+    # (colors with alpha cannot be represented with signed int and just positive values allowed)
+    if wantsPositivePalette and long < 0:
+        return int(-(((long & 0xFFFFFFFF) ^ 0xFFFFFFFF) + 1))
+    
+    # It is stored as int so we do not need to do anything
     if type(long) == int:
         return long
-    
-    long &= 0xFFFFFFFF
-    
-    if long & 0x80000000:
-        return int(-((long ^ 0xFFFFFFFF) + 1))
+    elif wantsIntPalette and not wantsPositivePalette:
+        long &= 0xFFFFFFFF
+        
+        if long & 0x80000000:
+            return int(-((long ^ 0xFFFFFFFF) + 1))
+        else:
+            return int(long)
+    # Cannot do anythin and probably should not do anything
     else:
-        return int(long)
+        return long
 
 def positiveColor(color):
     if wantsPositiveColor and color < 0:
@@ -234,7 +255,7 @@ class ColorPalette(QWidget):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
         
-        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # if color cannot be negative number we convert it manually
 
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
@@ -325,7 +346,7 @@ class InterpolationView(QCanvasView):
     def setPalette1(self, palette):
         dx = 140; dy = colorButtonSize
         bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2 
-        image = QImage(bmp, dx, dy, 8, signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+        image = QImage(bmp, dx, dy, 8, signedPalette(palette), 256, QImage.LittleEndian) # we take care palette has proper values with proper types
         pm = QPixmap()
         pm.convertFromImage(image, QPixmap.Color);
 

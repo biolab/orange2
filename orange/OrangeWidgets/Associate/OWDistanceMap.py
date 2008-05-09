@@ -234,7 +234,7 @@ class OWDistanceMap(OWWidget):
 
     def qrgbToQColor(self, color):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF)
-        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # on Mac color can not be negative number in this case so we convert it manually
+        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # if color cannot be negative number we convert it manually
 
     def getItemFromPos(self, i):
         if (len(self.distanceMap.elementIndices)==0):
@@ -636,7 +636,7 @@ class OWDistanceMap(OWWidget):
 class ImageItem(QCanvasRectangle):
     def __init__(self, bitmap, canvas, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
         QCanvasRectangle.__init__(self, canvas)
-	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
         self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
         self.canvas = canvas
         self.setSize(width, height)

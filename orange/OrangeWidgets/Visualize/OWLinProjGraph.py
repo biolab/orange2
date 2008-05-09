@@ -870,15 +870,15 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
                 for cls in self.potentialsClassifier.classVar.values:
                     color = colors[sortedClasses.index(cls)].light(150).rgb()
-                    color = [f(ColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # on Mac color cannot be negative number in this case so we convert it manually
+                    color = [f(ColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # if color cannot be negative number we convert it manually
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades
                         palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
-#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
-            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # we take care palette has proper values with proper types
+            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # we take care palette has proper values with proper types
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
             self.potentialContext = (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
