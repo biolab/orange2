@@ -719,10 +719,10 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
       newNode->branchDescriptions = mlnew TStringList;
 
       char str[128];
-      sprintf(str, "<%3.3f", cut);
+      sprintf(str, "<=%3.3f", cut);
       newNode->branchDescriptions->push_back(str);
       dummyVar->values->push_back(str);
-      sprintf(str, ">=%3.3f", cut);
+      sprintf(str, ">%3.3f", cut);
       newNode->branchDescriptions->push_back(str);
       dummyVar->values->push_back(str);
 
