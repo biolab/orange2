@@ -510,7 +510,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
             ptsi->y += *Xi * anci->y;
             *sumi += *Xi * *radi;
           }
-          if (*sumi != 0.0) {
+          if (fabs(*sumi) > 1e-6) {
             ptsi->x /= *sumi;
             ptsi->y /= *sumi;
           }
@@ -590,8 +590,8 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         aax += anci->x;
         aay += anci->y;
       }
-      aax /= nAttrs;
-      aay /= nAttrs;
+      aax /= nAttrs ? nAttrs : 1;
+      aay /= nAttrs ? nAttrs : 1;
 
       for(anci = anc; anci != ance; anci++) {
         anci->x -= aax;
@@ -836,7 +836,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
             ptsi->y += *Xi * anci->y;
             *sumi += *Xi * *radi;
           }
-          if (*sumi != 0.0) {
+          if (fabs(*sumi) > 1e-6) {
             ptsi->x /= *sumi;
             ptsi->y /= *sumi;
           }
@@ -893,10 +893,17 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
       // Move anchors
       double maxr = 0.0;
       for(anci = anc, dri = dr, radi = rad; dri != dre; dri++, anci++, radi++) {
-        const double newr = *radi + *dri * scaling;
+        double newr = *radi + *dri * scaling;
+        if (newr < 1e-4)
+          newr = 1e-4;
         double rat = newr / *radi;
+        if (rat > 10) {
+          rat = 10;
+          newr = *radi * 100;
+        }
         anci->x *= rat;
         anci->y *= rat;
+//        printf("%f\t%f\t%f\t%f\t%f\n", anci->x, anci->y, newr, sqrt(sqr(anci->x) + sqr(anci->y)), rat);
         if (newr > maxr)
           maxr = newr;
       }
@@ -911,6 +918,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
         }
       }
     }
+//    printf("\n");
 
     symmetricTransformation(anc, ance, mirrorSymmetry != 0);
     
