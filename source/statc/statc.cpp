@@ -1105,8 +1105,29 @@ PyObject *py_linregress(PyObject *, PyObject *args)
 /* *********** INFERENTIAL STATISTICS ************/
 
 T_T_FROM_LIST_T(ttest_1samp)
-T_T_FROM_LIST_LIST(ttest_ind)
 T_T_FROM_LIST_LIST(ttest_rel)
+
+PyObject *py_ttest_ind(PyObject *, PyObject *args)
+{ PyTRY
+    vector<double> x, y;
+    if (args22listsne(args, x, y)) {
+      double res1, res2;
+      res1=ttest_ind(x, y, res2);
+      return Py_BuildValue("dd", res1, res2);
+    }
+   
+    PyErr_Clear();
+   
+    vector<PyWrapper> wx, wy;
+    if (args22wlistsne(args, wx, wy)) {
+      PyWrapper res1, res2;
+      res1=ttest_ind(wx, wy, res2);
+      return Py_BuildValue("NN", (PyObject *)res1, (PyObject *)res2);
+    }
+    
+    PYERROR(PyExc_AttributeError, "ttest_ind: two lists of equal size expected", PYNULL);
+  PyCATCH
+}
 
 PyObject *py_chisquare(PyObject *, PyObject *args)
 { PyTRY
