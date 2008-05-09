@@ -639,9 +639,9 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
   descriptions = mlnew TStringList();
   char str[128];
-  sprintf(str, "<%3.3f", bestThreshold);
+  sprintf(str, "<=%3.3f", bestThreshold);
   descriptions->push_back(str);
-  sprintf(str, ">=%3.3f", bestThreshold);
+  sprintf(str, ">%3.3f", bestThreshold);
   descriptions->push_back(str);
 
   bvar->name = gen->domain->attributes->at(bestAttr)->name;
