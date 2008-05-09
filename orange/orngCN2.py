@@ -114,9 +114,10 @@ def CN2Learner(examples = None, weightID=0, **kwds):
         return cn2
 
 def supervisedClassCheck(examples):
-    if not examples.domain.classVar:
+    # examples[0] to make it work on a list of examples, too
+    if not examples[0].domain.classVar:
         raise Exception("Class variable is required!")
-    if examples.domain.classVar.varType == orange.VarTypes.Continuous:
+    if examples[0].domain.classVar.varType == orange.VarTypes.Continuous:
         raise Exception("CN2 requires a discrete class!")
     
 class CN2LearnerClass(orange.RuleLearner):
