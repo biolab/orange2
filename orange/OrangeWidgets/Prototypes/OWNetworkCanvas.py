@@ -42,28 +42,10 @@ class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
       QwtPlotCurve.__init__(self, "Network Curve")
 
-      #if xData != None and yData != None:
-      #    self.setRawData(xData, yData)
-
-      #self.setData([0], [0])
       self.coors = None
       self.vertices = []
       self.edges = []
       self.setItemAttribute(QwtPlotItem.Legend, 0)
-
-  def toPolar(self, x, y):
-      if x > 0 and y >= 0:
-          return math.atan(y/x)
-      elif x > 0 and y < 0:
-          return math.atan(y/x) + 2 * math.pi
-      elif x < 0:
-          return math.atan(y/x) + math.pi
-      elif x == 0 and y > 0:
-          return math.pi / 2
-      elif x == 0 and y < 0:
-          return math.pi * 3 / 2
-      else:
-          return None
       
   def moveSelectedVertices(self, dx, dy):
     for vertex in self.vertices:
@@ -72,6 +54,10 @@ class NetworkCurve(QwtPlotCurve):
         self.coors[1][vertex.index] = self.coors[1][vertex.index] + dy  
       
     self.setData(self.coors[0], self.coors[1])
+  
+  def setVertexColor(self, v, color):
+      self.vertices[v].color = color
+      self.vertices[v].pen = QPen(color, 1)
   
   def getSelectedVertices(self):
     selection = []
@@ -161,7 +147,6 @@ class OWNetworkCanvas(OWGraph):
       self.selectionStyles = {}  # dictionary of styles of selected nodes
       self.markerKeys = {}       # dictionary of type NodeNdx : markerCurveKey
       self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
-      self.colorIndex = -1
       self.visualizer = None
       self.selectedCurve = None
       self.selectedVertex = None
@@ -623,16 +608,30 @@ class OWNetworkCanvas(OWGraph):
           
   def setVertexColor(self, attribute):
       if attribute == "(one color)":
-          self.colorIndex = -1
+          colorIndex = -1
       else:
           i = 0
           for var in self.visualizer.graph.items.domain.variables:
               if var.name == attribute:
-                  self.colorIndex = i
+                  colorIndex = i
                   if var.varType == orange.VarTypes.Discrete: 
-                      self.colorIndices = getVariableValueIndices(self.visualizer.graph.items, self.colorIndex)
+                      colorIndices = getVariableValueIndices(self.visualizer.graph.items, colorIndex)
+                      
               i += 1
-      pass
+      
+      for v in range(self.nVertices):
+          if colorIndex > -1:    
+              if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+                  newColor = self.contPalette[self.noJitteringScaledData[colorIndex][v]]
+                  
+              elif self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+                  newColor = self.discPalette[colorIndices[self.visualizer.graph.items[v][colorIndex].value]]
+                  self.networkCurve.setVertexColor(v, newColor)
+                  
+          else:
+              self.networkCurve.setVertexColor(v, Qt.blue)
+      
+      self.replot()
       
   def setLabelText(self, attributes):
       self.labelText = []
@@ -673,7 +672,6 @@ class OWNetworkCanvas(OWGraph):
       self.nVertices = visualizer.graph.nVertices
       self.nEdges = 0
       self.vertexDegree = []
-      self.colorIndex = -1
       
       #dodajanje vozlisc
       #print "OWNeteorkCanvas/addVisualizer: adding vertices..."

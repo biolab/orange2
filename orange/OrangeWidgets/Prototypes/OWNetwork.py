@@ -166,7 +166,7 @@ class OWNetwork(OWWidget):
 
         #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
         
-        ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = False)
+        ib = OWGUI.widgetBox(self.infoTab, "General")
         OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
         OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
         OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
@@ -181,6 +181,7 @@ class OWNetwork(OWWidget):
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
+        
         self.displayTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
@@ -365,11 +366,11 @@ class OWNetwork(OWWidget):
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
 
-#        self.colorCombo.clear()
-#        self.colorCombo.addItem("(one color)")
-#        for var in vars:
-#            if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
-#                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+        self.colorCombo.clear()
+        self.colorCombo.addItem("(one color)")
+        for var in vars:
+            if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
 
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
