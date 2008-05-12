@@ -95,9 +95,10 @@ class OWNetworkFile(OWWidget):
         
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0])
-        
-        if len(self.recentDataFiles) > 0 and os.path.exists(self.recentDataFiles[0]):
-            self.addDataFile(self.recentDataFiles[0])
+
+        if len(self.recentDataFiles) > 0 and os.path.exists(self.recentDataFiles[1]):
+            self.selectDataFile(1)
+            #self.addDataFile(self.recentDataFiles[0])
         
     # user selected a graph file from the combo box
     def selectFile(self, n):
@@ -158,10 +159,14 @@ class OWNetworkFile(OWWidget):
         
         "Display a FileDialog and select a file"
         if len(self.recentDataFiles) == 0 or self.recentDataFiles[0] == "(none)":
-            if sys.platform == "darwin":
-                startfile = user.home
+            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+                if sys.platform == "darwin":
+                    startfile = user.home
+                else:
+                    startfile="."
             else:
-                startfile="."
+                startfile = os.path.dirname(self.recentFiles[0])
+                
         else:
             startfile = self.recentDataFiles[0]
                 
