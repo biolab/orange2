@@ -20,6 +20,8 @@ class DendrogramPlot(object):
         self.matrixAreaWidth = matrixAreaWidth
         self.fontSize = fontSize
         self.treeColors = treeColors
+        self.lowColor = (0, 0, 0)
+        self.hiColor = (255, 255, 255)
 
     def _getTextSizeHint(self, text):
         if type(text)==str:
@@ -41,7 +43,7 @@ class DendrogramPlot(object):
         else:
             height = 20+fontSize*len(labels)
         try:
-            self.font = ImageFont.truetype("arial.ttf", fontSize)
+            self.font = ImageFont.truetype("cour.ttf", fontSize)
         except:
             self.font = ImageFont.load_default()
             fontSize = self._getTextSizeHint("ABCDEF")[1]
@@ -67,7 +69,9 @@ class DendrogramPlot(object):
         self.matrixAreaWidth = matrixAreaWidth
 
     def SetMatrixColorScheme(self, low, hi):
-        pass
+        self.lowColor = low
+        self.hiColor = hi
+        
     def _getColorScheme(self):
         vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType==orange.VarTypes.Continuous] or [0]
         avg = sum(vals)/len(vals)
@@ -76,7 +80,8 @@ class DendrogramPlot(object):
             if val.isSpecial():
                 return None
             elif val.variable.varType==orange.VarTypes.Continuous:
-                r = g = b = int(255.0*(float(val)-avg)/abs(maxVal-minVal))
+##                r = g = b = int(255.0*(float(val)-avg)/abs(maxVal-minVal))
+                r, g, b = [int(self.lowColor[i]+(self.hiColor[i]-self.lowColor[i])*(float(val)-avg)/abs(maxVal-minVal)) for i in range(3)]
             elif val.variable.varType==orange.VarTypes.Discrete:
                 r = g = b = int(255.0*float(val)/len(val.variable.values))
             return (r, g, b)
@@ -116,21 +121,24 @@ class DendrogramPlot(object):
                 return (treeHeight, (subClusterPoints[0][1]+subClusterPoints[-1][1])/2)
             else:
                 self.globalHeight+=hAdvance
-                return (textAreaStart, self.globalHeight-hAdvance/2)
+                return (treeAreaStart+treeAreaWidth, self.globalHeight-hAdvance/2)
         _drawTree(self.tree)
-        cellWidth = matrixAreaWidth/len(self.data.domain.attributes)
+        cellWidth = float(matrixAreaWidth)/len(self.data.domain.attributes)
         def _drawMatrixRow(ex, yPos):
             for i, attr in enumerate(ex.domain.attributes):
                 col = colorSheme(ex[attr])
                 if col:
-                    self.painter.rectangle([(matrixAreaStart+i*cellWidth, yPos), (matrixAreaStart+(i+1)*cellWidth, yPos+hAdvance)], fill=colorSheme(ex[attr]))#, outline=self.defaultMatrixOutlineColor)
+                    if cellWidth>4:
+                        self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]), outline=self.defaultMatrixOutlineColor)
+                    else:
+                        self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]))
                 else:
                     pass #TODO indicate a missing value
 ##        for i, (label, row) in enumerate(zip(labels, matrix)):
         for i in self.tree:
             label = labels[i]
             row = self.data[i]
-            self.painter.text((textAreaStart, topMargin+i*hAdvance), " "+label, fill=self.defaultTextColor)
+            self.painter.text((textAreaStart, topMargin+i*hAdvance), label, fill=self.defaultTextColor)
             _drawMatrixRow(row, topMargin+i*hAdvance)
 
         self.image.save(file, "PNG")
@@ -138,6 +146,7 @@ class DendrogramPlot(object):
 
 if __name__=="__main__":
     data = orange.ExampleTable("e://repo//orange//doc//datasets//brown-selected.tab")
+##    data = orange.ExampleTable("e://repo//orange//doc//datasets//iris.tab")
 ##    m = [[], [ 3], [ 2, 4], [17, 5, 4], [ 2, 8, 3, 8], [ 7, 5, 10, 11, 2], [ 8, 4, 1, 5, 11, 13], [ 4, 7, 12, 8, 10, 1, 5], [13, 9, 14, 15, 7, 8, 4, 6], [12, 10, 11, 15, 2, 5, 7, 3, 1]]
 ##    matrix = orange.SymMatrix(m)
     dist = orange.ExamplesDistanceConstructor_Euclidean(data)
@@ -147,7 +156,8 @@ if __name__=="__main__":
         for j in range(i+1):
             matrix[i, j] = dist(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
-    d = DendrogramPlot(root, data=data, width=500, treeColors={root.left:(0,255,0), root.right:(0,0,255)})
+    d = DendrogramPlot(root, data=data, treeColors={root.left:(0,255,0), root.right:(0,0,255)} , width=500)
+    d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
     d.Plot()
     
     
