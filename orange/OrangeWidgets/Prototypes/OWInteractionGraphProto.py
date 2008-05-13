@@ -286,11 +286,11 @@ class OWInteractionGraphProto(OWWidget):
         f.close()
         
         self.graph = self.interactionMatrix.exportNetwork(significant_digits=3,positive_int=8,negative_int=8,absolute_int=0)
-
+        
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
         (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
-
+        
         textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
         pipePngIn.close()
