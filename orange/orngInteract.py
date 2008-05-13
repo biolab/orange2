@@ -34,6 +34,7 @@
 import orange
 import orngContingency, numpy
 import warnings, math, string, copy
+from orangeom import Network
 
 def _nicefloat(f,sig):
     # pretty-float formatter
@@ -243,6 +244,124 @@ class InteractionMatrix:
             for i in range(j):
                 t = '%s+%s'%(self.names[i],self.names[j])
                 print "%30s\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f"%(t,self.igain[(i,j)],self.corr[(i,j)],self.igain[(i,j)]+self.corr[(i,j)],self.gains[i],self.gains[j])
+                
+    def exportNetwork(self,  absolute_int=10, positive_int = 0, negative_int = 0, best_attributes = 0, significant_digits = 2, pretty_names = 1, widget_coloring=1, pcutoff = 1):
+        NA = len(self.names)
+
+        ### SELECTION OF INTERACTIONS AND ATTRIBUTES ###
+
+        # prevent crashes
+        best_attributes = min(best_attributes,len(self.attlist))
+        positive_int = min(positive_int,len(self.list))
+        absolute_int = min(absolute_int,len(self.list))
+        negative_int = min(negative_int,len(self.list))
+
+        # select the top interactions
+        ins = []
+        if positive_int > 0:
+            ins += self.list[-positive_int:]
+        ins += self.list[:negative_int]
+        if absolute_int > 0:
+            ins += self.abslist[-absolute_int:]
+
+        # pick best few attributes
+        atts = []
+        if best_attributes > 0:
+            atts += [i for (x,i) in self.attlist[-best_attributes:]]
+
+        # disregard the insignificant attributes, interactions
+        if len(self.plist) > 0 and pcutoff < 1:
+            # attributes
+            oats = atts
+            atts = []
+            for i in oats:
+                if self.plut[(i,-1)] < pcutoff:
+                    atts.append(i)
+            # interactions
+            oins = ins
+            ins = []
+            for y in oins:
+                (ig,i,j) = y[1]
+                if self.plut[(i,j,-1)] < pcutoff:
+                    ins.append(y)
+        
+        ints = []
+        max_igain = -1e6
+        min_gain = 1e6 # lowest information gain of involved attributes
+        # remove duplicates and sorting keys
+        for (x,v) in ins:
+            if v not in ints:
+                ints.append(v)
+                # add to attribute list
+                (ig,i,j) = v
+                max_igain = max(abs(ig),max_igain)
+                for x in [i,j]:
+                    if x not in atts:
+                        atts.append(x)
+                        min_gain = min(min_gain,self.gains[x])
+
+        # fill-in the attribute list with all possibly more important attributes
+        ## todo
+            
+        ### NODE DRAWING ###
+        map = {}
+        graph = Network(len(atts), 0)
+        table = []
+        
+        for i in range(len(atts)):
+            map[atts[i]] = i
+            
+            ndx = atts[i]
+            t = '%s' % self.names[ndx]
+            if pretty_names:
+                t = string.replace(t, "ED_", "")
+                t = string.replace(t, "D_", "")
+                t = string.replace(t, "M_", "")
+                t = string.replace(t, " ", "\\n")
+                t = string.replace(t, "-", "\\n")
+                t = string.replace(t, "_", "\\n")
+                r = self.gains[ndx] * 100.0 / self.entropy
+                table.append([i + 1, t, r])  
+        
+        d = orange.Domain([orange.IntVariable('index'), orange.StringVariable('label'), orange.FloatVariable('norm. gain')])
+        data = orange.ExampleTable(d, table)
+        graph.items = data
+        
+        table = []
+        for (ig,i,j) in ints:
+            j = map[j]
+            i = map[i]
+            
+            perc = int(abs(ig)*100.0/max(max_igain,self.attlist[-1][0])+0.5)
+            graph[i, j] = perc / 30 + 1
+            
+            if self.entropy > 1e-6:
+                mc = _nicefloat(100.0*ig/self.entropy,significant_digits)+"%"
+            else:
+                mc = _nicefloat(0.0,significant_digits)
+            if len(self.plist) > 0 and pcutoff < 1:
+                mc += "\\nP\<%.3f"%self.plut[(i,j,-1)]
+
+            if ig > 0:
+                if widget_coloring:
+                    color = "green"
+                else:
+                    color = '"0.0 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                dir = "both"
+            else:
+                if widget_coloring:
+                    color = "red"
+                else:
+                    color = '"0.5 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                dir = 'none'
+
+            table.append([i, j, mc, dir, color])
+
+        d = orange.Domain([orange.IntVariable('u'), orange.IntVariable('v'), orange.StringVariable('label'), orange.EnumVariable('dir', values = ["both", "none"]), orange.EnumVariable('color', values = ["green", "red"])])
+        data = orange.ExampleTable(d, table)
+        graph.links = data
+
+        return graph
 
     def exportGraph(self, f, absolute_int=10, positive_int = 0, negative_int = 0, best_attributes = 0, print_bits = 1, black_white = 0, significant_digits = 2, postscript = 1, pretty_names = 1, url = 0, widget_coloring=1, pcutoff = 1):
         NA = len(self.names)
