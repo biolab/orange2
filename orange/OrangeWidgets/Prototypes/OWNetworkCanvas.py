@@ -9,34 +9,35 @@ SELECT_POLYGON = 3
 MOVE_SELECTION = 100
 
 import copy
-
 from OWGraph import *
 from numpy import *
 from orngScaleScatterPlotData import *
 from OWGraphTools import UnconnectedLinesCurve
 
 class NetworkVertex():
-  def __init__(self):
-    self.index = -1
-    self.marked = False
-    self.show = True
-    self.selected = False
-    self.lebel = []
-    self.tooltip = []
-    
-    self.pen = QPen(Qt.blue, 1)
-    self.nocolor = Qt.white
-    self.color = Qt.blue
-    self.size = 5
+    def __init__(self):
+        self.index = -1
+        self.marked = False
+        self.show = True
+        self.selected = False
+        self.label = []
+        self.tooltip = []
+        
+        self.pen = QPen(Qt.blue, 1)
+        self.nocolor = Qt.white
+        self.color = Qt.blue
+        self.size = 5
     
 class NetworkEdge():
-  def __init__(self):
-    self.u = None
-    self.v = None
-    self.arrowu = 0
-    self.arrowv = 0
-    
-    self.pen = QPen(Qt.lightGray, 1)
+    def __init__(self):
+        self.u = None
+        self.v = None
+        self.arrowu = 0
+        self.arrowv = 0
+        self.weight = 0
+        self.label = []
+        
+        self.pen = QPen(Qt.lightGray, 1)
 
 class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
@@ -46,7 +47,7 @@ class NetworkCurve(QwtPlotCurve):
       self.vertices = []
       self.edges = []
       self.setItemAttribute(QwtPlotItem.Legend, 0)
-      
+
   def moveSelectedVertices(self, dx, dy):
     for vertex in self.vertices:
       if vertex.selected:
@@ -113,6 +114,25 @@ class NetworkCurve(QwtPlotCurve):
         py2 = yMap.transform(self.coors[1][edge.v.index])
         
         painter.drawLine(px1, py1, px2, py2)
+        
+        d = 12
+        #painter.setPen(QPen(Qt.lightGray, 1))
+        painter.setBrush(Qt.lightGray)
+        if edge.arrowu:
+            x = self.coors[0][edge.u.index] - self.coors[0][edge.v.index]
+            y = self.coors[1][edge.u.index] - self.coors[1][edge.v.index]
+            
+            fi = math.atan2(y,x) * 180 / math.pi * 16
+            if not fi is None:
+                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, fi - 160, 320)
+                
+        if edge.arrowv:
+            x = self.coors[0][edge.v.index] - self.coors[0][edge.u.index]
+            y = self.coors[1][edge.v.index] - self.coors[1][edge.u.index]
+            
+            fi = math.atan2(y,x) * 180 / math.pi * 16
+            if not fi is None:
+                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, fi - 160, 320)
     
     for vertex in self.vertices:
       if vertex.show:
@@ -173,7 +193,12 @@ class OWNetworkCanvas(OWGraph):
       self.insideviewNeighbours = 2
       self.enableGridXB(False)
       self.enableGridYL(False)
-    
+      
+      self.showWeights = 0
+      self.minEdgeWeight = sys.maxint
+      self.maxEdgeWeight = 0
+      self.maxEdgeSize = 1
+      
       self.networkCurve = NetworkCurve(self)
       
   def getSelection(self):
@@ -559,9 +584,11 @@ class OWNetworkCanvas(OWGraph):
               
           self.addCurve("radius", Qt.white, Qt.green, 1, style = QwtPlotCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
       
+      self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased)
       self.networkCurve.attach(self)
       self.drawLabels()
       self.drawToolTips()
+      self.drawWeights()
       self.zoomExtent()
  
   def drawToolTips(self):
@@ -605,6 +632,23 @@ class OWNetworkCanvas(OWGraph):
               if lbl:
                   mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom)
                   self.markerKeys[vertex.index] = mkey     
+                  
+  def drawWeights(self):
+      if self.showWeights:
+          print 'show w'
+          for edge in self.edges:
+              if not (edge.u.show and edge.v.show):
+                  continue
+              
+              if self.labelsOnMarkedOnly and not (edge.u.marked and edge.v.marked):
+                  continue
+                                
+              x1 = (self.visualizer.coors[0][edge.u.index] + self.visualizer.coors[0][edge.v.index]) / 2
+              y1 = (self.visualizer.coors[1][edge.u.index] + self.visualizer.coors[1][edge.v.index]) / 2
+              lbl = "%.2f" % edge.weight
+              
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
+              self.markerKeys[(edge.u,edge.v)] = mkey     
           
   def setVertexColor(self, attribute):
       if attribute == "(one color)":
@@ -688,22 +732,53 @@ class OWNetworkCanvas(OWGraph):
       #print "OWNeteorkCanvas/addVisualizer: adding edges..."
       self.edges_old = {}
       self.nEdges = 0
-      
+      self.networkCurve = NetworkCurve(self)
       self.edges = []
+      
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
           edge = NetworkEdge()
           edge.u = self.vertices[i]
           edge.v = self.vertices[j]
+
+          edge.weight = visualizer.graph[i, j][0]
+          
           self.edges.append(edge)
           self.nEdges += 1
           
-      self.networkCurve = NetworkCurve(self)
+          if self.minEdgeWeight > edge.weight:
+              self.minEdgeWeight = edge.weight
+              
+          elif self.maxEdgeWeight < edge.weight:
+              self.maxEdgeWeight = edge.weight
+            
+          if visualizer.graph.directed:
+              edge.arrowu = 0
+              edge.arrowv = 1
+                        
+      if self.maxEdgeWeight < 10:
+          self.maxEdgeSize = self.maxEdgeWeight
+      else:
+          self.maxEdgeSize = 10
+          
+      self.setEdgesSize()
+                        
       self.networkCurve.coors = visualizer.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
       self.networkCurve.changed()
       
+  def setEdgesSize(self):
+      if self.maxEdgeWeight > self.minEdgeWeight:
+          k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
+          for edge in self.edges:
+              size = (edge.weight - self.minEdgeWeight) * k + 1
+              edge.pen = QPen(Qt.lightGray, size)
+      else:
+          for edge in self.edges:
+              edge.pen = QPen(Qt.lightGray, 1)
+          
+    
   def updateCanvas(self):
       self.setAxisAutoScaled()
       self.updateData()

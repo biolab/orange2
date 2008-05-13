@@ -31,7 +31,7 @@ class OWNetwork(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Network')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
+        self.inputs = [("Network", Network, self.setGraph ), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
         self.outputs = [("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.markerAttributes = []
@@ -101,6 +101,9 @@ class OWNetwork(OWWidget):
         
         self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
+        
+        self.showWeights = 0
+        OWGUI.checkBox(self.displayTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
         
         self.labelsOnMarkedOnly = 0
         OWGUI.checkBox(self.displayTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
@@ -186,6 +189,8 @@ class OWNetwork(OWWidget):
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
         self.protoTab.layout().addStretch(1)
+        self.optMethod = 1
+        self.setOptMethod()
         
         self.resize(1000, 600)
 
@@ -212,12 +217,12 @@ class OWNetwork(OWWidget):
         print self.graph.getSelectedVertices()
         if len(self.graph.getSelectedVertices()) == 1:
             if self.graph.insideview == 1:
-                print "i: 1"
+                print "insideview: 1"
                 self.graph.insideview = 0
                 self.graph.showAllVertices()
                 self.updateCanvas()
             else:
-                print "i: 0"
+                print "insideview: 0"
                 self.graph.insideview = 1
                 self.graph.insideviewNeighbors = self.insideViewNeighbours
                 self.frButton.setDown(True)
@@ -225,6 +230,11 @@ class OWNetwork(OWWidget):
     
         else:
             print "One node must be selected!"
+    
+    def showWeightLabels(self):
+        self.graph.showWeights = self.showWeights
+        self.graph.updateData()
+        self.graph.replot()
             
     def labelsOnMarked(self):
         self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
