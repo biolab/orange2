@@ -9,7 +9,7 @@ class DendrogramPlot(object):
     defaultTreeColor = (255, 0, 0)
     defaultTextColor = (100, 100, 100)
     defaultMatrixOutlineColor = (240, 240, 240)
-    def __init__(self, tree, data=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, treeColors={}):
+    def __init__(self, tree, data=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, clusterColors={}):
         self.tree = tree
         self.data = data
         self.width = width
@@ -19,7 +19,7 @@ class DendrogramPlot(object):
         self.textAreaWidth = textAreaWidth
         self.matrixAreaWidth = matrixAreaWidth
         self.fontSize = fontSize
-        self.treeColors = treeColors
+        self.clusterColors = clusterColors
         self.lowColor = (0, 0, 0)
         self.hiColor = (255, 255, 255)
 
@@ -61,16 +61,25 @@ class DendrogramPlot(object):
             width = treeAreaWidth+textAreaWidth+matrixAreaWidth+emptySpace
         return width, height, treeAreaWidth, textAreaWidth, matrixAreaWidth, fontSize, fontSize
 
-    def SetLayout(self, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None):
+    def SetLayout(self, width=None, height=None): #, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None):
+        """Set the layout of the dendrogram. 
+        """
         self.height = height
         self.width = width
-        self.treeAreaWidth = treeAreaWidth
-        self.textAreaWidth = textAreaWidth
-        self.matrixAreaWidth = matrixAreaWidth
+##        self.treeAreaWidth = treeAreaWidth
+##        self.textAreaWidth = textAreaWidth
+##        self.matrixAreaWidth = matrixAreaWidth
 
     def SetMatrixColorScheme(self, low, hi):
+        """Set the matrix color scheme. low and hi must be (r, g, b) tuples
+        """
         self.lowColor = low
         self.hiColor = hi
+
+    def SetClusterColors(self, clusterColors={}):
+        """clusterColors must be a dictionary with cluster instances as keys and (r, g, b) tuples as items.
+        """
+        self.clusterColors = clusterColors
         
     def _getColorScheme(self):
         vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType==orange.VarTypes.Continuous] or [0]
@@ -87,11 +96,22 @@ class DendrogramPlot(object):
             return (r, g, b)
         return colorScheme
 
-    def InitPainter(self, w, h):
+    def _initPainter(self, w, h):
         self.image = Image.new("RGB", (w, h), color=(255, 255, 255))
         self.painter = ImageDraw.Draw(self.image)
+
+    def _truncText(self, text, width):
+        while text:
+            if self._getTextSizeHint(text)[0]>width:
+                text = text[:-1]
+            else:
+                break
+        return text
+                
     
     def Plot(self, file="graph.png"):
+        """Draws the dendrogram and saves it to file
+        """
         if type(file)==str:
             file = open(file, "wb")
         topMargin = 10
@@ -107,10 +127,10 @@ class DendrogramPlot(object):
         self.globalHeight = topMargin
         globalTreeHeight = self.tree.height
         if not self.painter:
-            self.InitPainter(width, height)
+            self._initPainter(width, height)
         def _drawTree(tree, color=None):
             treeHeight = treeAreaStart+(1-tree.height/globalTreeHeight)*treeAreaWidth
-            color = self.treeColors.get(tree, color or self.defaultTreeColor)
+            color = self.clusterColors.get(tree, color or self.defaultTreeColor)
             if tree.branches:
                 subClusterPoints = []
                 for t in tree.branches:
@@ -138,15 +158,17 @@ class DendrogramPlot(object):
         for i in self.tree:
             label = labels[i]
             row = self.data[i]
-            self.painter.text((textAreaStart, topMargin+i*hAdvance), label, fill=self.defaultTextColor)
+            self.painter.text((textAreaStart, topMargin+i*hAdvance), self._truncText(label, textAreaWidth), font=self.font, fill=self.defaultTextColor)
             _drawMatrixRow(row, topMargin+i*hAdvance)
 
         self.image.save(file, "PNG")
     
 
 if __name__=="__main__":
-    data = orange.ExampleTable("e://repo//orange//doc//datasets//brown-selected.tab")
-##    data = orange.ExampleTable("e://repo//orange//doc//datasets//iris.tab")
+    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
+##    data = orange.ExampleTable("doc//datasets//iris.tab")
+##    data = orange.ExampleTable("doc//datasets//zoo.tab")
+##    data = orange.ExampleTable("doc//datasets//titanic.tab")
 ##    m = [[], [ 3], [ 2, 4], [17, 5, 4], [ 2, 8, 3, 8], [ 7, 5, 10, 11, 2], [ 8, 4, 1, 5, 11, 13], [ 4, 7, 12, 8, 10, 1, 5], [13, 9, 14, 15, 7, 8, 4, 6], [12, 10, 11, 15, 2, 5, 7, 3, 1]]
 ##    matrix = orange.SymMatrix(m)
     dist = orange.ExamplesDistanceConstructor_Euclidean(data)
@@ -156,8 +178,9 @@ if __name__=="__main__":
         for j in range(i+1):
             matrix[i, j] = dist(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
-    d = DendrogramPlot(root, data=data, treeColors={root.left:(0,255,0), root.right:(0,0,255)} , width=500)
+    d = DendrogramPlot(root, data=data)#, fontSize=20) #height=1000)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
+    d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
     d.Plot()
     
     
