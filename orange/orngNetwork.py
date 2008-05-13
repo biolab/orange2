@@ -4,14 +4,15 @@ import numpy
 import orange
 import orangeom
 
+
+
 class NetworkOptimization(orangeom.NetworkOptimization):
-    def __init__(self, graph=None, parent=None, name="None"):
+    def __init__(self, graph=None, name="None"):
         if graph is None:
             graph = orangeom.Network(2, 0)
             
         self.setGraph(graph)
         self.graph = graph
-        self.parent = parent
         self.maxWidth  = 1000
         self.maxHeight = 1000
         
