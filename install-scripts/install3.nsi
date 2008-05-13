@@ -125,6 +125,7 @@ Section ""
 				MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython23
 					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython23
 						Quit
+			installpython23:
 				File 3rdparty-23\Python-2.3.5.exe
 				ExecWait "$DESKTOP\Python-2.3.5.exe"
 				Delete "$DESKTOP\Python-2.3.5.exe"
@@ -132,7 +133,7 @@ Section ""
 		!else
 		    StrCpy $0 ""
 			askpython:
-				MessageBox MB_YESNOCANCEL "Orange installer will first launch installation of Python ${NPYVER}.$\r$\nWould you like it to install automatically?$\r$\n(Press No for letting you set its options, Cancel to cancel installation of Orange." /SD IDYES IDYES installsilently IDNO installmanually
+				MessageBox MB_YESNOCANCEL "Orange installer will first launch installation of Python ${NPYVER}.$\r$\nWould you like it to install automatically?$\r$\n(Press No for Custom installation of Python, Cancel to cancel installation of Orange." /SD IDYES IDYES installsilently IDNO installpython
 					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
 						Quit
 			installsilently:
