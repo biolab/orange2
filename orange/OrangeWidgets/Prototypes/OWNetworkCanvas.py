@@ -464,9 +464,12 @@ class OWNetworkCanvas(OWGraph):
           if ndx != -1 and mind < 50:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
               self.networkCurve.setMarkedVertices(toMark)
+              self.drawLabels()
+              self.drawWeights()
               self.replot()
           else:
               self.networkCurve.unMark()
+              self.drawLabels()
               self.replot()
               
                      

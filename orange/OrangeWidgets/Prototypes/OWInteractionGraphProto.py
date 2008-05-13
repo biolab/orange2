@@ -120,6 +120,7 @@ class OWInteractionGraphProto(OWWidget):
         self.listTab.layout().addStretch(1)
         self.graphTab.layout().addStretch(1)
         
+        
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         
@@ -290,8 +291,8 @@ class OWInteractionGraphProto(OWWidget):
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
         (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
-        
-        textPng = pipePngIn.read()
+        textPng = ""
+        #textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
         pipePngIn.close()
         pipePlainIn.close()
@@ -301,17 +302,15 @@ class OWInteractionGraphProto(OWWidget):
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
-            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
+            pass
+            #self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
         
          # create a picture
         pixmap = QPixmap()
-        pixmap.loadFromData(textPng)
-        canvasPixmap = QCanvasPixmap(pixmap, QPoint(0,0))
-        width = canvasPixmap.width()
-        height = canvasPixmap.height()
-        
-        self.canvasR.setTiles(pixmap, 1, 1, width, height)
-        self.canvasR.resize(width, height)
+        #pixmap.loadFromData(textPng)
+        canvasPixmap = self.canvasR.addPixmap(pixmap)
+        width = canvasPixmap.pixmap().width()
+        height = canvasPixmap.pixmap().height()
 
         # hide all rects
         for rects in self.rectIndices.values():
@@ -497,9 +496,9 @@ class OWInteractionGraphProto(OWWidget):
             index += 1
         
         # resizing of the left canvas to update width
-        self.canvasL.resize(maxWidth + 10, self.mainArea.size().height() - 52)
-        self.canvasM.resize(maxWidth + 10, self.mainArea.size().height() - 52)
-        self.updateCanvas()
+        #self.canvasL.resize(maxWidth + 10, self.mainArea.size().height() - 52)
+        #self.canvasM.resize(maxWidth + 10, self.mainArea.size().height() - 52)
+        #self.updateCanvas()
 
 
     #########################################
@@ -556,20 +555,20 @@ class OWInteractionGraphProto(OWWidget):
     ### showing and hiding attributes
     #################################################
     def _showAttribute(self, name):
-        self.shownAttribsLB.insertItem(name)    # add to shown
+        self.shownAttribsLB.addItem(name)    # add to shown
 
         count = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from hidden
             if str(self.hiddenAttribsLB.item(i).text()) == name:
-                self.hiddenAttribsLB.removeItem(i)
+                self.hiddenAttribsLB.takeItem(i)
 
     def _hideAttribute(self, name):
-        self.hiddenAttribsLB.insertItem(name)    # add to hidden
+        self.hiddenAttribsLB.addItem(name)    # add to hidden
 
         count = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from shown
             if str(self.shownAttribsLB.item(i).text()) == name:
-                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.takeItem(i)
 
     ##########
     # add attribute to showList or hideList and show or hide its rectangle
