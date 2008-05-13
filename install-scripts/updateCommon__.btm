@@ -13,7 +13,9 @@ set PLINK_MACINTOSH_GENOMICS=orange-mac-genomics-%verstr.dmg
 
 cdd %STABLEDIR
 
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f -P -d
+svn update 
+rem http://www.ailab.si/svn/orange/trunk/orange orange
+rem cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f -P -d
 break_on_error
 
 cdd %SCRIPTDIR
