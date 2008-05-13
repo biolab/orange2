@@ -934,6 +934,7 @@ int getWords(string const& s, vector<string> &container)
 {
     int n = 0;
 	bool quotation = false;
+	container.clear();
     string::const_iterator it = s.begin(), end = s.end(), first;
     for (first = it; it != end; ++it)
     {
@@ -1428,6 +1429,7 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
 WRAPPER(ExampleTable)
 PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
+	
 
   PyTRY
     
@@ -1437,7 +1439,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 	PDomain wdomain = domain;
 	TExampleTable *table;
 	PExampleTable wtable;
-  int directed = 0;
+	int directed = 0;
 	//cout << "readNetwork" << endl;
 	char *fn;
 
@@ -1450,7 +1452,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 	ifstream file(fn);
 	string graphName = "";
 	int nVertices = 0;
-
+	
 	if (file.is_open())
 	{
 		// read head
@@ -1496,16 +1498,59 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						file.close();
 						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
+				}
+				else if (stricmp(words[0].c_str(), "*arcs") == 0)
+				{
+					directed = 1;
+					break;
+				}
+			}
+		}
+		file.close();
+	}
+
+	file.open(fn);
+	if (file.is_open())
+	{
+		// read head
+		while (!file.eof())
+		{
+			getline (file, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				if (stricmp(words[0].c_str(), "*vertices") == 0)
+				{
+					//cout << "Vertices" << endl;
+					if (n > 1)
+					{
+						istringstream strVertices(words[1]);
+						strVertices >> nVertices;
+						if (nVertices == 0)
+						{
+							file.close();
+							PYERROR(PyExc_SystemError, "invalid file format", NULL);
+						}
+
+						//cout << "nVertices: " << nVertices << endl;
+					}
+					else
+					{
+						file.close();
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					}
 
 					break;
 				}
 			}
 		}
-
+		
 		graph = new TNetwork(nVertices, 0, directed == 1);
 		wgraph = graph;
-
-    domain->addVariable(new TIntVariable("index"));
+		
+		domain->addVariable(new TIntVariable("index"));
 		domain->addVariable(new TStringVariable("label"));
 		domain->addVariable(new TFloatVariable("x"));
 		domain->addVariable(new TFloatVariable("y"));
@@ -1514,7 +1559,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		domain->addVariable(new TStringVariable("bc"));
 		domain->addVariable(new TStringVariable("bw"));
 		table = new TExampleTable(domain);
-  	wtable = table;
+		wtable = table;
 
 		// read vertex descriptions
 		while (!file.eof())
@@ -1636,12 +1681,14 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						{
 							int i1 = -1;
 							int i2 = -1;
+							int i3 = -1;
 							istringstream strI1(words[0]);
 							istringstream strI2(words[1]);
-
+							istringstream strI3(words[2]);
 							strI1 >> i1;
 							strI2 >> i2;
-
+							strI3 >> i3;
+							
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
 								file.close();
@@ -1652,12 +1699,13 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 								continue;
 							
 							//cout << "i1: " << i1 << " i2: " << i2 << endl;
-							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = 1;
+							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
 						}
 					}
 				}
 			}
 		}
+		
 		// read edges
 		n = getWords(line, words);
 		if (n > 0)
@@ -1669,16 +1717,19 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					getline (file, line);
 					vector<string> words;
 					int n = getWords(line, words);
+					
 					//cout << line << "  -  " << n << endl;
 					if (n > 1)
 					{
 						int i1 = -1;
 						int i2 = -1;
+						int i3 = -1;
 						istringstream strI1(words[0]);
 						istringstream strI2(words[1]);
-
+						istringstream strI3(words[2]);
 						strI1 >> i1;
 						strI2 >> i2;
+						strI3 >> i3;
 
 						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 						{
@@ -1689,8 +1740,11 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						if (i1 == i2)
 							continue;
 
-						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = 1;
-						/**graph->getOrCreateEdge(i2 - 1, i1 - 1) = 1;*/
+						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
+						
+						if (directed == 1) {
+							*graph->getOrCreateEdge(i2 - 1, i1 - 1) = i3;
+						}
 					}
 				}
 			}
