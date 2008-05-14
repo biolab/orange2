@@ -208,9 +208,9 @@ class OWNetworkFile(OWWidget):
                 pass
             else:
                 return
-
-            data = self.readNetFile(fn)
             
+            data = self.readNetFile(fn)
+                
             if data == None:
                 self.send("Network", None)
                 return
@@ -240,13 +240,18 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
-        
+ 
         try:
             network.readNetwork(fn)
             self.infoc.setText("Data generated and added automatically.")
         except:
             self.infoa.setText("Could not read file.")
             self.infob.setText("")
+            self.infoc.setText("")
+            
+            #del self.recentFiles[0]
+            #self.setFileList()
+            #self.selectFile(0)
             return None
         
         return network.graph
