@@ -333,7 +333,13 @@ class InteractionMatrix:
             i = map[i]
             
             perc = int(abs(ig)*100.0/max(max_igain,self.attlist[-1][0])+0.5)
-            graph[i, j] = perc / 30 + 1
+
+            if self.entropy > 1e-6:
+                w = float(100.0*ig/self.entropy)
+            else:
+                w = float(0.0)
+            
+            graph[i, j] = w
             
             if self.entropy > 1e-6:
                 mc = _nicefloat(100.0*ig/self.entropy,significant_digits)+"%"
