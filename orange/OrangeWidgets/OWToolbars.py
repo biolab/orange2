@@ -20,7 +20,7 @@ dlg_browseCircle = dir + "Dlg_browseCircle.png"
 dlg_zoom_selection = dir + "Dlg_zoom_selection.png"
 dlg_pan = dir + "Dlg_pan_hand.png"
 dlg_select = dir + "Dlg_arrow.png"
-dlg_zoom_extent = dir + "Dlg_zoom_extent.png"
+dlg_zoom_extent = dir + "dlg_zoom_extent.png"
 
 
 def createButton(parent, text, action = None, icon = None, toggle = 0):
