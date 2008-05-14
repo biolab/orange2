@@ -73,6 +73,7 @@ class OWInteractionGraphProto(OWWidget):
         self.tabs = OWGUI.tabWidget(self.mainArea)
         
         self.listTab = OWGUI.createTabPage(self.tabs, "List")
+        self.listTab.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self.graphTab = OWGUI.createTabPage(self.tabs, "Graph")
         
         self.splitter = QSplitter(Qt.Horizontal, self.listTab)
@@ -638,7 +639,6 @@ class OWInteractionGraphProto(OWWidget):
 
     def updateCanvas(self):
         self.tabs.resize(self.mainArea.size())
-        self.splitCanvas.resize(QSize(self.mainArea.size().width() - 26, self.mainArea.size().height() - 52))
         
         self.canvasL.update()
         self.canvasM.update()
