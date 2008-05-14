@@ -1547,6 +1547,11 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 			}
 		}
 		
+		if (nVertices <= 1) {
+			file.close();
+			PYERROR(PyExc_SystemError, "invalid file format; invalid number of vertices (less than 1)", NULL);
+		}
+
 		graph = new TNetwork(nVertices, 0, directed == 1);
 		wgraph = graph;
 		
