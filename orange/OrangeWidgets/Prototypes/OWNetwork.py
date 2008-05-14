@@ -21,6 +21,7 @@ dlg_sel2mark = dir + "Dlg_Sel2Mark.png"
 dlg_selIsmark = dir + "Dlg_SelisMark.png"
 dlg_selected = dir + "Dlg_SelectedNodes.png"
 dlg_unselected = dir + "Dlg_UnselectedNodes.png"
+dlg_showall = dir + "Dlg_clear.png"
 
 class OWNetwork(OWWidget):
     settingsList = ["autoSendSelection", 
@@ -141,7 +142,13 @@ class OWNetwork(OWWidget):
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
 #        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
         
-        ib = OWGUI.widgetBox(self.markTab, "Selection", orientation="horizontal", addSpace=True)
+        T = OWToolbars.NavigateSelectToolbar
+        self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
+                                  buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
+                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
+                                             T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
+        
+        ib = OWGUI.widgetBox(self.zoomSelectToolbar, "Inv", orientation="vertical")
         btnM2S = OWGUI.button(ib, self, "", callback = self.markedToSelection)
         btnM2S.setIcon(QIcon(dlg_mark2sel))
         btnM2S.setToolTip("Add Marked to Selection")
@@ -152,22 +159,18 @@ class OWNetwork(OWWidget):
         btnSIM.setIcon(QIcon(dlg_selIsmark))
         btnSIM.setToolTip("Set Selection to Marked")
         
-        self.hideBox = OWGUI.widgetBox(self.markTab, "Hide vertices", orientation="horizontal", addSpace=False)
+        self.hideBox = OWGUI.widgetBox(self.zoomSelectToolbar, "Hide", orientation="vertical")
         btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
         btnSEL.setIcon(QIcon(dlg_selected))
-        btnSEL.setToolTip("Selected")
+        btnSEL.setToolTip("Hide selected")
         btnUN = OWGUI.button(self.hideBox, self, "", callback=self.hideAllButSelected)
         btnUN.setIcon(QIcon(dlg_unselected))
-        btnUN.setToolTip("Unselected")
-        OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
-                
-        T = OWToolbars.NavigateSelectToolbar
-        self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
-                                  buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
-                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
-                                             T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
-
-        #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
+        btnUN.setToolTip("Hide unselected")
+        btnSW = OWGUI.button(self.hideBox, self, "", callback=self.showAllNodes)
+        btnSW.setIcon(QIcon(dlg_showall))
+        btnSW.setToolTip("Show all nodes")
+        
+        OWGUI.rubber(self.zoomSelectToolbar)
         
         ib = OWGUI.widgetBox(self.infoTab, "General")
         OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")

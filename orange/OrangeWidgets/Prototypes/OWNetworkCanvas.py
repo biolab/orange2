@@ -738,6 +738,9 @@ class OWNetworkCanvas(OWGraph):
       self.networkCurve = NetworkCurve(self)
       self.edges = []
       
+      self.minEdgeWeight = sys.maxint
+      self.maxEdgeWeight = 0
+      
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
           edge = NetworkEdge()
