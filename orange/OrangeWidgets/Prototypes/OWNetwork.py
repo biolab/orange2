@@ -31,7 +31,7 @@ class OWNetwork(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Network')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph ), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
+        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
         self.outputs = [("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.markerAttributes = []
