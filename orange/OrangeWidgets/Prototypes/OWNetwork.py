@@ -325,7 +325,7 @@ class OWNetwork(OWWidget):
         print "replot in " + str(stop - start)
         
     def saveNetwork(self):
-        filename = QFileDialog.getSaveFileName(QString.null,'PAJEK networks (*.net)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK networks (*.net)')
         if filename:
             fn = ""
             head, tail = os.path.splitext(str(filename))
