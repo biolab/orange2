@@ -145,7 +145,6 @@ class NavigateSelectToolbar(QWidget):
                 
         self.navigate = OWGUI.widgetBox(self, "Nav", orientation = "vertical")
         self.select = OWGUI.widgetBox(self, "Sel", orientation = "vertical")
-        OWGUI.rubber(self)
         
         self.graph = graph # save graph. used to send signals
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
