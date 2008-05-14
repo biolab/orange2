@@ -3,15 +3,15 @@ import math
 
 import Image, ImageDraw, ImageFont
 
-
 class DendrogramPlot(object):
     defaultFontSize = 12
     defaultTreeColor = (255, 0, 0)
     defaultTextColor = (100, 100, 100)
     defaultMatrixOutlineColor = (240, 240, 240)
-    def __init__(self, tree, data=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, clusterColors={}):
+    def __init__(self, tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, clusterColors={}):
         self.tree = tree
         self.data = data
+        self.labels = labels
         self.width = width
         self.height = height
         self.painter = painter
@@ -22,6 +22,9 @@ class DendrogramPlot(object):
         self.clusterColors = clusterColors
         self.lowColor = (0, 0, 0)
         self.hiColor = (255, 255, 255)
+        if not self.labels:
+            self.labels = [str(m) for m in tree]
+
 
     def _getTextSizeHint(self, text):
         if type(text)==str:
@@ -30,6 +33,8 @@ class DendrogramPlot(object):
             return (max([self.font.getsize(t)[0] for t in text]), max([self.font.getsize(t)[1] for t in text]))
 
     def _getMatrixRowSizeHint(self, height, max=None):
+        if not self.data:
+            return (0, 0)
         if max==None:
             return (len(self.data.domain.attributes)*height, height)
         else:
@@ -118,9 +123,7 @@ class DendrogramPlot(object):
         bottomMargin = 10
         leftMargin = 10
         rightMargin = 10
-        labels = [str(ex.getclass()) for ex in data] # TODO: get arbitrary labels
-        colorSheme = self._getColorScheme()
-        width, height, treeAreaWidth, textAreaWidth, matrixAreaWidth, hAdvance, fontSize = self._getLayout(labels)
+        width, height, treeAreaWidth, textAreaWidth, matrixAreaWidth, hAdvance, fontSize = self._getLayout(self.labels)
         treeAreaStart = leftMargin
         textAreaStart = treeAreaStart+treeAreaWidth+leftMargin
         matrixAreaStart = textAreaStart+textAreaWidth+leftMargin
@@ -143,23 +146,26 @@ class DendrogramPlot(object):
                 self.globalHeight+=hAdvance
                 return (treeAreaStart+treeAreaWidth, self.globalHeight-hAdvance/2)
         _drawTree(self.tree)
-        cellWidth = float(matrixAreaWidth)/len(self.data.domain.attributes)
-        def _drawMatrixRow(ex, yPos):
-            for i, attr in enumerate(ex.domain.attributes):
-                col = colorSheme(ex[attr])
-                if col:
-                    if cellWidth>4:
-                        self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]), outline=self.defaultMatrixOutlineColor)
+        if self.data:
+            colorSheme = self._getColorScheme()
+            cellWidth = float(matrixAreaWidth)/len(self.data.domain.attributes)
+            def _drawMatrixRow(ex, yPos):
+                for i, attr in enumerate(ex.domain.attributes):
+                    col = colorSheme(ex[attr])
+                    if col:
+                        if cellWidth>4:
+                            self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]), outline=self.defaultMatrixOutlineColor)
+                        else:
+                            self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]))
                     else:
-                        self.painter.rectangle([(int(matrixAreaStart+i*cellWidth), yPos), (int(matrixAreaStart+(i+1)*cellWidth), yPos+hAdvance)], fill=colorSheme(ex[attr]))
-                else:
-                    pass #TODO indicate a missing value
+                        pass #TODO indicate a missing value
 ##        for i, (label, row) in enumerate(zip(labels, matrix)):
         for i in self.tree:
-            label = labels[i]
-            row = self.data[i]
+            label = self.labels[i]
             self.painter.text((textAreaStart, topMargin+i*hAdvance), self._truncText(label, textAreaWidth), font=self.font, fill=self.defaultTextColor)
-            _drawMatrixRow(row, topMargin+i*hAdvance)
+            if self.data:
+                row = self.data[i]
+                _drawMatrixRow(row, topMargin+i*hAdvance)
 
         self.image.save(file, "PNG")
     
@@ -178,7 +184,7 @@ if __name__=="__main__":
         for j in range(i+1):
             matrix[i, j] = dist(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
-    d = DendrogramPlot(root, data=data)#, fontSize=20) #height=1000)
+    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
     d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
     d.Plot()
