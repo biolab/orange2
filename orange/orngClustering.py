@@ -5,7 +5,7 @@ import Image, ImageDraw, ImageFont
 
 class DendrogramPlot(object):
     defaultFontSize = 12
-    defaultTreeColor = (255, 0, 0)
+    defaultTreeColor = (0, 0, 0)
     defaultTextColor = (100, 100, 100)
     defaultMatrixOutlineColor = (240, 240, 240)
     def __init__(self, tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, clusterColors={}):
@@ -137,14 +137,14 @@ class DendrogramPlot(object):
             if tree.branches:
                 subClusterPoints = []
                 for t in tree.branches:
-                    point = _drawTree(t, color)
-                    self.painter.line([(treeHeight, point[1]), point], fill=color, width=2)
+                    point, cc = _drawTree(t, color)
+                    self.painter.line([(treeHeight, point[1]), point], fill=cc, width=2)
                     subClusterPoints.append(point)
                 self.painter.line([(treeHeight, subClusterPoints[0][1]), (treeHeight, subClusterPoints[-1][1])], fill=color, width=2)
-                return (treeHeight, (subClusterPoints[0][1]+subClusterPoints[-1][1])/2)
+                return (treeHeight, (subClusterPoints[0][1]+subClusterPoints[-1][1])/2), color
             else:
                 self.globalHeight+=hAdvance
-                return (treeAreaStart+treeAreaWidth, self.globalHeight-hAdvance/2)
+                return (treeAreaStart+treeAreaWidth, self.globalHeight-hAdvance/2), color
         _drawTree(self.tree)
         if self.data:
             colorSheme = self._getColorScheme()
