@@ -484,11 +484,13 @@ void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, c
         discretizer->points->push_back( ((*ni).first + (*di).first) /2);
         N -= inthis;
         inthis = 0;
+        prevel = (*ni).first;
       }
       else {
         discretizer->points->push_back( (prevel + (*di).first) / 2);
         N -= (inthis - ((*di).second));
         inthis = (*di).second;
+        prevel = (*di).first;
       }
       if (--toGo) 
         inone = N/toGo;
