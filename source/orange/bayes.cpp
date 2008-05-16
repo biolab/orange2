@@ -185,7 +185,11 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
       
       // If we have a contingency, that's great
       if (dciOK && *dci) {
-        *result *= (*dci)->p(*ei);
+        PDistribution cp = (*dci)->p(*ei);
+        if (cp->cases > 1e-6) {
+          *result *= cp;
+          *result /= *classDistDiv;
+        }
       }
 
       else if (ceiOK && *cei) {
@@ -207,10 +211,10 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
             while (classVar->nextValue(classVal));
 
           *result *= nd;
+          *result /= *classDistDiv;
         }
       }
 
-      *result /= *classDistDiv;
       result->normalize();
     }
     if (dciOK)
