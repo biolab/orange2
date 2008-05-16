@@ -12,7 +12,6 @@ import copy
 from OWGraph import *
 from numpy import *
 from orngScaleScatterPlotData import *
-from OWGraphTools import UnconnectedLinesCurve
 
 class NetworkVertex():
     def __init__(self):
@@ -49,12 +48,16 @@ class NetworkCurve(QwtPlotCurve):
       self.setItemAttribute(QwtPlotItem.Legend, 0)
 
   def moveSelectedVertices(self, dx, dy):
+    movedVertices = []
     for vertex in self.vertices:
       if vertex.selected:
         self.coors[0][vertex.index] = self.coors[0][vertex.index] + dx
         self.coors[1][vertex.index] = self.coors[1][vertex.index] + dy  
-      
+        movedVertices.append(vertex.index)
+        
     self.setData(self.coors[0], self.coors[1])
+    
+    return movedVertices
   
   def setVertexColor(self, v, color):
       self.vertices[v].color = color
@@ -193,6 +196,7 @@ class OWNetworkCanvas(OWGraph):
       self.insideviewNeighbours = 2
       self.enableGridXB(False)
       self.enableGridYL(False)
+      self.renderAntialiased = 1
       
       self.showWeights = 0
       self.minEdgeWeight = sys.maxint
@@ -374,48 +378,6 @@ class OWNetworkCanvas(OWGraph):
  
   def getSelectedVertices(self):
     return self.networkCurve.getSelectedVertices()
- 
-  def moveVertex(self, pos):
-        # ce ni nic izbrano
-      if self.selectedCurve == None:
-          return
-      #curve = self.curve(self.vertices[self.selectedVertex])  #self.selectedCurve je key
-      #newX = self.invTransform(curve.xAxis(), pos.x())
-      #newY = self.invTransform(curve.yAxis(), pos.y())
-
-      newX = self.invTransform(2, pos.x())
-      newY = self.invTransform(0, pos.y())
-
-      oldX = self.visualizer.coors[0][self.selectedVertex]
-      oldY = self.visualizer.coors[1][self.selectedVertex]
-      
-      self.visualizer.coors[0][self.selectedVertex] = newX
-      self.visualizer.coors[1][self.selectedVertex] = newY
-      
-      (key, neighbours) = self.vertices_old[self.selectedVertex]
-      self.setCurveData(key, [newX], [newY])
-      
-      edgesCurve = self.curve(self.edgesKey)
-
-      for e in neighbours:
-          if (oldX == edgesCurve.xData[e*2]) and (oldY == edgesCurve.yData[e*2]):
-              edgesCurve.xData[e*2] = newX
-              edgesCurve.yData[e*2] = newY
-          elif (oldX == edgesCurve.xData[e*2 + 1]) and (oldY == edgesCurve.yData[e*2 + 1]):
-              edgesCurve.xData[e*2 + 1] = newX
-              edgesCurve.yData[e*2 + 1] = newY
- 
-      self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
-      
-      if self.selectedVertex in self.markerKeys:
-          mkey = self.markerKeys[self.selectedVertex]
-          self.marker(mkey).setXValue(float(newX))
-          self.marker(mkey).setYValue(float(newY))
-          self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-      
-      if self.selectedVertex in self.tooltipKeys:
-          tkey = self.tooltipKeys[self.selectedVertex]
-          self.tips.positions[tkey] = (newX, newY, 0, 0)
   
   def getNeighboursUpTo(self, ndx, dist):
       newNeighbours = neighbours = set([ndx])
@@ -447,9 +409,21 @@ class OWNetworkCanvas(OWGraph):
 
   def mouseMoveEvent(self, event):
       if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
-          dx = self.invTransform(2, event.pos().x()) - self.invTransform(2, self.GMmouseStartEvent.x())
-          dy = self.invTransform(0, event.pos().y()) - self.invTransform(0, self.GMmouseStartEvent.y())
-          self.networkCurve.moveSelectedVertices(dx, dy)
+          newX = self.invTransform(2, event.pos().x())
+          newY = self.invTransform(0, event.pos().y())
+          
+          dx = newX - self.invTransform(2, self.GMmouseStartEvent.x())
+          dy = newY - self.invTransform(0, self.GMmouseStartEvent.y())
+          movedVertices = self.networkCurve.moveSelectedVertices(dx, dy)
+          
+          for vertex in movedVertices:
+              if vertex in self.markerKeys:
+                  mkey = self.markerKeys[vertex]
+                  mkey.setValue(float(newX), float(newY))
+              
+              if vertex in self.tooltipKeys:
+                  tkey = self.tooltipKeys[vertex]
+                  self.tips.positions[tkey] = (newX, newY, 0, 0)
 
           self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
           self.GMmouseStartEvent.setY(event.pos().y())
@@ -472,7 +446,6 @@ class OWNetworkCanvas(OWGraph):
               self.drawLabels()
               self.replot()
               
-                     
       if self.smoothOptimization:
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
@@ -555,11 +528,11 @@ class OWNetworkCanvas(OWGraph):
           self.vertices[ndx].selected = True
       else:
           self.removeSelection()
-              
-  def dist(self, s1, s2):
-      return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
   
   def updateData(self):
+      if self.visualizer == None:
+          return
+      
       self.removeDrawingCurves(removeLegendItems = 0)
       self.tips.removeAll()
       
@@ -587,12 +560,16 @@ class OWNetworkCanvas(OWGraph):
               
           self.addCurve("radius", Qt.white, Qt.green, 1, style = QwtPlotCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
       
-      self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased)
+      if self.renderAntialiased:
+          self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased)
+      else:
+          self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased, False)
+          
       self.networkCurve.attach(self)
       self.drawLabels()
       self.drawToolTips()
       self.drawWeights()
-      self.zoomExtent()
+      #self.zoomExtent()
  
   def drawToolTips(self):
     # add ToolTips

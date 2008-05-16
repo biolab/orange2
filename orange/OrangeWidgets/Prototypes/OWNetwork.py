@@ -109,6 +109,12 @@ class OWNetwork(OWWidget):
         self.labelsOnMarkedOnly = 0
         OWGUI.checkBox(self.displayTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
         
+        self.maxLinkSize = 10
+        self.stepsSpin = OWGUI.spin(self.displayTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        
+        self.renderAntialiased = 1
+        OWGUI.checkBox(self.displayTab, self, 'renderAntialiased', 'Render antialiased:', callback = self.setRenderAntialiased)
+        
         OWGUI.separator(self.displayTab)
 
         OWGUI.button(self.displayTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
@@ -233,6 +239,16 @@ class OWNetwork(OWWidget):
     
         else:
             print "One node must be selected!"
+            
+    def setMaxLinkSize(self):
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.graph.setEdgesSize()
+        self.graph.replot()
+        
+    def setRenderAntialiased(self):
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.updateData()
+        self.graph.replot()
     
     def showWeightLabels(self):
         self.graph.showWeights = self.showWeights
