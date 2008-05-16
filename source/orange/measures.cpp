@@ -898,25 +898,32 @@ float TMeasureAttribute_cost::operator()(PContingency probabilities, const TDisc
     if (ci == mostCommon) {
       TDiscDistribution dist2 = dist;
       dist2 += probabilities->innerDistributionUnknown;
-      N += dist2.cases;
-      continueCost += dist2.cases * majorityCost(dist2);
+      if (dist2.cases && dist2.abs) {
+        N += dist2.cases;
+        continueCost += dist2.cases * majorityCost(dist2);
+      }
     }
     else {
-      N += dist.cases;
-      continueCost += dist.cases * majorityCost(dist.distribution);
+      if (dist.cases && dist.abs) {
+        N += dist.cases;
+        continueCost += dist.cases * majorityCost(dist.distribution);
+      }
     }
   }
 
   if (unknownsTreatment == UnknownsAsValue) {
     const float &cases = probabilities->innerDistributionUnknown->cases;
-    N += cases;
-    continueCost += cases * majorityCost(CAST_TO_DISCDISTRIBUTION(probabilities->innerDistributionUnknown));
+    if (cases) {
+      N += cases;
+      continueCost += cases * majorityCost(CAST_TO_DISCDISTRIBUTION(probabilities->innerDistributionUnknown));
+    }
   }
 
-  continueCost /= N;
+  if (N)
+    continueCost /= N;
 
   float cost = stopCost - continueCost;
-  if (unknownsTreatment == ReduceByUnknowns)
+  if ((unknownsTreatment == ReduceByUnknowns) && outer.unknowns) // to avoid div by zero if !cases, too
     cost *= (outer.cases / (outer.unknowns + outer.cases));
 
   return round0(cost);
