@@ -140,7 +140,8 @@ class CN2Classifier(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.__dict__.update(argkw)
-        self.prior = orange.Distribution(examples.domain.classVar, examples)
+        # examples[0] to make it work on a list of examples, too
+        self.prior = orange.Distribution(examples[0].domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
         classifier = None
@@ -190,14 +191,17 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         supervisedClassCheck(examples)
         
         rules = orange.RuleList()
-        self.ruleStopping.apriori = orange.Distribution(examples.domain.classVar,examples)
+        
+        # examples[0] to make it work on a list of examples, too
+        self.ruleStopping.apriori = orange.Distribution(examples[0].domain.classVar,examples)
         progress=getattr(self,"progressCallback",None)
         if progress:
             progress.start = 0.0
             progress.end = 0.0
-            distrib = orange.Distribution(examples.domain.classVar, examples, weight)
+            # examples[0] to make it work on a list of examples, too
+            distrib = orange.Distribution(examples[0].domain.classVar, examples, weight)
             distrib.normalize()
-        for targetClass in examples.domain.classVar:
+        for targetClass in examples[0].domain.classVar:
             if progress:
                 progress.start = progress.end
                 progress.end += distrib[targetClass]
@@ -228,7 +232,8 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
             return disc, sumdisc
 
         # create empty distribution
-        retDist = orange.DiscDistribution(self.examples.domain.classVar)
+        # examples[0] to make it work on a list of examples, too
+        retDist = orange.DiscDistribution(self.examples[0].domain.classVar)
         covRules = orange.RuleList()
         # iterate through examples - add distributions
         sumdisc = 0.
@@ -239,7 +244,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         if not sumdisc:
             retDist = self.prior
             sumdisc = self.prior.abs
-        for c in self.examples.domain.classVar:
+        for c in self.examples[0].domain.classVar:
             retDist[c] /= sumdisc
         if retRules:
             if result_type == orange.GetValue:
@@ -264,7 +269,8 @@ class RuleClassifier_bestRule(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.__dict__.update(argkw)
-        self.prior = orange.Distribution(examples.domain.classVar, examples)
+        # examples[0] to make it work on a list of examples, too
+        self.prior = orange.Distribution(examples[0].domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
         retDist = orange.Distribution(example.domain.classVar)
