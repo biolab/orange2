@@ -12,6 +12,7 @@ def call(f,*args,**keyargs):
 
 from OWWidget import *
 import OWGUI, string, os.path, user, sys, warnings
+import orngIO
 
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
@@ -25,6 +26,11 @@ class OWFile(OWWidget):
     settingsList=["recentFiles", "createNewOn"]
     contextHandlers = {"": FileNameContextHandler()}
 
+    registeredFileTypes = [ft for ft in orange.getRegisteredFileTypes() if len(ft)>2 and ft[2]]
+    dlgFormats = 'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\n' \
+                 + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
+                 + "\nAll files(*.*)"
+                 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File")
 
@@ -160,9 +166,9 @@ class OWFile(OWWidget):
             else:
                 startfile=self.recentFiles[0]
 
-        filename = str(QFileDialog.getOpenFileName(startfile,
-        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)',
-        None, 'Open Orange Data File'))
+        
+         
+        filename = str(QFileDialog.getOpenFileName(startfile, self.dlgFormats, None, 'Open Orange Data File'))
 
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
