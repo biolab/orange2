@@ -38,7 +38,7 @@ class ConfusionTableItem(QTableItem):
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
-    def __init__(self,parent=None, signalManager = None):
+    def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Confusion Matrix", 1)
 
         # inputs
@@ -76,7 +76,7 @@ class OWConfusionMatrix(OWWidget):
         self.layout.setAutoAdd(False)
         labpred = OWGUI.widgetLabel(self.mainArea, "Prediction")
         self.layout.addWidget(labpred, 0, 1, QWidget.AlignCenter)
-        self.layout.addWidget(OWGUI.separator(self.mainArea),1, 0)
+        self.layout.addWidget(OWGUI.separator(self.mainArea), 1, 0)
 
         labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class")
         self.layout.addWidget(labpred, 2, 0, QWidget.AlignCenter)
@@ -93,7 +93,7 @@ class OWConfusionMatrix(OWWidget):
 
         self.connect(self.table, SIGNAL("selectionChanged()"), self.sendIf)
 
-        self.resize(750,450)
+        self.resize(750, 450)
 
     def resizeEvent(self, *args):
         if hasattr(self, "table"):
@@ -159,8 +159,7 @@ class OWConfusionMatrix(OWWidget):
         rowPriors = [r/total for r in rowSums]
         colPriors = [r/total for r in colSums]
 
-        try:
-          for ri, r in enumerate(cm):
+        for ri, r in enumerate(cm):
             for ci, c in enumerate(r):
                 item = self.table.item(ri+1, ci+1)
                 if self.shownQuantity == 0:
@@ -178,13 +177,7 @@ class OWConfusionMatrix(OWWidget):
                     else:
                         item.setText(" %s " % "N/A")
                 self.table.updateCell(ri, ci)
-        except:
-            print ri, ci
-            print dim
-            print self.table.numRows(), self.table.numCols()
-            print cm
-            print self.res.classValues
-            
+           
 
         for ci in range(len(cm)):
             self.table.setText(dim+1, ci+1, self.isInteger % colSums[ci])
