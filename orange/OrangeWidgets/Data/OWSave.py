@@ -14,12 +14,26 @@
 
 from OWWidget import *
 import OWGUI
-import re, os.path, user, sys
+import os.path, user, sys
 from exceptions import Exception
 
 class OWSave(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
 
+    savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
+              ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
+              ".csv": orange.saveCsv
+              }
+
+    # exclude C50 since it has the same extension and we do not need saving to it anyway
+    registeredFileTypes = [ft for ft in orange.getRegisteredFileTypes() if len(ft)>3 and ft[3] and not ft[0]=="C50"]
+    
+    dlgFormats = 'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\n' \
+                 + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
+                 + "\nAll files(*.*)"
+
+    savers.update(dict((lower(ft[1][1:]), ft[3]) for ft in registeredFileTypes))
+    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Save")
 
@@ -50,13 +64,6 @@ class OWSave(OWWidget):
         self.connect(self.filecombo, SIGNAL('activated ( int ) '),self.saveFile)        
         
 
-    savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
-              ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
-              ".csv": orange.saveCsv
-              }
-    
-    re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
-
     def dataset(self, data):
         self.data = data
         self.save.setDisabled(data == None)
@@ -67,9 +74,7 @@ class OWSave(OWWidget):
         else:
             startfile = user.home
 
-        dlg = QFileDialog.getSaveFileName(startfile,
-                          'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)
-                          None, "Orange Data File")
+        dlg = QFileDialog.getSaveFileName(startfile, self.dlgFormats, None, "Orange Data File")
 #        dlg.exec_loop()
 
         filename = str(dlg)
@@ -77,7 +82,7 @@ class OWSave(OWWidget):
             return
         
         ext = lower(os.path.splitext(filename)[1])
-        if not self.savers.has_key(ext):
+        if not ext in self.savers:
             filt_ext = ".tab"
             filename += filt_ext
             
