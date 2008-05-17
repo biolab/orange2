@@ -22,7 +22,13 @@
 
 import orange,string
 
-def loadARFF(filename):
+def loadARFF(filename, createNewOn = None, **kw):
+    givenCreateNewOn = createNewOn
+    if givenCreateNewOn is None:
+        createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
+    else:
+        createNewOn = givenCreateNewOn
+          
     try:
         f = open(filename,'r')
     except:
@@ -31,6 +37,7 @@ def loadARFF(filename):
     name = ''
     state = 0 # header
     data = []
+    stati = []
     for l in f.readlines():
         l = l[:-1] # strip \n
         l = string.replace(l,'\t',' ') # get rid of tabs
@@ -84,11 +91,12 @@ def loadARFF(filename):
                         if len(sy)>0:
                             vals.append(sy)
                     #print atn,vals
-                    a = orange.EnumVariable(name=atn,values=vals)
+                    a, s = orange.Variable.make(atn, orange.VarTypes.Discrete, vals, None, createNewOn)
                 else:
                     # real...
-                    a = orange.FloatVariable(name=atn)
+                    a, s = orange.Variable.make(atn, orange.VarTypes.Continuous, None, None, createNewOn)
                 attributes.append(a)
+                stati.append(s)
     # generate the domain
     d = orange.Domain(attributes)
     lex = []
@@ -97,7 +105,10 @@ def loadARFF(filename):
         lex.append(e)
     t = orange.ExampleTable(d,lex)
     t.name = name
-    return t
+    if givenCreateNewOn is None:
+        return t
+    else:
+        return t, stati, {}
 
 def toARFF(filename,table,try_numericize=0):
     t = table
