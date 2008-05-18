@@ -324,9 +324,12 @@ class OWTestLearners(OWWidget):
 
     def setTestData(self, data):
         """handle test data set"""
-        self.testdata = orange.Filter_hasClassValue(data)
-        self.testDataBtn.setEnabled(self.testdata <> None)
-        if self.testdata:
+        if data is None:
+            self.testdata = None
+        else:
+            self.testdata = orange.Filter_hasClassValue(data)
+        self.testDataBtn.setEnabled(self.testdata is not None)
+        if self.testdata is not None:
             if self.resampling == 4:
                 if self.data:
                     self.score([l.id for l in self.learners.values()])
