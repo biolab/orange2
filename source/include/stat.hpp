@@ -1473,7 +1473,7 @@ T loess_y(const T &refx, map<T, U> points, const float &windowProp)
 }
 
 
-enum { DISTRIBUTE_MINIMAL, DISTRIBUTE_FACTOR, DISTRIBUTE_FIXED, DISTRIBUTE_UNIFORM };
+enum { DISTRIBUTE_MINIMAL, DISTRIBUTE_FACTOR, DISTRIBUTE_FIXED, DISTRIBUTE_UNIFORM, DISTRIBUTE_MAXIMAL };
 
 template<class T, class U>
 void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, int method = DISTRIBUTE_MINIMAL)
@@ -1486,6 +1486,12 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
 
   result.clear();
 
+  if ((nPoints == 1) || (DISTRIBUTE_MINIMAL && (nPoints <= points.size())) || (DISTRIBUTE_MAXIMAL && (nPoints >= points.size()))) {
+    for (mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
+      result.push_back((*pi).first);
+    return;
+  }
+  
   switch (method) {
     case DISTRIBUTE_FACTOR: {
       for (mapiterator pi(points.begin()), pe(points.end());;) {
@@ -1504,35 +1510,42 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
     }
 
 
-    case DISTRIBUTE_MINIMAL: {
-      if (nPoints<=points.size()) {
-        for (mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
-          result.push_back((*pi).first);
-      }
-      else {
-        T ineach = float(nPoints - points.size()) / float(points.size()-1);
-        T inthis = T(0.0);
+    case DISTRIBUTE_MINIMAL: {  // All original points plus some in between to fill up the quota
+      T ineach = float(nPoints - points.size()) / float(points.size()-1);
+      T inthis = T(0.0);
     
-        for (mapiterator pi(points.begin()), pe(points.end());;) {
-          T ax = (*pi).first;
-          result.push_back(ax);
+      for (mapiterator pi(points.begin()), pe(points.end());;) {
+        T ax = (*pi).first;
+        result.push_back(ax);
 
-          if (++pi==pe)
-            break;
+        if (++pi==pe)
+          break;
 
-          inthis += ineach;
-          if (inthis>=T(0.5)) {
-            T dif = ((*pi).first - ax) / (int(floor(inthis))+1);
-            while (inthis>T(0.5)) {
-              result.push_back(ax += dif);
-              inthis -= T(1.0);
-            }
+        inthis += ineach;
+        if (inthis>=T(0.5)) {
+          T dif = ((*pi).first - ax) / (int(floor(inthis))+1);
+          while (inthis>T(0.5)) {
+            result.push_back(ax += dif);
+            inthis -= T(1.0);
           }
         }
       }
       return;
     }
 
+    case DISTRIBUTE_MAXIMAL: {  // Just as many points as allowed
+      T ineach = float(points.size()) / float(nPoints); 
+      T inthis = T(0.0);
+    
+      for(mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++) {
+        inthis += 1;
+        if (inthis >= 0) {
+          result.push_back((*pi).first);
+          inthis -= ineach;
+        }
+      }
+      return;
+    }
 
     case DISTRIBUTE_FIXED: {
       set<float> ppos;
