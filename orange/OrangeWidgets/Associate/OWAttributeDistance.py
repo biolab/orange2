@@ -33,8 +33,9 @@ class OWAttributeDistance(OWWidget):
 
         self.ClassInteractions = 0
         self.loadSettings()
-        self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass)
-        self.classIntCB.setDisabled(True)
+#        self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass)
+#        self.classIntCB.setDisabled(True)
+        OWGUI.widgetLabel(self.controlArea, "This widget has no parameters.")
         self.resize(215,50)
 #        self.adjustSize()
 
