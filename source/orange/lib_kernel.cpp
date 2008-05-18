@@ -1814,28 +1814,46 @@ PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstup
   vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, true, false, exhaustiveFilesearch);
   fileFound = fi!=filetypeDefinitions.end();
 
-  if (fileFound) {
-    PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
-    if (!res)
-      throw pyexception();
-    if (res == Py_None)
-      return res;
+  if (!fileFound) 
+    return PYNULL;
 
-    if (PyOrExampleTable_Check(res))
-      return res;
+  PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
+  if (!res)
+    throw pyexception();
+  if (res == Py_None)
+    return res;
 
-    PExampleGenerator gen;
-    if (!exampleGenFromParsedArgs(res, gen))
-      return PYNULL;
+  bool gotTuple = PyTuple_Check(res);
+  PyObject *res1 = gotTuple ? PyTuple_GET_ITEM(res, 0) : res;
+    
+  if (PyOrExampleTable_Check(res1))
+    return res;
 
-    TExampleTable *table = gen.AS(TExampleTable);
-    if (!table)
-      return PYNULL;
-
-    return WrapNewOrange(table, type);
+  PExampleGenerator gen;
+  if (!exampleGenFromParsedArgs(res1, gen)) {
+    Py_DECREF(res);
+    return PYNULL;
   }
 
-  return PYNULL;
+  TExampleTable *table = gen.AS(TExampleTable);
+  if (!table) {
+    Py_DECREF(res);
+    return PYNULL;
+  }
+
+  if (gotTuple) {
+    PyObject *nres = PyTuple_New(PyTuple_Size(res));
+    PyTuple_SetItem(nres, 0, WrapNewOrange(table, type));
+    for(int i = 1; i < PyTuple_Size(res); i++)
+      PyTuple_SetItem(nres, i, PyTuple_GET_ITEM(res, i));
+      
+    Py_DECREF(res);
+    return nres;
+  }
+  else {
+    Py_DECREF(res);
+    return WrapNewOrange(table, type);
+  }
 }
 
 bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
@@ -1867,11 +1885,24 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
   
   bool pythonFileFound;
   res = loadDataByPython(type, filename, argstuple, keywords, false, pythonFileFound);
-  if (res)
-    if (res != Py_None)
-      return res;
+  if (res) {
+    if (res != Py_None) {
+      if (!PyTuple_Check(res))
+        return res;
+
+      PyObject *pygen = PyTuple_GetItem(res, 0);
+      Py_INCREF(pygen);
+      
+      if (PyTuple_Size(res) >= 2)
+        Orange_setattrDictionary((TPyOrange *)pygen, "attributeLoadStatus", PyTuple_GET_ITEM(res, 1), false);
+      if (PyTuple_Size(res) >= 3)
+        Orange_setattrDictionary((TPyOrange *)pygen, "metaAttributeLoadStatus", PyTuple_GET_ITEM(res, 2), false);
+      return pygen;
+    }
+      
     else
       Py_DECREF(Py_None);
+  }
 
   PyErr_Clear();
 
