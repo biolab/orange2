@@ -226,7 +226,7 @@ public:
   int nPoints; //P The number of points on curve
   int distributionMethod; //P Meaning of the 'nPoints'
 
-  TConditionalProbabilityEstimatorConstructor_loess(const float &windowProp = 0.5, const int &nP = -3);
+  TConditionalProbabilityEstimatorConstructor_loess(const float &windowProp = 0.5, const int &nP = 50);
   virtual PConditionalProbabilityEstimator operator()(PContingency frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const;
 };
 

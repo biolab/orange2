@@ -254,7 +254,7 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_kernel::operator()(PDistr
 TProbabilityEstimatorConstructor_loess::TProbabilityEstimatorConstructor_loess(const float &windowProp, const int &ak)
 : windowProportion(windowProp),
   nPoints(ak),
-  distributionMethod(DISTRIBUTE_FIXED)
+  distributionMethod(DISTRIBUTE_MAXIMAL)
 {}
 
 
