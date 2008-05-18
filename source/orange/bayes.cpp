@@ -285,8 +285,12 @@ float TBayesClassifier::p(const TValue &classValue, const TExample &origexam)
   TExample::const_iterator ei(exam.begin());
   for ( ; dciOK && (dci!=dce) || ceiOK && (cei!=cee); ei++) {
     if (!(*ei).isSpecial()) {
-      if (dciOK && *dci)
-        res *= (*dci)->p(*ei)->p(classValue)/c;
+      if (dciOK && *dci) {
+        PDistribution cp = (*dci)->p(*ei);
+        if (cp->cases > 1e-6) {
+          res *= (*dci)->p(*ei)->p(classValue)/c;
+        }
+      }
       else if (ceiOK && *cei) 
         res *= (*cei)->call(classValue, *ei)/c;
     }
