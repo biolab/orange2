@@ -68,6 +68,7 @@ STATC_API void initstatc()
   PyModule_AddObject(pdm, "Factor", PyInt_FromLong(DISTRIBUTE_FACTOR));
   PyModule_AddObject(pdm, "Fixed", PyInt_FromLong(DISTRIBUTE_FIXED));
   PyModule_AddObject(pdm, "Uniform", PyInt_FromLong(DISTRIBUTE_UNIFORM));
+  PyModule_AddObject(pdm, "Maximal", PyInt_FromLong(DISTRIBUTE_MAXIMAL));
 
   PyModule_AddObject(me, "pointDistribution", pdm);
 }
