@@ -1678,14 +1678,13 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 		PyCATCH
 }
 
-PyObject *Filter_deepCopy(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_NOARGS, "() -> filter")
+PyObject *Filter_deepCopy(PyObject *self) PYARGS(METH_NOARGS, "() -> filter")
 {
 	PyTRY
-		NO_KEYWORDS
 		CAST_TO(TFilter, filter); 
 
-	PFilter res = filter->deepCopy();
-	return WrapOrange(res);
+    PFilter res = filter->deepCopy();
+	  return WrapOrange(res);
 	PyCATCH
 }
 
