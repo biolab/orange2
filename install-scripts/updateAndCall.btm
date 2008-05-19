@@ -1,4 +1,5 @@
+net use o: \\estelle.fri.uni-lj.si\download
 cdd e:\orange\scripts
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update
+svn update
 call callUpdateSnapshot.btm
 shutdown -s
