@@ -37,7 +37,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     # update shown data. Set attributes, coloring by className ....
     def updateData(self, attributes, targetValue, midLabels = None, startIndex = 0, stopIndex = 0):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
-        self.removeTooltips()
+#        self.removeTooltips()
         self.removeMarkers()
 
         self.curvePoints = []
@@ -223,8 +223,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         # ############################################
         # do we want to show distributions with discrete attributes
-        if self.showDistributions and self.rawData.domain.classVar and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
-            self.showDistributionValues(targetValue, validData, indices, dataStop)
+#        if self.showDistributions and self.rawData.domain.classVar and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+#            self.showDistributionValues(targetValue, validData, indices, dataStop)
 
         # ############################################
         # draw vertical lines that represent attributes
@@ -367,110 +367,110 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
 
 
-    # ##########################################
-    # SHOW DISTRIBUTION BAR GRAPH
-    def showDistributionValues(self, targetValue, validData, indices, dataStop):
-        # get index of class
-        classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
+#    # ##########################################
+#    # SHOW DISTRIBUTION BAR GRAPH
+#    def showDistributionValues(self, targetValue, validData, indices, dataStop):
+#        # get index of class
+#        classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
+#
+#        # create color table
+#        count = len(self.rawData.domain.classVar.values)
+#        #if count < 1: count = 1.0
+#
+#        # we create a hash table of possible class values (happens only if we have a discrete class)
+#        classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)
+#        classValueSorted  = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+#
+#        self.toolInfo = []
+#        for graphAttrIndex in range(len(indices)):
+#            index = indices[graphAttrIndex]
+#            if self.rawData.domain[index].varType != orange.VarTypes.Discrete: continue
+#            attr = self.rawData.domain[index]
+#            attrLen = len(attr.values)
+#
+#            values = []
+#            totals = [0] * attrLen
+#
+#            # we create a hash table of variable values and their indices
+#            variableValueIndices = getVariableValueIndices(self.rawData, index)
+#            variableValueSorted = getVariableValuesSorted(self.rawData, index)
+#
+#            for i in range(count):
+#                values.append([0] * attrLen)
+#
+#            stop = indices[:graphAttrIndex]
+#            for i in range(len(self.rawData)):
+#                if dataStop and self.hidePureExamples == 1 and dataStop[i] in stop: continue
+#                if validData[i] == 0: continue
+#                # processing for distributions
+#                attrIndex = variableValueIndices[self.rawData[i][index].value]
+#                classIndex = classValueIndices[self.rawData[i][classNameIndex].value]
+#                totals[attrIndex] += 1
+#                values[classIndex][attrIndex] += 1
+#
+#            # calculate maximum value of all values - needed for scaling
+#            maximum = 1
+#            for i in range(len(values)):
+#                for j in range(len(values[i])):
+#                    if values[i][j] > maximum: maximum = values[i][j]
+#
+#            # calculate the sum of totals - needed for tooltips
+#            sumTotals = 0
+#            for val in totals: sumTotals += val
+#
+#            # save info for tooltips
+#            for i in range(attrLen):
+#                list= []
+#                for j in range(count):
+#                    list.append((classValueSorted[j], values[j][i]))
+#                list.reverse()
+#                y_start = float(i+1)/float(attrLen); y_end = float(i)/float(attrLen)
+#                x_start = float(graphAttrIndex) - 0.45; x_end = float(graphAttrIndex) + 0.45
+#                item = (self.rawData.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
+#                self.toolInfo.append(item)
+#
+#
+#            # create bar curve
+#            for i in range(count):
+#                if targetValue != None:
+#                    if classValueSorted[i] == targetValue: newColor = self.colorTargetValue
+#                    else: newColor = self.colorNonTargetValue
+#                else:
+#                    newColor = self.discPalette[i]
+#
+#                for j in range(attrLen):
+#                    width = float(values[i][j]*0.5) / float(maximum)
+#                    interval = 1.0/float(2*attrLen)
+#                    yOff = float(1.0 + 2.0*j)/float(2*attrLen)
+#                    height = 0.7/float(count*attrLen)
+#
+#                    yLowBott = yOff - float(count*height)/2.0 + i*height
+#                    ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height]))
+#                    self.nonDataKeys.append(ckey)
+#
+#        self.addTooltips()
 
-        # create color table
-        count = len(self.rawData.domain.classVar.values)
-        #if count < 1: count = 1.0
-
-        # we create a hash table of possible class values (happens only if we have a discrete class)
-        classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)
-        classValueSorted  = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
-
-        self.toolInfo = []
-        for graphAttrIndex in range(len(indices)):
-            index = indices[graphAttrIndex]
-            if self.rawData.domain[index].varType != orange.VarTypes.Discrete: continue
-            attr = self.rawData.domain[index]
-            attrLen = len(attr.values)
-
-            values = []
-            totals = [0] * attrLen
-
-            # we create a hash table of variable values and their indices
-            variableValueIndices = getVariableValueIndices(self.rawData, index)
-            variableValueSorted = getVariableValuesSorted(self.rawData, index)
-
-            for i in range(count):
-                values.append([0] * attrLen)
-
-            stop = indices[:graphAttrIndex]
-            for i in range(len(self.rawData)):
-                if dataStop and self.hidePureExamples == 1 and dataStop[i] in stop: continue
-                if validData[i] == 0: continue
-                # processing for distributions
-                attrIndex = variableValueIndices[self.rawData[i][index].value]
-                classIndex = classValueIndices[self.rawData[i][classNameIndex].value]
-                totals[attrIndex] += 1
-                values[classIndex][attrIndex] += 1
-
-            # calculate maximum value of all values - needed for scaling
-            maximum = 1
-            for i in range(len(values)):
-                for j in range(len(values[i])):
-                    if values[i][j] > maximum: maximum = values[i][j]
-
-            # calculate the sum of totals - needed for tooltips
-            sumTotals = 0
-            for val in totals: sumTotals += val
-
-            # save info for tooltips
-            for i in range(attrLen):
-                list= []
-                for j in range(count):
-                    list.append((classValueSorted[j], values[j][i]))
-                list.reverse()
-                y_start = float(i+1)/float(attrLen); y_end = float(i)/float(attrLen)
-                x_start = float(graphAttrIndex) - 0.45; x_end = float(graphAttrIndex) + 0.45
-                item = (self.rawData.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
-                self.toolInfo.append(item)
-
-
-            # create bar curve
-            for i in range(count):
-                if targetValue != None:
-                    if classValueSorted[i] == targetValue: newColor = self.colorTargetValue
-                    else: newColor = self.colorNonTargetValue
-                else:
-                    newColor = self.discPalette[i]
-
-                for j in range(attrLen):
-                    width = float(values[i][j]*0.5) / float(maximum)
-                    interval = 1.0/float(2*attrLen)
-                    yOff = float(1.0 + 2.0*j)/float(2*attrLen)
-                    height = 0.7/float(count*attrLen)
-
-                    yLowBott = yOff - float(count*height)/2.0 + i*height
-                    ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height]))
-                    self.nonDataKeys.append(ckey)
-
-        self.addTooltips()
-
-    def addTooltips(self):
-        for i in range(len(self.toolInfo)):
-            (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
-            if total == 0: continue
-            tooltipText = "Attribute: <b>%s</b><br>Value: <b>%s</b><br>Total instances: <b>%i</b> (%.1f%%)<br>Class distribution:<br>" % (name, value, total, 100.0*float(total)/float(sumTotals))
-            for j in range(len(lista)):
-                (val, count) = lista[j]
-                tooltipText += "<b>%s</b> : <b>%i</b> (%.1f%%)" % (val, count, 100.0*float(count)/float(total))
-                if j != len(lista)-1 : tooltipText += "<br>"
-            x_1 = self.transform(QwtPlot.xBottom, x_start)
-            x_2 = self.transform(QwtPlot.xBottom, x_end)
-            y_1 = self.transform(QwtPlot.yLeft, y_start)
-            y_2 = self.transform(QwtPlot.yLeft, y_end)
-            rect = QRect(x_1, y_1, x_2-x_1, y_2-y_1)
-            self.toolRects.append(rect)
-            QToolTip.add(self, rect, tooltipText)
-
-    def removeTooltips(self):
-        for rect in self.toolRects:
-            QToolTip.remove(self, rect)
-        self.toolRects = []
+#    def addTooltips(self):
+#        for i in range(len(self.toolInfo)):
+#            (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
+#            if total == 0: continue
+#            tooltipText = "Attribute: <b>%s</b><br>Value: <b>%s</b><br>Total instances: <b>%i</b> (%.1f%%)<br>Class distribution:<br>" % (name, value, total, 100.0*float(total)/float(sumTotals))
+#            for j in range(len(lista)):
+#                (val, count) = lista[j]
+#                tooltipText += "<b>%s</b> : <b>%i</b> (%.1f%%)" % (val, count, 100.0*float(count)/float(total))
+#                if j != len(lista)-1 : tooltipText += "<br>"
+#            x_1 = self.transform(QwtPlot.xBottom, x_start)
+#            x_2 = self.transform(QwtPlot.xBottom, x_end)
+#            y_1 = self.transform(QwtPlot.yLeft, y_start)
+#            y_2 = self.transform(QwtPlot.yLeft, y_end)
+#            rect = QRect(x_1, y_1, x_2-x_1, y_2-y_1)
+#            self.toolRects.append(rect)
+#            QToolTip.add(self, rect, tooltipText)
+#
+#    def removeTooltips(self):
+#        for rect in self.toolRects:
+#            QToolTip.remove(self, rect)
+#        self.toolRects = []
 
 
     # if user clicked between two lines send signal that
@@ -480,10 +480,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
             axis = self.axisScaleDraw(QwtPlot.xBottom)
             self.parallelDlg.sendShownAttributes([str(axis.label(x1)), str(axis.label(x1+1))])
 
-    def updateLayout(self):
-        OWGraph.updateLayout(self)
-        self.removeTooltips()
-        self.addTooltips()
+#    def updateLayout(self):
+#        OWGraph.updateLayout(self)
+#        self.removeTooltips()
+#        self.addTooltips()
 
     """
     def updateAxes(self):
@@ -491,14 +491,14 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.removeTooltips()
         self.addTooltips()
     """
-    def updateTooltips(self):
-        self.removeTooltips()
-        self.addTooltips()
+#    def updateTooltips(self):
+#        self.removeTooltips()
+#        self.addTooltips()
 
-    # if we zoomed, we have to update tooltips
-    def onMouseReleased(self, e):
-        OWGraph.onMouseReleased(self, e)
-        self.updateTooltips()
+#    # if we zoomed, we have to update tooltips
+#    def onMouseReleased(self, e):
+#        OWGraph.onMouseReleased(self, e)
+#        self.updateTooltips()
 
     def onMouseMoved(self, e):
         if self.mouseCurrentlyPressed:

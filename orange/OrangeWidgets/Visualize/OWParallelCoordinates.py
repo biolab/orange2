@@ -103,7 +103,7 @@ class OWParallelCoordinates(OWVisWidget):
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateGraph, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
+        OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateGraph, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. The visualization must in this case be interpreted from left to right.")
         OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateGraph, tooltip  = "Show lines using splines")
         OWGUI.checkBox(box, self, 'graph.lineTracking', 'Line tracking', callback = self.updateGraph, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
         OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
@@ -111,7 +111,7 @@ class OWParallelCoordinates(OWVisWidget):
 
         box3 = OWGUI.widgetBox(self.SettingsTab, "Statistics")
         OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateGraph, sendSelectedValue = 0, valueType = int)
-        OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
+        #OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
 
         OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = "Middle labels", items = ["No labels", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "The information do you wish to view on top in the middle of coordinate axes", sendSelectedValue = 1, valueType = str)
 
