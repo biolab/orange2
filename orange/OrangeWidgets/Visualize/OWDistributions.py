@@ -171,12 +171,16 @@ class OWDistributionGraph(OWGraph):
             "use orange.EquiDistDiscretization(numberOfIntervals)"
             equiDist = orange.EquiDistDiscretization(numberOfIntervals = self.numberOfBars)
             d_variable = equiDist(self.attributeName, self.data)
-            d_data = self.data.select([d_variable, self.data.domain.classVar])
-            tmphdata = orange.DomainContingency(d_data)[0]
-            dc = orange.DomainContingency(self.data) #!!!
-            g = orange.ConditionalProbabilityEstimatorConstructor_loess(dc[self.attributeName], nPoints=200) #!!!
+#            d_data = self.data.select([d_variable, self.data.domain.classVar])
+#            tmphdata = orange.DomainContingency(d_data)[0]
+#            dc = orange.DomainContingency(self.data) #!!!
+            tmphdata = orange.ContingencyAttrClass(d_variable, self.data)
+            try:
+                g = orange.ConditionalProbabilityEstimatorConstructor_loess(self.dc[self.attributeName], nPoints=200) #!!!
+                self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
+            except:
+                self.probGraphValues = [] 
             # print [ps.variances for (x, ps) in g.probabilities.items()]
-            self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
             # calculate the weighted CI=math.sqrt(prob*(1-prob)/(0.0+self.sums[curcol])),
             # where self.sums[curcol] = g.probabilities.items()[example][1].cases
 
