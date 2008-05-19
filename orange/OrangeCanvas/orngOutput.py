@@ -94,13 +94,7 @@ class OutputWindow(QMainWindow):
 
     # simple printing of text called by print calls
     def write(self, text):
-        text = str(text)
-        text = text.replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text = text.replace("(br)", "<br>")
-        text = text.replace("(nobr)", "<nobr>").replace("(/nobr)", "</nobr>")
-        text = text.replace("(b)", "<b>").replace("(/b)", "</b>")
-        text = text.replace("(i)", "<i>").replace("(/i)", "</i>")
-        text = text.replace("(hr)", "<hr>")
+        text = self.getSafeString(text)
         text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
         #text = "<nobr>" + text + "</nobr>"
 
@@ -132,6 +126,9 @@ class OutputWindow(QMainWindow):
         if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:    # user pressed CTRL+"C"
             self.textOutput.copy()
 
+    def getSafeString(self, s):
+        return str(s).replace("<", "&lt;").replace(">", "&gt;")
+
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
@@ -139,30 +136,29 @@ class OutputWindow(QMainWindow):
 
         text = ""
         t = localtime()
-        text += "<hr><nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type).replace("<", "(").replace(">", ")") , t[3],t[4],t[5])
+        text += "<hr><nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
         list = traceback.extract_tb(tracebackInfo, 10)
-        space = "&nbsp &nbsp "
+        space = "&nbsp; "
         totalSpace = space
         for i in range(len(list)):
             (file, line, funct, code) = list[i]
             if code == None: continue
             (dir, filename) = os.path.split(file)
-            text += "<nobr>" + totalSpace + "File: <u>" + filename + "</u>  in line %4d</nobr><br>" %(line)
-            text += "<nobr>" + totalSpace + "<nobr>Function name: %s</nobr><br>" % (funct)
-            if i == len(list)-1:
-                text += "<nobr>" + totalSpace + "Code: <b>" + code + "</b></nobr><br>"
-            else:
-                text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>"
-                totalSpace += space
+            text += "<nobr>" + totalSpace + "File: <b>" + filename + "</b>, line %4d" %(line) + " in <b>%s</b></nobr><br>\n" % (self.getSafeString(funct))
+            text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>\n"
+            totalSpace += space
 
-        value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type).replace("<", "(").replace(">", ")") + "</b></nobr><br>"
-        text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><br><hr>"
+        lines = traceback.format_exception_only(type, value)
+        for line in lines[:-1]:
+            text += "<nobr>" + totalSpace + self.getSafeString(line) + "</nobr><br>\n"
+        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n"
+        
+        text += "<hr>\n"
         self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
