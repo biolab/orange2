@@ -110,7 +110,7 @@ class OWNetwork(OWWidget):
         OWGUI.checkBox(self.displayTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
         
         self.maxLinkSize = 10
-        self.stepsSpin = OWGUI.spin(self.displayTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        OWGUI.spin(self.displayTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
         
         self.renderAntialiased = 1
         OWGUI.checkBox(self.displayTab, self, 'renderAntialiased', 'Render antialiased:', callback = self.setRenderAntialiased)
@@ -517,7 +517,7 @@ class OWNetwork(OWWidget):
         self.optButton.setChecked(False)
     
     def setOptMethod(self):
-        if self.optMethod == 1:
+        if str(self.optMethod) == '1':
             self.stepsSpin.setEnabled(True)
         else:
             self.stepsSpin.setEnabled(False)
