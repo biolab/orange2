@@ -291,6 +291,7 @@ class OWNomogram(OWWidget):
             if a and len(a.attValues)>1:
                 self.bnomogram.addAttribute(a)
 
+        self.alignRadio.setDisabled(False)
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
 
@@ -536,20 +537,30 @@ class OWNomogram(OWWidget):
 
     def classifier(self, cl):
         self.closeContext()
-        if not self.cl or not cl or not self.cl.domain == cl.domain:
-            if cl:
-                self.initClassValues(cl.domain.classVar)
-            self.TargetClassIndex = 0
-        self.cl = cl
-        if hasattr(self.cl, "data"):
-            self.data = self.cl.data
-        else:
-            self.data = None
+        self.error(2) 
 
-        self.error(2)
+        oldcl = self.cl
+        self.cl = None
+        
+        if cl:
+            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier):
+                if isinstance(cl, acceptable):
+                    self.cl = cl
+                    break
+            else:
+                self.error(2, "Nomograms can be drawn for only for Bayesian classifier and logistic regression")
+                 
+        if not oldcl or not self.cl or not oldcl.domain == self.cl.domain:
+            if self.cl:
+                self.initClassValues(self.cl.domain.classVar)
+            self.TargetClassIndex = 0
+            
+        self.data = getattr(self.cl, "data", None)
+
         if self.data and self.data.domain and not self.data.domain.classVar:
             self.error(2, "Classless domain")
-            return
+            # Here it said "return", but let us report an error and clean up the widget
+            self.cl = self.data = None
 
         self.openContext("", self.data)
         if not self.data:
@@ -587,16 +598,16 @@ class OWNomogram(OWWidget):
                     if not at in self.data.domain:
                         return
 
-        if type(self.cl) == orange.BayesClassifier:
+        if isinstance(self.cl, orange.BayesClassifier):
 #            if len(self.cl.domain.classVar.values)>2:
 #                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
 #                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
 #            else:
                 self.nbClassifier(self.cl)
-##        elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
+##        elif isinstance(self.cl, orngLR_Jakulin.MarginMetaClassifier) and self.data:
 ##            self.svmClassifier(self.cl)
 
-        elif type(self.cl) == orange.LogRegClassifier:
+        elif isinstance(self.cl, orange.LogRegClassifier):
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
             if self.cl.continuizedDomain:
