@@ -68,6 +68,8 @@ public:
 	TNetworkOptimization();
 	~TNetworkOptimization();
 	
+	
+	
 	void random();
 	int fruchtermanReingold(int steps);
 	int radialFruchtermanReingold(int steps, int nCircles);

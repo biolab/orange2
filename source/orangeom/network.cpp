@@ -38,7 +38,7 @@ TNetwork::TNetwork(TGraphAsList *graph)
     vertices.push_back(v1);
     optimize.insert(v1);
 	}
-
+	
   hierarchy.setTop(vertices);
 }
 

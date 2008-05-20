@@ -1509,13 +1509,13 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		file.close();
 	}
 
-	file.open(fn);
-	if (file.is_open())
+	ifstream file1(fn);
+	if (file1.is_open())
 	{
 		// read head
-		while (!file.eof())
+		while (!file1.eof())
 		{
-			getline (file, line);
+			getline (file1, line);
 			vector<string> words;
 			int n = getWords(line, words);
 			//cout << line << "  -  " << n << endl;
@@ -1530,16 +1530,16 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						strVertices >> nVertices;
 						if (nVertices == 0)
 						{
-							file.close();
-							PYERROR(PyExc_SystemError, "invalid file format", NULL);
+							file1.close();
+							PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 						}
 
 						//cout << "nVertices: " << nVertices << endl;
 					}
 					else
 					{
-						file.close();
-						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+						file1.close();
+						PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 					}
 
 					break;
@@ -1548,8 +1548,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		}
 		
 		if (nVertices <= 1) {
-			file.close();
-			PYERROR(PyExc_SystemError, "invalid file format; invalid number of vertices (less than 1)", NULL);
+			file1.close();
+			PYERROR(PyExc_SystemError, "invalid file1 format; invalid number of vertices (less than 1)", NULL);
 		}
 
 		graph = new TNetwork(nVertices, 0, directed == 1);
@@ -1567,9 +1567,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		wtable = table;
 
 		// read vertex descriptions
-		while (!file.eof())
+		while (!file1.eof())
 		{
-			getline(file, line);
+			getline(file1, line);
 			vector<string> words;
 			int n = getWords(line, words);
 			//cout << line << "  -  " << n << endl;
@@ -1585,8 +1585,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				strIndex >> index;
 				if ((index <= 0) || (index > nVertices))
 				{
-					file.close();
-					PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					file1.close();
+					PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 				}
 
 				//cout << "index: " << index << " n: " << n << endl;
@@ -1623,8 +1623,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 								i++; 
 							else 
 							{
-								file.close();
-								PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 							}
 
 							//cout << "ic: " << words[i] << endl;
@@ -1636,8 +1636,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 								i++; 
 							else 
 							{
-								file.close();
-								PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 							}
 
 							//cout << "bc: " << words[i] << endl;
@@ -1649,8 +1649,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 								i++; 
 							else
 							{
-								file.close();
-								PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 							}
 
 							//cout << "bw: " << words[i] << endl;
@@ -1671,9 +1671,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		{
 			if (stricmp(words[0].c_str(), "*arcs") == 0)
 			{
-				while (!file.eof())
+				while (!file1.eof())
 				{
-					getline (file, line);
+					getline (file1, line);
 					vector<string> words;
 					int n = getWords(line, words);
 					//cout << line << "  -  " << n << endl;
@@ -1696,8 +1696,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 							
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
-								file.close();
-								PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 							}
 
 							if (i1 == i2)
@@ -1717,9 +1717,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		{
 			if (stricmp(words[0].c_str(), "*edges") == 0)
 			{
-				while (!file.eof())
+				while (!file1.eof())
 				{
-					getline (file, line);
+					getline (file1, line);
 					vector<string> words;
 					int n = getWords(line, words);
 					
@@ -1738,8 +1738,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 
 						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 						{
-							file.close();
-							PYERROR(PyExc_SystemError, "invalid file format", NULL);
+							file1.close();
+							PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 						}
 
 						if (i1 == i2)
@@ -1755,11 +1755,11 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 			}
 		}
 
-		file.close();
+		file1.close();
 	}
 	else
 	{
-	  PyErr_Format(PyExc_SystemError, "unable to open file '%s'", fn);
+	  PyErr_Format(PyExc_SystemError, "unable to open file1 '%s'", fn);
 	  return NULL;
 	}
 
