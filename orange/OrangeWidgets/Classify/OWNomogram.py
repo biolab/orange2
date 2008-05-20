@@ -314,11 +314,12 @@ class OWNomogram(OWWidget):
         except:
             aprox_prior_error = 0
 
-        if cl.continuizedDomain:
-            for at in cl.continuizedDomain.attributes:
+        domain = cl.continuizedDomain or cl.domain
+        if domain:
+            for at in domain.attributes:
                 at.setattr("visited",0)
 
-            for at in cl.continuizedDomain.attributes:
+            for at in domain.attributes:
                 if at.getValueFrom and at.visited==0:
                     name = at.getValueFrom.variable.name
                     var = at.getValueFrom.variable
@@ -329,7 +330,7 @@ class OWNomogram(OWWidget):
                     listOfExcludedValues = []
                     for val in var.values:
                         foundValue = False
-                        for same in cl.continuizedDomain.attributes:
+                        for same in domain.attributes:
                             if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
                                 same.setattr("visited",1)
                                 a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
