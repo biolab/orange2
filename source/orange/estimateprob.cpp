@@ -461,13 +461,22 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
       raiseError("attribute '%s' is not continuous", frequencies->outerVariable->name.c_str());
     else
       raiseError("continuous attribute expected for condition");
+
   if (frequencies->continuous->size() < 2)
-    raiseError("distribution is empty or contains only one element");
+    raiseError("distribution (of attribute values, probably) is empty or has only a single value");
 
   PContingency cont = CLONE(TContingency, frequencies);
+  const TDistributionMap &points = *frequencies->continuous;
+
+/*  if (frequencies->continuous->size() == 1) {
+    TDiscDistribution *f = (TDiscDistribution *)(points.begin()->second.getUnwrappedPtr());
+    f->normalize();
+    f->variances = mlnew TFloatList(f->size(), 0.0);
+    return mlnew TConditionalProbabilityEstimator_FromDistribution(cont);
+  }
+*/
   cont->continuous->clear();
 
-  const TDistributionMap &points = *frequencies->continuous;
   vector<float> xpoints;
   distributePoints(points, nPoints, xpoints, distributionMethod);
 
