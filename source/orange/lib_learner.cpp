@@ -1729,7 +1729,7 @@ PyObject *RuleBeamInitializer__reduce__(PyObject *self)
 PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules, evaluator, prior) -/-> (rules, bestRule)")
 {
   PyTRY
-    NO_KEYWORDS
+     NO_KEYWORDS
 
     PExampleGenerator gen;
     PRuleList baseRules;
