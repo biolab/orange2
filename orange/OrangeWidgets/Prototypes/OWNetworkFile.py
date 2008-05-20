@@ -96,7 +96,7 @@ class OWNetworkFile(OWWidget):
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0])
 
-        if len(self.recentDataFiles) > 0 and os.path.exists(self.recentDataFiles[1]):
+        if len(self.recentDataFiles) > 1 and os.path.exists(self.recentDataFiles[1]):
             self.selectDataFile(1)
             #self.addDataFile(self.recentDataFiles[0])
         
