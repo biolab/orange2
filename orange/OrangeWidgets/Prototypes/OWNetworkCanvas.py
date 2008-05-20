@@ -615,7 +615,6 @@ class OWNetworkCanvas(OWGraph):
                   
   def drawWeights(self):
       if self.showWeights:
-          print 'show w'
           for edge in self.edges:
               if not (edge.u.show and edge.v.show):
                   continue
@@ -717,7 +716,7 @@ class OWNetworkCanvas(OWGraph):
       
       self.minEdgeWeight = sys.maxint
       self.maxEdgeWeight = 0
-      
+
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
           edge = NetworkEdge()
@@ -729,11 +728,13 @@ class OWNetworkCanvas(OWGraph):
           self.edges.append(edge)
           self.nEdges += 1
           
-          if self.minEdgeWeight > edge.weight:
+          if edge.weight != None and self.minEdgeWeight > edge.weight:
               self.minEdgeWeight = edge.weight
               
-          elif self.maxEdgeWeight < edge.weight:
+          elif edge.weight != None and self.maxEdgeWeight < edge.weight:
               self.maxEdgeWeight = edge.weight
+          
+          # print edge.weight
             
           if visualizer.graph.directed:
               edge.arrowu = 0
@@ -753,6 +754,9 @@ class OWNetworkCanvas(OWGraph):
       
   def setEdgesSize(self):
       if self.maxEdgeWeight > self.minEdgeWeight:
+          print 'maxEdgeSize',self.maxEdgeSize
+          print 'maxEdgeWeight',self.maxEdgeWeight
+          print 'minEdgeWeight',self.minEdgeWeight
           k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
           for edge in self.edges:
               size = (edge.weight - self.minEdgeWeight) * k + 1

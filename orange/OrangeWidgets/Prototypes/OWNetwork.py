@@ -49,7 +49,7 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
-        self.nVertices = self.nShown = self.nHidden = self.nMarked = self.nSelected = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = 0
+        self.nVertices = self.nShown = self.nHidden = self.nMarked = self.nSelected = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
         self.optimizeWhat = 1
         self.stopOptimization = 0
         
@@ -184,6 +184,7 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
         OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
+        OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
         self.insideView = 0
         self.insideViewNeighbours = 2
@@ -390,7 +391,9 @@ class OWNetwork(OWWidget):
             self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
         else:
             self.edgesPerVertex = 0
+            
         self.diameter = graph.getDiameter()
+        self.clustering_coefficient = graph.getClusteringCoefficient() * 100
         #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
