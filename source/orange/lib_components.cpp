@@ -4959,10 +4959,21 @@ PyObject *Graph_getEdges(PyObject *self, PyObject *args, PyObject *) PYARGS(METH
 	vector<int> neighbours;
 
 	for(int v1 = 0; v1 < graph->nVertices; v1++) {
+		neighbours.clear();
 		if (hasType)
-			graph->getNeighboursFrom_Single(v1, edgeType, neighbours);
+			if (graph->directed) {
+				graph->getNeighboursFrom(v1, edgeType, neighbours);
+			}
+			else {
+				graph->getNeighboursFrom_Single(v1, edgeType, neighbours);
+			}
 		else
-			graph->getNeighboursFrom_Single(v1, neighbours);
+			if (graph->directed) {
+				graph->getNeighboursFrom(v1, neighbours);
+			}
+			else {
+				graph->getNeighboursFrom_Single(v1, neighbours);
+			}
 
 		ITERATE(vector<int>, ni, neighbours) {
 			PyObject *nel = Py_BuildValue("ii", v1, *ni);
@@ -5067,6 +5078,18 @@ PyObject *Graph_getClusters(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 	  RETURN_NONE;
   PyCATCH
 }
+
+PyObject *Graph_getClusteringCoefficient(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> clustering_coefficient")
+{
+  PyTRY
+  CAST_TO(TGraph, graph);
+  
+  double coef = graph->getClusteringCoefficient();
+  return Py_BuildValue("d", coef);
+  
+  PyCATCH
+}
+
 PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> list of subgraphs")
 {
   PyTRY
@@ -5219,6 +5242,7 @@ void GraphAsMatrix_dealloc(PyObject *self)
 PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
 	PyTRY
+		cout << "TNetwork constructor" << endl;
 		int nVertices, directed, nEdgeTypes = 1;
 	if (!PyArg_ParseTuple(args, "ii|i", &nVertices, &directed, &nEdgeTypes))
 		PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);

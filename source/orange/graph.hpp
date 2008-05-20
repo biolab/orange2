@@ -82,6 +82,7 @@ public:
   int getDiameter();
   void getClusters();
   vector<int> getLargestFullGraphs(vector<int> nodes, vector<int> candidates);
+  double getClusteringCoefficient();
 };
 
 WRAPPER(Graph)
