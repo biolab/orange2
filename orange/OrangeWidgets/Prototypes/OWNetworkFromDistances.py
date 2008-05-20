@@ -12,13 +12,11 @@
 
 import OWGUI
 from OWWidget import *
-from orange import Graph
 from OWGraph import *
-from OWNetworkCanvas import *
+from orngNetwork import * 
+from orangeom import Network
 
 class Hist(OWGraph):
-    
-    
     def __init__(self, master, parent = None):
         OWGraph.__init__(self, parent, "Histogram")
         self.master = master
@@ -37,6 +35,9 @@ class Hist(OWGraph):
         self.upperBoundary = 0
         self.lowerBoundaryKey = None
         self.upperBoundaryKey = None
+        
+        self.enableGridXB(False)
+        self.enableGridYL(False)
 
     def setValues(self, values):
         self.minValue = min(values)
@@ -70,31 +71,35 @@ class Hist(OWGraph):
         self.upperBoundary = upper
         maxy = max(self.yData)
         
-        self.setCurveData(self.lowerBoundaryKey, [self.lowerBoundary, self.lowerBoundary], [0, maxy])
-        self.setCurveData(self.upperBoundaryKey, [self.upperBoundary, self.upperBoundary], [0, maxy])
+        self.lowerBoundaryKey.setData([self.lowerBoundary, self.lowerBoundary], [0, maxy])
+        self.upperBoundaryKey.setData([self.upperBoundary, self.upperBoundary], [0, maxy])
         self.replot()
             
     def updateData(self):
         self.removeDrawingCurves(removeLegendItems = 0)
                     
-        key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, style = QwtCurve.Steps, symbol = QwtSymbol.None, xData = self.xData, yData = self.yData, showFilledSymbols = False)
+        self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
         
         maxy = max(self.yData)
-        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy], showFilledSymbols = False)
-        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy], showFilledSymbols = False)
+        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
+        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
 
+        print self.lowerBoundary
+        print self.upperBoundary
+        self.setAxisScale(QwtPlot.xBottom, min(self.xData), max(self.xData))
+        self.setAxisScale(QwtPlot.yLeft, min(self.yData), maxy)
 #    def setAxisAutoScaled(self):
 #        self.setAxisAutoScale(self.xBottom)
 #        self.setAxisAutoScale(self.yLeft)
             
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["threshold"]
+    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
-        self.outputs = [("Graph with ExampleTable", Graph), ("Examples", ExampleTable)]
+        self.outputs = [("Network", Network), ("Examples", ExampleTable)]
 
         self.spinLowerThreshold = 0
         self.spinLowerChecked = False
@@ -109,19 +114,14 @@ class OWNetworkFromDistances(OWWidget):
         
         # GUI
         # general settings
-#        boxHistogram = QVGroupBox("Distance histogram", self.mainArea)
-#        self.histogram = Hist(self, boxHistogram)      
-#        self.box = QVBoxLayout(boxHistogram)
-#        self.box.addWidget(self.histogram)
+        boxHistogram = OWGUI.widgetBox(self.mainArea, box = "Distance histogram")
+        self.histogram = Hist(self, boxHistogram)
+        boxHistogram.layout().addWidget(self.histogram)
 
-        boxHistogram = QVGroupBox("Distance histogram", self.mainArea)
-        self.histogram = Hist(self, boxHistogram)      
-        self.box = QVBoxLayout(boxHistogram)
-        self.box.addWidget(self.histogram)
         boxHistogram.setMinimumWidth(500)
         boxHistogram.setMinimumHeight(300)
         
-        boxGeneral = QVGroupBox("Distance boundaries", self.controlArea)
+        boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
         OWGUI.separator(self.controlArea)
         #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
         #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
@@ -130,16 +130,16 @@ class OWNetworkFromDistances(OWWidget):
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
         
         # options
-        boxOptions = QVGroupBox("Options", self.controlArea)
-        self.includeNotConnected = 1
+        boxOptions = OWGUI.widgetBox(self.controlArea, box = "Options")
+        self.excludeUnconnected = 0
         self.attrColor = ""
         #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
-        OWGUI.checkBox(boxOptions, self, 'includeNotConnected', 'Include not connected nodes', disabled = 1)#, callback = self.updateGraph)
+        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected nodes', disabled = 1)#, callback = self.updateGraph)
         # info
-        boxInfo = QVGroupBox("Network info", self.controlArea)
-        self.infoa = QLabel("No data loaded.", boxInfo)
-        self.infob = QLabel('', boxInfo)
-        self.infoc = QLabel('', boxInfo)
+        boxInfo = OWGUI.widgetBox(self.controlArea, box = "Network info")
+        self.infoa = OWGUI.widgetLabel(boxInfo, "No data loaded.")
+        self.infob = OWGUI.widgetLabel(boxInfo, '')
+        self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
         self.resize(700, 322)
 
@@ -188,7 +188,7 @@ class OWNetworkFromDistances(OWWidget):
             self.infob.setText("")
             return
 
-        graph = orange.GraphAsList(self.data.dim, 0)
+        graph = Network(self.data.dim, 0)
         graph.setattr("items", self.data.items)
             
         # set the threshold
@@ -210,7 +210,7 @@ class OWNetworkFromDistances(OWWidget):
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
-        self.send("Graph with ExampleTable", graph)
+        self.send("Network", graph)
         self.send("Examples", graph.items)
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
     
