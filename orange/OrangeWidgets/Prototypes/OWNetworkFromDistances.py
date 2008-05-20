@@ -157,8 +157,8 @@ class OWNetworkFromDistances(OWWidget):
         
         self.histogram.setValues(values)
         #print maxValue
-        #self.spinLower.setMaxValue(maxValue)
-        #self.spinUpper.setMaxValue(maxValue)
+        
+        self.spinLowerThreshold = self.spinUpperThreshold = min(values)
         
         self.generateGraph()
         
