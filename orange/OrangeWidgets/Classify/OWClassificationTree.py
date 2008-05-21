@@ -26,7 +26,7 @@ class OWClassificationTree(OWWidget):
     measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]

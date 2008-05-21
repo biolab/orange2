@@ -13,7 +13,7 @@ from exceptions import SystemExit
 class OWSVM(OWWidget):
     settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu", "nomogram"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs=[("Example Table", ExampleTable, self.setData)]
         self.outputs=[("Learner", orange.Learner),("Classifier", orange.Classifier),("Support Vectors", ExampleTable)]
 

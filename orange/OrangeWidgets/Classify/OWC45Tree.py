@@ -18,7 +18,7 @@ class OWC45Tree(OWWidget):
                     "convertToOrange"]
 
     def __init__(self, parent=None, signalManager = None, name='C4.5'):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
         self.callbackDeposit = []
 

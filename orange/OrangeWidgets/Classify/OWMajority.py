@@ -14,7 +14,7 @@ class OWMajority(OWWidget):
     settingsList = ["name"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, 'Majority', wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, 'Majority', wantMainArea = 0, resizingEnabled = 0)
 
         self.callbackDeposit = []
 
