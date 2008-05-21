@@ -36,9 +36,6 @@ class OrangeCanvasDlg(QMainWindow):
             self.setWindowIcon(QIcon(canvasIconName))
 
         # create error and warning icons
-#        informationIconName = os.path.join(canvasPicsDir, "triangle-blue.png")
-#        warningIconName = os.path.join(canvasPicsDir, "triangle-orange.png")
-#        errorIconName = os.path.join(canvasPicsDir, "triangle-red.png")
         informationIconName = os.path.join(canvasPicsDir, "information.png")
         warningIconName = os.path.join(canvasPicsDir, "warning.png")
         errorIconName = os.path.join(canvasPicsDir, "error.png")
@@ -184,7 +181,7 @@ class OrangeCanvasDlg(QMainWindow):
         except:
             if QMessageBox.warning(self,'Orange Canvas','Several widgets now use numpy module, \nthat is not yet installed on this computer. \nDo you wish to download it?',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
                 import webbrowser
-                webbrowser.open("http://sourceforge.net/project/showfiles.php?group_id=1369&package_id=175103&release_id=468153")
+                webbrowser.open("http://sourceforge.net/projects/numpy/")
 
 
     def createWidgetsToolbar(self, rebuildRegistry):
@@ -857,12 +854,13 @@ class OrangeCanvasDlg(QMainWindow):
                 self.createWidgetsToolbar(0)
 
     def updateStyle(self):
-        qApp.setStyle(QStyleFactory.create(self.settings["style"]))
+        QApplication.setStyle(QStyleFactory.create(self.settings["style"]))
         qApp.setStyleSheet(" QDialogButtonBox { button-layout: 0; }")       # we want buttons to go in the "windows" direction (Yes, No, Cancel)
         if self.settings["useDefaultPalette"]:
-            qApp.setPalette(QApplication.style().standardPalette())
+            QApplication.setPalette(qApp.style().standardPalette())
         else:
-            qApp.setPalette(self.originalPalette)
+            QApplication.setPalette(self.originalPalette)
+        
 
     def setStatusBarEvent(self, text):
         if text == "" or text == None:
@@ -920,7 +918,7 @@ class OrangeCanvasDlg(QMainWindow):
             lowerItems = [str(n).lower() for n in QStyleFactory.keys()]
             currStyle = str(qApp.style().objectName())      # currStyle has a lowercase
             self.settings.setdefault("style", items[lowerItems.index(currStyle)])
-        self.settings.setdefault("useDefaultPalette", 0)
+        self.settings.setdefault("useDefaultPalette", 1)
 
 
         self.settings.setdefault("focusOnCatchException", 1)
