@@ -11,7 +11,7 @@
 # Shows data distributions, distribution of attribute values and distribution of classes for each attribute
 #
 
-from OWTools import *
+from OWColorPalette import ColorPixmap, ColorPaletteGenerator
 from OWWidget import *
 from OWGraph import *
 import OWGUI
@@ -137,8 +137,7 @@ class OWDistributionGraph(OWGraph):
         self.barSize = n
         if not(self.variableContinuous):
             self.refreshVisibleOutcomes()
-            #self.replot()
-            self.repaint()
+            self.replot()
 
     def calcPureHistogram(self):
         if self.data==None:
@@ -260,7 +259,7 @@ class OWDistributionGraph(OWGraph):
             self.enableYRaxis(0)
             self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
 
-        self.repaint()
+        self.replot()
 
     def refreshVisibleOutcomes(self):
         if not self.data or not self.visibleOutcomes: return
@@ -370,7 +369,7 @@ class OWDistributionGraph(OWGraph):
         enableIfExists(self.probCurveKey, self.showProbabilities)
         enableIfExists(self.probCurveUpperCIKey, self.showConfidenceIntervals and self.showProbabilities)
         enableIfExists(self.probCurveLowerCIKey, self.showConfidenceIntervals and self.showProbabilities)
-        self.repaint()        
+        self.replot()        
         
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
@@ -521,8 +520,7 @@ class OWDistributions(OWWidget):
     def setShowProbabilities(self):
         self.graph.showProbabilities = self.showProbabilities
         self.graph.refreshProbGraph()
-        #self.graph.replot()
-        self.repaint()
+        self.graph.replot()
 
     def setShowContinuousClassGraph(self):
         self.graph.showContinuousClassGraph=self.showContinuousClassGraph
@@ -549,7 +547,7 @@ class OWDistributions(OWWidget):
         self.graph.showConfidenceIntervals = self.showConfidenceIntervals
         #self.updateGraphSettings()
         self.graph.refreshProbGraph()
-        #self.graph.replot()
+        self.graph.replot()
 
     def setTarget(self, *t):
         if t:
@@ -560,6 +558,7 @@ class OWDistributions(OWWidget):
         self.targetValue = targetValue
         #self.updateGraphSettings()
         self.graph.refreshProbGraph()
+        self.graph.replot()
         outcomeName = ""
         if self.data and self.data.domain.classVar:
             self.setYPaxisTitle("P( " + self.data.domain.classVar.name + " = " + targetValue + " )")
@@ -656,6 +655,6 @@ if __name__ == "__main__":
     owd.show()
     data=orange.ExampleTable("../../doc/datasets/titanic.tab")
     owd.setData(data)
-    a.exec_loop()
+    a.exec_()
     owd.saveSettings()
     orange.VarTypes.Continuous
