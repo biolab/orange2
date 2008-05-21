@@ -253,7 +253,6 @@ class SchemaDoc(QMdiSubWindow):
         line.outWidget.removeLine(line)
         line.inWidget.updateTooltip()
         line.outWidget.updateTooltip()
-        line.hide()
         line.remove()
         self.enableSave(True)
         self.saveTempDoc()
