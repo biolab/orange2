@@ -201,7 +201,7 @@ class OWScatterPlotXp(OWWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         self.graph.setGridPen(QPen(dlg.getColor("Grid")))
 
@@ -472,16 +472,16 @@ class OWScatterPlotXp(OWWidget):
         if dlg.exec_loop():
             self.colorSettings = dlg.getColorSchemas()
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.graph.setGridPen(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.addSpace(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)
