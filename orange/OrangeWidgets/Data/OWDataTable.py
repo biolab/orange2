@@ -36,9 +36,9 @@ class OWDataTable(OWWidget):
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
         self.locale = QLocale()
-        
+
         self.loadSettings()
-        
+
         # info box
         infoBox = OWGUI.widgetBox(self.controlArea, "Info")
         self.infoEx = OWGUI.widgetLabel(infoBox, 'No data on input.')
@@ -55,24 +55,30 @@ class OWDataTable(OWWidget):
         boxSettings = OWGUI.widgetBox(self.controlArea, "Settings")
         self.cbShowMeta = OWGUI.checkBox(boxSettings, self, "showMeta", 'Show meta attributes', callback = self.cbShowMetaClicked)
         self.cbShowMeta.setEnabled(False)
-        self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Show distributions', callback = self.cbShowDistributions)
+        self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
         colBox = OWGUI.indentedBox(boxSettings, orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20)
+        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
         OWGUI.rubber(colBox)
-        
-        self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Original Order", callback = self.btnResetSortClicked)
+
+        resizeColsBox = OWGUI.widgetBox(boxSettings, 0, "horizontal", 0)
+        OWGUI.label(resizeColsBox, self, "Resize columns: ")
+        OWGUI.button(resizeColsBox, self, "+", self.increaseColWidth, tooltip = "Increase the width of the columns", width=30)
+        OWGUI.button(resizeColsBox, self, "-", self.decreaseColWidth, tooltip = "Decrease the width of the columns", width=30)
+        OWGUI.rubber(resizeColsBox)
+
+        self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Order of Examples", callback = self.btnResetSortClicked, tooltip = "Show examples in the same order as they appear in the file")
 
         OWGUI.rubber(self.controlArea)
-        
+
         # GUI with tabs
         self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
         self.table2id = {}  # key: table, value: widget id
         self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
-        
+
         self.updateColor()
-        
+
     def changeColor(self):
         color = QColorDialog.getColor(self.distColor, self)
         if color.isValid():
@@ -89,7 +95,20 @@ class OWDataTable(OWWidget):
         painter.fillRect(0,0,w,h, QBrush(self.distColor))
         painter.end()
         self.colButton.setIcon(QIcon(pixmap))
-        
+
+    def increaseColWidth(self):
+        table = self.tabs.currentWidget()
+        for col in range(table.columnCount()):
+            w = table.columnWidth(col)
+            table.setColumnWidth(col, w + 10)
+
+    def decreaseColWidth(self):
+        table = self.tabs.currentWidget()
+        for col in range(table.columnCount()):
+            w = table.columnWidth(col)
+            minW = table.sizeHintForColumn(col)
+            table.setColumnWidth(col, max(w - 10, minW))
+
 
     def dataset(self, data, id=None):
         """Generates a new table and adds it to a new tab when new data arrives;
@@ -105,10 +124,10 @@ class OWDataTable(OWWidget):
                 self.table2id.pop(self.id2table.pop(id))
             self.data[id] = data
             self.showMetas[id] = (True, [])
-            
+
             table = OWGUI.table(None, 0,0)
             table.setSelectionBehavior(QAbstractItemView.SelectRows)
-            
+
             self.id2table[id] = table
             self.table2id[table] = id
             if data.name:
@@ -119,14 +138,14 @@ class OWDataTable(OWWidget):
             if id[2] != None:
                 tabName += " [" + str(id[2]) + "]"
             self.tabs.addTab(table, tabName)
-            
+
             self.progressBarInit()
             self.setTable(table, data)
             self.progressBarFinished()
             self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.setInfo(data)
             self.cbShowMeta.setEnabled(len(self.showMetas[id][1])>0)        # enable showMetas checkbox only if metas exist
-            
+
         elif self.data.has_key(id):
             self.data.pop(id)
             self.showMetas.pop(id)
@@ -150,15 +169,15 @@ class OWDataTable(OWWidget):
         ml.sort(lambda x,y: cmp(y[0], x[0]))
         metas = [x[1] for x in ml]
         metaKeys = [x[0] for x in ml]
-  
+
         mo = data.domain.getmetas(True).items()
         if mo:
             mo.sort(lambda x,y: cmp(x[1].name.lower(),y[1].name.lower()))
             metas.append(None)
             metaKeys.append(None)
-            
+
         varsMetas = vars + metas
-        
+
         numVars = len(data.domain.variables)
         numMetas = len(metas)
         numVarsMetas = numVars + numMetas
@@ -177,7 +196,7 @@ class OWDataTable(OWWidget):
 
         # set the header (attribute names)
         table.setHorizontalHeaderLabels(table.variableNames)
-        
+
         #table.hide()
         clsColor = QColor(160,160,160)
         metaColor = QColor(220,220,200)
@@ -191,13 +210,13 @@ class OWDataTable(OWWidget):
                 self.showMetas[id][1].append(j) # store indices of meta attributes
             else:
                 bgColor = white
-         
+
             for i in range(numEx):
                 OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
-            
+
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
-        
+
         self.connect(table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
         #table.verticalHeader().setMovable(False)
 
@@ -211,7 +230,7 @@ class OWDataTable(OWWidget):
         table.horizontalHeader().setSortIndicatorShown(1)
         header = table.horizontalHeader()
         if index == table.oldSortingIndex:
-            order = table.oldSortingOrder == Qt.AscendingOrder and Qt.DescendingOrder or Qt.AscendingOrder 
+            order = table.oldSortingOrder == Qt.AscendingOrder and Qt.DescendingOrder or Qt.AscendingOrder
         else:
             order = Qt.AscendingOrder
         table.sortByColumn(index, order)
@@ -246,7 +265,7 @@ class OWDataTable(OWWidget):
     def cbShowDistributions(self):
         table = self.tabs.currentWidget()
         table.reset()
-        
+
     # show data in the default order
     def btnResetSortClicked(self):
         table = self.tabs.currentWidget()
@@ -255,7 +274,7 @@ class OWDataTable(OWWidget):
         self.progressBarInit()
         self.setTable(table, data)
         self.progressBarFinished()
-        
+
 
     def setInfo(self, data):
         """Updates data info.
@@ -299,37 +318,37 @@ class TableItemDelegate(QItemDelegate):
         QItemDelegate.__init__(self, widget)
         self.table = table
         self.widget = widget
-  
+
     def paint(self, painter, option, index):
         if not self.widget.showDistributions:
             QItemDelegate.paint(self, painter, option, index)
-            return 
-        
+            return
+
         col = index.column()
         row = index.row()
-                        
+
         if col >= len(self.table.dist) or self.table.dist[col] == None:        # meta attributes and discrete attributes don't have a key
             QItemDelegate.paint(self, painter, option, index)
             return
-                
-        dist = self.table.dist[col]    
-             
+
+        dist = self.table.dist[col]
+
         painter.save()
         self.drawBackground(painter, option, index)
         value, ok = index.data(Qt.DisplayRole).toDouble()
-                        
+
         if ok:        # in case we get "?" it is not ok
             smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
             painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
             text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
         else:
             text = index.data(Qt.DisplayRole).toString()
-        
+
         self.drawDisplay(painter, option, option.rect, text)
         painter.restore()
-        
 
-        
+
+
 
 if __name__=="__main__":
     a = QApplication(sys.argv)
@@ -345,9 +364,6 @@ if __name__=="__main__":
     #ow.dataset(d1,"auto-mpg")
     #ow.dataset(d2,"voting")
     #ow.dataset(d4,"wpbc")
-    import time
-    t = time.time()
     ow.dataset(d5,"adult_sample")
-    print time.time()-t
     a.exec_()
     ow.saveSettings()
