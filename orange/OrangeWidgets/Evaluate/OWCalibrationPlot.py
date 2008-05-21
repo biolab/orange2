@@ -6,7 +6,7 @@
 <priority>1030</priority>
 """
 import orngOrangeFoldersQt4
-from OWTools import *
+from OWColorPalette import ColorPixmap
 from OWWidget import *
 from OWGraph import *
 import OWGUI
