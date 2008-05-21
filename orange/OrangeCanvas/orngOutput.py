@@ -94,8 +94,8 @@ class OutputWindow(QMainWindow):
 
     # simple printing of text called by print calls
     def write(self, text):
-        text = self.getSafeString(text)
-        text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
+        Text = self.getSafeString(text)
+        Text = Text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
         #text = "<nobr>" + text + "</nobr>"
 
         if self.focusOnCatchOutput:
@@ -103,12 +103,12 @@ class OutputWindow(QMainWindow):
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
-            self.logFile.write(text)
+            self.logFile.write(Text)
 
-        self.textOutput.setText(str(self.textOutput.text()) + text)
+        self.textOutput.setText(str(self.textOutput.text()) + Text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
-        if text[-1:] == "\n":
+        if Text[-1:] == "\n":
             if self.printOutput:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
             self.unfinishedText = ""
