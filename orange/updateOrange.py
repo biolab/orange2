@@ -141,7 +141,7 @@ class updateOrangeDlg(QMainWindow):
 
         self.text = QTextEdit(self)
         self.text.setReadOnly(1)
-        font = self.text.font(); font.setPointSize(10); self.text.setFont(font)
+        self.text.zoomIn(2)
         self.setCentralWidget(self.text)
         self.statusBar = QStatusBar(self)
         self.setStatusBar(self.statusBar)
@@ -507,10 +507,16 @@ class updateOrangeDlg(QMainWindow):
         return md
 
     def addText(self, text, nobr = 1, addBreak = 1):
-        if nobr: self.text.setText(str(self.text.toPlainText()) + '<nobr>' + text + '</nobr>')
-        else:    self.text.setText(str(self.text.toPlainText()) + text)
-        if addBreak: self.text.setText(str(self.text.toPlainText()) + "<br>")
-        #self.text.ensureVisible(0, self.text.contentsHeight())
+        cursor = QTextCursor(self.text.textCursor())                # clear the current text selection so that
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
+        self.text.setTextCursor(cursor)                             # existing text
+                
+        if nobr: self.text.insertHtml('<nobr>' + text + '</nobr>')
+        else:    self.text.insertHtml(text)
+        
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
+        self.text.setTextCursor(cursor)
+        if addBreak: self.text.insertHtml("<br>")
         self.text.verticalScrollBar().setValue(self.text.verticalScrollBar().maximum())
 
     def keyPressEvent(self, e):
