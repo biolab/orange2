@@ -5,7 +5,7 @@ from operator import add
 from math import *
 from orngScaleLinProjData import *
 import orngVisFuncts
-import ColorPalette
+import OWColorPalette
 from OWGraphTools import UnconnectedLinesCurve
 
 # indices in curveData
@@ -155,6 +155,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if hasDiscreteClass:
             valLen = len(self.rawData.domain.classVar.values)
             classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)    # we create a hash table of variable values and their indices
+            self.discPalette.setNumberOfColors(valLen)
         else:    # if we have a continuous class
             valLen = 0
             classValueIndices = None
@@ -469,8 +470,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         yFloat = rad * sin(phi)
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2])
                     self.updateData(self.shownAttributes)
-                    self.repaint()
-                    #self.replot()
+                    self.replot()
                     #self.widget.recomputeEnergy()
             return
 
@@ -487,11 +487,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             (x_i, y_i, color, index, extraString) = nearestPoint
             intX = self.transform(QwtPlot.xBottom, x_i)
             intY = self.transform(QwtPlot.yLeft, y_i)
-            if len(self.anchorData) > 50:
-                text = "Too many attributes.<hr>Example index = %d" % (index)
-                self.showTip(intX, intY, text)
 
-            elif self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
+            if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     if self.anchorsAsVectors and not self.scalingByVariance:
@@ -717,15 +714,15 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
                 for cls in self.potentialsClassifier.classVar.values:
                     color = colors[sortedClasses.index(cls)].light(150).rgb()
-                    color = [f(ColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # on Mac color cannot be negative number in this case so we convert it manually
+                    color = [f(OWColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # on Mac color cannot be negative number in this case so we convert it manually
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades
                         palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
-#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
-            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, OWColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, OWColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
             self.potentialContext = (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
