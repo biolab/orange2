@@ -65,6 +65,9 @@ class FreeViz:
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
 
+    def setStatusBarText(self, *args):
+        pass
+
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawData.domain.attributes]
         self.radialAnchors()
@@ -362,13 +365,7 @@ class FreeViz:
     def s2nMixAnchorsAutoSet(self):
         # check if we have data and a discrete class
         if not self.rawData or len(self.rawData) == 0 or not self.rawData.domain.classVar or self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
-            return
-
-        if not self.rawData.domain.classVar or not self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
-            if self.__class__ != FreeViz:
-                QMessageBox.critical( self, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
-            else:
-                print "S2N heuristic works only in data sets with a discrete class value"
+            self.setStatusBarText("No data or data without a discrete class")
             return
 
         import orngVizRank
@@ -395,9 +392,8 @@ class FreeViz:
                         qApp.processEvents()
 
                     acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
-                    if hasattr(self, "setStatusBarText"):
-                        if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
-                        else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
+                    if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
+                    else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
 
                     results[acc] = (perm, val)
             if results.keys() == []: return
@@ -417,13 +413,11 @@ class FreeViz:
                     return
                 acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
                 results.append(acc)
-                if hasattr(self, "setStatusBarText"):
-                    if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
-                    else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
+                if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
+                else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
             self.s2nSpread = results.index(max(results))
 
-            if hasattr(self, "setStatusBarText"):
-                self.setStatusBarText("Best projection value is %.2f" % (max(results)))
+            self.setStatusBarText("Best projection value is %.2f" % (max(results)))
 
         # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
         self.s2nMixAnchors()
@@ -433,12 +427,8 @@ class FreeViz:
     def s2nMixAnchors(self, setAttributeListInRadviz = 1):
         # check if we have data and a discrete class
         if not self.rawData or len(self.rawData) == 0 or not self.rawData.domain.classVar or self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
+            self.setStatusBarText("S2N only works on data with a discrete class value")
             return
-
-        if self.__class__ != FreeViz:
-            if not self.rawData.domain.classVar or not self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
-                QMessageBox.critical( self, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
-                return 0
 
         # compute the quality of attributes only once
         if self.s2nMixData == None:
@@ -450,7 +440,9 @@ class FreeViz:
             classCount = len(self.s2nMixData[1])
             attrs = self.s2nMixData[0][:(self.s2nPlaceAttributes/classCount)*classCount]
 
-        if len(attrs) == 0: return 0
+        if len(attrs) == 0:
+            self.setStatusBarText("No discrete attributes found")
+            return 0
 
         arr = [0]       # array that will tell where to put the next attribute
         for i in range(1,len(attrs)/2): arr += [i,-i]
@@ -500,10 +492,6 @@ class FreeViz:
             if hasClass:
                 classArray = numpy.compress(indices, classArray)
 
-        #if sum(validData) <= len(attrIndices):
-        #    self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
-        #    return
-
         vectors = None
         if method == DR_PCA:
             vectors = FreeViz.findSPCAProjection(self, dataMatrix, classArray, SPCA = 0)
@@ -515,13 +503,16 @@ class FreeViz:
             vectors = FreeViz.findPLSProjection(self, dataMatrix, classMatrix, 2)
             vectors = vectors.T
 
-        if vectors == None:
+        # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
+        if vectors == None or not vectors.any() or False in numpy.isfinite(vectors) or False in numpy.isreal(vectors):
+            self.setStatusBarText("Unable to compute anchor positions for the selected attributes")  
             return None
 
         xAnchors = vectors[0]
         yAnchors = vectors[1]
 
         m = math.sqrt(max(xAnchors**2 + yAnchors**2))
+
         xAnchors /= m
         yAnchors /= m
         names = self.graph.attributeNames
@@ -561,6 +552,7 @@ class FreeViz:
             u = numpy.random.random_sample((n,1))
             w = normalize(numpy.dot(E.T,u))
             t = normalize(numpy.dot(E,w))
+            c = normalize(numpy.dot(F.T,t))
 
             dif = t
             # iterations for loading vector t
