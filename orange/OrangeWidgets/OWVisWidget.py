@@ -25,18 +25,17 @@ class OWVisWidget(OWWidget):
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up3.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonUPAttr.setMaximumWidth(30)
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down3.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setMaximumWidth(30)
 
         self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up3.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down3.png")))
         self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes)
 
         self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, dragDropCallback = callback, enableDragDrop = 1, selectionMode = QListWidget.ExtendedSelection)
@@ -107,7 +106,7 @@ class OWVisWidget(OWWidget):
 
         self.sendShownAttributes()
         if self.updateCallbackFunction: self.updateCallbackFunction()
-        self.graph.replot()
+        #self.graph.replot()
         self.graph.removeAllSelections()
 
     def removeAttribute(self):
@@ -124,7 +123,7 @@ class OWVisWidget(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.getShownAttributeList())
         self.sendShownAttributes()
         if self.updateCallbackFunction: self.updateCallbackFunction()
-        self.graph.replot()
+        #self.graph.replot()
         self.graph.removeAllSelections()
 
     def getShownAttributeList(self):
