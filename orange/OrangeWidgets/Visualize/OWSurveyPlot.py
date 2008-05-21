@@ -12,7 +12,7 @@
 import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWSurveyPlotGraph import *
-from OWDlgs import ColorPalette
+import OWColorPalette
 import orngVisFuncts
 import OWGUI
 
@@ -99,7 +99,7 @@ class OWSurveyPlot(OWVisWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
 
@@ -152,6 +152,8 @@ class OWSurveyPlot(OWVisWidget):
             self.resetAttrManipulation()
             self.setSortCombo()
             self.setShownAttributeList(self.data)
+            if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.graph.discPalette.setNumberOfColors(len(self.data.domain.classVar.values))
         self.sortingClick()
 
 
@@ -187,19 +189,19 @@ class OWSurveyPlot(OWVisWidget):
 
     def setColors(self):
         dlg = self.createColorDialog()
-        if dlg.exec_loop():
+        if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = ColorPalette(self, "Color Palette")
-        c.createDiscretePalette("Discrete Palette")
-        c.createContinuousPalette("contPalette", "Continuous palette")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
         box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.layout().addSpacing(5)
