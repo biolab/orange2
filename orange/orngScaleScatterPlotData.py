@@ -2,6 +2,26 @@ from orngScaleData import *
 
 class orngScaleScatterPlotData(orngScaleData):
 
+    def getOriginalData(self, indices):
+        data = self.originalData.take(indices, axis = 0)
+        for i, ind in enumerate(indices):
+            [minVal, maxVal] = self.attrValues[self.rawData.domain[ind].name]
+            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
+                data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawData)) - 0.5)
+            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+                data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawData)) - 0.5)
+        return data
+    
+    def getOriginalSubsetData(self, indices):
+        data = self.originalSubsetData.take(indices, axis = 0)
+        for i, ind in enumerate(indices):
+            [minVal, maxVal] = self.attrValues[self.rawSubsetData.domain[ind].name]
+            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
+                data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
+            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+                data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
+        return data
+
     # create x-y projection of attributes in attrList
     def getXYPositions(self, xAttr, yAttr):
         xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
