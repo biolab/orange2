@@ -169,8 +169,7 @@ class OWITree(OWClassificationTreeViewer):
             self.tree.descender = orange.TreeDescender_UnknownMergeAsBranchSizes()
             self.tree.tree = self.newTreeNode(self.data)
             # set target class combo
-            for name in self.tree.tree.examples.domain.classVar.values:
-                self.targetCombo.insertItem(name)
+            self.targetCombo.addItems(name for name in self.tree.tree.examples.domain.classVar.values)
             self.targetClass = 0
             self.openContext("", self.tree.domain)
         else:
