@@ -32,7 +32,8 @@ class QMyLabel(QLabel):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWScatterPlotMatrix(OWWidget):
-    settingsList = ["pointWidth", "showAxisScale", "showXaxisTitle", "showYLaxisTitle",  "showLegend", "jitterSize", "jitterContinuous", "showFilledSymbols", "colorSettings"]
+    settingsList = ["pointWidth", "showAxisScale", "showXaxisTitle", "showYLaxisTitle",
+                    "showLegend", "jitterSize", "jitterContinuous", "showFilledSymbols", "colorSettings"]
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
 
     def __init__(self,parent=None, signalManager = None):
@@ -136,14 +137,14 @@ class OWScatterPlotMatrix(OWWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.contPalette = dlg.getContinuousPalette("contPalette")
-        self.discPalette = dlg.getDiscretePalette()
+        self.discPalette = dlg.getDiscretePalette("discPalette")
         self.graphCanvasColor = dlg.getColor("Canvas")
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette("Discrete palette")
-        c.createContinuousPalette("contPalette", "Continuous palette")
-        box = c.createBox("otherColors", "Other colors")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings)
@@ -151,10 +152,10 @@ class OWScatterPlotMatrix(OWWidget):
 
     def setColors(self):
         dlg = self.createColorDialog()
-        if dlg.exec_loop():
+        if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.contPalette = dlg.getContinuousPalette("contPalette")
-            self.discPalette = dlg.getDiscretePalette()
+            self.discPalette = dlg.getDiscretePalette("discPalette")
             self.graphCanvasColor = dlg.getColor("Canvas")
             self.updateSettings()
 
@@ -182,7 +183,7 @@ class OWScatterPlotMatrix(OWWidget):
         if self.graphs == []: return
         self.graphs[0].jitterSize = self.jitterSize
         self.graphs[0].jitterContinuous = self.jitterContinuous
-        self.graphs[0].setData(self.data)
+        self.graphs[0].rescaleData()
 
         for graph in self.graphs[1:]:
             graph.jitterSize = self.jitterSize
@@ -274,7 +275,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self)
         self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
         self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
-        self.sizeDlg.exec_loop()
+        self.sizeDlg.exec_()
 
     def saveToFileAccept(self):
         qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)")
@@ -346,10 +347,10 @@ class OWScatterPlotMatrix(OWWidget):
     # we catch mouse release event so that we can send the "Attribute Selection List" signal
     def onMouseReleased(self, e):
         for i in range(len(self.graphs)):
-            if self.graphs[i].blankClick == 1:
+            if self.graphs[i].staticClick == 1:
                 (attr1, attr2, className, string) = self.graphParameters[i]
                 self.send("Attribute Selection List", [attr1, attr2])
-                self.graphs[i].blankClick = 0
+                self.graphs[i].staticClick = 0
 
 
     # receive new data and update all fields
