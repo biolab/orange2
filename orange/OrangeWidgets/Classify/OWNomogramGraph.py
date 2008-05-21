@@ -602,7 +602,7 @@ class AttrLineCont(AttrLine):
 
     # initialization before 2d paint
     def initializeBeforePaint(self, canvas):
-        [self.removeItem(l) for l in self.contLabel]
+        [l.scene().removeItem(l) for l in self.contLabel]
         self.atNames = AttrLine(self.name, canvas)
         for at in self.attValues:
             self.atNames.addAttValue(AttValue(at.name, float(at.name)))
@@ -793,7 +793,7 @@ class AttrLineOrdered(AttrLine):
 
     # initialization before 2d paint
     def initializeBeforePaint(self, canvas):
-        [self.removeItem(l) for l in self.contLabel]
+        [l.scene().removeItem(l) for l in self.contLabel]
         self.contLabel=[]
         for val in self.attValues:
             # draw value
