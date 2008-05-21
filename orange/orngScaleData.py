@@ -5,7 +5,6 @@ import sys, math
 import orange
 import numpy
 import numpy.core.ma as MA
-from OWTools import *
 
 
 # ####################################################################
@@ -122,6 +121,14 @@ class orngScaleData:
             fullData.extend(subsetData)
         return fullData
 
+    # force the exising data to be rescaled do to changes like, jitterContinuous, jitterSize, ...
+    def rescaleData(self):
+        data = self.rawData
+        subsetData = self.rawSubsetData
+        self.rawData = None
+        self.rawSubsetData = None
+        self.setData(data, subsetData)
+
     # this function has to be called before setData or setSubsetData
     # because it computes the minimum and maximum values in the dataset
     def setData(self, data, subsetData = None, **args):
@@ -179,7 +186,7 @@ class orngScaleData:
         arr = fullData.toNumpyMA("ac")[0].T
         self.averages = MA.filled(MA.average(arr, 1), 1)   # replace missing values with 1
         validDataArray = numpy.array(1-arr.mask, numpy.short)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-        arr = numpy.array(MA.filled(arr, -99999999))
+        arr = numpy.array(MA.filled(arr, orange.Illegal_Float))
         originalData = arr.copy()
         scaledData = numpy.zeros(originalData.shape, numpy.float)
 
@@ -351,7 +358,7 @@ class orngScaleData:
         if self.validDataArray == None or len(self.validDataArray) == 0:
             return numpy.array([], numpy.bool)
         try:
-            selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+            selectedArray = self.validDataArray.take(indices, axis = 0)
         except:
             print indices
             print self.validDataArray
@@ -362,7 +369,7 @@ class orngScaleData:
     def getValidSubsetList(self, indices):
         if self.validSubsetDataArray == None or len(self.validSubsetDataArray) == 0:
             return numpy.array([], numpy.bool)
-        selectedArray = numpy.take(self.validSubsetDataArray, indices, axis = 0)
+        selectedArray = self.validSubsetDataArray.take(indices, axis = 0)
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 
