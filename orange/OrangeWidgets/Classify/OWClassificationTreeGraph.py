@@ -7,7 +7,7 @@
 """
 import orngOrangeFoldersQt4
 from OWTreeViewer2D import *
-import OWGraphTools
+import OWColorPalette
 
 class ClassificationNode(CanvasNode):
     def __init__(self,attrVal,*args):
@@ -39,7 +39,7 @@ class ClassificationNode(CanvasNode):
         self.textInd=[]
         self.pieObj=[]
         distSum=sum(self.dist)
-        color=OWGraphTools.ColorPaletteHSV(len(self.dist))
+        color=OWColorPalette.ColorPaletteHSV(len(self.dist))
         startAngle=0
         for i in range(len(self.dist)):
             angle=360/distSum*self.dist[i]*16
