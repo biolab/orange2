@@ -7,6 +7,15 @@ import orngVisFuncts
 from OWGraphTools import UnconnectedLinesCurve
 
 # ####################################################################
+# calculate Euclidean distance between two points
+def euclDist(v1, v2):
+    val = 0
+    for i in range(len(v1)):
+        val += (v1[i]-v2[i])**2
+    return math.sqrt(val)
+
+
+# ####################################################################
 # get a list of all different permutations
 def getPermutationList(elements, tempPerm, currList, checkReverse):
     for i in range(len(elements)):
@@ -63,6 +72,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScalePolyvizData.__init__(self)
+        self.enableGridXB(0)
+        self.enableGridYL(0)
 
         self.lineLength = 2
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
@@ -85,6 +96,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.showProbabilities = 0
         self.squareGranularity = 3
         self.spaceBetweenCells = 1
+        self.scaleFactor = 1.0
 
         # init axes
         self.enableXaxis(0)
@@ -112,7 +124,6 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         #self.removeCurves()
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
-        self.tips.removeAll()
 
         # initial var values
         self.showKNNModel = 0
@@ -328,17 +339,20 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 for i in range(count):
                     y = -1.0 + i*2.0/float(count)
                     col = self.contPalette[i/float(count)]
-                    PolygonCurve(self, QPen(col), QBrush(col), xs, [y,y, y+height, y+height]).attach(self)
+                    c = PolygonCurve(QPen(col), QBrush(col), xs, [y,y, y+height, y+height])
+                    c.attach(self)
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
                 self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
                 self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
+        self.replot()
+
 
     def addAnchorLine(self, x, y, xAnchors, yAnchors, color, index, count):
         for j in range(count):
-            dist = EuclDist([x, y], [xAnchors[j] , yAnchors[j]])
+            dist = euclDist([x, y], [xAnchors[j] , yAnchors[j]])
             if dist == 0: continue
             kvoc = float(self.lineLength * 0.05) / dist
             lineX1 = x; lineY1 = y
@@ -831,4 +845,4 @@ if __name__== "__main__":
 
     a.setMainWidget(c)
     c.show()
-    a.exec_loop()
+    a.exec_()
