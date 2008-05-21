@@ -73,10 +73,10 @@ class OWRank(OWWidget):
         OWGUI.rubber(self.controlArea)
         
         box = OWGUI.widgetBox(self.controlArea, "Distributions", addSpace=True)
-        self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions", 'Show distributions', callback = self.cbShowDistributions)
+        self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions", 'Visualize values', callback = self.cbShowDistributions)
         colBox = OWGUI.indentedBox(box, orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20)
+        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
         OWGUI.rubber(colBox)
         
         selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select attributes", callback=self.selectMethodChanged)
