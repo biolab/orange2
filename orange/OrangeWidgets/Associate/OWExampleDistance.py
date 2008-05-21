@@ -19,7 +19,7 @@ class OWExampleDistance(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance', wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance', wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
