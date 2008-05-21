@@ -6,7 +6,6 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 import orngOrangeFoldersQt4
-from OWTools import *
 from OWWidget import *
 from OWGraph import *
 import OWGUI
