@@ -27,7 +27,7 @@ class OWFile(OWWidget):
     contextHandlers = {"": FileNameContextHandler()}
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
         self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
@@ -65,7 +65,7 @@ class OWFile(OWWidget):
         #OWGUI.separator(hbox, 16, 0)
         OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
 
-        OWGUI.radioButtonsInBox(smallWidget.widget, self, "createNewOn", box="New Attributes", addSpace=True,
+        OWGUI.radioButtonsInBox(smallWidget.widget, self, "createNewOn", box="New Attributes",
                        label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
                                     "Have no common values with the new (recommended)",
@@ -177,6 +177,7 @@ class OWFile(OWWidget):
 
     # Open a file, create data from it and send it over the data channel
     def openFile(self, fn, throughReload, DK=None, DC=None):
+        if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
         self.error()
         self.warning()
 
@@ -219,6 +220,7 @@ class OWFile(OWWidget):
                 self.infoa.setText('No data loaded due to an error')
                 self.infob.setText("")
                 self.warnings.setText("")
+                if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
                 return
                         
         self.dataDomain = data.domain
@@ -260,7 +262,7 @@ class OWFile(OWWidget):
                 warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
 
         self.warnings.setText(warnings)
-        qApp.processEvents()
+        #qApp.processEvents()
         #self.adjustSize()
 
         # make new data and send it
@@ -272,6 +274,7 @@ class OWFile(OWWidget):
 
         self.send("Examples", data)
         self.send("Attribute Definitions", data.domain)
+        if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
