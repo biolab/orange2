@@ -256,7 +256,7 @@ if __name__=="__main__":
     ow=OWSieveMultigram()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()
 
     #save settings
     ow.saveSettings()
