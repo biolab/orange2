@@ -19,7 +19,7 @@ class OWRegressionTree(OWWidget):
                   "MaxMajCheck", "MaxMajVal", "PostMaj", "PostMPCheck", "PostMPVal", "Bin"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Regression Tree", wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, "Regression Tree", wantMainArea = 0, resizingEnabled = 0)
         self.Name="Regression Tree"
         self.MinInstCheck=1
         self.MinInstVal=5
