@@ -1,118 +1,10 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.Qwt5 import *
-
-#from Numeric import *
-#from OWGraphTools import *
-from math import sqrt
-
-##colorHSVValues = [(240, 255, 255), (0, 255, 255), (120, 255, 255), (30, 255, 255), (60, 255, 255),
-##                  (300, 255, 255), (180, 255, 255), (270, 255, 255), (210, 255, 255), (45, 127, 255),
-##                  (45, 127, 127), (30, 255, 92), (120, 255, 84), (60, 255, 192), (180, 255, 127),
-##                  (0, 255, 128), (300, 255, 127)]
-
-defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)]
-
-#colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
-
-#ColorBrewer color set - bad when there are small points but great when you have to color areas
-ColorBrewerColors = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+import numpy
 
 SelectionCurveRtti = QwtPlotCurve.Rtti_PlotUserItem + 123
 LegendCurveRtti = QwtPlotCurve.Rtti_PlotUserItem + 124
-
-class ColorPaletteGenerator:
-    maxHueVal = 260
-
-    def __init__(self, numberOfColors = 0, rgbColors = defaultRGBColors):
-        self.rgbColors = rgbColors
-        self.numberOfColors = numberOfColors
-        if rgbColors:
-            self.rgbQColors = [QColor(*color) for color in self.rgbColors]
-
-
-    def __getitem__(self, index, brightness = None):
-        if type(index) == tuple:
-            index, brightness = index
-
-        if self.numberOfColors == -1:     # is this color for continuous attribute?
-            col = QColor()
-            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
-            return col
-        else:
-            if index < len(self.rgbColors):
-                if brightness == None:
-                    return self.rgbQColors[index]
-                else:
-                    color = QColor(*self.rgbColors[index])
-                    h,s,v,a = color.getHsv()
-                    color.setHsv(h, int(brightness), v, a)
-                    return color
-            else:
-                col = QColor()
-                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
-                return col
-
-    def getRGB(self, index, brightness = None):
-        if self.numberOfColors == -1:     # is this color for continuous attribute?
-            col = QColor()
-            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
-            return (col.red(), col.green(), col.blue())
-        else:
-            if index < len(self.rgbColors):
-                if brightness == None:
-                    return self.rgbColors[index]
-                else:
-                    col = QColor(*self.rgbColors[index])
-                    h,s,v,a = col.getHsv()
-                    col.setHsv(h, int(brightness), v, a)
-                    return (col.red(), col.green(), col.blue())
-            else:
-                col = QColor()
-                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
-                return (col.red(), col.green(), col.blue())
-
-    # get QColor instance for given index
-    def getColor(self, index, brightness = None):
-        return self.__getitem__(index, brightness)
-
-# only for backward compatibility
-class ColorPaletteHSV(ColorPaletteGenerator):
-    pass
-
-
-# black and white color palette
-class ColorPaletteBW:
-    def __init__(self, numberOfColors = -1, brightest = 50, darkest = 255):
-        self.numberOfColors = numberOfColors
-        self.brightest = brightest
-        self.darkest = darkest
-        self.hueValues = []
-
-        if numberOfColors == -1: return  # used for coloring continuous variables
-        else:
-            self.values = [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]
-
-    def __getitem__(self, index):
-        if self.numberOfColors == -1:                # is this color for continuous attribute?
-            val = int(self.brightest + (self.darkest-self.brightest)*index)
-            return QColor(val, val, val)
-        else:                                                                           # get color for discrete attribute
-            return QColor(self.values[index], self.values[index], self.values[index])   # index must be between 0 and self.numberofColors
-
-    # get QColor instance for given index
-    def getColor(self, index):
-        return self.__getitem__(index)
-
-
-
-# ####################################################################
-# calculate Euclidean distance between two points
-def EuclDist(v1, v2):
-    val = 0
-    for i in range(len(v1)):
-        val += (v1[i]-v2[i])**2
-    return sqrt(val)
 
 
 # ####################################################################
@@ -139,7 +31,7 @@ class TooltipManager:
         self.texts=[]
 
     # Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one.
-    def addToolTip(self,x, y,text, customX = 0, customY = 0):
+    def addToolTip(self, x, y, text, customX = 0, customY = 0):
         self.positions.append((x,y, customX, customY))
         self.texts.append(text)
 
@@ -179,68 +71,39 @@ class SelectionCurve(QwtPlotCurve):
         return SelectionCurveRtti
 
     def addPoint(self, xPoint, yPoint):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        xVals.append(xPoint)
-        yVals.append(yPoint)
-        self.setData(xVals, yVals)
+        self.setData([self.x(i) for i in range(self.dataSize())] + [xPoint], [self.y(i) for i in range(self.dataSize())] + [yPoint])
         self.pointArrayValid = 0        # invalidate the point array
 
     def removeLastPoint(self):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()-1):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        self.setData(xVals, yVals)
+        self.setData([self.x(i) for i in range(self.dataSize()-1)], [self.y(i) for i in range(self.dataSize()-1)])
         self.pointArrayValid = 0        # invalidate the point array
 
     def replaceLastPoint(self, xPoint, yPoint):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()-1):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        xVals.append(xPoint)
-        yVals.append(yPoint)
-        self.setData(xVals, yVals)
+        self.setData([self.x(i) for i in range(self.dataSize()-1)] + [xPoint], [self.y(i) for i in range(self.dataSize()-1)] + [yPoint])
         self.pointArrayValid = 0        # invalidate the point array
 
     def createPointArray(self):
-        xMap = self.parentPlot().canvasMap(self.xAxis())
-        yMap = self.parentPlot().canvasMap(self.yAxis())
-
-        self.pointArray = QPointArray(self.dataSize() + 1)
+        self.pointArray = QPolygonF()
         for i in range(self.dataSize()):
-            self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-        self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
+            self.pointArray.append(QPointF(self.x(i), self.y(i)))
+        self.pointArray.append(QPointF(self.x(0), self.y(0)))
         self.pointArrayValid = 1
 
     def getSelectedPoints(self, xData, yData, validData):
-        import numpy
         self.createPointArray()
-        region = QRegion(self.pointArray)
         selected = numpy.zeros(len(xData))
 
-        xMap = self.parentPlot().canvasMap(self.xAxis())
-        yMap = self.parentPlot().canvasMap(self.yAxis())
         for i in range(len(xData)):
             if validData[i]:
-                selected[i] = region.contains(QPoint(xMap.transform(xData[i]), yMap.transform(yData[i])))
+                selected[i] = self.pointArray.containsPoint(QPointF(xData[i], yData[i]), Qt.OddEvenFill)
         return selected
 
     # is point defined at x,y inside a rectangle defined with this curve
     def isInside(self, x, y):
-        xMap = self.parentPlot().canvasMap(self.xAxis())
-        yMap = self.parentPlot().canvasMap(self.yAxis())
-
         if not self.pointArrayValid:
             self.createPointArray()
 
-        return QRegion(self.pointArray).contains(QPoint(xMap.transform(x), yMap.transform(y)))
+        return self.pointArray.containsPoint(QPointF(x, y), Qt.OddEvenFill)
 
     # test if the line going from before last and last point intersect any lines before
     # if yes, then add the intersection point and remove the outer points
@@ -354,7 +217,7 @@ class RectangleCurve(QwtPlotCurve):
 # data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
 # brush and pen can also be set by calls to setPen and setBrush functions
 class PolygonCurve(QwtPlotCurve):
-    def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+    def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None, tooltip = None):
         QwtPlotCurve.__init__(self)
         if pen:
             self.setPen(pen)
@@ -364,30 +227,11 @@ class PolygonCurve(QwtPlotCurve):
         self.Brush = brush
         self.setStyle(QwtPlotCurve.Lines)
         self.setItemAttribute(QwtPlotItem.Legend, 0)
+        self.tooltip = tooltip
         if xData != None and yData != None:
             self.setData(xData, yData)
 
 
-# ####################################################################
-# create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.
-class nonTransparentMarker(QwtPlotMarker):
-    def __init__(self, backColor, *args):
-        QwtPlotMarker.__init__(self, *args)
-        self.backColor = backColor
-
-    def draw(self, p, x, y, rect):
-        p.setPen(self.labelPen())
-        p.setFont(self.font())
-
-        th = p.fontMetrics().height();
-        tw = p.fontMetrics().width(self.label());
-        r = QRect(x + 4, y - th/2 - 2, tw + 4, th + 4)
-        p.fillRect(r, QBrush(self.backColor))
-        p.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, self.label());
-
-
-# ####################################################################
-#
 class errorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, text = "", connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
         QwtPlotCurve.__init__(self, text)
@@ -458,6 +302,54 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
         # restore ex settings
         p.setPen(pen)
 
+
+# ####################################################################
+# create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.
+class nonTransparentMarker(QwtPlotMarker):
+    def __init__(self, backColor, *args):
+        QwtPlotMarker.__init__(self, *args)
+        self.backColor = backColor
+
+    def draw(self, p, x, y, rect):
+        p.setPen(self.labelPen())
+        p.setFont(self.font())
+
+        th = p.fontMetrics().height();
+        tw = p.fontMetrics().width(self.label());
+        r = QRect(x + 4, y - th/2 - 2, tw + 4, th + 4)
+        p.fillRect(r, QBrush(self.backColor))
+        p.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, self.label());
+
+
+
+class RotatedMarker(QwtPlotMarker):
+    def __init__(self, parent, label = "", x = 0.0, y = 0.0, rotation = 0):
+        QwtPlotMarker.__init__(self, parent)
+        self.rotation = rotation
+        self.parent = parent
+        self.x = x
+        self.y = y
+        self.setXValue(x)
+        self.setYValue(y)
+        self.parent = parent
+
+        if rotation != 0: self.setLabel(label + "  ")
+        else:             self.setLabel(label)
+
+    def setRotation(self, rotation):
+        self.rotation = rotation
+
+    def draw(self, painter, x, y, rect):
+        rot = math.radians(self.rotation)
+
+        x2 = x * math.cos(rot) - y * math.sin(rot)
+        y2 = x * math.sin(rot) + y * math.cos(rot)
+
+        painter.rotate(-self.rotation)
+        QwtPlotMarker.draw(self, painter, x2, y2, rect)
+        painter.rotate(self.rotation)
+
+
 # ####################################################################
 # draw labels for discrete attributes
 class DiscreteAxisScaleDraw(QwtScaleDraw):
@@ -479,3 +371,4 @@ class HiddenScaleDraw(QwtScaleDraw):
 
     def label(self, value):
         return QwtText()
+
