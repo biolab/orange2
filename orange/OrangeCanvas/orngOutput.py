@@ -96,18 +96,8 @@ class OutputWindow(QMdiSubWindow):
 
     # simple printing of text called by print calls
     def write(self, text):
-        # is this some extra info for debuging
-        #if len(text) > 7 and text[0:7] == "<extra>":
-        #    if not self.printExtraOutput: return
-        #    text = text[7:]
-        text = str(text)
-        text = text.replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text = text.replace("(br)", "<br>")
-        text = text.replace("(nobr)", "<nobr>").replace("(/nobr)", "</nobr>")
-        text = text.replace("(b)", "<b>").replace("(/b)", "</b>")
-        text = text.replace("(i)", "<i>").replace("(/i)", "</i>")
-        text = text.replace("(hr)", "<hr>")
-        text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
+        Text = self.getSafeString(text)
+        Text = Text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
         #text = "<nobr>" + text + "</nobr>"
 
         if self.focusOnCatchOutput:
@@ -116,17 +106,17 @@ class OutputWindow(QMdiSubWindow):
 
         if self.writeLogFile:
             #self.logFile.write(str(text) + "<br>\n")
-            self.logFile.write(text)
+            self.logFile.write(Text)
 
         cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
         self.textOutput.setTextCursor(cursor)                             # existing text
         if text == " ": self.textOutput.insertHtml("&nbsp;")
-        else:           self.textOutput.insertHtml(text)                                  # then append the text
+        else:           self.textOutput.insertHtml(Text)                                  # then append the text
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
         self.textOutput.setTextCursor(cursor)
 
-        if text[-1:] == "\n":
+        if Text[-1:] == "\n":
             if self.printOutput:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
             self.unfinishedText = ""
@@ -139,6 +129,8 @@ class OutputWindow(QMdiSubWindow):
 
     def flush(self):
         pass
+    def getSafeString(self, s):
+        return str(s).replace("<", "&lt;").replace(">", "&gt;")
 
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
@@ -149,31 +141,27 @@ class OutputWindow(QMdiSubWindow):
         if str(self.textOutput.toPlainText()) not in ["", "\n"]:
             text += "<hr>"
         t = localtime()
-        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type).replace("<", "(").replace(">", ")") , t[3],t[4],t[5])
+        text += "<hr><nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
         list = traceback.extract_tb(tracebackInfo, 10)
-        space = "&nbsp; &nbsp; "
+        space = "&nbsp; "
         totalSpace = space
         for i in range(len(list)):
             (file, line, funct, code) = list[i]
             if code == None: continue
             (dir, filename) = os.path.split(file)
-            text += "<nobr>" + totalSpace + "File: <u>" + filename + "</u>  in line %4d</nobr><br>" %(line)
-            text += "<nobr>" + totalSpace + "<nobr>Function name: %s</nobr><br>" % (funct)
-            if i == len(list)-1:
-                text += "<nobr>" + totalSpace + "Code: <b>" + code + "</b></nobr><br>"
-            else:
-                text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>"
-                totalSpace += space
+            text += "<nobr>" + totalSpace + "File: <b>" + filename + "</b>, line %4d" %(line) + " in <b>%s</b></nobr><br>\n" % (self.getSafeString(funct))
+            text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>\n"
+            totalSpace += space
 
-        value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
-        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type).replace("<", "(").replace(">", ")") + "</b></nobr><br>"
-        text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><hr>"
-        text = text.replace("<br>","<br>\n")
+        lines = traceback.format_exception_only(type, value)
+        for line in lines[:-1]:
+            text += "<nobr>" + totalSpace + self.getSafeString(line) + "</nobr><br>\n"
+        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n<hr>\n"
 
         cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
