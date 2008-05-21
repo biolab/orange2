@@ -7,7 +7,6 @@ import orngOrangeFoldersQt4
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from OWTools import *
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
@@ -18,6 +17,9 @@ import OWGUI
 
 ERROR = 0
 WARNING = 1
+
+TRUE=1
+FALSE=0
 
 def unisetattr(self, name, value, grandparent):
     if "." in name:
@@ -93,9 +95,6 @@ class ControlledAttributesDict(dict):
 class ExampleTable(orange.ExampleTable):
     pass
 
-class ExampleTableWithClass(ExampleTable):
-    pass
-
 class AttributeList(list):
     pass
 
@@ -103,7 +102,7 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False):
+    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
@@ -118,7 +117,8 @@ class OWBaseWidget(QDialog):
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
 
-        QDialog.__init__(self, parent, Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint)
+        if resizingEnabled: QDialog.__init__(self, parent, Qt.Dialog)
+        else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
@@ -535,8 +535,8 @@ class OWBaseWidget(QDialog):
                     except:
                         type, val, traceback = sys.exc_info()
                         sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
-
-                qApp.restoreOverrideCursor()
+                    qApp.restoreOverrideCursor()
+                    
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
         if hasattr(self, "handleNewSignals") and newSignal == 1:
@@ -657,8 +657,8 @@ class OWBaseWidget(QDialog):
         #self.setState("Warning", id, text)
 
     def warning(self, id = 0, text = ""):
-        #self.setState("Warning", id, text)
-        self.setState("Info", id, text)        # if we want warning just set information
+        self.setState("Warning", id, text)
+        #self.setState("Info", id, text)        # if we want warning just set information
 
     def error(self, id = 0, text = ""):
         self.setState("Error", id, text)
@@ -831,6 +831,8 @@ class OWBaseWidget(QDialog):
                 sys.excepthook(excType, value, tracebackInfo)  # print the exception
                 sys.stderr.write("Widget settings are:\n")
                 for i, setting in enumerate(getattr(self, "settingsList", [])):
+                    if setting in ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]:
+                        continue
                     sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
 
 
