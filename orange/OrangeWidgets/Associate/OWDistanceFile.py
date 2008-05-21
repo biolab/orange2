@@ -16,7 +16,7 @@ class OWDistanceFile(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='Distance File'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
