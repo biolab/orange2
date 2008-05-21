@@ -5,12 +5,11 @@
 <priority>3300</priority>
 """
 
-from qt import *
 from qttable import *
 from OWWidget import *
 #from OWScatterPlotGraph import *
 from OWCorrAnalysisGraph import *
-import OWGUI, OWToolbars, OWDlgs
+import OWGUI, OWToolbars, OWColorPalette
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
@@ -279,9 +278,9 @@ class OWCorrAnalysis(OWWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-        self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+        self.graph.setGridColor(QPen(dlg.getColor("Grid")))
 
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
@@ -543,19 +542,19 @@ class OWCorrAnalysis(OWWidget):
 
     def setColors(self):
         dlg = self.createColorDialog()
-        if dlg.exec_loop():
+        if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+            self.graph.setGridColor(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color palette")
-        c.createDiscretePalette(" Discrete palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other colors ")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete palette")
+        c.createContinuousPalette("contPalette", "Continuous palette")
+        box = c.createBox("otherColors", "Other colors")
         c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.addSpace(5)
         c.createColorButton(box, "Grid", "Grid color", QColor(Qt.black))
@@ -663,4 +662,4 @@ if __name__=="__main__":
 ##    f.close()
 ##    ow.dataset(a)
 
-    appl.exec_loop()
+    appl.exec_()
