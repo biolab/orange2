@@ -9,7 +9,7 @@
 import orngOrangeFoldersQt4
 import orange, orngCN2
 from OWWidget import *
-import OWGUI, OWGraphTools
+import OWGUI, OWColorPalette
 import sys
 import re
 
@@ -399,7 +399,7 @@ class DistBar(QGraphicsRectItem):
         distText=self.distText.strip("<>")
         dist=[float(f) for f in distText.split(",")]
         distSum=sum(dist)
-        classColor=OWGraphTools.ColorPaletteHSV(len(dist))
+        classColor=OWColorPalette.ColorPaletteHSV(len(dist))
         m=max(dist)
         for i in range(len(dist)):
             r=QGraphicsRectItem(None, self.canvas)
