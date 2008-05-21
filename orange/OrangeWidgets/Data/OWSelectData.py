@@ -90,7 +90,7 @@ class OWSelectData(OWWidget):
         self.boxIndices = {}
         self.valuesStack = QStackedWidget(self)
         glac.addWidget(self.valuesStack, 0, 2)
-        
+
         # values 0: empty
         boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
         self.boxIndices[0] = boxVal
@@ -154,7 +154,7 @@ class OWSelectData(OWWidget):
         self.criteriaTable.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.criteriaTable.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
         self.connect(self.criteriaTable, SIGNAL('cellClicked(int, int)'), self.currentCriteriaChange)
-        
+
         boxDataIn = OWGUI.widgetBox(self, 'Data In', addToLayout = 0)
         grid.addWidget(boxDataIn, 3,0)
         self.dataInExamplesLabel = OWGUI.widgetLabel(boxDataIn, "num examples")
@@ -404,6 +404,8 @@ class OWSelectData(OWWidget):
             return
         self.Conditions = self.Conditions[:currRow-1] + [self.Conditions[currRow], self.Conditions[currRow-1]] + self.Conditions[currRow+1:]
         self.synchronizeTable()
+        self.criteriaTable.setCurrentCell(max(0, currRow-1), 1)
+        self.updateMoveButtons()
         self.setOutputIf()
 
 
@@ -416,6 +418,8 @@ class OWSelectData(OWWidget):
             return
         self.Conditions = self.Conditions[:currRow] + [self.Conditions[currRow+1], self.Conditions[currRow]] + self.Conditions[currRow+2:]
         self.synchronizeTable()
+        self.criteriaTable.setCurrentCell(min(currRow+1, self.criteriaTable.rowCount()-1), 1)
+        self.updateMoveButtons()
         self.setOutputIf()
 
 
@@ -454,6 +458,7 @@ class OWSelectData(OWWidget):
                     self.leStr2.setText(str(cond.val2))
                 self.cbCaseSensitive.setChecked(cond.caseSensitive)
             elif self.name2var[cond.varName].varType == orange.VarTypes.Discrete:
+                self.lbVals.clearSelection()
                 for val in cond.val1:
                     lbItems = self.lbVals.findItems(val, Qt.MatchExactly)
                     for item in lbItems:
@@ -543,7 +548,7 @@ class OWSelectData(OWWidget):
                     self.lbVals.setSelectionMode(QListWidget.SingleSelection)
                 isSelected = False
                 for name in selectedItemNames:
-                    items = self.lbVals.findItems(name)
+                    items = self.lbVals.findItems(name, Qt.MatchExactly)
                     for item in items:
                         item.setSelected(1)
                         isSelected = True
