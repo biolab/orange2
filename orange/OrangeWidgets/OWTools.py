@@ -30,14 +30,5 @@ def getHtmlCompatibleString(strVal):
     return strVal
 
 
-#A 10X10 single color pixmap
-class ColorPixmap (QIcon):
-    def __init__(self,color=QColor(Qt.white), size = 12):
-        "Creates a single-color pixmap"
-        p = QPixmap(size,size)
-        p.fill(color)
-        self.color = color
-        QIcon.__init__(self, p)
-
 
 
