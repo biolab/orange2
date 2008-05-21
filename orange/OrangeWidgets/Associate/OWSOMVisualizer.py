@@ -8,7 +8,7 @@
 import orngOrangeFoldersQt4
 import orange, orngSOM, orangeom
 import math, numpy, sets
-import OWGUI, OWGraphTools
+import OWGUI, OWColorPalette
 from OWWidget import *
 from OWTreeViewer2D import CanvasBubbleInfo
 from OWDlgs import OWChooseImageSizeDlg
@@ -57,7 +57,7 @@ class CanvasSOMItem(QCanvasPolygon):
         if len(self.node.examples)<0:
             return
         dist=orange.Distribution(attrIndex, self.node.examples)
-        colors=OWGraphTools.ColorPaletteHSV(len(dist))
+        colors=OWColorPalette.ColorPaletteHSV(len(dist))
         distSum=max(sum(dist),1)
         startAngle=0
         for i in range(len(dist)):
@@ -186,7 +186,7 @@ class SOMCanvasView(QCanvasView):
                 s="Avg "+node.examples.domain.classVar.name+":"+("%.3f" % dist.average())
                 b.addTextLine(s)
             else:
-                colors=OWGraphTools.ColorPaletteHSV(len(node.examples.domain.classVar.values))
+                colors=OWColorPalette.ColorPaletteHSV(len(node.examples.domain.classVar.values))
                 for i in range(len(node.examples.domain.classVar.values)):
                     s=str(node.examples.domain.classVar.values[i])+": "+str(dist[i])
                     b.addTextLine(s, colors[i])
@@ -363,7 +363,7 @@ class SOMCanvas(QCanvas):
                         dist=orange.Distribution(attr, n.node.mappedExamples)
                     else:
                         dist=orange.Distribution(attr, n.node.examples)
-                    colors=OWGraphTools.ColorPaletteHSV(len(dist))
+                    colors=OWColorPalette.ColorPaletteHSV(len(dist))
                     maxProb=max(dist)
                     majValInd=filter(lambda i:dist[i]==maxProb, range(len(dist)))[0]
                     if self.parent().discHistMode==1:
