@@ -1,0 +1,689 @@
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from OWWidget import *
+import OWGUI
+
+defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)]
+defaultColorBrewerPalette = {3: [(127, 201, 127), (190, 174, 212), (253, 192, 134)], 4: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153)], 5: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176)], 6: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127)], 7: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127), (191, 91, 23)], 8: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127), (191, 91, 23), (102, 102, 102)]} 
+
+colorButtonSize = 25
+specialColorLabelWidth = 160
+paletteInterpolationColors = 250
+
+# On Mac OS X there are problems with QRgb and whether it is long or int and even whether
+# it is positive or negative number (there is corelation between those)
+# Color can be stored in 32 bit unsigned int but Python does not have unsigned int explicitly
+# So Python on Mac sometimes uses long where it should use int (when the highest bit is set and
+# it sees the number as positive - so it cannot be stored as positive number in 31 bits) and sometimes
+# it needs unsigned number and so uses long and does not want a signed int
+
+try:
+    qRed(-1)
+    wantsPositiveColor = False
+except:
+    wantsPositiveColor = True
+
+def signedColor(long):
+    if type(long) == int:
+        return long
+    
+    long &= 0xFFFFFFFF
+    
+    if long & 0x80000000:
+        return int(-((long ^ 0xFFFFFFFF) + 1))
+    else:
+        return int(long)
+
+def positiveColor(color):
+    if wantsPositiveColor and color < 0:
+        return (-color - 1) ^ 0xFFFFFFFF
+    else:
+        return color
+
+def signedPalette(palette):
+    return [signedColor(color) for color in palette]
+
+
+#A 10X10 single color pixmap
+class ColorPixmap (QIcon):
+    def __init__(self,color=QColor(Qt.white), size = 12):
+        "Creates a single-color pixmap"
+        p = QPixmap(size,size)
+        p.fill(color)
+        self.color = color
+        QIcon.__init__(self, p)
+
+
+# a widget that can be used to select the colors to be used
+class ColorPaletteDlg(OWBaseWidget):
+    def __init__(self,parent, caption = "Color Palette", callback = None, modal  = TRUE):
+        OWBaseWidget.__init__(self, None, None, caption, modal = modal)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setMargin(4)
+
+        self.callback = callback
+        self.contPaletteNames = []
+        self.discPaletteNames = []
+        self.colorButtonNames = []
+        self.colorSchemas = []
+        self.selectedSchemaIndex = 0
+
+        self.mainArea = OWGUI.widgetBox(self, spacing = 4)
+        self.layout().addWidget(self.mainArea)
+        self.schemaCombo = OWGUI.comboBox(self.mainArea, self, "selectedSchemaIndex", box = "Saved Profiles", callback = self.paletteSelected)
+
+        self.hbox = OWGUI.widgetBox(self, orientation = "horizontal")
+        self.okButton = OWGUI.button(self.hbox, self, "OK", self.acceptChanges)
+        self.cancelButton = OWGUI.button(self.hbox, self, "Cancel", self.reject)
+        self.setMinimumWidth(230)
+        self.resize(350, 200)
+
+    def acceptChanges(self):
+        state = self.getCurrentState()
+        oldState = self.colorSchemas[self.selectedSchemaIndex][1]
+        if state == oldState:
+            QDialog.accept(self)
+        else:
+            # if we changed the deafult schema, we must save it under a new name
+            if self.colorSchemas[self.selectedSchemaIndex][0] == "Default":
+                if QMessageBox.information(self, 'Question', 'The color schema has changed. Do you want to save changes?','Yes','No', '', 0,1):
+                    QDialog.reject(self)
+                else:
+                    self.selectedSchemaIndex = self.schemaCombo.count()-1
+                    self.paletteSelected()
+                    QDialog.accept(self)
+            # simply save the new users schema
+            else:
+                self.colorSchemas[self.selectedSchemaIndex] = [self.colorSchemas[self.selectedSchemaIndex][0], state]
+                QDialog.accept(self)
+
+    def createBox(self, boxName, boxCaption = None):
+        box = OWGUI.widgetBox(self.mainArea, boxCaption)
+        box.setAlignment(Qt.AlignLeft)
+        return box
+
+    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
+        self.__dict__["butt" + buttonName] = ColorButton(self, box, buttonCaption)
+        self.__dict__["butt" + buttonName].setColor(QColor(initialColor))
+        self.colorButtonNames.append(buttonName)
+
+
+    def createContinuousPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = QColor(Qt.white), initialColor2 = Qt.black):
+        buttBox = OWGUI.widgetBox(self.mainArea, boxCaption) 
+        box = OWGUI.widgetBox(buttBox, orientation = "horizontal")
+        
+        self.__dict__["cont"+paletteName+"Left"]  = ColorButton(self, box, color = QColor(initialColor1))
+        self.__dict__["cont"+paletteName+"View"] = PaletteView(box)
+        self.__dict__["cont"+paletteName+"Right"] = ColorButton(self, box, color = QColor(initialColor2))
+
+        self.__dict__["cont"+paletteName+"passThroughBlack"] = passThroughBlack
+        self.__dict__["cont"+paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(buttBox, self, "cont"+paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
+        self.contPaletteNames.append(paletteName)
+
+    # #####################################################
+    # DISCRETE COLOR PALETTE
+    # #####################################################
+    def createDiscretePalette(self, paletteName, boxCaption, rgbColors = defaultRGBColors):
+        vbox = OWGUI.widgetBox(self.mainArea, boxCaption, orientation = 'vertical')
+        self.__dict__["disc"+paletteName+"View"] = PaletteView(vbox)
+        self.__dict__["disc"+paletteName+"View"].rgbColors = rgbColors
+        
+        hbox = OWGUI.widgetBox(vbox, orientation = 'horizontal')
+        self.__dict__["disc"+paletteName+"EditButt"] = OWGUI.button(hbox, self, "Edit palette", self.editPalette, tooltip = "Edit the order and colors of the palette", debuggingEnabled = 0, toggleButton = 1)
+        self.__dict__["disc"+paletteName+"LoadButt"] = OWGUI.button(hbox, self, "Load palette", self.loadPalette, tooltip = "Load a predefined color palette", debuggingEnabled = 0, toggleButton = 1)
+        self.discPaletteNames.append(paletteName)
+        
+
+    def editPalette(self):
+        for paletteName in self.discPaletteNames:
+            if self.__dict__["disc"+paletteName+"EditButt"].isChecked():
+                dlg = PaletteEditor(self, self.__dict__["disc"+paletteName+"View"].rgbColors)
+                if dlg.exec_() and self.__dict__["disc"+paletteName+"View"].getRgbColors() != dlg.rgbColors:
+                    self.__dict__["disc"+paletteName+"View"].rgbColors = dlg.getRgbColors()
+                self.__dict__["disc"+paletteName+"EditButt"].setChecked(0)
+                return
+                
+    def loadPalette(self):
+        for paletteName in self.discPaletteNames:
+            if self.__dict__["disc"+paletteName+"LoadButt"].isChecked():
+                self.__dict__["disc"+paletteName+"LoadButt"].setChecked(0)
+                dlg = ColorPalleteListing()
+                if dlg.exec_() == QDialog.Accepted:
+                    for butt in dlg.buttons:
+                        if butt.isChecked():
+                            self.__dict__["disc"+paletteName+"View"].setDiscPalette(butt.rgbColors)
+                            return 
+
+
+    # #####################################################
+
+    def getCurrentSchemeIndex(self):
+        return self.selectedSchemaIndex
+
+    def getColor(self, buttonName):
+        return self.__dict__["butt"+buttonName].getColor()
+
+    def getContinuousPalette(self, paletteName):
+        c1 = self.__dict__["cont"+paletteName+"Left"].getColor()
+        c2 = self.__dict__["cont"+paletteName+"Right"].getColor()
+        b = self.__dict__["cont"+paletteName+"passThroughBlack"]
+        return ContinuousPaletteGenerator(c1, c2, b)
+
+    def getDiscretePalette(self, paletteName):
+        return ColorPaletteGenerator(rgbColors = self.__dict__["disc"+paletteName+"View"].rgbColors)
+
+    def getColorSchemas(self):
+        return self.colorSchemas
+
+    def getCurrentState(self):
+        l1 = [(name, self.qRgbFromQColor(self.__dict__["butt"+name].getColor())) for name in self.colorButtonNames]
+        l2 = [(name, (self.qRgbFromQColor(self.__dict__["cont"+name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__["cont"+name+"Right"].getColor()), self.__dict__["cont"+name+"passThroughBlack"])) for name in self.contPaletteNames]
+        l3 = [(name, self.__dict__["disc"+name+"View"].rgbColors) for name in self.discPaletteNames]
+        return [l1, l2, l3]
+
+
+    def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
+        self.schemaCombo.clear()
+
+        if not schemas or type(schemas) != list:
+            schemas = [("Default", self.getCurrentState()) ]
+
+        self.colorSchemas = schemas
+        self.schemaCombo.addItems([s[0] for s in schemas])
+        self.schemaCombo.addItem("Save current palette as...")
+        self.selectedSchemaIndex = selectedSchemaIndex
+        self.paletteSelected()
+
+    def setCurrentState(self, state):
+        [buttons, contPalettes, discPalettes] = state
+        for (name, but) in buttons:
+            self.__dict__["butt"+name].setColor(self.rgbToQColor(but))
+        for (name, (l,r,chk)) in contPalettes:
+            self.__dict__["cont"+name+"Left"].setColor(self.rgbToQColor(l))
+            self.__dict__["cont"+name+"Right"].setColor(self.rgbToQColor(r))
+            self.__dict__["cont"+name+"passThroughBlack"] = chk
+            self.__dict__["cont"+name+"passThroughBlackCheckbox"].setChecked(chk)
+            self.__dict__["cont"+name+"View"].setContPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk)
+
+        for (name, rgbColors) in discPalettes:
+            self.__dict__["disc"+name+"View"].setDiscPalette(rgbColors)
+                        
+
+    def paletteSelected(self):
+        if not self.schemaCombo.count(): return
+
+        # if we selected "Save current palette as..." option then add another option to the list
+        if self.selectedSchemaIndex == self.schemaCombo.count()-1:
+            message = "Please enter a new name for the current color schema:"
+            ok = FALSE
+            while not ok:
+                text, ok = QInputDialog.getText(self, "New Schema Name", message)
+                if (ok):
+                    newName = str(text)
+                    oldNames = [str(self.schemaCombo.itemText(i)).lower() for i in range(self.schemaCombo.count()-1)]
+                    if newName.lower() == "default":
+                        ok = FALSE
+                        message = "Can not change the 'Default' schema. Please enter a different name:"
+                    elif newName.lower() in oldNames:
+                        index = oldNames.index(newName.lower())
+                        self.colorSchemas.pop(index)
+
+                    if ok:
+                        self.colorSchemas.insert(0, (newName, self.getCurrentState()))
+                        self.schemaCombo.insertItem(0, newName)
+                        #self.schemaCombo.setCurrentIndex(0)
+                        self.selectedSchemaIndex = 0
+                else:
+                    state = self.getCurrentState()  # if we pressed cancel we have to select a different item than the "Save current palette as..."
+                    self.selectedSchemaIndex = 0    # this will change the color buttons, so we have to restore the colors
+                    self.setCurrentState(state)
+        else:
+            schema = self.colorSchemas[self.selectedSchemaIndex][1]
+            self.setCurrentState(schema)
+            if self.callback: self.callback()
+
+
+    def rgbToQColor(self, rgb):
+        # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+        # why this was not used before so I am leaving it as it is
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
+
+    def qRgbFromQColor(self, qcolor):
+        return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
+
+    def createPalette(self, color1, color2, passThroughBlack, colorNumber = paletteInterpolationColors):
+        if passThroughBlack:
+            palette = [qRgb(color1.red() - color1.red()*i*2./colorNumber, color1.green() - color1.green()*i*2./colorNumber, color1.blue() - color1.blue()*i*2./colorNumber) for i in range(colorNumber/2)]
+            palette += [qRgb(color2.red()*i*2./colorNumber, color2.green()*i*2./colorNumber, color2.blue()*i*2./colorNumber) for i in range(colorNumber - (colorNumber/2))]
+        else:
+            palette = [qRgb(color1.red() + (color2.red()-color1.red())*i/colorNumber, color1.green() + (color2.green()-color1.green())*i/colorNumber, color1.blue() + (color2.blue()-color1.blue())*i/colorNumber) for i in range(colorNumber)]
+        return palette
+
+    # this function is called if one of the color buttons was pressed or there was any other change of the color palette
+    def colorSchemaChange(self):
+        self.setCurrentState(self.getCurrentState())
+        if self.callback: self.callback()
+
+
+class ColorPalleteListing(OWBaseWidget):
+    def __init__(self):
+        OWBaseWidget.__init__(self, None, None, "Color Palette List", modal = 1)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setMargin(0)
+        sa = QScrollArea()
+        sa.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        sa.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.layout().addWidget(sa)
+        
+        space = QWidget(self)
+        space.setLayout(QVBoxLayout())
+        sa.setWidget(space)
+        sa.setWidgetResizable(1)        # this is crucial in order for the scrollarea to work - otherwise the content is not visible!!!
+        
+        self.buttons = []
+        self.setMinimumWidth(400)
+        
+        from ColorBrewerColorSchemes import colorSchemes
+            
+        box = OWGUI.widgetBox(space, "Information", addSpace = True, orientation="vertical")
+        OWGUI.widgetLabel(box, '<p align="center">This dialog shows a list of predefined color palettes <br>from colorbrewer.org that can be used in Orange.<br>You can select a palette by clicking on it.</p>')
+        
+        box = OWGUI.widgetBox(space, "Default Palette", addSpace = True, orientation="vertical")
+        butt = OWGUI.button(box, self, "", self.buttClicked, tooltip = "Default color palette", toggleButton = 1)
+        butt.rgbColors = defaultRGBColors
+        butt.setIcon(QIcon(createDiscPalettePixmap(butt.iconSize().width(), butt.iconSize().height(), defaultRGBColors)))
+        self.buttons.append(butt)
+        
+        for type in ["Qualitative", "Spectral", "Diverging", "Sequential" ]:
+            colorGroup = colorSchemes.get(type.lower(), {})
+            if colorGroup != {}:
+                box = OWGUI.widgetBox(space, type + " Palettes", addSpace = True, orientation="vertical")
+                keys = colorGroup.keys()
+                keys.sort()
+                for key in keys:
+                    butt = OWGUI.button(box, self, "", self.buttClicked, tooltip = key, toggleButton = 1)
+                    butt.rgbColors = colorGroup[key]
+                    self.buttons.append(butt)
+                    
+        box = OWGUI.widgetBox(space, 1, orientation = "horizontal")
+        #OWGUI.button(box, self, "OK", self.accept)
+        OWGUI.button(box, self, "Cancel", self.reject)
+        
+        self.resize(300, 400)
+
+    def showEvent(self, ev):
+        self.resizeEvent(ev)
+
+    def resizeEvent(self, ev):
+        for butt in self.buttons:
+            butt.setFixedHeight(40)
+            butt.setFlat(1)
+            #butt.setStyleSheet("QPushButton:hover { color: white; }")
+            butt.setIconSize(butt.size() - QSize(20, 14))
+            butt.setIcon(QIcon(createDiscPalettePixmap(butt.iconSize().width(), butt.iconSize().height(), butt.rgbColors)))
+        
+    def buttClicked(self):
+        self.accept()
+    
+
+class PaletteEditor(OWBaseWidget):
+    def __init__(self, parent, rgbColors):
+        OWBaseWidget.__init__(self, None, None, "Palette Editor", modal = 1)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setMargin(4)
+        
+        hbox = OWGUI.widgetBox(self, "Information" , orientation = 'horizontal')
+        OWGUI.widgetLabel(hbox, '<p align="center">You can reorder colors in the list using the<br>buttons on the right or by dragging and dropping the items.<br>To change a specific color double click the item in the list.</p>')
+        
+        hbox = OWGUI.widgetBox(self, 1, orientation = 'horizontal')
+        self.discListbox = OWGUI.listBox(hbox, self, enableDragDrop = 1)
+        
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected colors up")
+        buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected colors down")
+        buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up3.png")))
+        buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        buttonUPAttr.setMaximumWidth(30)
+        buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down3.png")))
+        buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        buttonDOWNAttr.setMaximumWidth(30)
+        self.connect(self.discListbox, SIGNAL("itemDoubleClicked ( QListWidgetItem *)"), self.changeDiscreteColor)
+        
+        box = OWGUI.widgetBox(self, 1, orientation = "horizontal")
+        OWGUI.button(box, self, "OK", self.accept)
+        OWGUI.button(box, self, "Cancel", self.reject)
+                
+        if type(rgbColors) == dict:
+            colors = rgbColors[max(rgbColors.keys())]
+        else:
+            colors = rgbColors
+        
+        self.discListbox.setIconSize(QSize(25, 25))
+        for ind, (r,g,b) in enumerate(colors):
+            item = QListWidgetItem(ColorPixmap(QColor(r,g,b), 25), "Color %d" % (ind+1))
+            item.rgbColor = (r,g,b)
+            self.discListbox.addItem(item)
+            
+        self.resize(300, 300)
+                 
+                 
+    def changeDiscreteColor(self, item):
+        ind = self.discListbox.indexFromItem(item).row()
+        r,g,b = self.rgbColors[ind]
+        color = QColorDialog.getColor(QColor(r,g,b), self)
+        if color.isValid():
+            self.discListBox.item(ind).setIcon(ColorPixmap(color, 25))
+            self.discListBox.item(ind).rgbColor = (color.red(), color.green(), color.blue())
+
+
+    # move selected attribute in "Attribute Order" list one place up
+    def moveAttrUP(self):
+        if len(self.discListbox.selectedIndexes()) == 0: return
+        ind = self.discListbox.selectedIndexes()[0].row()
+        if ind == 0: return
+        iconI = self.discListbox.item(ind-1).icon()
+        iconII = self.discListbox.item(ind).icon()
+        self.discListbox.item(ind-1).setIcon(iconII)
+        self.discListbox.item(ind).setIcon(iconI)
+        self.discListbox.item(ind-1).rgbColor, self.discListbox.item(ind).rgbColor = self.discListbox.item(ind).rgbColor, self.discListbox.item(ind-1).rgbColor
+        self.discListbox.setCurrentRow(ind-1)
+        
+
+    # move selected attribute in "Attribute Order" list one place down
+    def moveAttrDOWN(self):
+        if len(self.discListbox.selectedIndexes()) == 0: return
+        ind = self.discListbox.selectedIndexes()[0].row()
+        if ind == self.discListbox.count()-1: return
+        iconI = self.discListbox.item(ind+1).icon()
+        iconII = self.discListbox.item(ind).icon()
+        self.discListbox.item(ind+1).setIcon(iconII)
+        self.discListbox.item(ind).setIcon(iconI)
+        self.discListbox.item(ind).rgbColor, self.discListbox.item(ind+1).rgbColor = self.discListbox.item(ind+1).rgbColor, self.discListbox.item(ind).rgbColor
+        self.discListbox.setCurrentRow(ind+1)
+        
+    def getRgbColors(self):
+        return [self.discListbox.item(i).rgbColor for i in range(self.discListbox.count())]
+        
+
+class ContinuousPaletteGenerator:
+    def __init__(self, color1, color2, passThroughBlack):
+        self.c1Red, self.c1Green, self.c1Blue = color1.red(), color1.green(), color1.blue()
+        self.c2Red, self.c2Green, self.c2Blue = color2.red(), color2.green(), color2.blue()
+        self.passThroughBlack = passThroughBlack
+
+    def getRGB(self, val):
+        if self.passThroughBlack:
+            if val < 0.5:
+                return (self.c1Red - self.c1Red*val*2, self.c1Green - self.c1Green*val*2, self.c1Blue - self.c1Blue*val*2)
+            else:
+                return (self.c2Red*(val-0.5)*2., self.c2Green*(val-0.5)*2., self.c2Blue*(val-0.5)*2.)
+        else:
+            return (self.c1Red + (self.c2Red-self.c1Red)*val, self.c1Green + (self.c2Green-self.c1Green)*val, self.c1Blue + (self.c2Blue-self.c1Blue)*val)
+
+    # val must be between 0 and 1
+    def __getitem__(self, val):
+        return QColor(*self.getRGB(val))
+
+
+class ColorPaletteGenerator:
+    maxHueVal = 260
+
+    def __init__(self, numberOfColors = 0, rgbColors = defaultRGBColors):
+        self.numberOfColors = -1
+        self.rgbColors = rgbColors
+        if type(rgbColors) == dict:
+            self.rgbColorsDict = rgbColors
+        self.setNumberOfColors(numberOfColors)
+        
+    # set the number of colors in the palette
+    def setNumberOfColors(self, numberOfColors):
+        if numberOfColors == self.numberOfColors:
+            return
+        
+        self.numberOfColors = numberOfColors
+        
+        if hasattr(self, "rgbColorsDict") and self.rgbColorsDict.has_key(max(3, numberOfColors)):
+            self.rgbColors = self.rgbColorsDict[max(3, numberOfColors)][:numberOfColors]
+        self.rgbQColors = [QColor(*color) for color in self.rgbColors]
+        
+
+    def __getitem__(self, index, brightness = None):
+        if type(index) == tuple:
+            index, brightness = index
+
+        if self.numberOfColors == -1:     # is this color for continuous attribute?
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
+            return col
+        else:
+            if index < len(self.rgbColors):
+                if brightness == None:
+                    return self.rgbQColors[index]
+                else:
+                    color = QColor(*self.rgbColors[index])
+                    h,s,v,a = color.getHsv()
+                    color.setHsv(h, int(brightness), v, a)
+                    return color
+            else:
+                col = QColor()
+                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
+                return col
+
+    def getRGB(self, index, brightness = None):
+        if self.numberOfColors == -1:     # is this color for continuous attribute?
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
+            return (col.red(), col.green(), col.blue())
+        else:
+            if index < len(self.rgbColors):
+                if brightness == None:
+                    return self.rgbColors[index]
+                else:
+                    col = QColor(*self.rgbColors[index])
+                    h,s,v,a = col.getHsv()
+                    col.setHsv(h, int(brightness), v, a)
+                    return (col.red(), col.green(), col.blue())
+            else:
+                col = QColor()
+                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
+                return (col.red(), col.green(), col.blue())
+
+    # get QColor instance for given index
+    def getColor(self, index, brightness = None):
+        return self.__getitem__(index, brightness)
+
+# only for backward compatibility
+class ColorPaletteHSV(ColorPaletteGenerator):
+    pass
+
+
+# black and white color palette
+class ColorPaletteBW:
+    def __init__(self, numberOfColors = -1, brightest = 50, darkest = 255):
+        self.numberOfColors = numberOfColors
+        self.brightest = brightest
+        self.darkest = darkest
+        self.hueValues = []
+
+        if numberOfColors == -1: return  # used for coloring continuous variables
+        else:
+            self.values = [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]
+
+    def __getitem__(self, index):
+        if self.numberOfColors == -1:                # is this color for continuous attribute?
+            val = int(self.brightest + (self.darkest-self.brightest)*index)
+            return QColor(val, val, val)
+        else:                                                                           # get color for discrete attribute
+            return QColor(self.values[index], self.values[index], self.values[index])   # index must be between 0 and self.numberofColors
+
+    # get QColor instance for given index
+    def getColor(self, index):
+        return self.__getitem__(index)
+
+
+
+class ColorSchema:
+    def __init__(self, name, palette, additionalColors, passThroughBlack):
+        self.name = name
+        self.palette = palette
+        self.additionalColors = additionalColors
+        self.passThroughBlack = passThroughBlack
+
+    def getName(self):
+        return self.name
+
+    def getPalette(self):
+        return self.palette
+
+    def getAdditionalColors(self):
+        return self.additionalColors
+
+    def getPassThroughBlack(self):
+        return self.passThroughBlack
+
+class PaletteView(QGraphicsView):
+    def __init__(self, parent = None):
+        self.canvas = QGraphicsScene(0, 0, 1000, colorButtonSize)
+        QGraphicsView.__init__(self, self.canvas, parent)
+        self.ensureVisible(0,0,1,1)
+        
+        self.color1 = None
+        self.color2 = None
+        self.rgbColors = []
+
+        #self.setFrameStyle(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.setFixedHeight(colorButtonSize)
+        self.setMinimumWidth(colorButtonSize)
+        
+        if parent and parent.layout():
+            parent.layout().addWidget(self)
+    
+    def resizeEvent(self, ev):
+        self.updateImage()
+        
+    def setDiscPalette(self, rgbColors):
+        self.rgbColors = rgbColors
+        self.updateImage()
+    
+    def setContPalette(self, color1, color2, passThroughBlack):
+        self.color1 = color1
+        self.color2 = color2
+        self.passThroughBlack = passThroughBlack
+        self.updateImage()
+        
+    def updateImage(self):
+        for item in self.scene().items():
+            item.hide()
+        if self.color1 == None: 
+            img = createDiscPalettePixmap(self.width(), self.height(), self.rgbColors)
+        else:
+            img = createContPalettePixmap(self.width(), self.height(), self.color1, self.color2, self.passThroughBlack)
+        self.scene().addPixmap(img)
+        self.scene().update()
+
+
+# create a pixmap with color going from color1 to color2
+def createContPalettePixmap(width, height, color1, color2, passThroughBlack):
+    p = QPainter()
+    img = QPixmap(width, height)
+    p.begin(img)
+    
+    #p.eraseRect(0, 0, w, h)
+    p.setPen(QPen(Qt.NoPen))
+    g = QLinearGradient(0, 0, width, height)
+    g.setColorAt(0, color1)
+    g.setColorAt(1, color2)
+    if passThroughBlack:
+        g.setColorAt(0.5, Qt.black)
+    p.fillRect(img.rect(), QBrush(g))
+    return img
+        
+    
+# create a pixmap with a discrete palette 
+def createDiscPalettePixmap(width, height, palette):
+    p = QPainter()
+    img = QPixmap(width, height)
+    p.begin(img)
+    p.setPen(QPen(Qt.NoPen))
+    if type(palette) == dict:       # if palette is the dict with different 
+        palette = palette[max(palette.keys())]
+    if len(palette) == 0: return img
+    rectWidth = width / float(len(palette))
+    for i, col in enumerate(palette):
+        p.setBrush(QBrush(QColor(*col)))
+        p.drawRect(QRectF(i*rectWidth, 0, (i+1)*rectWidth, height))
+    return img
+        
+
+class ColorButton(QWidget):
+    def __init__(self, master = None, parent = None, label = None, color = None):
+        QWidget.__init__(self, master)
+
+        self.parent = parent
+        self.master = master
+
+        if self.parent and self.parent.layout():
+            self.parent.layout().addWidget(self)
+
+        self.setLayout(QHBoxLayout())
+        self.layout().setMargin(0)
+        self.icon = QFrame(self)
+        self.icon.setFixedSize(colorButtonSize, colorButtonSize)
+        self.icon.setAutoFillBackground(1)
+        self.icon.setFrameStyle (QFrame.StyledPanel+ QFrame.Sunken)
+        self.layout().addWidget(self.icon)
+
+        if label != None:
+            self.label = OWGUI.widgetLabel(self, label)
+            self.layout().addWidget(self.label)
+
+        if color != None:
+            self.setColor(color)
+
+
+    def setColor(self, color):
+        self.color = color
+        palette = QPalette()
+        palette.setBrush(QPalette.Background, color)
+        self.icon.setPalette(palette)
+
+    def getColor(self):
+        return self.color
+
+    def mousePressEvent(self, ev):
+        color = QColorDialog.getColor(self.color)
+        if color.isValid():
+            self.setColor(color)
+            if self.master and hasattr(self.master, "colorSchemaChange"):
+                self.master.colorSchemaChange()
+
+
+###########################################################################
+class TestWidget(OWWidget):
+    def __init__(self, parent=None, name='TestWidget'):
+        OWWidget.__init__(self, parent, name, 'Microarray Heat Map', FALSE)
+        #self.controlArea = self
+        #self.setLayout(QVBoxLayout())
+
+        self.colorPalette = ColorPalette(self, self.controlArea, "", additionalColors = None)
+        self.controlArea.layout().addWidget(self.colorPalette)
+        #a = ColorButton(self)
+        #self.controlArea.layout().addWidget(a)
+
+###########################################################################
+
+if __name__== "__main__":
+    a = QApplication(sys.argv)
+
+    c = ColorPaletteDlg(None, modal = FALSE)
+    c.createContinuousPalette("continuousPalette", "Continuous Palette")
+    c.createDiscretePalette("discPalette", "Discrete Palette")
+    box = c.createBox("otherColors", "Colors")
+    c.createColorButton(box, "Canvas", "Canvas")
+    c.createColorButton(box, "Grid", "Grid")
+    c.setColorSchemas()
+    c.show()
+    a.exec_()
