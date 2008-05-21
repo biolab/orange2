@@ -18,7 +18,7 @@ from OWPolyvizGraph import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWLinProj):
-    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
+    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor", "graph.useAntialiasing",
                     "graph.showLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
                     "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankLearnerName",
                     "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "showAllAttributes", "graph.lineLength"]
@@ -32,8 +32,8 @@ class OWPolyviz(OWLinProj):
         # SETTINGS TAB
         self.extraTopBox.show()
         OWGUI.hSlider(self.extraTopBox, self, 'graph.lineLength', box=' Line length ', minValue=0, maxValue=10, step=1, callback = self.updateGraph)
-        
-               
+
+
 
 
 #test widget appearance
