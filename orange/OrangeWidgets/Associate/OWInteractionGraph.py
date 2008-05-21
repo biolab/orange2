@@ -548,25 +548,13 @@ class OWInteractionGraph(OWWidget):
     # SAVING GRAPHS
     ##################################################
     def saveToFileLCanvas(self):
-        self.saveCanvasToFile(self.canvasViewL, self.canvasL.size())
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasL)
+        sizeDlg.exec_()
+        
 
     def saveToFileRCanvas(self):
-        self.saveCanvasToFile(self.canvasViewR, self.canvasR.size())
-
-    def saveCanvasToFile(self, canvas, size):
-        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-
-        buffer = QPixmap(size) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        canvas.drawContents(painter, 0,0, size.width(), size.height())
-        painter.end()
-        buffer.save(fileName, ext)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR)
+        sizeDlg.exec_()
 
 
 #test widget appearance
