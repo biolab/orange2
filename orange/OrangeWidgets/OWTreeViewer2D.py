@@ -1,5 +1,5 @@
 import orngOrangeFoldersQt4
-import orange, orngTree, OWGUI, OWGraphTools
+import orange, orngTree, OWGUI, OWColorPalette
 from OWWidget import *
 
 DefDroppletRadiust=7
@@ -734,7 +734,7 @@ class OWTreeViewer2D(OWWidget):
             self.tree=tree.tree
             self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
             self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
-            self.ClassColors=OWGraphTools.ColorPaletteHSV(len(self.tree.distribution))
+            self.ClassColors = OWColorPalette.ColorPaletteHSV(len(self.tree.distribution))
             self.rootNode=self.walkcreate(self.tree, None)
             self.canvas.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
             self.activateLoadedSettings()
