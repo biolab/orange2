@@ -3,9 +3,9 @@
 #
 # the base for all graphs
 
-from OWTools import *
 from PyQt4.Qwt5 import *
-from OWGraphTools import *      # color palletes, user defined curves, ...
+from OWGraphTools import *      # user defined curves, ...
+from OWColorPalette import *      # color palletes, ...
 from OWDlgs import OWChooseImageSizeDlg
 import orange, math
 from OWBaseWidget import unisetattr
@@ -23,6 +23,7 @@ class OWGraph(QwtPlot):
         QwtPlot.__init__(self, parent)
         self.parentName = name
         #self.setWindowFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
+        self.setAutoReplot(False)
 
         self.setAxisAutoScale(QwtPlot.xBottom)
         self.setAxisAutoScale(QwtPlot.xTop)
@@ -36,7 +37,7 @@ class OWGraph(QwtPlot):
         self.setAxisTitle(QwtPlot.xTop, text)
         self.setAxisTitle(QwtPlot.yLeft, text)
         self.setAxisTitle(QwtPlot.yRight, text)
-
+        
         ticksFont = QFont('Helvetica', 9)
         self.setAxisFont(QwtPlot.xBottom, ticksFont)
         self.setAxisFont(QwtPlot.xTop, ticksFont)
@@ -57,6 +58,7 @@ class OWGraph(QwtPlot):
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
+        self.useAntialiasing = 0
 
         self.state = ZOOMING
         self.zoomCurve = None
@@ -71,7 +73,6 @@ class OWGraph(QwtPlot):
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
         self.enableWheelZoom = 0
-        self.blankClick = 0
         self.noneSymbol = QwtSymbol()
         self.noneSymbol.setStyle(QwtSymbol.NoSymbol)
         self.tips = TooltipManager(self)
@@ -85,13 +86,7 @@ class OWGraph(QwtPlot):
         self.showFilledSymbols = 1
         self.showLegend = 1
         self.alphaValue = 255
-        self.alphaValue2 = 150
-        self.scaleFactor = 1.0              # used in some visualizations to "stretch" the data - see radviz, polviz
         self.setCanvasColor(QColor(Qt.white))
-        self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
-        self.ypos = 0
-        self.colorNonTargetValue = QColor(200,200,200)
-        self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
         #self.curveSymbols = [QwtSymbol.Triangle, QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
 
@@ -99,7 +94,6 @@ class OWGraph(QwtPlot):
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
-        self.currentScale = {}
 
         # when using OWGraph we can define functions that will receive mouse move, press, release events. these functions
         # HAVE TO RETURN whether the signal was handled, or you also want to use default OWGraph handler
@@ -125,11 +119,6 @@ class OWGraph(QwtPlot):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
 
-    def setAxisScale(self, axis, min, max, step = 0):
-        current = self.currentScale.get(axis, None)
-        if current and current == (min, max, step): return
-        QwtPlot.setAxisScale(self, axis, min, max, step)
-        self.currentScale[axis] = (min, max, step)
 
     def setTickLength(self, axis, minor, medium, major):
         self.axisScaleDraw(axis).setTickLength(QwtScaleDiv.MinorTick, minor)
@@ -157,7 +146,6 @@ class OWGraph(QwtPlot):
             self.setAxisAutoScale(QwtPlot.yLeft)
             self.setAxisMaxMinor(QwtPlot.yLeft, 10)
             self.setAxisMaxMajor(QwtPlot.yLeft, 10)
-        self.updateToolTips()
 
     def setYRlabels(self, labels):
         "Sets the Y-axis labels on the right."
@@ -177,7 +165,6 @@ class OWGraph(QwtPlot):
             self.setAxisAutoScale(QwtPlot.yRight)
             self.setAxisMaxMinor(QwtPlot.yRight, 10)
             self.setAxisMaxMajor(QwtPlot.yRight, 10)
-        self.updateToolTips()
 
     def setXlabels(self, labels):
         "Sets the x-axis labels if x-axis discrete."
@@ -198,7 +185,6 @@ class OWGraph(QwtPlot):
             self.setAxisAutoScale(QwtPlot.xBottom)
             self.setAxisMaxMinor(QwtPlot.xBottom, 10)
             self.setAxisMaxMajor(QwtPlot.xBottom, 10)
-        self.updateToolTips()
 
     def enableXaxis(self, enable):
         self.enableAxis(QwtPlot.xBottom, enable)
@@ -212,29 +198,22 @@ class OWGraph(QwtPlot):
         self.enableAxis(QwtPlot.yRight, enable)
         self.repaint()
 
-    def updateToolTips(self):
-        pass
-
     def setRightTip(self,explain):
         "Sets the tooltip for the right y axis"
         self.tipRight = explain
-        self.updateToolTips()
 
     def setLeftTip(self,explain):
         "Sets the tooltip for the left y axis"
         self.tipLeft = explain
-        self.updateToolTips()
 
     def setBottomTip(self,explain):
         "Sets the tooltip for the left x axis"
         self.tipBottom = explain
-        self.updateToolTips()
 
-    def resizeEvent(self, event):
-        "Makes sure that the plot resizes"
-        self.updateToolTips()
-        self.updateLayout()
-        QwtPlot.resizeEvent(self, event)
+#    def resizeEvent(self, event):
+#        "Makes sure that the plot resizes"
+#        self.updateLayout()
+#        QwtPlot.resizeEvent(self, event)
 
     def paintEvent(self, qpe):
         for curve in self.selectionCurveList:     # the selection curves must set new point array
@@ -349,13 +328,15 @@ class OWGraph(QwtPlot):
 
     # ####################################################################
     # return string with attribute names and their values for example example
-    def getExampleTooltipText(self, data, example, indices = None):
+    def getExampleTooltipText(self, data, example, indices = None, maxIndices = 20):
         if not indices: indices = range(len(data.domain.attributes))
 
         text = "<b>Attributes:</b><br>"
-        for index in indices:
+        for index in indices[:maxIndices]:
             if example[index].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain[index].name)
             else:                          text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[index].name, str(example[index]))
+        if len(indices) > maxIndices:
+            text += "&nbsp;"*4 + " ... <br>"
 
 
         if data.domain.classVar:
@@ -374,10 +355,9 @@ class OWGraph(QwtPlot):
 
         return text[:-4]        # remove the last <br>
 
-    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = 1, penAlpha = 255, brushAlpha = 255):
+    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         curve = QwtPlotCurve(name)
-        if antiAlias:
-            curve.setRenderHint(QwtPlotItem.RenderAntialiased)
+        curve.setRenderHint(QwtPlotItem.RenderAntialiased, antiAlias == 1 or self.useAntialiasing)
         curve.setItemAttribute(QwtPlotItem.Legend, enableLegend)
         curve.setItemAttribute(QwtPlotItem.AutoScale, autoScale)
         if penAlpha != 255:
@@ -391,10 +371,7 @@ class OWGraph(QwtPlot):
             newSymbol = QwtSymbol(symbol, QBrush(), QPen(penColor), QSize(size, size))
         curve.setSymbol(newSymbol)
         curve.setStyle(style)
-        if not pen:
-            curve.setPen(QPen(penColor, lineWidth))
-        else:
-            curve.setPen(pen)
+        curve.setPen(pen != None and pen or QPen(penColor, lineWidth))
         if xData != [] and yData != []:
             curve.setData(xData, yData)
         curve.attach(self)
@@ -428,7 +405,7 @@ class OWGraph(QwtPlot):
 
     # mouse was only pressed and released on the same spot. visualization methods might want to process this event
     def staticMouseClick(self, e):
-        pass
+        return 0
 
     def activateZooming(self):
         self.state = ZOOMING
@@ -474,25 +451,47 @@ class OWGraph(QwtPlot):
         return removed
 
     def removeAllSelections(self, send = 1):
+        selectionsExisted = len(self.selectionCurveList) > 0
         self.detachItems(SelectionCurveRtti)
         self.selectionCurveList = []
-        self.replot()
-        if send and self.autoSendSelectionCallback:
-            self.autoSendSelectionCallback() # do we want to send new selection
+        if selectionsExisted:
+            self.replot()
+            if send and self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback() # do we want to send new selection
 
     def zoomOut(self):
         if len(self.zoomStack):
-            (xmin, xmax, ymin, ymax) = self.zoomStack.pop()
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-            self.replot()
+            newXMin, newXMax, newYMin, newYMax = self.zoomStack.pop()
+            self.setNewZoom(newXMin, newXMax, newYMin, newYMax)
             return 1
         return 0
+
+    def setNewZoom(self, newXMin, newXMax, newYMin, newYMax):
+        oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
+        oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound() 
+        oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound() 
+        oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
+        
+        if len(self.itemList()) > 1000 or sum([item.dataSize() for item in self.itemList() if isinstance(item, QwtPlotCurve)]) > 1000:    # if too many curves then don't be smooth
+            steps = 1
+        else:
+            steps = 10
+        for i in range(1, steps+1):
+            midXMin = oldXMin * (steps-i)/float(steps) + newXMin * i/float(steps)
+            midXMax = oldXMax * (steps-i)/float(steps) + newXMax * i/float(steps)
+            midYMin = oldYMin * (steps-i)/float(steps) + newYMin * i/float(steps)
+            midYMax = oldYMax * (steps-i)/float(steps) + newYMax * i/float(steps)
+            self.setAxisScale(QwtPlot.yLeft, midYMin, midYMax)
+            self.setAxisScale(QwtPlot.xBottom, midXMin, midXMax)
+
+            #if i == steps:
+            #    self.removeCurve(zoomOutCurveKey)
+            self.replot()
 
     def closestMarker(self, intX, intY):
         point = QPoint(intX, intY)
         marker = None
-        dist = 1000000000
+        dist = 1e30
         for curve in self.itemList():
             if isinstance(curve, QwtPlotMarker):
                 curvePoint = QPoint(self.transform(QwtPlot.xBottom, curve.xValue()), self.transform(QwtPlot.yLeft, curve.yValue()))
@@ -532,9 +531,6 @@ class OWGraph(QwtPlot):
         canvasPos = self.canvas().mapFrom(self, e.pos())
         self.xpos = canvasPos.x()
         self.ypos = canvasPos.y()
-
-        xs = self.axisScaleDiv(QwtPlot.xBottom)
-        x = self.invTransform(QwtPlot.xBottom, e.x())
 
         # ####
         # ZOOM
@@ -603,11 +599,30 @@ class OWGraph(QwtPlot):
             self.replot()
 
         elif self.state == PANNING and self.panPosition:
-            dx = self.invTransform(QwtPlot.xBottom, e.globalX()) - self.invTransform(QwtPlot.xBottom, self.panPosition[0])
-            dy = self.invTransform(QwtPlot.yLeft, e.globalY()) - self.invTransform(QwtPlot.yLeft, self.panPosition[1])
-            self.setaxisScaleDiv(QwtPlot.xBottom, self.paniniX[0] - dx, self.paniniX[1] - dx)
-            self.setaxisScaleDiv(QwtPlot.yLeft, self.paniniY[0] - dy, self.paniniY[1] - dy)
-            self.replot()
+            if hasattr(self, "paniniX") and hasattr(self, "paniniY"):
+                dx = self.invTransform(QwtPlot.xBottom, self.panPosition[0]) - self.invTransform(QwtPlot.xBottom, e.globalX()) 
+                dy = self.invTransform(QwtPlot.yLeft, self.panPosition[1]) - self.invTransform(QwtPlot.yLeft, e.globalY())
+                xEnabled, xMin, xMax = getattr(self, "xPanningInfo", (1, self.paniniX[0] + dx, self.paniniX[1] + dx))
+                yEnabled, yMin, yMax = getattr(self, "yPanningInfo", (1, self.paniniY[0] + dy, self.paniniY[1] + dy))
+                
+                if self.paniniX[0] + dx < xMin:  # if we reached the left edge, don't change the right edge
+                    xMax = self.paniniX[1] - (self.paniniX[0] - xMin)
+                elif self.paniniX[1] + dx > xMax:   # if we reached the right edge, don't change the left edge
+                    xMin = self.paniniX[0] + (xMax - self.paniniX[1])
+                else:
+                    xMin, xMax = self.paniniX[0] + dx, self.paniniX[1] + dx
+                if xEnabled: self.setAxisScale(QwtPlot.xBottom, xMin, xMax)
+                
+                if self.paniniY[0] + dy < yMin:  # if we reached the left edge, don't change the right edge
+                    yMax = self.paniniY[1] - (self.paniniY[0] - yMin)
+                elif self.paniniY[1] + dy > yMax:   # if we reached the right edge, don't change the left edge
+                    yMin = self.paniniY[0] + (yMax - self.paniniY[1])
+                else:
+                    yMin, yMax = self.paniniY[0] + dy, self.paniniY[1] + dy
+                if yEnabled: self.setAxisScale(QwtPlot.yLeft, yMin, yMax)
+
+                if xEnabled or yEnabled: self.replot()
+                
 
 
     def mouseReleaseEvent(self, e):
@@ -624,28 +639,40 @@ class OWGraph(QwtPlot):
 
         if e.button() != Qt.RightButton:
             if self.xpos == canvasPos.x() and self.ypos == canvasPos.y():
-                self.staticMouseClick(e)
+                handled = self.staticMouseClick(e)
+                if handled: return
                 staticClick = 1
 
         if e.button() == Qt.LeftButton:
             if self.state == ZOOMING:
-                xmin = min(self.xpos, canvasPos.x());  xmax = max(self.xpos, canvasPos.x())
-                ymin = min(self.ypos, canvasPos.y());  ymax = max(self.ypos, canvasPos.y())
-
                 if self.zoomCurve: self.zoomCurve.detach()
                 self.zoomCurve = None
                 self.tempSelectionCurve = None
 
-                if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
+                xmin = min(self.xpos, canvasPos.x());  xmax = max(self.xpos, canvasPos.x())
+                ymin = min(self.ypos, canvasPos.y());  ymax = max(self.ypos, canvasPos.y())
 
-                xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
-                ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
+                if staticClick or xmax-xmin < 4 or ymax-ymin < 4:
+                    x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+                    y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
+                    diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
+                    diffY = (self.axisScaleDiv(QwtPlot.yLeft).hBound() -  self.axisScaleDiv(QwtPlot.yLeft).lBound()) / 2.
+                    
+                    # use this to zoom to the center of the screen 
+                    #xmin = x - diffX/2.; xmax = x + diffX/2.
+                    #ymin = y + diffY/2.; ymax = y - diffY/2.
+                    
+                    # use this to zoom to the place where the mouse cursor is
+                    xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX   
+                    xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
+                    ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).hBound() - y) / diffY
+                    ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).lBound()) / diffY
+                else:
+                    xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
+                    ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
 
-                self.blankClick = 0
                 self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound(), self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()))
-                self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-                self.setAxisScale(QwtPlot.yLeft, ymax, ymin)
-                self.replot()
+                self.setNewZoom(xmin, xmax, ymax, ymin)
 
             elif self.state == SELECT_RECTANGLE:
                 if self.tempSelectionCurve:
@@ -657,7 +684,6 @@ class OWGraph(QwtPlot):
                 ok = self.zoomOut()
                 if not ok:
                     self.removeLastSelection()
-                    self.blankClick = 1 # we just clicked and released the button at the same position
                     return
 
             elif self.state == SELECT_RECTANGLE:
@@ -676,7 +702,8 @@ class OWGraph(QwtPlot):
                 else:
                     ok = self.removeLastSelection()
                     if not ok: self.zoomOut()
-        #self.replot()
+
+
 
     def wheelEvent(self, e):
         if not self.enableWheelZoom:
@@ -685,12 +712,12 @@ class OWGraph(QwtPlot):
         d = -e.delta()/120.
 
         if getattr(self, "controlPressed", False):
-            ys = self.axisScale(QwtPlot.yLeft)
+            ys = self.axisScaleDiv(QwtPlot.yLeft)
             yoff = d * (ys.hBound() - ys.lBound()) / 100.
             self.setAxisScale(QwtPlot.yLeft, ys.lBound() + yoff, ys.hBound() + yoff)
 
         elif getattr(self, "altPressed", False):
-            xs = self.axisScale(QwtPlot.xBottom)
+            xs = self.axisScaleDiv(QwtPlot.xBottom)
             xoff = d * (xs.hBound() - xs.lBound()) / 100.
             self.setAxisScale(QwtPlot.xBottom, xs.lBound() - xoff, xs.hBound() - xoff)
 
@@ -848,31 +875,4 @@ drawLegend(items)\n""" % (str(legendItems)))
         col = tuple([v/float(255) for v in col])
         return col, obj.color().alpha()/float(255)
 
-
-class RotatedMarker(QwtPlotMarker):
-    def __init__(self, parent, label = "", x = 0.0, y = 0.0, rotation = 0):
-        QwtPlotMarker.__init__(self, parent)
-        self.rotation = rotation
-        self.parent = parent
-        self.x = x
-        self.y = y
-        self.setXValue(x)
-        self.setYValue(y)
-        self.parent = parent
-
-        if rotation != 0: self.setLabel(label + "  ")
-        else:             self.setLabel(label)
-
-    def setRotation(self, rotation):
-        self.rotation = rotation
-
-    def draw(self, painter, x, y, rect):
-        rot = math.radians(self.rotation)
-
-        x2 = x * math.cos(rot) - y * math.sin(rot)
-        y2 = x * math.sin(rot) + y * math.cos(rot)
-
-        painter.rotate(-self.rotation)
-        QwtPlotMarker.draw(self, painter, x2, y2, rect)
-        painter.rotate(self.rotation)
 
