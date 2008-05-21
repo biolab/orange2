@@ -11,11 +11,12 @@ import orange
 import orngMDS
 import OWGUI
 import numpy, sys, math, time, os
-import OWGraphTools
+import OWColorPalette
 import OWToolbars
 from random import random
 from OWGraph import *
 from sets import Set
+from PyQt4.Qwt5 import *
 
 try:
     from OWDataFiles import DataFiles
@@ -190,7 +191,7 @@ class OWMDS(OWWidget):
         
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
-                c=OWGraphTools.ColorPaletteHSV(len(attr.values))
+                c=OWColorPalette.ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
                     self.colors[i][attrI]= check(data[i],attr)  and c[int(data[i][attr])] or Qt.black
 ##                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
@@ -200,7 +201,7 @@ class OWMDS(OWWidget):
                 attrI+=1
                 discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
-                c=OWGraphTools.ColorPaletteHSV(-1)                
+                c=OWColorPalette.ColorPaletteHSV(-1)                
                 #val=[e[attr] for e in data if not e[attr].isSpecial()]
                 val=[e[attr] for e in data if check(e, attr)]
                 minVal=min(val or [0])
@@ -242,7 +243,7 @@ class OWMDS(OWWidget):
             try:
                 #print dir(data[0][1][0])
                 strains=list(Set([d.strain for d in data]))
-                c=OWGraphTools.ColorPaletteHSV(len(strains))
+                c=OWColorPalette.ColorPaletteHSV(len(strains))
                 for i, d in enumerate(data):
                     self.colors[i][1]=c[strains.index(d.strain)]
                     self.names[i][1]=" "+d.name
@@ -265,7 +266,7 @@ class OWMDS(OWWidget):
         self.names=[[""]*4 for i in range(len(data))]
         self.selectedInput=[False]*len(data)
         try:
-            c=OWGraphTools.ColorPaletteHSV(len(data))
+            c=OWColorPalette.ColorPaletteHSV(len(data))
             for i, d in enumerate(data):
                 self.colors[i][1]=c[i]
                 self.names[i][1]=" " +str(d.name)
@@ -563,7 +564,7 @@ class MDSGraph(OWGraph):
                 for j, ptj in enumerate(self.mds.points):
                     dist =  matrix[i, j]
                     if dist < maxdist:
-                        self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = (maxdist - dist) * k))
+                        self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = (maxdist - dist) * k))
                     
     def updateLines(self):
         if self.mds:
