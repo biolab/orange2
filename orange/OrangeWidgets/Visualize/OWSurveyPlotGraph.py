@@ -50,9 +50,6 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         for i in range(len(labels)):
             self.addCurve("", style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [i,i], yData = [0, 1])
 
-        #self.replot()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-        #self.updateLayout()
-
         xRectsToAdd = {}
         yRectsToAdd = {}
         classNameIndex = -1
@@ -60,6 +57,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
             if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
                 classValDict = getVariableValueIndices(self.rawData, self.rawData.domain.classVar)
+                #self.discPalette.setNumberOfColors(len(classValDict.keys()))
 
         y = 0
         for i in range(len(self.rawData)):
@@ -124,4 +122,4 @@ if __name__== "__main__":
 
     a.setMainWidget(c)
     c.show()
-    a.exec_loop()
+    a.exec_()
