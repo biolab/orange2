@@ -9,7 +9,6 @@ import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import sys, re
-from OWTools import *
 
 
 class OWAssociationRulesTreeViewer(OWWidget):
