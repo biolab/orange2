@@ -11,15 +11,15 @@ import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 from OWMosaicOptimization import *
+from OWTools import getHtmlCompatibleString
 from math import sqrt, floor, ceil, pow
 import operator
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from OWQCanvasFuncts import *
-from OWGraphTools import *
+import OWColorPalette
 import OWDlgs
 from orngVisFuncts import permutations
 from copy import copy
-from OWGraphTools import ColorBrewerColors
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -169,34 +169,34 @@ class OWMosaicDisplay(OWWidget):
         optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Dialogs", orientation = "horizontal")
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0, tooltip = "Find attribute combinations that will separate different classes as clearly as possible.")
 
-        self.box7 = OWGUI.collapsableWidgetBox(self.GeneralTab, "Explore Attribute Permutations", self, "exploreAttrPermutations", callback = self.permutationListToggle)
-        self.permutationList = OWGUI.listBox(self.box7, self, callback = self.setSelectedPermutation)
+        self.collapsableWBox = OWGUI.collapsableWidgetBox(self.GeneralTab, "Explore Attribute Permutations", self, "exploreAttrPermutations", callback = self.permutationListToggle)
+        self.permutationList = OWGUI.listBox(self.collapsableWBox, self, callback = self.setSelectedPermutation)
         #self.permutationList.hide()
         self.GeneralTab.layout().addStretch(100)
 
         # ######################
         # SETTINGS TAB
         # ######################
-        box5 = OWGUI.widgetBox(self.SettingsTab, "Colors in cells represent...")
+        box5 = OWGUI.widgetBox(self.SettingsTab, "Colors in Cells Represent...", addSpace = 1)
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.updateGraph)
         #box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = "Visual settings", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+        box = OWGUI.widgetBox(self.SettingsTab, "Visual Settings", addSpace = 1)
+        OWGUI.comboBoxWithCaption(box, self, "cellspace", "Minimum cell distance: ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+        OWGUI.checkBox(box, self, "removeUnusedValues", "Remove unused attribute values", tooltip = "Do you want to remove unused attribute values?\nThis setting will not be considered until new data is received.")
 
-        self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell distribution settings")
+        self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell Distribution Settings", addSpace = 1)
         OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
         OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show apriori distribution with lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
 
-        self.box8 = OWGUI.widgetBox(self.SettingsTab, "Subboxes in Cells")
+        self.box8 = OWGUI.widgetBox(self.SettingsTab, "Subboxes in Cells", addSpace = 1)
         OWGUI.spin(self.box8, self, 'boxSize', 1, 15, 1, '', "Subbox Size (pixels): ", orientation = "horizontal", callback = self.updateGraph)
         OWGUI.checkBox(self.box8, self, 'showSubsetDataBoxes', 'Show class distribution of subset data', callback = self.updateGraph, tooltip = "Show small boxes at right (or bottom) edge of cells to represent class distribution of examples from example subset input.")
         OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use subboxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
         indBox = OWGUI.indentedBox(self.box8)
         OWGUI.comboBox(indBox, self, 'showAprioriDistributionBoxes', items = ["Expected class distribution", "Apriori class distribution"], tooltip = "Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).", callback = self.updateGraph)
 
-        OWGUI.checkBox(self.SettingsTab, self, "removeUnusedValues", "Remove unused values", box = "Attributes", tooltip = "Do you want to remove unused attribute values?\nThis setting will not be considered until new data is received.")
-
-        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", addSpace = 1)
         OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the color palette for class values", debuggingEnabled = 0)
 
         #self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -208,19 +208,19 @@ class OWMosaicDisplay(OWWidget):
 
         self.activateLoadedSettings()
         dlg = self.createColorDialog()
-        self.colorPalette = dlg.getDiscretePalette()
-
-        from OWGraphTools import ColorBrewerColors, defaultRGBColors
-        #self.selectionColorPalette = [QColor(*col) for col in ColorBrewerColors[::-1]]
-        self.selectionColorPalette = [QColor(*col) for col in defaultRGBColors]
+        self.colorPalette = dlg.getDiscretePalette("discPalette")
+        
+        self.selectionColorPalette = [QColor(*col) for col in OWColorPalette.defaultRGBColors]
 
         self.VizRankLearner = MosaicTreeLearner(self.optimizationDlg)
         self.send("Learner", self.VizRankLearner)
-        self.box7.syncControls()
 
         # this is needed so that the tabs are wide enough!
         self.safeProcessEvents()
         self.wdChildDialogs = [self.optimizationDlg]        # used when running widget debugging
+
+    def activateLoadedSettings(self):
+        self.collapsableWBox.syncControls()
 
     def permutationListToggle(self):
         if self.exploreAttrPermutations:
@@ -245,7 +245,7 @@ class OWMosaicDisplay(OWWidget):
         elif self.sort4.isChecked(): attr = self.attr4
 
         if self.data and attr  != "" and attr != "(None)":
-            dlg = SortAttributeValuesDlg(self, self.manualAttributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
+            dlg = SortAttributeValuesDlg(self, attr, self.manualAttributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
             if dlg.exec_() == QDialog.Accepted:
                 self.manualAttributeValuesDict[attr] = [str(dlg.attributeList.item(i).text()) for i in range(dlg.attributeList.count())]
 
@@ -310,11 +310,13 @@ class OWMosaicDisplay(OWWidget):
 
             if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.interiorColoring = CLASS_DISTRIBUTION
+                self.colorPalette.setNumberOfColors(len(self.data.domain.classVar.values))
             else:
                 self.interiorColoring = PEARSON
 
         self.initCombos(self.data)
         self.openContext("", self.data)
+        
 
         if data and self.unprocessedSubsetData:        # if we first received subset data we now have to call setSubsetData to process it
             self.setSubsetData(self.unprocessedSubsetData)
@@ -788,12 +790,14 @@ class OWMosaicDisplay(OWWidget):
         if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
-            self.colorPalette = dlg.getDiscretePalette()
+            self.colorPalette = dlg.getDiscretePalette("discPalette")
+            if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.colorPalette.setNumberOfColors(len(self.data.domain.classVar.values))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete palette ", ColorBrewerColors)
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette", OWColorPalette.defaultColorBrewerPalette)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
@@ -864,52 +868,50 @@ class OWMosaicDisplay(OWWidget):
 
 
 class SortAttributeValuesDlg(OWBaseWidget):
-    def __init__(self, parentWidget = None, attrList = []):
+    def __init__(self, parentWidget = None, attr = "", valueList = []):
         OWBaseWidget.__init__(self, None, None, "Sort Attribute Values", modal = TRUE)
 
-        self.space = QWidget(self)
-        self.layout = QVBoxLayout(self, 4)
-        self.layout.addWidget(self.space)
+        self.setLayout(QVBoxLayout())
+        #self.space = QWidget(self)
+        #self.layout = QVBoxLayout(self, 4)
+        #self.layout.addWidget(self.space)
 
-        box1 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        box1 = OWGUI.widgetBox(self, "Select Value Order for Attribute \"" + attr + '"', orientation = "horizontal")
 
-        self.attributeList = QListWidget(box1)
-        self.attributeList.setSelectionMode(QListWidget.Extended)
+        self.attributeList = OWGUI.listBox(box1, self, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1)
+        self.attributeList.addItems(valueList) 
 
         vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attribute values down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonUPAttr.setFixedWidth(40)
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setFixedWidth(40)
 
-        box2 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        box2 = OWGUI.widgetBox(self, 1, orientation = "horizontal")
         self.okButton =     OWGUI.button(box2, self, "OK", callback = self.accept)
         self.cancelButton = OWGUI.button(box2, self, "Cancel", callback = self.reject)
-
-        for attr in attrList:
-            self.attributeList.addItem(attr)
 
         self.resize(300, 300)
 
     # move selected attribute values
     def moveAttrUP(self):
         for i in range(1, self.attributeList.count()):
-            if self.attributeList.isSelected(i):
+            if self.attributeList.item(i).isSelected():
                 self.attributeList.insertItem(i-1, self.attributeList.item(i).text())
                 self.attributeList.takeItem(i+1)
                 self.attributeList.item(i-1).setSelected(TRUE)
 
     def moveAttrDOWN(self):
         for i in range(self.attributeList.count()-2,-1,-1):
-            if self.attributeList.isSelected(i):
+            if self.attributeList.item(i).isSelected():
                 self.attributeList.insertItem(i+2, self.attributeList.item(i).text())
+                self.attributeList.item(i+2).setSelected(TRUE)
                 self.attributeList.takeItem(i)
-                self.attributeList.item(i+1).setSelected(TRUE)
-
+                
 
 #test widget appearance
 if __name__=="__main__":
