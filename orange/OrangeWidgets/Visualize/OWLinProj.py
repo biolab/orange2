@@ -15,7 +15,7 @@ from OWLinProjGraph import *
 from OWkNNOptimization import OWVizRank
 from OWFreeVizOptimization import *
 import OWToolbars, OWGUI, orngTest
-import orngVisFuncts, OWDlgs
+import orngVisFuncts, OWColorPalette
 import orngVizRank
 
 ###########################################################################################
@@ -25,7 +25,7 @@ class OWLinProj(OWVisWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.alphaValue",
-                    "showProbabilitiesDetails", "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells",
+                    "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions",
                     "graph.scalingByVariance", "graph.globalValueScaling"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
@@ -54,7 +54,6 @@ class OWLinProj(OWVisWidget):
         self.addProjectedPositions = 0
         self.resetAnchors = 0
 
-        self.showProbabilitiesDetails = 0
         self.boxGeneral = 1
 
         #add a graph widget
@@ -127,7 +126,7 @@ class OWLinProj(OWVisWidget):
             if name.lower() == "linear projection":
                 self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
                 self.send("FreeViz Learner", self.freeVizLearner)
-                
+
 ##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.vizrankButton.setMaximumWidth(63)
 ##        self.clusterDetectionDlgButton.setMaximumWidth(63)
@@ -136,7 +135,7 @@ class OWLinProj(OWVisWidget):
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
-        self.graph.selectionChangedCallback = self.selectionChanged
+        self.graph.autoSendSelectionCallback = self.selectionChanged
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
@@ -184,22 +183,22 @@ class OWLinProj(OWVisWidget):
         OWGUI.checkBox(box3, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box3, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
+        OWGUI.checkBox(box3, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
 
         box5 = OWGUI.widgetBox(box3, orientation = "horizontal")
-        box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
-        box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
 
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
-        hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
+        smallWidget = OWGUI.SmallWidgetLabel(box5, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
         OWGUI.rubber(box5)
 
-        OWGUI.separator(box6, width=20)
+        box6 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
+        box7 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
         OWGUI.widgetLabel(box6, "Granularity:  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
-        OWGUI.separator(box7, width=20)
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
-        hider.setWidgets([box6, box7])
+
+        box3.syncControls()
 
         OWGUI.button(box8, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
         self.SettingsTab.layout().addStretch(100)
@@ -218,7 +217,7 @@ class OWLinProj(OWVisWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
@@ -309,12 +308,13 @@ class OWLinProj(OWVisWidget):
 
 
     def setSubsetData(self, data, update = 1):
+        self.warning(10)
+        
         if self.subsetData != None and data != None and self.subsetData.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
         try:
             subsetData = data.select(self.data.domain)
-            self.warning(10)
         except:
             subsetData = None
             self.warning(10, data and "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data." or "")
@@ -360,8 +360,7 @@ class OWLinProj(OWVisWidget):
         self.updateGraph()
 
     def resetGraphData(self):
-        orngScaleLinProjData.setData(self.graph, self.data)
-        #self.graph.setData(self.data)
+        self.graph.rescaleData()
         self.updateGraph()
 
     def setValueScaling(self):
@@ -388,15 +387,15 @@ class OWLinProj(OWVisWidget):
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color palette")
-        c.createDiscretePalette(" Discrete palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other colors ")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         box.layout().addSpacing(5)
@@ -413,7 +412,8 @@ class OWLinProj(OWVisWidget):
         self.vizrank.hide()
         if hasattr(self, "freeVizDlg"):
             self.freeVizDlg.hide()
-        OWVisWidget.destroy(self, dw, dsw)
+        self.hide()     # TODO: maybe this doesn't work!!
+        #OWVisWidget.destroy(self, dw, dsw)
 
 
 #test widget appearance
@@ -422,5 +422,6 @@ if __name__=="__main__":
     ow=OWLinProj()
     ow.show()
     ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo.tab"))
-    a.exec_loop()
+    ow.handleNewSignals()
+    a.exec_()
 
