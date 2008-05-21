@@ -11,7 +11,7 @@ from OWWidget import *
 from sets import Set
 from OWQCanvasFuncts import *
 import OWGUI
-import OWGraphTools
+import OWColorPalette
 import math
 import os
 
@@ -552,7 +552,7 @@ class Dendrogram(QGraphicsScene):
         new.rootGraphics=obj
         self.selectionList.append(new)
         c=float(self.parent.Brightness)/10;
-        colorPalette=OWGraphTools.ColorPaletteHSV(len(self.selectionList))
+        colorPalette=OWColorPalette.ColorPaletteHSV(len(self.selectionList))
         #color=[(a.red()+(255-a.red())*c, a.green()+(255-a.green())*c,
         #                 a.blue()+(255-a.blue())*c) for a in colorPalette]
         #colorPalette=[QColor(a[0],a[1],a[2]) for a in color]
