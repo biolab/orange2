@@ -108,7 +108,7 @@ class OWAttributeStatistics(OWWidget):
 
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
-        sizeDlg.exec_loop()
+        sizeDlg.exec_()
 
 """
 class DisplayStatistics
