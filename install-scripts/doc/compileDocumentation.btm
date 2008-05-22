@@ -28,8 +28,8 @@ cdd %SNAPSHOTDIR\orange\orangeCanvas
 python orngRegistry.py
 popd
 
-..\widgetCatalogs.py html C:\Documents and Settings\cvso\Application Data\Orange\OrangeCanvas\widgetRegistry.xml catalog >> catalog/default.htm
-..\widgetCatalogs.py hh C:\Documents and Settings\cvso\Application Data\Orange\OrangeCanvas\widgetRegistry.xml catalog > catalog/hhstructure.txt
+..\widgetCatalogs.py html "C:\Documents and Settings\cvso\Application Data\Orange\OrangeCanvas\widgetRegistry.xml" catalog >> catalog/default.htm
+..\widgetCatalogs.py hh "C:\Documents and Settings\cvso\Application Data\Orange\OrangeCanvas\widgetRegistry.xml" catalog > catalog/hhstructure.txt
 compile catalog
 
 cd ..
