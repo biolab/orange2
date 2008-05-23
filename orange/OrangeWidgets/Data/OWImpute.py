@@ -378,15 +378,15 @@ class OWImpute(OWWidget):
         self.send("Imputer", self.imputer)
         if self.data:
             if self.imputer:
-                #try:
+                try:
                     constructed = self.imputer(self.data)
                     data = constructed(self.data)
                     ## meta-comment: is there a missing 'not' in the below comment?
                     # if the above fails, dataChanged should be set to False
                     self.dataChanged = False
-                #except:
-                #    self.error(0, "Imputation failed; this is typically due to unsuitable model.\nIt can also happen with some imputation techniques if no values are defined.")
-                #    data = None
+                except:
+                    self.error(0, "Imputation failed; this is typically due to unsuitable model.\nIt can also happen with some imputation techniques if no values are defined.")
+                    data = None
             else:
                 data = None
             self.send("Examples", data)
