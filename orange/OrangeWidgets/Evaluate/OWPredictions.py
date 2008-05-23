@@ -27,6 +27,7 @@ class colorItem(QTableItem):
 
 class OWPredictions(OWWidget):
     settingsList = ["showProb", "showClass", "ShowAttributeMethod", "sendOnChange", "precision"]
+    contextHandlers = {"": ClassValuesContextHandler("", "selectedClasses")}
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Predictions")
@@ -260,9 +261,11 @@ class OWPredictions(OWWidget):
 
     def setData(self, data):
         if not data:
+            self.closeContext()
             self.data = data
             self.datalabel = "N/A"
             self.clear()
+            self.openContext("", None)
         else:
             vartypes = {1:"discrete", 2:"continuous"}
             self.data = data
@@ -291,7 +294,9 @@ class OWPredictions(OWWidget):
             if self.predictors.has_key(id):
                 del self.predictors[id]
                 if len(self.predictors) == 0:
+                    self.closeContext()
                     self.clear()
+                    self.openContext("", None)
                 else:
                     self.predictorlabel = "%d" % len(self.predictors)
             return
@@ -300,6 +305,7 @@ class OWPredictions(OWWidget):
         self.predictors[id] = predictor
         self.predictorlabel = "%d" % len(self.predictors)
 
+        self.closeContext()
         # set the outcome variable
         ov = getoutvar(self.predictors.values())
         if len(self.predictors) and not ov:
@@ -320,8 +326,13 @@ class OWPredictions(OWWidget):
             else:
                 self.copt.show()
                 self.classes = [str(v) for v in self.outvar.values]
-                self.selectedClasses = []
+                if self.classes:
+                    self.selectedClasses = [0]
+                else:
+                    self.selectedClasses = []
                 self.tasklabel = "Classification"
+                
+        self.openContext("", self.outvar or None)
 
         if self.data:
             self.setTable()
