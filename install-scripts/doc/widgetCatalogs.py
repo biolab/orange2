@@ -3,6 +3,8 @@ def getWidgetsByCategory(xmlfilename):
     from xml.dom import minidom
     for categoryNode in minidom.parse(open(xmlfilename)).getElementsByTagName("category"):
         category = categoryNode.getAttribute("name")
+        if category == "Prototypes" or categoryNode.hasAttribute("directory"):
+            continue
         for widgetNode in categoryNode.getElementsByTagName("widget"):
             categories.setdefault(category, []).append(dict([(x, widgetNode.getAttribute(x)) for x in ["name", "contact", "icon", "priority", "file", "in", "out"]]))
     for cw in categories.values():
@@ -11,8 +13,7 @@ def getWidgetsByCategory(xmlfilename):
 
 
 def mergeCategories(categoriesOrder, xmlCategories):
-    dontAdd = categoriesOrder + ["Genomics", "Other"]
-    return categoriesOrder + filter(lambda x:x not in dontAdd, xmlCategories.keys())
+    return categoriesOrder + [x for x in xmlCategories.keys() if x not in categoriesOrder]
 
 
 def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Data", "Visualize", "Classify", "Evaluate", "Associate", "Regression"], verbose=False):
