@@ -1,18 +1,18 @@
 <html>
 
 <head>
-<title>orngGsea: Gene Set Enrichment Analysis</title>
+<title>obiGsea: Gene Set Enrichment Analysis</title>
 <link rel=stylesheet href="../style.css" type="text/css">
 <link rel=stylesheet href="style-print.css" type="text/css" media=print>
 </head>
 
 <body>
-<h1>orngGsea: Gene Set Enrichment Analysis</h1>
+<h1>obiGsea: Gene Set Enrichment Analysis</h1>
 <index name="modules/gene set enrichment analysis">
 
 <p>Gene Set Enrichment Analysis (GSEA) is a method which tries to identify groups of genes that are
-regulated together. It is implemented in module orngGsea, which is included in Orange for Functional Genomics package.
-To use orngGsea you need to install Orange for Functional Genomics.</p>
+regulated together. It is implemented in module obiGsea, which is included in Orange for Functional Genomics package.
+To use obiGsea you need to install Orange for Functional Genomics.</p>
 
 <h2>GSEA</h2>
 <index name="gsea">
@@ -91,7 +91,7 @@ data. For the method to work we had to specify our one sets of attributes that s
 <p class="header"><a href="gsea1.py">gsea1.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
 
-<xmp class=code>import orange, orngGsea
+<xmp class=code>import orange, obiGsea
 
 data = orange.ExampleTable("iris")
 
@@ -100,7 +100,7 @@ gen1 = dict([
     ("petal",["petal length", "petal width", "petal color"])
     ])
 
-res = orngGsea.runGSEA(data, minSize=2, geneSets=gen1)
+res = obiGsea.runGSEA(data, minSize=2, geneSets=gen1)
 print "%5s  %6s %6s %s" % ("LABEL", "NES", "P-VAL", "GENES")
 for name,resu in res.items():
     print "%5s  %6.3f %6.3f %s" % (name, resu[1], resu[2], str(resu[6]))
