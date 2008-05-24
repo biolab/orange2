@@ -12,6 +12,7 @@ import copy
 from OWGraph import *
 from numpy import *
 from orngScaleScatterPlotData import *
+from orangeom import Network
 
 class NetworkVertex():
     def __init__(self):
@@ -64,12 +65,7 @@ class NetworkCurve(QwtPlotCurve):
       self.vertices[v].pen = QPen(color, 1)
   
   def getSelectedVertices(self):
-    selection = []
-    for vertex in self.vertices:  
-      if vertex.selected:
-        selection.append(vertex.index)
-        
-    return selection
+    return [vertex.index for vertex in self.vertices if vertex.selected]
   
   def setMarkedVertices(self, vertices):
     for vertex in self.vertices:
@@ -77,6 +73,17 @@ class NetworkCurve(QwtPlotCurve):
         vertex.marked = True
       else:
         vertex.marked = False
+        
+  def markToSel(self):
+    for vertex in self.vertices:
+      if vertex.marked == True:
+          vertex.selected = True
+          
+  def selToMark(self):
+    for vertex in self.vertices:
+      if vertex.selected == True:
+          vertex.selected = False
+          vertex.marked = True
   
   def unMark(self):
     for vertex in self.vertices:
@@ -252,44 +259,52 @@ class OWNetworkCanvas(OWGraph):
               iteration += 1
               qApp.processEvents()
               self.updateCanvas()
-     
-  def addSelection(self, ndx, replot = True):
-      #print("add selection")
-      change = False
-      if hasattr(ndx, "__iter__"):
-          for v in ndx:
-              if not v in self.selection and not v in self.hiddenNodes:
-                  (key, neighbours) = self.vertices_old[int(v)]
-                  color = self.curve(key).symbol().pen().color().name()
-                  self.selectionStyles[int(v)] = color
-                  newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.vertexSize + 4))
-                  self.setCurveSymbol(key, newSymbol)
-                  self.selection.append(v);
-                  change = True
-      else:
-          if not ndx in self.selection and not ndx in self.hiddenNodes:
-              if self.insideview == 1:
-                  self.removeSelection(None, False)
-                  
-              (key, neighbours) = self.vertices_old[ndx]
-              color = self.curve(key).symbol().pen().color().name()
-              self.selectionStyles[int(ndx)] = color
-              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4, self.getVertexSize(ndx) + 4))
-              self.setCurveSymbol(key, newSymbol)
-              self.selection.append(ndx);
-              #self.visualizer.filter[ndx] = True
-              change = True
-      if change:
-          if replot:
-              self.replot()
               
-          self.markSelectionNeighbours()
+  def markedToSelection(self):
+      self.networkCurve.markToSel()
+      self.replot()
       
-      self.master.nSelected = len(self.selection)
-      if self.insideview == 1:
-          self.optimize(100)
-          self.updateCanvas()
-      return change
+  def selectionToMarked(self):
+      self.networkCurve.selToMark()
+      self.replot()
+     
+#  def addSelection(self, ndx, replot = True):
+#      #print("add selection")
+#      change = False
+#      if hasattr(ndx, "__iter__"):
+#          for v in ndx:
+#              if not v in self.selection and not v in self.hiddenNodes:
+#                  (key, neighbours) = self.vertices_old[int(v)]
+#                  color = self.curve(key).symbol().pen().color().name()
+#                  self.selectionStyles[int(v)] = color
+#                  newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.vertexSize + 4))
+#                  self.setCurveSymbol(key, newSymbol)
+#                  self.selection.append(v);
+#                  change = True
+#      else:
+#          if not ndx in self.selection and not ndx in self.hiddenNodes:
+#              if self.insideview == 1:
+#                  self.removeSelection(None, False)
+#                  
+#              (key, neighbours) = self.vertices_old[ndx]
+#              color = self.curve(key).symbol().pen().color().name()
+#              self.selectionStyles[int(ndx)] = color
+#              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4, self.getVertexSize(ndx) + 4))
+#              self.setCurveSymbol(key, newSymbol)
+#              self.selection.append(ndx);
+#              #self.visualizer.filter[ndx] = True
+#              change = True
+#      if change:
+#          if replot:
+#              self.replot()
+#              
+#          self.markSelectionNeighbours()
+#      
+#      self.master.nSelected = len(self.selection)
+#      if self.insideview == 1:
+#          self.optimize(100)
+#          self.updateCanvas()
+#      return change
       
   def removeVertex(self, v):
       if v in self.selection:
@@ -341,7 +356,9 @@ class OWNetworkCanvas(OWGraph):
               self.selectNeighbours(sel, neighbours - sel, depth+1, maxdepth)
       
   def getSelectedExamples(self):
-      if len(self.selection) == 0:
+      selection = self.networkCurve.getSelectedVertices()
+      
+      if len(selection) == 0:
           return None
       
       indeces = self.visualizer.nVertices() * [0]
@@ -355,26 +372,12 @@ class OWNetworkCanvas(OWGraph):
           return None
 
   def getSelectedGraph(self):
-    if len(self.selection) == 0:
+    selection = self.networkCurve.getSelectedVertices()
+    
+    if len(selection) == 0:
         return None
-    
-    graph = orange.GraphAsList(len(self.selection), 0)
-    
-    for e in range(self.nEdges):
-        (key, i, j) = self.edges_old[e]
-        
-        if (i in self.selection) and (j in self.selection):
-            graph[self.selection.index(i), self.selection.index(j)] = 1
-    
-    indeces = self.visualizer.nVertices() * [0]
-    
-    for v in self.selection:
-        indeces[v] = v + 1
 
-    if self.visualizer.graph.items != None:
-        graph.setattr("items", self.visualizer.graph.items.select(indeces))
-          
-    return graph
+    return Network(self.visualizer.graph.getSubGraph(selection))
  
   def getSelectedVertices(self):
     return self.networkCurve.getSelectedVertices()
@@ -781,12 +784,6 @@ class OWNetworkCanvas(OWGraph):
       #self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
       #self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
       pass
-      
-  def sendData(self):
-      try:
-          getattr(self.master, "sendData")()
-      except AttributeError:
-          print "Attribute not foud in self.master"
   
   def zoomExtent(self):
       self.setAxisAutoScaled()

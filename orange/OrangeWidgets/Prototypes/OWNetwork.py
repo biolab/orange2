@@ -33,7 +33,7 @@ class OWNetwork(OWWidget):
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
+        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -85,15 +85,6 @@ class OWNetwork(OWWidget):
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
         
-#        OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-#        self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
-#        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
-#        #OWGUI.button(self.optimizeBox, self, "F-R Special", callback=self.frSpecial)
-#        OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
-#        OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
-#        OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
-#        OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
-
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
         self.colorCombo.addItem("(none)")
         
@@ -220,7 +211,7 @@ class OWNetwork(OWWidget):
     def insideviewneighbours(self):
         if self.graph.insideview == 1:
             self.graph.insideviewNeighbours = self.insideViewNeighbours
-            self.frButton.setDown(True)
+            self.optButton.setChecked(True)
             self.fr()
         
     def insideview(self):
@@ -235,7 +226,7 @@ class OWNetwork(OWWidget):
                 print "insideview: 0"
                 self.graph.insideview = 1
                 self.graph.insideviewNeighbors = self.insideViewNeighbours
-                self.frButton.setDown(True)
+                self.optButton.setChecked(True)
                 self.fr()
     
         else:
@@ -365,12 +356,13 @@ class OWNetwork(OWWidget):
             else:
                 self.send("Selected Examples", self.graph.getSelectedExamples())
                 
-            self.send("Selected Graph", graph)
+            self.send("Selected Network", graph)
         else:
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
-            self.send("Selected Graph", None)
+            
+            self.send("Selected Network", None)
       
     def setGraph(self, graph):
         if graph == None:
@@ -663,10 +655,10 @@ class OWNetwork(OWWidget):
         self.graph.enableGridX(self.graphShowGrid)
     
     def markedToSelection(self):
-        self.graph.addSelection(self.graph.markedNodes)
+        self.graph.markedToSelection()
       
     def markedFromSelection(self):
-        self.graph.removeSelection(self.graph.markedNodes)
+        self.graph.selectionToMarked()
     
     def setSelectionToMarked(self):
         self.graph.removeSelection(None, False)
