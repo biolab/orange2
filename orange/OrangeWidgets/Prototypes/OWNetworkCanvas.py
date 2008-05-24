@@ -388,7 +388,7 @@ class OWNetworkCanvas(OWGraph):
       self.state = MOVE_SELECTION
 
   def mouseMoveEvent(self, event):
-      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
+      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseStartEvent != None:
           newX = self.invTransform(2, event.pos().x())
           newY = self.invTransform(0, event.pos().y())
           
@@ -455,11 +455,13 @@ class OWNetworkCanvas(OWGraph):
       if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
         self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
       else:
-        #pritisk na gumb izven izbranega podrocja ali pa ni izbranega podrocja
+        # button pressed outside selected area or there is no area
         self.selectVertex(event.pos())
         self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
         self.replot()
-
+    elif self.state == SELECT_RECTANGLE:
+        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+        OWGraph.mousePressEvent(self, event)
     else:
         OWGraph.mousePressEvent(self, event)     
 
@@ -474,7 +476,17 @@ class OWNetworkCanvas(OWGraph):
           self.GMmouseStartEvent=None
           
       elif self.state == SELECT_RECTANGLE:
-          self.selectVertices()
+          x1 = self.invTransform(2, self.GMmouseStartEvent.x())
+          y1 = self.invTransform(0, self.GMmouseStartEvent.y())
+          
+          x2 = self.invTransform(2, event.pos().x())
+          y2 = self.invTransform(0, event.pos().y())
+          
+          selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
+
+          for ndx in selection:
+              self.vertices[ndx].selected = True
+          
           OWGraph.mouseReleaseEvent(self, event)
           self.removeAllSelections()
 
@@ -484,16 +496,6 @@ class OWNetworkCanvas(OWGraph):
                   self.selectVertices()
       else:
           OWGraph.mouseReleaseEvent(self, event)
-      
-  def selectVertices(self):
-      #print "selecting vertices.."
-      for vertexKey in self.indexPairs.keys():
-          vObj = self.curve(vertexKey)
-          
-          if self.isPointSelected(vObj.x(0), vObj.y(0)):
-              self.addSelection(self.indexPairs[vertexKey], False)
-              
-      self.replot()
               
   def selectVertex(self, pos):
       min = 1000000
@@ -505,7 +507,12 @@ class OWNetworkCanvas(OWGraph):
       ndx, min = self.visualizer.closestVertex(px, py)
 
       if min < 50 and ndx != -1:
-          self.vertices[ndx].selected = True
+          if self.insideview:
+              self.networkCurve.unSelect()
+              self.vertices[ndx].selected = True
+              self.optimize(100)
+          else:
+              self.vertices[ndx].selected = True
       else:
           self.removeSelection()
   
