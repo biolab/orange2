@@ -214,6 +214,9 @@ class OWNetworkCanvas(OWGraph):
       self.maxEdgeWeight = 0
       self.maxEdgeSize = 1
       
+      self.setAxisAutoScale(self.xBottom)
+      self.setAxisAutoScale(self.yLeft)
+      
       self.networkCurve = NetworkCurve(self)
       
   def getSelection(self):
@@ -280,44 +283,6 @@ class OWNetworkCanvas(OWGraph):
   def selectionToMarked(self):
       self.networkCurve.selToMark()
       self.replot()
-     
-#  def addSelection(self, ndx, replot = True):
-#      #print("add selection")
-#      change = False
-#      if hasattr(ndx, "__iter__"):
-#          for v in ndx:
-#              if not v in self.selection and not v in self.hiddenNodes:
-#                  (key, neighbours) = self.vertices_old[int(v)]
-#                  color = self.curve(key).symbol().pen().color().name()
-#                  self.selectionStyles[int(v)] = color
-#                  newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.vertexSize + 4))
-#                  self.setCurveSymbol(key, newSymbol)
-#                  self.selection.append(v);
-#                  change = True
-#      else:
-#          if not ndx in self.selection and not ndx in self.hiddenNodes:
-#              if self.insideview == 1:
-#                  self.removeSelection(None, False)
-#                  
-#              (key, neighbours) = self.vertices_old[ndx]
-#              color = self.curve(key).symbol().pen().color().name()
-#              self.selectionStyles[int(ndx)] = color
-#              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4, self.getVertexSize(ndx) + 4))
-#              self.setCurveSymbol(key, newSymbol)
-#              self.selection.append(ndx);
-#              #self.visualizer.filter[ndx] = True
-#              change = True
-#      if change:
-#          if replot:
-#              self.replot()
-#              
-#          self.markSelectionNeighbours()
-#      
-#      self.master.nSelected = len(self.selection)
-#      if self.insideview == 1:
-#          self.optimize(100)
-#          self.updateCanvas()
-#      return change
       
   def removeVertex(self, v):
       if v in self.selection:
@@ -711,8 +676,7 @@ class OWNetworkCanvas(OWGraph):
       self.nEdges = 0
       self.vertexDegree = []
       
-      #dodajanje vozlisc
-      #print "OWNeteorkCanvas/addVisualizer: adding vertices..."
+      #add nodes
       self.vertices_old = {}
       self.vertices = []
       for v in range(0, self.nVertices):
@@ -722,8 +686,7 @@ class OWNetworkCanvas(OWGraph):
           self.vertices.append(vertex)
       #print "done."
       
-      #dodajanje povezav
-      #print "OWNeteorkCanvas/addVisualizer: adding edges..."
+      #add edges
       self.edges_old = {}
       self.nEdges = 0
       self.networkCurve = NetworkCurve(self)
@@ -748,8 +711,6 @@ class OWNetworkCanvas(OWGraph):
               
           elif edge.weight != None and self.maxEdgeWeight < edge.weight:
               self.maxEdgeWeight = edge.weight
-          
-          # print edge.weight
             
           if visualizer.graph.directed:
               edge.arrowu = 0
@@ -769,9 +730,9 @@ class OWNetworkCanvas(OWGraph):
       
   def setEdgesSize(self):
       if self.maxEdgeWeight > self.minEdgeWeight:
-          print 'maxEdgeSize',self.maxEdgeSize
-          print 'maxEdgeWeight',self.maxEdgeWeight
-          print 'minEdgeWeight',self.minEdgeWeight
+          #print 'maxEdgeSize',self.maxEdgeSize
+          #print 'maxEdgeWeight',self.maxEdgeWeight
+          #print 'minEdgeWeight',self.minEdgeWeight
           k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
           for edge in self.edges:
               size = (edge.weight - self.minEdgeWeight) * k + 1
@@ -782,25 +743,15 @@ class OWNetworkCanvas(OWGraph):
           
     
   def updateCanvas(self):
-      self.setAxisAutoScaled()
-      self.updateData()
-      self.replot()
-      # preprecimo avtomatsko primikanje plota (kadar smo odmaknili neko skrajno tocko)
-      self.setAxisFixedScale()    
-  
-  def setAxisAutoScaled(self):
       self.setAxisAutoScale(self.xBottom)
       self.setAxisAutoScale(self.yLeft)
-
-  def setAxisFixedScale(self):
-      #self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
-      #self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
-      pass
+      self.updateData()
+      self.replot()  
   
   def zoomExtent(self):
-      self.setAxisAutoScaled()
+      self.setAxisAutoScale(self.xBottom)
+      self.setAxisAutoScale(self.yLeft)
       self.replot()
-      self.setAxisFixedScale()
       
   def zoomSelection(self):
       selection = self.networkCurve.getSelectedVertices()
