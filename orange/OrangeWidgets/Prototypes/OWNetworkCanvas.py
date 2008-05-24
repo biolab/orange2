@@ -88,6 +88,10 @@ class NetworkCurve(QwtPlotCurve):
   def unMark(self):
     for vertex in self.vertices:
       vertex.marked = False
+      
+  def unSelect(self):
+    for vertex in self.vertices:
+        vertex.selected = False
         
   def setHiddenVertices(self, nodes):
     for vertex in self.vertices:
@@ -317,8 +321,7 @@ class OWNetworkCanvas(OWGraph):
       return False
       
   def removeSelection(self, replot = True):
-      for vertex in self.vertices:
-        vertex.selected = False
+      self.networkCurve.unSelect()
       
       if replot:
         self.replot()
