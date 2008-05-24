@@ -227,14 +227,23 @@ class OWNetworkCanvas(OWGraph):
   
   def hideSelectedVertices(self):
     self.networkCurve.hideSelectedVertices()
+    self.drawLabels()
+    self.drawToolTips()
+    self.drawWeights()
     self.replot()
     
   def hideUnSelectedVertices(self):
     self.networkCurve.hideUnSelectedVertices()
+    self.drawLabels()
+    self.drawToolTips()
+    self.drawWeights()
     self.replot()
     
   def showAllVertices(self):
     self.networkCurve.showAllVertices()
+    self.drawLabels()
+    self.drawToolTips()
+    self.drawWeights()
     self.replot()
     
   def optimize(self, frSteps):
