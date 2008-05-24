@@ -10,6 +10,8 @@ import orngOrangeFoldersQt4
 import orange
 import OWGUI
 from OWWidget import *
+import os.path
+import pickle
 
 class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles"]
@@ -69,24 +71,29 @@ class OWDistanceFile(OWWidget):
 
         self.error()
         try:
-            fle = open(fn)
-            while 1:
-                lne = fle.readline().strip()
-                if lne:
-                    break
-            spl = lne.split()
-            dim = int(spl[0])
-            labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
-            self.matrix = matrix = orange.SymMatrix(dim)
-            self.matrix.setattr("items", [""] * dim)
-            for li, lne in enumerate(fle):
-                spl = lne.split("\t")
-                if labeled:
-                    self.matrix.items[li] = spl[0].strip()
-                    spl = spl[1:]
-                for lj, s in enumerate(spl):
-                    if s:
-                        self.matrix[li, lj] = float(s)
+            if os.path.splitext(fn)[1] == '.pkl':
+                pkl_file = open(fn, 'rb')
+                self.matrix = pickle.load(pkl_file)
+                pkl_file.close()
+            else:    
+                fle = open(fn)
+                while 1:
+                    lne = fle.readline().strip()
+                    if lne:
+                        break
+                spl = lne.split()
+                dim = int(spl[0])
+                labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
+                self.matrix = matrix = orange.SymMatrix(dim)
+                self.matrix.setattr("items", [""] * dim)
+                for li, lne in enumerate(fle):
+                    spl = lne.split("\t")
+                    if labeled:
+                        self.matrix.items[li] = spl[0].strip()
+                        spl = spl[1:]
+                    for lj, s in enumerate(spl):
+                        if s:
+                            self.matrix[li, lj] = float(s)
 
             self.relabel()
         except:
