@@ -186,7 +186,11 @@ class NavigateSelectToolbar(QWidget):
                         getattr(self.navigate, ff[1]).setChecked(fi == b)
                     if ff[6] == "select":
                         getattr(self.select, ff[1]).setChecked(fi == b)
-        getattr(self.graph, f[2])()
+                
+        try:
+            getattr(self.graph, f[2])()
+        except:
+            getattr(self.widget, f[2])()
 
         cursor = f[4]
         if not cursor is None:
