@@ -255,7 +255,7 @@ class OWNetwork(OWWidget):
     def setSearchStringTimer(self):
         self.hubs = 1
         self.searchStringTimer.stop()
-        self.searchStringTimer.start(750, True)
+        self.searchStringTimer.start(750)
          
     def setMarkMode(self, i = None):
         if not i is None:
@@ -661,8 +661,8 @@ class OWNetwork(OWWidget):
         self.graph.selectionToMarked()
     
     def setSelectionToMarked(self):
-        self.graph.removeSelection(None, False)
-        self.graph.addSelection(self.graph.markedNodes)
+        self.graph.removeSelection(False)
+        self.graph.markedToSelection()
     
     def selectAllConnectedNodes(self):
         self.graph.selectConnectedNodes(1000000)
