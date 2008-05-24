@@ -1426,6 +1426,44 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
   PyCATCH
 }
 
+PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x1, y1, x2, y2) -> list of vertices")
+{
+  PyTRY
+	double x1, y1, x2, y2;
+
+	if (!PyArg_ParseTuple(args, "dddd:NetworkOptimization.getVerticesInRect", &x1, &y1, &x2, &y2))
+		return NULL;
+	
+	if (x1 > x2) {
+		double tmp = x2;
+		x2 = x1;
+		x1 = tmp;
+	}
+	
+	if (y1 > y2) {
+		double tmp = y2;
+		y2 = y1;
+		y1 = tmp;
+	}
+
+	CAST_TO(TNetworkOptimization, graph);
+	PyObject* vertices = PyList_New(0);
+	int i;
+	for (i = 0; i < graph->nVertices; i++) {
+		double vX = graph->pos[0][i];
+		double vY = graph->pos[1][i];
+		
+		if (x1 <= vX and x2 >= vX and y1 <= vY and y2 >= vY) {
+			PyObject *nel = Py_BuildValue("i", i);
+			PyList_Append(vertices, nel);
+			Py_DECREF(nel);
+		}
+	}
+
+	return vertices;
+  PyCATCH
+}
+
 WRAPPER(ExampleTable)
 PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
