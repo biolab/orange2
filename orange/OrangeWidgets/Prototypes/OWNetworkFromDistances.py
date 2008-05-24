@@ -1,7 +1,7 @@
 """
 <name>Network from Distances</name>
 <description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
-<icon>icons/Outlier.png</icon>
+<icon>icons/NetworkFromDistances.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3013</priority>
 """
@@ -24,7 +24,6 @@ class Hist(OWGraph):
 
         self.enableXaxis(1)
         self.enableYLaxis(1)
-        self.state = NOTHING  #default je rocno premikanje
         
         self.xData = []
         self.yData = []
@@ -43,25 +42,7 @@ class Hist(OWGraph):
         self.minValue = min(values)
         self.maxValue = max(values)
         
-        boxes = 100
-        box_size = (self.maxValue - self.minValue) / boxes
-        
-        if box_size > 0:
-            self.xData = []
-            self.yData = [0] * boxes
-            for i in range(boxes):
-                self.xData.append(self.minValue + i * box_size + box_size / 2)
-                 
-            for value in values:
-                box = int((value - self.minValue) / box_size)
-                if box >= len(self.yData):
-                    box = boxes - 1
-                n = self.yData[box]
-                self.yData[box] = n + 1
-                
-            #print values
-            #print self.xData
-            #print self.yData 
+        (self.yData, self.xData) = numpy.histogram(values, bins=100)
             
         self.updateData()
         self.replot()
@@ -84,16 +65,11 @@ class Hist(OWGraph):
         self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
         self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
 
-        print self.lowerBoundary
-        print self.upperBoundary
         self.setAxisScale(QwtPlot.xBottom, min(self.xData), max(self.xData))
         self.setAxisScale(QwtPlot.yLeft, min(self.yData), maxy)
-#    def setAxisAutoScaled(self):
-#        self.setAxisAutoScale(self.xBottom)
-#        self.setAxisAutoScale(self.yLeft)
             
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold"]
+    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "largestComponent"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
@@ -105,7 +81,8 @@ class OWNetworkFromDistances(OWWidget):
         self.spinLowerChecked = False
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
-    
+        self.largestComponent = 0
+        
         # set default settings
         self.data = None
         self.threshold = 0.2
@@ -134,7 +111,9 @@ class OWNetworkFromDistances(OWWidget):
         self.excludeUnconnected = 0
         self.attrColor = ""
         #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
-        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected nodes', disabled = 1)#, callback = self.updateGraph)
+        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected nodes', disabled = 1)
+        OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.largestComponentCliked)
+        
         # info
         boxInfo = OWGUI.widgetBox(self.controlArea, box = "Network info")
         self.infoa = OWGUI.widgetLabel(boxInfo, "No data loaded.")
@@ -142,6 +121,9 @@ class OWNetworkFromDistances(OWWidget):
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
         self.resize(700, 322)
+        
+    def largestComponentCliked(self):
+        self.generateGraph()
 
     def cdata(self, data):
         if data == None:
@@ -150,17 +132,19 @@ class OWNetworkFromDistances(OWWidget):
         self.data = data
         
         # draw histogram
-        values = []
-        for i in range(data.dim):
-            for j in range(i):
-                values.append(data[i][j])
-        
+        t1 = time.time()
+        data.matrixType = data.Lower
+        values = data.getValues()
+        t2 = time.time()
         self.histogram.setValues(values)
+        t3 = time.time()
         #print maxValue
         
         self.spinLowerThreshold = self.spinUpperThreshold = min(values)
-        
+        t4 = time.time()
         self.generateGraph()
+        t5 = time.time()
+        #print t1-t2,t2-t3,t3-t4,t4-t5
         
     def changeLowerSpin(self):
         if self.spinLowerThreshold >= self.spinUpperThreshold:
@@ -189,29 +173,25 @@ class OWNetworkFromDistances(OWWidget):
             return
 
         graph = Network(self.data.dim, 0)
-        graph.setattr("items", self.data.items)
+        
+        if hasattr(self.data, "items"):
+            graph.setattr("items", self.data.items)
             
         # set the threshold
         # set edges where distance is lower than threshold
-        n = 0
-        nedges = 0
-        #print self.spinLowerThreshold
-        #print self.spinUpperThreshold
-        for i in range(self.data.dim):
-            oldn = n
-            for j in range(i):
-                if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
-                    n += 1
-                    graph[i,j] = 1
-            if n > oldn:
-                nedges += 1
-          
-        self.graph = graph
+        nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
+        n = len(graph.getEdges())
+        
+        if self.largestComponent:
+            self.graph = Network(graph.getSubGraph(graph.getConnectedComponents()[0]))
+        else:
+            self.graph = graph
+            
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
-        self.send("Network", graph)
-        self.send("Examples", graph.items)
+        self.send("Network", self.graph)
+        self.send("Examples", self.graph.items)
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
     
 if __name__ == "__main__":
