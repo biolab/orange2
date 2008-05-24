@@ -238,6 +238,15 @@ div.separator
     height: 89px;
 }
 
+span.option
+{
+    font-weight: bold;
+    font-family: Arial;
+    padding: 1px;
+    padding-left: 3px;
+    padding-right: 3px;
+    background-color: #eeeeee;
+}
 
 TABLE {
     font-family: Verdana;
@@ -261,15 +270,13 @@ PRE.code { background-color: #FCD179; margin-top: 3px}
 */
 
 .schema {
-	border:2;
-	border-color: #777777;
-	margin-left: 10px;
-	margin-right: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 .snapshot {
-	margin-left: 10px;
-	margin-right: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 
