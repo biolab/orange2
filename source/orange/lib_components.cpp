@@ -3050,6 +3050,31 @@ PyObject *__pickleLoaderSymMatrix(PyObject *, PyObject *args) PYARGS(METH_VARARG
 }
 
 
+PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(None -> list of values)")
+{
+	PyTRY
+	CAST_TO(TSymMatrix, matrix)
+
+	PyObject* components_list = PyList_New(0);
+		
+	int i,j;
+	for (i = 1; i < matrix->dim; i++) {
+		for (j = i+1; j < matrix->dim; j++) {
+			double value = 0;
+			if (matrix->matrixType == 0)
+				value = matrix->getitem(j,i);
+			else
+				value = matrix->getitem(i,j);
+			
+			PyObject *nel = Py_BuildValue("d", value);
+			PyList_Append(components_list, nel);
+			Py_DECREF(nel);
+		}
+	}
+	
+	return components_list;
+	PyCATCH
+}
 
 
 PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
@@ -4378,46 +4403,46 @@ bool moreLength (const vector<int>& s1, const vector<int>& s2)
 	return s1.size() > s2.size();
 }
 
-PyObject *Graph_getConnectedComponents(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> list of [nodes]")
+PyObject *Graph_getConnectedComponents(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_NOARGS, "None -> list of [nodes]")
 {
 	PyTRY
-		CAST_TO(TGraph, graph);
+	CAST_TO(TGraph, graph);
+	//cout << "Graph_getConnectedComponents" << endl;
+	int node = 0;
+	vector<set<int> > components;
+	set<int> all;
 
-		int node = 0;
-		vector<set<int> > components;
-		set<int> all;
+	while (node < graph->nVertices)
+	{
+		set<int> component = graph->getConnectedComponent(node);
+		components.push_back(component);
+		all.insert(component.begin(), component.end());
 
-		while (node < graph->nVertices)
+		while(node < graph->nVertices)
 		{
-			set<int> component = graph->getConnectedComponent(node);
-			components.push_back(component);
-			all.insert(component.begin(), component.end());
-
-			while(node < graph->nVertices)
-			{
-				node++;
-				if (all.find(node) == all.end())
-					break;
-			}
+			node++;
+			if (all.find(node) == all.end())
+				break;
 		}
-		sort(components.begin(), components.end(), lessLength);
+	}
+	sort(components.begin(), components.end(), lessLength);
 
-		PyObject* components_list = PyList_New(0);
+	PyObject* components_list = PyList_New(0);
 
-		ITERATE(vector<set<int> >, si, components) {
-			PyObject* component_list = PyList_New(0);
-			
-			ITERATE(set<int>, ni, *si) {
-				PyObject *nel = Py_BuildValue("i", *ni);
-				PyList_Append(component_list, nel);
-				Py_DECREF(nel);
-			}
-
-			PyList_Append(components_list, component_list);
-			Py_DECREF(component_list);
+	ITERATE(vector<set<int> >, si, components) {
+		PyObject* component_list = PyList_New(0);
+		
+		ITERATE(set<int>, ni, *si) {
+			PyObject *nel = Py_BuildValue("i", *ni);
+			PyList_Append(component_list, nel);
+			Py_DECREF(nel);
 		}
 
-		return components_list;
+		PyList_Append(components_list, component_list);
+		Py_DECREF(component_list);
+	}
+
+	return components_list;
 	PyCATCH
 }
 
@@ -4483,60 +4508,61 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 
 
 PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference);
+
 PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
 {
 	PyTRY
-		CAST_TO(TGraph, graph);
+	CAST_TO(TGraph, graph);
+	//cout << "Graph_getSubGraph" << endl;
+	PyObject *vertices;
+	
+	if (!PyArg_ParseTuple(args, "O:Graph.getSubGraph", &vertices))
+		return PYNULL;
 
-		PyObject *vertices;
-		
-		if (!PyArg_ParseTuple(args, "O:Graph.getSubGraph", &vertices))
-			return PYNULL;
+	int size = PyList_Size(vertices);
+	PyList_Sort(vertices);
 
-		int size = PyList_Size(vertices);
-		PyList_Sort(vertices);
+	TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
+	PGraph wsubgraph = subgraph;
 
-		TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
-		PGraph wsubgraph = subgraph;
+	int i;
+	vector<int> neighbours;
+	for (i = 0; i < size; i++)
+	{
+		int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
 
-		int i;
-		vector<int> neighbours;
-		for (i = 0; i < size; i++)
+		graph->getNeighboursFrom_Single(vertex, neighbours);
+		ITERATE(vector<int>, ni, neighbours)
 		{
-			int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
-
-			graph->getNeighboursFrom_Single(vertex, neighbours);
-			ITERATE(vector<int>, ni, neighbours)
+			if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 			{
-				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+				int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+				
+				if (index != -1)
 				{
-					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-					
-					if (index != -1)
-					{
-						double* w = subgraph->getOrCreateEdge(i, index);
-						*w = 1.0;
-					}
+					double* w = subgraph->getOrCreateEdge(i, index);
+					*w = 1.0;
 				}
 			}
 		}
+	}
  
-    PyObject *pysubgraph = WrapOrange(wsubgraph);
+	PyObject *pysubgraph = WrapOrange(wsubgraph);
 
-		// set graphs attribut items of type ExampleTable to subgraph
-    PyObject *strItems = PyString_FromString("items");
+	// set graphs attribut items of type ExampleTable to subgraph
+	PyObject *strItems = PyString_FromString("items");
 
-		if (PyObject_HasAttr(self, strItems) == 1)
-		{
-			PyObject* items = PyObject_GetAttr(self, strItems);
+	if (PyObject_HasAttr(self, strItems) == 1)
+	{
+		PyObject* items = PyObject_GetAttr(self, strItems);
       PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 
       Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
-    }
+	}
 
-	  Py_DECREF(strItems);
+	Py_DECREF(strItems);
 
-		return pysubgraph;
+	return pysubgraph;
 	PyCATCH
 }
 
