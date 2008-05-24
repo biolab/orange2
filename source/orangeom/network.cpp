@@ -363,6 +363,66 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 	PyCATCH
 }
 
+
+PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnected")
+{
+	PyTRY
+	CAST_TO(TNetwork, network);
+	
+	PyObject *pyMatrix;
+	double lower;
+	double upper;
+	
+	if (!PyArg_ParseTuple(args, "Odd:Network.fromSymMatrix", &pyMatrix, &lower, &upper))
+		return PYNULL;
+  
+	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
+	
+	if (matrix->dim != network->nVertices)
+		PYERROR(PyExc_TypeError, "SymMatrix dimension should equal number of vertices.", PYNULL);
+	
+	int i,j;
+	int nConnected = 0;
+	
+	if (matrix->matrixType == 0) {
+		// lower
+		for (i = 1; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				double value = matrix->getitem(j,i);
+				if (lower <=  value and value <= upper) {
+					double* w = network->getOrCreateEdge(j, i);
+					*w = value;		
+					connected = true;
+				}
+			}
+			
+			if (connected)
+				nConnected++;
+		}
+	}
+	else {
+		// upper
+		for (i = 1; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				double value = matrix->getitem(i,j);
+				if (lower <=  value and value <= upper) {
+					double* w = network->getOrCreateEdge(i, j);
+					*w = value;
+					connected = true;
+				}
+			}
+
+			if (connected)
+				nConnected++;
+		}
+	}
+	
+	return Py_BuildValue("i", nConnected);
+	PyCATCH;
+}
+
 PyObject *Network_printHierarchy(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "None -> None")
 {
   PyTRY
@@ -417,7 +477,7 @@ PyObject *Network_expandMeta(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
   PyTRY
     int meta;
 
-    if (!PyArg_ParseTuple(args, "u:Network.groupVerticesInHierarchy", &meta))
+    if (!PyArg_ParseTuple(args, "i:Network.groupVerticesInHierarchy", &meta))
 		  return PYNULL;
 
     CAST_TO(TNetwork, network);

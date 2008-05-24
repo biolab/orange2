@@ -41,6 +41,7 @@
 #include "root.hpp"
 #include "graph.hpp"
 #include "table.hpp"
+#include "symmatrix.hpp"
 #include "stringvars.hpp"
 
 #ifdef DARWIN
@@ -50,6 +51,7 @@
 using namespace std;
 
 WRAPPER(ExampleTable)
+WRAPPER(SymMatrix)
 
 class TNetworkHierarchyNode
 {
