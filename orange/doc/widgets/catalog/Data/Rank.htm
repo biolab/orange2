@@ -39,23 +39,23 @@
 
 <P>The right-hand side of the widget presents the computed quality of the attributes. The first line shows the attribute name and the second the number of its values (or a "C", if the attribute is continuous. Remaining columns show different measures of quality.</P>
 
-<p>The user is able to select the measures (s)he wants computed and presented. <code>ReliefF</code> requires setting two arguments: the number of <code>Neighbours</code> taken into account and the number of randomly chosen reference <code>Examples</code>. The former should be higher if there is a lot of noise; the latter generally makes the computation less reliable if set too low, while higher values make it slow.</p>
+<p>The user is able to select the measures (s)he wants computed and presented. <span class="option">ReliefF</span> requires setting two arguments: the number of <span class="option">Neighbours</span> taken into account and the number of randomly chosen reference <span class="option">Examples</span>. The former should be higher if there is a lot of noise; the latter generally makes the computation less reliable if set too low, while higher values make it slow.</p>
 
 <P>The order in which the attributes are presented can be set either in the list below the measures or by clicking the table's column headers. Attributes can also be sorted by a measure not printed in the table.</P>
 
-<P>Measures that cannot handle continuous attributes (impurity measures - information gain, gain ratio and gini index) are run on discretized attributes. For sake of simplicity we always split the continuous attributes in intervals with (approximately) equal number of examples, but the user can set the number of <code>Intervals</code>.</P>
+<P>Measures that cannot handle continuous attributes (impurity measures - information gain, gain ratio and gini index) are run on discretized attributes. For sake of simplicity we always split the continuous attributes in intervals with (approximately) equal number of examples, but the user can set the number of <span class="option">Intervals</span>.</P>
 
-<P>It is also possible to set the <code>number of decimals</code> in the print out. Using a number to high may exaggerate the accuracy of the computation; many decimals may only be useful when the computed numbers are really small.</P>
+<P>It is also possible to set the number of decimals (<span class="option">No. of decimals</span>) in the print out. Using a number to high may exaggerate the accuracy of the computation; many decimals may only be useful when the computed numbers are really small.</P>
 
 <P>The widget outputs two example tables. The one, whose corresponding signal is named <code>ExampleTable Attributes</code> looks pretty much like the one shown in the Rank widget, except that the second column is split into two columns, one giving the attribute type (D for discrete and C for continuous), and the other giving the number of distinct values if the attribute is discrete and undefined if it's continuous.</P>
 
 <P>The second, more interesting table has the same examples as the original, but with a subset of the attributes. To select/unselect attributes, click the corresponding rows in the table. This way, the widget can be used for manual selection of attributes. Something similar can also be done with a <a href="SelectAttributes.htm">Select Attributes</a> widget, except that the Rank widget can be used for selecting the attributes according to their quality, while Select Attributes offers more in terms of changing the order of attributes, picking another class attribute and similar.</P>
 
-<P>The widget can also be used to automatically select a feature subset. If <code>Best ranked</code> is selected in box <code>Select attributes</code>, the widget will output a data set where examples are described by the specified number of best ranked attributes. The data set is changed whenever the order of attributes is changed for any reason (different measure is selected for sorting, ReliefF or discretization settings are changed...)</P>
+<P>The widget can also be used to automatically select a feature subset. If <span class="option">Best ranked</span> is selected in box <span class="option">Select attributes</span>, the widget will output a data set where examples are described by the specified number of best ranked attributes. The data set is changed whenever the order of attributes is changed for any reason (different measure is selected for sorting, ReliefF or discretization settings are changed...)</P>
 
-<P>The first two options in <code>Select Attributes</code> box can be used to remove the selection (<code>None</code>) or to select all attributes (<code>All</code>).</P>
+<P>The first two options in <span class="option">Select Attributes</span> box can be used to clear the selection (<span class="option">None</span>) or to select all attributes (<span class="option">All</span>).</P>
 
-<P>Button <code>Commit</code> sends the data set with the selected attributes. If <b>Send automatically</b> is set, the data set is committed on any change.</P>
+<P>Button <span class="option">Commit</span> sends the data set with the selected attributes. If <span class="option">Send automatically</span> is set, the data set is committed on any change.</P>
 
 
 <h2>Examples</h2>

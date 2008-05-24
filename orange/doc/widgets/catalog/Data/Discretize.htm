@@ -42,20 +42,20 @@ src="Discretize-S.png" alt="Discretize" border=0></a>
 
 <p>Three discretization methods are supported. Continuous attributes
 are either discretized using a set of intervals of the same size
-(<b>Equal-Width Intervals</b>), using a set of intervals where interval
+(<span class="option">Equal-Width Intervals</span>), using a set of intervals where interval
 borders are defined so that each interval covers approximately equal
-number of data instances (<b>Equal-Frequency Intervals</b>). Number of
+number of data instances (<span class="option">Equal-Frequency Intervals</span>). Number of
 intervals is user-defined.</p>
 
-<p>A different technique is <b>Entropy-based
-discretization</b>, which works only if an input data set includes a
+<p>A different technique is <span class="option">Entropy-based
+discretization</span>, which works only if an input data set includes a
 discrete class and finds intervals so that these minimize the entropy
 of the class variable (e.g., intervals tend to include instances of
 some prevailing class). The algorithm used is that of Fayyad and Irani
 (1992). One possible outcome of the algorithm is that no appropriate
 cut-off points are found, hence an attribute is reduced to a constant
 and can be removed from the data set. Attributes of this kind are
-listed under <b>Removed Attributes</b>.</p>
+listed under <span class="option">Removed Attributes</span>.</p>
 
 <p>Depending on the user's settings, the widget can display either the
 discretization intervals or the cut-off points, that is, interval borders.</p>
