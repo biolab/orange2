@@ -196,15 +196,24 @@ class OWNetworkFromDistances(OWWidget):
         n = len(graph.getEdges())
         
         if self.largestComponent:
-            self.graph = Network(graph.getSubGraph(graph.getConnectedComponents()[0]))
+            components = graph.getConnectedComponents()[0]
+            if len(components) > 1:
+                self.graph = Network(graph.getSubGraph(components))
+            else:
+                self.graph = None
         else:
             self.graph = graph
             
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
+        
         self.send("Network", self.graph)
-        self.send("Examples", self.graph.items)
+        if self.graph == None:
+             self.send("Examples", None)
+        else:
+            self.send("Examples", self.graph.items)
+        
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
     
 if __name__ == "__main__":
