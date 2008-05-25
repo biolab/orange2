@@ -39,11 +39,16 @@ class Hist(OWGraph):
         self.enableGridYL(False)
 
     def setValues(self, values):
-        self.minValue = min(values)
-        self.maxValue = max(values)
-        
         (self.yData, self.xData) = numpy.histogram(values, bins=100)
-            
+        
+        self.minx = min(self.xData)
+        self.maxx = max(self.xData)
+        self.miny = min(self.yData)
+        self.maxy = max(self.yData)
+        
+        self.minValue = self.minx
+        self.maxValue = self.maxx
+        
         self.updateData()
         self.replot()
         
@@ -61,12 +66,16 @@ class Hist(OWGraph):
                     
         self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
         
-        maxy = max(self.yData)
+        maxy = self.maxy
         self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
         self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
 
-        self.setAxisScale(QwtPlot.xBottom, min(self.xData), max(self.xData))
-        self.setAxisScale(QwtPlot.yLeft, min(self.yData), maxy)
+        minx = self.minx
+        maxx = self.maxx
+        miny = self.miny
+
+        self.setAxisScale(QwtPlot.xBottom, minx - (0.05 * (maxx - minx)), maxx + (0.05 * (maxx - minx)))
+        self.setAxisScale(QwtPlot.yLeft, miny - (0.05 * (maxy - miny)), maxy + (0.05 * (maxy - miny)))
             
 class OWNetworkFromDistances(OWWidget):
     settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "largestComponent"]
@@ -139,30 +148,34 @@ class OWNetworkFromDistances(OWWidget):
         self.histogram.setValues(values)
         t3 = time.time()
         #print maxValue
-        
-        self.spinLowerThreshold = self.spinUpperThreshold = min(values)
+        low = min(values)
+        upp = max(values)
+        self.spinLowerThreshold = self.spinUpperThreshold = low - (0.03 * (upp - low))
+        print self.spinLowerThreshold
         t4 = time.time()
         self.generateGraph()
         t5 = time.time()
         #print t1-t2,t2-t3,t3-t4,t4-t5
         
     def changeLowerSpin(self):
-        if self.spinLowerThreshold >= self.spinUpperThreshold:
-            self.spinLowerThreshold = self.spinUpperThreshold
-        elif self.spinLowerThreshold < self.histogram.minValue:
+        if self.spinLowerThreshold < self.histogram.minValue:
             self.spinLowerThreshold = self.histogram.minValue
         elif self.spinLowerThreshold > self.histogram.maxValue:
             self.spinLowerThreshold = self.histogram.maxValue
             
+        if self.spinLowerThreshold >= self.spinUpperThreshold:
+            self.spinUpperThreshold = self.spinLowerThreshold
+            
         self.generateGraph()
         
     def changeUpperSpin(self):
-        if self.spinUpperThreshold <= self.spinLowerThreshold:
-            self.spinUpperThreshold = self.spinLowerThreshold
-        elif self.spinUpperThreshold < self.histogram.minValue:
+        if self.spinUpperThreshold < self.histogram.minValue:
             self.spinUpperThreshold = self.histogram.minValue
         elif self.spinUpperThreshold > self.histogram.maxValue:
             self.spinUpperThreshold = self.histogram.maxValue
+            
+        if self.spinUpperThreshold <= self.spinLowerThreshold:
+            self.spinUpperThreshold = self.spinUpperThreshold
         
         self.generateGraph()
         
