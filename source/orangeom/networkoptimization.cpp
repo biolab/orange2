@@ -1453,7 +1453,7 @@ PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) 
 		double vX = graph->pos[0][i];
 		double vY = graph->pos[1][i];
 		
-		if (x1 <= vX and x2 >= vX and y1 <= vY and y2 >= vY) {
+		if ((x1 <= vX) && (x2 >= vX) && (y1 <= vY) && (y2 >= vY)) {
 			PyObject *nel = Py_BuildValue("i", i);
 			PyList_Append(vertices, nel);
 			Py_DECREF(nel);
