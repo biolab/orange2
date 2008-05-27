@@ -33,7 +33,7 @@ class OWNetwork(OWWidget):
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
-        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable)]
+        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -104,7 +104,10 @@ class OWNetwork(OWWidget):
         OWGUI.spin(self.displayTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
         
         self.renderAntialiased = 1
-        OWGUI.checkBox(self.displayTab, self, 'renderAntialiased', 'Render antialiased:', callback = self.setRenderAntialiased)
+        OWGUI.checkBox(self.displayTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
+        
+        self.checkSendMarkedNodes = 0
+        OWGUI.checkBox(self.displayTab, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
         
         OWGUI.separator(self.displayTab)
 
@@ -192,8 +195,28 @@ class OWNetwork(OWWidget):
         self.protoTab.layout().addStretch(1)
         self.optMethod = 1
         self.setOptMethod()
-        
+         
         self.resize(1000, 600)
+        
+    def setSendMarkedNodes(self):
+        if self.checkSendMarkedNodes:
+            self.graph.sendMarkedNodes = self.sendMarkedNodes
+            self.sendMarkedNodes(self.graph.getMarkedVertices())
+        else:
+            self.send("Marked Examples", None)
+            self.graph.sendMarkedNodes = None
+        
+    def sendMarkedNodes(self, markedNodes):        
+        if len(markedNodes) == 0:
+            self.send("Marked Examples", None)
+            return
+        
+        if self.visualize != None and self.visualize.graph != None and self.visualize.graph.items != None:                    
+            items = self.visualize.graph.items.getitems(markedNodes)
+            self.send("Marked Examples", items)
+            return
+        
+        self.send("Marked Examples", None)
 
     def collapse(self):
         print "collapse"
@@ -361,8 +384,6 @@ class OWNetwork(OWWidget):
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
-            
-            self.send("Selected Network", None)
       
     def setGraph(self, graph):
         if graph == None:
@@ -631,9 +652,6 @@ class OWNetwork(OWWidget):
     """
     Network Visualization (design)
     """
-  
-    def selectConnectedNodes(self):
-        self.graph.selectConnectedNodes(self.connectDistance)
        
     def clickedAttLstBox(self):
         self.graph.setLabelText([self.attributes[i][0] for i in self.markerAttributes])

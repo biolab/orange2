@@ -66,6 +66,9 @@ class NetworkCurve(QwtPlotCurve):
   
   def getSelectedVertices(self):
     return [vertex.index for vertex in self.vertices if vertex.selected]
+
+  def getMarkedVertices(self):
+    return [vertex.index for vertex in self.vertices if vertex.marked]
   
   def setMarkedVertices(self, vertices):
     for vertex in self.vertices:
@@ -178,12 +181,9 @@ class OWNetworkCanvas(OWGraph):
       self.edges = []
       self.indexPairs = {}       # distionary of type CurveKey: orngIndex   (for nodes)
       #self.selection = []        # list of selected nodes (indices)
-      self.selectionStyles = {}  # dictionary of styles of selected nodes
       self.markerKeys = {}       # dictionary of type NodeNdx : markerCurveKey
       self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
       self.visualizer = None
-      self.selectedCurve = None
-      self.selectedVertex = None
       self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
       self.edgesKey = -1
       #self.vertexSize = 6
@@ -208,6 +208,7 @@ class OWNetworkCanvas(OWGraph):
       self.enableGridXB(False)
       self.enableGridYL(False)
       self.renderAntialiased = 1
+      self.sendMarkedNodes = None
       
       self.showWeights = 0
       self.minEdgeWeight = sys.maxint
@@ -221,6 +222,9 @@ class OWNetworkCanvas(OWGraph):
       
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
+
+  def getMarkedVertices(self):
+    return self.networkCurve.getMarkedVertices()
       
   def getVertexSize(self, index):
       return 6
@@ -278,49 +282,26 @@ class OWNetworkCanvas(OWGraph):
               
   def markedToSelection(self):
       self.networkCurve.markToSel()
+      self.drawLabels()
+      self.drawToolTips()
+      self.drawWeights()
       self.replot()
       
   def selectionToMarked(self):
       self.networkCurve.selToMark()
+      self.drawLabels()
+      self.drawToolTips()
+      self.drawWeights()
       self.replot()
       
-  def removeVertex(self, v):
-      if v in self.selection:
-          (key, neighbours) = self.vertices_old[v]
-          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(self.selectionStyles[v])), QSize(self.getVertexSize(v), self.getVertexSize(v)))
-          self.setCurveSymbol(key, newSymbol)
-          selection.remove(v)
-          del self.selectionStyles[v]
-          return True
-      return False
+      if self.sendMarkedNodes != None:
+          self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
       
   def removeSelection(self, replot = True):
       self.networkCurve.unSelect()
       
       if replot:
         self.replot()
-      
-  def selectConnectedNodes(self, distance):
-      if distance <= 0:
-          return
-      
-      #print "distance: " + str(distance)
-      sel = set(self.selection)
-      for v in self.selection:
-          neighbours = set(self.visualizer.graph.getNeighbours(v))
-          #print neighbours
-          self.selectNeighbours(sel, neighbours - sel, 1, distance);
-          
-      self.removeSelection()
-      for ndx in sel:
-          (key, neighbours) = self.vertices_old[ndx]
-          self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
-          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4, self.getVertexSize(ndx) + 4))
-          self.setCurveSymbol(key, newSymbol)
-          self.selection.append(ndx);
-      
-      self.master.nSelected = len(self.selection)
-      self.replot()
   
   def selectNeighbours(self, sel, nodes, depth, maxdepth):
       #print "list: " + str(sel)
@@ -338,11 +319,8 @@ class OWNetworkCanvas(OWGraph):
       if len(selection) == 0:
           return None
       
-      indeces = self.visualizer.nVertices() * [0]
+      indices = [v + 1 for v in selection]
       
-      for v in self.selection:
-          indeces[v] = v + 1
-
       if self.visualizer.graph.items != None:
           return self.visualizer.graph.items.select(indeces)
       else:
@@ -376,13 +354,31 @@ class OWNetworkCanvas(OWGraph):
               toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
           
           self.networkCurve.setMarkedVertices(toMark)
+          self.drawLabels()
+          self.drawToolTips()
+          self.drawWeights()
           self.replot()
           
+          if self.sendMarkedNodes != None:
+              self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+              
   def unMark(self):
     self.networkCurve.unMark()
+    self.drawLabels()
+    self.drawToolTips()
+    self.drawWeights()
     
+    if self.sendMarkedNodes != None:
+          self.sendMarkedNodes([])
+          
   def setMarkedVertices(self, vertices):
     self.networkCurve.setMarkedVertices(vertices)
+    self.drawLabels()
+    self.drawToolTips()
+    self.drawWeights()
+    
+    if self.sendMarkedNodes != None:
+          self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
       
   def activateMoveSelection(self):
       self.state = MOVE_SELECTION
@@ -421,10 +417,16 @@ class OWNetworkCanvas(OWGraph):
               self.drawLabels()
               self.drawWeights()
               self.replot()
+              
+              if self.sendMarkedNodes != None:
+                  self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
           else:
               self.networkCurve.unMark()
               self.drawLabels()
               self.replot()
+              
+              if self.sendMarkedNodes != None:
+                  self.sendMarkedNodes([])
               
       if self.smoothOptimization:
           px = self.invTransform(2, event.x())
@@ -452,13 +454,13 @@ class OWNetworkCanvas(OWGraph):
   def mousePressEvent(self, event):
     if self.state == MOVE_SELECTION:
       self.mouseCurrentlyPressed = 1
-      if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
-        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-      else:
+      #if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
+      #  self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+      #else:
         # button pressed outside selected area or there is no area
-        self.selectVertex(event.pos())
-        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-        self.replot()
+      self.selectVertex(event.pos())
+      self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+      self.replot()
     elif self.state == SELECT_RECTANGLE:
         self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
         OWGraph.mousePressEvent(self, event)
@@ -469,10 +471,7 @@ class OWNetworkCanvas(OWGraph):
       if self.state == MOVE_SELECTION:
           self.mouseCurrentlyPressed = 0
           
-          self.selectedCurve= None
-          self.selectedVertex=None
           self.moveGroup=False
-          #self.selectedVertices=[]
           self.GMmouseStartEvent=None
           
       elif self.state == SELECT_RECTANGLE:
@@ -487,6 +486,7 @@ class OWNetworkCanvas(OWGraph):
           for ndx in selection:
               self.vertices[ndx].selected = True
           
+          self.markSelectionNeighbours()
           OWGraph.mouseReleaseEvent(self, event)
           self.removeAllSelections()
 
@@ -511,10 +511,14 @@ class OWNetworkCanvas(OWGraph):
               self.networkCurve.unSelect()
               self.vertices[ndx].selected = True
               self.optimize(100)
+              
+              self.markSelectionNeighbours()
           else:
               self.vertices[ndx].selected = True
+              self.markSelectionNeighbours()
       else:
           self.removeSelection()
+          self.unMark()
   
   def updateData(self):
       if self.visualizer == None:
