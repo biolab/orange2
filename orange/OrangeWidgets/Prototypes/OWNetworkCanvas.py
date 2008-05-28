@@ -24,6 +24,7 @@ class NetworkVertex():
         self.tooltip = []
         
         self.pen = QPen(Qt.blue, 1)
+        self.pen.setJoinStyle(Qt.RoundJoin)
         self.nocolor = Qt.white
         self.color = Qt.blue
         self.size = 5
@@ -214,6 +215,8 @@ class OWNetworkCanvas(OWGraph):
       self.minEdgeWeight = sys.maxint
       self.maxEdgeWeight = 0
       self.maxEdgeSize = 1
+      
+      self.maxVertexSize = 5
       
       self.setAxisAutoScale(self.xBottom)
       self.setAxisAutoScale(self.yLeft)
@@ -492,7 +495,7 @@ class OWNetworkCanvas(OWGraph):
 
       elif self.state == SELECT_POLYGON:
               OWGraph.mouseReleaseEvent(self, event)
-              if self.tempSelectionCurve == None:   #ce je OWVisGraph zakljucil poligon
+              if self.tempSelectionCurve == None:   #if OWVisGraph closed polygon
                   self.selectVertices()
       else:
           OWGraph.mouseReleaseEvent(self, event)
@@ -695,6 +698,8 @@ class OWNetworkCanvas(OWGraph):
           vertex = NetworkVertex()
           vertex.index = v
           self.vertices.append(vertex)
+          
+          
       #print "done."
       
       #add edges
@@ -733,7 +738,8 @@ class OWNetworkCanvas(OWGraph):
           self.maxEdgeSize = 10
           
       self.setEdgesSize()
-                        
+      self.setVerticesSize()
+      
       self.networkCurve.coors = visualizer.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
@@ -751,7 +757,24 @@ class OWNetworkCanvas(OWGraph):
       else:
           for edge in self.edges:
               edge.pen = QPen(Qt.lightGray, 1)
+              
+  def setVerticesSize(self, column=None):
+      column = str(column)
+      if column in self.visualizer.graph.items.domain:
+          values = [x[column].value for x in self.visualizer.graph.items]
           
+          minVertexWeight = min(values)
+          maxVertexWeight = max(values)
+          
+          k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
+          
+          for vertex in self.vertices:
+              vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
+              vertex.pen.setWidthF(1 + float(vertex.size) / 20)
+      else:
+          for vertex in self.vertices:
+              vertex.size = self.maxVertexSize
+              vertex.pen.setWidthF(1 + float(self.maxVertexSize) / 20)
     
   def updateCanvas(self):
       self.setAxisAutoScale(self.xBottom)

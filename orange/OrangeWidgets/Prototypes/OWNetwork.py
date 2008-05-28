@@ -26,7 +26,11 @@ dlg_showall = dir + "Dlg_clear.png"
 class OWNetwork(OWWidget):
     settingsList = ["autoSendSelection", 
                     "spinExplicit", 
-                    "spinPercentage"] 
+                    "spinPercentage",
+                    "maxLinkSize",
+                    "maxVertexSize",
+                    "renderAntialiased",
+                    "self.labelsOnMarkedOnly"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -49,9 +53,14 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
+        self.vertexSize = 0
         self.nVertices = self.nShown = self.nHidden = self.nMarked = self.nSelected = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
         self.optimizeWhat = 1
         self.stopOptimization = 0
+        self.maxLinkSize = 3
+        self.maxVertexSize = 5
+        self.renderAntialiased = 1
+        self.labelsOnMarkedOnly = 0
         
         self.loadSettings()
 
@@ -60,13 +69,16 @@ class OWNetwork(OWWidget):
         self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
         self.mainArea.layout().addWidget(self.graph)
         
+        self.graph.maxLinkSize = self.maxLinkSize
+        self.graph.maxVertexSize = self.maxVertexSize
+        
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
         self.tabs = OWGUI.tabWidget(self.hcontroArea)
         self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
-        self.protoTab = OWGUI.createTabPage(self.tabs, "Prototypes")
+        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         
@@ -95,16 +107,18 @@ class OWNetwork(OWWidget):
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
         self.showWeights = 0
-        OWGUI.checkBox(self.displayTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
+        OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
         
-        self.labelsOnMarkedOnly = 0
-        OWGUI.checkBox(self.displayTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
         
-        self.maxLinkSize = 10
-        OWGUI.spin(self.displayTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        OWGUI.spin(self.settingsTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
         
-        self.renderAntialiased = 1
-        OWGUI.checkBox(self.displayTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
+        self.vertexSizeCombo = OWGUI.comboBox(self.settingsTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
+        self.vertexSizeCombo.addItem("(none)")
+        
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setMaxVertexSize)
+        
+        OWGUI.checkBox(self.settingsTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
         
         self.checkSendMarkedNodes = 0
         OWGUI.checkBox(self.displayTab, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
@@ -182,9 +196,9 @@ class OWNetwork(OWWidget):
         
         self.insideView = 0
         self.insideViewNeighbours = 2
-        OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
-        #OWGUI.button(self.protoTab, self, "Clustering", callback=self.clustering)
-        OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
+        OWGUI.spin(self.settingsTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
+        #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
+        OWGUI.button(self.settingsTab, self, "Collapse", callback=self.collapse)
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -192,7 +206,7 @@ class OWNetwork(OWWidget):
         self.displayTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
-        self.protoTab.layout().addStretch(1)
+        self.settingsTab.layout().addStretch(1)
         self.optMethod = 1
         self.setOptMethod()
          
@@ -254,16 +268,6 @@ class OWNetwork(OWWidget):
     
         else:
             print "One node must be selected!"
-            
-    def setMaxLinkSize(self):
-        self.graph.maxEdgeSize = self.maxLinkSize
-        self.graph.setEdgesSize()
-        self.graph.replot()
-        
-    def setRenderAntialiased(self):
-        self.graph.renderAntialiased = self.renderAntialiased
-        self.graph.updateData()
-        self.graph.replot()
     
     def showWeightLabels(self):
         self.graph.showWeights = self.showWeights
@@ -412,10 +416,15 @@ class OWNetwork(OWWidget):
         self.attributes = [(var.name, var.varType) for var in vars]
 
         self.colorCombo.clear()
+        self.vertexSizeCombo.clear()
         self.colorCombo.addItem("(one color)")
+        self.vertexSizeCombo.addItem("(same size)")
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                 self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+            
+            if var.varType in [orange.VarTypes.Continuous]:
+                self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
 
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
@@ -667,7 +676,15 @@ class OWNetwork(OWWidget):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.graph.updateData()
         self.graph.replot()
-          
+        
+    def setVertexSize(self):
+        if self.vertexSize > 0:
+            self.graph.setVerticesSize(self.vertexSizeCombo.currentText())
+        else:
+            self.graph.setVerticesSize()
+            
+        self.graph.replot()
+                  
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
         self.graph.enableGridX(self.graphShowGrid)
@@ -684,6 +701,26 @@ class OWNetwork(OWWidget):
     
     def selectAllConnectedNodes(self):
         self.graph.selectConnectedNodes(1000000)
+        
+    def setMaxLinkSize(self):
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.graph.setEdgesSize()
+        self.graph.replot()
+        
+    def setMaxVertexSize(self):
+        self.graph.maxVertexSize = self.maxVertexSize
+        
+        if self.vertexSize > 0:
+            self.graph.setVerticesSize(self.vertexSizeCombo.currentText())
+        else:
+            self.graph.setVerticesSize()
+            
+        self.graph.replot()
+        
+    def setRenderAntialiased(self):
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.updateData()
+        self.graph.replot()
         
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
