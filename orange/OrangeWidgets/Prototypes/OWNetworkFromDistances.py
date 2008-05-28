@@ -17,11 +17,11 @@ from orngNetwork import *
 from orangeom import Network
 
 class Hist(OWGraph):
-    def __init__(self, master, parent = None):
-        OWGraph.__init__(self, parent, "Histogram")
-        self.master = master
+    def __init__(self, parent, type=0):
+        OWGraph.__init__(self, None, "Histogram")
         self.parent = parent
-
+        self.type = type
+        
         self.enableXaxis(1)
         self.enableYLaxis(1)
         
