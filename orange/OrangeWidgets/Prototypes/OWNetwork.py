@@ -30,7 +30,7 @@ class OWNetwork(OWWidget):
                     "maxLinkSize",
                     "maxVertexSize",
                     "renderAntialiased",
-                    "self.labelsOnMarkedOnly"] 
+                    "labelsOnMarkedOnly"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
