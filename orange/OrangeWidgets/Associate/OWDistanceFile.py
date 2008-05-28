@@ -72,6 +72,7 @@ class OWDistanceFile(OWWidget):
         self.error()
         try:
             if os.path.splitext(fn)[1] == '.pkl':
+                #print fn
                 pkl_file = open(fn, 'rb')
                 self.matrix = pickle.load(pkl_file)
                 pkl_file.close()
