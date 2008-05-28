@@ -47,11 +47,16 @@ class OutputWindow(QMainWindow):
 
     def closeEvent(self,ce):
         #QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
-        self.catchException(0)
-        self.catchOutput(0)
-        wins = self.canvasDlg.workspace.getDocumentList()
-        if wins != []:
-            wins[0].setFocus()
+        if getattr(self.canvasDlg, "canvasIsClosing", 0):
+            self.catchException(0)
+            self.catchOutput(0)
+            ce.accept()
+            QMainWindow.closeEvent(self, ce)
+        else:
+            wins = self.canvasDlg.workspace.getDocumentList()
+            if wins != []:
+                wins[0].setFocus()
+            ce.ignore()
 
     def focusInEvent(self, ev):
         self.canvasDlg.enableSave(1)
