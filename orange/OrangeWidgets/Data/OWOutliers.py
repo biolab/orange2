@@ -53,7 +53,7 @@ class OWOutliers(OWWidget):
                        callback=self.applySettings)
 
         OWGUI.separator(self.controlArea)
-        box = OWGUI.widgetBox(self.controlArea, "Settings")
+        box = OWGUI.widgetBox(self.controlArea, "Outliers")
         OWGUI.lineEdit(box, self, 'zscore',
                        label = 'Outlier Z:', labelWidth=80,
                        orientation='horizontal', # box=None,
@@ -62,7 +62,7 @@ class OWOutliers(OWWidget):
                        callback=self.applySettings)
 
         OWGUI.separator(self.controlArea)
-
+      
         self.resize(100,100)
         self.applySettings()
 
@@ -119,13 +119,12 @@ class OWOutliers(OWWidget):
             outlier.setDistanceMatrix(self.distanceMatrix) 
             self.data=getattr(self.distanceMatrix, "items")
             self.haveInput = 1     
+        elif self.dataInput <> None:
+            self.data = self.dataInput
+            outlier.setExamples(self.data, self.metrics[self.metric][1](self.data))        
+            self.haveInput = 1
         else:
-            if self.dataInput <> None:
-                self.data = self.dataInput
-                outlier.setExamples(self.data, self.metrics[self.metric][1](self.data))        
-                self.haveInput = 1
-            else:
-                self.data = None
+            self.data = None
         self.outlier = outlier
         self.applySettings()
 

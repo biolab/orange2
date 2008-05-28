@@ -54,18 +54,13 @@ class OutlierDetection:
     return means
   
   def average(self, list):
-    av = 0.0
-    for el in list:
-      av = av + el
-    return av/len(list)
+    return float(sum(list))/len(list)
     
   def findNearestLimited(self, i, dist, knn):
-    copy = []
-    for el in dist:
-      copy.append(el)
-    #remove distance to same element
-    copy[i:i+1] = []
-    if (knn == 0):
+    
+    copy = list(dist[:i] + dist[i+1:])
+ 
+    if (knn == 0): #zero means all
       return copy
     else:
       takelimit = min(len(dist)-1, knn)
