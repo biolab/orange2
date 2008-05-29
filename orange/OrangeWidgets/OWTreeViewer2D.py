@@ -2,6 +2,9 @@ import orngOrangeFoldersQt4
 import orange, orngTree, OWGUI, OWColorPalette
 from OWWidget import *
 
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
 DefDroppletRadiust=7
 DefNodeWidth=30
 DefNodeHeight=20
@@ -9,12 +12,12 @@ ExpectedBubbleWidth=200
 ExpectedBubbleHeight=400
 DefDroppletBrush=QBrush(Qt.darkGray)
 
-class CanvasTextContainer(QGraphicsRectItem):
+class GraphicsTextContainer(QGraphicsRectItem):
     def __init__(self, *args):
-        QGraphicsRectItem.__init__(self, None, *args)
+        QGraphicsRectItem.__init__(self, *args)
         self.textObj=[]
         self.spliterObj=[]
-        self.canvasObj=[]
+        self.sceneObj=[]
         self.lines=[]
         self.spliterLines=[]
         self.textLines=[]
@@ -35,10 +38,10 @@ class CanvasTextContainer(QGraphicsRectItem):
 #        for o in self.textObj+self.canvasObj+self.spliterObj:
 #            o.moveBy(dx, dy)
 
-#    def setZValue(self, z):
-#        QGraphicsRectItem.setZValue(self,z)
-#        for o in self.textObj+self.spliterObj:
-#            o.setZValue(z+1)
+    def setZValue(self, z):
+        QGraphicsRectItem.setZValue(self,z)
+        for o in self.textObj+self.spliterObj:
+            o.setZValue(z+1)
 
 #    def setSize(self, w, h):
 #        QGraphicsRectItem.setSize(self, w, h)
@@ -50,6 +53,9 @@ class CanvasTextContainer(QGraphicsRectItem):
         for s in self.spliterObj:
             s.setLine(0,0,w-1,0)
 
+    def setPos(self, x, y):
+        QGraphicsRectItem.setPos(self, x, y)
+
     def setFont(self, font, rearange=True):
         for r in self.textObj:
             r.setFont(font)
@@ -60,7 +66,7 @@ class CanvasTextContainer(QGraphicsRectItem):
         QGraphicsRectItem.setBrush(self, brush)
         (h,s,v,a) = brush.color().getHsv()
         for t in self.textObj:
-            (th,ts,tv,ta)=t.color().getHsv()
+            (th,ts,tv,ta)=t.brush().color().getHsv()
             if (v<tv+200 and tv==0) or (v-tv and tv!=0) or s<ts:
                 t.setPen(QPen(Qt.white))
             else:
@@ -69,19 +75,19 @@ class CanvasTextContainer(QGraphicsRectItem):
     def show(self):
         self.isShown=True
         QGraphicsRectItem.show(self)
-        for o in self.textObj+self.canvasObj+self.spliterObj:
-            o.show()
+##        for o in self.textObj+self.sceneObj+self.spliterObj:
+##            o.show()
 
     def hide(self):
         self.isShown=False
         QGraphicsRectItem.hide(self)
-        for o in self.textObj+self.canvasObj+self.spliterObj:
-            o.hide()
+##        for o in self.textObj+self.sceneObj+self.spliterObj:
+##            o.hide()
 
     def addTextLine(self,text=None, color=None, fitSquare=True):
         self.lines.append((text,color))
         if text!=None:
-            t = QGraphicsTextItem(text, self, self.scene())
+            t = QGraphicsSimpleTextItem(text, self, self.scene())
             t.setPen(QPen(color or Qt.black))
             t.setZValue(self.zValue()+1)
             t.setPos(1,self.textOffset)
@@ -89,10 +95,10 @@ class CanvasTextContainer(QGraphicsRectItem):
             self.textOffset+=t.boundingRect().height()+self.lineSpacing
             self.textLines.append((text, color))
         else:
-            t = QGraphicsLineItem(None, self, self.scene())
+            t = QGraphicsLineItem(self, self.scene())
             t.setZValue(self.zValue()+1)
             t.setPen(QPen(color or Qt.black))
-            t.setLine(0,0,self.width()-1,0)
+            t.setLine(0,0,self.rect().width()-1,0)
             t.setPos(0,self.textOffset+self.lineSpacing)
             self.textOffset+=self.lineSpacing*2
             self.spliterObj.append(t)
@@ -106,10 +112,10 @@ class CanvasTextContainer(QGraphicsRectItem):
     def truncateText(self, trunc=True):
         if trunc:
             for r in self.textObj:
-                if r.boundingRect().width()>self.width():
+                if r.boundingRect().width()>self.rect().width():
                     t=str(r.text())
                     cw=float(r.boundingRect().width())/len(t)
-                    r.setText(t[:-int((r.boundingRect().width()-self.width())/cw) or -1])
+                    r.setText(t[:-int((r.boundingRect().width()-self.rect().width())/cw) or -1])
         else:
             for i in range(len(self.textObj)):
                 self.textObj[i].setText(self.textLines[i][0])
@@ -117,11 +123,11 @@ class CanvasTextContainer(QGraphicsRectItem):
     def reArangeText(self, fitSquare=True, startOffset=0):
         self.textOffset=startOffset
         for line in self.lineObj:
-            if isinstance(line, QGraphicsTextItem):
-                line.setPos(self.x()+1, self.y()+self.textOffset)
+            if isinstance(line, QGraphicsSimpleTextItem):
+                line.setPos(self.rect().x()+1, self.rect().y()+self.textOffset)
                 self.textOffset+=line.boundingRect().height()+self.lineSpacing
             else:
-                line.setPos(self.x(),self.y()+self.textOffset)
+                line.setPos(self.rect().x(),self.rect().y()+self.textOffset)
                 self.textOffset+=self.lineSpacing
         if fitSquare:
             self.fitSquare()
@@ -136,56 +142,67 @@ class CanvasTextContainer(QGraphicsRectItem):
     def fitSquare(self):
         w=max([t.boundingRect().width() for t in self.textObj]+[2])
         h=self.textOffset+2
-        CanvasTextContainer.setRect(self, self.x(), self.y(), w+2, h)
+        GraphicsTextContainer.setRect(self, 0, 0, w+2, h)
+        print w, h
+##        GraphicsTextContainer.setRect(self, self.x(), self.y(), w+2, h)
+##        self.setRect(self.rect().setSize(QSizeF(w+2, h)))
 
-class CanvasBubbleInfo(CanvasTextContainer):
+class GraphicsBubbleInfo(GraphicsTextContainer):
     def __init__(self, node, pos, *args):
-        CanvasTextContainer.__init__(self, *args)
+        GraphicsTextContainer.__init__(self, None, *args)
         self.shadow = QGraphicsRectItem(self, self.scene())
         self.shadow.setBrush(QBrush(Qt.darkGray))
-        self.canvasObj.append(self.shadow)
+        self.sceneObj.append(self.shadow)
+        self.setPos(5, 5)
 
     def setZValue(self, z):
-        CanvasTextContainer.setZValue(self,z)
+        GraphicsTextContainer.setZValue(self,z)
         self.shadow.setZValue(z-1)
 
     def setRect(self, x, y, w, h):
-        CanvasTextContainer.setRect(self, x, y, w, h)
-        self.shadow.setRect(x+5,y+5,w,h)
+        GraphicsTextContainer.setRect(self, x, y, w, h)
+        self.shadow.setRect(0, 0, w, h)
 
     def fitSquare(self):
         w=max([t.boundingRect().width() for t in self.textObj]+[2])
         h=self.textOffset+2
-        CanvasBubbleInfo.setRect(self, self.x(), self.y(), w+2, h)
+        print w, h
+        GraphicsBubbleInfo.setRect(self, 0, 0, w+2, h)
 
 
-class CanvasNode(CanvasTextContainer):
+class GraphicsNode(GraphicsTextContainer):
     def __init__(self, tree, parent=None, *args):
-        CanvasTextContainer.__init__(self, *args)
+        GraphicsTextContainer.__init__(self, None, *args)
         self.tree=tree
         self.parent=parent
         self.isRoot=False
         self.nodeList=[]
         self.isOpen=True
         self.isSelected=False
-        self.dropplet = QGraphicsEllipseItem(None, self.scene())
+        self.dropplet = QGraphicsEllipseItem(self, self.scene())
         self.dropplet.setBrush(DefDroppletBrush)
         self.dropplet.setZValue(self.zValue()-1)
+        self.dropplet.setStartAngle(180*16)
+        self.dropplet.setSpanAngle(180*16)
         self.dropplet.node=self
-        self.parentEdge=QGraphicsLineItem(None, self.scene())
+        self.parentEdge=QGraphicsLineItem(self, self.scene())
         self.parentEdge.setPen(QPen())
         self.parentEdge.setZValue(self.zValue()-1)
-        self.canvasObj+=[self.dropplet]
+        self.sceneObj+=[self.dropplet]
         self.selectionSquare=[]
         if parent:
             parent.insertNode(self)
+        else:
+            self.scene().nodeList.append(self)
+            self.dropplet.show()
 
         self.setZValue(-20)
 
     def insertNode(self, node):
         self.nodeList.append(node)
         self.scene().nodeList.append(node)
-        node.parent=self
+##        node.parent=self
+##        node.setParentItem(self)
         self.dropplet.show()
 
     def takeNode(self, node):
@@ -217,32 +234,33 @@ class CanvasNode(CanvasTextContainer):
 #        self.parentEdge.setCanvas(canvas)
 
     def setRect(self, x, y, w,h):
-        CanvasTextContainer.setRect(self, x, y, w, h)
-        self.dropplet.setRect(self.rect().x()+self.width()/2,self.rect().y()+self.height(), w/4,w/4)
+        GraphicsTextContainer.setRect(self, x, y, w, h)
+##        self.dropplet.setRect(self.rect().x()+self.rect().width()/2,self.rect().y()+self.rect().height(), w/4,w/4)
+        self.dropplet.setRect(3*w/8, (8*h-w)/8, w/4,w/4)
         if self.isSelected:
             self.setSelectionBox()
 
     def setZValue(self, z):
-        CanvasTextContainer.setZValue(self,z)
+        GraphicsTextContainer.setZValue(self,z)
         self.dropplet.setZValue(z-1)
         self.parentEdge.setZValue(z-2)
 
-    def setPos(self, x, y):
-        CanvasTextContainer.setPos(self, x, y)
-        dx,dy=x-self.x(), y-self.y()
-        self.dropplet.moveBy(dx,dy)
+##    def setPos(self, x, y):
+##        GraphicsTextContainer.setPos(self, x, y)
+##        dx,dy=x-self.x(), y-self.y()
+##        self.dropplet.moveBy(dx,dy)
 
     def show(self):
-        CanvasTextContainer.show(self)
+        GraphicsTextContainer.show(self)
         self.parentEdge.show()
         if not self.nodeList:
             self.dropplet.hide()
         else:
             self.dropplet.show()
 
-    def hide(self):
-        CanvasTextContainer.hide(self)
-        self.parentEdge.hide()
+##    def hide(self):
+##        GraphicsTextContainer.hide(self)
+##        self.parentEdge.hide()
 
     def hideSubtree(self):
         self.hide()
@@ -258,26 +276,28 @@ class CanvasNode(CanvasTextContainer):
                 n.showSubtree()
 
     def updateEdge(self):
-        if self.parent!=self.scene() and self.parentEdge:
-            self.parentEdge.setLine(self.rect().width()/2, 3,
-                        self.parent.rect().x()+self.parent.rect().width()/2,self.parent.rect().y()+ \
-                        self.parent.rect().height())                        # this won't work yet
+##        if self.parent!=self.scene() and self.parentEdge:
+        if self.parent and self.parentEdge:
+            droppletCenter=self.mapFromItem(self.parent.dropplet, self.parent.dropplet.rect().center())
+            center=self.rect().center()
+            self.parentEdge.setLine(self.rect().width()/2, 0,
+                        droppletCenter.x(), droppletCenter.y())
 
     def setSelectionBox(self):
         self.isSelected=True
         if self.selectionSquare:
              self.selectionSquare = sl=self.selectionSquare
         else:
-             self.selectionSquare = sl = [QGraphicsLineItem(None, self.scene()) for i in range(8)]
-             self.canvasObj.extend(self.selectionSquare)
+             self.selectionSquare = sl = [QGraphicsLineItem(self, self.scene()) for i in range(8)]
+             self.sceneObj.extend(self.selectionSquare)
         for line in sl:
             line.setZValue(-5)
-            line.setPos(self.x(),self.y())
+##            line.setPos(self.x(),self.y())
             line.setPen(QPen(QColor(0, 0, 150), 3))
-        xleft = -3; xright = self.width() + 2
-        yup = -3; ydown = self.height() + 2
-        xspan = self.width() / 4; yspan = self.height() / 4
-        sl[0].setLine(xleft, yup, xleft + xspan, yup)        # this won't work yet!!!
+        xleft = -3; xright = self.rect().width() + 2
+        yup = -3; ydown = self.rect().height() + 2
+        xspan = self.rect().width() / 4; yspan = self.rect().height() / 4
+        sl[0].setLine(xleft, yup, xleft + xspan, yup)
         sl[1].setLine(xleft, yup-1, xleft, yup + yspan)
         sl[2].setLine(xright, yup, xright - xspan, yup)
         sl[3].setLine(xright, yup-1, xright, yup + yspan)
@@ -292,17 +312,16 @@ class CanvasNode(CanvasTextContainer):
         self.isSelected=False
         for l in self.selectionSquare:
             l.scene().removeItem(l)
-            self.canvasObj.remove(l)
+            self.sceneObj.remove(l)
         self.selectionSquare=[]
 
 
+def bubbleConstructor(node=None, pos =None, scene=None):
+    return GraphicsBubbleInfo(node, pos, scene)
 
-def bubbleConstructor(node=None, pos =None, canvas=None):
-    return CanvasBubbleInfo(node, pos, canvas)
-
-class TreeCanvasView(QGraphicsView):
-    def __init__(self, master, canvas, *args):
-        apply(QGraphicsView.__init__,(self,canvas)+args)
+class TreeGraphicsView(QGraphicsView):
+    def __init__(self, master, scene, *args):
+        apply(QGraphicsView.__init__,(self,scene)+args)
         self.master=master
         self.dropplet=None
         self.selectedNode=None
@@ -314,7 +333,7 @@ class TreeCanvasView(QGraphicsView):
 
     def setNavigator(self, nav):
         self.navigator=nav
-        self.master.connect(self.scene(),SIGNAL("resized()"),self.navigator.resizeCanvas)
+        self.master.connect(self.scene(),SIGNAL("resized()"),self.navigator.resizeScene)
         self.master.connect(self, SIGNAL("contentsMoving(int,int)"),self.navigator.moveView)
 
     def resizeEvent(self, event):
@@ -340,6 +359,7 @@ class TreeCanvasView(QGraphicsView):
             if self.bubble:
                 self.bubble.scene().removeItem(self.bubble)
             self.bubbleNode=node
+            print self.bubbleConstructor
             self.bubble=self.bubbleConstructor(node, pos, self.scene())
             self.bubble.setPos(pos.x()+5,pos.y()+5)
             self.bubble.setZValue(50)
@@ -362,42 +382,57 @@ class TreeCanvasView(QGraphicsView):
             self.selectedNode.setSelectionBox()
             self.master.updateSelection(self.selectedNode)
 
-    def contentsMouseMoveEvent(self,event):
-        obj=self.scene().collisions(event.pos())        # TO DO
-        obj=filter(lambda a:a.zValue()==-21 or a.zValue()==-20,obj)
-        if not obj:
-            self.updateDropplet()
-            self.updateBubble()
-        elif isinstance(obj[0], QGraphicsRectItem) and self.master.NodeBubblesEnabled:
-            self.updateBubble(obj[0],event.pos())
-            self.updateDropplet()
-        elif obj[0].__class__ == QGraphicsEllipseItem:
-            self.updateDropplet(obj[0])
-        else:
-            self.updateDropplet()
-            self.updateBubble()
+##    def contentsMouseMoveEvent(self,event):
+##        obj=self.scene().collisions(event.pos())        # TO DO
+##        obj=filter(lambda a:a.zValue()==-21 or a.zValue()==-20,obj)
+##        if not obj:
+##            self.updateDropplet()
+##            self.updateBubble()
+##        elif isinstance(obj[0], QGraphicsRectItem) and self.master.NodeBubblesEnabled:
+##            self.updateBubble(obj[0],event.pos())
+##            self.updateDropplet()
+##        elif obj[0].__class__ == QGraphicsEllipseItem:
+##            self.updateDropplet(obj[0])
+##        else:
+##            self.updateDropplet()
+##            self.updateBubble()
+##
+##    def contentsMousePressEvent(self, event):
+##        if self.dropplet:
+##            self.dropplet.node.setOpen(not self.dropplet.node.isOpen,
+##                (event.button()==QEvent.RightButton and 1) or -1)
+##            self.scene().fixPos()
+##        else:
+##            obj=self.scene().collisions(event.pos())        # to do
+##            obj=filter(lambda a:a.zValue()==-20, obj)
+##            if obj and isinstance(obj[0], QGraphicsRectItem):
+##                self.updateSelection(obj[0])
+##        self.scene().update()
 
-    def contentsMousePressEvent(self, event):
-        if self.dropplet:
-            self.dropplet.node.setOpen(not self.dropplet.node.isOpen,
-                (event.button()==QEvent.RightButton and 1) or -1)
-            self.scene().fixPos()
-        else:
-            obj=self.scene().collisions(event.pos())        # to do
-            obj=filter(lambda a:a.zValue()==-20, obj)
-            if obj and isinstance(obj[0], QGraphicsRectItem):
-                self.updateSelection(obj[0])
-        self.scene().update()
 
-
-class TreeCanvas(QGraphicsScene):
-    def __init__(self, parent, *args):
+class TreeGraphicsScene(QGraphicsScene):
+    def __init__(self, master, *args):
         apply(QGraphicsScene.__init__,(self,)+args)
         self.HSpacing=10
         self.VSpacing=10
-        self.parent=parent
+        self.dropplet=None
+        self.selectedNode=None
+        self.bubble=None
+        self.bubbleNode=None
+        self.master=master
+        self.bubbleConstructor=bubbleConstructor
         self.nodeList=[]
         self.edgeList=[]
+
+    def drawItems(self, painter, items, options, widget=None):
+        items = [(item.zValue(), item, opt) for item, opt in zip(items, options)]
+        items.sort()
+        for z, item, opt in items:
+##            print item
+            painter.save()
+            painter.setMatrix(item.sceneMatrix(), True)
+            item.paint(painter, opt, widget)
+            painter.restore()
 
     def insertNode(self, node, parent=None):
         if parent==None:
@@ -411,7 +446,8 @@ class TreeCanvas(QGraphicsScene):
 
     def clear(self):
         for n in self.nodeList:
-            n.scene().removeItem(n)
+            if n.scene():
+                n.scene().removeItem(n)
         self.nodeList=[]
 
     def fixPos(self, node=None, x=10, y=10):
@@ -423,13 +459,13 @@ class TreeCanvas(QGraphicsScene):
         if not x or not y: x, y= self.HSpacing, self.VSpacing
         self._fixPos(node,x,y)
         self.setSceneRect(0,0,self.gx+ExpectedBubbleWidth, self.gy+ExpectedBubbleHeight)
-
+        
     def _fixPos(self, node, x, y):
         ox=x
         if node.nodeList and node.isOpen:
             for n in node.nodeList:
                 (x,ry)=self._fixPos(n,x,y+self.VSpacing+node.rect().height())
-            x=(node.nodeList[0].rect().x()+node.nodeList[-1].rect().x())/2
+            x=(node.nodeList[0].pos().x()+node.nodeList[-1].pos().x())/2
             node.setPos(x,y)
             for n in node.nodeList:
                 n.updateEdge()
@@ -441,24 +477,91 @@ class TreeCanvas(QGraphicsScene):
 
         return (x,y)
 
-class TreeNavigator(TreeCanvasView):
-    class NavigatorNode(CanvasNode):
+    def mouseMoveEvent(self,event):
+        obj=self.items(event.scenePos())
+        obj=filter(lambda a:a.zValue()==-21 or a.zValue()==-20,obj)
+        if not obj:
+            self.updateDropplet()
+            self.updateBubble()
+        elif isinstance(obj[0], QGraphicsRectItem) and self.master.NodeBubblesEnabled:
+            self.updateBubble(obj[0],event.scenePos())
+            self.updateDropplet()
+        elif obj[0].__class__ == QGraphicsEllipseItem:
+            self.updateDropplet(obj[0])
+        else:
+            self.updateDropplet()
+            self.updateBubble()
+
+    def mousePressEvent(self, event):
+        if self.dropplet:
+            self.dropplet.node.setOpen(not self.dropplet.node.isOpen,
+                (event.button()==Qt.RightButton and 1) or -1)
+            self.fixPos()
+        else:
+            obj=self.items(event.scenePos())        # to do
+            obj=filter(lambda a:a.zValue()==-20, obj)
+            if obj and isinstance(obj[0], QGraphicsRectItem):
+                self.updateSelection(obj[0])
+        self.update()
+
+    def updateDropplet(self, dropplet=None):
+        if dropplet==self.dropplet:
+            return
+        if self.dropplet:
+            self.dropplet.setBrush(DefDroppletBrush)
+        self.dropplet=dropplet
+        if self.dropplet:
+            self.dropplet.setBrush(QBrush(Qt.black))
+        self.update()
+
+    def updateBubble(self, node=None, pos=QPointF(0,0)):
+        if self.bubbleNode==node and self.bubble:
+            self.bubble.setPos(pos.x()+5,pos.y()+5)
+            self.bubble.show()
+        elif node:
+            if self.bubble:
+                self.removeItem(self.bubble)
+            self.bubbleNode=node
+            self.bubble=self.bubbleConstructor(node, pos, self)
+            self.bubble.setPos(pos.x()+5,pos.y()+5)
+            self.bubble.setZValue(50)
+            self.bubble.show()
+        elif self.bubble:
+            self.removeItem(self.bubble)
+            self.bubble=self.bubbleNode=None
+        self.update()
+
+    def updateSelection(self, node=None):
+        if not node or node==self.selectedNode:
+            if self.selectedNode:
+                self.selectedNode.removeSelectionBox()
+            self.selectedNode=None
+            self.master.updateSelection(None)
+        else:
+            if self.selectedNode:
+                self.selectedNode.removeSelectionBox()
+            self.selectedNode=node
+            self.selectedNode.setSelectionBox()
+            self.master.updateSelection(self.selectedNode)        
+
+class TreeNavigator(TreeGraphicsView):
+    class NavigatorNode(GraphicsNode):
         def __init__(self,masterNode,*args):
-            CanvasNode.__init__(self, *args)
+            GraphicsNode.__init__(self, *args)
             self.masterNode=masterNode
         def leech(self):
             self.isOpen=self.masterNode.isOpen
             self.setBrush(self.masterNode.brush())
 
     def __init__(self, masterView, *args):
-        apply(TreeCanvasView.__init__,(self,)+args)
-        self.myCanvas = self.scene()
+        apply(TreeGraphicsView.__init__,(self,)+args)
+        self.myScene = self.scene()
         self.masterView=masterView
         self.scene().setSceneRect(0,0,self.width(),self.height())
         self.rootNode=None
         self.updateRatio()
         self.viewRect=QGraphicsRectItem(None, self.scene())
-        self.viewRect.setRect(50,50, self.rx*self.masterView.width(), self.ry*self.masterView.height())
+        self.viewRect.setRect(0,0, self.rx*self.masterView.width(), self.ry*self.masterView.height())
         self.viewRect.show()
         self.viewRect.setBrush(QBrush(Qt.lightGray))
         self.viewRect.setZValue(-10)
@@ -481,7 +584,7 @@ class TreeNavigator(TreeCanvasView):
 
 
     def walkcreate(self, masterNode, parent):
-        node=self.NavigatorNode(masterNode, masterNode.tree, parent or self.scene(), self.scene())
+        node=self.NavigatorNode(masterNode, masterNode.tree, parent, self.scene())
         node.setZValue(0)
         for n in masterNode.nodeList:
             self.walkcreate(n,node)
@@ -491,33 +594,34 @@ class TreeNavigator(TreeCanvasView):
         node.leech()
         if node.masterNode.isShown:
             node.show()
-            node.setRect(self.rx*node.masterNode.x(), self.ry*node.masterNode.y(), self.rx*node.masterNode.rect().width(), self.ry*node.masterNode.rect().height())
+            node.setPos(self.rx*node.masterNode.x(), self.ry*node.masterNode.y())
+            node.setRect(0, 0, self.rx*node.masterNode.rect().width(), self.ry*node.masterNode.rect().height())
             for n in node.nodeList:
                 self.walkupdate(n)
                 n.updateEdge()
         else:
             node.hideSubtree()
 
-    def contentsMousePressEvent(self, event):
-        if self.scene().sceneRect().contains(event.pos()):
-            self.masterView.centerOn(event.pos().x()/self.rx, event.pos().y()/self.ry)
+    def mousePressEvent(self, event):
+##        if self.scene().sceneRect().contains(event.pos()):
+        self.masterView.centerOn(event.pos().x()/self.rx, event.pos().y()/self.ry)
         self.buttonPressed=True
 
-    def contentsMouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event):
         self.buttonPressed=False
 
-    def contentsMouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event):
         if self.buttonPressed:
-            self.masterView.center(event.pos().x()/self.rx, event.pos().y()/self.ry)
+            self.masterView.centerOn(event.pos().x()/self.rx, event.pos().y()/self.ry)
             self.updateBubble(None)
         else:
-            obj=self.scene().collisions(event.pos())        # to do
+            obj=self.scene().items(self.mapToScene(event.pos()))        # to do
             if obj and obj[0].__class__==self.NavigatorNode:
-                self.updateBubble(obj[0], event.pos())
+                self.updateBubble(obj[0], self.mapToScene(event.pos()))
             else:
                 self.updateBubble()
 
-    def viewportResizeEvent(self, event):
+    def resizeEvent(self, event):
         self.scene().setSceneRect(0,0,event.size().width(), event.size().height())
         self.leech()
         self.updateView()
@@ -528,7 +632,7 @@ class TreeNavigator(TreeCanvasView):
         self.updateView()
         self.scene().update()
 
-    def resizeCanvas(self):
+    def resizeScene(self):
         self.updateRatio()
         if self.rootNode:
             self.leech()
@@ -543,12 +647,16 @@ class TreeNavigator(TreeCanvasView):
     def updateRatio(self):
         self.rx=float(self.scene().width())/float(self.masterView.scene().width())
         self.ry=float(self.scene().height())/float(self.masterView.scene().height())
+        print "Ratio: ", self.rx, self.ry
 
     def updateView(self):
-        self.viewRect.setRect(self.masterView.sceneRect().x()*self.rx, self.masterView.sceneRect().y()*self.ry, self.masterView.sceneRect().width()*self.rx, self.masterView.sceneRect().height()*self.ry)
+        pos=self.masterView.mapFromScene(0, 0)
+##        self.viewRect.setRect(self.masterView.sceneRect().x()*self.rx, self.masterView.sceneRect().y()*self.ry, self.masterView.sceneRect().width()*self.rx, self.masterView.sceneRect().height()*self.ry)
+        self.viewRect.setRect(-pos.x()*self.rx, -pos.y()*self.ry, self.masterView.width()*self.rx, self.masterView.height()*self.ry)
+        print -pos.x()*self.rx, -pos.y()*self.ry
 
-    def myBubbleConstructor(self, node, pos, canvas):
-        return self.masterView.bubbleConstructor(node.masterNode, pos, canvas)
+    def myBubbleConstructor(self, node, pos, scene):
+        return self.masterView.scene().bubbleConstructor(node.masterNode, pos, scene)
 
 
 class OWTreeViewer2D(OWWidget):
@@ -643,11 +751,11 @@ class OWTreeViewer2D(OWWidget):
         OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
         findbox = OWGUI.widgetBox(self.controlArea, orientation = "horizontal")
         self.centerRootButton=OWGUI.button(findbox, self, "Find Root",
-                                           callback=lambda :self.rootNode and self.canvasView.centerOn(self.rootNode.x(), self.rootNode.y()))
+                                           callback=lambda :self.rootNode and self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y()))
         self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected",
-                                           callback=lambda :self.canvasView.selectedNode and \
-                                     self.canvasView.centerOn(self.canvasView.selectedNode.x(),
-                                                            self.canvasView.selectedNode.y()))
+                                           callback=lambda :self.sceneView.selectedNode and \
+                                     self.sceneView.centerOn(self.sceneView.selectedNode.x(),
+                                                            self.sceneView.selectedNode.y()))
         self.NodeTab=NodeTab
         self.TreeTab=TreeTab
         self.GeneralTab=GeneralTab
@@ -662,40 +770,40 @@ class OWTreeViewer2D(OWWidget):
 
     def toggleZoomSlider(self):
         self.rescaleTree()
-        self.canvas.fixPos(self.rootNode,10,10)
-        self.canvas.update()
+        self.scene.fixPos(self.rootNode,10,10)
+        self.scene.update()
 
     def toggleVSpacing(self):
         self.rescaleTree()
-        self.canvas.fixPos(self.rootNode,10,10)
-        self.canvas.update()
+        self.scene.fixPos(self.rootNode,10,10)
+        self.scene.update()
 
     def toggleHSpacing(self):
         self.rescaleTree()
-        self.canvas.fixPos(self.rootNode,10,10)
-        self.canvas.update()
+        self.scene.fixPos(self.rootNode,10,10)
+        self.scene.update()
 
     def toggleTruncateText(self):
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
            n.truncateText(self.TruncateText)
-        self.canvas.update()
+        self.scene.update()
 
     def toggleTreeDepth(self):
         self.walkupdate(self.rootNode)
-        self.canvas.fixPos(self.rootNode,10,10)
-        self.canvas.update()
+        self.scene.fixPos(self.rootNode,10,10)
+        self.scene.update()
 
     def toggleLineWidth(self):
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
             if self.LineWidthMethod==0:
                 width=self.LineWidth
             elif self.LineWidthMethod == 1:
                 width = (n.tree.distribution.cases/self.tree.distribution.cases) * self.LineWidth
             elif self.LineWidthMethod == 2:
-                width = (n.tree.distribution.cases/((n.parent!=self.canvas and \
+                width = (n.tree.distribution.cases/((n.parent!=self.scene and \
                                     n.parent.tree.distribution.cases) or n.tree.distribution.cases)) * self.LineWidth
             n.setEdgeWidth(width)
-        self.canvas.update()
+        self.scene.update()
 
     def toggleNodeSize(self):
         pass
@@ -713,8 +821,8 @@ class OWTreeViewer2D(OWWidget):
         if not self.tree:
             return
         self.rescaleTree()
-        self.canvas.fixPos(self.rootNode,10,10)
-        self.canvas.update()
+        self.scene.fixPos(self.rootNode,10,10)
+        self.scene.update()
         self.toggleTruncateText()
         self.toggleTreeDepth()
         self.toggleLineWidth()
@@ -736,16 +844,17 @@ class OWTreeViewer2D(OWWidget):
             self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
             self.ClassColors = OWColorPalette.ColorPaletteHSV(len(self.tree.distribution))
             self.rootNode=self.walkcreate(self.tree, None)
-            self.canvas.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
+            self.scene.addItem(self.rootNode)
+            self.scene.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
             self.activateLoadedSettings()
-            self.canvasView.centerOn(self.rootNode.x(), self.rootNode.y())
+            self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y())
             self.centerRootButton.setDisabled(0)
             self.centerNodeButton.setDisabled(1)
 
-        self.canvas.update()
+        self.scene.update()
 
     def walkcreate(self, tree, parent=None, level=0):
-        node = CanvasNode(tree, parent or self.canvas, self.canvas)
+        node = GraphicsNode(tree, parent, self.scene)
         if tree.branches:
             for i in range(len(tree.branches)):
                 if tree.branches[i]:
@@ -764,15 +873,15 @@ class OWTreeViewer2D(OWWidget):
 
     def clear(self):
         self.tree=None
-        self.canvas.clear()
+        self.scene.clear()
         self.treeNav.scene().clear()
 
     def rescaleTree(self):
         k = 0.0028 * (self.Zoom ** 2) + 0.2583 * self.Zoom + 1.1389
-        self.canvas.VSpacing=int(DefNodeHeight*k*(0.3+self.VSpacing*0.15))
-        self.canvas.HSpacing=int(DefNodeWidth*k*(0.3+self.HSpacing*0.20))
-        for r in self.canvas.nodeList:
-            r.setRect(r.x(), r.y(), int(DefNodeWidth*k), int(DefNodeHeight*k))
+        self.scene.VSpacing=int(DefNodeHeight*k*(0.3+self.VSpacing*0.15))
+        self.scene.HSpacing=int(DefNodeWidth*k*(0.3+self.HSpacing*0.20))
+        for r in self.scene.nodeList:
+            r.setRect(r.rect().x(), r.rect().y(), int(DefNodeWidth*k), int(DefNodeHeight*k))
 
     def updateSelection(self, node=None):
         self.selectedNode=node
@@ -788,17 +897,17 @@ class OWDefTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
         self.settingsList=self.settingsList+["ShowPie"]
 
-        self.canvas = TreeCanvas(self)
-        self.canvasView = TreeCanvasView(self, self.canvas, self.mainArea)
-        self.mainArea.layout().addWidget(self.canvasView)
-        self.canvas.setSceneRect(0,0,800,800)
+        self.scene = TreeGraphicsScene(self)
+        self.sceneView = TreeGraphicsView(self, self.scene, self.mainArea)
+        self.mainArea.layout().addWidget(self.sceneView)
+        self.scene.setSceneRect(0,0,800,800)
         self.navWidget = QWidget(None)
         self.navWidget.setLayout(QVBoxLayout(self.navWidget))
-        scene = TreeCanvas(self.navWidget)
-        self.treeNav = TreeNavigator(self.canvasView, self, scene, self.navWidget)
+        scene = TreeGraphicsScene(self.navWidget)
+        self.treeNav = TreeNavigator(self.sceneView, self, scene, self.navWidget)
         self.treeNav.setScene(scene)
         self.navWidget.layout().addWidget(self.treeNav)
-        self.canvasView.setNavigator(self.treeNav)
+        self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
 #        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
 
@@ -807,7 +916,7 @@ if __name__=="__main__":
     ow = OWDefTreeViewer2D()
 
     #data = orange.ExampleTable('../../doc/datasets/voting.tab')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
+    data = orange.ExampleTable(r"..//doc//datasets//zoo.tab")
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.activateLoadedSettings()
     ow.ctree(None)
