@@ -217,12 +217,12 @@ def getLinearSVMWeights(classifier):
             w={}
             coefInd=j-1
             for svInd in apply(range, svRanges[i]):
-                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
                         updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             coefInd=i
             for svInd in apply(range, svRanges[j]):
-                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
                         updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             weights.append(w)
