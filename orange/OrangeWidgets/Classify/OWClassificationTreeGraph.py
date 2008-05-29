@@ -9,9 +9,9 @@ import orngOrangeFoldersQt4
 from OWTreeViewer2D import *
 import OWColorPalette
 
-class ClassificationNode(CanvasNode):
+class ClassificationNode(GraphicsNode):
     def __init__(self,attrVal,*args):
-        CanvasNode.__init__(self,*args)
+        GraphicsNode.__init__(self,*args)
         self.dist=self.tree.distribution
         self.attrVal=attrVal
         maxInst=max(self.dist)
@@ -22,7 +22,7 @@ class ClassificationNode(CanvasNode):
         self.majClassProb=maxInst/self.dist.cases
         self.tarClassProb=self.dist.items()[0][1]/self.dist.cases
         self.numInst=self.dist.cases
-        self.title = QGraphicsTextItem(attrVal, self, self.scene())
+##        self.title = QGraphicsTextItem(attrVal, self, self.scene())
         self.texts=[self.majClassName, "%.3f" % self.majClassProb, "%.3f" % self.tarClassProb, "%.1f" % self.numInst]
         self.name = (self.tree.branches and self.tree.branchSelector.classVar.name) or self.majClassName
         self.textAdvance=12
@@ -41,62 +41,77 @@ class ClassificationNode(CanvasNode):
         distSum=sum(self.dist)
         color=OWColorPalette.ColorPaletteHSV(len(self.dist))
         startAngle=0
+        self.pieGroup=QGraphicsItemGroup(self, self.scene())
+        self.pieGroup.setPos(self.rect().width(), self.rect().height()/2)
+        r=self.rect().height()*0.4
         for i in range(len(self.dist)):
             angle=360/distSum*self.dist[i]*16
-            e=QGraphicsEllipseItem(self.height()/2, self.width(), self.height()*0.8, self.height()*0.8, None, self.canvas())
+##            e=QGraphicsEllipseItem(self.rect().height()/2, self.rect().width(), self.rect().height()*0.8, self.rect().height()*0.8, None, self.scene())
+            e=QGraphicsEllipseItem(-r, -r, 2*r, 2*r, self.pieGroup, self.scene())
             e.setStartAngle(startAngle)
             e.setSpanAngle(angle)
             e.setBrush(QBrush(color[i]))
             e.setZValue(0)
             startAngle+=angle
             self.pieObj.append(e)
-        e = QGraphicsEllipseItem(self.height(), self.width(), self.height()*0.8+4, self.height()*0.8+4, None, self.canvas())
+##        e = QGraphicsEllipseItem(self.rect().height(), self.rect().width(), self.rect().height()*0.8+4, self.rect().height()*0.8+4, None, self.scene())
+        e = QGraphicsEllipseItem(-r-2, -r-2, 2*r+2, 2*r+2, self.pieGroup, self.scene())
+##        e = QGraphicsEllipseItem(0, 0, r+4, r+4, self.pieGroup, self.scene())
         e.setStartAngle(0)
         e.setSpanAngle(360*16)
         e.setBrush(QBrush(Qt.black))
         e.setZValue(-1)
         self.pieObj.append(e)
-        self.canvasObj.extend(self.pieObj)
+        self.sceneObj.extend(self.pieObj)
         self.isPieShown=True
 
-    def setSize(self,w,h):
-        CanvasNode.setSize(self,w,h)
+    def setRect(self, x, y, w, h):
+        GraphicsNode.setRect(self, x, y, w, h)
         self.updateText()
+        self.pieGroup.setPos(x+w, h/2)
+        r=h*0.4
         for e in self.pieObj[:-1]:
-            e.setRect(self.x()+self.width(), self.y()+self.height()/2, h*0.8,h*0.8)
-        self.pieObj[-1].setRect(self.x()+self.width(), self.y()+self.height()/2, h*0.8+2,h*0.8+2)
+##            e.setRect(self.x()+self.rect().width(), self.y()+self.rect().height()/2, h*0.8,h*0.8)
+            e.setRect(-r, -r, 2*r, 2*r)
+##            e.setRect(0, 0, r, r)
+        self.pieObj[-1].setRect(-r-2, -r-2, 2*r+2, 2*r+2)
+##        self.pieObj[-1].setRect(0, 0, r+4, r+4)
 
     def setBrush(self, brush):
-        CanvasTextContainer.setBrush(self, brush)
+        GraphicsTextContainer.setBrush(self, brush)
         if self.textObj:
             self.textObj[0].setPen(QPen((Qt.black)))
 
-    def show(self):
-        CanvasNode.show(self)
-        if not self.isPieShown:
-            for e in self.pieObj:
-                e.hide()
+##    def show(self):
+##        GraphicsNode.show(self)
+##        if not self.isPieShown:
+##            for e in self.pieObj:
+##                e.hide()
 
     def setPieVisible(self, b=True):
-        self.isPieShown=b
-        if self.isShown and b:
-            for e in self.pieObj:
-                e.show()
+        if b:
+            self.pieGroup.show()
         else:
-            for e in self.pieObj:
-                e.hide()
+            self.pieGroup.hide()
+##        self.isPieShown=b
+##        if self.isShown and b:
+##            for e in self.pieObj:
+##                e.show()
+##        else:
+##            for e in self.pieObj:
+##                e.hide()
 
     def setText(self, textInd=[]):
         self.textInd=textInd
         j=1
         for i in textInd:
-            CanvasNode.setText(self, j, self.texts[i], fitSquare=False)
+            GraphicsNode.setText(self, j, self.texts[i], fitSquare=False)
             j+=1
         for i in range(len(textInd),2):
-            CanvasNode.setText(self, i+1, "", fitSquare=False)
+            GraphicsNode.setText(self, i+1, "", fitSquare=False)
 
     def updateText(self):
-        self.textAdvance=float(self.height())/3
+        self.textAdvance=float(self.rect().height())/3
         self.lineSpacing=0
         self.setFont(QFont("",self.textAdvance*0.7), False)
         self.reArangeText(False, -self.textAdvance-self.lineSpacing)
@@ -106,8 +121,10 @@ class ClassificationNode(CanvasNode):
         self.textOffset=startOffset
         x,y=self.x(),self.y()
         for i in range(4):
-            self.textObj[i].setPos(x+1, y+(i-1)*self.textAdvance)
-        self.spliterObj[0].setPos(x, y+self.height()-self.textAdvance)
+##            self.textObj[i].setPos(x+1, y+(i-1)*self.textAdvance)
+            self.textObj[i].setPos(1, (i-1)*self.textAdvance)
+##        self.spliterObj[0].setPos(x, y+self.rect().height()-self.textAdvance)
+        self.spliterObj[0].setPos(0, self.rect().height()-self.textAdvance)
 
 import re
 import sets
@@ -188,25 +205,28 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 
         self.ShowPies=1
         self.TargetClassIndex=0
-        self.canvas=TreeCanvas(self)
-        self.canvasView=TreeCanvasView(self, self.canvas, self.mainArea, "CView")
-        layout=QVBoxLayout(self.mainArea)
-        layout.addWidget(self.canvasView)
-        self.canvas.resize(800,800)
-        self.canvasView.bubbleConstructor=self.classificationBubbleConstructor
-        self.navWidget=QWidget(None, "Navigator")
+        self.scene=TreeGraphicsScene(self)
+        self.sceneView=TreeGraphicsView(self, self.scene)
+        self.mainArea.layout().addWidget(self.sceneView)
+##        layout=QVBoxLayout()
+##        layout.addWidget(self.sceneView)
+##        self.mainArea.layout().
+##        self.mainArea.setLayout(layout)
+        self.scene.setSceneRect(0,0,800,800)
+        self.scene.bubbleConstructor=self.classificationBubbleConstructor
+        self.navWidget=QWidget()
         self.navWidget.lay=QVBoxLayout(self.navWidget)
-        canvas=TreeCanvas(self.navWidget)
-        self.treeNav=TreeNavigator(self.canvasView,self,canvas,self.navWidget, "Nav")
-        self.treeNav.setCanvas(canvas)
+        scene=TreeGraphicsScene(self.navWidget)
+        self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
+        self.treeNav.setScene(scene)
         self.navWidget.lay.addWidget(self.treeNav)
-        self.canvasView.setNavigator(self.treeNav)
+        self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        self.navWidget.setCaption("Navigator")
+##        self.navWidget.setCaption("Navigator")
         # OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
         self.setMouseTracking(True)
 
-        nodeInfoBox = QVButtonGroup("Show Info", self.NodeTab)
+        nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info")
         nodeInfoButtons = ['Majority class', 'Majority class probability', 'Target class probability', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
         self.NodeInfoW = []; self.dummy = 0
@@ -236,9 +256,9 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             self.NodeInfoSorted=list(self.NodeInfo)
             self.NodeInfoSorted.sort()
             self.NodeInfoMethod=id
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
             n.setText(self.NodeInfoSorted)
-        self.canvas.update()
+        self.scene.update()
 
     def activateLoadedSettings(self):
         if not self.tree:
@@ -248,7 +268,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.toggleNodeColor()
 
     def toggleNodeColor(self):
-        for node in self.canvas.nodeList:
+        for node in self.scene.nodeList:
             if self.NodeColorMethod == 0:   # default
                 node.setBrush(QBrush(BodyColor_Default))
             elif self.NodeColorMethod == 1: # instances in node
@@ -275,22 +295,22 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                 else:
                     light = 100
                 node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
-        self.canvas.update()
+        self.scene.update()
         self.treeNav.leech()
 
     def toggleTargetClass(self):
         if self.NodeColorMethod in [3,4]:
             self.toggleNodeColor()
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
             n.texts[2]="%.3f" % (n.dist.items()[self.TargetClassIndex][1]/n.dist.cases)
             if 2 in self.NodeInfoSorted:
                 n.setText(self.NodeInfoSorted)
-        self.canvas.update()
+        self.scene.update()
 
     def togglePies(self):
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
             n.setPieVisible(self.ShowPies)
-        self.canvas.update()
+        self.scene.update()
 
     def ctree(self, tree=None):
         self.send("Examples", None)
@@ -307,15 +327,15 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWTreeViewer2D.ctree(self, tree)
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
-        node=ClassificationNode(attrVal, tree, parent or self.canvas, self.canvas)
+        node=ClassificationNode(attrVal, tree, parent, self.scene)
         if tree.branches:
             for i in range(len(tree.branches)):
                 if tree.branches[i]:
                     self.walkcreate(tree.branches[i],node,level+1,tree.branchDescriptions[i])
         return node
 
-    def classificationBubbleConstructor(self, node, pos, canvas):
-        b=CanvasBubbleInfo(node, pos,canvas)
+    def classificationBubbleConstructor(self, node, pos, scene):
+        b=GraphicsBubbleInfo(node, pos, scene)
         rule=list(node.rule)
         if rule:
             try:
@@ -351,12 +371,12 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         if ext=="DOT":
             orngTree.printDot(self.tree, fileName)
             return
-        dSize= self.canvas.size()
+        dSize= self.scene.size()
         buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
         painter = QPainter(buffer)
 
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter,0,0,dSize.width(), dSize.height())
+        self.sceneView.drawContents(painter,0,0,dSize.width(), dSize.height())
         painter.end()
         buffer.save(fileName, ext)
 
@@ -369,10 +389,10 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWClassificationTreeGraph()
-    a.setMainWidget(ow)
+##    a.setMainWidget(ow)
 
     #data = orange.ExampleTable('../../doc/datasets/voting.tab')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
+    data = orange.ExampleTable(r"../../doc/datasets/zoo.tab")
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.ctree(tree)
 
