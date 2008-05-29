@@ -1,7 +1,7 @@
 """
 <name>Network from Distances</name>
 <description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
-<icon>icons/Outlier.png</icon>
+<icon>icons/NetworkFromDistances.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3012</priority>
 """
@@ -12,8 +12,8 @@
 
 import OWGUI
 from OWWidget import *
-from orange import Graph
-from OWGraph import *
+from orngNetwork import * 
+from orangeom import Network
 from OWNetworkCanvas import *
 
 class Hist(OWGraph):
@@ -94,7 +94,7 @@ class OWNetworkFromDistances(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
-        self.outputs = [("Graph with ExampleTable", Graph), ("Examples", ExampleTable)]
+        self.outputs = [("Network", Network), ("Examples", ExampleTable)]
 
         self.spinLowerThreshold = 0
         self.spinLowerChecked = False
@@ -188,7 +188,7 @@ class OWNetworkFromDistances(OWWidget):
             self.infob.setText("")
             return
 
-        graph = orange.GraphAsList(self.data.dim, 0)
+        graph = Network(self.data.dim, 0)
         graph.setattr("items", self.data.items)
             
         # set the threshold
@@ -210,7 +210,8 @@ class OWNetworkFromDistances(OWWidget):
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
-        self.send("Graph with ExampleTable", graph)
+        
+        self.send("Network", graph)
         self.send("Examples", graph.items)
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
     
