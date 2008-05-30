@@ -30,7 +30,7 @@
 <DD>Trained classifier (a subtype of Classifier)</DD>
 </dl>
 
-<P>Signal <code>Naive Bayesian Classifier</code> sends data only if the learning data (signal <code>Classified Examples</code> is present.</P>
+<P>Signal <code>Naive Bayesian Classifier</code> sends data only if the learning data (signal <code>Examples</code> is present.</P>
 
 <h2>Description</h2>
 
@@ -43,7 +43,7 @@
 <P>Learner can be given a name under which it will appear in, say, <code>Test Learners</code>. The default name is "Naive Bayes".</P>
 
 <P>Next come the probability estimators. <span class="option">Prior</span> sets the method used for estimating prior class probabilities from the data. You can use either <span class="option">Relative frequency</span> or the <span class="option">Laplace estimate</span>. <span class="option">Conditional (for discrete)</span> sets the method for estimating conditional probabilities, besides the above two, conditional probabilities can be estimated using the <span class="option">m-estimate</span>; in this case the value of m should be given as the <span class="option">Parameter for m-estimate</span>. By setting it to <span class="option">&lt;same as above&gt;</span> the classifier will use the same method as for estimating prior probabilities.</P>
- 
+
 <p>Conditional probabilities for continuous attributes are estimated using LOESS. <span class="option">Size of LOESS window</span> sets the proportion of points in the window; higher numbers mean more smoothing. <span class="option">LOESS sample points</span> sets the number of points in which the function is sampled.</p>
 
 <P>If the class is binary, the classification accuracy may be increased considerably by letting the learner find the optimal classification threshold (option <span class="option">Adjust threshold</span>). The threshold is computed from the training data. If left unchecked, the usual threshold of 0.5 is used.</P>
