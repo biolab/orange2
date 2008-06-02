@@ -7,9 +7,11 @@ import OWGUI
 from OWWidget import *
 from OWGraph import *
 
+import numpy
+
 class OWHist(OWGraph):
-    def __init__(self, parent, type=0):
-        OWGraph.__init__(self, None, "Histogram")
+    def __init__(self, parent=None, type=0):
+        OWGraph.__init__(self, parent, "Histogram")
         self.parent = parent
         self.type = type
         
@@ -52,18 +54,18 @@ class OWHist(OWGraph):
         self.upperBoundary = upper
         maxy = max(self.yData)
         
-        self.lowerBoundaryKey.setData([self.lowerBoundary, self.lowerBoundary], [0, maxy])
-        self.upperBoundaryKey.setData([self.upperBoundary, self.upperBoundary], [0, maxy])
+        self.setCurveData(self.lowerBoundaryKey, [self.lowerBoundary, self.lowerBoundary], [0, maxy])
+        self.setCurveData(self.upperBoundaryKey, [self.upperBoundary, self.upperBoundary], [0, maxy])
         self.replot()
             
     def updateData(self):
         self.removeDrawingCurves(removeLegendItems = 0)
                     
-        self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
+        self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps, xData = list(self.xData), yData = list(self.yData))
         
         maxy = self.maxy
-        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
-        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
+        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
+        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
 
         minx = self.minx
         maxx = self.maxx
