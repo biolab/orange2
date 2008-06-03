@@ -450,6 +450,7 @@ class OWNetwork(OWWidget):
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 1500: self.frSteps = 1500;
         
+        # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
             self.renderAntialiased = 0
             self.graph.renderAntialiased = self.renderAntialiased
