@@ -430,8 +430,23 @@ class OWNetwork(OWWidget):
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                 self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
-            
-            if var.varType in [orange.VarTypes.Continuous]:
+                
+            if var.varType in [orange.VarTypes.String] and hasattr(graph, 'items') and graph.items != None and len(graph.items) > 0:
+                
+                value = graph.items[random.randint(0, len(graph.items) - 1)][var].value
+                
+                # can value be a list?
+                try:
+                    if type(eval(value)) == type([]):
+                        self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                        continue
+                except:
+                    pass
+                
+                if len(value.split(',')) > 1:
+                    self.vertexSizeCombo.addItem(self.icons[var.varType], "num of " + unicode(var.name))
+                
+            elif var.varType in [orange.VarTypes.Continuous]:
                 self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
         
         for i in range(self.vertexSizeCombo.count()):

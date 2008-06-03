@@ -760,21 +760,36 @@ class OWNetworkCanvas(OWGraph):
               
   def setVerticesSize(self, column=None, inverted=0):
       column = str(column)
-      if column in self.visualizer.graph.items.domain:
-          values = [x[column].value for x in self.visualizer.graph.items]
+      if column in self.visualizer.graph.items.domain or (column.startswith("num of ") and column.replace("num of ", "") in self.visualizer.graph.items.domain):
+          values = []
           
-          minVertexWeight = min(values)
-          maxVertexWeight = max(values)
+          if column in self.visualizer.graph.items.domain:
+              values = [x[column].value for x in self.visualizer.graph.items]
+          else:
+              values = [len(x[column.replace("num of ", "")].value.split(',')) for x in self.visualizer.graph.items]
+        
+          minVertexWeight = float(min(values))
+          maxVertexWeight = float(max(values))
           
           k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
           
           if inverted:
               for vertex in self.vertices:
-                  vertex.size = self.maxVertexSize - ((self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k)
+                  if column in self.visualizer.graph.items.domain:
+                      vertex.size = self.maxVertexSize - ((self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k)
+                  else:
+                      vertex.size = self.maxVertexSize - ((len(self.visualizer.graph.items[vertex.index][column.replace("num of ", "")].value.split(',')) - minVertexWeight) * k)
+                  
+                  
                   vertex.pen.setWidthF(1 + float(vertex.size) / 20)
           else:
               for vertex in self.vertices:
-                  vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
+                  if column in self.visualizer.graph.items.domain:
+                      vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
+                  else:
+                      vertex.size = (float(len(self.visualizer.graph.items[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + 5
+                      
+                  #print vertex.size
                   vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       else:
           for vertex in self.vertices:
