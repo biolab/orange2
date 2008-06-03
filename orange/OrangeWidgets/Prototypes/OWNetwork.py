@@ -33,7 +33,8 @@ class OWNetwork(OWWidget):
                     "labelsOnMarkedOnly",
                     "invertSize",
                     "optMethod",
-                    "lastVertexSizeColumn"] 
+                    "lastVertexSizeColumn",
+                    "showWeights"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -67,6 +68,7 @@ class OWNetwork(OWWidget):
         self.invertSize = 0
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
+        self.showWeights = 0
         
         self.loadSettings()
 
@@ -112,7 +114,7 @@ class OWNetwork(OWWidget):
         self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
-        self.showWeights = 0
+        
         OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
         
         OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
@@ -464,6 +466,9 @@ class OWNetwork(OWWidget):
         self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 1500: self.frSteps = 1500;
+        
+        self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.graph.showWeights = self.showWeights
         
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
