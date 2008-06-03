@@ -32,7 +32,8 @@ class OWNetwork(OWWidget):
                     "renderAntialiased",
                     "labelsOnMarkedOnly",
                     "invertSize",
-                    "optMethod"] 
+                    "optMethod",
+                    "lastVertexSizeColumn"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -65,6 +66,7 @@ class OWNetwork(OWWidget):
         self.labelsOnMarkedOnly = 0
         self.invertSize = 0
         self.optMethod = 0
+        self.lastVertexSizeColumn = ''
         
         self.loadSettings()
 
@@ -431,7 +433,12 @@ class OWNetwork(OWWidget):
             
             if var.varType in [orange.VarTypes.Continuous]:
                 self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
-
+        
+        for i in range(self.vertexSizeCombo.count()):
+            if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
+                self.vertexSizeCombo.setCurrentIndex(i)
+                break
+            
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
         #print "done."
@@ -449,6 +456,8 @@ class OWNetwork(OWWidget):
 
             self.maxVertexSize = 5
             self.graph.maxVertexSize = self.maxVertexSize
+            self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+            
             if self.vertexSize > 0:
                 self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
             else:
@@ -463,6 +472,14 @@ class OWNetwork(OWWidget):
             self.optButton.setChecked(1)
             self.optLayout()
         else:
+            self.graph.maxVertexSize = self.maxVertexSize
+            self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+            
+            if self.vertexSize > 0:
+                self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+            else:
+                self.graph.setVerticesSize()
+                
             self.optButton.setChecked(1)
             self.optLayout()
         #self.random()
@@ -729,9 +746,10 @@ class OWNetwork(OWWidget):
     
     def setVertexSize(self):
         self.graph.maxVertexSize = self.maxVertexSize
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
         if self.vertexSize > 0:
-            self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+            self.graph.setVerticesSize(self.lastVertexSizeColumn, self.invertSize)
         else:
             self.graph.setVerticesSize()
             
