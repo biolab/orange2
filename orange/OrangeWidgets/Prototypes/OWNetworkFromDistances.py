@@ -140,12 +140,15 @@ class OWNetworkFromDistances(OWWidget):
             else:
                 self.graph = None
         elif self.excludeUnconnected:
-            components = graph.getConnectedComponents()
+            components = [x for x in graph.getConnectedComponents() if len(x) > 1]
             
-            include = reduce(lambda x,y: x+y, [x for x in components if len(x) > 1])
-            
-            if len(include) > 1:
-                self.graph = Network(graph.getSubGraph(include))
+            if len(components) > 1:
+                include = reduce(lambda x,y: x+y, components)
+                
+                if len(include) > 1:
+                    self.graph = Network(graph.getSubGraph(include))
+                else:
+                    self.graph = None
             else:
                 self.graph = None
         else:
