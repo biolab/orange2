@@ -18,7 +18,7 @@ from orangeom import Network
 from OWHist import *
             
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "largestComponent"]
+    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "largestComponent", "excludeUnconnected"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
@@ -31,6 +31,7 @@ class OWNetworkFromDistances(OWWidget):
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
         self.largestComponent = 0
+        self.excludeUnconnected = 0
         
         # set default settings
         self.data = None
@@ -57,11 +58,11 @@ class OWNetworkFromDistances(OWWidget):
         
         # options
         boxOptions = OWGUI.widgetBox(self.controlArea, box = "Options")
-        self.excludeUnconnected = 0
+        
         self.attrColor = ""
         #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
-        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected nodes', disabled = 1)
-        OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.largestComponentCliked)
+        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected vertices', callback = self.generateGraph)
+        OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.generateGraph)
         
         # info
         boxInfo = OWGUI.widgetBox(self.controlArea, box = "Network info")
@@ -70,9 +71,6 @@ class OWNetworkFromDistances(OWWidget):
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
         self.resize(700, 322)
-        
-    def largestComponentCliked(self):
-        self.generateGraph()
 
     def cdata(self, data):
         if data == None:
@@ -141,9 +139,18 @@ class OWNetworkFromDistances(OWWidget):
                 self.graph = Network(graph.getSubGraph(components))
             else:
                 self.graph = None
+        elif self.excludeUnconnected:
+            components = graph.getConnectedComponents()
+            
+            include = reduce(lambda x,y: x+y, [x for x in components if len(x) > 1])
+            
+            if len(include) > 1:
+                self.graph = Network(graph.getSubGraph(include))
+            else:
+                self.graph = None
         else:
             self.graph = graph
-            
+    
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
