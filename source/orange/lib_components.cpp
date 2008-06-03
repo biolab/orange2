@@ -4541,7 +4541,8 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 				if (index != -1)
 				{
 					double* w = subgraph->getOrCreateEdge(i, index);
-					*w = 1.0;
+					double* oldw = graph->getOrCreateEdge(vertex, *ni);
+					*w = *oldw;
 				}
 			}
 		}
