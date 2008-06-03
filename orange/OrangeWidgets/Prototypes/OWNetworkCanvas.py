@@ -752,8 +752,12 @@ class OWNetworkCanvas(OWGraph):
           #print 'minEdgeWeight',self.minEdgeWeight
           k = (self.maxEdgeSize - 1) / (self.maxEdgeWeight - self.minEdgeWeight)
           for edge in self.edges:
-              size = (edge.weight - self.minEdgeWeight) * k + 1
-              edge.pen = QPen(Qt.lightGray, size)
+              if edge.weight == None:
+                  size = 1
+                  edge.pen = QPen(Qt.lightGray, size)
+              else:
+                  size = (edge.weight - self.minEdgeWeight) * k + 1
+                  edge.pen = QPen(Qt.lightGray, size)
       else:
           for edge in self.edges:
               edge.pen = QPen(Qt.lightGray, 1)
