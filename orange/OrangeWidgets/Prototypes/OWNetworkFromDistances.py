@@ -118,41 +118,51 @@ class OWNetworkFromDistances(OWWidget):
         self.generateGraph()
         
     def generateGraph(self):
+        self.error()
+        
         if self.data == None:
             self.infoa.setText("No data loaded.")
             self.infob.setText("")
             return
-
-        graph = Network(self.data.dim, 0)
         
-        if hasattr(self.data, "items"):
-            graph.setattr("items", self.data.items)
-            
-        # set the threshold
-        # set edges where distance is lower than threshold
-        nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
-        n = len(graph.getEdges())
+        nEdgesEstimate = 2 * sum([self.histogram.yData[i] for i,e in enumerate(self.histogram.xData) if self.spinLowerThreshold <= e <= self.spinUpperThreshold])
         
-        if self.largestComponent:
-            components = graph.getConnectedComponents()[0]
-            if len(components) > 1:
-                self.graph = Network(graph.getSubGraph(components))
-            else:
-                self.graph = None
-        elif self.excludeUnconnected:
-            components = [x for x in graph.getConnectedComponents() if len(x) > 1]
+        if nEdgesEstimate > 100000:
+            self.graph = None
+            nedges = 0
+            n = 0
+            self.error('Estimated number of edges is too high (%d).' % nEdgesEstimate)
+        else:
+            graph = Network(self.data.dim, 0)
             
-            if len(components) > 1:
-                include = reduce(lambda x,y: x+y, components)
+            if hasattr(self.data, "items"):
+                graph.setattr("items", self.data.items)
                 
-                if len(include) > 1:
-                    self.graph = Network(graph.getSubGraph(include))
+            # set the threshold
+            # set edges where distance is lower than threshold
+            nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
+            n = len(graph.getEdges())
+            
+            if self.largestComponent:
+                components = graph.getConnectedComponents()[0]
+                if len(components) > 1:
+                    self.graph = Network(graph.getSubGraph(components))
+                else:
+                    self.graph = None
+            elif self.excludeUnconnected:
+                components = [x for x in graph.getConnectedComponents() if len(x) > 1]
+                
+                if len(components) > 1:
+                    include = reduce(lambda x,y: x+y, components)
+                    
+                    if len(include) > 1:
+                        self.graph = Network(graph.getSubGraph(include))
+                    else:
+                        self.graph = None
                 else:
                     self.graph = None
             else:
-                self.graph = None
-        else:
-            self.graph = graph
+                self.graph = graph
     
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
