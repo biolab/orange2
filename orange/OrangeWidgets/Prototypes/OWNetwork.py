@@ -30,7 +30,9 @@ class OWNetwork(OWWidget):
                     "maxLinkSize",
                     "maxVertexSize",
                     "renderAntialiased",
-                    "labelsOnMarkedOnly"] 
+                    "labelsOnMarkedOnly",
+                    "invertSize",
+                    "optMethod"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -61,6 +63,8 @@ class OWNetwork(OWWidget):
         self.maxVertexSize = 5
         self.renderAntialiased = 1
         self.labelsOnMarkedOnly = 0
+        self.invertSize = 0
+        self.optMethod = 0
         
         self.loadSettings()
 
@@ -83,7 +87,7 @@ class OWNetwork(OWWidget):
         self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         
         OWGUI.label(self.optimizeBox, self, "Select layout optimization method:")
-        self.optMethod = 0
+        
         self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
         self.optCombo.addItem("Random")
         self.optCombo.addItem("Fruchterman Reingold")
@@ -116,7 +120,9 @@ class OWNetwork(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(self.settingsTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
         self.vertexSizeCombo.addItem("(none)")
         
-        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setMaxVertexSize)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
+        
+        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
         
         OWGUI.checkBox(self.settingsTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
         
@@ -233,7 +239,7 @@ class OWNetwork(OWWidget):
         self.send("Marked Examples", None)
 
     def collapse(self):
-        print "collapse"
+        #print "collapse"
         self.visualize.collapse()
         self.graph.addVisualizer(self.visualize)
         #if not nodes is None:
@@ -242,7 +248,7 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
         
     def clustering(self):
-        print "clustering"
+        #print "clustering"
         self.visualize.graph.getClusters()
         
     def insideviewneighbours(self):
@@ -298,11 +304,11 @@ class OWNetwork(OWWidget):
         vgraph = self.visualize.graph
 
         if hubs == 0:
-            print "mark on input"
+            #print "mark on input"
             return
         
         elif hubs == 1:
-            print "mark on given label"
+            #print "mark on given label"
             txt = self.markSearchString
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
@@ -312,13 +318,13 @@ class OWNetwork(OWWidget):
             return
         
         elif hubs == 2:
-            print "mark on focus"
+            #print "mark on focus"
             self.graph.unMark()
             self.graph.tooltipNeighbours = self.markDistance
             return
 
         elif hubs == 3:
-            print "mark selected"
+            #print "mark selected"
             self.graph.unMark()
             self.graph.selectionNeighbours = self.markDistance
             self.graph.markSelectionNeighbours()
@@ -328,25 +334,25 @@ class OWNetwork(OWWidget):
         powers = vgraph.getDegrees()
         
         if hubs == 4: # at least N connections
-            print "mark at least N connections"
+            #print "mark at least N connections"
             N = self.markNConnections
             self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
             self.graph.replot()
         elif hubs == 5:
-            print "mark at most N connections"
+            #print "mark at most N connections"
             N = self.markNConnections
             self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
             self.graph.replot()
         elif hubs == 6:
-            print "mark more than any"
+            #print "mark more than any"
             self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
             self.graph.replot()
         elif hubs == 7:
-            print "mark more than avg"
+            #print "mark more than avg"
             self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
             self.graph.replot()
         elif hubs == 8:
-            print "mark most"
+            #print "mark most"
             sortedIdx = range(len(powers))
             sortedIdx.sort(lambda x,y: -cmp(powers[x], powers[y]))
             cutP = self.markNumber - 1
@@ -414,7 +420,7 @@ class OWNetwork(OWWidget):
         #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
-
+        #print self.attributes
         self.colorCombo.clear()
         self.vertexSizeCombo.clear()
         self.colorCombo.addItem("(one color)")
@@ -437,7 +443,29 @@ class OWNetwork(OWWidget):
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 1500: self.frSteps = 1500;
         
-        self.random()
+        if self.frSteps < 10:
+            self.renderAntialiased = 0
+            self.graph.renderAntialiased = self.renderAntialiased
+
+            self.maxVertexSize = 5
+            self.graph.maxVertexSize = self.maxVertexSize
+            if self.vertexSize > 0:
+                self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+            else:
+                self.graph.setVerticesSize()
+                
+            self.maxLinkSize = 1
+            self.graph.maxEdgeSize = self.maxLinkSize
+            self.graph.setEdgesSize()
+            
+            self.optMethod = 0
+            self.setOptMethod()
+            self.optButton.setChecked(1)
+            self.optLayout()
+        else:
+            self.optButton.setChecked(1)
+            self.optLayout()
+        #self.random()
     
     def setExampleSubset(self, subset):
         if self.graph == None:
@@ -559,7 +587,7 @@ class OWNetwork(OWWidget):
             return
               
         if not self.optButton.isChecked():
-          print "not"
+          #print "not"
           self.stopOptimization = 1
           self.optButton.setChecked(False)
           self.optButton.setText("Optimize layout")
@@ -626,7 +654,7 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)
+        #print "refreshRate: " + str(refreshRate)
         
         tolerance = 5
         initTemp = 100
@@ -676,14 +704,6 @@ class OWNetwork(OWWidget):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.graph.updateData()
         self.graph.replot()
-        
-    def setVertexSize(self):
-        if self.vertexSize > 0:
-            self.graph.setVerticesSize(self.vertexSizeCombo.currentText())
-        else:
-            self.graph.setVerticesSize()
-            
-        self.graph.replot()
                   
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
@@ -706,12 +726,12 @@ class OWNetwork(OWWidget):
         self.graph.maxEdgeSize = self.maxLinkSize
         self.graph.setEdgesSize()
         self.graph.replot()
-        
-    def setMaxVertexSize(self):
+    
+    def setVertexSize(self):
         self.graph.maxVertexSize = self.maxVertexSize
         
         if self.vertexSize > 0:
-            self.graph.setVerticesSize(self.vertexSizeCombo.currentText())
+            self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
         else:
             self.graph.setVerticesSize()
             

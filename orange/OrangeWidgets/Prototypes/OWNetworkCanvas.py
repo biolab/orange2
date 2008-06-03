@@ -758,7 +758,7 @@ class OWNetworkCanvas(OWGraph):
           for edge in self.edges:
               edge.pen = QPen(Qt.lightGray, 1)
               
-  def setVerticesSize(self, column=None):
+  def setVerticesSize(self, column=None, inverted=0):
       column = str(column)
       if column in self.visualizer.graph.items.domain:
           values = [x[column].value for x in self.visualizer.graph.items]
@@ -768,9 +768,14 @@ class OWNetworkCanvas(OWGraph):
           
           k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
           
-          for vertex in self.vertices:
-              vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
-              vertex.pen.setWidthF(1 + float(vertex.size) / 20)
+          if inverted:
+              for vertex in self.vertices:
+                  vertex.size = self.maxVertexSize - ((self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k)
+                  vertex.pen.setWidthF(1 + float(vertex.size) / 20)
+          else:
+              for vertex in self.vertices:
+                  vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
+                  vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       else:
           for vertex in self.vertices:
               vertex.size = self.maxVertexSize
