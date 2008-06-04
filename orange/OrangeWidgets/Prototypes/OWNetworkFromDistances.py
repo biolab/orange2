@@ -147,13 +147,13 @@ class OWNetworkFromDistances(OWWidget):
             nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
             n = len(graph.getEdges())
             print 'self.netOption',self.netOption
-            if str(self.netOption) == '1':
+            if str(self.netOption) == '2':
                 components = graph.getConnectedComponents()[0]
                 if len(components) > 1:
                     self.graph = Network(graph.getSubGraph(components))
                 else:
                     self.graph = None
-            elif str(self.netOption) == '2':
+            elif str(self.netOption) == '1':
                 components = [x for x in graph.getConnectedComponents() if len(x) > 1]
                 
                 if len(components) > 1:
