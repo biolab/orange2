@@ -117,8 +117,11 @@ class OWBaseWidget(QDialog):
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
 
-        if resizingEnabled: QDialog.__init__(self, parent, Qt.Dialog)
-        else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
+        #if resizingEnabled: QDialog.__init__(self, parent, Qt.Dialog)
+        #else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
+
+        if resizingEnabled: QDialog.__init__(self, parent, Qt.Window)
+        else:               QDialog.__init__(self, parent, Qt.Window | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
