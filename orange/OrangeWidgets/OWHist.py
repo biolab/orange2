@@ -73,3 +73,31 @@ class OWHist(OWGraph):
 
         self.setAxisScale(QwtPlot.xBottom, minx - (0.05 * (maxx - minx)), maxx + (0.05 * (maxx - minx)))
         self.setAxisScale(QwtPlot.yLeft, miny - (0.05 * (maxy - miny)), maxy + (0.05 * (maxy - miny)))
+
+class OWInteractiveHist(OWHist):
+    def _setBoundary(self, button, cut):
+        if self.type==1:
+            if button == QMouseEvent.LeftButton:
+                low, hi = cut, self.upperBoundary
+            else:
+                low, hi = self.lowerBoundary, cut
+            if low > hi:
+                low, hi = hi, low
+            self.setBoundary(low, hi)
+        else:
+            self.setBoundary(cut, cut)
+        
+    def onMousePressed(self, e):
+        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        self.mouseCurrentlyPressed = 1
+        self._setBoundary(e.button(), cut)
+        
+    def onMouseMoved(self, e):
+        if self.mouseCurrentlyPressed:
+            cut = self.invTransform(QwtPlot.xBottom, e.x())
+            self._setBoundary(e.state(), cut)
+
+    def onMouseReleased(self, e):
+        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        self.mouseCurrentlyPressed = 0
+        self._setBoundary(e.button(), cut)
