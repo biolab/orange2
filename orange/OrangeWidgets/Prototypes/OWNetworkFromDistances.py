@@ -18,7 +18,7 @@ from orangeom import Network
 from OWHist import *
             
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "largestComponent", "excludeUnconnected"]
+    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "netOption"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
@@ -30,8 +30,7 @@ class OWNetworkFromDistances(OWWidget):
         self.spinLowerChecked = False
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
-        self.largestComponent = 0
-        self.excludeUnconnected = 0
+        self.netOption = 0
         
         # set default settings
         self.data = None
@@ -57,12 +56,17 @@ class OWNetworkFromDistances(OWWidget):
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
         
         # options
-        boxOptions = OWGUI.widgetBox(self.controlArea, box = "Options")
+        #boxOptions = OWGUI.widgetBox(self.controlArea, box = "Options")
         
         self.attrColor = ""
         #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
-        OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected vertices', callback = self.generateGraph)
-        OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.generateGraph)
+        #OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected vertices', callback = self.generateGraph)
+        #OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.generateGraph)
+        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph, addSpace = True)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude unconnected vertices", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback = self.generateGraph)
         
         # info
         boxInfo = OWGUI.widgetBox(self.controlArea, box = "Network info")
@@ -142,14 +146,14 @@ class OWNetworkFromDistances(OWWidget):
             # set edges where distance is lower than threshold
             nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
             n = len(graph.getEdges())
-            
-            if self.largestComponent:
+            print 'self.netOption',self.netOption
+            if str(self.netOption) == '1':
                 components = graph.getConnectedComponents()[0]
                 if len(components) > 1:
                     self.graph = Network(graph.getSubGraph(components))
                 else:
                     self.graph = None
-            elif self.excludeUnconnected:
+            elif str(self.netOption) == '2':
                 components = [x for x in graph.getConnectedComponents() if len(x) > 1]
                 
                 if len(components) > 1:
