@@ -22,10 +22,10 @@ class SchemaView(QGraphicsView):
         self.selectedLine = None
         self.tempWidget = None
         self.setRenderHint(QPainter.Antialiasing)
-        self.createPopupMenus()
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.ensureVisible(0,0,1,1)
-
-    def createPopupMenus(self):
+        
+        # create popup menus
         self.linePopup = QMenu("Link", self)
         self.lineEnabledAction = self.menupopupLinkEnabledID = self.linePopup.addAction( "Enabled",  self.toggleEnabledLink)
         self.lineEnabledAction.setCheckable(1)
@@ -274,7 +274,7 @@ class SchemaView(QGraphicsView):
 
         # if we are drawing line
         elif self.bLineDragging:
-            item = self.scene().itemAt(QPointF(ev.pos()))
+            item = self.scene().itemAt(QPointF(point))
 
             # we must check if we have really conected some output to input
             if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and self.tempLine and item != self.tempWidget:
