@@ -24,7 +24,7 @@ from orangeom import Network
 
 class OWNetworkFile(OWWidget):
     
-    settingsList=["recentFiles", "recentDataFiles"]
+    settingsList=["recentFiles", "recentDataFiles", "recentEdgesFiles"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Network File")
@@ -35,6 +35,8 @@ class OWNetworkFile(OWWidget):
         #set default settings
         self.recentFiles = ["(none)"]
         self.recentDataFiles = ["(none)"]
+        self.recentEdgesFiles = ["(none)"]
+        
         self.domain = None
         self.graph = None
         #get settings from the ini file, if they exist
@@ -47,22 +49,29 @@ class OWNetworkFile(OWWidget):
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
         
-        self.databox = OWGUI.widgetBox(self.controlArea, box = "Data File", orientation = "horizontal")
+        self.databox = OWGUI.widgetBox(self.controlArea, box = "Vertices Data File", orientation = "horizontal")
         self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
         self.datacombo.setMinimumWidth(250)
         button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0, width=25)
+        
+        self.edgesbox = OWGUI.widgetBox(self.controlArea, box = "Edges Data File", orientation = "horizontal")
+        self.edgescombo = OWGUI.comboBox(self.edgesbox, self, "edgesname")
+        self.edgescombo.setMinimumWidth(250)
+        button = OWGUI.button(self.edgesbox, self, '...', callback = self.browseEdgesFile, disabled=0, width=25)
         
         # info
         box = OWGUI.widgetBox(self.controlArea, "Info")
         self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
         self.infob = OWGUI.widgetLabel(box, ' ')
         self.infoc = OWGUI.widgetLabel(box, ' ')
+        self.infod = OWGUI.widgetLabel(box, ' ')
         
         self.resize(150,100)
         self.activateLoadedSettings()
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
         self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
+        self.connect(self.edgescombo, SIGNAL('activated(int)'), self.selectEdgesFile)
         
     # set the file combo box
     def setFileList(self):
@@ -83,14 +92,25 @@ class OWNetworkFile(OWWidget):
                 self.datacombo.addItem("(none)")
             else:
                 self.datacombo.addItem(os.path.split(file)[1])
+                
+        self.edgescombo.clear()
+        if not self.recentEdgesFiles:
+            self.edgescombo.addItem("(none)")
+        for file in self.recentEdgesFiles:
+            if file == "(none)":
+                self.edgescombo.addItem("(none)")
+            else:
+                self.edgescombo.addItem(os.path.split(file)[1])
         
         self.filecombo.updateGeometry()
         self.datacombo.updateGeometry()
+        self.edgescombo.updateGeometry()
      
     def activateLoadedSettings(self):
         # remove missing data set names
         self.recentFiles = filter(os.path.exists, self.recentFiles)
         self.recentDataFiles = filter(os.path.exists, self.recentDataFiles)
+        self.recentEdgesFiles = filter(os.path.exists, self.recentEdgesFiles)
         self.setFileList()
         
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
@@ -98,7 +118,9 @@ class OWNetworkFile(OWWidget):
 
         if len(self.recentDataFiles) > 1 and os.path.exists(self.recentDataFiles[1]):
             self.selectDataFile(1)
-            #self.addDataFile(self.recentDataFiles[0])
+            
+        if len(self.recentEdgesFiles) > 1 and os.path.exists(self.recentEdgesFiles[1]):
+            self.selectEdgesFile(1)
         
     # user selected a graph file from the combo box
     def selectFile(self, n):
@@ -112,6 +134,16 @@ class OWNetworkFile(OWWidget):
             self.openFile(self.recentFiles[0])
     
     # user selected a data file from the combo box
+    def selectEdgesFile(self, n):
+        if n < len(self.recentEdgesFiles) :
+            name = self.recentEdgesFiles[n]
+            self.recentEdgesFiles.remove(name)
+            self.recentEdgesFiles.insert(0, name)
+
+        if len(self.recentEdgesFiles) > 0:
+            self.setFileList()
+            self.addEdgesFile(self.recentEdgesFiles[0])
+    
     def selectDataFile(self, n):
         if n < len(self.recentDataFiles) :
             name = self.recentDataFiles[n]
@@ -132,15 +164,38 @@ class OWNetworkFile(OWWidget):
         
         self.setFileList()
         
+    def addEdgesFile(self, fn):
+        if fn == "(none)" or self.graph == None:
+            self.infod.setText("No edges data file specified.")
+            return
+         
+        table = ExampleTable(fn)
+        print "nEdges", len(self.graph.getEdges())
+        print "len table", len(table)
+        if len(table) != len(self.graph.getEdges()):
+            self.infod.setText("Edges data length does not match number of edges.")
+            
+            if '(none)' in self.recentEdgesFiles: 
+                self.recentEdgesFiles.remove('(none)')
+                
+            self.recentEdgesFiles.insert(0, '(none)')
+            self.setFileList()
+            return
+        
+        self.graph.setattr("links", table)
+        self.infod.setText("Edges data file added.")
+        self.send("Network", self.graph)
+        
+        
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
-            self.infoc.setText("No data file specified.")
+            self.infoc.setText("No vertices data file specified.")
             return
          
         table = ExampleTable(fn)
         
         if len(table) != self.graph.nVertices:
-            self.infoc.setText("Data length does not match number of vertices.")
+            self.infoc.setText("Vertices data length does not match number of vertices.")
             
             if '(none)' in self.recentDataFiles: 
                 self.recentDataFiles.remove('(none)')
@@ -150,8 +205,33 @@ class OWNetworkFile(OWWidget):
             return
         
         self.graph.setattr("items", table)
-        self.infoc.setText("Data file added.")
+        self.infoc.setText("Vertices data file added.")
         self.send("Network", self.graph)
+        
+    def browseEdgesFile(self, inDemos=0):
+        if self.graph == None:
+            return
+        
+        "Display a FileDialog and select a file"
+        if len(self.recentEdgesFiles) == 0 or self.recentEdgesFiles[0] == "(none)":
+            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+                if sys.platform == "darwin":
+                    startfile = user.home
+                else:
+                    startfile="."
+            else:
+                startfile = os.path.dirname(self.recentFiles[0])
+                
+        else:
+            startfile = self.recentEdgesFiles[0]
+                
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Edges Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
+    
+        if filename == "": return
+        if filename in self.recentEdgesFiles: self.recentEdgesFiles.remove(filename)
+        self.recentEdgesFiles.insert(0, filename)
+        self.setFileList()
+        self.addEdgesFile(self.recentEdgesFiles[0])
         
     def browseDataFile(self, inDemos=0):
         if self.graph == None:
@@ -170,7 +250,7 @@ class OWNetworkFile(OWWidget):
         else:
             startfile = self.recentDataFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Vertices Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
     
         if filename == "": return
         if filename in self.recentDataFiles: self.recentDataFiles.remove(filename)
@@ -243,11 +323,12 @@ class OWNetworkFile(OWWidget):
  
         try:
             network.readNetwork(fn)
-            self.infoc.setText("Data generated and added automatically.")
+            self.infoc.setText("Vertices data generated and added automatically.")
         except:
             self.infoa.setText("Could not read file.")
             self.infob.setText("")
             self.infoc.setText("")
+            self.infod.setText("")
             
             #del self.recentFiles[0]
             #self.setFileList()
