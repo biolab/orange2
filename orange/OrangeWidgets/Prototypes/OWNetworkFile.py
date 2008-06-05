@@ -101,7 +101,7 @@ class OWNetworkFile(OWWidget):
                 self.edgescombo.addItem("(none)")
             else:
                 self.edgescombo.addItem(os.path.split(file)[1])
-        
+            
         self.filecombo.updateGeometry()
         self.datacombo.updateGeometry()
         self.edgescombo.updateGeometry()
@@ -160,7 +160,11 @@ class OWNetworkFile(OWWidget):
         if '(none)' in self.recentDataFiles: 
             self.recentDataFiles.remove('(none)')
             
+        if '(none)' in self.recentEdgesFiles: 
+            self.recentEdgesFiles.remove('(none)')
+            
         self.recentDataFiles.insert(0, '(none)')
+        self.recentEdgesFiles.insert(0, '(none)')
         
         self.setFileList()
         
@@ -170,8 +174,6 @@ class OWNetworkFile(OWWidget):
             return
          
         table = ExampleTable(fn)
-        print "nEdges", len(self.graph.getEdges())
-        print "len table", len(table)
         if len(table) != len(self.graph.getEdges()):
             self.infod.setText("Edges data length does not match number of edges.")
             
