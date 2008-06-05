@@ -75,8 +75,48 @@ class OWHist(OWGraph):
         self.setAxisScale(QwtPlot.yLeft, miny - (0.05 * (maxy - miny)), maxy + (0.05 * (maxy - miny)))
 
 class OWInteractiveHist(OWHist):
+    shadeTypes = ["lowTail", "hiTail", "twoTail", "middle"]
+    def updateData(self):
+        OWHist.updateData(self)
+        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
+        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
+        self.middleShadeKey = self.addCurve("middleShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
+        
+        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
+        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
+        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
+
+    def shadeTails(self):
+        if self.type in ["hiTail", "twoTail"]:
+            index = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100), 0)
+            x = [self.upperBoundary] + list(self.xData[index:])
+            y = [self.yData[min(index, 99)]] + list(self.yData[index:])
+            self.setCurveData(self.upperTailShadeKey, x, y)
+        if self.type in ["lowTail", "twoTail"]:
+            index = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),100), 0)
+            x = list(self.xData[:index]) + [self.lowerBoundary]
+            y = list(self.yData[:index]) + [self.yData[min(index,99)]]
+            self.setCurveData(self.lowerTailShadeKey, x, y)
+        if self.type in ["middle"]:
+            indexLow = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),99), 0)
+            indexHi = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100)-1, 0)
+            x = [self.lowerBoundary] + list(self.xData[indexLow: indexHi]) +[self.upperBoundary]
+            y = [self.yData[max(index,0)]] + list(self.yData[indexLow: indexHi]) +[self.yData[max(indexHi, 99)]]
+            self.setCurveData(self.middleShadeKey, x, y)
+        if self.type in ["hiTail", "middle"]:
+            self.setCurveData(self.lowerTailShadeKey, [], [])
+        if self.type in ["lowTail", "middle"]:
+            self.setCurveData(self.upperTailShadeKey, [], [])
+        if self.type in ["lowTail", "hiTail", "twoTail"]:
+            self.setCurveData(self.middleShadeKey, [], [])
+        
+    def setBoundary(self, low, hi):
+        OWHist.setBoundary(self, low, hi)
+        self.shadeTails()
+        self.replot()
+    
     def _setBoundary(self, button, cut):
-        if self.type==1:
+        if self.type in ["twoTail", "middle"]:
             if button == QMouseEvent.LeftButton:
                 low, hi = cut, self.upperBoundary
             else:
