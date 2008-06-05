@@ -3,8 +3,7 @@ import random
 import numpy
 import orange
 import orangeom
-
-
+import os.path
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     def __init__(self, graph=None, name="None"):
@@ -233,6 +232,14 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
         graphFile.write('\n')
         graphFile.close()
+        
+        if self.graph.items != None and len(self.graph.items) > 0:
+            (name, ext) = os.path.splitext(fn)
+            self.graph.items.save(name + "_items.tab")
+            
+        if self.graph.links != None and len(self.graph.links) > 0:
+            (name, ext) = os.path.splitext(fn)
+            self.graph.links.save(name + "_links.tab")
 
         return 0
     
