@@ -359,7 +359,6 @@ class TreeGraphicsView(QGraphicsView):
             if self.bubble:
                 self.bubble.scene().removeItem(self.bubble)
             self.bubbleNode=node
-            print self.bubbleConstructor
             self.bubble=self.bubbleConstructor(node, pos, self.scene())
             self.bubble.setPos(pos.x()+5,pos.y()+5)
             self.bubble.setZValue(50)
@@ -653,7 +652,7 @@ class TreeNavigator(TreeGraphicsView):
         pos=self.masterView.mapFromScene(0, 0)
 ##        self.viewRect.setRect(self.masterView.sceneRect().x()*self.rx, self.masterView.sceneRect().y()*self.ry, self.masterView.sceneRect().width()*self.rx, self.masterView.sceneRect().height()*self.ry)
         self.viewRect.setRect(-pos.x()*self.rx, -pos.y()*self.ry, self.masterView.width()*self.rx, self.masterView.height()*self.ry)
-        print -pos.x()*self.rx, -pos.y()*self.ry
+        print "UpdateView:", -pos.x()*self.rx, -pos.y()*self.ry
 
     def myBubbleConstructor(self, node, pos, scene):
         return self.masterView.scene().bubbleConstructor(node.masterNode, pos, scene)
@@ -753,9 +752,8 @@ class OWTreeViewer2D(OWWidget):
         self.centerRootButton=OWGUI.button(findbox, self, "Find Root",
                                            callback=lambda :self.rootNode and self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y()))
         self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected",
-                                           callback=lambda :self.sceneView.selectedNode and \
-                                     self.sceneView.centerOn(self.sceneView.selectedNode.x(),
-                                                            self.sceneView.selectedNode.y()))
+                                           callback=lambda :self.selectedNode and \
+                                     self.sceneView.centerOn(self.selectedNode.scenePos()))
         self.NodeTab=NodeTab
         self.TreeTab=TreeTab
         self.GeneralTab=GeneralTab
