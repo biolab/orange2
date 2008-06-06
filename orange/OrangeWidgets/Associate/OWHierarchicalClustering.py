@@ -106,6 +106,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.spin(dendrogramBox,self, "LineSpacing", label="Line spacing",
                         min=2,max=8,step=1)
         OWGUI.button(dendrogramBox, self, "&Apply",self.applySettings)
+        OWGUI.rubber(self.settingsTab)
 
         #Selection options
         OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line",
@@ -121,6 +122,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
+        OWGUI.rubber(self.selectionTab)
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout()
@@ -426,7 +428,6 @@ class Dendrogram(QGraphicsScene):
             rectW=self.width()-self.textAreaWidth-top
             rectH=low-hi
             rect=MyCanvasRect(top, hi, rectW+2, rectH)
-            print top, hi, rectW+2, rectH
             self.addItem(rect)
             rect.left=leftR
             rect.right=rightR
@@ -440,17 +441,10 @@ class Dendrogram(QGraphicsScene):
             return (rect, (hi+low)/2)
         else:
             text=MyCanvasText(self, font=self.font, alignment=Qt.AlignLeft)
-            #if len(cluster)>1:
-            #    text.setText("(%i items)" % len(cluster))
-            #else:
-            #    text.setText(str(cluster[0]))
             text.setPlainText(" ")
             text.cluster=cluster
-##            text.setFont(self.font)
             text.setPos(leftMargin+self.treeAreaWidth+5,math.ceil(self.gTextPos))
-##            text.setTextFlags(Qt.AlignLeft)
             text.setZValue(1)
-##            text.show()
             self.textObj.append(text)
             self.gTextPos+=self.gTextPosInc
             return (None, self.gTextPos-self.gTextPosInc/2)
@@ -543,10 +537,6 @@ class Dendrogram(QGraphicsScene):
         tmpList.reverse()
         vertList.extend(tmpList)
         new=SelectionPoly(QPolygonF(vertList))
-##        array=QPointArray(len(vertList))
-##        for i in range(len(vertList)):
-##            array.setPoint(i,vertList[i])
-##        new.setPoints(array)
         self.addItem(new)
         new.rootCluster=obj.cluster
         new.rootGraphics=obj
@@ -615,6 +605,7 @@ class Dendrogram(QGraphicsScene):
             self.setCutOffLine(e.scenePos().x())
 
     def mouseMoveEvent(self, e):
+        print "mouse move"
         if not self.rootCluster:
             return
         if self.parent.SelectionMode==1 and self.cutOffLineDragged:
@@ -698,7 +689,6 @@ class ScaleView(QGraphicsView):
             self.scene().removeItem(a)
         self.scene().removeItem(self.scene().marker)
         self.scene().obj=[]
-##        self.scene().update()
 
     def drawScale(self, treeAreaW, height):
         self.clear()
@@ -711,18 +701,11 @@ class ScaleView(QGraphicsView):
             distInc=0.25
         while xPos>=leftMargin:
             text=OWCanvasText(self.scene(), str(dist), xPos, 9, Qt.AlignCenter)
-##            text.setPos(xPos,9)
             text.setZValue(0)
-##            text.setTextFlags(Qt.AlignCenter)
-##            text.show()
             line1=OWCanvasLine(self.scene(), xPos, 0, xPos, 2)
             line2=OWCanvasLine(self.scene(), xPos, 16, xPos, 20)
-##            line1.setPoints(xPos,0,xPos,2)
             line1.setZValue(0)
-##            line1.show()
-##            line2.setPoints(xPos,16,xPos,20)
             line2.setZValue(0)
-##            line2.show()
             self.scene().obj.append(text)
             self.scene().obj.append(line1)
             self.scene().obj.append(line2)
@@ -731,10 +714,8 @@ class ScaleView(QGraphicsView):
 
         self.marker=OWCanvasRectangle(self.scene(),self.markerPos-3,0,1,20, brushColor=QColor("blue"))
         self.marker.setZValue(1)
-##        self.marker.show()
         self.scene().obj.append(self.marker)
         self.scene().marker=self.marker
-##        self.scene().update()
 
     def mousePressEvent(self, e):
         if e.pos().x()<0 and e.pos().x()>leftMargin+self.scene().treeAreaW:
@@ -745,7 +726,6 @@ class ScaleView(QGraphicsView):
         self.markerPos=e.pos().x()+3
         self.marker.setPos(self.markerPos-3,0)
         self.markerDragged=True
-##        self.scene().update()
         self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def mouseReleaseEvent(self, e):
@@ -759,20 +739,17 @@ class ScaleView(QGraphicsView):
         if self.markerDragged and e.pos():
            self.markerPos=e.pos().x()+3
            self.marker.setPos(self.markerPos-3,0)
-##           self.scene().update()
            self.parent.dendrogram.setCutOffLine(e.pos().x())
 
     def moveMarker(self, x):
         self.scene().marker.setPos(x,0)
-##        self.scene().update()
 
 class MyCanvasRect(QGraphicsRectItem):
-    left=None
-    right=None
-    cluster=None
     def __init__(self, *args):
         QGraphicsRectItem.__init__(self, *args)
-        print args
+        self.left = None
+        self.right = None
+        self.cluster = None
     def highlight(self, pen):
         if self.pen()==pen:
             return
@@ -782,9 +759,10 @@ class MyCanvasRect(QGraphicsRectItem):
             self.right.highlight(pen)
         self.setPen(pen)
 
-    #def drawShape(self, painter):
+
     def paint(self, painter, option, widget=None):
         rect=self.rect()
+        painter.setPen(self.pen())
         painter.drawLine(rect.x(),rect.y(),rect.x(),rect.y()+rect.height())   
         if self.left:
             rectL=self.left.rect()
@@ -798,38 +776,29 @@ class MyCanvasRect(QGraphicsRectItem):
         else:
             painter.drawLine(rect.x(),rect.y()+rect.height(),rect.x()+rect.width(),
                 rect.y()+rect.height())
-##        if self.left:
-##            painter.drawLine(self.x(),self.y(),self.left.x(),self.y())
-##        else:
-##            painter.drawLine(self.x(),self.y(),self.x()+self.rect().width(),self.y())
-##        if self.right:
-##            painter.drawLine(self.x(),self.y()+self.rect().height(),self.right.x(),
-##                self.y()+self.rect().height())
-##        else:
-##            painter.drawLine(self.x(),self.y()+self.rect().height(),self.x()+self.rect().width(),
-##                self.y()+self.rect().height())
-        
 
 class MyCanvasText(OWCanvasText):
-    cluster=None
+    def __init__(self, *args, **kw):
+        OWCanvasText.__init__(self, *args, **kw)
+        self.cluster = None
 
 class SelectionPoly(QGraphicsPolygonItem):
-    rootCluster=None
-    rootGraphics=None
     def __init__(self, *args):
-        apply(QGraphicsPolygonItem.__init__, (self,)+args)
+        QGraphicsPolygonItem.__init__(self, *args)
+        self.rootCluster=None
+        self.rootGraphics=None
         self.setZValue(20)
 
     def clearGraphics(self):
         self.scene().removeItem(self)
 
 class BubbleRect(QGraphicsRectItem):
-    def __init__(self,*args):
-        apply(QGraphicsRectItem.__init__, (self,)+args)
+    def __init__(self, *args):
+        QGraphicsRectItem.__init__(self, *args)
         self.setBrush(QBrush(Qt.white))
         self.text=QGraphicsTextItem(self)
         self.text.setPos(5, 5)
-##        self.setZValue(30)
+        self.setZValue(30)
 ##        self.text.setZValue(31)
 
     def setText(self, text):
