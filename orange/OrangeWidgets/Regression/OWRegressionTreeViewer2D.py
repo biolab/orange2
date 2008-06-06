@@ -10,9 +10,9 @@ from OWTreeViewer2D import *
 import re
 import sets
 
-class RegressionNode(CanvasNode):
+class RegressionNode(GraphicsNode):
     def __init__(self, attrVal, *args):
-        CanvasNode.__init__(self, *args)
+        GraphicsNode.__init__(self, *args)
         self.attrVal=attrVal
         self.dist=self.tree.distribution
         self.numInst=self.dist.cases
@@ -28,27 +28,27 @@ class RegressionNode(CanvasNode):
         self.addTextLine(None, None, None)
         self.addTextLine(self.name, None, False)
         self.textind=[]
-        self.rule=(isinstance(self.parent, QCanvasRectangle) and \
+        self.rule=(isinstance(self.parent, QGraphicsRectItem) and \
                    self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
         self.textAdvance=15
 
     def setSize(self,w,h):
-        CanvasNode.setSize(self,w,h)
+        GraphicsNode.setSize(self,w,h)
         self.updateText()
 
     def setBrush(self, brush):
-        CanvasTextContainer.setBrush(self, brush)
-        if self.textObj:
-            self.textObj[0].setColor(Qt.black)
+        GraphicsTextContainer.setBrush(self, brush)
+##        if self.textObj:
+##            self.textObj[0].setColor(Qt.black)
 
     def setText(self, textInd=[]):
         self.textInd=textInd
         j=1
         for i in textInd:
-            CanvasNode.setText(self, j, self.texts[i], fitSquare=False)
+            GraphicsNode.setText(self, j, self.texts[i], fitSquare=False)
             j+=1
         for i in range(len(textInd),2):
-            CanvasNode.setText(self, i+1, "", fitSquare=False)
+            GraphicsNode.setText(self, i+1, "", fitSquare=False)
 
     def updateText(self):
         self.textAdvance=float(self.height())/3
@@ -137,20 +137,22 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
         
-        self.canvas = TreeCanvas(self)
-        self.canvasView = TreeCanvasView(self, self.canvas, self.mainArea, "CView")
-        self.mainArea.layout().addWidget(self.canvasView)
+        self.scene = TreeGraphicsScene(self)
+        self.sceneView = TreeGraphicsView(self, self.scene)
+        self.mainArea.layout().addWidget(self.sceneView)
+        self.scene.setSceneRect(0,0,800,800)
 
-        self.canvasView.bubbleConstructor=self.regressionBubbleConstructor
+        self.sceneView.bubbleConstructor=self.regressionBubbleConstructor
 
-        self.navWidget = QWidget(None, "Navigator")
-        self.navWidget.setLayout(QVBoxLayout())
+        self.navWidget = QWidget(None)
+        self.navWidget.lay=QVBoxLayout(self.navWidget)
+##        self.navWidget.setLayout(QVBoxLayout())
 
-        canvas = TreeCanvas(self.navWidget)
-        self.treeNav=TreeNavigator(self.canvasView,self,canvas,self.navWidget, "Nav")
-        self.treeNav.setCanvas(canvas)
+        scene = TreeGraphicsScene(self.navWidget)
+        self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
+        self.treeNav.setScene(scene)
         self.navWidget.layout().addWidget(self.treeNav)
-        self.canvasView.setNavigator(self.treeNav)
+        self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
         self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
@@ -183,9 +185,9 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
             self.NodeInfoSorted=list(self.NodeInfo)
             self.NodeInfoSorted.sort()
             self.NodeInfoMethod=id
-        for n in self.canvas.nodeList:
+        for n in self.scene.nodeList:
             n.setText(self.NodeInfoSorted)
-        self.canvas.update()
+        self.scene.update()
 
     def activateLoadedSettings(self):
         if not self.tree:
@@ -196,7 +198,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 
     def toggleNodeColor(self):
         numInst=self.tree.distribution.cases
-        for node in self.canvas.nodeList:
+        for node in self.scene.nodeList:
             if self.NodeColorMethod == 0:   # default
                 node.setBrush(QBrush(BodyColor_Default))
             elif self.NodeColorMethod == 1: # instances in node
@@ -211,7 +213,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
             elif self.NodeColorMethod == 4:
                 light = 400 - 300*node.error
                 node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
-        self.canvas.update()
+        self.scene.update()
         self.treeNav.leech()
 
     def ctree(self, tree=None):
@@ -219,15 +221,15 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.ctree(self, tree)
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
-        node=RegressionNode(attrVal, tree, parent or self.canvas, self.canvas)
+        node=RegressionNode(attrVal, tree, parent, self.scene)
         if tree.branches:
             for i in range(len(tree.branches)):
                 if tree.branches[i]:
                     self.walkcreate(tree.branches[i],node,level+1,tree.branchDescriptions[i])
         return node
 
-    def regressionBubbleConstructor(self, node, pos, canvas):
-        b=CanvasBubbleInfo(node, pos,canvas)
+    def regressionBubbleConstructor(self, node, pos, scene):
+        b=GraphicsBubbleInfo(node, pos,scene)
         rule=list(node.rule)
         #print node.rule, rule
         #rule.sort(lambda:a,b:a[0]<b[0])
@@ -261,12 +263,12 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         if ext=="DOT":
             orngTree.printDot(self.tree, fileName)
             return
-        dSize= self.canvas.size()
+        dSize= self.scene.size()
         buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
         painter = QPainter(buffer)
 
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter,0,0,dSize.width(), dSize.height())
+        self.sceneView.drawContents(painter,0,0,dSize.width(), dSize.height())
         painter.end()
         buffer.save(fileName, ext)
 
@@ -274,9 +276,9 @@ if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWRegressionTreeViewer2D()
 
-    #data = orange.ExampleTable('../../doc/datasets/housing.tab')
-    #tree = orange.TreeLearner(data, storeExamples = 1)
-    #ow.ctree(tree)
+    data = orange.ExampleTable('../../doc/datasets/housing.tab')
+    tree = orange.TreeLearner(data, storeExamples = 1)
+    ow.ctree(tree)
 
     # here you can test setting some stuff
     ow.show()
