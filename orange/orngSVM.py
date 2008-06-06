@@ -287,7 +287,7 @@ class SparseLinKernel:
         return pow(sum, 0.5)
 
 class BagOfWords:
-    """Computes a BOW kernel function (sum_i(example[i]*example[i])) using the examples meta attributes (need to be floats)"""
+    """Computes a BOW kernel function (sum_i(example1[i]*example2[i])) using the examples meta attributes (need to be floats)"""
     def __call__(self, example1, example2):
         s=Set(example1.getmetas().keys()).intersection(Set(example2.getmetas().keys()))
         sum=0
@@ -329,5 +329,16 @@ class RFE(object):
         attrs = [attr for attr in data.domain.attributes if attr in scores]
         data = data.select(attrs + [data.domain.classVar])
         return data
-        
+
+def exampleTableToSVMFormat(examples, file):
+    attrs = examples.domain.attributes + examples.domain.getmetas().values()
+    attrs = [attr for attr in attrs if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+    cv = examples.domain.classVar
+    
+    for ex in examples:
+        file.write(str(int(ex[cv])))
+        for i, attr in enumerate(attrs):
+            if not ex[attr].isSpecial():
+                file.write(" "+str(i+1)+":"+str(ex[attr]))
+        file.write("\n")
             
