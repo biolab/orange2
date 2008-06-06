@@ -32,12 +32,12 @@ class RegressionNode(GraphicsNode):
                    self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
         self.textAdvance=15
 
-    def setSize(self,w,h):
-        GraphicsNode.setSize(self,w,h)
+    def setRect(self,x,y,w,h):
+        GraphicsNode.setRect(self,x,y,w,h)
         self.updateText()
 
-    def setBrush(self, brush):
-        GraphicsTextContainer.setBrush(self, brush)
+##    def setBrush(self, brush):
+##        GraphicsTextContainer.setBrush(self, brush)
 ##        if self.textObj:
 ##            self.textObj[0].setColor(Qt.black)
 
@@ -51,18 +51,27 @@ class RegressionNode(GraphicsNode):
             GraphicsNode.setText(self, i+1, "", fitSquare=False)
 
     def updateText(self):
-        self.textAdvance=float(self.height())/3
+        self.textAdvance=float(self.rect().height())/3
         self.lineSpacing=0
         self.setFont(QFont("",self.textAdvance*0.7), False)
         self.reArangeText(False, -self.textAdvance-self.lineSpacing)
 
 
+##    def reArangeText(self, fitSquare=True, startOffset=0):
+##        self.textOffset=startOffset
+##        x,y=self.x(),self.y()
+##        for i in range(4):
+##            self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
+##        self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
+
     def reArangeText(self, fitSquare=True, startOffset=0):
         self.textOffset=startOffset
         x,y=self.x(),self.y()
         for i in range(4):
-            self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
-        self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
+##            self.textObj[i].setPos(x+1, y+(i-1)*self.textAdvance)
+            self.textObj[i].setPos(1, (i-1)*self.textAdvance)
+##        self.spliterObj[0].setPos(x, y+self.rect().height()-self.textAdvance)
+        self.spliterObj[0].setPos(0, self.rect().height()-self.textAdvance)        
 
 
 def parseRules(rules):
@@ -229,7 +238,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         return node
 
     def regressionBubbleConstructor(self, node, pos, scene):
-        b=GraphicsBubbleInfo(node, pos,scene)
+        b=GraphicsBubbleInfo(node, pos, scene)
         rule=list(node.rule)
         #print node.rule, rule
         #rule.sort(lambda:a,b:a[0]<b[0])
