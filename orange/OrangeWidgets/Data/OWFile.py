@@ -259,7 +259,13 @@ class OWFile(OWWidget):
             attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
                   + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
             if attrs:
-                warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
+                jattrs = ", ".join(attrs)
+                if len(jattrs) > 80:
+                    jattrs = jattrs[:80] + "..."
+                if len(jattrs) > 30: 
+                    warnings += "<li>%s:<br/> %s</li>" % (message, jattrs)
+                else:
+                    warnings += "<li>%s: %s</li>" % (message, jattrs)
 
         self.warnings.setText(warnings)
         qApp.processEvents()
