@@ -685,6 +685,7 @@ class OWDiscretize(OWWidget):
             le.setText(" ".join(cs))
 
         self.indiDiscretization, self.indiIntervals = indiData[:2]
+        self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
 
         self.graph.setData(attr, self.data)
         if hasattr(self, "discretizers"):
@@ -752,7 +753,7 @@ class OWDiscretize(OWWidget):
             if not dontSetACustom and which >= 0 and not self.customSplits[which]:
                 attr = self.data.domain[idx]
                 splitsTxt = self.indiData[idx][2+which] = [str(attr(x)) for x in self.graph.curCutPoints]
-                self.customSplits[which] = " ".join(splitsTxt)
+                self.customSplits[which] = splitsTxt # " ".join(splitsTxt)
                 self.customLineEdits[which].setText(" ".join(splitsTxt))
                 self.computeDiscretizer(i, idx)
             else:
@@ -839,9 +840,9 @@ class OWDiscretize(OWWidget):
         idx = self.continuousIndices[self.selectedAttr]
 
         if self.indiDiscretization >= self.D_N_METHODS + 1:
-            splits = str(self.customSplits[self.indiDiscretization - self.D_N_METHODS - 1])
+            splits = self.customSplits[self.indiDiscretization - self.D_N_METHODS - 1]
             try:
-                valid = bool([float(i) for i in self.customSplits[which]])
+                valid = bool([float(i) for i in self.customSplits[which]].split())
             except:
                 valid = False
         else:
