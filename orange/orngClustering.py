@@ -23,7 +23,7 @@ class DendrogramPlot(object):
         self.lowColor = (0, 0, 0)
         self.hiColor = (255, 255, 255)
         if not self.labels:
-            self.labels = [str(m) for m in tree]
+            self.labels = [str(m) for m in self.tree.mapping.objects]
 
 
     def _getTextSizeHint(self, text):
@@ -95,7 +95,7 @@ class DendrogramPlot(object):
                 return None
             elif val.variable.varType==orange.VarTypes.Continuous:
 ##                r = g = b = int(255.0*(float(val)-avg)/abs(maxVal-minVal))
-                r, g, b = [int(self.lowColor[i]+(self.hiColor[i]-self.lowColor[i])*(float(val)-avg)/abs(maxVal-minVal)) for i in range(3)]
+                r, g, b = [int(self.lowColor[i]+(self.hiColor[i]-self.lowColor[i])*(float(val)-minVal)/abs(maxVal-minVal)) for i in range(3)]
             elif val.variable.varType==orange.VarTypes.Discrete:
                 r = g = b = int(255.0*float(val)/len(val.variable.values))
             return (r, g, b)
@@ -160,11 +160,13 @@ class DendrogramPlot(object):
                     else:
                         pass #TODO indicate a missing value
 ##        for i, (label, row) in enumerate(zip(labels, matrix)):
-        for i in self.tree:
-            label = self.labels[i]
+        
+        for i, el in enumerate(self.tree):
+            label = self.labels[el]
+##            print label, el, i
             self.painter.text((textAreaStart, topMargin+i*hAdvance), self._truncText(label, textAreaWidth), font=self.font, fill=self.defaultTextColor)
             if self.data:
-                row = self.data[i]
+                row = self.data[el]
                 _drawMatrixRow(row, topMargin+i*hAdvance)
 
         self.image.save(file, "PNG")
