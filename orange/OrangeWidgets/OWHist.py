@@ -7,9 +7,11 @@ import OWGUI
 from OWWidget import *
 from OWGraph import *
 
+import numpy
+
 class OWHist(OWGraph):
-    def __init__(self, parent, type=0):
-        OWGraph.__init__(self, None, "Histogram")
+    def __init__(self, parent=None, type=0):
+        OWGraph.__init__(self, parent, "Histogram")
         self.parent = parent
         self.type = type
         
@@ -28,6 +30,8 @@ class OWHist(OWGraph):
         
         self.enableGridXB(False)
         self.enableGridYL(False)
+
+        self.buttonCurrentlyPressed = None
 
     def setValues(self, values):
         nBins = 100
@@ -71,3 +75,76 @@ class OWHist(OWGraph):
 
         self.setAxisScale(QwtPlot.xBottom, minx - (0.05 * (maxx - minx)), maxx + (0.05 * (maxx - minx)))
         self.setAxisScale(QwtPlot.yLeft, miny - (0.05 * (maxy - miny)), maxy + (0.05 * (maxy - miny)))
+
+class OWInteractiveHist(OWHist):
+    shadeTypes = ["lowTail", "hiTail", "twoTail", "middle"]
+    def updateData(self):
+        OWHist.updateData(self)
+        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.middleShadeKey = self.addCurve("middleShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+
+        self.upperTailShadeKey.setBrush(QBrush(Qt.red))
+        self.lowerTailShadeKey.setBrush(QBrush(Qt.red))
+        self.middleShadeKey.setBrush(QBrush(Qt.red))        
+##        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
+##        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
+##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
+
+    def shadeTails(self):
+        if self.type in ["hiTail", "twoTail"]:
+            index = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100), 0)
+            x = [self.upperBoundary] + list(self.xData[index:])
+            y = [self.yData[min(index, 99)]] + list(self.yData[index:])
+            self.upperTailShadeKey.setData(x, y)
+        if self.type in ["lowTail", "twoTail"]:
+            index = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),100), 0)
+            x = list(self.xData[:index]) + [self.lowerBoundary]
+            y = list(self.yData[:index]) + [self.yData[min(index,99)]]
+            self.lowerTailShadeKey.setData(x, y)
+        if self.type in ["middle"]:
+            indexLow = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),99), 0)
+            indexHi = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100)-1, 0)
+            x = [self.lowerBoundary] + list(self.xData[indexLow: indexHi]) +[self.upperBoundary]
+            y = [self.yData[max(index,0)]] + list(self.yData[indexLow: indexHi]) +[self.yData[max(indexHi, 99)]]
+            self.middleShadeKey.setData(x, y)
+        if self.type in ["hiTail", "middle"]:
+            self.lowerTailShadeKey.setData([], [])
+        if self.type in ["lowTail", "middle"]:
+            self.upperTailShadeKey.setData([], [])
+        if self.type in ["lowTail", "hiTail", "twoTail"]:
+            self.middleShadeKey.setData([], [])
+        
+    def setBoundary(self, low, hi):
+        OWHist.setBoundary(self, low, hi)
+        self.shadeTails()
+        self.replot()
+    
+    def _setBoundary(self, button, cut):
+        if self.type in ["twoTail", "middle"]:
+            if button == Qt.LeftButton:
+                low, hi = cut, self.upperBoundary
+            else:
+                low, hi = self.lowerBoundary, cut
+            if low > hi:
+                low, hi = hi, low
+            self.setBoundary(low, hi)
+        else:
+            self.setBoundary(cut, cut)
+        
+    def mousePressEvent(self, e):
+        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        self.mouseCurrentlyPressed = 1
+        self.buttonCurrentlyPressed = e.button()
+        self._setBoundary(e.button(), cut)
+        
+    def mouseMoveEvent(self, e):
+        if self.mouseCurrentlyPressed:
+            cut = self.invTransform(QwtPlot.xBottom, e.x())
+            self._setBoundary(self.buttonCurrentlyPressed, cut)
+
+    def mouseReleaseEvent(self, e):
+        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        self._setBoundary(self.buttonCurrentlyPressed, cut)
+        self.mouseCurrentlyPressed = 0
+        self.buttonCurrentlyPressed = None
