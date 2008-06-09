@@ -23,8 +23,7 @@ class DendrogramPlot(object):
         self.lowColor = (0, 0, 0)
         self.hiColor = (255, 255, 255)
         if not self.labels:
-            self.labels = [str(m) for m in self.tree.mapping.objects]
-
+            self.labels = [str(m) for m in getattr(self.tree.mapping, "objects", [""]*len(tree))]
 
     def _getTextSizeHint(self, text):
         if type(text)==str:
@@ -162,6 +161,7 @@ class DendrogramPlot(object):
 ##        for i, (label, row) in enumerate(zip(labels, matrix)):
         
         for i, el in enumerate(self.tree):
+            el = self.tree.mapping[i] # in case el mapping has objects and el is not an integer
             label = self.labels[el]
 ##            print label, el, i
             self.painter.text((textAreaStart, topMargin+i*hAdvance), self._truncText(label, textAreaWidth), font=self.font, fill=self.defaultTextColor)
@@ -186,6 +186,7 @@ if __name__=="__main__":
         for j in range(i+1):
             matrix[i, j] = dist(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
+##    root.mapping.objects = [str(ex.getclass()) for ex in data]
     d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
     d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
