@@ -11,7 +11,7 @@ from orngLR import *
 import OWGUI
 
 class OWLogisticRegression(OWWidget):
-    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
+    settingsList = ["univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -27,7 +27,6 @@ class OWLogisticRegression(OWWidget):
         self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
 
         self.name = "Logistic regression"
-        self.removeSingular = 1
         self.univariate = 0
         self.stepwiseLR = 0
         self.addCrit = 10
@@ -46,8 +45,6 @@ class OWLogisticRegression(OWWidget):
         OWGUI.separator(self.controlArea)
 
         box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)
-
-        OWGUI.checkBox(box, self, "removeSingular", "Remove singular attributes", tooltip="Remove constant attributes and attributes causing singularities")
 
         stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
         ibox = OWGUI.indentedBox(box)
@@ -74,7 +71,7 @@ class OWLogisticRegression(OWWidget):
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
         else:
-            self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing,
+            self.learner = LogRegLearner(removeSingular = True, imputer = imputer, removeMissing = removeMissing,
                                          stepwiseLR = self.stepwiseLR, addCrit = self.addCrit/100., removeCrit = self.removeCrit/100.,
                                          numAttr = self.limitNumAttr and float(self.numAttr) or -1.0)
 
