@@ -101,7 +101,7 @@ class OWNomogram(OWWidget):
                                 addSpace=True,
                                 callback=[lambda:self.verticalSpacingContLabel.setDisabled(not self.contType), self.showNomogram])
 
-        self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['point scale', 'log odds ratios'], 'Scale',
+        self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['Point scale', 'Log odds ratios'], 'Scale',
                                 tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
                                 addSpace=True,
                                 callback=self.showNomogram)
