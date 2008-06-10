@@ -49,7 +49,7 @@ def avg(l):
 
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "histogram", "histogram_size", "confidence_percent", "sort_type"]
+    settingsList = ["alignType", "contType", "histogram", "histogram_size", "confidence_check", "confidence_percent", "sort_type"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
 
     def __init__(self,parent=None, signalManager = None):
@@ -114,14 +114,8 @@ class OWNomogram(OWWidget):
         self.probabilityCheck = OWGUI.checkBox(layoutBox, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
 
         self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
-        self.histogramCheck.setChecked(False)
-        self.histogramCheck.setDisabled(True)
-        self.histogramLabel.setDisabled(True)
 
         self.CICheck, self.CILabel = OWGUI.checkWithSpin(layoutBox, self, 'Confidence intervals (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
-        self.CICheck.setChecked(False)
-        self.CICheck.setDisabled(True)
-        self.CILabel.setDisabled(True)
 
         OWGUI.separator(layoutBox)
         self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
@@ -557,9 +551,9 @@ class OWNomogram(OWWidget):
             self.CILabel.setDisabled(True)
         else:
             self.histogramCheck.setEnabled(True)
-            self.histogramLabel.setEnabled(True)
+            self.histogramCheck.makeConsistent()
             self.CICheck.setEnabled(True)
-            self.CILabel.setEnabled(True)
+            self.CICheck.makeConsistent()
         self.updateNomogram()
 
     def setTarget(self):
