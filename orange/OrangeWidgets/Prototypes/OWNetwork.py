@@ -462,8 +462,7 @@ class OWNetwork(OWWidget):
         
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
-                self.vertexSizeCombo.setCurrentIndex(i)
-                print "set color",i
+                self.vertexSize = i
                 break
             
         #print "OWNetwork/setGraph: add visualizer..."
@@ -491,6 +490,7 @@ class OWNetwork(OWWidget):
         self.graph.renderAntialiased = self.renderAntialiased
         self.graph.showEdgeLabels = self.showEdgeLabels
         self.graph.maxVertexSize = self.maxVertexSize
+        self.graph.maxEdgeSize = self.maxLinkSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
         if self.vertexSize > 0:
@@ -498,7 +498,6 @@ class OWNetwork(OWWidget):
         else:
             self.graph.setVerticesSize()
             
-        self.graph.maxEdgeSize = self.maxLinkSize
         self.graph.setEdgesSize()
             
         self.optButton.setChecked(1)
