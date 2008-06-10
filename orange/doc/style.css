@@ -53,6 +53,7 @@ H1 {
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
+    clear: both;
 }
 
 .wide {         width: 0px;
@@ -68,6 +69,7 @@ H2 {
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
+    clear: both;
 }
 
 H3 {
@@ -75,6 +77,7 @@ H3 {
     font-family: Verdana;
     font-size: 11px;
     white-space: nowrap;
+    clear: both;
 }
 
 h4 {
@@ -279,6 +282,12 @@ PRE.code { background-color: #FCD179; margin-top: 3px}
     margin-right: 10px;
 }
 
+.leftscreenshot { 
+    float:left;
+    margin-top: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
 
 XMP.code, PRE.code {
 /*    background-color: #fdf2b4; */
