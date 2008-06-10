@@ -320,26 +320,17 @@ class TableItemDelegate(QItemDelegate):
         self.widget = widget
 
     def paint(self, painter, option, index):
-        if not self.widget.showDistributions:
-            QItemDelegate.paint(self, painter, option, index)
-            return
-
-        col = index.column()
-        row = index.row()
-
-        if col >= len(self.table.dist) or self.table.dist[col] == None:        # meta attributes and discrete attributes don't have a key
-            QItemDelegate.paint(self, painter, option, index)
-            return
-
-        dist = self.table.dist[col]
-
         painter.save()
         self.drawBackground(painter, option, index)
         value, ok = index.data(Qt.DisplayRole).toDouble()
 
         if ok:        # in case we get "?" it is not ok
-            smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
-            painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
+            if self.widget.showDistributions:
+                col = index.column()
+                if col < len(self.table.dist) and self.table.dist[col]:        # meta attributes and discrete attributes don't have a key
+                    dist = self.table.dist[col]
+                    smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
+                    painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
             text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
         else:
             text = index.data(Qt.DisplayRole).toString()
