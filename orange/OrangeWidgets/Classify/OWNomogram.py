@@ -49,7 +49,7 @@ def avg(l):
 
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "histogram", "histogram_size", "confidence_check", "confidence_percent", "sort_type"]
+    settingsList = ["alignType", "verticalSpacing", "contType", "verticalSpacingContinuous", "yAxis", "probability", "confidence_check", "confidence_percent", "histogram", "histogram_size", "sort_type"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
 
     def __init__(self,parent=None, signalManager = None):
@@ -101,13 +101,14 @@ class OWNomogram(OWWidget):
                                 addSpace=True,
                                 callback=[lambda:self.verticalSpacingContLabel.setDisabled(not self.contType), self.showNomogram])
 
+        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+        self.verticalSpacingContLabel.setDisabled(not self.contType)
+
         self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['Point scale', 'Log odds ratios'], 'Scale',
                                 tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
                                 addSpace=True,
                                 callback=self.showNomogram)
-        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
-        self.verticalSpacingContLabel.setDisabled(not self.contType)
-
+        
 
         layoutBox = OWGUI.widgetBox(self.controlArea, "Display", orientation=1, addSpace=True)
 
