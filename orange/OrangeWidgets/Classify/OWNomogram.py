@@ -49,7 +49,7 @@ def avg(l):
 
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
+    settingsList = ["alignType", "contType", "histogram", "histogram_size", "confidence_percent", "sort_type"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
 
     def __init__(self,parent=None, signalManager = None):
@@ -64,21 +64,17 @@ class OWNomogram(OWWidget):
         self.contType = 0
         self.yAxis = 0
         self.probability = 0
-        self.showBaseLine = 1
-        self.table = 0
         self.verticalSpacing = 60
         self.verticalSpacingContinuous = 100
         self.diff_between_ordinal = 30
         self.fontSize = 9
         self.lineWidth = 1
-        self.bubble = 1
         self.histogram = 1
         self.histogram_size = 10
         self.data = None
         self.cl = None
         self.confidence_check = 0
         self.confidence_percent = 95
-#        self.notTargetClassIndex = 1
         self.sort_type = 0
 
         self.loadSettings()
@@ -88,66 +84,54 @@ class OWNomogram(OWWidget):
         self.bnomogram = None
 
 
-        #inputs
         self.inputs=[("Classifier", orange.Classifier, self.classifier)]
 
-        # GUI definition
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
 
-        # GENERAL TAB
-        GeneralTab = QVGroupBox(self)
-
-        self.alignRadio = OWGUI.radioButtonsInBox(GeneralTab, self,  'alignType', ['Left', '0-point'], box='Align',
-                                                  tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
-                                                  callback=self.showNomogram)
-        self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log OR'], 'yAxis',
-                                tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
-                                callback=self.showNomogram)
-        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous attributes',
-                                tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
-                                callback=self.showNomogram)
-
-        #target combo box
         self.TargetClassIndex = 0
-        self.targetCombo = OWGUI.comboBox(GeneralTab, self, "TargetClassIndex", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
+        self.targetCombo = OWGUI.comboBox(self.controlArea, self, "TargetClassIndex", " Target Class ", addSpace=True, tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
 
-        #self.yAxisRadio.setDisabled(True)
-        self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
-        #self.probabilityCheck.setDisabled(True)
-        self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table', 'Show table',  tooltip='Show table of selected attribute values?')
-        self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
-        self.tableCheck.setDisabled(True)
+        self.alignRadio = OWGUI.radioButtonsInBox(self.controlArea, self,  'alignType', ['Align left', 'Align by zero influence'], box='Attribute placement',
+                                                  tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
+                                                  addSpace=True,
+                                                  callback=self.showNomogram)
+        self.verticalSpacingLabel = OWGUI.spin(self.alignRadio, self, 'verticalSpacing', 15, 200, label = 'Vertical spacing:',  orientation = 0, tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
 
-        self.sortBox = OWGUI.comboBox(GeneralTab, self, "sort_type", box="Sorting", label="Criteria: ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
+        self.ContRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'contType',   ['1D projection', '2D curve'], 'Continuous attributes',
+                                tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
+                                addSpace=True,
+                                callback=[lambda:self.verticalSpacingContLabel.setDisabled(not self.contType), self.showNomogram])
 
-        self.tabs.insertTab(GeneralTab, "General")
+        self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['point scale', 'log odds ratios'], 'Scale',
+                                tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
+                                addSpace=True,
+                                callback=self.showNomogram)
+        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+        self.verticalSpacingContLabel.setDisabled(not self.contType)
 
-        # TREE TAB
-        NomogramStyleTab = QVGroupBox(self)
 
-        self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 200, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
-        self.verticalSpacingContLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacingContinuous', 15, 200, box = 'Vertical spacing (for cont.):',  tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
-##        self.verticalSpacingLabel.setDisabled(True)
-##        self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.', callback = self.showNomogram)
-##        self.fontSizeLabel.setDisabled(True)
-##        self.lineWidthLabel = OWGUI.spin(NomogramStyleTab, self, 'lineWidth', 1, 10, box = 'Line width:',  tooltip='Define width of lines shown in nomogram.', callback = self.showNomogram)
-##        self.lineWidthLabel.setDisabled(True)
-        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Histogram, max. size:', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+        layoutBox = OWGUI.widgetBox(self.controlArea, "Display", orientation=1, addSpace=True)
+
+        self.probabilityCheck = OWGUI.checkBox(layoutBox, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
+
+        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
         self.histogramCheck.setChecked(False)
         self.histogramCheck.setDisabled(True)
         self.histogramLabel.setDisabled(True)
 
-        # save button
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-
-        # objects/gui widgets in settings tab for showing and adjusting confidence intervals properties
-        self.CICheck, self.CILabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Confidence Interval (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+        self.CICheck, self.CILabel = OWGUI.checkWithSpin(layoutBox, self, 'Confidence intervals (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
         self.CICheck.setChecked(False)
         self.CICheck.setDisabled(True)
         self.CILabel.setDisabled(True)
-        self.showBaseLineCB = OWGUI.checkBox(NomogramStyleTab, self, 'showBaseLine', 'Show Base Line (at 0-point)', callback = self.setBaseLine)
 
-        self.tabs.insertTab(NomogramStyleTab, "Settings")
+        OWGUI.separator(layoutBox)
+        self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
+
+
+        OWGUI.rubber(self.controlArea)
+
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+
+
 
         #add a graph widget
         self.box=QBoxLayout(self.mainArea, QVBoxLayout.TopToBottom, 0)
@@ -669,7 +653,7 @@ class OWNomogram(OWWidget):
 
     def setBaseLine(self):
         if self.bnomogram:
-            self.bnomogram.showBaseLine(self.showBaseLine)
+            self.bnomogram.showBaseLine(True)
 
     def saveToFileCanvas(self):
         EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale

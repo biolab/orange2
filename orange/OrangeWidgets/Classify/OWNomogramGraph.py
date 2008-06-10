@@ -290,8 +290,8 @@ class AttValueMarker(QCanvasEllipse):
     def showSelected(self):
         #self.borderCircle.show()
         self.setBrush(QBrush(QColor(253,151,51), self.brush().style()))
-        if self.canvas().parent.bubble:
-            self.descriptor.showAll()
+#        if self.canvas().parent.bubble:
+        self.descriptor.showAll()
         
     def hideSelected(self):
         #self.borderCircle.hide()
@@ -1252,10 +1252,10 @@ class BasicNomogram(QCanvas):
 
     def paint(self, rect, mapper):
         self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()-self.parent.verticalSpacing/2 + 25)
-        if self.parent.showBaseLine:
-            self.zeroLine.show()
-        else:
-            self.zeroLine.hide()
+#        if self.parent.showBaseLine:
+        self.zeroLine.show()
+#        else:
+#            self.zeroLine.hide()
         curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         disc = False
  
