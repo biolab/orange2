@@ -463,6 +463,7 @@ class OWNetwork(OWWidget):
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
                 self.vertexSizeCombo.setCurrentIndex(i)
+                print "set color",i
                 break
             
         #print "OWNetwork/setGraph: add visualizer..."
