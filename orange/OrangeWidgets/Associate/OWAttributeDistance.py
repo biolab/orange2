@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore", module="orngInteract")
 # main class
 
 class OWAttributeDistance(OWWidget):	
-    settingsList = ["ClassInteractions"]
+    settingsList = ["classInteractions"]
 
     def __init__(self, parent=None, signalManager = None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
@@ -31,11 +31,16 @@ class OWAttributeDistance(OWWidget):
 
         self.data = None        
 
-        self.ClassInteractions = 0
+        self.classInteractions = 0
         self.loadSettings()
-#        self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass)
-#        self.classIntCB.setDisabled(True)
-        OWGUI.widgetLabel(self.controlArea, "This widget has no parameters.")
+        rb = OWGUI.radioButtonsInBox(self.controlArea, self, "classInteractions", [], "Distance", callback=self.toggleClass)
+        OWGUI.widgetLabel(rb, "Measures on discrete attributes\n   (continuous attributes are discretized into five intervals)")
+        for b in ("Pearson's chi-square", "2-way interactions - I(A;B)/H(A,B)", "3-way interactions - I(A;B;C)"):
+            OWGUI.appendRadioButton(rb, self, "classInteractions", b)
+        
+        OWGUI.widgetLabel(rb, "\n"+"Measures on continuous attributes\n   (discrete attributes are treated as ordinal)")
+        for b in ("Pearson's correlation", "Spearman's correlation"):
+            OWGUI.appendRadioButton(rb, self, "classInteractions", b)
         self.resize(215,50)
 #        self.adjustSize()
 
@@ -45,21 +50,50 @@ class OWAttributeDistance(OWWidget):
     def computeMatrix(self):
         if self.data:
             atts = self.data.domain.attributes
-            im = orngInteract.InteractionMatrix(self.data, dependencies_too=1)
-            (diss,labels) = im.depExportDissimilarityMatrix(jaccard=1)  # 2-interactions
-
             matrix = orange.SymMatrix(len(atts))
             matrix.setattr('items', atts)
-            for i in range(len(atts)-1):
-                for j in range(i+1):
-                    matrix[i+1, j] = diss[i][j]
+
+            if self.classInteractions < 3:
+                if self.data.domain.hasContinuousAttributes():
+                    if self.discretizedData is None:
+                        self.discretizedData = orange.Preprocessor_discretize(self.data, method=orange.EquiNDiscretization(numberOfIntervals=4))
+                    data = self.discretizedData
+                else:
+                    data = self.data
+
+                im = orngInteract.InteractionMatrix(data, dependencies_too=1)
+                off = 1
+                if self.classInteractions == 0:
+                    diss,labels = im.exportChi2Matrix()
+                    off = 0
+                elif self.classInteractions == 1:
+                    (diss,labels) = im.depExportDissimilarityMatrix(jaccard=1)  # 2-interactions
+                else:
+                    (diss,labels) = im.exportDissimilarityMatrix(jaccard=1)  # 3-interactions
+
+                for i in range(len(atts)-off):
+                    for j in range(i+1):
+                        matrix[i+off, j] = diss[i][j]
+
+            else:
+                if self.classInteractions == 3:
+                    for a1 in range(len(atts)):
+                        for a2 in range(a1):
+                            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, self.data, 0).p
+                else:
+                    import numpy, statc
+                    m = self.data.toNumpyMA("A")[0]
+                    averages = numpy.ma.average(m, axis=0)
+                    filleds = [list(numpy.ma.filled(m[:,i], averages[i])) for i in range(len(atts))]
+                    for a1, f1 in enumerate(filleds):
+                        for a2 in range(a1):
+                            matrix[a1, a2] = statc.spearmanr(f1, filleds[a2])[1]
+                
             return matrix
         else:
             return None
 
     def toggleClass(self):
-        """TODO!!!
-        """
         self.sendData()
 
 
@@ -67,11 +101,8 @@ class OWAttributeDistance(OWWidget):
     # input output signal management
 
     def dataset(self, data):
-        if data and len(data.domain.attributes):
-            self.data = orange.Preprocessor_discretize(data, method=orange.EquiNDiscretization(numberOfIntervals=5))
-##            self.classIntCB.setDisabled(self.data.domain.classVar == None)
-        else:
-            self.data = None
+        self.data = self.isDataWithClass(data) and data or None
+        self.discretizedData = None
         self.sendData()
 
 
