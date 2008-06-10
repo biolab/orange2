@@ -1576,7 +1576,7 @@ class Mapper_Linear_Fixed:
        
         k = (self.maxGraphBeta-self.minGraphBeta)/max((self.maxGraphValue-self.minGraphValue), aproxZero)
         dSumValues = [(d,self.minGraphBeta + (d-self.minGraphValue)*k) for d in dSum]
-        headerLine = AttrLine("Points", canvas)
+        headerLine = AttrLine("Total", canvas)
         for d_i,d in enumerate(dSumValues):
             headerLine.addAttValue(AttValue(" "+str(conv(d[0]))+" ", d[1], markerWidth = 1))
             if d != dSumValues[-1]:

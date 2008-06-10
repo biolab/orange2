@@ -79,8 +79,8 @@ class OWNomogram(OWWidget):
 
         self.loadSettings()
 
-        self.pointsName = ["Points", "Log OR"]
-        self.totalPointsName = ["Total Points", "Log OR Sum"]
+        self.pointsName = ["Total", "Total"]
+        self.totalPointsName = ["Probability", "Probability"]
         self.bnomogram = None
 
 
@@ -113,9 +113,9 @@ class OWNomogram(OWWidget):
 
         self.probabilityCheck = OWGUI.checkBox(layoutBox, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
 
-        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
-
         self.CICheck, self.CILabel = OWGUI.checkWithSpin(layoutBox, self, 'Confidence intervals (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+
+        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
 
         OWGUI.separator(layoutBox)
         self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
