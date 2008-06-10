@@ -97,6 +97,11 @@ class OWDataDomain(OWWidget):
         self.applyButton.setMaximumWidth(applyButtonWidth)
         self.resetButton = OWGUI.button(boxApply, self, "Reset", callback = self.reset)
         self.resetButton.setMaximumWidth(applyButtonWidth)
+        
+        grid.setRowStretch(0, 4)
+        grid.setRowStretch(1, 0)
+        grid.setRowStretch(2, 2)
+         
 
         self.icons = self.createAttributeIconDict()
 
