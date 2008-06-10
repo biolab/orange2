@@ -17,7 +17,7 @@ class OWDataSampler(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'SampleData')
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.outputs = [("Sample", ExampleTable), ("Remaining Examples", ExampleTable)]
 
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
