@@ -146,3 +146,58 @@ TDomainBasicAttrStat::TDomainBasicAttrStat(PExampleGenerator gen, const long &we
 /* Removes empty BasicAttrStat (i.e. those at places corresponding to non-continuous attributes */
 void TDomainBasicAttrStat::purge()
 { erase(remove_if(begin(), end(), logical_not<PBasicAttrStat>()), end()); }
+
+
+#include "stat.hpp"
+
+TPearsonCorrelation::TPearsonCorrelation(PExampleGenerator gen, PVariable v1, PVariable v2, const long &weightID)
+{
+  const bool d1 = v1->varType == TValue::INTVAR;
+  const bool d2 = v2->varType == TValue::INTVAR;
+
+  if (   !d1 && (v1->varType != TValue::FLOATVAR)
+      || !d2 && (v2->varType != TValue::FLOATVAR))
+    raiseError("correlation can only be computed for discrete and continuous attributes");
+    
+  const int i1 = gen->domain->getVarNum(v1, false);
+  const int i2 = gen->domain->getVarNum(v2, false);
+
+  float Sx=0, Sy=0, Sxx=0, Syy=0, Sxy=0, N=0;
+  PEITERATE(ei, gen) {
+    const TValue &vl1 = i1==ILLEGAL_INT ? v1->computeValue(*ei) : (*ei)[i1];
+    const TValue &vl2 = i2==ILLEGAL_INT ? v2->computeValue(*ei) : (*ei)[i2];
+    if (vl1.isSpecial() || vl2.isSpecial())
+      continue;
+      
+    const float w = WEIGHT(*ei);
+    const float f1 = d1 ? vl1.intV : vl1.floatV;
+    const float f2 = d2 ? vl2.intV : vl2.floatV;
+    N += w;
+    Sx += w*f1;
+    Sxx += w*f1*f1;
+    Sy += w*f2;
+    Syy += w*f2*f2;
+    Sxy += w*f1*f2;
+  }
+
+  float div = N<1e-10 ? 0 : sqrt((Sxx-Sx*Sx/N)*(Syy-Sy*Sy/N));
+  if (div < 1e-10) {
+    r = t = 0;
+    p = 1;
+    df = -1;
+    return;
+  }
+  
+  r = (Sxy - Sx*Sy/N) / div;
+  if (r == 1) {
+    t = 999999;
+    p = 0;
+    df = -1;
+    return;
+  }
+  
+  t = r*sqrt((N-2)/(1-r*r));
+  df = int(floor(N));
+  
+  p=betai(double(df*0.5), double(0.5), double(df/(df+t*t)));
+}

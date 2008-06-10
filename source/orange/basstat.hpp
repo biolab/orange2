@@ -74,5 +74,18 @@ public:
 
 WRAPPER(DomainBasicAttrStat);
 
+
+class ORANGE_API TPearsonCorrelation : public TOrange {
+public:
+  __REGISTER_CLASS
+
+  float r; //P correlation coefficient
+  float t; //P t-statics significance
+  int df; //P degrees of freedom
+  float p; //P significance
+
+  TPearsonCorrelation(PExampleGenerator gen, PVariable v1, PVariable v2, const long &weightID = 0);
+};
+  
 #endif
 

@@ -292,31 +292,32 @@ PyObject *CostMatrix_setcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
 #include "basstat.hpp"
 
 PyObject *BasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(variable, [examples, weightID, min=, max=, avg=, dev=, n=]) -> BasicAttrStat") ALLOWS_EMPTY
-{ PyTRY
-PyObject *pyvar = NULL;
-PExampleGenerator egen;
-int weightID = 0;
-if (!PyArg_ParseTuple(args, "|OO&i:BasicAttrStat.__new__", &pyvar, pt_ExampleGenerator, &egen, &weightID))
-return NULL;
+{
+  PyTRY
+    PyObject *pyvar = NULL;
+    PExampleGenerator egen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "|OO&i:BasicAttrStat.__new__", &pyvar, pt_ExampleGenerator, &egen, &weightID))
+      return NULL;
 
-if (!pyvar)
-return WrapNewOrange(mlnew TBasicAttrStat(PVariable()), type);
+    if (!pyvar)
+      return WrapNewOrange(mlnew TBasicAttrStat(PVariable()), type);
 
-if (!egen) {
-	if (!PyOrVariable_Check(pyvar)) {
-		PyErr_Format(PyExc_TypeError, "BasicAttrStat expects a 'Variable', not a '%s'", pyvar->ob_type->tp_name);
-		return NULL;
-	}
+    if (!egen) {
+	    if (!PyOrVariable_Check(pyvar)) {
+		    PyErr_Format(PyExc_TypeError, "BasicAttrStat expects a 'Variable', not a '%s'", pyvar->ob_type->tp_name);
+		    return NULL;
+	    }
 
-	return WrapNewOrange(mlnew TBasicAttrStat(PyOrange_AsVariable(pyvar)), type);
-}
+	    return WrapNewOrange(mlnew TBasicAttrStat(PyOrange_AsVariable(pyvar)), type);
+    }
 
-PVariable var = varFromArg_byDomain(pyvar, egen->domain, false);
-if (!var)
-return NULL;
+    PVariable var = varFromArg_byDomain(pyvar, egen->domain, false);
+    if (!var)
+      return NULL;
 
-return WrapNewOrange(mlnew TBasicAttrStat(egen, var, weightID), type);
-PyCATCH
+    return WrapNewOrange(mlnew TBasicAttrStat(egen, var, weightID), type);
+  PyCATCH
 }
 
 
@@ -472,6 +473,28 @@ return 0;
 PyCATCH_1
 }
 
+
+
+PyObject *PearsonCorrelation_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(var1, var2, examples[, weightID]) -> PearsonCorrelation")
+{
+  PyTRY
+    PyObject *pyvar1, *pyvar2;
+    PExampleGenerator egen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "OOO&|i:BasicAttrStat.__new__", &pyvar1, &pyvar2, pt_ExampleGenerator, &egen, &weightID))
+      return NULL;
+
+    PVariable var1 = varFromArg_byDomain(pyvar1, egen->domain, false);
+    if (!var1) 
+      return NULL;
+      
+    PVariable var2 = varFromArg_byDomain(pyvar2, egen->domain, false);
+    if (!var2)
+      return NULL;
+
+    return WrapNewOrange(mlnew TPearsonCorrelation(egen, var1, var2, weightID), type);
+  PyCATCH
+}
 
 
 
