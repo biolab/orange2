@@ -34,13 +34,14 @@ class OWNetwork(OWWidget):
                     "invertSize",
                     "optMethod",
                     "lastVertexSizeColumn",
-                    "showWeights"] 
+                    "showWeights",
+                    "showEdgeLabels"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
+        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Add Items", orange.ExampleTable, self.setItems)]
         self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
@@ -69,6 +70,7 @@ class OWNetwork(OWWidget):
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
         self.showWeights = 0
+        self.showEdgeLabels = 0
         
         self.loadSettings()
 
@@ -116,6 +118,8 @@ class OWNetwork(OWWidget):
         
         
         OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
+        
+        OWGUI.checkBox(self.settingsTab, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
         
         OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
         
@@ -283,7 +287,12 @@ class OWNetwork(OWWidget):
         self.graph.showWeights = self.showWeights
         self.graph.updateData()
         self.graph.replot()
-            
+        
+    def showEdgeLabelsClick(self):
+        self.graph.showEdgeLabels = self.showEdgeLabels
+        self.graph.updateData()
+        self.graph.replot()
+        
     def labelsOnMarked(self):
         self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.graph.updateData()
@@ -473,38 +482,43 @@ class OWNetwork(OWWidget):
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
             self.renderAntialiased = 0
-            self.graph.renderAntialiased = self.renderAntialiased
-
             self.maxVertexSize = 5
-            self.graph.maxVertexSize = self.maxVertexSize
-            self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
-            
-            if self.vertexSize > 0:
-                self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
-            else:
-                self.graph.setVerticesSize()
-                
             self.maxLinkSize = 1
-            self.graph.maxEdgeSize = self.maxLinkSize
-            self.graph.setEdgesSize()
-            
             self.optMethod = 0
-            self.setOptMethod()
-            self.optButton.setChecked(1)
-            self.optLayout()
-        else:
-            self.graph.maxVertexSize = self.maxVertexSize
-            self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+            self.setOptMethod()            
             
-            if self.vertexSize > 0:
-                self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
-            else:
-                self.graph.setVerticesSize()
-                
-            self.optButton.setChecked(1)
-            self.optLayout()
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.showEdgeLabels = self.showEdgeLabels
+        self.graph.maxVertexSize = self.maxVertexSize
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        
+        if self.vertexSize > 0:
+            self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+        else:
+            self.graph.setVerticesSize()
+            
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.graph.setEdgesSize()
+            
+        self.optButton.setChecked(1)
+        self.optLayout()
+
         #self.random()
-    
+        
+    def setItems(self, items=None):
+        if self.visualize.graph == None:
+            return
+        
+        if items == None:
+            return
+        
+        if len(items) != self.visualize.graph.nVertices:
+            self.error('ExampleTable items must have one example for each vertex.')
+            return
+        
+        self.visualize.graph.setattr("items", items)
+        self.setGraph(self.visualize.graph)
+        
     def setExampleSubset(self, subset):
         if self.graph == None:
             return

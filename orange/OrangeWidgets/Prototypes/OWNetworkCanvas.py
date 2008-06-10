@@ -48,6 +48,7 @@ class NetworkCurve(QwtPlotCurve):
       self.vertices = []
       self.edges = []
       self.setItemAttribute(QwtPlotItem.Legend, 0)
+      self.showEdgeLabels = 0
 
   def moveSelectedVertices(self, dx, dy):
     movedVertices = []
@@ -151,6 +152,17 @@ class NetworkCurve(QwtPlotCurve):
             fi = math.atan2(y,x) * 180 / math.pi * 16
             if not fi is None:
                 painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, fi - 160, 320)
+                
+        if self.showEdgeLabels and len(edge.label) > 0:
+            lbl = ', '.join(edge.label)
+            x = (px1 + px2) / 2
+            y = (py1 + py2) / 2
+            
+            th = painter.fontMetrics().height()
+            tw = painter.fontMetrics().width(lbl)
+            r = QRect(x - tw/2, y - th/2, tw, th)
+            painter.fillRect(r, QBrush(Qt.white))
+            painter.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, lbl)
     
     for vertex in self.vertices:
       if vertex.show:
@@ -210,6 +222,7 @@ class OWNetworkCanvas(OWGraph):
       self.enableGridYL(False)
       self.renderAntialiased = 1
       self.sendMarkedNodes = None
+      self.showEdgeLabels = 0
       
       self.showWeights = 0
       self.minEdgeWeight = sys.maxint
@@ -558,7 +571,8 @@ class OWNetworkCanvas(OWGraph):
           self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased)
       else:
           self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased, False)
-          
+    
+      self.networkCurve.showEdgeLabels = self.showEdgeLabels
       self.networkCurve.attach(self)
       self.drawLabels()
       self.drawToolTips()
@@ -731,6 +745,15 @@ class OWNetworkCanvas(OWGraph):
           if visualizer.graph.directed:
               edge.arrowu = 0
               edge.arrowv = 1
+              
+          if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
+              row = visualizer.graph.links.filter(u=(i,i), v=(j,j))
+              
+              if len(row) == 1:
+                  edge.label = []
+                  for k in range(2, len(row[0])):
+                      edge.label.append(str(row[0][k]))
+                      #print row[0][k]
                         
       if self.maxEdgeWeight < 10:
           self.maxEdgeSize = self.maxEdgeWeight
