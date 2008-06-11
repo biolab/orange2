@@ -45,8 +45,8 @@ class OWHist(OWGraph):
         self.miny = min(self.yData)
         self.maxy = max(self.yData)
         
-        self.minValue = self.minx
-        self.maxValue = self.maxx
+        self.minValue = min(values)
+        self.maxValue = max(values)
         
         self.updateData()
         self.replot()
