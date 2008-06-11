@@ -225,6 +225,7 @@ class OWNetworkCanvas(OWGraph):
       self.showEdgeLabels = 0
       
       self.showWeights = 0
+      self.showIndexes = 0
       self.minEdgeWeight = sys.maxint
       self.maxEdgeWeight = 0
       self.maxEdgeSize = 1
@@ -253,6 +254,7 @@ class OWNetworkCanvas(OWGraph):
     self.drawLabels()
     self.drawToolTips()
     self.drawWeights()
+    self.drawIndexes()
     self.replot()
     
   def hideUnSelectedVertices(self):
@@ -260,6 +262,7 @@ class OWNetworkCanvas(OWGraph):
     self.drawLabels()
     self.drawToolTips()
     self.drawWeights()
+    self.drawIndexes()
     self.replot()
     
   def showAllVertices(self):
@@ -267,6 +270,7 @@ class OWNetworkCanvas(OWGraph):
     self.drawLabels()
     self.drawToolTips()
     self.drawWeights()
+    self.drawIndexes()
     self.replot()
     
   def optimize(self, frSteps):
@@ -301,6 +305,7 @@ class OWNetworkCanvas(OWGraph):
       self.drawLabels()
       self.drawToolTips()
       self.drawWeights()
+      self.drawIndexes()
       self.replot()
       
   def selectionToMarked(self):
@@ -308,6 +313,7 @@ class OWNetworkCanvas(OWGraph):
       self.drawLabels()
       self.drawToolTips()
       self.drawWeights()
+      self.drawIndexes()
       self.replot()
       
       if self.sendMarkedNodes != None:
@@ -373,6 +379,7 @@ class OWNetworkCanvas(OWGraph):
           self.drawLabels()
           self.drawToolTips()
           self.drawWeights()
+          self.drawIndexes()
           self.replot()
           
           if self.sendMarkedNodes != None:
@@ -383,6 +390,7 @@ class OWNetworkCanvas(OWGraph):
     self.drawLabels()
     self.drawToolTips()
     self.drawWeights()
+    self.drawIndexes()
     
     if self.sendMarkedNodes != None:
           self.sendMarkedNodes([])
@@ -392,6 +400,7 @@ class OWNetworkCanvas(OWGraph):
     self.drawLabels()
     self.drawToolTips()
     self.drawWeights()
+    self.drawIndexes()
     
     if self.sendMarkedNodes != None:
           self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
@@ -411,6 +420,10 @@ class OWNetworkCanvas(OWGraph):
           for vertex in movedVertices:
               if vertex in self.markerKeys:
                   mkey = self.markerKeys[vertex]
+                  mkey.setValue(float(newX), float(newY))
+            
+              if 'index ' + str(vertex) in self.markerKeys:
+                  mkey = self.markerKeys['index ' + str(vertex)]
                   mkey.setValue(float(newX), float(newY))
               
               if vertex in self.tooltipKeys:
@@ -432,6 +445,7 @@ class OWNetworkCanvas(OWGraph):
               self.networkCurve.setMarkedVertices(toMark)
               self.drawLabels()
               self.drawWeights()
+              self.drawIndexes()
               self.replot()
               
               if self.sendMarkedNodes != None:
@@ -439,6 +453,7 @@ class OWNetworkCanvas(OWGraph):
           else:
               self.networkCurve.unMark()
               self.drawLabels()
+              self.drawIndexes()
               self.replot()
               
               if self.sendMarkedNodes != None:
@@ -542,7 +557,6 @@ class OWNetworkCanvas(OWGraph):
       
       self.removeDrawingCurves(removeLegendItems = 0)
       self.tips.removeAll()
-      
       self.networkCurve.setData(self.visualizer.coors[0], self.visualizer.coors[1])
       
       selection = self.networkCurve.getSelectedVertices()
@@ -577,6 +591,7 @@ class OWNetworkCanvas(OWGraph):
       self.drawLabels()
       self.drawToolTips()
       self.drawWeights()
+      self.drawIndexes()
       #self.zoomExtent()
  
   def drawToolTips(self):
@@ -602,8 +617,8 @@ class OWNetworkCanvas(OWGraph):
           self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
                  
   def drawLabels(self):
-      self.removeMarkers()
       self.markerKeys = {}
+      self.removeMarkers()
       if len(self.labelText) > 0:
           for vertex in self.vertices:
               if not vertex.show:
@@ -619,8 +634,24 @@ class OWNetworkCanvas(OWGraph):
               lbl = " ".join([str(values[ndx]) for ndx in self.labelText])
               if lbl:
                   mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom)
-                  self.markerKeys[vertex.index] = mkey     
-                  
+                  self.markerKeys[vertex.index] = mkey    
+                   
+  def drawIndexes(self):
+      if self.showIndexes:
+          for vertex in self.vertices:
+              if not vertex.show:
+                  continue
+              
+              if self.labelsOnMarkedOnly and not (vertex.marked):
+                  continue
+                                
+              x1 = self.visualizer.coors[0][vertex.index]
+              y1 = self.visualizer.coors[1][vertex.index]
+
+              lbl= str(vertex.index)
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignTop)
+              self.markerKeys['index ' + str(vertex.index)] = mkey         
+
   def drawWeights(self):
       if self.showWeights:
           for edge in self.edges:

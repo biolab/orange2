@@ -35,6 +35,7 @@ class OWNetwork(OWWidget):
                     "optMethod",
                     "lastVertexSizeColumn",
                     "showWeights",
+                    "showIndexes", 
                     "showEdgeLabels"] 
     
     def __init__(self, parent=None, signalManager=None):
@@ -70,6 +71,7 @@ class OWNetwork(OWWidget):
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
         self.showWeights = 0
+        self.showIndexes = 0
         self.showEdgeLabels = 0
         
         self.loadSettings()
@@ -116,9 +118,8 @@ class OWNetwork(OWWidget):
         self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
-        
+        OWGUI.checkBox(self.settingsTab, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
         OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
-        
         OWGUI.checkBox(self.settingsTab, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
         
         OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
@@ -283,6 +284,11 @@ class OWNetwork(OWWidget):
         else:
             print "One node must be selected!"
     
+    def showIndexLabels(self):
+        self.graph.showIndexes = self.showIndexes
+        self.graph.updateData()
+        self.graph.replot()
+        
     def showWeightLabels(self):
         self.graph.showWeights = self.showWeights
         self.graph.updateData()
@@ -478,7 +484,7 @@ class OWNetwork(OWWidget):
         
         self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
         self.graph.showWeights = self.showWeights
-        
+        self.graph.showIndexes = self.showIndexes
         # if graph is large, set random layout, min vertex size, min edge size
         if self.frSteps < 10:
             self.renderAntialiased = 0
