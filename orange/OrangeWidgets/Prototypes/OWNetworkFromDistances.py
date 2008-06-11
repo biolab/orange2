@@ -67,7 +67,19 @@ class OWNetworkFromDistances(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude unconnected vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
+        self.attribute = None
+        self.attributeCombo = OWGUI.comboBox(ribg, self, "attribute", box = "Filter attribute")#, callback=self.setVertexColor)
         
+        self.label = ''
+        self.searchString = OWGUI.lineEdit(self.attributeCombo.box, self, "label", callback=self.setSearchStringTimer, callbackOnType=True)
+        self.searchStringTimer = QTimer(self)
+        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.generateGraph)
+        #self.vertexForComponentSpin = OWGUI.spin(ribg, self, "vertexForComponent", min=0, max=0, step=1, label="Vertex:", callback=self.generateGraph)
+        
+        if str(self.netOption) != '3':
+            self.attributeCombo.box.setEnabled(False)
+            
         # info
         boxInfo = OWGUI.widgetBox(self.controlArea, box = "Network info")
         self.infoa = OWGUI.widgetLabel(boxInfo, "No data loaded.")
@@ -75,6 +87,14 @@ class OWNetworkFromDistances(OWWidget):
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
         self.resize(700, 322)
+        
+    def enableAttributeSelection(self):
+        print 'juhej'
+        self.attributeCombo.box.setEnabled(True)
+        
+    def setSearchStringTimer(self):
+        self.searchStringTimer.stop()
+        self.searchStringTimer.start(750)
 
     def cdata(self, data):
         if data == None:
@@ -97,7 +117,25 @@ class OWNetworkFromDistances(OWWidget):
         t4 = time.time()
         self.generateGraph()
         t5 = time.time()
+        #self.vertexForComponentSpin.control.setMaximum(data.dim - 1)
         #print t1-t2,t2-t3,t3-t4,t4-t5
+        
+        self.attributeCombo.clear()
+        vars = []
+        if (self.data != None):
+            if hasattr(self.data, "items"):
+                if isinstance(self.data.items, orange.ExampleTable):
+                    vars[:0] = self.data.items.domain.variables
+                
+                    metas = self.data.items.domain.getmetas(0)
+                    for i, var in metas.iteritems():
+                        vars.append(var)
+                        
+        self.icons = self.createAttributeIconDict()
+                        
+        for var in vars:
+            self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
+
         
     def changeLowerSpin(self):
         if self.spinLowerThreshold < self.histogram.minValue:
@@ -122,6 +160,8 @@ class OWNetworkFromDistances(OWWidget):
         self.generateGraph()
         
     def generateGraph(self):
+        self.searchStringTimer.stop()
+        self.attributeCombo.box.setEnabled(False)
         self.error()
         
         if self.data == None:
@@ -148,9 +188,9 @@ class OWNetworkFromDistances(OWWidget):
             n = len(graph.getEdges())
             #print 'self.netOption',self.netOption
             if str(self.netOption) == '2':
-                components = graph.getConnectedComponents()[0]
-                if len(components) > 1:
-                    self.graph = Network(graph.getSubGraph(components))
+                component = graph.getConnectedComponents()[0]
+                if len(component) > 1:
+                    self.graph = Network(graph.getSubGraph(component))
                 else:
                     self.graph = None
             elif str(self.netOption) == '1':
@@ -163,6 +203,30 @@ class OWNetworkFromDistances(OWWidget):
                         self.graph = None
                 else:
                     self.graph = None
+            elif str(self.netOption) == '3':
+                self.attributeCombo.box.setEnabled(True)
+                self.graph = None
+                
+                #print self.attributeCombo.currentText()
+                if self.attributeCombo.currentText() != '' and self.label != '':
+                    components = graph.getConnectedComponents()
+                    
+                    txt = self.label.lower()
+                    #print 'txt:',txt
+                    nodes = [i for i, values in enumerate(self.data.items) if txt in str(values[str(self.attributeCombo.currentText())]).lower()]
+                    #print "nodes:",nodes
+                    if len(nodes) > 0:
+                        vertices = []
+                        for component in components:
+                            for node in nodes:
+                                if node in component:
+                                    if len(component) > 1:
+                                        vertices.extend(component)
+                                        
+                        if len(vertices) > 0:
+                            #print vertices
+                            self.graph = Network(graph.getSubGraph(vertices))
+                    
             else:
                 self.graph = graph
     
@@ -170,6 +234,7 @@ class OWNetworkFromDistances(OWWidget):
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         
+        #print 'self.graph:',self.graph
         self.send("Network", self.graph)
         if self.graph == None:
              self.send("Examples", None)
