@@ -52,6 +52,7 @@
 
 <P>After changing one or more settings, you need to push <span class="option">Apply</span>, which will put the new learner on the output and, if the training examples are given, construct a new classifier and output it as well.</P>
 
+<p>The tree can deal with missing data. Orange's tree learner actually supports quite a few methods for that, but when used from canvas, it effectively splits the example into multiple examples with different weights. If you had data with 25% males and 75% females, then when the gender is unknown, the examples splits into two, a male and a female with weights .25 and .75, respectively. This goes for both learning and classification.</p>
 
 <h2>Examples</h2>
 
