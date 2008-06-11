@@ -28,10 +28,7 @@
 
 <h2>Description</h2>
 
-<table><tr><td valign="top">
-<img class="screenshot" src="File.png" align="left">
-</td>
-<td valign="top">
+<img class="screenshotleft" src="File.png" align="left">
 
 <p>This is the widget you will probably use in every schema. It reads the
 input data file (data table with examples) and sends the data set to the
@@ -48,9 +45,15 @@ as well as files in C4.5 format and Weka's .arrf files.</p>
 examples, attributes and meta attributes, and information on class
 variable (if defined in a file).</p>
 
-<p>The controls in between are for more advanced users. Tab-delimited file
+<p>The controls in between are for more advanced users.</p>
+
+<p>Tab-delimited file
 can have user defined symbols for undefined values. The symbols for "don't care"
-and "don't know" values can be specified in the corresponding edit lines.</p>
+and "don't know" values can be specified in the corresponding edit lines. The default
+values for "don't know" and "don't care" depend upon format. Most users will use
+tab-delimited files: keep the field empty or put a question mark in there and that's
+it. Most algorithms do not differ between <em>don't know</em> and <em>don't care</em>
+values, so consider them both to mean <em>undefined</em>.</p>
 
 <p>The part which most will probably neither understand nor need is related to
 construction of new attributes. It becomes important when multiple data sets are
@@ -62,7 +65,6 @@ will use the attribute of the same name from the second. In cases when attribute
 from different files just accidentally bear different names, one can instruct Orange
 to either always construct new attribute or construct them when they differ in
 their domains. Use this option with great care (if at all).</p>
-</td></tr></table>
 
 <h2>Examples</h2>
 
