@@ -208,22 +208,20 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.scene=TreeGraphicsScene(self)
         self.sceneView=TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
-##        layout=QVBoxLayout()
-##        layout.addWidget(self.sceneView)
-##        self.mainArea.layout().
-##        self.mainArea.setLayout(layout)
         self.scene.setSceneRect(0,0,800,800)
+        
         self.scene.bubbleConstructor=self.classificationBubbleConstructor
+        
         self.navWidget=QWidget()
         self.navWidget.lay=QVBoxLayout(self.navWidget)
+        
         scene=TreeGraphicsScene(self.navWidget)
         self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
         self.treeNav.setScene(scene)
         self.navWidget.lay.addWidget(self.treeNav)
         self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-##        self.navWidget.setCaption("Navigator")
-        # OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
+        self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info")
