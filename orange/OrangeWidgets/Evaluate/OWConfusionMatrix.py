@@ -39,7 +39,7 @@ class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Confusion Matrix", 1)
+        OWWidget.__init__(self, parent, signalManager, "Confusion Matrix")
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.setTestResults, Default)]
@@ -54,11 +54,11 @@ class OWConfusionMatrix(OWWidget):
         self.shownQuantity = 0
 
         self.learnerList = OWGUI.listBox(self.controlArea, self, "selectedLearner", "learnerNames", box = "Learners", callback = self.learnerChanged)
-        self.learnerList.setMinimumHeight(300)
+        self.learnerList.setMinimumHeight(100)
         OWGUI.separator(self.controlArea)
 
 
-        OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = ["Number of examples", "Observed and expected examples", "Proportions of predicted", "Proportions of true"], box = "Show", callback=self.reprint)
+        OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = ["Number of examples", "Proportions of predicted", "Proportions of true"], box = "Show", callback=self.reprint, addSpace=True)
 
         box = OWGUI.widgetBox(self.controlArea, "Selection", addSpace=True)
         OWGUI.button(box, self, "Correct", callback=self.selectCorrect)
@@ -68,8 +68,8 @@ class OWConfusionMatrix(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Output")
         OWGUI.checkBox(box, self, "appendPredictions", "Append class predictions", callback = self.sendIf)
         OWGUI.checkBox(box, self, "appendProbabilities", "Append predicted class probabilities", callback = self.sendIf)
-        applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically")
+        applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData)
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.sendData)
 
         self.layout=QGridLayout(self.mainArea, 4, 3)
@@ -78,7 +78,7 @@ class OWConfusionMatrix(OWWidget):
         self.layout.addWidget(labpred, 0, 1, QWidget.AlignCenter)
         self.layout.addWidget(OWGUI.separator(self.mainArea), 1, 0)
 
-        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class")
+        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class"+"  ")
         self.layout.addWidget(labpred, 2, 0, QWidget.AlignCenter)
         self.layout.addMultiCellWidget(OWGUI.rubber(self.mainArea), 3, 3, 0, 2)
 
@@ -164,14 +164,14 @@ class OWConfusionMatrix(OWWidget):
                 item = self.table.item(ri+1, ci+1)
                 if self.shownQuantity == 0:
                     item.setText(self.isInteger % c)
+#                elif self.shownQuantity == 1:
+#                    item.setText((self.isInteger + "/ %5.3f ") % (c, total*rowPriors[ri]*colPriors[ci]))
                 elif self.shownQuantity == 1:
-                    item.setText((self.isInteger + "/ %5.3f ") % (c, total*rowPriors[ri]*colPriors[ci]))
-                elif self.shownQuantity == 2:
                     if colSums[ci] > 1e-5:
                         item.setText(" %2.1f %%  " % (100 * c / colSums[ci]))
                     else:
                         item.setText(" %s " % "N/A")
-                elif self.shownQuantity == 3:
+                elif self.shownQuantity == 2:
                     if rowSums[ri] > 1e-5:
                         item.setText(" %2.1f %%  " % (100 * c / rowSums[ri]))
                     else:
