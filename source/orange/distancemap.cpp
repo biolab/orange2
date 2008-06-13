@@ -126,10 +126,24 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
     resi += fill;
     for(xpoints = grid ? cellHeight-2 : cellHeight-1; xpoints--; resi += rowSize)
       memcpy(resi, thisline, lineWidth);
-
+      
     if (grid) {
       memset(resi, 252, rowSize);
       resi += rowSize;
+      
+      unsigned char *bi;
+      if (height >= 10) {
+        for(bi = thisline, xpoints = width; xpoints--; bi += cellWidth)
+          bi[0] = bi[1] = bi[cellWidth-3] = bi[cellWidth-2] = bi[rowSize] = bi[rowSize+cellWidth-2] = 252;
+        for(bi = thisline+rowSize*(cellHeight-2), xpoints = width; xpoints--; bi += cellWidth)
+          bi[0] = bi[1] = bi[cellWidth-3] = bi[cellWidth-2] = bi[-rowSize] = bi[-rowSize+cellWidth-2] = 252;
+      }
+      else {
+        for(bi = thisline, xpoints = width; xpoints--; bi += cellWidth)
+          bi[0] = bi[cellWidth-2] = 252;
+        for(bi = thisline+rowSize*(cellHeight-2), xpoints = width; xpoints--; bi += cellWidth)
+          bi[0] = bi[cellWidth-2] = 252;
+      }
     }
   }
 
