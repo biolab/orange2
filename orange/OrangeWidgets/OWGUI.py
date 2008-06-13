@@ -512,7 +512,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     return slider
 
 
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1):
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1, addSpace=False):
     try:
         import qwt
     except:
@@ -520,6 +520,7 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     init = master.getdeepattr(value)
     if box:
         sliderBox = QHButtonGroup(box, widget)
+        separator(widget)
     else:
         sliderBox = widget
 
