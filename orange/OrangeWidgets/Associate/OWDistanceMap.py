@@ -63,7 +63,7 @@ class OWDistanceMap(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Distance Map')
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Examples", ExampleTable), ("Examples", ExampleTable),("Attribute List", orange.VarList)]
+        self.outputs = [("Examples", ExampleTable), ("Attribute List", orange.VarList)]
 
         self.clicked = False
         self.offsetX = 5
@@ -93,6 +93,11 @@ class OWDistanceMap(OWWidget):
         self.SendOnRelease = 1
 
         self.loadSettings()
+        
+        ### !!!!!!!!!!!!!!
+        ### I added this since I removed the setting and don't want anyone to get
+        ### stuck with a save setting
+        self.Gamma = 1
 
         self.maxHSize = 30; self.maxVSize = 30
         self.sorting = [("No sorting", self.sortNone),
@@ -106,7 +111,7 @@ class OWDistanceMap(OWWidget):
 
         # SETTINGS TAB
         tab = QVGroupBox(self)
-        box = QVButtonGroup("Cell Size (Pixels)", tab)
+        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)", addSpace=True)
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
@@ -117,19 +122,28 @@ class OWDistanceMap(OWWidget):
                          callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t), self.drawDistanceMap,self.manageGrid])
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares",
                          callback = [self.setSquares, self.drawDistanceMap])
-        OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=min(self.CellWidth, self.CellHeight) <= c_smallcell)
+        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
-        OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1,
-                         step=0.1, callback=self.drawDistanceMap)
+        OWGUI.qwtHSlider(tab, self, "Merge", box="Merge" ,label='Elements:', labelWidth=50,
+                         minValue=1, maxValue=100, step=1,
+                         callback=self.createDistanceMap, ticks=0, addSpace=True)
+        
+        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
+                         items=[x[0] for x in self.sorting],
+                         tooltip="Sorting method for items in distance matrix.",
+                         callback=self.sortItems)
 
-        self.colorPalette = ColorPalette(tab, self, "",
-                         additionalColors =["Cell outline", "Selected cells"],
-                         callback = self.setColor)
         self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
         tab = QVGroupBox(self)
-        box = QVButtonGroup("Threshold Values", tab)
+        box = OWGUI.widgetBox(tab, "Color settings", addSpace=True)
+        OWGUI.widgetLabel(box, "Gamma")
+        OWGUI.qwtHSlider(box, self, "Gamma", minValue=0.1, maxValue=1,
+                         step=0.1, maxWidth=100, callback=self.drawDistanceMap)
+
+        OWGUI.separator(box)
+
         OWGUI.checkBox(box, self, 'CutEnabled', "Enable thresholds", callback=self.setCutEnabled)
         self.sliderCutLow = OWGUI.qwtHSlider(box, self, 'CutLow', label='Low:',
                               labelWidth=33, minValue=-100, maxValue=0, step=0.1,
@@ -143,15 +157,12 @@ class OWDistanceMap(OWWidget):
             self.sliderCutLow.box.setDisabled(1)
             self.sliderCutHigh.box.setDisabled(1)
 
-        box = QVButtonGroup("Merge", tab)
-        OWGUI.qwtHSlider(box, self, "Merge", label='Elements:', labelWidth=50,
-                         minValue=1, maxValue=100, step=1,
-                         callback=self.createDistanceMap, ticks=0)
-        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
-                         items=[x[0] for x in self.sorting],
-                         tooltip="Sorting method for items in distance matrix.",
-                         callback=self.sortItems)
-        self.tabs.insertTab(tab, "Filter")
+
+        self.colorPalette = ColorPalette(tab, self, "",
+                         additionalColors =["Cell outline", "Selected cells"],
+                         callback = self.setColor)
+
+        self.tabs.insertTab(tab, "Colors")
 
         # INFO TAB
         tab = QVGroupBox(self)
@@ -601,9 +612,12 @@ class OWDistanceMap(OWWidget):
         self.createDistanceMap()
 
     def setMatrix(self, matrix):
+        self.send("Examples", None)
+        self.send("Attribute List", None)
+
         if not matrix:
-            # should remove the data where necessary
             return
+
         # check if the same length
         self.matrix = matrix
         self.constructDistanceMap()
