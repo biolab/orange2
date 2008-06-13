@@ -37,10 +37,12 @@ class OWKMeans(OWWidget):
 
         # GUI definition
         # settings
-        OWGUI.qwtHSlider(self.controlArea, self, "K", box="Number of Clusters", label="K: ", minValue=1, maxValue=30, step=1, callback=self.settingsChanged)
-        OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
-        QWidget(self.controlArea).setFixedSize(0, 8)
-        self.applyBtn = QPushButton("&Apply", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Settings")
+        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1, callback=self.settingsChanged)
+        OWGUI.separator(box)
+        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
+        OWGUI.separator(box)
+        self.applyBtn = OWGUI.button(box, self, "&Apply", callback = self.cluster)
         self.applyBtn.setDisabled(TRUE)
 
         # display of clustering results
@@ -75,13 +77,13 @@ class OWKMeans(OWWidget):
 
         bic, cbic = compute_bic(self.cdata, self.mc.medoids)
         for k in range(self.K):
-            self.table.setText(k, 0, str(k+1))
-            self.table.setText(k, 1, str(dist[k]))
+            self.table.setText(k, 0, str(k+1)+" ")
+            self.table.setText(k, 1, str(dist[k])+" ")
             self.table.setText(k, 2, "%5.3f" % self.mc.cdisp[k])
             self.table.setText(k, 3, "%6.2f" % cbic[k])
 
         colorItem(self.table, self.K, 0, "Total")
-        colorItem(self.table, self.K, 1, str(len(self.data)))
+        colorItem(self.table, self.K, 1, str(len(self.data))+ " ")
         colorItem(self.table, self.K, 2, "%5.3f" % self.mc.disp)
         colorItem(self.table, self.K, 3, "%6.2f" % bic)
 
