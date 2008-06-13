@@ -253,9 +253,9 @@ class OWSelectData(OWWidget):
                 filter = orange.Filter_disjunction([orange.Filter_conjunction(l) for l in filterList])
             else:
                 filter = orange.Filter_conjunction([]) # a filter that does nothing
-            matchingOutput = filter(self.data)
+            matchingOutput = filter(self.data, 1)
             matchingOutput.name = self.data.name
-            nonMatchingOutput = filter(self.data, negate=1)
+            nonMatchingOutput = filter(self.data, 1, negate=1)
             nonMatchingOutput.name = self.data.name
 
             if self.purgeAttributes or self.purgeClasses:
