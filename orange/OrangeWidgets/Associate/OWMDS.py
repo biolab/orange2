@@ -13,10 +13,10 @@ import OWGUI
 import numpy, sys, math, time, os
 import OWColorPalette
 import OWToolbars
-from random import random
 from OWGraph import *
 from sets import Set
 from PyQt4.Qwt5 import *
+from random import random
 
 try:
     from OWDataFiles import DataFiles
@@ -542,6 +542,7 @@ class MDSGraph(OWGraph):
             self.setPoints()
                 #self.setLines(True)
         for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
+##        for axis in [QwtPlot.xBottom, QwtPlot.yLeft]:
             self.setAxisAutoScale(axis)
         self.updateAxes()
         self.repaint()
@@ -655,9 +656,9 @@ if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWMDS()
     w.show()
-    #data=orange.ExampleTable("../../doc/datasets/iris.tab")
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
-    #data=orange.ExampleTable("/home/ales/src/MDSjakulin/eu_nations.txt")
+    data=orange.ExampleTable("../../doc/datasets/iris.tab")
+##    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+##    data=orange.ExampleTable("/home/ales/src/MDSjakulin/eu_nations.txt")
     matrix = orange.SymMatrix(len(data))
     dist = orange.ExamplesDistanceConstructor_Euclidean(data)
     matrix = orange.SymMatrix(len(data))
