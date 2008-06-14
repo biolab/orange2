@@ -67,6 +67,7 @@ class OWHierarchicalClustering(OWWidget):
         self.selectedExamples=None
         self.ctrlPressed=FALSE
         self.addIdAs = 0
+        self.settingsChanged = False
 
         self.linkageMethods=[a[0] for a in self.linkage]
 
@@ -125,35 +126,21 @@ class OWHierarchicalClustering(OWWidget):
 
         box = OWGUI.widgetBox(self.settingsTab, "Selection")
         OWGUI.checkBox(box, self, "SelectionMode", "Show cutoff line", callback=self.updateCutOffLine)
-        cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster indices", callback=self.selectionChange)
+        cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster indices", callback=self.commitDataIf)
         self.classificationBox = ib = OWGUI.indentedBox(box)
-        le = OWGUI.lineEdit(ib, self, "ClassifyName", "Name" + "  ", callback=self.selectionChange, orientation=0, controlWidth=75)
+        le = OWGUI.lineEdit(ib, self, "ClassifyName", "Name" + "  ", callback=self.commitDataIf, orientation=0, controlWidth=75)
         OWGUI.separator(ib, height = 4)
-        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 0, items = ["Class attribute", "Attribute", "Meta attribute"], callback=self.selectionChange)
+        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 0, items = ["Class attribute", "Attribute", "Meta attribute"], callback=self.commitDataIf)
         cb.disables.append(ib)
         cb.makeConsistent()
         
         OWGUI.separator(box)
-        OWGUI.checkBox(box, self, "CommitOnChange", "Commit on change", callback=self.selectionChange)
-        OWGUI.button(box, self, "&Commit", self.commitData)
+        cbAuto = OWGUI.checkBox(box, self, "CommitOnChange", "Commit on change")
+        btCommit = OWGUI.button(box, self, "&Commit", self.commitData)
+        OWGUI.setStopper(self, btCommit, cbAuto, "settingsChanged", self.commitData)
         
         
         OWGUI.rubber(self.settingsTab)
-#        OWGUI.button(dendrogramBox, self, "&Apply",self.applySettings)
-
-#        #Selection options
-#        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Show cutoff line", 
-#              callback=self.updateCutOffLine)
-#        self.classificationBox=QVGroupBox(self.selectionTab)
-#        #self.classificationBox.setTitle("Classification")
-#        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected", "Classify selected examples", callback=self.selectionChange)
-#        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name", callback=self.selectionChange)
-#        #selectionBox=QVGroupBox(self.selectionTab)
-#        commitBox=QVGroupBox(self.selectionTab)
-#        commitBox.setTitle("Commit settings")
-#        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change", callback=self.selectionChange)
-#        OWGUI.button(commitBox, self, "&Commit", self.commitData)
-#        OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
@@ -297,14 +284,17 @@ class OWHierarchicalClustering(OWWidget):
         if self.matrixSource=="Attribute Distance":
             return
         self.selectionList=selection
-        if self.CommitOnChange and self.dendrogram.cutOffLineDragged==False:
-            self.commitData()
+        if self.dendrogram.cutOffLineDragged==False:
+            self.commitDataIf()
 
-    def selectionChange(self):
+    def commitDataIf(self):
         if self.CommitOnChange:
             self.commitData()
+        else:
+            self.settingsChanged = True
 
     def commitData(self):
+        self.settingsChanged = False
         self.selection=[]
         selection=self.selectionList
         maps=[self.rootCluster.mapping[c.first:c.last] for c in [e.rootCluster for e in selection]]
@@ -317,7 +307,7 @@ class OWHierarchicalClustering(OWWidget):
         items = getattr(self.matrix, "items")
         if self.matrixSource == "Example Distance":
             if self.ClassifySelected:
-                clistVar=orange.EnumVariable(str(self.ClassifyName) ,
+                clustVar=orange.EnumVariable(str(self.ClassifyName) ,
                             values=[str(i) for i in range(len(maps))])
                 c=[i for i in range(len(maps)) for j in maps[i]]
                 origDomain = items.domain
@@ -327,7 +317,7 @@ class OWHierarchicalClustering(OWWidget):
                         domain.addmeta(orange.newmetaid(), origDomain.classVar)
                     aid = -1
                 elif self.addIdAs == 1:
-                    domain=orange.Domain(origDomain.attributes+clustVar, origDomain.classVar)
+                    domain=orange.Domain(origDomain.attributes+[clustVar], origDomain.classVar)
                     aid = len(origDomain.attributes)
                 else:
                     domain=orange.Domain(origDomain.attributes, origDomain.classVar)
