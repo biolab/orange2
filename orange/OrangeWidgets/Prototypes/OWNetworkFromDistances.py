@@ -179,8 +179,13 @@ class OWNetworkFromDistances(OWWidget):
         else:
             graph = Network(self.data.dim, 0)
             
-            if hasattr(self.data, "items"):
-                graph.setattr("items", self.data.items)
+            if hasattr(self.data, "items"):               
+                if type(self.data.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
+                    graph.setattr("items", self.data.items)
+                else:
+                    data = [[x.name] for x in self.data.items]
+                    items = orange.ExampleTable(orange.Domain(orange.StringVariable('label'), 0), data)
+                    graph.setattr("items", list(items))
                 
             # set the threshold
             # set edges where distance is lower than threshold

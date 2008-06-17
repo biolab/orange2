@@ -122,6 +122,14 @@ class NetworkCurve(QwtPlotCurve):
   def changed(self):
       self.itemChanged()
     
+#  def boundingRect(self):    
+#      minx = min(self.coors[0])
+#      maxx = max(self.coors[0])
+#      miny = min(self.coors[1])
+#      maxy = max(self.coors[1])
+#      
+#      return QwtRect(minx, miny, maxx - minx, maxy - miny)  
+    
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:

@@ -42,7 +42,7 @@ class OWNetwork(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Network')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Add Items", orange.ExampleTable, self.setItems)]
+        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
         self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
@@ -512,10 +512,7 @@ class OWNetwork(OWWidget):
         #self.random()
         
     def setItems(self, items=None):
-        if self.visualize.graph == None:
-            return
-        
-        if items == None:
+        if self.visualize.graph == None or items == None:
             return
         
         if len(items) != self.visualize.graph.nVertices:
@@ -524,6 +521,29 @@ class OWNetwork(OWWidget):
         
         self.visualize.graph.setattr("items", items)
         self.setGraph(self.visualize.graph)
+        
+    def markItems(self, items):
+        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None or items == None:
+            print 'return 1'
+            return
+        
+        if len(items) > 0:
+            commonVars = set(items.domain) & set(self.visualize.graph.items.domain)
+            
+            if len(commonVars) > 0:
+                for var in commonVars:
+                    orgVar = self.visualize.graph.items.domain[var]
+                    mrkVar = items.domain[var]
+                    
+                    if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
+                        values = [str(x[var]) for x in items]
+                        toMark = [i for i,x in enumerate(self.visualize.graph.items) if str(x[var]) in values]
+                        self.graph.setMarkedVertices(list(toMark))
+                        self.graph.replot()
+                        break
+        else:
+            self.graph.setMarkedVertices([])
+            self.graph.replot()
         
     def setExampleSubset(self, subset):
         if self.graph == None:
