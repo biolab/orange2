@@ -179,7 +179,7 @@ class OWDataSampler(OWWidget):
             self.infoa.setText('No data on input.')
             self.infob.setText('')
             self.infoc.setText('')
-            self.send("Examples", None)
+            self.send("Sample", None)
             self.send("Remaining Examples", None)
             self.data = None
 
