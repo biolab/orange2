@@ -2,7 +2,6 @@ from qt import *
 from qttable import *
 import math
 import OWBaseWidget
-import orange
 import sys, traceback
 
 
@@ -376,6 +375,7 @@ attributeIconDict = None
 def getAttributeIcons():
     global attributeIconDict
     if not attributeIconDict:
+        import orange
         attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202, 0, 32)),
                      orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26, 150, 65)),
                      orange.VarTypes.String: createAttributePixmap("S", Qt.black),
@@ -512,7 +512,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     return slider
 
 
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1, addSpace=False):
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1, addSpace=False, orientation=0):
     try:
         import qwt
     except:
@@ -524,11 +524,20 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     else:
         sliderBox = widget
 
-    hb = QHBox(sliderBox)
     if label:
+        horiz = orientation=="horizontal" or not orientation 
+        if horiz:
+            hb = QHBox(sliderBox)
+        else:
+            hb = QVBox(sliderBox)
         lbl = QLabel(label, hb)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+        if not horiz:
+            separator(hb, height=2)
+            hb = QHBox(hb)
+    else:
+        hb = QHBox(sliderBox)
     if ticks:
         slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
     else:
@@ -676,7 +685,10 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     combo.box = hb
 
     if addSpace:
-        separator(widget)
+        if isinstance(addSpace, int):
+            separator(widget, height=addSpace)
+        else:
+            separator(widget)
 
     if items:
         for i in items:
