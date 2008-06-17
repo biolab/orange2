@@ -212,7 +212,7 @@ class OWDataSampler(OWWidget):
         if remainder:
             remainder.name = self.data.name
         # send data
-        self.send("Examples", sample)
+        self.send("Sample", sample)
         self.send("Remaining Examples", remainder)
 
     # MAIN SWITCH
