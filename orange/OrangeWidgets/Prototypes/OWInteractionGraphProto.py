@@ -3,15 +3,13 @@
 <description>Interaction graph construction and viewer.</description>
 <icon>icons/InteractionGraph.png</icon>
 <contact>Aleks Jakulin</contact>
-<priority>4010</priority>
+<priority>3012</priority>
 """
 # InteractionGraph.py
 #
 #
-
+import orngOrangeFoldersQt4
 from OWWidget import *
-from qt import *
-from qtcanvas import *
 import orngInteract, OWQCanvasFuncts
 import statc
 import os
@@ -21,9 +19,9 @@ from orngCI import FeatureByCartesianProduct
 import OWGUI
 from orangeom import Network
 
-class IntGraphView(QCanvasView):
+class IntGraphView(QGraphicsView):
     def __init__(self, parent, name, *args):
-        apply(QCanvasView.__init__,(self,) + args)
+        apply(QGraphicsView.__init__,(self,) + args)
         self.parent = parent
         self.name = name
 
@@ -71,44 +69,47 @@ class OWInteractionGraphProto(OWWidget):
         #load settings
         self.loadSettings()
 
-        self.tabs = QTabWidget(self.mainArea)
+        # add a settings dialog and initialize its values
+        self.tabs = OWGUI.tabWidget(self.mainArea)
         
-        self.listTab = QVGroupBox(self)
-        self.graphTab = QVGroupBox(self)
-
-        self.tabs.insertTab(self.listTab, "List")
-        self.tabs.insertTab(self.graphTab, "Graph")
+        self.listTab = OWGUI.createTabPage(self.tabs, "List")
+        self.listTab.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        self.graphTab = OWGUI.createTabPage(self.tabs, "Graph")
+        
+        self.splitter = QSplitter(Qt.Horizontal, self.listTab)
+        self.listTab.layout().addWidget(self.splitter)
 
         self.splitCanvas = QSplitter(self.listTab)
 
-        self.canvasL = QCanvas(2000, 2000)
-        self.canvasViewL = IntGraphView(self, "interactions", self.canvasL, self.splitCanvas)
-        self.canvasViewL.show()
+        self.canvasL = QGraphicsScene()
+        self.canvasViewL = IntGraphView(self, "interactions", self.canvasL, self)
+        self.splitter.addWidget(self.canvasViewL)
+        self.canvasViewL.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         
-        self.canvasM = QCanvas(2000, 2000)
-        self.canvasViewM = IntGraphView(self, "correlations", self.canvasM, self.splitCanvas)
-        self.canvasViewM.show()
+        self.canvasM = QGraphicsScene()
+        self.canvasViewM = IntGraphView(self, "correlations", self.canvasM, self)
+        self.splitter.addWidget(self.canvasViewM)
 
-        self.canvasR = QCanvas(2000,2000)
-        self.canvasViewR = IntGraphView(self, "graph", self.canvasR, self.graphTab)
-        self.canvasViewR.show()
+        self.canvasR = QGraphicsScene()
+        self.canvasViewR = IntGraphView(self, "graph", self.canvasR, self)
+        self.graphTab.layout().addWidget(self.canvasViewR)
 
         #GUI
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.controlArea, "Selected Attributes", addSpace = True)
+        self.shownAttribsGroup = OWGUI.widgetBox(self.controlArea, "Selected Attributes")
         self.addRemoveGroup = OWGUI.widgetBox(self.controlArea, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.controlArea, "Unselected Attributes", addSpace = True)
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.controlArea, "Unselected Attributes")
 
-        self.shownAttribsLB = OWGUI.listBox(self.shownAttribsGroup, self, "selectedShown", "shownAttributes", selectionMode = QListBox.Extended)
+        self.shownAttribsLB = OWGUI.listBox(self.shownAttribsGroup, self, "selectedShown", "shownAttributes", selectionMode = QListWidget.ExtendedSelection)
 
         self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttributeClick, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.dirname(__file__) + "/../icons/Dlg_up2.png"))
+        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttributeClick, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.dirname(__file__) + "/../icons/Dlg_down2.png"))
+        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
 
-        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", selectionMode = QListBox.Extended, addSpace = True)
+        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", selectionMode = QListWidget.ExtendedSelection)
 
-        settingsBox = OWGUI.widgetBox(self.controlArea, "Settings", addSpace = True)
+        settingsBox = OWGUI.widgetBox(self.controlArea, "Settings")
         self.mergeAttributesCB = OWGUI.checkBox(settingsBox, self, "mergeAttributes", 'Merge attributes', callback = self.mergeAttributesEvent, tooltip = "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with a right mouse click inside interaction rectangles in the left graph.\nA merged attribute is then created as a cartesian product of corresponding attributes \nand added to the list of attributes.")
         self.importantInteractionsCB = OWGUI.checkBox(settingsBox, self, "onlyImportantInteractions", 'Important interactions only', callback = self.showImportantInteractions)
 
@@ -117,8 +118,13 @@ class OWInteractionGraphProto(OWWidget):
         self.saveLCanvas = OWGUI.button(self.controlArea, self, "Save left canvas", callback = self.saveToFileLCanvas)
         self.saveRCanvas = OWGUI.button(self.controlArea, self, "Save right canvas", callback = self.saveToFileRCanvas)
 
+        self.listTab.layout().addStretch(1)
+        self.graphTab.layout().addStretch(1)
+        
+        
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
+        
         self.activateLoadedSettings()
 
     def showEvent(self, e):
@@ -282,12 +288,12 @@ class OWInteractionGraphProto(OWWidget):
         f.close()
         
         self.graph = self.interactionMatrix.exportNetwork(significant_digits=3,positive_int=8,negative_int=8,absolute_int=0)
-
+        
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
         (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
-
-        textPng = pipePngIn.read()
+        textPng = ""
+        #textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
         pipePngIn.close()
         pipePlainIn.close()
@@ -297,17 +303,15 @@ class OWInteractionGraphProto(OWWidget):
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
-            self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
+            pass
+            #self.error(0, "This widget needs 'graphviz' software package. You can freely download it from the web.")
         
          # create a picture
         pixmap = QPixmap()
-        pixmap.loadFromData(textPng)
-        canvasPixmap = QCanvasPixmap(pixmap, QPoint(0,0))
-        width = canvasPixmap.width()
-        height = canvasPixmap.height()
-        
-        self.canvasR.setTiles(pixmap, 1, 1, width, height)
-        self.canvasR.resize(width, height)
+        #pixmap.loadFromData(textPng)
+        canvasPixmap = self.canvasR.addPixmap(pixmap)
+        width = canvasPixmap.pixmap().width()
+        height = canvasPixmap.pixmap().height()
 
         # hide all rects
         for rects in self.rectIndices.values():
@@ -493,9 +497,9 @@ class OWInteractionGraphProto(OWWidget):
             index += 1
         
         # resizing of the left canvas to update width
-        self.canvasL.resize(maxWidth + 10, self.mainArea.size().height() - 52)
-        self.canvasM.resize(maxWidth + 10, self.mainArea.size().height() - 52)
-        self.updateCanvas()
+        #self.canvasL.resize(maxWidth + 10, self.mainArea.size().height() - 52)
+        #self.canvasM.resize(maxWidth + 10, self.mainArea.size().height() - 52)
+        #self.updateCanvas()
 
 
     #########################################
@@ -552,20 +556,20 @@ class OWInteractionGraphProto(OWWidget):
     ### showing and hiding attributes
     #################################################
     def _showAttribute(self, name):
-        self.shownAttribsLB.insertItem(name)    # add to shown
+        self.shownAttribsLB.addItem(name)    # add to shown
 
         count = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from hidden
             if str(self.hiddenAttribsLB.item(i).text()) == name:
-                self.hiddenAttribsLB.removeItem(i)
+                self.hiddenAttribsLB.takeItem(i)
 
     def _hideAttribute(self, name):
-        self.hiddenAttribsLB.insertItem(name)    # add to hidden
+        self.hiddenAttribsLB.addItem(name)    # add to hidden
 
         count = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):        # remove from shown
             if str(self.shownAttribsLB.item(i).text()) == name:
-                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.takeItem(i)
 
     ##########
     # add attribute to showList or hideList and show or hide its rectangle
@@ -635,7 +639,6 @@ class OWInteractionGraphProto(OWWidget):
 
     def updateCanvas(self):
         self.tabs.resize(self.mainArea.size())
-        self.splitCanvas.resize(QSize(self.mainArea.size().width() - 26, self.mainArea.size().height() - 52))
         
         self.canvasL.update()
         self.canvasM.update()

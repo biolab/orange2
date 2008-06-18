@@ -5,8 +5,8 @@
 <icon>CalibrationPlot.png</icon>
 <priority>1030</priority>
 """
-
-from OWTools import *
+import orngOrangeFoldersQt4
+from OWColorPalette import ColorPixmap
 from OWWidget import *
 from OWGraph import *
 import OWGUI
@@ -51,23 +51,20 @@ class singleClassCalibrationPlotGraph(OWGraph):
         self.numberOfClasses = len(self.dres.classValues)
 
         for cNum in range(classifiersNum):
-            ckey = self.insertCurve('')
-            self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 3))
-            self.classifierCalibrationCKeys.append(ckey)
+            curve = self.addCurve('', pen=QPen(self.classifierColor[cNum], 3))
+            self.classifierCalibrationCKeys.append(curve)
 
-            newSymbol = QwtSymbol(QwtSymbol.None, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0))
             curve = errorBarQwtPlotCurve(self, '', connectPoints = 0, tickXw = 0.0)
-            ckey = self.insertCurve(curve)
-            self.setCurveSymbol(ckey, newSymbol)
-            self.setCurveStyle(ckey, QwtCurve.UserCurve)
-            self.classifierYesClassRugCKeys.append(ckey)
+            curve.attach(self)
+            curve.setSymbol(QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0)))
+            curve.setStyle(QwtPlotCurve.UserCurve)
+            self.classifierYesClassRugCKeys.append(curve)
 
-            newSymbol = QwtSymbol(QwtSymbol.None, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0))
             curve = errorBarQwtPlotCurve(self, '', connectPoints = 0, tickXw = 0.0)
-            ckey = self.insertCurve(curve)
-            self.setCurveSymbol(ckey, newSymbol)
-            self.setCurveStyle(ckey, QwtCurve.UserCurve)
-            self.classifierNoClassRugCKeys.append(ckey)
+            curve.attach(self)
+            curve.setSymbol(QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0)))
+            curve.setStyle(QwtPlotCurve.UserCurve)
+            self.classifierNoClassRugCKeys.append(curve)
 
             self.showClassifiers.append(0)
 
@@ -77,17 +74,13 @@ class singleClassCalibrationPlotGraph(OWGraph):
                 self.targetClass = 0
             if self.targetClass >= self.numberOfClasses:
                 self.targetClass = self.numberOfClasses - 1
-            if self.targetClass < 0: 
+            if self.targetClass < 0:
                 self.targetClass = None ## no classes, no target
 
         if (self.dres == None) or (self.targetClass == None):
             self.setMainTitle("")
-            for ckey in self.classifierCalibrationCKeys:
-                self.setCurveData(ckey, [], [])
-            for ckey in self.classifierYesClassRugCKeys:
-                self.setCurveData(ckey, [], [])
-            for ckey in self.classifierNoClassRugCKeys:
-                self.setCurveData(ckey, [], [])
+            for curve in self.classifierCalibrationCKeys + self.classifierYesClassRugCKeys + self.classifierNoClassRugCKeys:
+                curve.setData([], [])
             return
 
         self.setMainTitle(self.dres.classValues[self.targetClass])
@@ -97,8 +90,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
         for (curve, yesClassRugPoints, noClassRugPoints) in calibrationCurves:
             x = [px for (px, py) in curve]
             y = [py for (px, py) in curve]
-            ckey = self.classifierCalibrationCKeys[classifier]
-            self.setCurveData(ckey, x, y)
+            curve = self.classifierCalibrationCKeys[classifier]
+            curve.setData(x, y)
 
             x = []
             y = []
@@ -114,8 +107,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
 
                     x.append(px)
                     y.append(py - self.rugHeight*n)
-            ckey = self.classifierYesClassRugCKeys[classifier]
-            self.setCurveData(ckey, x, y)
+            curve = self.classifierYesClassRugCKeys[classifier]
+            curve.setData(x, y)
 
             x = []
             y = []
@@ -131,14 +124,14 @@ class singleClassCalibrationPlotGraph(OWGraph):
 
                     x.append(px)
                     y.append(py)
-            ckey = self.classifierNoClassRugCKeys[classifier]
-            self.setCurveData(ckey, x, y)
+            curve = self.classifierNoClassRugCKeys[classifier]
+            curve.setData(x, y)
             classifier += 1
 
         self.updateCurveDisplay()
 
     def removeCurves(self):
-        OWGraph.removeCurves(self)
+        OWGraph.clear(self)
         self.classifierColor = []
         self.classifierNames = []
         self.showClassifiers = []
@@ -150,26 +143,23 @@ class singleClassCalibrationPlotGraph(OWGraph):
         self.classifierNoClassRugCKeys = []
 
         ## diagonal curve
-        self.diagonalCKey = self.insertCurve('')
-        self.setCurvePen(self.diagonalCKey, QPen(Qt.black, 1))
-        self.setCurveData(self.diagonalCKey, [0.0, 1.0], [0.0, 1.0])
+        self.diagonalCKey = self.addCurve("", pen = QPen(Qt.black, 1), style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0.0, 1.0], yData = [0.0, 1.0])
 
     def updateCurveDisplay(self):
-        self.curve(self.diagonalCKey).setEnabled(self.showDiagonal)
+        self.diagonalCKey.setVisible(self.showDiagonal)
 
         for cNum in range(len(self.showClassifiers)):
             showCNum = (self.showClassifiers[cNum] <> 0)
-            self.curve(self.classifierCalibrationCKeys[cNum]).setEnabled(showCNum)
+            self.classifierCalibrationCKeys[cNum].setVisible(showCNum)
             b = showCNum and self.showRugs
-            self.curve(self.classifierYesClassRugCKeys[cNum]).setEnabled(b)
-            self.curve(self.classifierNoClassRugCKeys[cNum]).setEnabled(b)
-
+            self.classifierYesClassRugCKeys[cNum].setVisible(b)
+            self.classifierNoClassRugCKeys[cNum].setVisible(b)
         self.updateLayout()
         self.update()
 
     def setCalibrationCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
-            self.setCurvePen(self.classifierCalibrationCKeys[cNum], QPen(self.classifierColor[cNum], v))
+            self.classifierCalibrationCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
         self.update()
 
     def setShowClassifiers(self, list):
@@ -211,33 +201,33 @@ class OWCalibrationPlot(OWWidget):
         self.numberOfClassifiers = 0
 
         # GUI
-        self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
+        self.graphsGridLayoutQGL = QGridLayout(self)
+        import sip
+        sip.delete(self.mainArea.layout())
+        self.mainArea.setLayout(self.graphsGridLayoutQGL)
+
         ## save each ROC graph in separate file
         self.graph = None
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
         ## general tab
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
-        self.generalTab = QVGroupBox(self)
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.generalTab = OWGUI.createTabPage(self.tabs, "General")
+        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+
         self.splitQS = QSplitter()
         self.splitQS.setOrientation(Qt.Vertical)
 
         ## classifiers selection (classifiersQLB)
-        self.classifiersQVGB = QVGroupBox(self.generalTab)
-        self.classifiersQVGB.setTitle("Classifiers")
-        self.classifiersQLB = QListBox(self.classifiersQVGB)
-        self.classifiersQLB.setSelectionMode(QListBox.Multi)
-        self.unselectAllClassifiersQLB = QPushButton("(Un)select All", self.classifiersQVGB)
-        self.connect(self.classifiersQLB, SIGNAL("selectionChanged()"), self.classifiersSelectionChange)
-        self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
-        self.tabs.insertTab(self.generalTab, "General")
+        self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
+        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
+        self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select all", callback = self.SUAclassifiersQLB)
 
         ## settings tab
-        self.settingsTab = QVGroupBox(self)
-        OWGUI.hSlider(self.settingsTab, self, 'CalibrationCurveWidth', box='Calibration curve width', minValue=1, maxValue=9, step=1, callback=self.setCalibrationCurveWidth, ticks=1)
-        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal line', tooltip='', callback=self.setShowDiagonal)
-        OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show rug', tooltip='', callback=self.setShowRugs)
-        self.tabs.insertTab(self.settingsTab, "Settings")
+        OWGUI.hSlider(self.settingsTab, self, 'CalibrationCurveWidth', box='Calibration Curve Width', minValue=1, maxValue=9, step=1, callback=self.setCalibrationCurveWidth, ticks=1)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show Diagonal Line', tooltip='', callback=self.setShowDiagonal)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show Rugs', tooltip='', callback=self.setShowRugs)
+        self.settingsTab.layout().addStretch(100)
 
     def setCalibrationCurveWidth(self):
         for g in self.graphs:
@@ -255,10 +245,11 @@ class OWCalibrationPlot(OWWidget):
     def selectUnselectAll(self, qlb):
         selected = 0
         for i in range(qlb.count()):
-            if qlb.isSelected(i):
+            if qlb.item(i).isSelected():
                 selected = 1
                 break
-        qlb.selectAll(not(selected))
+        if selected: qlb.clearSelection()
+        else: qlb.selectAll()
 
     def SUAclassifiersQLB(self):
         self.selectUnselectAll(self.classifiersQLB)
@@ -266,7 +257,7 @@ class OWCalibrationPlot(OWWidget):
     def classifiersSelectionChange(self):
         list = []
         for i in range(self.classifiersQLB.count()):
-            if self.classifiersQLB.isSelected(i):
+            if self.classifiersQLB.item(i).isSelected():
                 list.append( 1 )
             else:
                 list.append( 0 )
@@ -296,7 +287,7 @@ class OWCalibrationPlot(OWWidget):
     def target(self, targetClass):
         self.targetClass = targetClass
 
-        for g in self.graphs: 
+        for g in self.graphs:
             g.hide()
 
         if (self.targetClass <> None) and (len(self.graphs) > 0):
@@ -342,8 +333,8 @@ class OWCalibrationPlot(OWWidget):
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
                 newColor = self.classifierColor[i]
-                self.classifiersQLB.insertItem(ColorPixmap(newColor), self.dres.classifierNames[i])
-            self.classifiersQLB.selectAll(1)
+                self.classifiersQLB.addItem(QListWidgetItem(ColorPixmap(newColor), self.dres.classifierNames[i]))
+            self.classifiersQLB.selectAll()
         else:
             self.numberOfClasses = 0
             self.classifierColor = None
@@ -355,6 +346,5 @@ class OWCalibrationPlot(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     owdm = OWCalibrationPlot()
-    a.setMainWidget(owdm)
     owdm.show()
-    a.exec_loop()
+    a.exec_()

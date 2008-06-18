@@ -5,7 +5,7 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange, orngSVM, OWGUI, sys
 from OWWidget import *
 from exceptions import SystemExit
@@ -13,7 +13,7 @@ from exceptions import SystemExit
 class OWSVM(OWWidget):
     settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu", "nomogram"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs=[("Example Table", ExampleTable, self.setData)]
         self.outputs=[("Learner", orange.Learner),("Classifier", orange.Classifier),("Support Vectors", ExampleTable)]
 
@@ -36,7 +36,7 @@ class OWSVM(OWWidget):
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        self.kernelBox=b=QVButtonGroup("Kernel", self.controlArea)
+        self.kernelBox=b = OWGUI.widgetBox(self.controlArea, "Kernel")
         self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d",
                     "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
 
@@ -63,11 +63,9 @@ class OWSVM(OWWidget):
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy")
 
-        OWGUI.separator(self.controlArea)
-
         OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
-        self.adjustSize()
+        #self.adjustSize()
         self.loadSettings()
         self.changeKernel()
         self.searching=False
@@ -154,7 +152,7 @@ class OWSVM(OWWidget):
             self.paramButton.setText("Stop")
             self.searching=True
             self.search_()
-            
+
     def progres(self, f, best):
         qApp.processEvents()
         self.best=best
@@ -190,7 +188,7 @@ class OWSVM(OWWidget):
             pass
         self.finishSearch()
 
-from exceptions import Exception        
+from exceptions import Exception
 class UnhandledException(Exception):
     pass
 
@@ -198,9 +196,8 @@ import sys
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWSVM()
-    app.setMainWidget(w)
     w.show()
-    d=orange.ExampleTable("../../doc/datasets/iris.tab")
-    w.setData(d)
-    app.exec_loop()
+    #d=orange.ExampleTable("../../doc/datasets/iris.tab")
+    #w.setData(d)
+    app.exec_()
     w.saveSettings()

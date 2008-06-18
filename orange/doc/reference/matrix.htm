@@ -13,7 +13,7 @@
 <index name="numpy">
 <index name="conversion to/from arrays">
 
-<P>Besides being a great language by itself, Python features a huge library of scientific functions called SciPy. SciPy is centered around a module called <code>numpy</code>, which evolved from <code>numarray</code> and <code>Numeric</code> (sometimes mistakenly referred to as <code>NumPy</code>), where <code>numarray</code> is a compatibility-breaking variation of <code>Numeric</code> (the one called <code>NumPy</code>) to which all numerical code Python was supposed to migrate. When it did not, module <code>numpy</code> again joined <code>numarray</code> and <code>Numeric</code> (aka <code>NumPy</code>). Or so they say. Orange proudly supports an integration with this mess in hope to make a lasting contribution to it. ;)</P>
+<P>Besides being a great language by itself, Python features a huge library of scientific functions called SciPy. SciPy is centered around a module called <code>numpy</code>, which evolved from <code>numarray</code> and <code>Numeric</code> (sometimes mistakenly referred to as <code>NumPy</code>), where <code>numarray</code> is a compatibility-breaking variation of <code>Numeric</code> (the one called <code>NumPy</code>) to which all numerical code Python was supposed to migrate. When it did not, module <code>numpy</code> again joined <code>numarray</code> and <code>Numeric</code> (aka <code>NumPy</code>). Or so they say. Orange proudly supports an integration with this mess in hope to make a lasting contribution to it.</P>
 
 <P>Data from an <code>ExampleTable</code> can be converted to and from Numeric, numarray and numpy's arrays. Numpy also has a new type, record array. Due to lack of documentation for the C API and, even more, doubting that this type would be very useful, Orange at the moment doesn't know about it.</P>
 
@@ -40,8 +40,6 @@
 <P>When the class attribute is discrete and has more than two values, an exception is raised unless multinomial attributes are treated as ordinal.</P>
 
 <P>The treatment of multinomial attributes offered by these functions is very limited. There are way more versatile <a href="TransformValue.htm><code>Continuizer</code> classes</a> for converting multinomial attributes into discrete, with which you can, for instance replace a discrete attribute with multiple indicator variables ets.</P>
-
-<P>Attributes other than the usual discrete and continuous values are represented by <code>orange.IllegalFloat</code> and also masked out if a masked array is being created. Note that <code>orange.IllegalFloat</code> is not NaN since NaNs cannot be compared (e.g. NaN sometimes equals any number, but sometimes two NaNs don't equal each other...). The reason why attributes of other types are stored but masked instead of simply ignored is that otherwise one would need to setup a map for translating attribute indices from the domain to the array.</P>
 
 <P>We shall show a few examples on the Iris data set with 150 examples described by four attributes and a three-valued class attribute.</P>
 

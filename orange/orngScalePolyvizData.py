@@ -10,9 +10,9 @@ class orngScalePolyvizData(orngScaleLinProjData):
         self.attrLocalValues = {}
 
     # if we use globalScaling we must also save min and max values for each attribute
-    def setData(self, data):
+    def setData(self, data, subsetData = None, **args):
         # first call the original function to scale data
-        orngScaleLinProjData.setData(self, data)
+        orngScaleLinProjData.setData(self, data, subsetData, **args)
         
         if data == None or len(data) == 0: return
 

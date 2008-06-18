@@ -24,8 +24,7 @@ class TreeLearner(orange.Learner):
         if not self.learner:
             self.learner = self.instance()
         if not hasattr(self, "split") and not hasattr(self, "measure"):
-            # this should also work for lists of examples, not just ExampleTable
-            if examples[0].domain.classVar.varType == orange.VarTypes.Discrete:
+            if examples.domain.classVar.varType == orange.VarTypes.Discrete:
                 measure = orange.MeasureAttribute_gainRatio()
             else:
                 measure = orange.MeasureAttribute_MSE()

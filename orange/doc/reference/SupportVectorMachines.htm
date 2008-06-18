@@ -6,14 +6,9 @@
 <h1>Support Vector Machines</h1>
 <index name="classes+support vector machines">
 
-<p>Support vector machines (SVM) is a popular machine learning method
-with variants for classification, regression and distribution
-estimation that can learn a problem in a higher dimensional space
-through the use of a kernel trick. Integrated with Orange is a popular
-implementation by Chang and Lin, <a
-href="http://www.csie.ntu.edu.tw/~cjlin/libsvm">libsvm</a>. Orange
-currently embeds version 8.1 of the library, which supports:</p>
-
+<p>SVM is a popular method for classification, regression and distribution estimation that can learn a problem in a higher dimensional space through the use of a kernel trick.
+Orange interfaces the libsvm-8.1 library (Chih-Chung Chang and Chih-Jen Lin, LIBSVM : a library for support vector machines, 2001. Software available at <a href=http://www.csie.ntu.edu.tw/~cjlin/libsvm>http://www.csie.ntu.edu.tw/~cjlin/libsvm</a>)
+witch supports:
 <ul>
  <li>C support vector classification (C_SVC)</li>
  <li>NU support vector classification (NU_SVC)</li>
@@ -21,10 +16,7 @@ currently embeds version 8.1 of the library, which supports:</p>
  <li>EPSILON support vector regression (EPSILON_SVR)</li>
  <li>NU support vector regression (NU_SVR)</li>
 </ul>
-
-<p>The support for the following kernel functions is provided by
-libsvm library:</p>
-
+Additionally you can use the following kernel functions:
 <ul>
  <li>linear: u'*v</li>
  <li>polynomial: (gamma*u'*v + coef0)^degree</li>
@@ -33,9 +25,7 @@ libsvm library:</p>
  <li>custom kernel (any function that remotely resembles a distance measure between two examples that can be implemented in python)</li>
 </ul>
 </p>
-
 <h2>SVMLearner</h2>
-
 <p><INDEX name="classes/SVMLearner">SVMLearner class constructs a <INDEX name="classes/SVMClassifier">SVMClassifier </p>
 <p class=section >Attributes</p>
 <dl class=attributes>
@@ -108,14 +98,6 @@ Iris-setosa Iris-setosa <0.964, 0.019, 0.016>
 Iris-setosa Iris-setosa <0.968, 0.016, 0.016>
 ...
 </xmp>
-
-<hr>
-
-<H2>References</H2>
-
-<p>Chih-Chung Chang and Chih-Jen Lin, LIBSVM : a library for support
-vector machines, 2001. Software available at <a
-href=http://www.csie.ntu.edu.tw/~cjlin/libsvm>http://www.csie.ntu.edu.tw/~cjlin/libsvm</a></P>
 
 </body></html>
 

@@ -1,10 +1,6 @@
-from qt import *
-from qttable import *
-from qtcanvas import *
-try:
-    import qwt
-except:
-    import Qwt4 as qwt
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+import PyQt4.Qwt5 as qwt
 import math
 from OWWidget import *
 import OWGUI
@@ -13,9 +9,14 @@ import OWGUI
 class TestWidget(OWWidget):
     def __init__(self, parent=None, name='TestWidget'):
         OWWidget.__init__(self, parent, name, 'Microarray Heat Map', FALSE)
+        #self.controlArea = self
+        #self.setLayout(QVBoxLayout())
 
-        #self.colorPalette = ColorPalette(self.space, self, "", additionalColors = ["Cell Outline", "Selected Cells"])
-        self.colorPalette = ColorPalette(self.space, self, "", additionalColors = None)
+        self.colorPalette = ColorPalette(self, self.controlArea, "", additionalColors = None)
+        self.controlArea.layout().addWidget(self.colorPalette)
+        #a = ColorButton(self)
+        #self.controlArea.layout().addWidget(a)
+
 ###########################################################################
 
 colorButtonSize = 15
@@ -34,38 +35,17 @@ try:
     wantsPositiveColor = False
 except:
     wantsPositiveColor = True
-    
-try:
-    QImage(chr(0), 1, 1, 1, [0,0xFFFFFFFF], 2, QImage.LittleEndian)
-    wantsIntPalette = False
-except:
-    wantsIntPalette = True
-
-try:
-    QImage(chr(0), 1, 1, 1, [0,-1], 2, QImage.LittleEndian)
-    wantsPositivePalette = False
-except:
-    wantsPositivePalette = True
 
 def signedColor(long):
-    # Maybe wantsIntPalette is true but we cannot do anything here than just try to convert it to positive color
-    # (colors with alpha cannot be represented with signed int and just positive values allowed)
-    if wantsPositivePalette and long < 0:
-        return int(-(((long & 0xFFFFFFFF) ^ 0xFFFFFFFF) + 1))
-    
-    # It is stored as int so we do not need to do anything
     if type(long) == int:
         return long
-    elif wantsIntPalette and not wantsPositivePalette:
-        long &= 0xFFFFFFFF
-        
-        if long & 0x80000000:
-            return int(-((long ^ 0xFFFFFFFF) + 1))
-        else:
-            return int(long)
-    # Cannot do anythin and probably should not do anything
+    
+    long &= 0xFFFFFFFF
+    
+    if long & 0x80000000:
+        return int(-((long ^ 0xFFFFFFFF) + 1))
     else:
-        return long
+        return int(long)
 
 def positiveColor(color):
     if wantsPositiveColor and color < 0:
@@ -79,85 +59,51 @@ def signedPalette(palette):
 class ColorPalette(QWidget):
     def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):
         QWidget.__init__(self, parent)
-        self.constructing = TRUE
 
+        self.constructing = TRUE
         self.callback = callback
-        
+        self.schema = ""
+        self.passThroughBlack = 0
+
         self.colorSchemas = {}
 
         self.setMinimumHeight(300)
         self.setMinimumWidth(200)
 
-        #create box aroung whole widget
-        self.box = OWGUI.widgetBox(self, label)
-        self.box.setOrientation(Qt.Vertical)
-        self.box.setColumns(20)
-        self.box.setMinimumHeight(300)
-        self.box.setMinimumWidth(200)
-        self.box.setMaximumWidth(200)
-        self.box.InsideSpacing = 2
-        self.box.InsideMargin = 2
+        self.box = OWGUI.widgetBox(self, label, orientation = "vertical")
 
-        self.schemaCombo = QComboBox(self.box)
-        self.connect(self.schemaCombo, SIGNAL("activated(const QString&)"), self.onComboBoxChange)
+        self.schemaCombo = OWGUI.comboBox(self.box, self, "schema", callback = self.onComboBoxChange)
 
-        self.interpolationHBox = QHBox(self.box)
-        self.interpolationHBox.setSpacing(5)
-        
+        self.interpolationHBox = OWGUI.widgetBox(self.box, orientation = "horizontal")
         self.colorButton1 = ColorButton(self, self.interpolationHBox)
         self.interpolationView = InterpolationView(self.interpolationHBox)
         self.colorButton2 = ColorButton(self, self.interpolationHBox)
 
-        self.chkPassThroughBlack = QCheckBox("Pass through black", self.box)
-        self.chkPassThroughBlack.setMaximumWidth(190)
-        self.connect(self.chkPassThroughBlack, SIGNAL("stateChanged ( int )"), self.onCheckBoxChange)        
-        self.box.addSpace(30)
+        self.chkPassThroughBlack = OWGUI.checkBox(self.box, self, "passThroughBlack", "Pass through black", callback = self.onCheckBoxChange)
+        #OWGUI.separator(self.box, 10, 10)
+        self.box.layout().addSpacing(10)
 
         #special colors buttons
-        self.NAHBox = QHBox(self.box)
-        self.NAHBox.setSpacing(5)
-        self.NAColorButton = ColorButton(self, self.NAHBox)
-        self.NALabel = OWGUI.widgetLabel(self.NAHBox, "N/A", specialColorLabelWidth)
 
-        self.underflowHBox = QHBox(self.box)
-        self.underflowHBox.setSpacing(5)
-        self.underflowColorButton = ColorButton(self, self.underflowHBox)
-        self.underflowLabel = OWGUI.widgetLabel(self.underflowHBox, "Underflow", specialColorLabelWidth)
-
-        self.overflowHBox = QHBox(self.box)
-        self.overflowHBox.setSpacing(5)
-        self.overflowColorButton = ColorButton(self, self.overflowHBox)
-        self.overflowLabel = OWGUI.widgetLabel(self.overflowHBox, "Overflow", specialColorLabelWidth)
-  
-        self.backgroundHBox = QHBox(self.box)
-        self.backgroundHBox.setSpacing(5)
-        self.backgroundColorButton = ColorButton(self, self.backgroundHBox)
-        self.backgroundLabel = OWGUI.widgetLabel(self.backgroundHBox, "Background (Grid)", specialColorLabelWidth)
+        self.NAColorButton = ColorButton(self, self.box, "N/A")
+        self.underflowColorButton = ColorButton(self, self.box, "Underflow")
+        self.overflowColorButton = ColorButton(self, self.box, "Overflow")
+        self.backgroundColorButton = ColorButton(self, self.box, "Background (Grid)")
 
         #set up additional colors
         self.additionalColorButtons = {}
-        self.box.addSpace(0)
 
         if additionalColors<>None:
             for colorName in additionalColors:
-                box = QHBox(self.box)
-                box.setSpacing(5)
-                button = ColorButton(self, box)
-                label = OWGUI.widgetLabel(box, colorName, specialColorLabelWidth)
-                self.additionalColorButtons[colorName] = button
+                self.additionalColorButtons[colorName] = ColorButton(self, self.box, colorName)
 
         #set up new and delete buttons
-        self.buttonHBox = QHBox(self.box)
-        self.buttonHBox.setSpacing(5)        
+        self.buttonHBox = OWGUI.widgetBox(self.box, orientation = "horizontal")
         self.newButton = OWGUI.button(self.buttonHBox, self, "New", self.OnNewButtonClicked)
         self.deleteButton = OWGUI.button(self.buttonHBox, self, "Delete", self.OnDeleteButtonClicked)
 
-        self.box.adjustSize()  
-        self.adjustSize()
-
         self.setInitialColorPalettes()
         self.paletteSelected()
-
         self.constructing = FALSE
 
     def onComboBoxChange(self, string):
@@ -170,12 +116,11 @@ class ColorPalette(QWidget):
         message = "Please enter new color schema name"
         ok = FALSE
         while (not ok):
-            s = QInputDialog.getText("New Schema", message, QLineEdit.Normal)
-
+            s = QInputDialog.getText(self, "New Schema", message)
             ok = TRUE
             if (s[1]==TRUE):
                 for i in range(self.schemaCombo.count()):
-                    if s[0].lower().compare(self.schemaCombo.text(i).lower())==0:
+                    if s[0].lower().compare(self.schemaCombo.itemText(i).lower())==0:
                         ok = FALSE
                         message = "Color schema with that name already exists, please enter another name"
                 if (ok):
@@ -183,18 +128,18 @@ class ColorPalette(QWidget):
                                                                self.getCurrentColorSchema().getPalette(),
                                                                self.getCurrentColorSchema().getAdditionalColors(),
                                                                self.getCurrentColorSchema().getPassThroughBlack())
-                    self.schemaCombo.insertItem(s[0])
-                    self.schemaCombo.setCurrentItem(self.schemaCombo.count()-1)
+                    self.schemaCombo.addItem(s[0])
+                    self.schemaCombo.setCurrentIndex(self.schemaCombo.count()-1)
             self.deleteButton.setEnabled(self.schemaCombo.count()>1)
 
-        
+
     def OnDeleteButtonClicked(self):
-        i = self.schemaCombo.currentItem()
+        i = self.schemaCombo.currentIndex()
         self.schemaCombo.removeItem(i)
-        self.schemaCombo.setCurrentItem(i)        
+        self.schemaCombo.setCurrentIndex(i)
         self.deleteButton.setEnabled(self.schemaCombo.count()>1)
         self.paletteSelected()
-        
+
     def getCurrentColorSchema(self):
         return self.colorSchemas[str(self.schemaCombo.currentText())]
 
@@ -208,9 +153,7 @@ class ColorPalette(QWidget):
     def setColorSchemas(self, schemas):
         self.colorSchemas = schemas
         self.schemaCombo.clear()
-        for name in schemas:
-            self.schemaCombo.insertItem(name)
-
+        self.schemaCombo.addItems(schemas)
         self.paletteSelected()
 
     def createPalette(self,color1,color2, passThroughBlack):
@@ -254,35 +197,35 @@ class ColorPalette(QWidget):
     def rgbToQColor(self, rgb):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
-        
-        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # if color cannot be negative number we convert it manually
+
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
-    
+
     def colorSchemaChange(self):
         white = qRgb(255,255,255)
-        gray = qRgb(200,200,200)        
+        gray = qRgb(200,200,200)
         name = self.getCurrentColorSchema().getName()
         passThroughBlack = self.chkPassThroughBlack.isChecked()
         palette = self.createPalette(self.colorButton1.getColor(), self.colorButton2.getColor(), passThroughBlack)
         palette += [white]*2 + [self.qRgbFromQColor(self.backgroundColorButton.getColor())] + \
                                [self.qRgbFromQColor(self.underflowColorButton.getColor())] + \
                                [self.qRgbFromQColor(self.overflowColorButton.getColor())] + \
-                               [self.qRgbFromQColor(self.NAColorButton.getColor())]                             
+                               [self.qRgbFromQColor(self.NAColorButton.getColor())]
 
         self.interpolationView.setPalette1(palette)
 
         additionalColors = {}
         for buttonName in self.additionalColorButtons:
             additionalColors[buttonName] = self.qRgbFromQColor(self.additionalColorButtons[buttonName].getColor())
-            
+
         schema = ColorSchema(name, palette, additionalColors, passThroughBlack)
         self.setCurrentColorSchema(schema)
 
         if not self.constructing and self.callback:
-            self.callback()        
-      
+            self.callback()
+
 
     def setInitialColorPalettes(self):
         white = qRgb(255,255,255)
@@ -293,24 +236,22 @@ class ColorPalette(QWidget):
             additionalColors[buttonName] = gray
 
 
-        self.schemaCombo.insertItem("Blue - Yellow")
+        self.schemaCombo.addItem("Blue - Yellow")
         palette = self.createPalette(QColor(0,0,255), QColor(255,255,0),FALSE)
         palette += [white]*3 + [qRgb(0., 0., 255.), qRgb(255., 255., 0.), gray]
         self.colorSchemas["Blue - Yellow"] = ColorSchema("Blue - Yellow", palette, additionalColors, FALSE)
-        
-        self.schemaCombo.insertItem("Black - Red")
+
+        self.schemaCombo.addItem("Black - Red")
         palette = self.createPalette(QColor(0,0,0), QColor(255,0,0),FALSE)
         palette += [white]*3 + [qRgb(0., 0, 0), qRgb(255., 0, 0), gray]
         self.colorSchemas["Black - Red"] = ColorSchema("Black - Red", palette, additionalColors, FALSE)
-        
-        self.schemaCombo.insertItem("Green - Black - Red")
+
+        self.schemaCombo.addItem("Green - Black - Red")
         palette = self.createPalette(QColor(0,255,0), QColor(255,0,0),TRUE)
         palette += [white]*3 + [qRgb(0, 255., 0), qRgb(255., 0, 0), gray]
-        self.colorSchemas["Green - Black - Red"] = ColorSchema("Green - Black - Red", palette, additionalColors, TRUE) 
+        self.colorSchemas["Green - Black - Red"] = ColorSchema("Green - Black - Red", palette, additionalColors, TRUE)
 
 
-
-         
 class ColorSchema:
     def __init__(self, name, palette, additionalColors, passThroughBlack):
         self.name = name
@@ -330,84 +271,83 @@ class ColorSchema:
     def getPassThroughBlack(self):
         return self.passThroughBlack
 
-class InterpolationView(QCanvasView):
+class InterpolationView(QGraphicsView):
     def __init__(self, parent = None):
-        self.canvas = QCanvas(colorButtonSize,colorButtonSize)
-        QCanvasView.__init__(self, self.canvas, parent)
+        self.canvas = QGraphicsScene(0,0,colorButtonSize,colorButtonSize)
+        QGraphicsView.__init__(self, self.canvas, parent)
 
         self.setFrameStyle(QFrame.NoFrame)
-        self.setVScrollBarMode(QScrollView.AlwaysOff)
-        self.setHScrollBarMode(QScrollView.AlwaysOff)        
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.setMaximumHeight(colorButtonSize)
-        self.setMinimumHeight(colorButtonSize)
+        self.setFixedHeight(colorButtonSize)
+        self.setMinimumWidth(colorButtonSize)
         self.setMaximumWidth(135)
+        if parent and parent.layout():
+            parent.layout().addWidget(self)
 
     def setPalette1(self, palette):
         dx = 140; dy = colorButtonSize
-        bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2 
-        image = QImage(bmp, dx, dy, 8, signedPalette(palette), 256, QImage.LittleEndian) # we take care palette has proper values with proper types
+        bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2
+        image = QImage(bmp, dx, dy, QImage.Format_MonoLSB)
+        #image.setNumColors(256)
+        image.setColorTable(palette)
         pm = QPixmap()
-        pm.convertFromImage(image, QPixmap.Color);
+        pm.fromImage(image)
 
-        self.canvas.setBackgroundPixmap(pm)
+        self.canvas.addPixmap(pm)
         self.canvas.update()
 
-class ColorButton(QCanvasView):
-    def __init__(self, master = None, parent = None):
-        self.canvas = QCanvas(colorButtonSize,colorButtonSize)
-        QCanvasView.__init__(self, self.canvas, parent)
-
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.setVScrollBarMode(QScrollView.AlwaysOff)
-        self.setHScrollBarMode(QScrollView.AlwaysOff)        
-
-        self.setMaximumWidth(colorButtonSize)
-        self.setMaximumHeight(colorButtonSize)
-        self.setMinimumWidth(colorButtonSize)
-        self.setMinimumHeight(colorButtonSize)        
+class ColorButton(QWidget):
+    def __init__(self, master = None, parent = None, label = None, color = None):
+        QWidget.__init__(self, master)
 
         self.parent = parent
-        self.color = Qt.white
         self.master = master
-       
-        self.viewport().setMouseTracking(True)
+
+        if self.parent and self.parent.layout():
+            self.parent.layout().addWidget(self)
+
+        self.setLayout(QHBoxLayout())
+        self.layout().setMargin(0)
+        self.icon = QFrame(self)
+        self.icon.setFixedSize(colorButtonSize, colorButtonSize)
+        self.icon.setAutoFillBackground(1)
+        self.icon.setFrameStyle (QFrame.StyledPanel+ QFrame.Sunken)
+        self.layout().addWidget(self.icon)
+
+        if label != None:
+            self.label = OWGUI.widgetLabel(self, label)
+            self.layout().addWidget(self.label)
+
+        if color != None:
+            self.setColor(color)
+
 
     def setColor(self, color):
         self.color = color
-        self.canvas.setBackgroundColor(color)
-        self.canvas.update()        
-        self.update()
+        palette = QPalette()
+        palette.setBrush(QPalette.Background, color)
+        self.icon.setPalette(palette)
 
     def getColor(self):
         return self.color
 
-    def contentsMousePressEvent(self, event):
-        self.clicked = TRUE
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
-        self.update()
-    
-    def contentsMouseReleaseEvent(self, event):
-        color = QColorDialog.getColor(self.color, self.parent)        
+    def mousePressEvent(self, ev):
+        color = QColorDialog.getColor(self.color, self.parent)
         if color.isValid():
-            self.color = color
-            self.canvas.setBackgroundColor(color)            
-            self.canvas.update()
-            if self.master<>None:
+            self.setColor(color)
+            if self.master and hasattr(self.master, "colorSchemaChange"):
                 self.master.colorSchemaChange()
-            
-        self.clicked = FALSE
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.update()
-
 
 
 if __name__=="__main__":
     import orange
     a = QApplication(sys.argv)
     ow = TestWidget()
-    a.setMainWidget(ow)
+    #a.setMainWidget(ow)
 
     ow.show()
-    a.exec_loop()
+    sys.exit(a.exec_())
     ow.saveSettings()
+

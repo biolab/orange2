@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange
 from OWWidget import *
 import OWGUI
@@ -14,7 +14,7 @@ class OWAssociationRules(OWWidget):
     settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
     
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "AssociationRules")
+        OWWidget.__init__(self, parent, signalManager, "AssociationRules", wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
@@ -86,6 +86,6 @@ if __name__=="__main__":
 ##    data = orange.ExampleTable("car")
 ##    ow.setData(data)
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()
 

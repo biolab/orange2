@@ -31,10 +31,9 @@
 #   - 2004/03/24:
 #       fixed an ugly bug in dep-dissimilarity matrix processing
 
-import orange, statc
+import orange
 import orngContingency, numpy
 import warnings, math, string, copy
-
 from orangeom import Network
 
 def _nicefloat(f,sig):
@@ -155,7 +154,6 @@ class InteractionMatrix:
         self.plut = {}
         self.ents = {}
         self.corr = {}
-        self.chi2 = {}
         self.simple = {}
         for i in range(NA):
             if weighting != None:
@@ -168,10 +166,6 @@ class InteractionMatrix:
             self.ents[(i,)] = orngContingency.Entropy(atc.a)
             self.way2[(i,-1,)] = atc
             self.ents[(i,-1)] = orngContingency.Entropy(atc.m)
-            N = sum(atc.a)
-            self.chi2[(i, i)] = statc.chisqprob(N * (numpy.sum(numpy.outer(atc.pa, atc.pa)) - 2 + len(atc.pa)), (len(atc.pa)-1)**2)
-
-#            self.chi2[(i, i)] = N * (numpy.sum(numpy.outer(atc.pa, atc.pa)) - 2 + len(atc.pa))   
             if simple_too:
                 simp = 0.0
                 for k in xrange(min(len(atc.a),len(atc.b))):
@@ -199,7 +193,6 @@ class InteractionMatrix:
                     gai = c.InteractionInformation()
                     self.ents[(j,i,)] = orngContingency.Entropy(c.m)
                     self.corr[(j,i,)] = gai
-                    self.chi2[(j,i)] = c.ChiSquareP()   
                     if simple_too:
                         simp = 0.0
                         for k in xrange(min(len(c.a),len(c.b))):
@@ -251,7 +244,7 @@ class InteractionMatrix:
             for i in range(j):
                 t = '%s+%s'%(self.names[i],self.names[j])
                 print "%30s\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f"%(t,self.igain[(i,j)],self.corr[(i,j)],self.igain[(i,j)]+self.corr[(i,j)],self.gains[i],self.gains[j])
-
+                
     def exportNetwork(self,  absolute_int=10, positive_int = 0, negative_int = 0, best_attributes = 0, significant_digits = 2, pretty_names = 1, widget_coloring=1, pcutoff = 1):
         NA = len(self.names)
 
@@ -340,7 +333,13 @@ class InteractionMatrix:
             i = map[i]
             
             perc = int(abs(ig)*100.0/max(max_igain,self.attlist[-1][0])+0.5)
-            graph[i, j] = perc / 30 + 1
+
+            if self.entropy > 1e-6:
+                w = float(100.0*ig/self.entropy)
+            else:
+                w = float(0.0)
+            
+            graph[i, j] = w
             
             if self.entropy > 1e-6:
                 mc = _nicefloat(100.0*ig/self.entropy,significant_digits)+"%"
@@ -797,19 +796,6 @@ class InteractionMatrix:
                     else:
                         f.write("\t%d -> %d [%sweight=%d];\n"%(i,j,style,(perc/30+1)))
         f.write("}\n")
-
-    def exportChi2Matrix(self, pretty_names = 1):
-        labels = []
-        for i in range(self.NA):
-            t = '%s'%self.names[i]
-            if pretty_names:
-                t = string.replace(t,"ED_","")
-                t = string.replace(t,"D_","")
-                t = string.replace(t,"M_","")
-            labels.append(t)
-
-        diss = [[self.chi2[(i,j)] for i in range(j+1)] for j in range(self.NA)]
-        return diss, labels
 
     def depExportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, jaccard = 1, simple_metric=0,color_coding = 0, verbose=0, include_label=0):
         NA = self.NA

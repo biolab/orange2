@@ -16,12 +16,12 @@ import warnings
 class OWLearningCurveC(OWWidget):
     settingsList = ["folds", "steps", "scoringF", "commitOnChange",
                     "graphPointSize", "graphDrawLines", "graphShowGrid"]
-    
+
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'LearningCurveC')
 
         self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
-        
+
         self.folds = 5     # cross validation folds
         self.steps = 10    # points in the learning curve
         self.scoringF = 0  # scoring function
@@ -30,7 +30,7 @@ class OWLearningCurveC(OWWidget):
         self.graphDrawLines = 1 # draw lines between points in the graph
         self.graphShowGrid = 1  # show gridlines in the graph
         self.loadSettings()
-        
+
         warnings.filterwarnings("ignore", ".*builtin attribute.*", orange.AttributeWarning)
 
         self.setCurvePoints() # sets self.curvePoints, self.steps equidistantpoints from 1/self.steps to 1
@@ -48,8 +48,8 @@ class OWLearningCurveC(OWWidget):
         ## class selection (classQLB)
         OWGUI.separator(self.controlArea)
         self.cbox = QVGroupBox("Learners", self.controlArea)
-        self.llb = QListBox(self.cbox)
-        self.llb.setSelectionMode(QListBox.Multi)
+        self.llb = QListWidget(self.cbox)
+        self.llb.setSelectionMode(QListWidget.MultiSelection)
         self.llb.setMinimumHeight(50)
         self.connect(self.llb, SIGNAL("selectionChanged()"),
                      self.learnerSelectionChanged)
@@ -76,7 +76,7 @@ class OWLearningCurveC(OWWidget):
         # start of content (right) area
         self.layout = QVBoxLayout(self.mainArea)
         tabs = QTabWidget(self.mainArea, 'tabs')
-        
+
         # graph widget
         tab = QVGroupBox(self)
         self.graph = QwtPlot(tab, None)
@@ -96,8 +96,8 @@ class OWLearningCurveC(OWWidget):
         self.layout.add(tabs)
         self.resize(550,200)
 
-    ##############################################################################    
-    # slots: handle input signals        
+    ##############################################################################
+    # slots: handle input signals
 
     def dataset(self, data):
         if data:
@@ -171,7 +171,7 @@ class OWLearningCurveC(OWWidget):
         if self.data:
             self.setTable()
 
-    ##############################################################################    
+    ##############################################################################
     # learning curve table, callbacks
 
     # recomputes the learning curve
@@ -181,7 +181,7 @@ class OWLearningCurveC(OWWidget):
             self.curves = self.getLearningCurve(learners)
             self.computeScores()
 
-    def computeScores(self):            
+    def computeScores(self):
         self.scores = [[] for i in range(len(self.learners))]
         for x in self.curves:
             for (i,s) in enumerate(self.scoring[self.scoringF][1](x)):
@@ -191,7 +191,7 @@ class OWLearningCurveC(OWWidget):
         self.setTable()
         self.replotGraph()
 
-    def getLearningCurve(self, learners):   
+    def getLearningCurve(self, learners):
         pb = OWGUI.ProgressBar(self, iterations=self.steps*self.folds)
         curve = orngTest.learningCurveN(learners, self.data, folds=self.folds, proportions=self.curvePoints, callback=pb.advance)
         pb.finish()
@@ -227,8 +227,9 @@ class OWLearningCurveC(OWWidget):
         colors = ColorPaletteHSV(len(self.learners))
         for (i,lt) in enumerate(self.learners):
             l = lt[1]
-            self.llb.insertItem(ColorPixmap(colors[i]), l.name)
-            self.llb.setSelected(i, l.isSelected)
+            item = QListWidgetItem(ColorPixmap(colors[i]), l.name)
+            item.setSelected(l.isSelected)
+            self.llb.addItem(item)
             l.color = colors[i]
         self.blockSelectionChanges = 0
 
@@ -282,7 +283,7 @@ if __name__=="__main__":
     ow = OWLearningCurveC()
     appl.setMainWidget(ow)
     ow.show()
-    
+
     l1 = orange.BayesLearner()
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)

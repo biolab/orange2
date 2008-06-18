@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>20</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 from exceptions import Exception
@@ -14,7 +14,7 @@ class OWMajority(OWWidget):
     settingsList = ["name"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, 'Majority')
+        OWWidget.__init__(self, parent, signalManager, 'Majority', wantMainArea = 0, resizingEnabled = 0)
 
         self.callbackDeposit = []
 
@@ -62,11 +62,10 @@ class OWMajority(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWMajority()
-    a.setMainWidget(ow)
 
 ##    dataset = orange.ExampleTable('adult_sample')
 ##    ow.setData(dataset)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

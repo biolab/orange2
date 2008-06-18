@@ -6,28 +6,26 @@
 <priority>300</priority>
 """
 
-from qttable import *
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import statc
 
 ##############################################################################
 
-class colorItem(QTableItem):
+class colorItem(QTableWidgetItem):
     def __init__(self, table, editType, text):
-        QTableItem.__init__(self, table, editType, str(text))
+        QTableWidgetItem.__init__(self, table, editType, str(text))
 
     def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-#        g.setColor(QColorGroup.Base, Qt.lightGray)
-        g.setColor(QColorGroup.Base, Qt.white)
-        QTableItem.paint(self, painter, g, rect, selected)
+        g = QPalette(colorgroup)
+        g.setColor(QPalette.Base, Qt.lightGray)
+        QTableWidgetItem.paint(self, painter, g, rect, selected)
 
 ##############################################################################
 
 class OWPredictions(OWWidget):
     settingsList = ["showProb", "showClass", "ShowAttributeMethod", "sendOnChange", "precision"]
-    contextHandlers = {"": ClassValuesContextHandler("", "selectedClasses")}
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Predictions")
@@ -62,14 +60,15 @@ class OWPredictions(OWWidget):
         OWGUI.label(ibox, self, "Task: %(tasklabel)s")
         OWGUI.separator(self.controlArea)
         
-        self.copt = QVButtonGroup("Options (classification)", self.controlArea)
+        self.copt = OWGUI.widgetBox(self.controlArea, "Options (classification)")
         self.copt.setDisabled(1)
-        OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities",
-                       callback=self.updateTableOutcomes)
+        OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities", callback=self.updateTableOutcomes)
+
+        self.lbClasses = OWGUI.listBox(self.copt, self, selectionMode = QListWidget.MultiSelection, callback = self.updateTableOutcomes)
 
         self.lbcls = OWGUI.listBox(self.copt, self, "selectedClasses", "classes",
                                    callback=[self.updateTableOutcomes, self.checksendpredictions],
-                                   selectionMode=QListBox.Multi)
+                                   selectionMode=QListWidget.MultiSelection)
         self.lbcls.setFixedHeight(50)
 
         OWGUI.spin(self.copt, self, "precision", 1, 6, label="No. of decimals: ",
@@ -83,17 +82,16 @@ class OWPredictions(OWWidget):
         # OWGUI.checkBox(self.ropt, self, 'showClass', "Show predicted class",
         #                callback=[self.updateTableOutcomes, self.checksendpredictions])
         # self.ropt.hide()
-        
+
         OWGUI.separator(self.controlArea)
 
-        self.att = QVButtonGroup("Data attributes", self.controlArea)
-        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'],
-                                callback=self.updateAttributes)
+        self.att = OWGUI.widgetBox(self.controlArea, "Data attributes")
+        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'], callback=self.updateAttributes)
         self.att.setDisabled(1)
         OWGUI.rubber(self.controlArea)
 
         OWGUI.separator(self.controlArea)
-        self.outbox = QVButtonGroup("Output", self.controlArea)
+        self.outbox = OWGUI.widgetBox(self.controlArea, "Output")
         
         self.commitBtn = OWGUI.button(self.outbox, self, "Send Predictions", callback=self.sendpredictions)
         OWGUI.checkBox(self.outbox, self, 'sendOnChange', 'Send automatically')
@@ -101,20 +99,17 @@ class OWPredictions(OWWidget):
         self.outbox.setDisabled(1)
 
         # GUI - Table
-        self.layout = QVBoxLayout(self.mainArea)
-        self.table = QTable(self.mainArea)
-        self.table.setSelectionMode(QTable.NoSelection)
+        self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
         self.header = self.table.horizontalHeader()
         self.vheader = self.table.verticalHeader()
         # manage sorting (not correct, does not handle real values)
         self.connect(self.header, SIGNAL("pressed(int)"), self.sort)
         self.sortby = -1
 
-        self.layout.add(self.table)
 
     ##############################################################################
     # Contents painting
- 
+
     def updateTableOutcomes(self):
         """updates the columns associated with the classifiers"""
         if not self.data or not self.predictors or not self.outvar:
@@ -182,8 +177,8 @@ class OWPredictions(OWWidget):
         if not self.outvar or self.data==None:
             return
 
-        self.table.setNumCols(len(self.data.domain.attributes) + 1 + len(self.predictors))
-        self.table.setNumRows(len(self.data))
+        self.table.setColumnCount(len(self.data.domain.attributes) + (self.data.domain.classVar <> None) + len(self.predictors))
+        self.table.setRowCount(len(self.data))
 
         # HEADER: set the header (attribute names)
         for col in range(len(self.data.domain.attributes)):
@@ -261,11 +256,9 @@ class OWPredictions(OWWidget):
 
     def setData(self, data):
         if not data:
-            self.closeContext()
             self.data = data
             self.datalabel = "N/A"
             self.clear()
-            self.openContext("", None)
         else:
             vartypes = {1:"discrete", 2:"continuous"}
             self.data = data
@@ -285,7 +278,7 @@ class OWPredictions(OWWidget):
             ov = predictors[0].classVar
             for predictor in predictors[1:]:
                 if ov != predictor.classVar:
-                    self.warning(0, "Predictors %s and %s make predictions for different class variables" % (predictors[0].name, predictor.name))
+                    self.warning(0, "Mismatch in class variable (e.g., predictors %s and %s)" % (predictors[0].name, predictor.name))
                     return None
             return ov
 
@@ -294,9 +287,7 @@ class OWPredictions(OWWidget):
             if self.predictors.has_key(id):
                 del self.predictors[id]
                 if len(self.predictors) == 0:
-                    self.closeContext()
                     self.clear()
-                    self.openContext("", None)
                 else:
                     self.predictorlabel = "%d" % len(self.predictors)
             return
@@ -305,7 +296,6 @@ class OWPredictions(OWWidget):
         self.predictors[id] = predictor
         self.predictorlabel = "%d" % len(self.predictors)
 
-        self.closeContext()
         # set the outcome variable
         ov = getoutvar(self.predictors.values())
         if len(self.predictors) and not ov:
@@ -326,13 +316,8 @@ class OWPredictions(OWWidget):
             else:
                 self.copt.show()
                 self.classes = [str(v) for v in self.outvar.values]
-                if self.classes:
-                    self.selectedClasses = [0]
-                else:
-                    self.selectedClasses = []
+                self.selectedClasses = []
                 self.tasklabel = "Classification"
-                
-        self.openContext("", self.outvar or None)
 
         if self.data:
             self.setTable()
@@ -360,18 +345,18 @@ class OWPredictions(OWWidget):
             if len(self.selectedClasses):
                 for c in self.predictors.values():
                     m = [orange.FloatVariable(name="%s(%s)" % (c.name, str(self.outvar.values[i])),
-                                              getValueFrom = lambda ex, rw, cindx=i, c=c: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
+                                              getValueFrom = lambda ex, rw, cindx=i: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
                          for i in self.selectedClasses]
                     metas.extend(m)
             if self.showClass:
                 mc = [orange.EnumVariable(name="%s" % c.name, values = self.outvar.values,
-                                         getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
+                                         getValueFrom = lambda ex, rw: orange.Value(c(ex)))
                       for c in self.predictors.values()]
                 metas.extend(mc)
         else:
             # regression
             mc = [orange.FloatVariable(name="%s" % c.name, 
-                                       getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
+                                       getValueFrom = lambda ex, rw: orange.Value(c(ex)))
                   for c in self.predictors.values()]
             metas.extend(mc)
 
@@ -389,7 +374,6 @@ class OWPredictions(OWWidget):
 if __name__=="__main__":    
     a = QApplication(sys.argv)
     ow = OWPredictions()
-    a.setMainWidget(ow)
     ow.show()
 
     import orngTree
@@ -436,5 +420,5 @@ if __name__=="__main__":
         ow.setPredictor(tree, 2)
         ow.setData(data)
 
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

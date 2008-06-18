@@ -18,22 +18,22 @@ import OWGUI
 class OWSieveMultigram(OWVisWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes", "showAllAttributes"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
-    
-            
+
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
-        self.outputs = [] 
+        self.outputs = []
 
         #set default settings
-        self.graphCanvasColor = str(Qt.white.name())
+        self.graphCanvasColor = str(QColor(Qt.white).name())
         self.data = None
         self.maxLineWidth = 3
         self.pearsonMinRes = 2
         self.pearsonMaxRes = 10
         self.showAllAttributes = 0
-        
+
         # add a settings dialog and initialize its values
         self.loadSettings()
 
@@ -45,7 +45,7 @@ class OWSieveMultigram(OWVisWidget):
         self.SettingsTab = OWSieveMultigramOptions(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-              
+
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWSieveMultigramGraph(self.mainArea)
@@ -53,7 +53,7 @@ class OWSieveMultigram(OWVisWidget):
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         self.statusBar.message("")
-                
+
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.interestingSubsetSelection)
         
@@ -75,25 +75,25 @@ class OWSieveMultigram(OWVisWidget):
     # #########################
     def activateLoadedSettings(self):
         # set loaded options settings
-        self.SettingsTab.lineCombo.setCurrentItem(self.maxLineWidth-1)        
+        self.SettingsTab.lineCombo.setCurrentIndex(self.maxLineWidth-1)
         index = self.SettingsTab.pearsonMaxNums.index(self.pearsonMaxRes)
-        self.SettingsTab.pearsonMaxResCombo.setCurrentItem(index)
+        self.SettingsTab.pearsonMaxResCombo.setCurrentIndex(index)
         self.SettingsTab.minResidualEdit.setText(str(self.pearsonMinRes))
         self.cbShowAllAttributes()
 
-        
+
     # receive new data and update all fields
     def setData(self, data):
         self.closeContext()
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissing(data)
-        self.computeProbabilities()        
+        self.computeProbabilities()
 
         self.setShownAttributeList(self.data)
         self.openContext("", self.data)
         self.resetAttrManipulation()
         self.updateGraph()
-        
+
 
     def sendShownAttributes(self):
         pass
@@ -103,7 +103,7 @@ class OWSieveMultigram(OWVisWidget):
         self.pearsonMaxRes = int(str(self.SettingsTab.pearsonMaxResCombo.currentText()))
         self.pearsonMinRes = float(str(self.SettingsTab.minResidualEdit.text()))
         self.graph.setSettings(self.maxLineWidth, self.pearsonMinRes, self.pearsonMaxRes)
-        
+
         self.graph.updateData(self.data, self.getShownAttributeList(), self.probabilities, self.statusBar)
         self.graph.update()
 
@@ -112,7 +112,7 @@ class OWSieveMultigram(OWVisWidget):
         interestingList = []
         data = self.data
 
-        # create a list of interesting attributes        
+        # create a list of interesting attributes
         for attrXindex in range(len(labels)):
             attrXName = labels[attrXindex]
 
@@ -131,14 +131,14 @@ class OWSieveMultigram(OWVisWidget):
                         elif expected == 0: pearson = actual/sqrt(actual)
                         else:               pearson = (actual - expected) / sqrt(expected)
                         if abs(pearson) > self.pearsonMinRes and attrXName not in interestingList: interestingList.append(attrXName)
-                        if abs(pearson) > self.pearsonMinRes and attrYName not in interestingList: interestingList.append(attrYName)                     
+                        if abs(pearson) > self.pearsonMinRes and attrYName not in interestingList: interestingList.append(attrYName)
 
         # remove attributes that are not in interestingList from visible attribute list
         for attr in labels:
             if attr not in interestingList:
-                index = self.shownAttribsLB.index(self.shownAttribsLB.findItem(attr))
-                self.shownAttribsLB.removeItem(index)
-                self.hiddenAttribsLB.insertItem(attr)
+                index = self.shownAttribsLB.index(self.shownAttribsLB.findItems(attr)[0])
+                self.shownAttribsLB.takeItem(index)
+                self.hiddenAttribsLB.addItem(attr)
         self.updateGraph()
 
     def computeProbabilities(self):
@@ -151,10 +151,10 @@ class OWSieveMultigram(OWVisWidget):
         dc = []
         for i in range(len(self.data.domain)):
             dc.append(orange.ContingencyAttrAttr(self.data.domain[i], self.data.domain[i], self.data))
-            
+
         for i in range(len(self.data.domain)):
             if self.data.domain[i].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
-            
+
             cont = dc[i]   # distribution of X attribute
             vals = []
             # compute contingency of x attribute
@@ -175,7 +175,7 @@ class OWSieveMultigram(OWVisWidget):
                 (contX, valsX) = conts[self.data.domain[attrX].name]
                 (contY, valsY) = conts[self.data.domain[attrY].name]
 
-                # create cartesian product of selected attributes and compute contingency 
+                # create cartesian product of selected attributes and compute contingency
                 (cart, profit) = FeatureByCartesianProduct(self.data, [self.data.domain[attrX], self.data.domain[attrY]])
                 tempData = self.data.select(list(self.data.domain) + [cart])
                 contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
@@ -202,14 +202,13 @@ class OWSieveMultigram(OWVisWidget):
         if self.data == None: return
 
         if self.data.domain.classVar.name not in list:
-            self.hiddenAttribsLB.insertItem(self.data.domain.classVar.name)
-            
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
+            self.hiddenAttribsLB.addItem(self.data.domain.classVar.name)
+
+        self.shownAttribsLB.addItems(list)
 
         for attr in self.data.domain:
             if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
+                self.hiddenAttribsLB.addItem(attr.name)
 
         self.updateGraph()
     #################################################
@@ -217,7 +216,7 @@ class OWSieveMultigram(OWVisWidget):
 class OWSieveMultigramOptions(QVGroupBox):
     pearsonMaxList = ['4','6','8','10','12']
     pearsonMaxNums = [ 4,  6,  8,  10,  12]
-    
+
     def __init__(self,parent=None,name=None):
         QVGroupBox.__init__(self, parent, name)
         self.parent = parent
@@ -235,20 +234,20 @@ class OWSieveMultigramOptions(QVGroupBox):
         QToolTip.add(self.hbox2, "The maximum expected Pearson standardized residual. Greater the maximum, brighter the colors.")
 
         self.hbox3 = QHBox(self.pearsonGroup, "minimum")
-        self.residualLabel2 = QLabel('Min residual'+'   ', self.hbox3)
+        self.residualLabel2 = QLabel('Min residual   ', self.hbox3)
         self.minResidualEdit = QLineEdit(self.hbox3)
         QToolTip.add(self.hbox3, "The minimal absolute residual value that will be shown in graph.")
 
         self.applyButton = QPushButton("&Apply", self)
 
-        self.initSettings()        
+        self.initSettings()
 
     def initSettings(self):
         # line width combo values
-        for i in range(1,10): self.lineCombo.insertItem(str(i))
+        self.lineCombo.addItems([str(i) for i in range(1,10)])
 
         # max residual combo values
-        for item in self.pearsonMaxList: self.pearsonMaxResCombo.insertItem(item)     
+        self.pearsonMaxResCombo.addItems(self.pearsonMaxList)
 
 
 #test widget appearance
@@ -257,7 +256,7 @@ if __name__=="__main__":
     ow=OWSieveMultigram()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()
 
-    #save settings 
+    #save settings
     ow.saveSettings()

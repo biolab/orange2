@@ -204,15 +204,7 @@ data2 = data.select(newattrs + [data.domain.classVar])
 
 <P>Each attribute now has its own <CODE>ClassifierFromVar</CODE> in its <CODE>getValueFrom</CODE>, but all use the same <CODE>IntervalDiscretizer</CODE>, <CODE>idisc</CODE>. Changing an element of its <CODE>points</CODE> affect all attributes.</P>
 
-<P><B>Do not change the length of <CODE>points</CODE> if the
-discretizer is used by any attribute.</B> The length of
-<CODE>points</CODE> should always match the number of values of the
-attribute, which is determined by the length of the attribute's field
-<CODE>values</CODE>. Therefore, if <CODE>attr</CODE> is a discretized
-attribute, than <CODE>len(attr.values)</CODE> must equal
-<CODE>len(attr.getValueFrom.transformer.points)+1</CODE>. It always
-does, unless you deliberately change it. If the sizes don't match,
-Orange will probably crash, and it will be entirely your fault.</P>
+<P><B>Do not change the length of <CODE>points</CODE> if the discretizer is used by any attribute.</B> The length of <CODE>points</CODE> should always match the number of values of the attribute, which is determined by the length of the attribute's field <CODE>values</CODE>. Therefore, if <CODE>attr</CODE> is a discretized attribute, than <CODE>len(attr.values)</CODE> must equal <CODE>len(attr.getValueFrom.transformer.points)+1</CODE>. It always does, unless you deliberately change it. If the sizes don't match, Orange will probably crash, and it will be entirely your fault.</P>f
 
 <H3>EquiDistDiscretizer</H3>
 <index name="classes/EquiDistDiscretizer">
@@ -228,7 +220,7 @@ Orange will probably crash, and it will be entirely your fault.</P>
 <DT>numberOfIntervals</DT>
 <DD>Number of intervals.</DD>
 <dt>points (read-only)</dt>
-<dd>The cut-off points; this is not a real attribute although it behaves as one. Reading it constructs a list of cut-off points and returns it, but changing the list doesn't affect the discretizer - it's a separate list. This attribute is here only for to give the <code>EquiDistDiscretizer</code> the same interface as that of <code>IntervalDiscretizer</code>.</dd>
+<dt>The cut-off points; this is not a real attribute although it behaves as one. Reading it constructs a list of cut-off points and returns it, but changing the list doesn't affect the discretizer - it's a separate list. This attribute is here only for to give the <code>EquiDistDiscretizer</code> the same interface as that of <code>IntervalDiscretizer</code>.</dt>
 </DL>
 
 <P>All values below <CODE>firstCut</CODE> belong to the first interval (including possible values smaller than <CODE>firstVal</CODE>. Otherwise, value <CODE>val</CODE>'s interval is <CODE>floor((val-firstVal)/step)</CODE>. If this is turns out to be greater or equal to <CODE>numberOfIntervals</CODE>, it is decreased to <CODE>numberOfIntervals-1</CODE>.</P>

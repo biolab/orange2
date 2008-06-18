@@ -2,6 +2,26 @@ from orngScaleData import *
 
 class orngScaleScatterPlotData(orngScaleData):
 
+    def getOriginalData(self, indices):
+        data = self.originalData.take(indices, axis = 0)
+        for i, ind in enumerate(indices):
+            [minVal, maxVal] = self.attrValues[self.rawData.domain[ind].name]
+            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
+                data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawData)) - 0.5)
+            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+                data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawData)) - 0.5)
+        return data
+    
+    def getOriginalSubsetData(self, indices):
+        data = self.originalSubsetData.take(indices, axis = 0)
+        for i, ind in enumerate(indices):
+            [minVal, maxVal] = self.attrValues[self.rawSubsetData.domain[ind].name]
+            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
+                data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
+            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+                data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
+        return data
+
     # create x-y projection of attributes in attrList
     def getXYPositions(self, xAttr, yAttr):
         xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
@@ -24,7 +44,7 @@ class orngScaleScatterPlotData(orngScaleData):
         return values
 
 
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
+    # create the projection of attribute indices given in attrIndices and create an example table with it.
     #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
         if self.rawData.domain.classVar:
@@ -37,13 +57,13 @@ class orngScaleScatterPlotData(orngScaleData):
             return orange.ExampleTable(domain, data)
         else:
             return orange.ExampleTable(domain)
-            
+
 
     def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         validData = settingsDict.get("validData")
         classList = settingsDict.get("classList")
         jitterSize = settingsDict.get("jitterSize", 0.0)
-        
+
         if validData == None:
             validData = self.getValidList(attrIndices)
         if sum(validData) == 0:

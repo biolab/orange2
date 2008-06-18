@@ -5,13 +5,13 @@
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3011</priority>
 """
-import OWGUI
-import OWToolbars
-
 from OWWidget import *
+
+import OWGUI
 from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
+import OWToolbars
 from statc import mean
 from orangeom import Network
 
@@ -21,18 +21,29 @@ dlg_sel2mark = dir + "Dlg_Sel2Mark.png"
 dlg_selIsmark = dir + "Dlg_SelisMark.png"
 dlg_selected = dir + "Dlg_SelectedNodes.png"
 dlg_unselected = dir + "Dlg_UnselectedNodes.png"
+dlg_showall = dir + "Dlg_clear.png"
 
 class OWNetwork(OWWidget):
-    settingsList=["autoSendSelection", "spinExplicit", "spinPercentage"]
-    contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"),
-                                                     ContextField("attributes", selected="tooltipAttributes"),
-                                                     "color"])}
-
+    settingsList = ["autoSendSelection", 
+                    "spinExplicit", 
+                    "spinPercentage",
+                    "maxLinkSize",
+                    "maxVertexSize",
+                    "renderAntialiased",
+                    "labelsOnMarkedOnly",
+                    "invertSize",
+                    "optMethod",
+                    "lastVertexSizeColumn",
+                    "showWeights",
+                    "showIndexes", 
+                    "showEdgeLabels"] 
+    
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
-
-        self.inputs = [("Network", Network, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
-        self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
+        
+        #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
+        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
+        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -48,150 +59,196 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
-        self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = 0
+        self.vertexSize = 0
+        self.nVertices = self.nShown = self.nHidden = self.nMarked = self.nSelected = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
         self.optimizeWhat = 1
         self.stopOptimization = 0
+        self.maxLinkSize = 3
+        self.maxVertexSize = 5
+        self.renderAntialiased = 1
+        self.labelsOnMarkedOnly = 0
+        self.invertSize = 0
+        self.optMethod = 0
+        self.lastVertexSizeColumn = ''
+        self.showWeights = 0
+        self.showIndexes = 0
+        self.showEdgeLabels = 0
         
         self.loadSettings()
 
         self.visualize = None
 
         self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
-        #self.optimize = OWGraphDrawingOptimize(parent=self);
-        #start of content (right) area
-        self.box = QVBoxLayout(self.mainArea)
-        self.box.addWidget(self.graph)
+        self.mainArea.layout().addWidget(self.graph)
+        
+        self.graph.maxLinkSize = self.maxLinkSize
+        self.graph.maxVertexSize = self.maxVertexSize
+        
+        self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
+        
+        self.tabs = OWGUI.tabWidget(self.hcontroArea)
+        self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
+        self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
+        self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
+        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
-        self.tabs = QTabWidget(self.controlArea)
-#        self.mainTab = QVGroupBox(self)
-        self.displayTab = QVGroupBox(self)
-        self.mainTab = self.displayTab
-        self.markTab = QVGroupBox(self)
-        self.infoTab = QVGroupBox(self)
-        self.protoTab = QVGroupBox(self)
-#        self.tabs.insertTab(self.mainTab, "Main")
-        self.tabs.insertTab(self.displayTab, "Display")
-        self.tabs.insertTab(self.markTab, "Mark")
-        self.tabs.insertTab(self.infoTab, "Info")
-        self.tabs.insertTab(self.protoTab, "Prototypes")
-        OWGUI.separator(self.controlArea)
-
-
-        self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
-        OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-        self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
-        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
-        #OWGUI.button(self.optimizeBox, self, "F-R Special", callback=self.frSpecial)
-        OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
-        OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
-        OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
-        OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
-        #OWGUI.separator(self.optimizeBox)
-        #OWGUI.widgetLabel("Optimize")
-        #ib = OWGUI.indentedBox(self.optimizeBox)
-        #for wh in ("All points", "Shown points", "Selected points"):
-        #    OWGUI.appendRadioButton(self.optimizeBox, self, "optimizeWhat", wh, insertInto=ib)
+        self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
+        
+        OWGUI.label(self.optimizeBox, self, "Select layout optimization method:")
+        
+        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
+        self.optCombo.addItem("Random")
+        self.optCombo.addItem("Fruchterman Reingold")
+        self.optCombo.addItem("Fruchterman Reingold Radial")
+        self.optCombo.addItem("Circular Crossing Reduction")
+        self.optCombo.addItem("Circular Original")
+        self.optCombo.addItem("Circular Random")
+        
+        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
+        self.stepsSpin.setEnabled(False)
+        
+        self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
         
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
-        self.colorCombo.insertItem("(none)")
+        self.colorCombo.addItem("(none)")
         
-        self.attBox = OWGUI.widgetBox(self.mainTab, "Labels", addSpace = False)
-        self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedAttLstBox)
+        self.attBox = OWGUI.widgetBox(self.displayTab, "Labels", addSpace = False)
+        self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         
-        self.tooltipBox = OWGUI.widgetBox(self.mainTab, "Tooltips", addSpace = False)  
-        self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
+        self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
+        self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
-        self.labelsOnMarkedOnly = 0
-        OWGUI.checkBox(self.mainTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        OWGUI.checkBox(self.settingsTab, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
+        OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
+        OWGUI.checkBox(self.settingsTab, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
         
-        OWGUI.separator(self.mainTab)
+        OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        
+        OWGUI.spin(self.settingsTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        
+        self.vertexSizeCombo = OWGUI.comboBox(self.settingsTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
+        self.vertexSizeCombo.addItem("(none)")
+        
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
+        
+        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
+        
+        OWGUI.checkBox(self.settingsTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
+        
+        self.checkSendMarkedNodes = 0
+        OWGUI.checkBox(self.displayTab, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
+        
+        OWGUI.separator(self.displayTab)
 
-        OWGUI.button(self.mainTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
-        OWGUI.button(self.mainTab, self, "Save network", callback=self.saveNetwork)
+        OWGUI.button(self.displayTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
+        OWGUI.button(self.displayTab, self, "Save network", callback=self.saveNetwork)
         
-        ib = OWGUI.widgetBox(self.markTab, "Info", addSpace = True)
+        ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical", addSpace = True)
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
-        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
-        #OWGUI.separator(ribg) 
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain")
+        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode, addSpace = True)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain", callback = self.setMarkMode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
-        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setHubs)
+        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setMarkMode)
         
-        #OWGUI.separator(ribg)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices")
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
-        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setHubs(h)))
-        #OWGUI.separator(ib, 4, 4)
+        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
         self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
-        #OWGUI.separator(ribg)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections")
-        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setHubs(h)))
-        #OWGUI.separator(ribg)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour")
-        #OWGUI.separator(ribg)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections")
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.setMarkMode)
+        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setMarkMode(h)))
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg)
-        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setHubs(h)))
+        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setMarkMode(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
 #        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
         
-        #ib = OWGUI.widgetBox(self.markTab, "Selection", addSpace = True)
-        ib = QHGroupBox("Selection", self.markTab)
-        btnM2S = OWGUI.button(ib, self, "", callback = self.markedToSelection)
-        btnM2S.setPixmap(QPixmap(dlg_mark2sel))
-        QToolTip.add(btnM2S, "Add Marked to Selection")
-        btnS2M = OWGUI.button(ib, self, "",callback = self.markedFromSelection)
-        btnS2M.setPixmap(QPixmap(dlg_sel2mark))
-        QToolTip.add(btnS2M, "Add Selection to Marked")
-        btnSIM = OWGUI.button(ib, self, "", callback = self.setSelectionToMarked)
-        btnSIM.setPixmap(QPixmap(dlg_selIsmark))
-        QToolTip.add(btnSIM, "Set Selection is Marked")
-        
-        self.hideBox = QHGroupBox("Hide vertices", self.markTab)
-        btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
-        btnSEL.setPixmap(QPixmap(dlg_selected))
-        QToolTip.add(btnSEL, "Selected")
-        btnUN = OWGUI.button(self.hideBox, self, "", callback=self.hideAllButSelected)
-        btnUN.setPixmap(QPixmap(dlg_unselected))
-        QToolTip.add(btnUN, "Unselected")
-        OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
-                
         T = OWToolbars.NavigateSelectToolbar
-        self.zoomSelectToolbar = OWToolbars.NavigateSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-                                                              buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
-                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_select), Qt.arrowCursor, 1, "select"),
-                                                                         T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
+        self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
+                                  buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
+                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
+                                             T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
         
-        #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
+        ib = OWGUI.widgetBox(self.zoomSelectToolbar, "Inv", orientation="vertical")
+        btnM2S = OWGUI.button(ib, self, "", callback = self.markedToSelection)
+        btnM2S.setIcon(QIcon(dlg_mark2sel))
+        btnM2S.setToolTip("Add Marked to Selection")
+        btnS2M = OWGUI.button(ib, self, "",callback = self.markedFromSelection)
+        btnS2M.setIcon(QIcon(dlg_sel2mark))
+        btnS2M.setToolTip("Remove Marked from Selection")
+        btnSIM = OWGUI.button(ib, self, "", callback = self.setSelectionToMarked)
+        btnSIM.setIcon(QIcon(dlg_selIsmark))
+        btnSIM.setToolTip("Set Selection to Marked")
         
-        ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = True)
+        self.hideBox = OWGUI.widgetBox(self.zoomSelectToolbar, "Hide", orientation="vertical")
+        btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
+        btnSEL.setIcon(QIcon(dlg_selected))
+        btnSEL.setToolTip("Hide selected")
+        btnUN = OWGUI.button(self.hideBox, self, "", callback=self.hideAllButSelected)
+        btnUN.setIcon(QIcon(dlg_unselected))
+        btnUN.setToolTip("Hide unselected")
+        btnSW = OWGUI.button(self.hideBox, self, "", callback=self.showAllNodes)
+        btnSW.setIcon(QIcon(dlg_showall))
+        btnSW.setToolTip("Show all nodes")
+        
+        OWGUI.rubber(self.zoomSelectToolbar)
+        
+        ib = OWGUI.widgetBox(self.infoTab, "General")
         OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
         OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
         OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
         OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
+        OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
         self.insideView = 0
         self.insideViewNeighbours = 2
-        OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
-        #OWGUI.button(self.protoTab, self, "Clustering", callback=self.clustering)
-        OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
+        OWGUI.spin(self.settingsTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
+        #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
+        OWGUI.button(self.settingsTab, self, "Collapse", callback=self.collapse)
         
         self.icons = self.createAttributeIconDict()
-        self.setHubs()
+        self.setMarkMode()
         
-        self.resize(850, 700)    
+        self.displayTab.layout().addStretch(1)
+        self.markTab.layout().addStretch(1)
+        self.infoTab.layout().addStretch(1)
+        self.settingsTab.layout().addStretch(1)
+        self.optMethod = 1
+        self.setOptMethod()
+         
+        self.resize(1000, 600)
+        
+    def setSendMarkedNodes(self):
+        if self.checkSendMarkedNodes:
+            self.graph.sendMarkedNodes = self.sendMarkedNodes
+            self.sendMarkedNodes(self.graph.getMarkedVertices())
+        else:
+            self.send("Marked Examples", None)
+            self.graph.sendMarkedNodes = None
+        
+    def sendMarkedNodes(self, markedNodes):        
+        if len(markedNodes) == 0:
+            self.send("Marked Examples", None)
+            return
+        
+        if self.visualize != None and self.visualize.graph != None and self.visualize.graph.items != None:                    
+            items = self.visualize.graph.items.getitems(markedNodes)
+            self.send("Marked Examples", items)
+            return
+        
+        self.send("Marked Examples", None)
 
     def collapse(self):
-        print "collapse"
+        #print "collapse"
         self.visualize.collapse()
         self.graph.addVisualizer(self.visualize)
         #if not nodes is None:
@@ -200,30 +257,47 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
         
     def clustering(self):
-        print "clustering"
+        #print "clustering"
         self.visualize.graph.getClusters()
         
     def insideviewneighbours(self):
         if self.graph.insideview == 1:
             self.graph.insideviewNeighbours = self.insideViewNeighbours
-            self.frButton.setOn(True)
+            self.optButton.setChecked(True)
             self.fr()
         
     def insideview(self):
-        if len(self.graph.selection) == 1:
+        print self.graph.getSelectedVertices()
+        if len(self.graph.getSelectedVertices()) == 1:
             if self.graph.insideview == 1:
+                print "insideview: 1"
                 self.graph.insideview = 0
-                self.graph.hiddenNodes = []
+                self.graph.showAllVertices()
                 self.updateCanvas()
             else:
+                print "insideview: 0"
                 self.graph.insideview = 1
                 self.graph.insideviewNeighbors = self.insideViewNeighbours
-                self.frButton.setOn(True)
+                self.optButton.setChecked(True)
                 self.fr()
     
         else:
             print "One node must be selected!"
-            
+    
+    def showIndexLabels(self):
+        self.graph.showIndexes = self.showIndexes
+        self.graph.updateData()
+        self.graph.replot()
+        
+    def showWeightLabels(self):
+        self.graph.showWeights = self.showWeights
+        self.graph.updateData()
+        self.graph.replot()
+        
+    def showEdgeLabelsClick(self):
+        self.graph.showEdgeLabels = self.showEdgeLabels
+        self.graph.updateData()
+        self.graph.replot()
         
     def labelsOnMarked(self):
         self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
@@ -233,9 +307,9 @@ class OWNetwork(OWWidget):
     def setSearchStringTimer(self):
         self.hubs = 1
         self.searchStringTimer.stop()
-        self.searchStringTimer.start(750, True)
+        self.searchStringTimer.start(750)
          
-    def setHubs(self, i = None):
+    def setMarkMode(self, i = None):
         if not i is None:
             self.hubs = i
             
@@ -249,23 +323,28 @@ class OWNetwork(OWWidget):
         vgraph = self.visualize.graph
 
         if hubs == 0:
+            #print "mark on input"
             return
         
         elif hubs == 1:
+            #print "mark on given label"
             txt = self.markSearchString
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
-            self.graph.setMarkedNodes([i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])])
-            #print [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            toMark = [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            self.graph.setMarkedVertices(toMark)
+            self.graph.replot()
             return
         
         elif hubs == 2:
-            self.graph.setMarkedNodes([])
+            #print "mark on focus"
+            self.graph.unMark()
             self.graph.tooltipNeighbours = self.markDistance
             return
 
         elif hubs == 3:
-            self.graph.setMarkedNodes([])
+            #print "mark selected"
+            self.graph.unMark()
             self.graph.selectionNeighbours = self.markDistance
             self.graph.markSelectionNeighbours()
             return
@@ -274,37 +353,34 @@ class OWNetwork(OWWidget):
         powers = vgraph.getDegrees()
         
         if hubs == 4: # at least N connections
+            #print "mark at least N connections"
             N = self.markNConnections
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power >= N])
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
+            self.graph.replot()
         elif hubs == 5:
+            #print "mark at most N connections"
             N = self.markNConnections
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power <= N])
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
+            self.graph.replot()
         elif hubs == 6:
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            #print "mark more than any"
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.graph.replot()
         elif hubs == 7:
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            #print "mark more than avg"
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.graph.replot()
         elif hubs == 8:
+            #print "mark most"
             sortedIdx = range(len(powers))
             sortedIdx.sort(lambda x,y: -cmp(powers[x], powers[y]))
-            cutP = self.markNumber
+            cutP = self.markNumber - 1
             cutPower = powers[sortedIdx[cutP]]
             while cutP < len(powers) and powers[sortedIdx[cutP]] == cutPower:
                 cutP += 1
-            self.graph.setMarkedNodes(sortedIdx[:cutP-1])
-            
-        
-    def clickedAttLstBox(self):
-        self.graph.setLabelText([self.attributes[i][0] for i in self.markerAttributes])
-        self.graph.updateData()
-        self.graph.replot()
-            
-        
-    def clickedTooltipLstBox(self):
-        self.graph.setTooltipText([self.attributes[i][0] for i in self.tooltipAttributes])
-        self.graph.updateData()
-        self.graph.replot()
-
-
+            self.graph.setMarkedVertices(sortedIdx[:cutP])
+            self.graph.replot()
+       
     def testRefresh(self):
         start = time()
         self.graph.replot()
@@ -312,7 +388,7 @@ class OWNetwork(OWWidget):
         print "replot in " + str(stop - start)
         
     def saveNetwork(self):
-        filename = QFileDialog.getSaveFileName(QString.null,'PAJEK networks (*.net)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK networks (*.net)')
         if filename:
             fn = ""
             head, tail = os.path.splitext(str(filename))
@@ -322,15 +398,7 @@ class OWNetwork(OWWidget):
                 fn = str(filename)
             
             self.graph.visualizer.saveNetwork(fn)
-    
-    def selectConnectedNodes(self):
-        self.graph.selectConnectedNodes(self.connectDistance)
-        
-        
-    def selectAllConnectedNodes(self):
-        self.graph.selectConnectedNodes(1000000)
-            
-    
+                    
     def sendData(self):
         graph = self.graph.getSelectedGraph()
         
@@ -340,22 +408,22 @@ class OWNetwork(OWWidget):
             else:
                 self.send("Selected Examples", self.graph.getSelectedExamples())
                 
-            self.send("Selected Graph", graph)
+            self.send("Selected Network", graph)
         else:
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
-            self.send("Selected Graph", None)
-   
-    
+      
     def setGraph(self, graph):
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."
-        self.visualize = NetworkOptimization(graph, self)
-        self.nVertices = len(graph)
-        self.nShown = len(graph)
+        self.visualize = NetworkOptimization(graph)
+        
+        self.nVertices = graph.nVertices
+        self.nShown = graph.nVertices
         self.nEdges = len(graph.getEdges())
+        
         if self.nEdges > 0:
             self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
         else:
@@ -365,17 +433,44 @@ class OWNetwork(OWWidget):
             self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
         else:
             self.edgesPerVertex = 0
+            
         self.diameter = graph.getDiameter()
+        self.clustering_coefficient = graph.getClusteringCoefficient() * 100
         #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
-
+        #print self.attributes
         self.colorCombo.clear()
-        self.colorCombo.insertItem("(one color)")
+        self.vertexSizeCombo.clear()
+        self.colorCombo.addItem("(one color)")
+        self.vertexSizeCombo.addItem("(same size)")
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
-                self.colorCombo.insertItem(self.icons[var.varType], unicode(var.name))
-
+                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+                
+            if var.varType in [orange.VarTypes.String] and hasattr(graph, 'items') and graph.items != None and len(graph.items) > 0:
+                
+                value = graph.items[random.randint(0, len(graph.items) - 1)][var].value
+                
+                # can value be a list?
+                try:
+                    if type(eval(value)) == type([]):
+                        self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                        continue
+                except:
+                    pass
+                
+                if len(value.split(',')) > 1:
+                    self.vertexSizeCombo.addItem(self.icons[var.varType], "num of " + unicode(var.name))
+                
+            elif var.varType in [orange.VarTypes.Continuous]:
+                self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+        
+        for i in range(self.vertexSizeCombo.count()):
+            if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
+                self.vertexSize = i
+                break
+            
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
         #print "done."
@@ -387,10 +482,71 @@ class OWNetwork(OWWidget):
         if self.frSteps <   1: self.frSteps = 1;
         if self.frSteps > 1500: self.frSteps = 1500;
         
-        self.random()
-    
+        self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.graph.showWeights = self.showWeights
+        self.graph.showIndexes = self.showIndexes
+        # if graph is large, set random layout, min vertex size, min edge size
+        if self.frSteps < 10:
+            self.renderAntialiased = 0
+            self.maxVertexSize = 5
+            self.maxLinkSize = 1
+            self.optMethod = 0
+            self.setOptMethod()            
+            
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.showEdgeLabels = self.showEdgeLabels
+        self.graph.maxVertexSize = self.maxVertexSize
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        
+        if self.vertexSize > 0:
+            self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
+        else:
+            self.graph.setVerticesSize()
+            
+        self.graph.setEdgesSize()
+            
+        self.optButton.setChecked(1)
+        self.optLayout()
+
+        #self.random()
+        
+    def setItems(self, items=None):
+        if self.visualize.graph == None or items == None:
+            return
+        
+        if len(items) != self.visualize.graph.nVertices:
+            self.error('ExampleTable items must have one example for each vertex.')
+            return
+        
+        self.visualize.graph.setattr("items", items)
+        self.setGraph(self.visualize.graph)
+        
+    def markItems(self, items):
+        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None or items == None:
+            print 'return 1'
+            return
+        
+        if len(items) > 0:
+            commonVars = set(items.domain) & set(self.visualize.graph.items.domain)
+            
+            if len(commonVars) > 0:
+                for var in commonVars:
+                    orgVar = self.visualize.graph.items.domain[var]
+                    mrkVar = items.domain[var]
+                    
+                    if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
+                        values = [str(x[var]) for x in items]
+                        toMark = [i for i,x in enumerate(self.visualize.graph.items) if str(x[var]) in values]
+                        self.graph.setMarkedVertices(list(toMark))
+                        self.graph.replot()
+                        break
+        else:
+            self.graph.setMarkedVertices([])
+            self.graph.replot()
+        
     def setExampleSubset(self, subset):
-        if self.graph.visualizer == None:
+        if self.graph == None:
             return
         
         hiddenNodes = []
@@ -412,56 +568,110 @@ class OWNetwork(OWWidget):
             except:
                 print "Error. Index column does not exists."
         
-        #print "hiddenNodes:"
-        #print hiddenNodes
-        
     def hideSelected(self):
-        #print self.graph.selection
-        toHide = self.graph.selection + self.graph.hiddenNodes
-        self.nHidden = len(toHide)
-        self.nShown = self.nVertices - self.nHidden 
-        self.graph.setHiddenNodes(toHide)
-        self.graph.removeSelection()
-        
-        
+        self.graph.hideSelectedVertices()
+                
     def hideAllButSelected(self):
-        allNodes = set(range(self.graph.nVertices))
-        allButSelected = list(allNodes - set(self.graph.selection))
-        toHide = allButSelected + self.graph.hiddenNodes
-        self.nHidden = len(toHide)
-        self.nShown = self.nVertices - self.nHidden 
-        self.graph.setHiddenNodes(toHide)
-    
-    
+        self.graph.hideUnSelectedVertices()
+      
     def showAllNodes(self):
-        self.graph.setHiddenNodes([])
-        self.nHidden = 0
-        self.nShown = self.nVertices
+        self.graph.showAllVertices()
+                               
+    def updateCanvas(self):
+        # if network exists
+        if self.visualize != None:
+            self.graph.updateCanvas()
+              
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Control:
+            self.graph.controlPressed = True
+            #print "cp"
+        elif e.key() == Qt.Key_Alt:
+            self.graph.altPressed = True
+        QWidget.keyPressEvent(self, e)
+               
+    def keyReleaseEvent(self, e):
+        if e.key() == Qt.Key_Control:
+            self.graph.controlPressed = False
+        elif e.key() == Qt.Key_Alt:
+            self.graph.altPressed = False
+        QWidget.keyReleaseEvent(self, e)
         
+#    def keyPressEvent(self, e):
+#        if e.text() == "f":
+#            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
+#        else:
+#            OWWidget.keyPressEvent(self, e)
+
+    def showDegreeDistribution(self):
+        from matplotlib import rcParams
+        import pylab as p
         
+        x = self.visualize.graph.getDegrees()
+        nbins = len(set(x))
+        if nbins > 500:
+          bbins = 500
+        #print len(x)
+        print x
+        # the histogram of the data
+        n, bins, patches = p.hist(x, nbins)
+        
+        p.xlabel('Degree')
+        p.ylabel('No. of nodes')
+        p.title(r'Degree distribution')
+        
+        p.show()
+        
+    """
+    Layout Optimization
+    """
+    def optLayout(self):
+        if not self.optButton.isChecked():
+            return
+            
+        if self.optMethod == 0:
+            self.random()
+        elif self.optMethod == 1:
+            self.fr()
+        elif self.optMethod == 2:
+            self.frRadial()
+        elif self.optMethod == 3:
+            self.circularCrossingReduction()
+        elif self.optMethod == 4:
+            self.circularOriginal()
+        elif self.optMethod == 5:
+            self.circularRandom()
+            
+        self.optButton.setChecked(False)
+    
+    def setOptMethod(self):
+        if str(self.optMethod) == '1':
+            self.stepsSpin.setEnabled(True)
+        else:
+            self.stepsSpin.setEnabled(False)
+
     def random(self):
         #print "OWNetwork/random.."
         if self.visualize == None:   #grafa se ni
             return    
             
         self.visualize.random()
-        
+        #print self.visualize.coors
         #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
-        #print "done."
         
     def fr(self):
-        from qt import qApp
         if self.visualize == None:   #grafa se ni
             return
               
-        if not self.frButton.isOn():
-            self.stopOptimization = 1
-            self.frButton.setOn(0)
-            self.frButton.setText("Fruchterman Reingold")
-            return
+        if not self.optButton.isChecked():
+          #print "not"
+          self.stopOptimization = 1
+          self.optButton.setChecked(False)
+          self.optButton.setText("Optimize layout")
+          return
         
-        self.frButton.setText("Stop")
+        self.optButton.setText("Stop")
         qApp.processEvents()
         self.stopOptimization = 0
         tolerance = 5
@@ -498,8 +708,8 @@ class OWNetwork(OWWidget):
                 qApp.processEvents()
                 self.updateCanvas()
                 
-        self.frButton.setOn(0)
-        self.frButton.setText("Fruchterman Reingold")
+        self.optButton.setChecked(False)
+        self.optButton.setText("Optimize layout")
         
     def frSpecial(self):
         steps = 100
@@ -513,8 +723,7 @@ class OWNetwork(OWWidget):
         #print oldXY
         self.graph.updateDataSpecial(oldXY)
         self.graph.replot()
-        
-        
+                
     def frRadial(self):
         #print "F-R Radial"
         k = 1.13850193174e-008
@@ -523,13 +732,15 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)
+        #print "refreshRate: " + str(refreshRate)
         
         tolerance = 5
         initTemp = 100
         centerNdx = 0
-        if len(self.graph.selection) > 0:
-            centerNdx = self.graph.selection[0]
+        
+        selection = self.graph.getSelection()
+        if len(selection) > 0:
+            centerNdx = selection[0]
             
         #print "center ndx: " + str(centerNdx)
         initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
@@ -542,99 +753,77 @@ class OWNetwork(OWWidget):
         #print "Circular Original"
         self.visualize.circularOriginal()
         self.updateCanvas()
-        
-        
+           
     def circularRandom(self):
         #print "Circular Random"
         self.visualize.circularRandom()
         self.updateCanvas()
 
-
     def circularCrossingReduction(self):
         #print "Circular Crossing Reduction"
         self.visualize.circularCrossingReduction()
         self.updateCanvas()
-        
-        
+      
+    """
+    Network Visualization (design)
+    """
+       
+    def clickedAttLstBox(self):
+        self.graph.setLabelText([self.attributes[i][0] for i in self.markerAttributes])
+        self.graph.updateData()
+        self.graph.replot()
+  
+    def clickedTooltipLstBox(self):
+        self.graph.setTooltipText([self.attributes[i][0] for i in self.tooltipAttributes])
+        self.graph.updateData()
+        self.graph.replot()
+
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.graph.updateData()
         self.graph.replot()
-        
-        
+                  
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
         self.graph.enableGridX(self.graphShowGrid)
-                    
-                    
-    def updateCanvas(self):
-        #ce imamo graf
-        if self.visualize != None:
-            self.graph.updateCanvas()#self.visualize.xCoors, self.visualize.yCoors)
-        
-        
-    def keyPressEvent(self, e):
-        if e.key() == Qt.Key_Control:
-            self.graph.controlPressed = True
-            #print "cp"
-        elif e.key() == Qt.Key_Alt:
-            self.graph.altPressed = True
-        QWidget.keyPressEvent(self, e)
-        
-        
-    def keyReleaseEvent(self, e):
-        if e.key() == Qt.Key_Control:
-            self.graph.controlPressed = False
-        elif e.key() == Qt.Key_Alt:
-            self.graph.altPressed = False
-        QWidget.keyReleaseEvent(self, e)
-        
-
-#    def keyPressEvent(self, e):
-#        if e.text() == "f":
-#            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
-#        else:
-#            OWWidget.keyPressEvent(self, e)
-
-
+    
     def markedToSelection(self):
-        self.graph.addSelection(self.graph.markedNodes)
-    
-    
+        self.graph.markedToSelection()
+      
     def markedFromSelection(self):
-        tomark = self.graph.markedNodes
-        tomark |= set(self.graph.selection)
-        self.graph.removeSelection(None, False)
-        self.graph.setMarkedNodes(tomark)
-    
+        self.graph.selectionToMarked()
     
     def setSelectionToMarked(self):
-        toselect = self.graph.markedNodes
-        self.graph.removeSelection(None, False)
-        self.graph.addSelection(toselect)
+        self.graph.removeSelection(False)
+        self.graph.markedToSelection()
+    
+    def selectAllConnectedNodes(self):
+        self.graph.selectConnectedNodes(1000000)
         
+    def setMaxLinkSize(self):
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.graph.setEdgesSize()
+        self.graph.replot()
+    
+    def setVertexSize(self):
+        self.graph.maxVertexSize = self.maxVertexSize
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
-    def showDegreeDistribution(self):
-        from matplotlib import rcParams
-        #rcParams['text.fontname'] = 'cmr10'
-        import pylab as p
+        if self.vertexSize > 0:
+            self.graph.setVerticesSize(self.lastVertexSizeColumn, self.invertSize)
+        else:
+            self.graph.setVerticesSize()
+            
+        self.graph.replot()
         
-        x = self.visualize.graph.getDegrees()
-        #print len(x)
-        #print x
-        # the histogram of the data
-        n, bins, patches = p.hist(x, 500)
+    def setRenderAntialiased(self):
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.updateData()
+        self.graph.replot()
         
-        p.xlabel('No. of nodes')
-        p.ylabel('Degree')
-        p.title(r'Degree distribution')
-        
-        p.show()
-
-
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
     ow = OWNetwork()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()
+    

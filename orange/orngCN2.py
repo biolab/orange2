@@ -114,10 +114,9 @@ def CN2Learner(examples = None, weightID=0, **kwds):
         return cn2
 
 def supervisedClassCheck(examples):
-    # examples[0] to make it work on a list of examples, too
-    if not examples[0].domain.classVar:
+    if not examples.domain.classVar:
         raise Exception("Class variable is required!")
-    if examples[0].domain.classVar.varType == orange.VarTypes.Continuous:
+    if examples.domain.classVar.varType == orange.VarTypes.Continuous:
         raise Exception("CN2 requires a discrete class!")
     
 class CN2LearnerClass(orange.RuleLearner):
@@ -140,8 +139,7 @@ class CN2Classifier(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.__dict__.update(argkw)
-        # examples[0] to make it work on a list of examples, too
-        self.prior = orange.Distribution(examples[0].domain.classVar, examples)
+        self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
         classifier = None
@@ -191,17 +189,14 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         supervisedClassCheck(examples)
         
         rules = orange.RuleList()
-        
-        # examples[0] to make it work on a list of examples, too
-        self.ruleStopping.apriori = orange.Distribution(examples[0].domain.classVar,examples)
+        self.ruleStopping.apriori = orange.Distribution(examples.domain.classVar,examples)
         progress=getattr(self,"progressCallback",None)
         if progress:
             progress.start = 0.0
             progress.end = 0.0
-            # examples[0] to make it work on a list of examples, too
-            distrib = orange.Distribution(examples[0].domain.classVar, examples, weight)
+            distrib = orange.Distribution(examples.domain.classVar, examples, weight)
             distrib.normalize()
-        for targetClass in examples[0].domain.classVar:
+        for targetClass in examples.domain.classVar:
             if progress:
                 progress.start = progress.end
                 progress.end += distrib[targetClass]
@@ -232,8 +227,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
             return disc, sumdisc
 
         # create empty distribution
-        # examples[0] to make it work on a list of examples, too
-        retDist = orange.DiscDistribution(self.examples[0].domain.classVar)
+        retDist = orange.DiscDistribution(self.examples.domain.classVar)
         covRules = orange.RuleList()
         # iterate through examples - add distributions
         sumdisc = 0.
@@ -244,7 +238,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         if not sumdisc:
             retDist = self.prior
             sumdisc = self.prior.abs
-        for c in self.examples[0].domain.classVar:
+        for c in self.examples.domain.classVar:
             retDist[c] /= sumdisc
         if retRules:
             if result_type == orange.GetValue:
@@ -269,8 +263,7 @@ class RuleClassifier_bestRule(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.__dict__.update(argkw)
-        # examples[0] to make it work on a list of examples, too
-        self.prior = orange.Distribution(examples[0].domain.classVar, examples)
+        self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
         retDist = orange.Distribution(example.domain.classVar)
@@ -305,10 +298,10 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-#            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-#        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
@@ -321,7 +314,7 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-#            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         try:
             coverage = examples.domain.getmeta("Coverage")
         except:
@@ -330,7 +323,7 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
             examples.addMetaAttribute(coverage,0.0)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-#        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 try:

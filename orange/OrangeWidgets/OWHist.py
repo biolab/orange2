@@ -31,6 +31,8 @@ class OWHist(OWGraph):
         self.enableGridXB(False)
         self.enableGridYL(False)
 
+        self.buttonCurrentlyPressed = None
+
     def setValues(self, values):
         nBins = 100
         if len(values) < 100:
@@ -43,8 +45,8 @@ class OWHist(OWGraph):
         self.miny = min(self.yData)
         self.maxy = max(self.yData)
         
-        self.minValue = self.minx
-        self.maxValue = self.maxx
+        self.minValue = min(values)
+        self.maxValue = max(values)
         
         self.updateData()
         self.replot()
@@ -54,18 +56,18 @@ class OWHist(OWGraph):
         self.upperBoundary = upper
         maxy = max(self.yData)
         
-        self.setCurveData(self.lowerBoundaryKey, [self.lowerBoundary, self.lowerBoundary], [0, maxy])
-        self.setCurveData(self.upperBoundaryKey, [self.upperBoundary, self.upperBoundary], [0, maxy])
+        self.lowerBoundaryKey.setData([self.lowerBoundary, self.lowerBoundary], [0, maxy])
+        self.upperBoundaryKey.setData([self.upperBoundary, self.upperBoundary], [0, maxy])
         self.replot()
             
     def updateData(self):
         self.removeDrawingCurves(removeLegendItems = 0)
                     
-        self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps, xData = list(self.xData), yData = list(self.yData))
+        self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
         
         maxy = self.maxy
-        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
-        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
+        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
+        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
 
         minx = self.minx
         maxx = self.maxx
@@ -78,37 +80,40 @@ class OWInteractiveHist(OWHist):
     shadeTypes = ["lowTail", "hiTail", "twoTail", "middle"]
     def updateData(self):
         OWHist.updateData(self)
-        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
-        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
-        self.middleShadeKey = self.addCurve("middleShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.None, style = QwtPlotCurve.Steps)
-        
-        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
-        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
-        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
+        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.middleShadeKey = self.addCurve("middleShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+
+        self.upperTailShadeKey.setBrush(QBrush(Qt.red))
+        self.lowerTailShadeKey.setBrush(QBrush(Qt.red))
+        self.middleShadeKey.setBrush(QBrush(Qt.red))        
+##        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
+##        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
+##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
 
     def shadeTails(self):
         if self.type in ["hiTail", "twoTail"]:
             index = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100), 0)
             x = [self.upperBoundary] + list(self.xData[index:])
             y = [self.yData[min(index, 99)]] + list(self.yData[index:])
-            self.setCurveData(self.upperTailShadeKey, x, y)
+            self.upperTailShadeKey.setData(x, y)
         if self.type in ["lowTail", "twoTail"]:
             index = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),100), 0)
             x = list(self.xData[:index]) + [self.lowerBoundary]
             y = list(self.yData[:index]) + [self.yData[min(index,99)]]
-            self.setCurveData(self.lowerTailShadeKey, x, y)
+            self.lowerTailShadeKey.setData(x, y)
         if self.type in ["middle"]:
             indexLow = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),99), 0)
             indexHi = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100)-1, 0)
             x = [self.lowerBoundary] + list(self.xData[indexLow: indexHi]) +[self.upperBoundary]
             y = [self.yData[max(index,0)]] + list(self.yData[indexLow: indexHi]) +[self.yData[max(indexHi, 99)]]
-            self.setCurveData(self.middleShadeKey, x, y)
+            self.middleShadeKey.setData(x, y)
         if self.type in ["hiTail", "middle"]:
-            self.setCurveData(self.lowerTailShadeKey, [], [])
+            self.lowerTailShadeKey.setData([], [])
         if self.type in ["lowTail", "middle"]:
-            self.setCurveData(self.upperTailShadeKey, [], [])
+            self.upperTailShadeKey.setData([], [])
         if self.type in ["lowTail", "hiTail", "twoTail"]:
-            self.setCurveData(self.middleShadeKey, [], [])
+            self.middleShadeKey.setData([], [])
         
     def setBoundary(self, low, hi):
         OWHist.setBoundary(self, low, hi)
@@ -117,7 +122,7 @@ class OWInteractiveHist(OWHist):
     
     def _setBoundary(self, button, cut):
         if self.type in ["twoTail", "middle"]:
-            if button == QMouseEvent.LeftButton:
+            if button == Qt.LeftButton:
                 low, hi = cut, self.upperBoundary
             else:
                 low, hi = self.lowerBoundary, cut
@@ -127,17 +132,19 @@ class OWInteractiveHist(OWHist):
         else:
             self.setBoundary(cut, cut)
         
-    def onMousePressed(self, e):
+    def mousePressEvent(self, e):
         cut = self.invTransform(QwtPlot.xBottom, e.x())
         self.mouseCurrentlyPressed = 1
+        self.buttonCurrentlyPressed = e.button()
         self._setBoundary(e.button(), cut)
         
-    def onMouseMoved(self, e):
+    def mouseMoveEvent(self, e):
         if self.mouseCurrentlyPressed:
             cut = self.invTransform(QwtPlot.xBottom, e.x())
-            self._setBoundary(e.state(), cut)
+            self._setBoundary(self.buttonCurrentlyPressed, cut)
 
-    def onMouseReleased(self, e):
+    def mouseReleaseEvent(self, e):
         cut = self.invTransform(QwtPlot.xBottom, e.x())
+        self._setBoundary(self.buttonCurrentlyPressed, cut)
         self.mouseCurrentlyPressed = 0
-        self._setBoundary(e.button(), cut)
+        self.buttonCurrentlyPressed = None

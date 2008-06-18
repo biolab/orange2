@@ -5,16 +5,16 @@
 <contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>15</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 from orngLR import *
 import OWGUI
 
 class OWLogisticRegression(OWWidget):
-    settingsList = ["univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
+    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
@@ -27,6 +27,7 @@ class OWLogisticRegression(OWWidget):
         self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
 
         self.name = "Logistic regression"
+        self.removeSingular = 1
         self.univariate = 0
         self.stepwiseLR = 0
         self.addCrit = 10
@@ -46,10 +47,12 @@ class OWLogisticRegression(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)
 
+        OWGUI.checkBox(box, self, "removeSingular", "Remove singular attributes", tooltip="Remove constant attributes and attributes causing singularities")
+
         stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
         ibox = OWGUI.indentedBox(box)
-        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add threshold [%]", labelWidth=155, tooltip="Requested significance for adding an attribute")
-        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove threshold [%]", labelWidth=155, tooltip="Requested significance for removing an attribute")
+        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add threshold [%]", labelWidth=155, tooltip="Requested significance for adding an attribute.")
+        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove threshold [%]", labelWidth=155, tooltip="Requested significance for removing an attribute.")
         limitAttSpin = OWGUI.checkWithSpin(ibox, self, "Limit number of attributes to ", 1, 100, "limitNumAttr", "numAttr", step=1, labelWidth=155, tooltip="Maximum number of attributes. Algorithm stops when it selects specified number of attributes.")
         stepwiseCb.disables += [addCritSpin, remCritSpin, limitAttSpin]
         stepwiseCb.makeConsistent()
@@ -60,7 +63,7 @@ class OWLogisticRegression(OWWidget):
         applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.applyLearner)
 
         OWGUI.rubber(self.controlArea)
-        self.adjustSize()
+        #self.adjustSize()
 
         self.applyLearner()
 
@@ -71,7 +74,7 @@ class OWLogisticRegression(OWWidget):
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
         else:
-            self.learner = LogRegLearner(removeSingular = True, imputer = imputer, removeMissing = removeMissing,
+            self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing,
                                          stepwiseLR = self.stepwiseLR, addCrit = self.addCrit/100., removeCrit = self.removeCrit/100.,
                                          numAttr = self.limitNumAttr and float(self.numAttr) or -1.0)
 
@@ -110,11 +113,10 @@ class OWLogisticRegression(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLogisticRegression()
-    a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
-    ow.setData(dataset)
+    #dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
+    #ow.setData(dataset)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

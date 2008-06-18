@@ -6,7 +6,7 @@
 #  (http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
 
 
-import orange, orngTest, orngStat, sys, math
+import orange, orngTest, orngStat, sys
 
 try:
     import orngSVM_Jakulin
@@ -217,12 +217,12 @@ def getLinearSVMWeights(classifier):
             w={}
             coefInd=j-1
             for svInd in apply(range, svRanges[i]):
-                for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
                         updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             coefInd=i
             for svInd in apply(range, svRanges[j]):
-                for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
                         updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             weights.append(w)
@@ -287,58 +287,10 @@ class SparseLinKernel:
         return pow(sum, 0.5)
 
 class BagOfWords:
-    """Computes a BOW kernel function (sum_i(example1[i]*example2[i])) using the examples meta attributes (need to be floats)"""
+    """Computes a BOW kernel function (sum_i(example[i]*example[i])) using the examples meta attributes (need to be floats)"""
     def __call__(self, example1, example2):
         s=Set(example1.getmetas().keys()).intersection(Set(example2.getmetas().keys()))
         sum=0
         for key in s:
             sum+=float(example2[key])*float(example1[key])
         return sum
-
-class RFE(object):
-    def __init__(self, learner=None):
-        self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.LINEAR)
-
-    def getAttrScores(self, data, stopAt=10):
-        iter = 1
-        attrs = data.domain.attributes
-        attrScores = {}
-        while len(attrs)>stopAt:
-            weights = getLinearSVMWeights(self.learner(data))
-            print iter, "Remaining:", len(attrs)
-            score = dict.fromkeys(attrs, 0)
-            for w in weights:
-                for attr, wAttr in w.items():
-                    score[attr] += wAttr**2
-            score = score.items()
-            score.sort(lambda a,b:cmp(a[1],b[1]))
-            numToRemove = max(int(len(attrs)*1.0/(iter+1)), 1)
-            for attr, s in  score[:numToRemove]:
-                attrScores[attr] = len(attrScores)
-            attrs = [attr for attr, s in score[numToRemove:]]
-            if attrs:
-                data = data.select(attrs + [data.domain.classVar])
-            iter += 1
-        return attrScores
-        
-    def __call__(self, data, numSelected=20):
-        scores = self.getAttrScores(data)
-        scores = scores.items()
-        scores.sort(lambda a,b:cmp(a[1],b[1]))
-        scores = dict(scores[-numSelected:])
-        attrs = [attr for attr in data.domain.attributes if attr in scores]
-        data = data.select(attrs + [data.domain.classVar])
-        return data
-
-def exampleTableToSVMFormat(examples, file):
-    attrs = examples.domain.attributes + examples.domain.getmetas().values()
-    attrs = [attr for attr in attrs if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
-    cv = examples.domain.classVar
-    
-    for ex in examples:
-        file.write(str(int(ex[cv])))
-        for i, attr in enumerate(attrs):
-            if not ex[attr].isSpecial():
-                file.write(" "+str(i+1)+":"+str(ex[attr]))
-        file.write("\n")
-            

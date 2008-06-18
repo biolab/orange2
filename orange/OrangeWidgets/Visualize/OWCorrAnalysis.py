@@ -5,20 +5,15 @@
 <priority>3300</priority>
 """
 
-from qt import *
 from qttable import *
 from OWWidget import *
 #from OWScatterPlotGraph import *
 from OWCorrAnalysisGraph import *
-import OWGUI, OWToolbars, OWDlgs
+import OWGUI, OWToolbars, OWColorPalette
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
-
-try:
-    import orngText
-except:
-    pass
+import orngText
 
 textCorpusModul = 1
 
@@ -44,9 +39,9 @@ class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
                     "colorSettings", "percRadius", "recentFiles"]
-                    
+
     contextHandlers = {"": DomainContextHandler("", ["attrRow", "attrCol"])}
-    
+
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'CorrAnalysis')
         self.callbackDeposit = []
@@ -54,19 +49,19 @@ class OWCorrAnalysis(OWWidget):
         self.inputs = [("Data", ExampleTable, self.dataset)]
         self.outputs = [("Selected data", ExampleTable)]
         self.recentFiles=[]
-        
+
         self.data = None
         self.CA = None
         self.CAloaded = False
         self.colors = ColorPaletteHSV(2)
-        
+
         #Locals
         self.showGridlines = 0
         self.autoSendSelection = 0
         self.toolbarSelection = 0
         self.percRadius = 5
-        
-        
+
+
         self.colorSettings = None
 
         # GUI
@@ -75,93 +70,93 @@ class OWCorrAnalysis(OWWidget):
         self.SettingsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        
+
         layout = QVBoxLayout(self.mainArea)
         self.tabsMain = QTabWidget(self.mainArea, 'tabWidgetMain')
-        
+
         layout.addWidget(self.tabsMain)
 
         # ScatterPlot
         self.graph = OWCorrAnalysisGraph(None, "ScatterPlot")
-        self.tabsMain.insertTab(self.graph, "Scatter Plot") 
+        self.tabsMain.insertTab(self.graph, "Scatter Plot")
 
         self.icons = self.createAttributeIconDict()
-        
+
         self.textData = False
         if textCorpusModul:
           OWGUI.checkBox(self.GeneralTab, self, 'textData', 'Textual data', callback = self.initAttrValues)
-        
+
         #col attribute
         self.attrCol = ""
-        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", "Column table attribute", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
 
         # row attribute
         self.attrRow = ""
-        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row table attribute", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
        
         #x principal axis
         self.attrX = 0
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", "Principal axis X", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
-        
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " Principal axis X ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
+
         #y principal axis
         self.attrY = 0
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", "Principal axis Y", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
-        
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
+
         contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
         self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (1, 10))
         self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (2, 10))
         
         sliders = QVGroupBox('Percentage of points', self.GeneralTab)
         OWGUI.widgetLabel(sliders, 'Row points')
-        self.percRow = 100        
+        self.percRow = 100
         self.rowSlider = OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=10, callback = self.updateGraph)
         OWGUI.widgetLabel(sliders, 'Column points')
-        self.percCol = 100        
+        self.percCol = 100
         self.colSlider = OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=10, callback = self.updateGraph)
 
-        
+
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
         self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.sendSelections)
-        
+
         self.apply = False
         OWGUI.button(self.GeneralTab, self, 'Update Graph', self.buttonUpdate)
-        
+
         OWGUI.button(self.GeneralTab, self, 'Save graph', self.graph.saveToFile)
         OWGUI.button(self.GeneralTab, self, 'Save CA', self.saveCA)
         OWGUI.button(self.GeneralTab, self, 'Load CA', self.loadCA)
         self.chosenSelection = []
         self.selections = []
-        OWGUI.listBox(self.GeneralTab, self, "chosenSelection", "selections", box="Feature selection used", selectionMode = QListBox.Multi, callback = None)
+        OWGUI.listBox(self.GeneralTab, self, "chosenSelection", "selections", box="Feature selection used", selectionMode = QListWidget.MultiSelection, callback = None)
         # ####################################
         # SETTINGS TAB
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box='Point size', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
         
         # general graph settings
-        box4 = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
+        box4 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X-axis title', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y-axis title', callback = self.updateGraph)
 ##        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)        
+        OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
-##        OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")        
+##        OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
         OWGUI.checkBox(box4, self, 'graph.showRowLabels', 'Show row labels', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showColumnLabels', 'Show column labels', callback = self.updateGraph)
 
 
-        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
-        
+
         #browsing radius
-        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box='Browsing curve size', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
+        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing curve size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
 
-        #font size        
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box='Set font size for labels', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
+        #font size
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box=' Set font size for labels ', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
 
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.maxPoints', box='Maximum number of points', minValue = 10, maxValue=40, step=1, callback = None)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.maxPoints', box=' Maximum number of points ', minValue = 10, maxValue=40, step=1, callback = None)
 
         self.resultsTab = QVGroupBox(self, "Results")
         self.tabsMain.insertTab(self.resultsTab, "Results")
@@ -170,19 +165,19 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.listBox(self.resultsTab, self, "chosenDoc", "docs", box="Documents", callback = None)
         self.chosenFeature = []
         self.features = self.graph.features
-        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", selectionMode = QListBox.Multi, callback = None)
+        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", selectionMode = QListWidget.MultiSelection, callback = None)
         OWGUI.button(self.resultsTab, self, "Save selected features", callback = self.saveFeatures)
         OWGUI.button(self.resultsTab, self, "Reconstruct words from letter ngrams", callback = self.reconstruct)
         self.chosenWord = []
         self.words = []
         OWGUI.listBox(self.resultsTab, self, "chosenWord", "words", box="Suggested words", callback = None)
-                
-        
+
+
 
         self.activateLoadedSettings()
         self.resize(700, 800)
-        
-        
+
+
     def loadCA(self):
         import cPickle
         try:
@@ -190,26 +185,26 @@ class OWCorrAnalysis(OWWidget):
                 lastPath = os.path.split(self.recentFiles[0])[0]
             else:
                 lastPath = "."
-                
-            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Load CA data"))
+
+            fn = str(QFileDialog.getOpenFileName(None, "Load CA data", lastPath, "Text files (*.*)"))
             if not fn:
                 return
-                
+
             fn = os.path.abspath(fn)
-            
+
             f = open(fn,'rb')
             self.CA = cPickle.load(f)
             f.close()
 
-            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+            fn = str(QFileDialog.getOpenFileName(None, "Save CA data", lastPath, "Text files (*.*)"))
             if not fn:
                 return
-                
+
             fn = os.path.abspath(fn)
             if fn in self.recentFiles: # if already in list, remove it
                 self.recentFiles.remove(fn)
             self.recentFiles.insert(0, fn)
-                        
+
             f = open(fn,'rb')
             data = cPickle.load(f)
             f.close()
@@ -218,9 +213,9 @@ class OWCorrAnalysis(OWWidget):
         except e:
             print e
             self.CA = None
-        
-        
-        
+
+
+
     def saveCA(self):
         from time import time
 
@@ -228,26 +223,26 @@ class OWCorrAnalysis(OWWidget):
             lastPath = os.path.split(self.recentFiles[0])[0]
         else:
             lastPath = "."
-            
-        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+
+        fn = str(QFileDialog.getSaveFileName(None, "Save CA data", lastPath, "Text files (*.*)"))
         if not fn:
             return
-            
+
         fn = os.path.abspath(fn)
         f = open(fn, 'wb')
         import cPickle
         cPickle.dump(self.CA, f, 1)
         f.close()
-        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save text data"))
+        fn = str(QFileDialog.getSaveFileName(None, "Save text data", lastPath, "Text files (*.*)"))
         if not fn:
             return
-            
-        fn = os.path.abspath(fn)        
-        
+
+        fn = os.path.abspath(fn)
+
         f = open(fn,'wb')
         cPickle.dump(self.data, f, 1)
         f.close()
-        
+
 
     def saveFeatures(self):
         """Saves the features in a file called features.txt"""
@@ -279,19 +274,19 @@ class OWCorrAnalysis(OWWidget):
             tmp = [(k, v) for k, v in wordList.items() if v]
             tmp.sort(lambda x,y: -cmp(x[1], y[1]))
             self.words = [i[0] + '  ' + str(i[1]) for i in tmp]
-        
+
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-        self.graph.setGridPen(QPen(dlg.getColor("Grid")))
-                
+        self.graph.setGridColor(QPen(dlg.getColor("Grid")))
+
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
 
-        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection, self.zoomSelectToolbar.actionBrowse, self.zoomSelectToolbar.actionBrowseCircle][self.toolbarSelection], []) 
-        
+        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection, self.zoomSelectToolbar.actionBrowse, self.zoomSelectToolbar.actionBrowseCircle][self.toolbarSelection], [])
+
     def dataset(self, dataset):
         self.closeContext()
         if dataset:
@@ -308,33 +303,33 @@ class OWCorrAnalysis(OWWidget):
         else:
             self.data = None
             self.initAttrValues()
-            
+
         self.openContext("", dataset)
         self.buttonUpdate()
-            
+
     def initAttrValues(self):
         self.attrRowCombo.clear()
         self.attrColCombo.clear()
- 
-        if self.data == None: return 
-        
-        if self.textData:
-            self.attrRowCombo.insertItem('document')
-            self.attrRowCombo.insertItem('category')
-            self.attrColCombo.insertItem('words')
-        else:            
-            for attr in self.data.domain:
-                if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
-                if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.insertItem(self.icons[attr.varType], attr.name)
 
-        self.attrRow = str(self.attrRowCombo.text(0))
-        if self.attrColCombo.count() > 1: 
-            self.attrCol = str(self.attrColCombo.text(1))
+        if self.data == None: return
+
+        if self.textData:
+            self.attrRowCombo.addItem('document')
+            self.attrRowCombo.addItem('category')
+            self.attrColCombo.addItem('words')
         else:
-            self.attrCol = str(self.attrColCombo.text(0))
-            
+            for attr in self.data.domain:
+                if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.addItem(QListWidgetItem(self.icons[attr.varType], attr.name))
+                if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.addItem(QListWidgetItem(self.icons[attr.varType], attr.name))
+
+        self.attrRow = str(self.attrRowCombo.itemText(0))
+        if self.attrColCombo.count() > 1:
+            self.attrCol = str(self.attrColCombo.itemText(1))
+        else:
+            self.attrCol = str(self.attrColCombo.itemText(0))
+
         self.updateTables()
-        
+
     def updateTables(self):
         if self.textData:
             if textCorpusModul:
@@ -407,45 +402,45 @@ class OWCorrAnalysis(OWWidget):
             self.rowCategories = list(dict(self.rowCategories).items())
             self.catColors = {"Row points": 0}
             del ca
-               
+
         self.rowSlider.setMinValue(1)
         self.rowSlider.setMaxValue(len(self.tipsR))
         self.percRow = len(self.tipsR) > 100 and 0.5 * len(self.tipsR) or len(self.tipsR)
         self.colSlider.setMinValue(1)
         self.colSlider.setMaxValue(len(self.tipsC))
         self.percCol = len(self.tipsC) > 100 and 0.5 * len(self.tipsC) or len(self.tipsC)
-        
-        
+
+
         self.initAxesValues()
         self.tabsMain.showPage(self.graph)
         self.calcRadius()
-        
+
         del caList
-        
+
     def initAxesValues(self):
         self.attrXCombo.clear()
         self.attrYCombo.clear()
-        
-        if self.data == None: return 
-            
-        for i in range(1, min(self.CA.D.shape) + 1):
-            self.attrXCombo.insertItem(str(i))
-            self.attrYCombo.insertItem(str(i))        
-        
-        self.attrX = str(self.attrXCombo.text(0))
-        if self.attrYCombo.count() > 1: 
-            self.attrY = str(self.attrYCombo.text(1))
-        else:                           
-            self.attrY = str(self.attrYCombo.text(0))
-            
+
+        if self.data == None: return
+
+        arr = [str(i) for i in range(1, min(self.CA.D.shape) + 1)]
+        self.attrXCombo.addItems(arr)
+        self.attrYCombo.addItems(arr)
+
+        self.attrX = str(self.attrXCombo.itemText(0))
+        if self.attrYCombo.count() > 1:
+            self.attrY = str(self.attrYCombo.itemText(1))
+        else:
+            self.attrY = str(self.attrYCombo.itemText(0))
+
         self.contributionBox()
-        
+
     def contributionBox(self):
         self.firstAxis.setText ('Axis %d: %f%%' % (int(self.attrX), self.CA.InertiaOfAxis(1)[int(self.attrX)-1]))
-        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.InertiaOfAxis(1)[int(self.attrY)-1]))            
-        
+        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.InertiaOfAxis(1)[int(self.attrY)-1]))
+
         self.updateGraph()
-        
+
     def buttonUpdate(self):
         self.apply = True
         self.graph.state = ZOOMING
@@ -458,22 +453,22 @@ class OWCorrAnalysis(OWWidget):
     def updateGraph(self):
         self.graph.zoomStack = []
         if not self.data:
-            return        
+            return
         if not self.apply:
             return
-            
+
         self.graph.removeAllSelections()
-##        self.graph.removeBrowsingCurve()        
+##        self.graph.removeBrowsingCurve()
         self.graph.removeCurves()
         self.graph.removeMarkers()
         self.graph.tips.removeAll()
-        
+
         if self.graph.showXaxisTitle == 1: self.graph.setXaxisTitle("Axis " + self.attrX)
         else: self.graph.setXaxisTitle("")
 
         if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
-        else: self.graph.setYLaxisTitle("")        
-        
+        else: self.graph.setYLaxisTitle("")
+
         cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percRow)
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
@@ -487,30 +482,30 @@ class OWCorrAnalysis(OWWidget):
             newcor = [labelDict[f] for f in newtips]
             if not self.graph.showRowLabels: newtips = ['' for i in indices]
             self.plotPoint(newcor, col, newtips, cat or "Row points", self.graph.showFilledSymbols)
-            
+
         cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percCol)
         indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsC = [self.tipsC[i] + 'C' for i in indices]
-        if not self.graph.showColumnLabels: tipsC = ['' for i in indices]        
+        if not self.graph.showColumnLabels: tipsC = ['' for i in indices]
         self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
 
         self.graph.enableLegend(1)
         self.graph.replot()
-    
-        
+
+
     def plotPoint(self, cor, color, tips, curveName = "", showFilledSymbols = 1):
         fillColor = self.colors[color]
         edgeColor = self.colors[color]
-               
+
         cor = array(cor)
-        key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols)                 
-        
+        key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols)
+
         for i in range(len(cor)):
             x = cor[i][0]
             y = cor[i][1]
-            self.graph.tips.addToolTip(x, y, tips[i])   
+            self.graph.tips.addToolTip(x, y, tips[i])
 
     def sendSelections(self, e):
         self.docs = self.graph.docs
@@ -540,45 +535,45 @@ class OWCorrAnalysis(OWWidget):
             symbol = self.graph.curveSymbol(key)
             self.graph.setCurveSymbol(key, QwtSymbol(symbol.style(), symbol.brush(), symbol.pen(), QSize(self.graph.pointWidth, self.graph.pointWidth)))
         self.graph.repaint()
-        
+
     def setShowGridlines(self):
         self.graph.enableGridXB(self.showGridlines)
-        self.graph.enableGridYL(self.showGridlines)        
-        
+        self.graph.enableGridYL(self.showGridlines)
+
     def setColors(self):
         dlg = self.createColorDialog()
-        if dlg.exec_loop():
+        if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+            self.graph.setGridColor(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color palette")
-        c.createDiscretePalette("Discrete palette")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
         box = c.createBox("otherColors", "Other colors")
-        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.addSpace(5)
-        c.createColorButton(box, "Grid", "Grid color", Qt.black)
+        c.createColorButton(box, "Grid", "Grid color", QColor(Qt.black))
         box.addSpace(5)
         box.adjustSize()
         c.setColorSchemas(self.colorSettings)
-        return c    
-    
+        return c
+
     def calcRadius(self):
         self.graph.radius =  (self.graph.axisScale(QwtPlot.xBottom).hBound() - self.graph.axisScale(QwtPlot.xBottom).lBound()) * self.percRadius / 100.0;
-        
+
 class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
     def __init__(self, widget, parent, graph, autoSend = 0):
         ZoomSelectToolbar.__init__(self, widget, parent, graph, autoSend)
         self.widget = widget
         group = QHButtonGroup("Browsing", parent)
         self.buttonBrowse = OWToolbars.createButton(group, "Browsing tool - Rectangle", self.actionBrowse, QPixmap(OWToolbars.dlg_browseRectangle), toggle = 1)
-        self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QPixmap(OWToolbars.dlg_browseCircle), toggle = 1)        
-        
+        self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QPixmap(OWToolbars.dlg_browseCircle), toggle = 1)
+
     def actionZooming(self):
         ZoomSelectToolbar.actionZooming(self)
         if 'buttonBrowse' in dir(self): self.buttonBrowse.setOn(0)
@@ -593,24 +588,24 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
         ZoomSelectToolbar.actionPolygonSelection(self)
         if 'buttonBrowse' in dir(self): self.buttonBrowse.setOn(0)
         if 'buttonBrowseCircle' in dir(self): self.buttonBrowseCircle.setOn(0)
-        
+
     def actionBrowse(self):
-        state = self.buttonBrowse.isOn()
+        state = self.buttonBrowse.isChecked()
         self.buttonBrowse.setOn(state)
         self.graph.activateBrowsing(state)
         if state:
             self.buttonBrowseCircle.setOn(0)
             self.buttonZoom.setOn(0)
             self.buttonSelectRect.setOn(0)
-            self.buttonSelectPoly.setOn(0)   
+            self.buttonSelectPoly.setOn(0)
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 3
             self.widget.calcRadius()
         else:
-            self.buttonZoom.setOn(1)            
+            self.buttonZoom.setOn(1)
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
-            
+
     def actionBrowseCircle(self):
-        state = self.buttonBrowseCircle.isOn()
+        state = self.buttonBrowseCircle.isChecked()
         self.buttonBrowseCircle.setOn(state)
         self.graph.activateBrowsingCircle(state)
         if state:
@@ -630,7 +625,7 @@ if __name__=="__main__":
 ##    os.chdir("/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/")
     appl = QApplication(sys.argv)
     ow = OWCorrAnalysis()
-    
+
     #owb = OWBagofWords.OWBagofWords()
     t = orngText.loadFromXML(r'c:\test\orange\msnbc.xml')
     #owb.data = t
@@ -654,11 +649,11 @@ if __name__=="__main__":
     ow.dataset(t1)
     print 'Done'
     ow.show()
-##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
+##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab')
 
 ##    lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
 ##    for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
-##        lem.stopwords.append(word)       
+##        lem.stopwords.append(word)
 ##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
 
 ##    #a = orange.ExampleTable('../../doc/datasets/smokers_ct.tab')
@@ -666,5 +661,5 @@ if __name__=="__main__":
 ##    a =cPickle.load(f)
 ##    f.close()
 ##    ow.dataset(a)
-    
-    appl.exec_loop()
+
+    appl.exec_()

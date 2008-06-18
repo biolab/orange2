@@ -1,3 +1,5 @@
+# Author:      B Zupan
+# Version:     1.0
 # Description: Shows the use of feature subset selection and compares
 #              plain naive Bayes (with discretization) and the same classifier but with
 #              feature subset selection. On crx data set, both classifiers achieve similarly

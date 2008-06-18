@@ -1,4 +1,3 @@
-from OWBaseWidget import *
 from OWWidget import OWWidget
 from OWkNNOptimization import *
 import orange, math, random
@@ -8,7 +7,7 @@ from math import sqrt
 from orngScaleLinProjData import *
 from orngLinProj import *
 
-class FreeVizOptimization(OWBaseWidget, FreeViz):
+class FreeVizOptimization(OWWidget, FreeViz):
     settingsList = ["stepsBeforeUpdate", "restrain", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
                     "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive",
@@ -18,16 +17,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     attractRepelValues = [(4, 1), (3, 1), (2, 1), (3, 2), (1, 1), (2, 3), (1, 2), (1, 3), (1, 4)]
 
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
-        OWBaseWidget.__init__(self, None, signalManager, "FreeViz Dialog")
+        OWWidget.__init__(self, None, signalManager, "FreeViz Dialog", savePosition = True, wantMainArea = 0, wantStatusBar = 1)
         FreeViz.__init__(self, graph)
 
         self.parentWidget = parentWidget
         self.parentName = parentName
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("FreeViz Optimization Dialog")
-        else:
-            self.setCaption("Qt FreeViz Optimization Dialog")
-        self.controlArea = QVBoxLayout(self)
+        self.setCaption("FreeViz Optimization Dialog")
         self.cancelOptimization = 0
         self.forceRelation = 5
         self.disableAttractive = 0
@@ -45,18 +40,10 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         self.loadSettings()
 
-        self.tabs = QTabWidget(self, 'tabWidget')
-        self.controlArea.addWidget(self.tabs)
-
-        self.MainTab = QVGroupBox(self)
-        self.S2NHeuristicTab = QVGroupBox(self)
-
-        self.tabs.insertTab(self.MainTab, "Main")
-        self.tabs.insertTab(self.S2NHeuristicTab, "S2N Heuristic")
-
-        if parentName.lower() != "radviz":
-            self.LinearTransformationTab = QVGroupBox(self)
-            self.tabs.insertTab(self.LinearTransformationTab, "Dimensionality Reduction")
+        self.layout().setMargin(0)
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.MainTab = OWGUI.createTabPage(self.tabs, "Main")
+        self.S2NHeuristicTab = OWGUI.createTabPage(self.tabs, "S2N Heuristic")
 
         # ###########################
         # MAIN TAB
@@ -78,26 +65,27 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.button(hbox1, self, "Circle", callback = self.radialAnchors)
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
-        self.manualPositioningButton.setToggleButton(1)
+        self.manualPositioningButton.setCheckable(1)
         OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors:", orientation = "horizontal", items = ["Unrestrained", "Fixed Length", "Fixed Angle"], callback = self.setRestraints)
 
         box2 = OWGUI.widgetBox(self.MainTab, "Forces", orientation = "vertical")
 
         self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian", "KNN", "Variance"], callback = self.forceLawChanged)
 
-        hbox2 = QHBox(box2); OWGUI.separator(hbox2, 20, 0); vbox2 = QVBox(hbox2)
+        hbox2 = OWGUI.widgetBox(box2, orientation = "horizontal")
+        hbox2.layout().addSpacing(10)
 
         validSigma = QDoubleValidator(self); validSigma.setBottom(0.01)
-        self.spinSigma = OWGUI.lineEdit(vbox2, self, "forceSigma", label = "Kernel width (sigma) ", labelWidth = 110, orientation = "horizontal", valueType = float)
+        self.spinSigma = OWGUI.lineEdit(hbox2, self, "forceSigma", label = "Kernel width (sigma) ", labelWidth = 110, orientation = "horizontal", valueType = float)
         self.spinSigma.setFixedSize(60, self.spinSigma.sizeHint().height())
         self.spinSigma.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed))
 
-        OWGUI.separator(box2, 20)
+        box2.layout().addSpacing(20)
 
-        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
+        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive  ",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
         self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing", tooltip="Normalize the forces so that the total sums of the\nrepulsive and attractive are in the above proportion.")
 
-        OWGUI.separator(box2, 20)
+        box2.layout().addSpacing(20)
 
         self.cbDisableAttractive = OWGUI.checkBox(box2, self, "disableAttractive", "Disable attractive forces", callback = self.setDisableAttractive)
         self.cbDisableRepulsive = OWGUI.checkBox(box2, self, "disableRepulsive", "Disable repulsive forces", callback = self.setDisableRepulsive)
@@ -118,7 +106,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         # ##########################
         # S2N HEURISTIC TAB
-        box = OWGUI.widgetBox(self.S2NHeuristicTab, "Signal to Noise heuristic")
+        box = OWGUI.widgetBox(self.S2NHeuristicTab, "Signal to Noise Heuristic")
         #OWGUI.comboBoxWithCaption(box, self, "s2nSpread", "Anchor spread: ", tooltip = "Are the anchors for each class value placed together or are they distributed along the circle", items = range(11), callback = self.s2nMixAnchors)
         box2 = OWGUI.widgetBox(box, 0, orientation = "horizontal")
         OWGUI.widgetLabel(box2, "Anchor spread:           ")
@@ -126,26 +114,24 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.comboBoxWithCaption(box, self, "s2nPlaceAttributes", "Attributes to place: ", tooltip = "Set the number of top ranked attributes to place. You can select a higher value than the actual number of attributes", items = self.attrsNum, callback = self.s2nMixAnchors, sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, 'autoSetParameters', 'Automatically find optimal parameters')
         self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)
+        OWGUI.rubber(self.S2NHeuristicTab)
 
         # ##########################
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
+            self.LinearTransformationTab = OWGUI.createTabPage(self.tabs, "Dimensionality Reduction")
             pcaBox = OWGUI.widgetBox(self.LinearTransformationTab, "Principal Component Analysis")
             #OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
             OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
             OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
             plsBox = OWGUI.widgetBox(self.LinearTransformationTab, "Partial Least Squares")
             OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
+            OWGUI.rubber(self.LinearTransformationTab)
 
 
-        # ###########################
-        self.statusBar = QStatusBar(self)
-        self.controlArea.addWidget(self.statusBar)
-        self.controlArea.activate()
-
-        self.resize(310,650)
-        self.setMinimumWidth(310)
-        self.tabs.setMinimumWidth(310)
+        self.resize(320,650)
+        #self.setMinimumWidth(310)
+        #self.tabs.setMinimumWidth(310)
 
 ##        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
         self.activateLoadedSettings()
@@ -154,14 +140,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     def activateLoadedSettings(self):
         self.forceLawChanged()
         self.updateForces()
-
         self.cbforcebal.setDisabled(self.cbDisableAttractive.isChecked() or self.cbDisableRepulsive.isChecked())
 
     # ##############################################################
     # EVENTS
     # ##############################################################
     def setManualPosition(self):
-        self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isOn()
+        self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isChecked()
 
     def setData(self, data):
         self.rawData = data
@@ -171,10 +156,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
-
-    def setStatusBarText(self, text):
-        self.statusBar.message(text)
-        qApp.processEvents()
 
     def updateForces(self):
         if self.disableAttractive or self.disableRepulsive:
@@ -189,7 +170,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.printEvent("Updated: %i, %i" % (self.attractG, self.repelG), eventVerbosity = 1)
 
     def forceLawChanged(self):
-        self.spinSigma.setDisabled(self.cbLaw.currentItem() not in [2, 3])
+        self.spinSigma.setDisabled(self.cbLaw.currentIndex() not in [2, 3])
 
     def setRestraints(self):
         if self.restrain:
@@ -259,7 +240,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.optimizeButton.hide()
         self.stopButton.show()
         self.cancelOptimization = 0
-        qApp.processEvents()
+        #qApp.processEvents()
 
         ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep)
 
@@ -301,9 +282,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     def findPLSProjection(self):
         self.findProjection(DR_PLS, setAnchors = 1)
 
-    def setStatusBarText(self, text):
-        self.statusBar.message(text)
-        qApp.processEvents()
 
 # ###############################################################
 # Optimize anchor position using differential evolution
@@ -384,6 +362,5 @@ if __name__=="__main__":
     import sys
     a=QApplication(sys.argv)
     ow=FreeVizOptimization()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()

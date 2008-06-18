@@ -61,10 +61,7 @@ class ClusterOptimization(OWBaseWidget):
 
         self.parentWidget = parentWidget
         self.parentName = parentName
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Cluster Dialog")
-        else:
-            self.setCaption("Qt "+"Cluster Dialog")
+        self.setCaption("Cluster Dialog")
         self.controlArea = QVBoxLayout(self)
 
         self.graph = graph
@@ -96,7 +93,7 @@ class ClusterOptimization(OWBaseWidget):
         self.pointStabilityCount = None
         self.attributeCountIndex = 1
         self.argumentationType = BEST_GROUPS
-        
+
         self.argumentationClassValue = 0
         self.distributionScale = 1
         self.considerDistance = 1
@@ -110,25 +107,25 @@ class ClusterOptimization(OWBaseWidget):
         self.argumentCountIndex = 1     # when classifying use 10 best arguments
         self.canUseMoreArguments = 0
         self.moreArgumentsIndex = 4
-        
+
         self.loadSettings()
 
         self.tabs = QTabWidget(self, 'tabWidget')
         self.controlArea.addWidget(self.tabs)
-        
+
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
         self.ArgumentationTab = QVGroupBox(self)
         self.ClassificationTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
-        
+
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ClassificationTab, "Classification")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")
-        
-        
+
+
         # ###########################
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
@@ -136,7 +133,7 @@ class ClusterOptimization(OWBaseWidget):
         self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown details in projections list" , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
         self.label1 = QLabel('Projections with ', self.buttonBox)
-        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["  exactly  ", "  maximum  "] )
+        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
         self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCountIndex", items = [str(x) for x in range(3, 15)] + ["ALL"], tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes")
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
@@ -148,8 +145,8 @@ class ClusterOptimization(OWBaseWidget):
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
 
-        self.resultList = QListBox(self.resultsBox)
-        #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
+        self.resultList = OWGUI.listBox(self.resultsBox, self)
+        #self.resultList.setSelectionMode(QListWidget.ExtendedSelection)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
         self.resultList.setMinimumSize(200,200)
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
@@ -172,14 +169,14 @@ class ClusterOptimization(OWBaseWidget):
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Heuristics for attribute ordering")
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Miscellaneous settings")
 
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of continuous attributes", items = [val for (val, m) in contMeasures])
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of discrete attributes", items = [val for (val, m) in discMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of Continuous Attributes", items = [val for (val, m) in contMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of Discrete Attributes", items = [val for (val, m) in discMeasures])
         
-        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:"+"   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
-        self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:"+"        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
+        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+        self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
 
         # ##########################
-        # ARGUMENTATION tab        
+        # ARGUMENTATION tab
         self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
         self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find Arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
@@ -188,19 +185,19 @@ class ClusterOptimization(OWBaseWidget):
         self.stopArgumentationButton.hide()
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the selected class value")
-        self.argumentList = QListBox(self.argumentBox)
+        self.argumentList = OWGUI.listBox(self.argumentBox, self)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
 
         # ##########################
         # CLASSIFICATION TAB
-        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = 'Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
-        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection score when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
-        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ...", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
+        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
         self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster.")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "The maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, "Argument count")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "The maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"])
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"])
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -210,11 +207,9 @@ class ClusterOptimization(OWBaseWidget):
         self.classesBox = OWGUI.widgetBox(self.ManageTab, "Select class values you wish to separate")
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Number of concurrently visualized attributes")
         self.manageBox = OWGUI.widgetBox(self.ManageTab, "Manage projections")
-        
-        self.classesList = QListBox(self.classesBox)
-        self.classesList.setSelectionMode(QListBox.Multi)
+
+        self.classesList = OWGUI.listBox(self.classesBox, selectionMode = QListWidget.MultiSelection, callback = self.updateShownProjections)
         self.classesList.setMinimumSize(60,60)
-        self.connect(self.classesList, SIGNAL("selectionChanged()"), self.updateShownProjections)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         OWGUI.button(self.buttonBox6, self, "Load", self.load)
@@ -223,20 +218,18 @@ class ClusterOptimization(OWBaseWidget):
         #self.buttonBox7 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         #OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
         #OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
-        
+
         self.buttonBox3 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         self.clusterStabilityButton = OWGUI.button(self.buttonBox3, self, 'Show cluster stability', self.evaluatePointsInClusters)
-        self.clusterStabilityButton.setToggleButton(1)
+        self.clusterStabilityButton.setCheckable(1)
         #self.saveProjectionButton = OWGUI.button(self.buttonBox3, self, 'Save projection')
         OWGUI.button(self.buttonBox3, self, "Save Best Graphs", self.exportMultipleGraphs)
 
         OWGUI.button(self.manageBox, self, "Clear Results", self.clearResults)
 
-        self.attrLenList = QListBox(self.manageResultsBox)
-        self.attrLenList.setSelectionMode(QListBox.Multi)
+        self.attrLenList = OWGUI.listBox(self.manageResultsBox, self, selectionMode = QListWidget.MultiSelection, callback = self.attrLenListChanged)
         self.attrLenList.setMinimumSize(60,60)
-        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
-        
+
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
@@ -252,8 +245,8 @@ class ClusterOptimization(OWBaseWidget):
             else:
                 self.clusterLearner = clusterLearner(self, self.parentWidget)
                 self.parentWidget.send("Cluster learner", self.clusterLearner)
-                
-                
+
+
     # ##############################################################
     # EVENTS
     # ##############################################################
@@ -272,12 +265,12 @@ class ClusterOptimization(OWBaseWidget):
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
     # result list must be updated accordingly
-    def attrLenListChanged(self):
+    def attrLenListChanged(self, *args):
         # check which attribute lengths do we want to show
         self.attrLenDict = {}
         for i in range(self.attrLenList.count()):
-            intVal = int(str(self.attrLenList.text(i)))
-            selected = self.attrLenList.isSelected(i)
+            intVal = int(str(self.attrLenList.item(i).text()))
+            selected = self.attrLenList.item(i).isSelected()
             self.attrLenDict[intVal] = selected
         self.updateShownProjections()
 
@@ -296,8 +289,8 @@ class ClusterOptimization(OWBaseWidget):
     def getSelectedClassValues(self):
         selectedClasses = []
         for i in range(self.classesList.count()-1):
-            if self.classesList.isSelected(i): selectedClasses.append(i)
-        if self.classesList.isSelected(self.classesList.count()-1):
+            if self.classesList.item(i).isSelected(): selectedClasses.append(i)
+        if self.classesList.item(self.classesList.count()-1).isSelected():
             selectedClasses.append(-1)      # "all clusters" is represented by -1 in the selectedClasses array
         return selectedClasses
 
@@ -311,7 +304,7 @@ class ClusterOptimization(OWBaseWidget):
         removeEdgesToDifferentClasses(graph, -3)    # None
         removeSingleLines(graph, None, None, None, 0, -1)
         edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 0)
-        
+
         closureDict = computeClosure(graph, edgesDict, 1, 1, 1, -3, -4)   # find points that define the edge of a cluster with one class value. these points used when we search for nearest points of a specific cluster
         #bigPolygonVerticesDict = copy(verticesDict)  # compute which points lie in which cluster
         otherClassDict = getPointsWithDifferentClassValue(graph, closureDict)   # this dict is used when evaluating a cluster to find nearest points that belong to a different class
@@ -336,9 +329,9 @@ class ClusterOptimization(OWBaseWidget):
         del closureDict
         closureDict = computeClosure(graph, edgesDict, 1, 1, 2, -3, -2)
         polygonVerticesDict = verticesDict  # compute which points lie in which cluster
-        
+
         aveDistDict = computeAverageDistance(graph, edgesDict)
-        
+
         # compute areas of all found clusters
         #areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
 
@@ -349,7 +342,7 @@ class ClusterOptimization(OWBaseWidget):
         allOtherClass.sort()
         for i in range(len(allOtherClass)-1)[::-1]:
             if allOtherClass[i] == allOtherClass[i+1]: allOtherClass.remove(allOtherClass[i])
-        
+
         valueDict = {}
         otherDict = {}
         enlargedClosureDict = {}
@@ -394,7 +387,7 @@ class ClusterOptimization(OWBaseWidget):
             dist = sqrt(dist*1000.0)
             value = points
             if self.considerDistance: value *= dist
-            
+
             valueDict[key] = value
             #enlargedClosureDict[key] = enlargeClosure(graph, closureDict[key], aveDistDict[key])
             enlargedClosureDict[key] = []
@@ -402,7 +395,7 @@ class ClusterOptimization(OWBaseWidget):
             #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass(), value, points, dist, area)
             #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, aveDistDict[key])
             otherDict[key] = (int(graph.objects[polygonVerticesDict[key][0]].getclass()), value, points, dist, (xAve, yAve), aveDistDict[key])
-        
+
         del edgesDict, clusterDict, verticesDict, allOtherClass
         for key in closureDict.keys():
             if not otherDict.has_key(key):
@@ -415,16 +408,13 @@ class ClusterOptimization(OWBaseWidget):
     # for each point in the data set compute how often does if appear inside a cluster
     # for each point then return a float between 0 and 1
     def evaluatePointsInClusters(self):
-        if self.clusterStabilityButton.isOn():
+        if self.clusterStabilityButton.isChecked():
             self.pointStability = numpy.zeros(len(self.rawData), numpy.float)
             self.pointStabilityCount = [0 for i in range(len(self.rawData.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
             
-            if (int(qVersion()[0]) >= 3):
-                (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
-            else:
-                (text, ok) = QInputDialog.getText('Qt '+'Projection count', 'How many of the best projections do you want to consider?')
+            (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
             if not ok: return
-            nrOfProjections = int(str(text)) 
+            nrOfProjections = int(str(text))
 
             considered = 0
             for i in range(len(self.allResults)):
@@ -451,7 +441,7 @@ class ClusterOptimization(OWBaseWidget):
         #self.pointStability = [1.0 - val for val in self.pointStability]
         if self.parentWidget: self.parentWidget.showSelectedCluster()
 
-            
+
     def updateShownProjections(self, *args):
         self.resultList.clear()
         self.shownResults = []
@@ -469,11 +459,11 @@ class ClusterOptimization(OWBaseWidget):
 
             if self.allResults[i][STR_LIST] != "": string += self.allResults[i][STR_LIST]
             else: string += self.buildAttrString(self.allResults[i][ATTR_LIST])
-            
-            self.resultList.insertItem(string)
+
+            self.resultList.addItem(string)
             self.shownResults.append(self.allResults[i])
             i+=1
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(self.resultList.item(0))
 
 
     # save input dataset, get possible class values, ...
@@ -486,7 +476,7 @@ class ClusterOptimization(OWBaseWidget):
         self.clearArguments()
         if not sameDomain: self.clearResults()
 
-        if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):        
+        if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):
             self.selectedClasses = []
             self.classesList.clear()
             self.classValueList.clear()
@@ -499,25 +489,25 @@ class ClusterOptimization(OWBaseWidget):
 
             # add class values
             for i in range(len(data.domain.classVar.values)):
-                self.classesList.insertItem(data.domain.classVar.values[i])
-                self.classValueList.insertItem(data.domain.classVar.values[i])
-            self.classesList.insertItem("All clusters")
-            self.classesList.selectAll(1)
-            if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
+                self.classesList.addItem(data.domain.classVar.values[i])
+                self.classValueList.addItem(data.domain.classVar.values[i])
+            self.classesList.addItem("All clusters")
+            self.classesList.selectAll()
+            if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentIndex(0)
 
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
         self.clearArguments()
-    
-                
+
+
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
     def getEvaluatedAttributes(self, data):
         self.setStatusBarText("Evaluating attributes...")
         attrs = orngVisFuncts.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         self.setStatusBarText("")
         return attrs
-    
+
     def addResult(self, value, closure, vertices, attrList, classValue, enlargedClosure, other, strList = ""):
         self.insertItem(self.findTargetIndex(value), value, closure, vertices, attrList, classValue, enlargedClosure, other, strList)
         qApp.processEvents()        # allow processing of other events
@@ -534,7 +524,7 @@ class ClusterOptimization(OWBaseWidget):
         if len(self.allResults) == 0: return 0
         if max(value, self.allResults[top][VALUE]) == value:
             return top
-        else: 
+        else:
             return bottom
 
     # insert new result - give parameters: value of the cluster, closure, list of attributes.
@@ -551,17 +541,17 @@ class ClusterOptimization(OWBaseWidget):
             if strList != "": string += strList
             else: string += self.buildAttrString(attrList)
 
-            self.resultList.insertItem(string, index)
+            self.resultList.insertItem(index, string)
             self.shownResults.insert(index, (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList))
 
         # remove worst projection if list is too long
         if self.resultList.count() > self.resultListLen:
-            self.resultList.removeItem(self.resultList.count()-1)
+            self.resultList.takeItem(self.resultList.count()-1)
             self.shownResults.pop()
-    
+
     def finishedAddingResults(self):
         self.cancelOptimization = 0
-        
+
         self.attrLenList.clear()
         self.attrLenDict = {}
         maxLen = -1
@@ -572,12 +562,12 @@ class ClusterOptimization(OWBaseWidget):
         if maxLen == 2: vals = [2]
         else: vals = range(3, maxLen+1)
         for val in vals:
-            self.attrLenList.insertItem(str(val))
+            self.attrLenList.addItem(str(val))
             self.attrLenDict[val] = 1
-        self.attrLenList.selectAll(1)
-        self.resultList.setCurrentItem(0)
+        self.attrLenList.selectAll()
+        self.resultList.setCurrentItem(self.resultList.item(0))
 
-    
+
     # ##############################################################
     # Loading and saving projection files
     # ##############################################################
@@ -624,9 +614,9 @@ class ClusterOptimization(OWBaseWidget):
         self.clearResults()
         self.clearArguments()
         if self.rawData == None:
-            QMessageBox.critical(None, 'Load', 'There is no data. First load a data set and then load a cluster file', QMessageBox.Ok)
+            QMessageBox.critical(None,'Load','There is no data. First load a data set and then load a cluster file',QMessageBox.Ok)
             return
-                
+
         name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting clusters (*.clu)", self, "", "Open Clusters")
         if name.isEmpty(): return
         name = str(name)
@@ -646,11 +636,11 @@ class ClusterOptimization(OWBaseWidget):
         # find if it was computed for specific class values
         selectedClasses = eval(file.readline()[:-1])
         for i in range(len(self.rawData.domain.classVar.values)):
-            self.classesList.setSelected(i, i in selectedClasses)
-        if -1 in selectedClasses: self.classesList.setSelected(self.classesList.count()-1, 1)
+            self.classesList.item(i).setSelected(i in selectedClasses)
+        if -1 in selectedClasses: self.classesList.item(self.classesList.count()-1).setSelected(1)
         checksum = eval(file.readline()[:-1])
         if self.rawData and self.rawData.checksum() != checksum:
-            cancel = QMessageBox.critical(None, "Load", "Currently loaded data set is different than the data set that was used for computing these projections. \nThere may be differences in the number of examples or in actual data values. \nThe shown clusters will therefore most likely show incorrect information. \nAre you sure you want to continue with loading?", 'Yes', 'No', '', 1,0)
+            cancel = QMessageBox.critical(None, "Load", "Currently loaded data set is different than the data set that was used for computing these projections. \nThere may be differences in the number of examples or in actual data values. \nThe shown clusters will therefore most likely show incorrect information. \nAre you sure you want to continue with loading?", 'Yes','No', '', 1,0)
             if cancel: return
 
         line = file.readline()[:-1];
@@ -677,7 +667,7 @@ class ClusterOptimization(OWBaseWidget):
         self.ArgumentationTab.setEnabled(0)
         self.ClassificationTab.setEnabled(0)
 
-    def enableControls(self):    
+    def enableControls(self):
         self.optimizationTypeCombo.setEnabled(1)
         self.attributeCountCombo.setEnabled(1)
         self.startOptimizationButton.show()
@@ -691,24 +681,21 @@ class ClusterOptimization(OWBaseWidget):
     # exporting multiple pictures
     # ##############################################################
     def exportMultipleGraphs(self):
-        if (int(qVersion()[0]) >= 3):
-            (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
-        else:
-            (text, ok) = QInputDialog.getText('Qt '+'Graph count', 'How many of the best projections do you wish to save?')
+        (text, ok) = QInputDialog.getText('Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
         self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
         self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
         self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
-        self.sizeDlg.exec_loop()
+        self.sizeDlg.exec_()
 
     def saveToFileAccept(self):
         fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to..."))
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
-        if ext == "":	
+        if ext == "":
         	ext = "PNG"  	# if no format was specified, we choose png
         	fileName = fileName + ".png"
         ext = ext.upper()
@@ -716,7 +703,7 @@ class ClusterOptimization(OWBaseWidget):
         (fil, extension) = os.path.splitext(fileName)
         size = self.sizeDlg.getSize()
         for i in range(1, min(self.resultList.count(), self.bestGraphsCount+1)):
-            self.resultList.setSelected(i-1, 1)
+            self.resultList.item(i-1).setSelected(1)
             self.graph.replot()
             name = fil + " (%02d)" % i + extension
             self.sizeDlg.saveToFileDirect(name, ext, size)
@@ -736,14 +723,14 @@ class ClusterOptimization(OWBaseWidget):
         dialog.show()
     """
 
-    
+
 
     # ######################################################
     # Auxiliary functions
     # ######################################################
     def getOptimizationType(self):
         return self.optimizationType
-   
+
     # from a list of attributes build a nice string with attribute names
     def buildAttrString(self, attrList):
         if len(attrList) == 0: return ""
@@ -787,7 +774,7 @@ class ClusterOptimization(OWBaseWidget):
         self.cancelArgumentation = 0
         self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
-        
+
         if self.subsetdata == None:
             QMessageBox.information( None, "Cluster Dialog Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return
@@ -826,15 +813,15 @@ class ClusterOptimization(OWBaseWidget):
                         inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
                         if inside == 0 or (inside == 1 and self.conditionForArgument == MUST_BE_INSIDE): continue
                         vals[classValue] += 1
-                        
+
                         self.arguments[classValue].append((None, value, attrList, startingIndex+index))
                         if classValue == self.classValueList.currentItem():
-                            self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                            self.argumentList.addItem("%.2f - %s" %(value, attrList))
                     if classIndices[cls] == startingIndex: classIndices[cls] = len(self.allResults)+1
-                    
+
                 foundArguments += 1
                 if min(classIndices) >= len(self.allResults): canFinish = 1  # out of possible arguments
-                
+
                 if sum(vals) > 0 and foundArguments >= argumentCount:
                     if not self.canUseMoreArguments or (max(vals)*100.0)/float(sum(vals)) > self.moreArgumentsNums[self.moreArgumentsIndex]:
                         canFinish = 1
@@ -846,7 +833,7 @@ class ClusterOptimization(OWBaseWidget):
                 if self.cancelArgumentation: break
                 # we also stop if we are not allowed to search for more than argumentCount arguments or we are allowed and we have a reliable prediction or we have used a 100 additional arguments
                 if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
-                
+
                 (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[index]
                 if type(classValue) == dict: continue       # the projection contains several clusters
 
@@ -854,19 +841,19 @@ class ClusterOptimization(OWBaseWidget):
                 inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
                 if self.conditionForArgument == MUST_BE_INSIDE and inside != 2: continue
                 elif inside == 0: continue
-                
+
                 foundArguments += 1  # increase argument count
-                
+
                 if self.useProjectionValue: vals[classValue] += value
                 else: vals[classValue] += 1
 
                 self.arguments[classValue].append((None, value, attrList, index))
                 if classValue == self.classValueList.currentItem():
-                    self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                    self.argumentList.addItem("%.2f - %s" %(value, attrList))
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
-        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(self.argumentList.item(0))
         if foundArguments == 0: return (None, None)
 
         suma = sum(vals)
@@ -874,16 +861,16 @@ class ClusterOptimization(OWBaseWidget):
         classValue = self.rawData.domain.classVar[vals.index(max(vals))]
 
         # show classification results
-        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": classValue, "prob": dist[classValue]*100}
+        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
         for key in dist.keys():
             s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
         if foundArguments > argumentCount:
-            s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": foundArguments, "ac": argumentCount}
+            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, argumentCount)
         s = s[:-4]
         if showClassification:
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
         return classValue, dist
-        
+
     # is the example described with scaledExampleVals inside closure that contains points in vertices in projection of attrList attributes
     def isExampleInsideCluster(self, attrList, scaledExampleVals, closure, vertices, averageEdgeDistance):
         testExampleAttrVals = [scaledExampleVals[self.graph.attributeNameIndex[attrList[i]]] for i in range(len(attrList))]
@@ -893,7 +880,7 @@ class ClusterOptimization(OWBaseWidget):
         if array == None:
             return 0
         short = numpy.transpose(numpy.take(array, vertices))
-        
+
         [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
 
         #if xTest < min(short[0]) or xTest > max(short[0]) or yTest < min(short[1]) or yTest > max(short[1]):
@@ -912,7 +899,7 @@ class ClusterOptimization(OWBaseWidget):
             if sqrt(xdiff*xdiff + ydiff*ydiff) < averageEdgeDistance:
                 val = 1
                 break
-           
+
         return val
 
 
@@ -928,12 +915,12 @@ class ClusterOptimization(OWBaseWidget):
         if len(arguments) == 0: return 0
         if max(value, arguments[top][1]) == value:
             return top
-        else: 
+        else:
             return bottom
-        
+
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
-    
+
     def argumentationClassChanged(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
@@ -941,14 +928,14 @@ class ClusterOptimization(OWBaseWidget):
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
             if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
-            else:               self.argumentList.insertItem("%.2f - %s" %(val[1], val[2]))
+            else:               self.argumentList.addItem("%.2f - %s" %(val[1], val[2]))
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
         clusterClosure = (self.allResults[self.arguments[classInd][ind][3]][CLOSURE], self.allResults[self.arguments[classInd][ind][3]][ENL_CLOSURE], self.allResults[self.arguments[classInd][ind][3]][CLASS])
         self.parentWidget.updateGraph(self.arguments[classInd][ind][2], clusterClosure = clusterClosure)
-        
+
 
 class clusterClassifier(orange.Classifier):
     def __init__(self, clusterOptimizationDlg, visualizationWidget, data, firstTime = 1):
@@ -958,13 +945,13 @@ class clusterClassifier(orange.Classifier):
 
         results = clusterOptimizationDlg.getAllResults()
         if firstTime and results != None and len(results) > 0:
-            computeProjections = QMessageBox.information(clusterOptimizationDlg, 'Cluster classifier', 'Do you want to classify examples based the projections that are currently in the projection list \n or do you want to compute new projections?', 'Current projections', 'Compute new projections', '', 0,1)
+            computeProjections = QMessageBox.information(clusterOptimizationDlg, 'Cluster classifier', 'Do you want to classify examples based the projections that are currently in the projection list \n or do you want to compute new projections?','Current projections','Compute new projections', '', 0,1)
             #computeProjections = 0
         elif results != None and len(results) > 0:
             computeProjections = 0
         else: computeProjections = 1
 
-        self.visualizationWidget.setData(data, clearResults = computeProjections)        
+        self.visualizationWidget.setData(data, clearResults = computeProjections)
         if computeProjections == 1:     # run cluster detection
             self.evaluating = 1
             t = QTimer(self.visualizationWidget)
@@ -978,7 +965,7 @@ class clusterClassifier(orange.Classifier):
     def stopEvaluation(self):
         if self.evaluating:
             self.clusterOptimizationDlg.stopOptimizationClick()
-            
+
 
     # for a given example run argumentation and find out to which class it most often falls
     def __call__(self, example, returnType):
@@ -1013,10 +1000,10 @@ class clusterClassifier(orange.Classifier):
                             classProjectionVals[classValue] += 1
                         break
                     if classIndices[cls] == startingIndex: classIndices[cls] = len(self.clusterOptimizationDlg.allResults)+1
-                    
+
                 argumentCount += 1
                 if min(classIndices) >= len(self.clusterOptimizationDlg.allResults): canFinish = 1  # out of possible arguments
-                
+
                 if sum(classProjectionVals) > 0 and argumentCount >= allowedArguments:
                     if not self.clusterOptimizationDlg.canUseMoreArguments or (max(classProjectionVals)*100.0)/float(sum(classProjectionVals)) > self.clusterOptimizationDlg.moreArgumentsNums[self.clusterOptimizationDlg.moreArgumentsIndex]:
                         canFinish = 1
@@ -1037,7 +1024,7 @@ class clusterClassifier(orange.Classifier):
             if argumentCount > allowedArguments:
                 s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": argumentCount, "ac": allowedArguments}
             print s[:-4]
-            
+
             return (classValue, dist)
         else:
             for (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) in self.clusterOptimizationDlg.allResults:
@@ -1059,7 +1046,7 @@ class clusterClassifier(orange.Classifier):
                     argumentValues.append((evaluation[0][2], evaluation[0][1]))
 
                 # find 10 more arguments than it is necessary - this is because with a different fold of data the clusters can be differently evaluated
-                if argumentCount >= self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]: 
+                if argumentCount >= self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]:
                     argumentValues.sort(); argumentValues.reverse()
                     vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawData.domain.classVar.values))]
                     neededArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
@@ -1085,7 +1072,7 @@ class clusterClassifier(orange.Classifier):
                         if consideredArguments > neededArguments:
                             s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": consideredArguments, "ac": neededArguments}
                         print s[:-4]
-                        
+
                         return (classValue, dist)
 
             # if we ran out of projections before we could get a reliable prediction use what we have
@@ -1094,7 +1081,7 @@ class clusterClassifier(orange.Classifier):
             for (val, c) in argumentValues:
                 if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
                 else:                                               vals[c] += 1
-                
+
             if max(vals) == 0.0:
                 print "there are no arguments for this example in the current projection list."
                 dist = orange.DiscDistribution([1/float(len(vals)) for i in range(len(vals))]); dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
@@ -1119,12 +1106,12 @@ class clusterLearner(orange.Learner):
         self.visualizationWidget = visualizationWidget
         self.name = self.clusterOptimizationDlg.parentWidget.clusterClassifierName
         self.firstTime = 1
-        
+
     def __call__(self, examples, weightID = 0):
         classifier = clusterClassifier(self.clusterOptimizationDlg, self.visualizationWidget, examples, self.firstTime)
         self.firstTime = 0
         return classifier
-        
+
 
 # ############################################################################################################################################
 # ############################################################################################################################################
@@ -1146,7 +1133,7 @@ def intersection(list1, list2):
     for e in list2:
         if list1_dict.has_key(e): int_dict[e] = 1
     return int_dict.keys()
-    
+
 # on which side of the line through (x1,y1), (x2,y2) lies the point (xTest, yTest)
 def getPosition(x1, y1, x2, y2, xTest, yTest):
     if x1 == x2:
@@ -1247,7 +1234,7 @@ def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict,
     for key in closureDict.keys():
         edges = closureDict[key]
         vertices = union([i for (i,j) in edges], [j for (i,j) in edges])
-        
+
         for vertex in vertices:
             correctClass = int(graph.objects[vertex].getclass())
             correct = []; incorrect = []
@@ -1256,7 +1243,7 @@ def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict,
                 else: incorrect.append(graph[vertex,n][DISTANCE])
 
             # if the distance to the correct class value is greater than to the incorrect class -> remove the point from the
-            if correct == [] or (len(incorrect) > 0 and min(correct) > min(incorrect)):     
+            if correct == [] or (len(incorrect) > 0 and min(correct) > min(incorrect)):
                 # if closure will degenerate into a line -> remove the remaining vertices
                 correctClassNeighbors = []
                 for n in graph.getNeighbours(vertex):
@@ -1277,7 +1264,7 @@ def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict,
 
                 # remove the vertex from the closure
                 for n in graph.getNeighbours(vertex):
-                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue 
+                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue
                     if newVal == None:  graph[vertex,n] = None
                     else:               graph[vertex,n][VALUE] = newVal
                     if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
@@ -1329,14 +1316,14 @@ def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdg
 
 # produce a dictionary with edges, clusters and vertices. clusters are enumerated from 1 up. Each cluster has a different value.
 # minimumValidValue - edges that have smaller value than this will be ignored and will represent boundary between different clusters
-def enumerateClusters(graph, minimumValidValue):    
+def enumerateClusters(graph, minimumValidValue):
     clusterIndex = 1
     verticesDict = {}
     clusterDict = {}
     edgesDict = {}
     for (i,j) in graph.getEdges(): graph[i,j][CLUSTER] = -1   # initialize class cluster
     for i in range(graph.nVertices): clusterDict[i] = -1
-    
+
     for i in range(graph.nVertices):
         if graph.getNeighbours(i) == [] or clusterDict[i] != -1: continue
         edgesDict[clusterIndex] = []
@@ -1365,14 +1352,14 @@ def computeAlphaShapes(graph, edgesDict, alphaShapesValue, insignificantEdgeValu
             for (i,j) in edges: graph[i,j][VALUE] = insignificantEdgeValue
             continue
 
-        # remove edges that are of lenghts average + alphaShapesValue * standard deviation        
+        # remove edges that are of lenghts average + alphaShapesValue * standard deviation
         lengths = [graph[i,j][DISTANCE] for (i,j) in edges]
         ave = sum(lengths) / len(lengths)
         std = sqrt(sum([(x-ave)*(x-ave) for x in lengths])/len(lengths))
         allowedDistance = ave + alphaShapesValue * std
         for index in range(len(lengths)):
             if lengths[index] > allowedDistance: graph[edges[index][0], edges[index][1]][VALUE] = removedEdgeValue
-        
+
 
 # alphashapes removed some edges. if after clustering two poins of the edge still belong to the same cluster, restore the deleted edges
 def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue, deleteValue):
@@ -1385,13 +1372,13 @@ def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue
             else:       # points belong to a different clusters. delete the values
                 if deleteValue == None: graph[i,j] = None
                 else:                   graph[i,j][VALUE] = deleteValue
-        
+
 
 # compute the area of the polygons that are not necessarily convex
 # can be used to measure how good one cluster is. Currently is is not used
 def computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, outerEdgeValue):
     areaDict = {}
-    
+
     for key in closureDict.keys():
         # first check if the closure is really a closure, by checking if it is connected into a circle
         # if it is not, remove this closure from all dictionaries
@@ -1407,7 +1394,7 @@ def computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, outer
             areaDict[key] = 0
             continue
 
-        # then compute its area size        
+        # then compute its area size
         currArea = 0.0
         edges = closureDict[key] # select outer edges
         coveredEdges = []
@@ -1474,7 +1461,7 @@ def pointInsideCluster(data, closure, xTest, yTest):
     for (p1, p2) in closure:
         if data[p1][0] == xTest and data[p1][1] == yTest: return 1
         if data[p2][0] == xTest and data[p2][1] == yTest: return 1
-        
+
     count = 0
     for (p2, p3) in closure:
         x1 = data[p2][0] - xTest; y1 = data[p2][1] - yTest
@@ -1482,8 +1469,8 @@ def pointInsideCluster(data, closure, xTest, yTest):
         if (y1 > 0 and y2 <= 0) or (y2 > 0 and y1 <= 0):
             x = (x1 * y2 - x2 * y1) / (y2 - y1)
             if x > 0: count += 1
-    return count % 2 
-        
+    return count % 2
+
 
 # compute average distance between points inside each cluster
 def computeAverageDistance(graph, edgesDict):
@@ -1635,4 +1622,4 @@ if __name__=="__main__":
     ow = ClusterOptimization()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()        
+    a.exec_()

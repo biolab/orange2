@@ -31,12 +31,12 @@ class OWInfo(OWWidget):
     settingsList=["text"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWBaseWidget.__init__(self, parent, signalManager, "Info Widget") 
+        OWBaseWidget.__init__(self, parent, signalManager, "Info Widget")
         self.title = self.captionTitle = "Info Widget"
 
         # if we want the widget to show the title then the title must start with "Qt"
         if (int(qVersion()[0]) < 3) and self.captionTitle[:2].upper != "QT": self.captionTitle = "Qt " + self.captionTitle
-            
+
         #the title
         self.setCaption(self.captionTitle)
         self.caption = QLabel("Information:", self)
@@ -50,21 +50,20 @@ class OWInfo(OWWidget):
         self.resize(200,200)
 
         self.linkBuffer={}
-        
+
         self.text = ""
         self.loadSettings()
         self.activateLoadedSettings()
 
     def keyPressEvent (self, ev) :
         self.text = str(self.textBox.text())
-               
+
     def activateLoadedSettings(self):
         if self.text != "": self.textBox.setText(self.text)
-        
+
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWInfo()
-    a.setMainWidget(owf)
     owf.show()
-    a.exec_loop()
+    a.exec_()
     owf.saveSettings()

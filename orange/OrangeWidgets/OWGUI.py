@@ -1,37 +1,63 @@
-from qt import *
-from qttable import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import math
-import OWBaseWidget
-import sys, traceback
-
+import orange
+#import sys, traceback
 
 YesNo = NoYes = ("No", "Yes")
+groupBoxMargin = 7
 
 import os.path
 
 enter_icon = None
 
+def getdeepattr(obj, attr, **argkw):
+    try:
+        return reduce(lambda o, n: getattr(o, n, None),  attr.split("."), obj)
+    except:
+        if argkw.has_key("default"):
+            return argkw[default]
+        else:
+            raise AttributeError, "'%s' has no attribute '%s'" % (obj, attr)
+
+
 def getEnterIcon():
     global enter_icon
     if not enter_icon:
-        enter_icon = QPixmap(os.path.dirname(__file__) + "/icons/Dlg_enter.png")
+        enter_icon = QIcon(os.path.dirname(__file__) + "/icons/Dlg_enter.png")
     return enter_icon
 
 
 # constructs a box (frame) if not none, and returns the right master widget
-def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
+def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePolicy = None, margin = -1, spacing = -1, flat = 0, addToLayout = 1):
     if box:
-        if orientation == 'horizontal' or not orientation:
-            b = QHGroupBox(widget)
-        else:
-            b = QVGroupBox(widget)
+        b = QGroupBox(widget)
         if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
             b.setTitle(" "+box.strip()+" ")
+        if margin == -1: margin = groupBoxMargin
+        b.setFlat(flat)
     else:
-        if orientation == 'horizontal' or not orientation:
-            b = QHBox(widget)
-        else:
-            b = QVBox(widget)
+        b = QWidget(widget)
+        if margin == -1: margin = 0
+    if addToLayout and widget.layout():
+        widget.layout().addWidget(b)
+
+    if isinstance(orientation, QLayout):
+        b.setLayout(orientation)
+    elif orientation == 'horizontal' or not orientation:
+        b.setLayout(QHBoxLayout())
+##        b.setSizePolicy(sizePolicy or QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum))
+    else:
+        b.setLayout(QVBoxLayout())
+##        b.setSizePolicy(sizePolicy or QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+    if sizePolicy:
+        b.setSizePolicy(sizePolicy)
+
+    if spacing == -1: spacing = 4
+    b.layout().setSpacing(spacing)
+    if margin != -1:
+        b.layout().setMargin(margin)
+
     if type(addSpace) == int:
         separator(widget, 0, addSpace)
     elif addSpace:
@@ -40,7 +66,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
     return b
 
 def indentedBox(widget, sep=20, orientation = True, addSpace=False):
-    r = widgetBox(widget, orientation = False)
+    r = widgetBox(widget, orientation = "horizontal")
     separator(r, sep, 0)
 
     if type(addSpace) == int:
@@ -51,10 +77,11 @@ def indentedBox(widget, sep=20, orientation = True, addSpace=False):
     return widgetBox(r, orientation = orientation)
 
 def widgetLabel(widget, label=None, labelWidth=None):
-    if not label is None:
+    if label is not None:
         lbl = QLabel(label, widget)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+        if widget.layout(): widget.layout().addWidget(lbl)
     else:
         lbl = None
 
@@ -66,8 +93,9 @@ __re_frmt = re.compile(r"(^|[^%])%\((?P<value>[a-zA-Z]\w*)\)")
 
 def label(widget, master, label, labelWidth = None):
     lbl = QLabel("", widget)
+    if widget.layout(): widget.layout().addWidget(lbl)
 
-    reprint = CallFront_Label(lbl, label, master)
+    reprint = CallFrontLabel(lbl, label, master)
     for mo in __re_frmt.finditer(label):
         master.controlledAttributes[mo.group("value")] = reprint
     reprint()
@@ -80,7 +108,9 @@ def label(widget, master, label, labelWidth = None):
 
 class SpinBoxWFocusOut(QSpinBox):
     def __init__(self, min, max, step, bi):
-        QSpinBox.__init__(self, min, max, step, bi)
+        QSpinBox.__init__(self, bi)
+        self.setRange(min, max)
+        self.setSingleStep(step)
         self.inSetValue = False
         self.enterButton = None
 
@@ -142,15 +172,16 @@ def spin(widget, master, value, min, max, step=1,
 
 
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
+    if bi.layout(): bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
     if tooltip:
-        QToolTip.add(wa, tooltip)
+        wa.setToolTip(tooltip)
     if value:
-        wa.setValue(master.getdeepattr(value))
+        wa.setValue(getdeepattr(master, value))
 
-    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and (wa.editor(), "textChanged(const QString &)"), CallFront_spin(wa), fvcb=int)
+    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(int)", CallFrontSpin(wa))
 
     if checked:
         wb.disables = [wa]
@@ -158,15 +189,15 @@ def spin(widget, master, value, min, max, step=1,
 
     if callback and callbackOnReturn:
         wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
-        master.connect(wa.editor(), SIGNAL("textChanged(const QString &)"), wa.onChange)
-        master.connect(wa.editor(), SIGNAL("returnPressed()"), wa.onEnter)
+        master.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
+        master.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
         master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
         if hasattr(wa, "upButton"):
             master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
             master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
-        QLabel(posttext, bi)
+        widgetLabel(bi, posttext)
 
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
@@ -182,61 +213,55 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     widgetLabel(b, label, labelWidth)
 
     wa = b.control = DoubleSpinBox(min, max, step, value, master, b)
-    wa.setValue(master.getdeepattr(value))
+    wa.setValue(getdeepattr(master, value))
+    if b.layout(): b.layout().addWidget(wa)
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
 
     if tooltip:
-        QToolTip.add(wa, tooltip)
+        wa.setToolTip(tooltip)
 
-    connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_doubleSpin(wa), fvcb=wa.clamp)
+    connectControl(wa, master, value, callback, "valueChanged(int)", CallFrontDoubleSpin(wa), fvcb=wa.clamp)
     return b
 
 
-def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], debuggingEnabled = 1):
-    if box or label:
-        b = widgetBox(widget, box, orientation=None)
-        wa = QCheckBox(label, b)
-        wa.box = b
-    else:
-        wa = QCheckBox(widget)
-        wa.box = None
+def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
+    b = widgetBox(widget, box, orientation=None)
+    wa = QCheckBox(label, b)
+    if addToLayout and b.layout(): b.layout().addWidget(wa)
 
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
-
-    wa.setChecked(master.getdeepattr(value))
+    wa.setChecked(getdeepattr(master, value))
     if disabled:
         wa.setDisabled(1)
     if tooltip:
-        QToolTip.add(wa, tooltip)
+        wa.setToolTip(tooltip)
 
-    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa),
+    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFrontCheckBox(wa),
                                           cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
-
-    wa.disables = disables or []
+    wa.disables = disables or [] # need to create a new instance of list (in case someone would want to append...)
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
     wa.makeConsistent.__call__(value)
-
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, value, callback)]
-
     return wa
 
 
 def enterButton(parent, height, placeholder = True):
-        button = QPushButton(parent)
-        button.setFixedSize(height, height)
-        button.setPixmap(getEnterIcon())
-        if not placeholder:
-            return button
+    button = QPushButton(parent)
+    button.setFixedSize(height, height)
+    button.setIcon(getEnterIcon())
+    if parent.layout(): parent.layout().addWidget(button)
+    if not placeholder:
+        return button
 
-        button.hide()
-        holder = QWidget(parent)
-        holder.setFixedSize(height, height)
-        return button, holder
+    button.hide()
+    holder = QWidget(parent)
+    holder.setFixedSize(height, height)
+    return button, holder
 
 
 class LineEditWFocusOut(QLineEdit):
@@ -301,73 +326,85 @@ def lineEdit(widget, master, value,
         wa = QLineEdit(b)
         wa.enterButton = None
 
+    if b.layout(): b.layout().addWidget(wa)
     if value:
-        wa.setText(unicode(master.getdeepattr(value)))
+        wa.setText(unicode(getdeepattr(master, value)))
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
 
     if tooltip:
-        QToolTip.add(wa, tooltip)
+        wa.setToolTip(tooltip)
     if validator:
         wa.setValidator(validator)
 
-    wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = value and valueType)[1]
+    wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
 
     wa.box = b
     return wa
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, toggleButton = False,value = ""):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, height = None, toggleButton = False, value = "", addToLayout = 1):
     btn = QPushButton(label, widget)
+    if addToLayout and widget.layout(): widget.layout().addWidget(btn)
+
     if width:
         btn.setFixedWidth(width)
+    if height:
+        btn.setFixedHeight(height)
     btn.setDisabled(disabled)
     if tooltip:
-        QToolTip.add(btn, tooltip)
-
+        btn.setToolTip(tooltip)
     if toggleButton:
-        btn.setToggleButton(True)
+        btn.setCheckable(True)
 
+    if callback:
+        master.connect(btn, SIGNAL("clicked()"), callback)
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
+    return btn
 
-    if value:
-        cfront, cback, cfunc = connectControl(btn, master, value, None, "toggled(bool)", CallFront_toggleButton(btn),
-                                              cfunc = callback and FunctionCallback(master, callback, widget=btn))
-    else:
-        if callback:
-            master.connect(btn, SIGNAL("clicked()"), callback)
-
+def toolButton(widget, master, callback = None, width = None, height = None, tooltip = None, addToLayout = 1, debuggingEnabled = 1):
+    btn = QToolButton(widget)
+    if addToLayout and widget.layout(): widget.layout().addWidget(btn)
+    if width != None: btn.setFixedWidth(width)
+    if height!= None: btn.setFixedHeight(height)
+    if tooltip != None: btn.setToolTip(tooltip)
+    if callback:
+        master.connect(btn, SIGNAL("clicked()"), callback)
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
 
 
-def separator(widget, width=0, height=8):
+def separator(widget, width=8, height=8):
     sep = QWidget(widget)
+    if widget.layout(): widget.layout().addWidget(sep)
     sep.setFixedSize(width, height)
     return sep
 
-def rubber(widget, orientation="vertical"):
-    sep = QWidget(widget)
-    sep.setMinimumSize(1, 1)
-    if orientation=="horizontal" or not orientation:
-        sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
-    else:
-        sep.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
-    return sep
+def rubber(widget):
+#    sep = QWidget(widget)
+#    if widget.layout(): widget.layout().addWidget(sep)
+#    sep.setMinimumSize(1, 1)
+#    if orientation=="horizontal" or not orientation:
+#        sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+#    else:
+#        sep.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
+#    return sep
+    widget.layout().addStretch(100)
 
 def createAttributePixmap(char, color = Qt.black):
-    pixmap = QPixmap()
-    pixmap.resize(13, 13)
+    pixmap = QPixmap(13,13)
     painter = QPainter()
     painter.begin(pixmap)
-    painter.setPen(color);
-    painter.setBrush(color);
-    painter.drawRect(0, 0, 13, 13);
-    painter.setPen(Qt.white)
+    painter.setPen( color );
+    painter.setBrush( color );
+    painter.drawRect( 0, 0, 13, 13 );
+    painter.setPen( QColor(Qt.white))
     painter.drawText(3, 11, char)
     painter.end()
-    return pixmap
+    return QIcon(pixmap)
 
 
 attributeIconDict = None
@@ -375,39 +412,39 @@ attributeIconDict = None
 def getAttributeIcons():
     global attributeIconDict
     if not attributeIconDict:
-        import orange
-        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202, 0, 32)),
-                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26, 150, 65)),
+        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
+                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26,150,65)),
                      orange.VarTypes.String: createAttributePixmap("S", Qt.black),
                      -1: createAttributePixmap("?", QColor(128, 128, 128))}
     return attributeIconDict
 
 
-def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single, debuggingEnabled = 1, addSpace = False):
-    bg = box and QHButtonGroup(box, widget) or widget
-
-    lb = QListBox(bg)
+def listBox(widget, master, value = None, labels = None, box = None, tooltip = None, callback = None, selectionMode = QListWidget.SingleSelection, enableDragDrop = 0, dragDropCallback = None, dataValidityCallback = None, sizeHint = None, debuggingEnabled = 1):
+    bg = box and widgetBox(widget, box, orientation = "horizontal") or widget
+    lb = OrangeListBox(master, value, enableDragDrop, dragDropCallback, dataValidityCallback, sizeHint, bg)
     lb.box = bg
     lb.setSelectionMode(selectionMode)
+    if bg.layout(): bg.layout().addWidget(lb)
 
-    if addSpace:
-        separator(widget)
-
-    clist = master.getdeepattr(value)
-    if type(clist) >= ControlledList:
-        clist = ControlledList(clist, lb)
-        master.__setattr__(value, clist)
+    if value != None:
+        clist = getdeepattr(master, value)
+        if type(clist) >= ControlledList:
+            clist = ControlledList(clist, lb)
+            master.__setattr__(value, clist)
 
     lb.ogValue = value
     lb.ogLabels = labels
     lb.ogMaster = master
     if tooltip:
-        QToolTip.add(lb, tooltip)
+        lb.setToolTip(tooltip)
 
-    connectControl(lb, master, value, callback, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
-    master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
-    setattr(master, labels, getattr(master, labels))
-    setattr(master, value, getattr(master, value))
+    connectControl(lb, master, value, callback, "itemSelectionChanged()", CallFrontListBox(lb), CallBackListBox(lb, master))
+    if value != None:
+        setattr(master, value, getdeepattr(master, value))
+    if hasattr(master, "controlledAttributes") and labels != None:
+        master.controlledAttributes[labels] = CallFrontListBoxLabels(lb)
+    if labels != None:
+        setattr(master, labels, getdeepattr(master, labels))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("listBox", lb, value, callback)]
     return lb
@@ -416,138 +453,156 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False, orientation = 'vertical', label = None):
     if box:
-        bb = (orientation == 'horizontal' or not orientation) and QHButtonGroup or QVButtonGroup
-        if type(box) in [str, unicode]:
-            bg = bb(box, widget)
-        else:
-            bg = bb(widget)
+        bg = widgetBox(widget, box, orientation)
     else:
         bg = widget
+
+    bg.group = QButtonGroup(bg)
 
     if addSpace:
         separator(widget)
 
     if not label is None:
         widgetLabel(bg, label)
-        
-    bg.setRadioButtonExclusive(1)
-    bg.buttons = []
-    for i in range(len(btnLabels)):
-        appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i])
 
-    connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
+    bg.buttons = []
+    bg.ogValue = value
+    for i in range(len(btnLabels)):
+        appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i], callback = callback)
+
+    if callback != None:
+        connectControl(bg.group, master, value, callback, "buttonClicked (int)", CallFrontRadioButtons(bg), CallBackRadioButton(bg, master))
+
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
     return bg
 
 
-def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None):
+def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None, callback = None):
+    dest = insertInto or bg
+
+    if not hasattr(bg, "buttons"):
+        bg.buttons = []
     i = len(bg.buttons)
+
     if type(label) in (str, unicode):
-        w = QRadioButton(label, insertInto or bg)
+        w = QRadioButton(label)
     else:
-        w = QRadioButton(unicode(i), insertInto or bg)
-        w.setPixmap(label)
-    if insertInto:
-        bg.insert(w)
-    w.setOn(master.getdeepattr(value) == i)
+        w = QRadioButton(unicode(i))
+        w.setIcon(QIcon(label))
+    #w.ogValue = value
+    if dest.layout(): dest.layout().addWidget(w)
+    if not hasattr(bg, "group"):
+        bg.group = QButtonGroup(bg)
+    bg.group.addButton(w)
+
+    w.setChecked(getdeepattr(master, value) == i)
     bg.buttons.append(w)
+#    if callback == None and hasattr(bg, "callback"):
+#        callback = bg.callback
+#    if callback != None:
+#        connectControl(w, master, value, callback, "clicked()", CallFrontRadioButtons(bg), CallBackRadioButton(w, master, bg))
     if tooltip:
-        QToolTip.add(w, tooltip)
-
-
-def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
-    if box:
-        bg = QHButtonGroup(box, widget)
-    else:
-        bg = widget
-
-    if type(label) in (str, unicode):
-        w = QRadioButton(label, bg)
-    else:
-        w = QRadioButton("X")
-        w.setPixmap(label)
-    w.setOn(master.getdeepattr(value))
-    if tooltip:
-        QToolTip.add(w, tooltip)
-
-    connectControl(w, master, value, callback, "stateChanged(int)", CallFront_checkBox(w))
-    if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
+        w.setToolTip(tooltip)
     return w
 
+#def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
+#    if box:
+#        bg = widgetBox(widget, box, orientation="horizontal")
+#    else:
+#        bg = widget
+#
+#    if type(label) in (str, unicode):
+#        w = QRadioButton(label, bg)
+#    else:
+#        w = QRadioButton("X")
+#        w.setPixmap(label)
+#    if bg.layout(): bg.layout().addWidget(w)
+#
+#    w.setChecked(getdeepattr(master, value))
+#    if tooltip:
+#        w.setToolTip(tooltip)
+#
+#    connectControl(w, master, value, callback, "stateChanged(int)", CallFrontCheckBox(w))
+#    if debuggingEnabled:
+#        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
+#    return w
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1):
-    if box:
-        sliderBox = QHButtonGroup(box, widget)
-    else:
-        sliderBox = QHBox(widget)
+
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, label=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1, tooltip = None, width = None):
+    sliderBox = widgetBox(widget, box, orientation = "horizontal")
+    if label:
+        lbl = widgetLabel(sliderBox, label)
 
     if vertical:
-        sliderOrient = QSlider.Vertical
+        sliderOrient = Qt.Vertical
     else:
-        sliderOrient = QSlider.Horizontal
+        sliderOrient = Qt.Horizontal
 
-    slider = QSlider(minValue, maxValue, step, master.getdeepattr(value), sliderOrient, sliderBox)
+    slider = QSlider(sliderOrient, sliderBox)
+    slider.setRange(minValue, maxValue)
+    slider.setSingleStep(step)
+    slider.setPageStep(step)
+    slider.setTickInterval(step)
+    slider.setValue(getdeepattr(master, value))
+
+    if tooltip:
+        slider.setToolTip(tooltip)
+
+    if width != None:
+        slider.setFixedWidth(width)
+
+    if sliderBox.layout(): sliderBox.layout().addWidget(slider)
+
     if ticks:
-        slider.setTickmarks(QSlider.Below)
+        slider.setTickPosition(QSlider.TicksBelow)
         slider.setTickInterval(ticks)
 
     if createLabel:
         label = QLabel(sliderBox)
+        if sliderBox.layout(): sliderBox.layout().addWidget(label)
         label.setText(labelFormat % minValue)
         width1 = label.sizeHint().width()
         label.setText(labelFormat % maxValue)
         width2 = label.sizeHint().width()
         label.setFixedSize(max(width1, width2), label.sizeHint().height())
-        txt = labelFormat % (master.getdeepattr(value)/divideFactor)
+        txt = labelFormat % (getdeepattr(master, value)/divideFactor)
         label.setText(txt)
         label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
         QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
 
-    connectControl(slider, master, value, callback, "valueChanged(int)", CallFront_hSlider(slider))
-    
+    connectControl(slider, master, value, callback, "valueChanged(int)", CallFrontHSlider(slider))
+
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
 
 
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1, addSpace=False, orientation=0):
-    try:
-        import qwt
-    except:
-        import Qwt4 as qwt
-    init = master.getdeepattr(value)
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, showValueLabel = 1, debuggingEnabled = 1):
+    import PyQt4.Qwt5 as qwt
+
+    init = getdeepattr(master, value)
     if box:
-        sliderBox = QHButtonGroup(box, widget)
-        separator(widget)
+        sliderBox = widgetBox(widget, box, orientation = "horizontal")
     else:
         sliderBox = widget
 
+    hb = widgetBox(sliderBox, orientation = "horizontal")
     if label:
-        horiz = orientation=="horizontal" or not orientation 
-        if horiz:
-            hb = QHBox(sliderBox)
-        else:
-            hb = QVBox(sliderBox)
-        lbl = QLabel(label, hb)
-        if labelWidth:
-            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-        if not horiz:
-            separator(hb, height=2)
-            hb = QHBox(hb)
-    else:
-        hb = QHBox(sliderBox)
+        lbl = widgetLabel(hb, label, labelWidth)
+
     if ticks:
-        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
+        slider = qwt.QwtSlider(hb, Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
     else:
-        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.None, qwt.QwtSlider.BgSlot)
+        slider = qwt.QwtSlider(hb, Qt.Horizontal, qwt.QwtSlider.NoScale, qwt.QwtSlider.BgSlot)
+    hb.layout().addWidget(slider)
+
     slider.setScale(minValue, maxValue, logarithmic) # the third parameter for logaritmic scale
     slider.setScaleMaxMinor(10)
     slider.setThumbWidth(20)
     slider.setThumbLength(12)
     if maxWidth:
-        slider.setMaximumSize(maxWidth, 40)
+        slider.setMaximumSize(maxWidth,40)
     if logarithmic:
         slider.setRange(math.log10(minValue), math.log10(maxValue), step)
         slider.setValue(math.log10(init))
@@ -555,27 +610,27 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         slider.setRange(minValue, maxValue, step)
         slider.setValue(init)
     if tooltip:
-        QToolTip.add(hb, tooltip)
+        hb.setToolTip(tooltip)
 
 ##    format = "%s%d.%df" % ("%", precision+3, precision)
     format = " %s.%df" % ("%", precision)
 
-    lbl = QLabel(hb)
-    lbl.setText(format % minValue)
-    width1 = lbl.sizeHint().width()
-    lbl.setText(format % maxValue)
-    width2 = lbl.sizeHint().width()
-    lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
-    lbl.setText(format % init)
+    if showValueLabel:
+        lbl = widgetLabel(hb, format % minValue)
+        width1 = lbl.sizeHint().width()
+        lbl.setText(format % maxValue)
+        width2 = lbl.sizeHint().width()
+        lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
+        lbl.setText(format % init)
 
     if logarithmic:
-        cfront = CallFront_logSlider(slider)
+        cfront = CallFrontLogSlider(slider)
         cback = ValueCallback(master, value, f=lambda x: 10**x)
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
+        if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
     else:
-        cfront = CallFront_hSlider(slider)
+        cfront = CallFrontHSlider(slider)
         cback = ValueCallback(master, value)
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
+        if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
     connectControl(slider, master, value, callback, "valueChanged(double)", cfront, cback)
     slider.box = hb
 
@@ -584,12 +639,244 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     return slider
 
 
+# list box where we can use drag and drop
+class OrangeListBox(QListWidget):
+    def __init__(self, widget, value = None, enableDragDrop = 0, dragDropCallback = None, dataValidityCallback = None, sizeHint = None, *args):
+        self.widget = widget
+        self.value = value
+        QListWidget.__init__(self, *args)
+        self.enableDragDrop = enableDragDrop
+        self.dragDopCallback = dragDropCallback
+        self.dataValidityCallback = dataValidityCallback
+        if not sizeHint:
+            self.defaultSizeHint = QSize(150,100)
+        else:
+            self.defaultSizeHint = sizeHint
+        if enableDragDrop:
+            self.setDragEnabled(1)
+            self.setAcceptDrops(1)
+            self.setDropIndicatorShown(1)
+            #self.setDragDropMode(QAbstractItemView.DragDrop)
+            self.dragStartPosition = 0
+
+    def setAttributes(self, data, attributes):
+        if type(shownAttributes[0]) == tuple:
+            setattr(self.widget, self.ogLabels, attributes)
+        else:
+            domain = data.domain
+            setattr(self.widget, self.ogLabels, [(domain[a].name, domain[a].varType) for a in attributes])
+
+    def sizeHint(self):
+        return self.defaultSizeHint
+
+
+    def startDrag(self, supportedActions):
+        if not self.enableDragDrop: return
+
+        drag = QDrag(self)
+        mime = QMimeData()
+
+        if not self.ogValue:
+            selectedItems = [i for i in range(self.count()) if self.item(i).isSelected()]
+        else:
+            selectedItems = getdeepattr(self.widget, self.ogValue, default = [])
+
+        mime.setText(str(selectedItems))
+        mime.source = self
+        drag.setMimeData(mime)
+        drag.start(Qt.MoveAction)
+
+    def dragEnterEvent(self, ev):
+        if not self.enableDragDrop: return
+        if self.dataValidityCallback: return self.dataValidityCallback(ev)
+
+        if ev.mimeData().hasText():
+            ev.accept()
+        else:
+            ev.ignore()
+
+
+    def dragMoveEvent(self, ev):
+        if not self.enableDragDrop: return
+        if self.dataValidityCallback: return self.dataValidityCallback(ev)
+
+        if ev.mimeData().hasText():
+            ev.setDropAction(Qt.MoveAction)
+            ev.accept()
+        else:
+            ev.ignore()
+
+    def dropEvent(self, ev):
+        if not self.enableDragDrop: return
+        if ev.mimeData().hasText():
+            item = self.itemAt(ev.pos())
+            if item:
+                index = self.indexFromItem(item).row()
+            else:
+                index = self.count()
+
+            source = ev.mimeData().source
+            selectedItemIndices = eval(str(ev.mimeData().text()))
+
+            if self.ogLabels != None and self.ogValue != None:
+                allSourceItems = getdeepattr(source.widget, source.ogLabels, default = [])
+                selectedItems = [allSourceItems[i] for i in selectedItemIndices]
+                allDestItems = getdeepattr(self.widget, self.ogLabels, default = [])
+
+                if source != self:
+                    setattr(source.widget, source.ogLabels, [item for item in allSourceItems if item not in selectedItems])   # TODO: optimize this code. use the fact that the selectedItemIndices is a sorted list
+                    setattr(self.widget, self.ogLabels, allDestItems[:index] + selectedItems + allDestItems[index:])
+                    setattr(source.widget, source.ogValue, [])  # clear selection in the source widget
+                else:
+                    items = [item for item in allSourceItems if item not in selectedItems]
+                    if index < len(allDestItems):
+                        while index > 0 and index in getdeepattr(self.widget, self.ogValue, default = []):      # if we are dropping items on a selected item, we have to select some previous unselected item as the drop target
+                            index -= 1
+                        destItem = allDestItems[index]
+                        index = items.index(destItem)
+                    else:
+                        index = max(0, index - len(selectedItems))
+                    setattr(self.widget, self.ogLabels, items[:index] + selectedItems + items[index:])
+                setattr(self.widget, self.ogValue, range(index, index+len(selectedItems)))
+            else:       # if we don't have variables ogValue and ogLabel
+                if source != self:
+                    self.insertItems(source.selectedItems())
+                    for index in selectedItemIndices[::-1]:
+                        source.takeItem(index)
+                else:
+                    if index < self.count():
+                        while index > 0 and self.item(index).isSelected():      # if we are dropping items on a selected item, we have to select some previous unselected item as the drop target
+                            index -= 1
+                    strs = [str(source.item(i).text()) for i in selectedItemIndices]
+                    for ind in selectedItemIndices[::-1]:
+                        source.takeItem(ind)
+                        if ind <= index: index-= 1
+                    self.insertItems(index, strs)
+                    self.clearSelection()
+                    for i in range(index, index+len(strs)):
+                        self.item(i).setSelected(1)
+
+            if self.dragDopCallback:        # call the callback
+                self.dragDopCallback()
+            ev.setDropAction(Qt.MoveAction)
+            ev.accept()
+        else:
+            ev.ignore()
+
+
+class SmallWidgetButton(QPushButton):
+    def __init__(self, widget, text = "", pixmap = None, box = None, orientation='vertical', tooltip = None, autoHideWidget = None):
+        #self.parent = parent
+        if pixmap != None:
+            import os
+            iconDir = os.path.join(os.path.dirname(__file__), "icons")
+            if type(pixmap) == str:
+                if os.path.exists(pixmap):
+                    name = pixmap
+                elif os.path.exists(os.path.join(iconDir, pixmap)):
+                    name = os.path.join(iconDir, pixmap)
+            elif type(pixmap) == QPixmap or type(pixmap) == QIcon:
+                name = pixmap
+            else:
+                name = os.path.join(iconDir, "arrow_down.png")
+            QPushButton.__init__(self, QIcon(name), text, widget)
+        else:
+            QPushButton.__init__(self, text, widget)
+        if widget.layout():
+            widget.layout().addWidget(self)
+        if tooltip != None:
+            self.setToolTip(tooltip)
+        # create autohide widget and set a layout
+        if autoHideWidget != None:
+            self.autohideWidget = autoHideWidget(None, Qt.Popup)
+        else:            
+            self.autohideWidget = AutoHideWidget(None, Qt.Popup)
+        self.widget = self.autohideWidget 
+
+        if isinstance(orientation, QLayout):
+            self.widget.setLayout(orientation)
+        elif orientation == 'horizontal' or not orientation:
+            self.widget.setLayout(QHBoxLayout())
+        else:
+            self.widget.setLayout(QVBoxLayout())
+        #self.widget.layout().setMargin(groupBoxMargin)
+
+        if box:
+            self.widget = widgetBox(self.widget, box, orientation)
+        #self.setStyleSheet("QPushButton:hover { background-color: #F4F2F0; }")
+
+        self.autohideWidget.hide()
+
+    def mousePressEvent(self, ev):
+        QWidget.mousePressEvent(self, ev)
+        if self.autohideWidget.isVisible():
+            self.autohideWidget.hide()
+        else:
+            #self.widget.move(self.parent.mapToGlobal(QPoint(0, 0)).x(), self.mapToGlobal(QPoint(0, self.height())).y())
+            self.autohideWidget.move(self.mapToGlobal(QPoint(0, self.height())))
+            self.autohideWidget.show()
+
+
+class SmallWidgetLabel(QLabel):
+    def __init__(self, widget, text = "", pixmap = None, box = None, orientation='vertical', tooltip = None):
+        QLabel.__init__(self, widget)
+        if text != "":
+            self.setText("<font color=\"#C10004\">" + text + "</font>")
+        elif pixmap != None:
+            import os
+            iconDir = os.path.join(os.path.dirname(__file__), "icons")
+            if type(pixmap) == str:
+                if os.path.exists(pixmap):
+                    name = pixmap
+                elif os.path.exists(os.path.join(iconDir, pixmap)):
+                    name = os.path.join(iconDir, pixmap)
+            elif type(pixmap) == QPixmap or type(pixmap) == QIcon:
+                name = pixmap
+            else:
+                name = os.path.join(iconDir, "arrow_down.png")
+            self.setPixmap(QPixmap(name))
+        if widget.layout():
+            widget.layout().addWidget(self)
+        if tooltip != None:
+            self.setToolTip(tooltip)
+        self.autohideWidget = self.widget = AutoHideWidget(None, Qt.Popup)
+
+        if isinstance(orientation, QLayout):
+            self.widget.setLayout(orientation)
+        elif orientation == 'horizontal' or not orientation:
+            self.widget.setLayout(QHBoxLayout())
+        else:
+            self.widget.setLayout(QVBoxLayout())
+
+        if box:
+            self.widget = widgetBox(self.widget, box, orientation)
+
+        self.autohideWidget.hide()
+
+    def mousePressEvent(self, ev):
+        QLabel.mousePressEvent(self, ev)
+        if self.autohideWidget.isVisible():
+            self.autohideWidget.hide()
+        else:
+            #self.widget.move(self.parent.mapToGlobal(QPoint(0, 0)).x(), self.mapToGlobal(QPoint(0, self.height())).y())
+            self.autohideWidget.move(self.mapToGlobal(QPoint(0, self.height())))
+            self.autohideWidget.show()
+
+
+class AutoHideWidget(QWidget):
+#    def __init__(self, parent = None):
+#        QWidget.__init__(self, parent, Qt.Popup)
+
+    def leaveEvent(self, ev):
+        self.hide()
+
+
 
 class SearchLineEdit(QLineEdit):
     def __init__(self, t, searcher):
         QLineEdit.__init__(self, t)
         self.searcher = searcher
-        
+
     def keyPressEvent(self, e):
         k = e.key()
         if k == Qt.Key_Down:
@@ -604,12 +891,12 @@ class SearchLineEdit(QLineEdit):
             self.searcher.window.hide()
         else:
             return QLineEdit.keyPressEvent(self, e)
-        
+
 class Searcher:
     def __init__(self, control, master):
         self.control = control
         self.master = master
-        
+
     def __call__(self):
         self.window = t = QFrame(self.master, "", QStyle.WStyle_Dialog + QStyle.WStyle_Tool + QStyle.WStyle_Customize + QStyle.WStyle_NormalBorder)
         la = QVBoxLayout(t).setAutoAdd(1)
@@ -624,27 +911,27 @@ class Searcher:
         t.setFixedSize(self.control.width(), 200)
         t.show()
         le.setFocus()
-        
+
         self.master.connect(le, SIGNAL("textChanged(const QString &)"), self.textChanged)
         self.master.connect(le, SIGNAL("returnPressed()"), self.returnPressed)
         self.master.connect(self.lb, SIGNAL("clicked(QListBoxItem *)"), self.mouseClicked)
-        
+
     def textChanged(self, s):
         s = str(s)
         self.lb.clear()
         for i in self.allItems:
             if s.lower() in i.lower():
                 self.lb.insertItem(i)
-               
-    def returnPressed(self): 
+
+    def returnPressed(self):
         if self.lb.count():
             self.conclude(self.lb.text(max(0, self.lb.currentItem())))
         else:
             self.window.hide()
-       
+
     def mouseClicked(self, item):
         self.conclude(item.text())
-       
+
     def conclude(self, valueQStr):
         value = str(valueQStr)
         index = self.allItems.index(value)
@@ -656,60 +943,44 @@ class Searcher:
                 self.control.cback(index)
         if self.control.cfunc:
             self.control.cfunc()
-                
+
         self.window.hide()
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1, searchAttr = False, addSpace = False):
-    horizontalBox = False
-    if box or label:
-        hb = widgetBox(widget, box, orientation)
-        widgetLabel(hb, label, labelWidth)
-#        separator(hb, 8, 4)
-        horizontalBox = orientation == 'horizontal' or not orientation
-    else:
-        hb = widget
 
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, editable = 0, searchAttr = False, indent = 0, addSpace = False, debuggingEnabled = 1):
+    hb = widgetBox(widget, box, orientation)
+    widgetLabel(hb, label, labelWidth)
     if tooltip:
-        QToolTip.add(hb, tooltip)
-
-    if searchAttr and not horizontalBox:
-        hb2 = widgetBox(hb, "", 0)
-    else:
-        hb2 = hb
-    combo = QComboBox(hb2)
-    if searchAttr:
-        searchButton = enterButton(hb2, combo.sizeHint().height(), False)
-        master.connect(searchButton, SIGNAL("clicked()"), Searcher(combo, master))
-
+        hb.setToolTip(tooltip)
+    combo = QComboBox(hb)
+    combo.setEditable(editable)
     combo.box = hb
-
-    if addSpace:
-        if isinstance(addSpace, int):
-            separator(widget, height=addSpace)
-        else:
-            separator(widget)
+    if indent:
+        hb = widgetBox(hb, orientation = "horizontal")
+        hb.layout().addSpacing(indent)
+    if hb.layout(): hb.layout().addWidget(combo)
 
     if items:
-        for i in items:
-            combo.insertItem(unicode(i))
-        if len(items)>0:
-                if sendSelectedValue and master.getdeepattr(value) in items: combo.setCurrentItem(items.index(master.getdeepattr(value)))
-                elif not sendSelectedValue: combo.setCurrentItem(master.getdeepattr(value))
+        combo.addItems([unicode(i) for i in items])
+        if len(items)>0 and value != None:
+            if sendSelectedValue and getdeepattr(master, value) in items: combo.setCurrentIndex(items.index(getdeepattr(master, value)))
+            elif not sendSelectedValue:
+                combo.setCurrentIndex(getdeepattr(master, value))
         else:
             combo.setDisabled(True)
 
-    combo.sendSelectedValue = sendSelectedValue
-    if sendSelectedValue:
-        control2attributeDict = dict(control2attributeDict)
-        if emptyString:
-            control2attributeDict[emptyString] = ""
-        combo.cfront, combo.cback, combo.cfunc = connectControl(combo, master, value, callback, "activated( const QString & )",
-                       CallFront_comboBox(combo, valueType, control2attributeDict),
-                       ValueCallbackCombo(master, value, valueType, control2attributeDict))
-    else:
-        combo.cfront, combo.cback, combo.cfunc = connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
-        
+    if value != None:
+        if sendSelectedValue:
+            control2attributeDict = dict(control2attributeDict)
+            if emptyString:
+                control2attributeDict[emptyString] = ""
+            connectControl(combo, master, value, callback, "activated( const QString & )",
+                           CallFrontComboBox(combo, valueType, control2attributeDict),
+                           ValueCallbackCombo(master, value, valueType, control2attributeDict))
+        else:
+            connectControl(combo, master, value, callback, "activated(int)", CallFrontComboBox(combo, None, control2attributeDict))
+
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, sendSelectedValue, valueType, callback)]
     return combo
@@ -722,48 +993,31 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
     return combo
 
 # creates a widget box with a button in the top right edge, that allows you to hide all the widgets in the box and collapse the box to its minimum height
-class collapsableWidgetBox(QVGroupBox):
-    def __init__(self, widget, box = "", master = None, value = "", callback = None):
-        QVGroupBox.__init__(self, widget)
+class collapsableWidgetBox(QGroupBox):
+    def __init__(self, widget, box = "", master = None, value = "", orientation = "vertical", callback = None):
+        QGroupBox.__init__(self, widget)
+        if orientation == 'vertical': self.setLayout(QVBoxLayout())
+        else:                         self.setLayout(QHBoxLayout())
+
+        if widget.layout():
+            widget.layout().addWidget(self)
         if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
             self.setTitle(" " + box.strip() + " ")
 
-        self.pixEdgeOffset = 10
+        self.setCheckable(1)
+        self.childWidgetVisibility = {}
 
         self.master = master
         self.value = value
         self.callback = callback
-        self.xPixCoord = 0
-        self.shownPixSize = (0, 0)
-        self.childWidgetVisibility = {}
-        self.pixmaps = []
-
-        import os
-        iconDir = os.path.join(os.path.dirname(__file__), "icons")
-        icon1 = os.path.join(iconDir, "arrow_down.png")
-        icon2 = os.path.join(iconDir, "arrow_up.png")
-
-        if os.path.exists(icon1) and os.path.exists(icon2):
-            self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
-        else:
-            # a little compatibility for QT 3.3 (on Mac at least)
-            if hasattr(self, "setPaletteBackgroundColor"):
-                self.setPaletteBackgroundColor(Qt.black)
-            else:
-                self.setBackgroundColor(Qt.black)
-        #self.updateControls()      # not needed yet, since no widgets are in it
+        widget.connect(self, SIGNAL("clicked()"), self.toggled)
 
 
-    def mousePressEvent(self, ev):
-        QVGroupBox.mousePressEvent(self, ev)
-
-        # did we click on the pixmap?
-        if ev.x() > self.xPixCoord and ev.x() < self.xPixCoord + self.shownPixSize[0] and ev.y() < self.shownPixSize[1]:
-            if self.value:
-                self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
+    def toggled(self, val = 0):
+        if self.value:
+            self.master.__setattr__(self.value, self.isChecked())
             self.updateControls()
-            self.repaint()
-        if self.callback is not None:
+        if self.callback != None:
             self.callback()
 
     # call when all widgets are added into the widget box to update the correct state (shown or hidden)
@@ -775,36 +1029,30 @@ class collapsableWidgetBox(QVGroupBox):
 
     def updateControls(self):
         val = self.master.getdeepattr(self.value)
+        self.setChecked(val)
+        self.setFlat(not val)
 
         for c in self.children():
             if isinstance(c, QLayout): continue
             if val:
-                if self.childWidgetVisibility.get(str(c), 1): c.show()
+                if self.childWidgetVisibility.get(str(c), 1):       # we don't show controls that were supposed to be hidden
+                    c.show()
             else:
                 self.childWidgetVisibility[str(c)] = not c.isHidden()      # before hiding, save its visibility so that we'll know to show it or not later
                 c.hide()
 
-    def paintEvent(self, ev):
-        QVGroupBox.paintEvent(self, ev)
-
-        if self.pixmaps != []:
-            pix = self.pixmaps[self.master.getdeepattr(self.value)]
-            painter = QPainter(self)
-            painter.drawPixmap(self.width() - pix.width() - self.pixEdgeOffset, 0, pix)
-            self.xPixCoord = self.width() - pix.width() - self.pixEdgeOffset
-            self.shownPixSize = (pix.width(), pix.height())
-
-
 
 # creates an icon that allows you to show/hide the widgets in the widgets list
 class widgetHider(QWidget):
-    def __init__(self, widget, master, value, size = (19, 19), widgets = [], tooltip = None):
+    def __init__(self, widget, master, value, size = (19,19), widgets = [], tooltip = None):
         QWidget.__init__(self, widget)
+        if widget.layout():
+            widget.layout().addWidget(self)
         self.value = value
         self.master = master
 
         if tooltip:
-            QToolTip.add(self, tooltip)
+            self.setToolTip(tooltip)
 
         import os
         iconDir = os.path.join(os.path.dirname(__file__), "icons")
@@ -812,54 +1060,30 @@ class widgetHider(QWidget):
         icon2 = os.path.join(iconDir, "arrow_up.png")
         self.pixmaps = []
 
-        if os.path.exists(icon1) and os.path.exists(icon2):
-            self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
-            w = self.pixmaps[0].width(); h = self.pixmaps[0].height()+1
-        else:
-            # a little compatibility for QT 3.3 (on Mac at least)
-            if hasattr(self, "setPaletteBackgroundColor"):
-                self.setPaletteBackgroundColor(Qt.black)
-            else:
-                self.setBackgroundColor(Qt.black)
-            w, h = size
-        self.setMaximumWidth(w)
-        self.setMaximumHeight(h)
-        self.setMinimumSize(w, h)
+        self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
+        self.setFixedSize(self.pixmaps[0].size())
 
         self.disables = widgets or [] # need to create a new instance of list (in case someone would want to append...)
         self.makeConsistent = Disabler(self, master, value, type = HIDER)
-        if self.pixmaps != []:
-            # a little compatibility for QT 3.3 (on Mac at least)
-            if hasattr(self, "setPaletteBackgroundPixmap"):
-                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-            else:
-                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-
         if widgets != []:
             self.setWidgets(widgets)
 
     def mousePressEvent(self, ev):
-        self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
-        if self.pixmaps != []:
-            # a little compatibility for QT 3.3 (on Mac at least)
-            if hasattr(self, "setPaletteBackgroundPixmap"):
-                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-            else:
-                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+        self.master.__setattr__(self.value, not getdeepattr(self.master, self.value))
         self.makeConsistent.__call__()
 
 
     def setWidgets(self, widgets):
         self.disables = widgets or []
-        if self.pixmaps != []:
-            # a little compatibility for QT 3.3 (on Mac at least)
-            if hasattr(self, "setPaletteBackgroundPixmap"):
-                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-            else:
-                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
         self.makeConsistent.__call__()
 
+    def paintEvent(self, ev):
+        QWidget.paintEvent(self, ev)
 
+        if self.pixmaps != []:
+            pix = self.pixmaps[getdeepattr(self.master, self.value)]
+            painter = QPainter(self)
+            painter.drawPixmap(0, 0, pix)
 
 
 ##############################################################################
@@ -869,7 +1093,7 @@ def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
     stopCheckbox.disables.append((-1, sendButton))
     sendButton.setDisabled(stopCheckbox.isChecked())
     master.connect(stopCheckbox, SIGNAL("toggled(bool)"),
-                   lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getattr(master, changedFlag, True) and callback())
+                   lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getdeepattr(master, changedFlag, True) and callback())
 
 
 class ControlledList(list):
@@ -890,51 +1114,50 @@ class ControlledList(list):
             return item
 
     def __setitem__(self, index, item):
-        self.listBox.setSelected(list.__getitem__(self, index), 0)
-        self.listBox.setSelected(item, 1)
+        self.listBox.item(list.__getitem__(self, index)).setSelected(0)
+        item.setSelected(1)
         list.__setitem__(self, index, item)
 
     def __delitem__(self, index):
-        self.listBox.setSelected(list.__getitem__(self, index), 0)
+        self.listBox.item(__getitem__(self, index)).setSelected(0)
         list.__delitem__(self, index)
 
     def __setslice__(self, start, end, slice):
         for i in list.__getslice__(self, start, end):
-            self.listBox.setSelected(i, 0)
+            self.listBox.item(i).setSelected(0)
         for i in slice:
-            self.listBox.setSelected(i, 1)
+            self.listBox.item(i).setSelected(1)
         list.__setslice__(self, start, end, slice)
 
     def __delslice__(self, start, end):
         if not start and end==len(self):
             for i in range(self.listBox.count()):
-                self.listBox.setSelected(i, 0)
+                self.listBox.item(i).setSelected(0)
         else:
             for i in list.__getslice__(self, start, end):
-                self.listBox.setSelected(i, 0)
+                self.listBox.item(i).setSelected(0)
         list.__delslice__(self, start, end)
 
     def append(self, item):
         list.append(self, item)
-        self.listBox.setSelected(item, 1)
+        item.setSelected(1)
 
     def extend(self, slice):
         list.extend(self, slice)
         for i in slice:
-            self.listBox.setSelected(i, 1)
+            self.listBox.item(i).setSelected(1)
 
     def insert(self, index, item):
-        self.listBox.setSelected(item, 1)
+        item.setSelected(1)
         list.insert(self, index, item)
 
     def pop(self, index=-1):
-        self.listBox.setSelected(list.__getitem__(self, index), 0)
+        self.listBox.item(list.__getitem__(self, index)).setSelected(0)
         list.pop(self, index)
 
     def remove(self, item):
-        self.listBox.setSelected(item, 0)
+        item.setSelected(0)
         list.remove(self, item)
-
 
 
 def connectControlSignal(master, control, signal, f):
@@ -1072,22 +1295,33 @@ class FunctionCallback:
                 self.f(**kwds)
 
 
-class ListBoxCallback:
-    def __init__(self, control, widget, attribute):
+class CallBackListBox:
+    def __init__(self, control, widget):
         self.control = control
         self.widget = widget
         self.disabled = 0
 
-    def __call__(self): # triggered by selectionChange()
-        if not self.disabled:
-            clist = self.widget.getdeepattr(self.control.ogValue)
+    def __call__(self, *args): # triggered by selectionChange()
+        if not self.disabled and self.control.ogValue != None:
+            clist = getdeepattr(self.widget, self.control.ogValue)
             list.__delslice__(clist, 0, len(clist))
             control = self.control
             for i in range(control.count()):
-                if control.isSelected(i):
+                if control.item(i).isSelected():
                     list.append(clist, i)
-
             self.widget.__setattr__(self.control.ogValue, clist)
+
+
+class CallBackRadioButton:
+    def __init__(self, control, widget):
+        self.control = control
+        self.widget = widget
+        self.disabled = False
+
+    def __call__(self, *args): # triggered by toggled()
+        if not self.disabled and self.control.ogValue != None:
+            arr = [butt.isChecked() for butt in self.control.buttons]
+            self.widget.__setattr__(self.control.ogValue, arr.index(1))
 
 
 ##############################################################################
@@ -1114,31 +1348,26 @@ class ControlledCallFront:
                 self.action(*args)
 
 
-class CallFront_spin(ControlledCallFront):
+class CallFrontSpin(ControlledCallFront):
     def action(self, value):
         if value is not None:
             self.control.setValue(value)
 
 
-class CallFront_doubleSpin(ControlledCallFront):
+class CallFrontDoubleSpin(ControlledCallFront):
     def action(self, value):
         if value is not None:
             self.control.setValue(self.control.expand(value))
 
 
-class CallFront_checkBox(ControlledCallFront):
+class CallFrontCheckBox(ControlledCallFront):
     def action(self, value):
-        if value is not None:
-            self.control.setChecked(value)
+        if value != None:
+            values = [Qt.Unchecked, Qt.Checked, Qt.PartiallyChecked]
+            self.control.setCheckState(values[value])
 
 
-class CallFront_toggleButton(ControlledCallFront):
-    def action(self, value):
-        if value is not None:
-            self.control.setOn(value)
-
-
-class CallFront_comboBox(ControlledCallFront):
+class CallFrontComboBox(ControlledCallFront):
     def __init__(self, control, valType = None, control2attributeDict = {}):
         ControlledCallFront.__init__(self, control)
         self.valType = valType
@@ -1149,25 +1378,25 @@ class CallFront_comboBox(ControlledCallFront):
             value = self.attribute2controlDict.get(value, value)
             if self.valType:
                 for i in range(self.control.count()):
-                    if self.valType(str(self.control.text(i))) == value:
-                        self.control.setCurrentItem(i)
+                    if self.valType(str(self.control.itemText(i))) == value:
+                        self.control.setCurrentIndex(i)
                         return
                 values = ""
                 for i in range(self.control.count()):
-                    values += str(self.control.text(i)) + (i < self.control.count()-1 and ", " or ".")
+                    values += str(self.control.itemText(i)) + (i < self.control.count()-1 and ", " or ".")
                 print "unable to set %s to value '%s'. Possible values are %s" % (self.control, value, values)
             else:
                 if value < self.control.count():
-                    self.control.setCurrentItem(value)
+                    self.control.setCurrentIndex(value)
 
 
-class CallFront_hSlider(ControlledCallFront):
+class CallFrontHSlider(ControlledCallFront):
     def action(self, value):
         if value is not None:
             self.control.setValue(value)
 
 
-class CallFront_logSlider(ControlledCallFront):
+class CallFrontLogSlider(ControlledCallFront):
     def action(self, value):
         if value is not None:
             if value < 1e-30:
@@ -1176,30 +1405,30 @@ class CallFront_logSlider(ControlledCallFront):
                 self.control.setValue(math.log10(value))
 
 
-class CallFront_lineEdit(ControlledCallFront):
+class CallFrontLineEdit(ControlledCallFront):
     def action(self, value):
         self.control.setText(unicode(value))
 
 
-class CallFront_radioButtons(ControlledCallFront):
+class CallFrontRadioButtons(ControlledCallFront):
     def action(self, value):
         if value < 0 or value >= len(self.control.buttons):
             value = 0
-        self.control.buttons[value].setOn(1)
+        self.control.buttons[value].setChecked(1)
 
 
-class CallFront_ListBox(ControlledCallFront):
+class CallFrontListBox(ControlledCallFront):
     def action(self, value):
         if value is not None:
             if not isinstance(value, ControlledList):
                 setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
             for i in range(self.control.count()):
                 shouldBe = i in value
-                if shouldBe != self.control.isSelected(i):
-                    self.control.setSelected(i, shouldBe)
+                if shouldBe != self.control.item(i).isSelected():
+                    self.control.item(i).setSelected(shouldBe)
 
 
-class CallFront_ListBoxLabels(ControlledCallFront):
+class CallFrontListBoxLabels(ControlledCallFront):
     def action(self, value):
         icons = getAttributeIcons()
         self.control.clear()
@@ -1207,14 +1436,14 @@ class CallFront_ListBoxLabels(ControlledCallFront):
             for i in value:
                 if type(i) == tuple:
                     if type(i[1]) == int:
-                        self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
+                        self.control.addItem(QListWidgetItem(icons.get(i[1], icons[-1]), i[0]))
                     else:
-                        self.control.insertItem(i[1], i[0])
+                        self.control.addItem( QListWidgetItem(i[0],i[1]) )
                 else:
-                    self.control.insertItem(i)
+                    self.control.addItem(i)
 
 
-class CallFront_Label:
+class CallFrontLabel:
     def __init__(self, control, label, master):
         self.control = control
         self.label = label
@@ -1251,7 +1480,7 @@ class Disabler:
             if len(value):
                 disabled = not value[0]
             else:
-                disabled = not self.master.getdeepattr(self.valueName)
+                disabled = not getdeepattr(self.master, self.valueName)
         else:
             disabled = 1
 
@@ -1281,26 +1510,22 @@ class Disabler:
 ##############################################################################
 # some table related widgets
 
-class tableItem(QTableItem):
-    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None, wordWrap=False, pixmap=None):
-        self.background = background
-        if pixmap:
-            QTableItem.__init__(self, table, editType, text, pixmap)
+class tableItem(QTableWidgetItem):
+    def __init__(self, table, x, y, text, editType = None, backColor=None, icon=None, type = QTableWidgetItem.Type):
+        QTableWidgetItem.__init__(self, type)
+        if icon:
+            self.setIcon(QIcon(icon))
+        if editType != None:
+            self.setFlags(editType)
         else:
-            QTableItem.__init__(self, table, editType, text)
+            self.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
+        if backColor != None:
+            self.setBackground(QBrush(backColor))
+        self.setData(Qt.DisplayRole, QVariant(text))        # we add it this way so that text can also be int and sorting will be done properly (as integers and not as text)
+
         table.setItem(x, y, self)
-        self.sortingKey = sortingKey
 
-    def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, self.background)
-        QTableItem.paint(self, painter, g, rect, selected)
 
-    def key(self):
-        if self.sortingKey:
-            return self.sortingKey
-        else:
-            return self.text()
 
 ##############################################################################
 # progress bar management
@@ -1322,17 +1547,19 @@ class ProgressBar:
 ##############################################################################
 # float
 class DoubleSpinBox(QSpinBox):
-    def __init__(self, min, max, step, value, master, *args):
+    def __init__(self,min,max,step,value,master, *args):
+        QSpinBox.__init__(self)
+        self.validator = QDoubleValidator(self)
         self.min=min
         self.max=max
         self.stepSize=step
         self.steps=(max-min)/step
         self.master=master
         self.value=value
-        apply(QSpinBox.__init__, (self, 0, self.steps, 1)+args)
-        self.setValidator(QDoubleValidator(self))
+        self.setRange(min, max)
+        self.setSingleStep(self.steps)
 
-    def mapValueToText(self, i):
+    def mapValueToText(self,i):
         return str(self.min+i*self.stepSize)
 
     def interpretText(self):
@@ -1342,5 +1569,25 @@ class DoubleSpinBox(QSpinBox):
         return self.min+val*self.stepSize
     def expand(self, val):
         return int(math.floor((val-self.min)/self.stepSize))
+    def validate(self, text, pos):
+        return self.validator.validate(text, pos)
 
+def tabWidget(widget):
+    w = QTabWidget(widget)
+    if widget.layout():
+        widget.layout().addWidget(w)
+    return w
 
+def createTabPage(tabWidget, name, widgetToAdd = None):
+    if widgetToAdd == None:
+        widgetToAdd = widgetBox(tabWidget, addToLayout = 0, margin = 4)
+    tabWidget.addTab(widgetToAdd, name)
+    return widgetToAdd
+
+def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
+    w = QTableWidget(rows, columns, widget)
+    if widget and addToLayout and widget.layout():
+        widget.layout().addWidget(w)
+    if selectionMode != -1:
+        w.setSelectionMode(selectionMode)
+    return w

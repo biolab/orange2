@@ -10,9 +10,9 @@
 def call(f,*args,**keyargs):
     return f(*args, **keyargs)
 
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, string, os.path, user, sys, warnings
-import orngIO
 
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
@@ -26,16 +26,11 @@ class OWFile(OWWidget):
     settingsList=["recentFiles", "createNewOn"]
     contextHandlers = {"": FileNameContextHandler()}
 
-    registeredFileTypes = [ft for ft in orange.getRegisteredFileTypes() if len(ft)>2 and ft[2]]
-    dlgFormats = 'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\n' \
-                 + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
-                 + "\nAll files(*.*)"
-                 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "File")
+        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
 
         #set default settings
         self.recentFiles=["(none)"]
@@ -48,19 +43,29 @@ class OWFile(OWWidget):
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=0)
-        self.filecombo=QComboBox(box)
+        self.filecombo = QComboBox(box)
         self.filecombo.setMinimumWidth(150)
-        button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
-        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
-        button.setMaximumWidth(25)
-
-        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
+        box.layout().addWidget(self.filecombo)
+        button = OWGUI.button(box, self, '...', callback = self.browseFile, width = 25, disabled=0)
+        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload, width = 50)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Info", addSpace = True)
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
+        self.warnings = OWGUI.widgetLabel(box, ' ')
+        
+        box = OWGUI.widgetBox(self.controlArea, "Advanced Settings")
+        smallWidget = OWGUI.SmallWidgetButton(box, text = "Show advanced settings")
+        
+        box = OWGUI.widgetBox(smallWidget.widget, "Missing Value Symbols", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
-        hbox = OWGUI.indentedBox(box, addSpace=True)
-        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' and 'NA'")
-        OWGUI.separator(hbox, 16, 0)
-        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' and '*'")
-        OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
+        
+        hbox = OWGUI.indentedBox(box)
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        #OWGUI.separator(hbox, 16, 0)
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
+
+        OWGUI.radioButtonsInBox(smallWidget.widget, self, "createNewOn", box="New Attributes",
                        label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
                                     "Have no common values with the new (recommended)",
@@ -68,27 +73,20 @@ class OWFile(OWWidget):
                                     "... Always create a new attribute"
                                ])
 
-        box = OWGUI.widgetBox(self.controlArea, "Info")
-        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
-        self.infob = OWGUI.widgetLabel(box, '')
-        self.warnings = OWGUI.widgetLabel(box, '')
-
-        self.adjustSize()
+        #self.adjustSize()
 
     # set the file combo box
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
+            self.filecombo.addItem("(none)")
         for file in self.recentFiles:
             if file == "(none)":
-                self.filecombo.insertItem("(none)")
+                self.filecombo.addItem("(none)")
             else:
-                self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.insertItem("Browse documentation data sets...")
-        #self.filecombo.adjustSize() #doesn't work properly :(
-        self.filecombo.updateGeometry()
-
+                self.filecombo.addItem(os.path.split(file)[1])
+        self.filecombo.addItem("Browse documentation data sets...")
+        
 
     def reload(self):
         if self.recentFiles:
@@ -166,9 +164,8 @@ class OWFile(OWWidget):
             else:
                 startfile=self.recentFiles[0]
 
-        
-         
-        filename = str(QFileDialog.getOpenFileName(startfile, self.dlgFormats, None, 'Open Orange Data File'))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile,
+        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)'))
 
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
@@ -180,6 +177,7 @@ class OWFile(OWWidget):
 
     # Open a file, create data from it and send it over the data channel
     def openFile(self, fn, throughReload, DK=None, DC=None):
+        if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
         self.error()
         self.warning()
 
@@ -188,6 +186,7 @@ class OWFile(OWWidget):
         
         if fn == "(none)":
             self.send("Examples", None)
+            self.send("Attribute Definitions", None)
             self.infoa.setText("No data loaded")
             self.infob.setText("")
             self.warnings.setText("")
@@ -218,9 +217,10 @@ class OWFile(OWWidget):
             if data is None:
                 self.error(str(errValue))
                 self.dataDomain = None
-                self.infoa.setText('Data was not loaded due to an error.')
+                self.infoa.setText('No data loaded due to an error')
                 self.infob.setText("")
                 self.warnings.setText("")
+                if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
                 return
                         
         self.dataDomain = data.domain
@@ -233,9 +233,9 @@ class OWFile(OWWidget):
             elif cl.varType == orange.VarTypes.Discrete:
                     self.infob.setText('Classification; Discrete class with %d value(s).' % len(cl.values))
             else:
-                self.infob.setText("Class is neither discrete nor continuous.")
+                self.infob.setText("Class neither descrete nor continuous.")
         else:
-            self.infob.setText("Data has no dependent variable.")
+            self.infob.setText("Data without a dependent variable.")
 
         warnings = ""
         metas = data.domain.getmetas()
@@ -259,17 +259,11 @@ class OWFile(OWWidget):
             attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
                   + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
             if attrs:
-                jattrs = ", ".join(attrs)
-                if len(jattrs) > 80:
-                    jattrs = jattrs[:80] + "..."
-                if len(jattrs) > 30: 
-                    warnings += "<li>%s:<br/> %s</li>" % (message, jattrs)
-                else:
-                    warnings += "<li>%s: %s</li>" % (message, jattrs)
+                warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
 
         self.warnings.setText(warnings)
-        qApp.processEvents()
-        self.adjustSize()
+        #qApp.processEvents()
+        #self.adjustSize()
 
         # make new data and send it
         fName = os.path.split(fn)[1]
@@ -279,12 +273,13 @@ class OWFile(OWWidget):
             data.name = fName
 
         self.send("Examples", data)
+        self.send("Attribute Definitions", data.domain)
+        if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWFile()
     ow.activateLoadedSettings()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

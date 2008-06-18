@@ -10,10 +10,11 @@
 #
 
 #import orange
-from qtcanvas import *
+import orngOrangeFoldersQt4
 from OWWidget import *
 from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
+import OWQCanvasFuncts
 
 class OWAttributeStatistics(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"])}
@@ -41,51 +42,52 @@ class OWAttributeStatistics(OWWidget):
 
         #GUI
 
-        AttsBox = QVGroupBox('Attributes',self.controlArea)
-        self.attributes = QListBox(AttsBox)
-        self.attributes.setSelectionMode(QListBox.Single)
+        AttsBox = OWGUI.widgetBox(self.controlArea, 'Attributes')
+        self.attributes = OWGUI.listBox(AttsBox, self, selectionMode = QListWidget.SingleSelection, callback = self.attributeHighlighted)
         self.attributes.setMinimumSize(150, 200)
         #connect controls to appropriate functions
-        self.connect(self.attributes, SIGNAL("highlighted(int)"), self.attributeHighlighted)
 
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea, 0,16)
 
         #give mainArea a layout
-        self.layout=QVBoxLayout (self.mainArea)
-        self.canvas = DisplayStatistics (self.cw, self.ch)
-        self.canvasview = QCanvasView (self.canvas, self.mainArea)
-        self.layout.addWidget ( self.canvasview )
-        self.canvasview.show()
+        self.canvas = DisplayStatistics(self)
+        self.canvas.canvasW, self.canvas.canvasH = self.cw, self.ch
+        self.canvasview = QGraphicsView(self.canvas, self.mainArea)
+        self.canvasview.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.mainArea.layout().addWidget( self.canvasview )
 
         self.icons = self.createAttributeIconDict()
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-        
+
 
     def resizeEvent(self, event):
         if self.canvas and self.data and self.HighlightedAttribute>=0:
             # canvas height should be a bit less than the height of the widget frame
             self.ch = self.height()-20
-            self.canvas = DisplayStatistics (self.cw, self.ch)
+            self.canvas.canvasW, self.canvas.canvasH = self.cw, self.ch
+            #self.canvas = DisplayStatistics (self.cw, self.ch)
             # the height of the bar should be 150 pixels smaller than the height of the canvas
             self.canvas.bar_height_pixels = self.height()-150
             #self.canvas.bar_height_pixels = 50
             self.canvas.displayStat(self.dataset, self.HighlightedAttribute, self.dist)
-            self.canvasview.setCanvas(self.canvas)
-            self.canvas.update()
+            #self.canvasview.setCanvas(self.canvas)
+            #self.canvas.update()
 
-    def attributeHighlighted(self, ind):
-        self.HighlightedAttribute = ind
+    def attributeHighlighted(self):
+        if self.attributes.selectedItems() == []: return
+        self.HighlightedAttribute = self.attributes.row(self.attributes.selectedItems()[0])
         self.ch = self.height()-self.chbias
-        self.canvas = DisplayStatistics (self.cw, self.ch)
+        #self.canvas = DisplayStatistics (self.cw, self.ch)
+        self.canvas.canvasW, self.canvas.canvasH = self.cw, self.ch
         self.canvas.bar_height_pixels = self.height()-160
-        self.canvas.displayStat(self.dataset, ind, self.dist)
-        self.canvasview.setCanvas(self.canvas)
-        self.canvas.update()
+        self.canvas.displayStat(self.dataset, self.HighlightedAttribute, self.dist)
+        #self.canvasview.setCanvas(self.canvas)
+        #self.canvas.update()
 
-       
+
     def data(self, data):
         self.closeContext()
-        
+
         self.attributes.clear()
         if data==None:
             self.dataset = self.dist = None
@@ -97,78 +99,63 @@ class OWAttributeStatistics(OWWidget):
             self.dist = orange.DomainDistributions(self.dataset)
 
             for a in self.dataset.domain:
-                self.attributes.insertItem(self.icons[a.varType], a.name)
-                
+                self.attributes.addItem(QListWidgetItem(self.icons[a.varType], a.name))
+
         self.HighlightedAttribute = 0
         self.openContext("", data)
-        self.attributes.setCurrentItem(self.HighlightedAttribute)
+        self.attributes.setCurrentItem(self.attributes.item(self.HighlightedAttribute))
 
 
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
-        sizeDlg.exec_loop()
+        sizeDlg.exec_()
 
 """
 class DisplayStatistics
 constructs a canvas to display some statistics
 """
-class DisplayStatistics (QCanvas):
-    def __init__(self,*args):
-        apply(QCanvas.__init__, (self,)+args)
+class DisplayStatistics (QGraphicsScene):
+    def __init__(self, parent = None):
+        QGraphicsScene.__init__(self, parent)
         self.bar_height_pixels=None
         self.bar_width_pixels=None
-        self.canvasW, self.canvasH = args[0], args[1]
         self.vbias, self.hbias = 60, 200
 
     def displayStat(self, data, ind, dist):
         if not data:
             return
-        
-        attr = data.domain[ind]
-        attr_name = QCanvasText (attr.name, self)
-        attr_name.move(10, 10)
-        attr_name.show()
+        self.vbias, self.hbias = 60, 200
+        for item in self.items():
+            self.removeItem(item)
 
+        attr = data.domain[ind]
+        attr_name = OWQCanvasFuncts.OWCanvasText(self, attr.name, 10, 10)
         if not dist[ind] or not dist[ind].items():
             if not dist[ind]:
-                msg = QCanvasText("The widget cannot show distributions for attributes of this type.", self)
+                attr_name.setPlainText("The widget cannot show distributions for attributes of this type.")
             else:
-                msg = QCanvasText("The attribute has no defined values.", self)
-            msg.move(20, 50)
-            msg.show()
+                attr_name.setPlainText("This attribute has no defined values.")
             return
         
         title_str = "Category"
         if attr.varType == orange.VarTypes.Continuous:
             title_str = "Values"
-        category = QCanvasText (title_str, self)
-        category.move(self.hbias-20, 30)
-        category.setTextFlags(Qt.AlignRight)
-        category.show()
+        category = OWQCanvasFuncts.OWCanvasText(self, title_str, self.hbias-20, 30, Qt.AlignRight)
 
         if attr.varType == orange.VarTypes.Discrete:
-            totalvalues = QCanvasText ("Total Values", self)
-            totalvalues.move(self.hbias+30, 30)
-            totalvalues.show()
+            totalvalues = OWQCanvasFuncts.OWCanvasText(self, "Total Values", self.hbias+30, 30)
             rect_len = 100
             rect_width = 20
             if len(dist[ind]) > 0 and max(dist[ind]) > 0:
                 f = rect_len/max(dist[ind])
                 for v in range(len(attr.values)):
-                    t = QCanvasText (attr.values[v],self)
-                    t.move(self.hbias-10,self.vbias)
-                    t.setTextFlags(Qt.AlignRight)
-                    t.show()
+                    t = OWQCanvasFuncts.OWCanvasText(self, attr.values[v], self.hbias-10, self.vbias, Qt.AlignRight)
                     bar_len = dist[ind][v]*f
                     if int(bar_len)==0 and bar_len!=0:
                         bar_len=1
-                    r = QCanvasRectangle(self.hbias, self.vbias, bar_len, rect_width-2, self)
-                    r.setPen (QPen(Qt.NoPen))
-                    r.setBrush (QBrush(QColor(0,0,254)))
-                    r.show()
-                    t1 = QCanvasText ("%i   (%2.1f %%)" % (dist[ind][v], 100*dist[ind][v]/(len(data) or 1)), self)
-                    t1.move(self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias)
-                    t1.show()
+                    r = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, bar_len, rect_width-2, pen = QPen(Qt.NoPen), brushColor = QColor(0,0,254))
+
+                    t1 = OWQCanvasFuncts.OWCanvasText(self, "%i   (%2.1f %%)" % (dist[ind][v], 100*dist[ind][v]/(len(data) or 1)), self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias, Qt.AlignLeft)
                     self.vbias+=rect_width
                 if self.vbias > self.canvasH:
                     self.canvasH = self.vbias+50
@@ -194,153 +181,96 @@ class DisplayStatistics (QCanvas):
             self.mean = dist[ind].average()
             self.stddev = dist[ind].dev()
             self.drawCStat()
-        self.resize(self.canvasW+10, self.canvasH)
 
     def drawCStat(self):
-        # draw the main rectangle 
+        # draw the main rectangle
         bar_height = self.maxi-self.mini
         #all = QCanvasRectangle (self.hbias, self.vbias, self.bar_width_pixels, self.bar_height_pixels, self)
         #all.show()
         textoffset = 15
         # draw a max line and text
-        maxi_txt = QCanvasText ("max", self)
+        maxi_txt = OWQCanvasFuncts.OWCanvasText(self, "max")
         # assume equal fonts for all the text
         self.textHeight = maxi_txt.boundingRect().height()
         maxvTextPos = self.vbias - self.textHeight*0.5
-        maxi_txt.move (self.hbias+self.bar_width_pixels+15, maxvTextPos)
-        maxi_txt.show()
-        maxi_txtL = QCanvasText ("%5.2f" % self.maxi, self)
-        maxi_txtL.move (self.hbias-textoffset, maxvTextPos)
-        maxi_txtL.setTextFlags(Qt.AlignRight)
-        maxi_txtL.show()
-        max_line = QCanvasLine(self)
-        max_line.setPoints (self.hbias-5, self.vbias, self.hbias+self.bar_width_pixels+5, self.vbias)
-        max_line.show()
-        max_line.setZ(1.0)
+        maxi_txt.setPos (self.hbias+self.bar_width_pixels+15, maxvTextPos)
+
+        maxi_txtL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.maxi, self.hbias-textoffset, maxvTextPos, Qt.AlignRight)
+
+        max_line = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, self.vbias, self.hbias+self.bar_width_pixels+5, self.vbias, z = 1)
 
         # draw a min line and text
-        mini_txt = QCanvasText ("min", self)
+        mini_txt = OWQCanvasFuncts.OWCanvasText(self, "min")
         minvTextPos = self.bar_height_pixels+self.vbias - self.textHeight*0.5
-        mini_txt.move (self.hbias+self.bar_width_pixels+textoffset, minvTextPos)
-        mini_txt.show()
-        mini_txtL = QCanvasText ("%5.2f" % self.mini, self)
-        mini_txtL.move (self.hbias-textoffset, minvTextPos)
-        mini_txtL.setTextFlags(Qt.AlignRight)
-        mini_txtL.show()
-        min_line = QCanvasLine(self)
-        min_line.setPoints (self.hbias-5, self.vbias+self.bar_height_pixels, self.hbias+self.bar_width_pixels+5, self.vbias+self.bar_height_pixels)
-        min_line.show()
-        min_line.setZ(1.0)
+        mini_txt.setPos(self.hbias+self.bar_width_pixels+textoffset, minvTextPos)
+
+        mini_txtL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.mini, self.hbias-textoffset, minvTextPos, Qt.AlignRight)
+
+        min_line = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, self.vbias+self.bar_height_pixels, self.hbias+self.bar_width_pixels+5, self.vbias+self.bar_height_pixels, z = 1)
 
         # draw a rectangle from the 3rd quartile to max; add line and text
         quartile3 =  int(self.bar_height_pixels*(self.maxi-self.q3)/(bar_height or 1))
-        crq3 = QCanvasRectangle (self.hbias, self.vbias, self.bar_width_pixels, quartile3, self)
-        crq3.setPen (QPen(Qt.NoPen))
-        crq3.setBrush (QBrush(QColor(0,175,0)))
-        crq3.show()
+        crq3 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, self.bar_width_pixels, quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(0,175,0))
+
         q3line = self.vbias + quartile3
-        line2 = QCanvasLine(self)
-        line2.setPoints (self.hbias-5, q3line, self.hbias+self.bar_width_pixels+5, q3line)
-        line2.show()
-        line2.setZ(1.0)
-        crq3tR = QCanvasText ("75%", self)
+        line2 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q3line, self.hbias+self.bar_width_pixels+5, q3line, z = 1)
+
         q3vTextPos = q3line - self.textHeight*0.5
-        crq3tR.move(self.hbias+self.bar_width_pixels+textoffset, q3vTextPos)
-        crq3tR.show()
-        crq3tL = QCanvasText ("%5.2f" % self.q3, self)
-        crq3tL.move(self.hbias-textoffset, q3vTextPos)
-        crq3tL.setTextFlags(Qt.AlignRight)
-        crq3tL.show()
+        crq3tR = OWQCanvasFuncts.OWCanvasText(self, "75%", self.hbias+self.bar_width_pixels+textoffset, q3vTextPos)
+
+        crq3tL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.q3, self.hbias-textoffset, q3vTextPos, Qt.AlignRight)
 
         # draw a rectangle from the median to the 3rd quartile; add line and text
         med = int(self.bar_height_pixels*(self.maxi-self.median)/(bar_height or 1))
-        crm = QCanvasRectangle (self.hbias, self.vbias+quartile3, self.bar_width_pixels, med-quartile3, self)
-        crm.setPen (QPen(Qt.NoPen))
-        crm.setBrush (QBrush(QColor(0,134,0)))
-        crm.show()
+        crm = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile3, self.bar_width_pixels, med-quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(0,134,0))
+
         mline = self.vbias + med
-        line3 = QCanvasLine(self)
-        line3.setPoints (self.hbias-5, mline, self.hbias+self.bar_width_pixels+5, mline)
-        line3.show()
-        line3.setZ(1.0)
-        crmtR = QCanvasText ("median", self)
+        line3 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, mline, self.hbias+self.bar_width_pixels+5, mline, z = 1)
+
         medvTextPos = mline - self.textHeight*0.5
-        crmtR.move(self.hbias+self.bar_width_pixels+textoffset, medvTextPos)
-        crmtR.show()
-        crmtL = QCanvasText ("%5.2f" % self.median, self)
-        crmtL.move(self.hbias-textoffset, medvTextPos)
-        crmtL.setTextFlags(Qt.AlignRight)
-        crmtL.show()
+        crmtR = OWQCanvasFuncts.OWCanvasText(self, "median", self.hbias+self.bar_width_pixels+textoffset, medvTextPos)
+
+        crmtL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.median, self.hbias-textoffset, medvTextPos, Qt.AlignRight)
 
         # draw a rectangle from the 1st quartile to the median; add line and text
         quartile1 = int(self.bar_height_pixels*(self.maxi-self.q1)/(bar_height or 1))
-        crq1 = QCanvasRectangle (self.hbias, self.vbias+med, self.bar_width_pixels, quartile1-med, self)
-        crq1.setPen (QPen(Qt.NoPen))
-        crq1.setBrush (QBrush(QColor(0,92,0)))
-        crq1.show()
+        crq1 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+med, self.bar_width_pixels, quartile1-med, pen = QPen(Qt.NoPen), brushColor = QColor(0,92,0))
         q1line = self.vbias + quartile1
-        line4 = QCanvasLine(self)
-        line4.setPoints (self.hbias-5, q1line, self.hbias+self.bar_width_pixels+5, q1line)
-        line4.show()
-        line4.setZ(1.0)
-        crq1tR = QCanvasText ("25%", self)
+        line4 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q1line, self.hbias+self.bar_width_pixels+5, q1line, z = 1)
+
         q1vTextPos = q1line - self.textHeight*0.5
-        crq1tR.move(self.hbias+self.bar_width_pixels+textoffset, q1vTextPos)
-        crq1tR.show()
-        crq1tL = QCanvasText ("%5.2f" % self.q1, self)
-        crq1tL.move(self.hbias-textoffset, q1vTextPos)
-        crq1tL.setTextFlags(Qt.AlignRight)
-        crq1tL.show()
+        crq1tR = OWQCanvasFuncts.OWCanvasText(self, "25%", self.hbias+self.bar_width_pixels+textoffset, q1vTextPos)
+
+        crq1tL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.q1, self.hbias-textoffset, q1vTextPos, Qt.AlignRight)
 
         # draw a rectangle from min to the 1st quartile
-        cr = QCanvasRectangle (self.hbias, self.vbias+quartile1, self.bar_width_pixels, self.bar_height_pixels-quartile1, self)
-        cr.setPen (QPen(Qt.NoPen))
-        cr.setBrush (QBrush(QColor(0,51,0)))
-        cr.show()
+        cr = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile1, self.bar_width_pixels, self.bar_height_pixels-quartile1, pen = QPen(Qt.NoPen), brushColor = QColor(0,51,0))
 
         # draw a horizontal mean line; add text
         self.meanpos = int(self.bar_height_pixels*(self.maxi-self.mean)/(bar_height or 1))
         self.stddev1 = int(self.bar_height_pixels*self.stddev/(bar_height or 1))
         #print "stddev ",self.stddev1, self.bar_height_pixels, bar_height
         mvbias = self.meanpos+self.vbias
-        line = QCanvasLine(self)
-        line.setPoints (self.hbias+self.bar_width_pixels, mvbias, self.hbias+self.bar_width_pixels +70, mvbias)
-        line.setPen (QPen(QColor(255, 0, 0), 1, Qt.SolidLine))
-        line.show()
-        line.setZ(1.0)
-        t = QCanvasText ("mean", self)
+        line = OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels, mvbias, self.hbias+self.bar_width_pixels +70, mvbias, penColor = QColor(255, 0, 0), z = 1)
+
         meanvTextPos = mvbias - self.textHeight*0.5
-        t.setColor (QColor(255, 0, 0))
-        t.move(self.hbias+self.bar_width_pixels+110, meanvTextPos)
-        t.setTextFlags(Qt.AlignRight)
-        t.show()
-        t3 = QCanvasText ("%5.2f +- %5.2f" % (self.mean, self.stddev), self)
-        t3.setColor (QColor(255, 0, 0))
-        t3.move(self.hbias-textoffset, meanvTextPos)
-        t3.setTextFlags(Qt.AlignRight)
-        t3.show()
+        t = OWQCanvasFuncts.OWCanvasText(self, "mean", self.hbias+self.bar_width_pixels+110, meanvTextPos, Qt.AlignRight)
+        t.setDefaultTextColor(QColor(255, 0, 0))
+
+        t3 = OWQCanvasFuncts.OWCanvasText(self, "%5.2f +- %5.2f" % (self.mean, self.stddev), self.hbias-textoffset, meanvTextPos, Qt.AlignRight)
+        t3.setDefaultTextColor(QColor(255, 0, 0))
+
 
         # draw the short bold mean line in the bar
-        bline = QCanvasLine(self)
-        bline.setPoints (self.hbias+self.bar_width_pixels*0.25, mvbias, self.hbias+self.bar_width_pixels*0.75, mvbias)
-        bline.setPen (QPen(QColor(255, 0, 0), 3, Qt.SolidLine))
-        bline.show()
-        bline.setZ(1.0)
+        bline = OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels*0.25, mvbias, self.hbias+self.bar_width_pixels*0.75, mvbias, penColor = QColor(255, 0, 0), penWidth = 3, z = 1)
 
         # draw the std dev. line
-        vert = QCanvasLine(self)
-        vert.setPoints (self.hbias+self.bar_width_pixels*0.5, mvbias-self.stddev1, self.hbias+self.bar_width_pixels*0.5, mvbias+self.stddev1)
-        vert.setPen (QPen(QColor(255, 0, 0), 1, Qt.SolidLine))
-        vert.show()
-        vert.setZ(1.0)
+        vert = OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels*0.5, mvbias-self.stddev1, self.hbias+self.bar_width_pixels*0.5, mvbias+self.stddev1, penColor = QColor(255, 0, 0), z = 1)
 
         # display the numbers of total and distinct values
-        t1 = QCanvasText ("%d total values" % self.total_values, self)
-        t1.move(10,self.vbias+self.bar_height_pixels+20)
-        t1.show()
-        t2 = QCanvasText ("%d distinct values" % self.distinct_values, self)
-        t2.move(10,self.vbias+self.bar_height_pixels+40)
-        t2.show()
+        t1 = OWQCanvasFuncts.OWCanvasText(self, "%d total values" % self.total_values, 10,self.vbias+self.bar_height_pixels+20)
+
+        t2 = OWQCanvasFuncts.OWCanvasText(self, "%d distinct values" % self.distinct_values, 10,self.vbias+self.bar_height_pixels+40)
 
         vspace = self.textHeight  # +4 space for text plus 2 pixels above and below
         #pos =['max':maxvTextPos, 'q3':q3vTextPos, 'mean':meanvTextPos, 'med':medvTextPos, 'q1':q1vTextPos, 'min':minvTextPos]
@@ -389,134 +319,70 @@ class DisplayStatistics (QCanvas):
             val, lab = above[i][0], above[i][1]
             if lab == 'max':
                 if val != maxvTextPos:
-                    maxi_txt.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    maxi_txtL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, self.vbias, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    maxi_txt.setPos(self.hbias+self.bar_width_pixels+textoffset, val)
+                    maxi_txtL.setPos(self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, self.vbias, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'q3':
                 if val != q3vTextPos:
-                    crq3tR.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    crq3tL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, q3line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, q3line, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crq3tR.setPos(self.hbias+self.bar_width_pixels+textoffset, val)
+                    crq3tL.setPos(self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, q3line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q3line, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'med':
                 if val != medvTextPos:
-                    crmtR.move (self.hbias+self.bar_width_pixels+15, val)
-                    crmtL.move (self.hbias-15, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, mline, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, mline, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crmtR.setPos (self.hbias+self.bar_width_pixels+15, val)
+                    crmtL.setPos (self.hbias-15, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, mline, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, mline, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'q1':
                 if val != q1vTextPos:
-                    crq1tR.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    crq1tL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crq1tR.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
+                    crq1tL.setPos (self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
         for i in range(1,len(below)):
             val, lab = below[i][0], below[i][1]
             if lab == 'min':
                 if val != minvTextPos:
-                    mini_txt.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    mini_txtL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, self.bar_height_pixels+self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, self.bar_height_pixels+self.vbias, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    mini_txt.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
+                    mini_txtL.setPos (self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, self.bar_height_pixels+self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, self.bar_height_pixels+self.vbias, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'q1':
                 if val != q1vTextPos:
-                    crq1tR.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    crq1tL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crq1tR.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
+                    crq1tL.setPos (self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'med':
                 if val != medvTextPos:
-                    crmtR.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    crmtL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, mline, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, mline, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crmtR.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
+                    crmtL.setPos (self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, mline, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, mline, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
             elif lab == 'q3':
                 if val != q3vTextPos:
-                    crq3tR.move (self.hbias+self.bar_width_pixels+textoffset, val)
-                    crq3tL.move (self.hbias-textoffset, val)
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, q3line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-5, q3line, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    l = QCanvasLine(self)
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    crq3tR.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
+                    crq3tL.setPos (self.hbias-textoffset, val)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, q3line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q3line, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
         #print
 
 
@@ -524,10 +390,10 @@ class DisplayStatistics (QCanvas):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAttributeStatistics()
-    a.setMainWidget(ow)
-    data = orange.ExampleTable('adult_sample')
-    data = orange.ExampleTable('adult_sample_noclass')
+    #data = orange.ExampleTable('adult_sample')
+    #data = orange.ExampleTable('adult_sample_noclass')
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     ow.data(data)
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

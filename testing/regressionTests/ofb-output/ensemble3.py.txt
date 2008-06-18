@@ -1,5 +1,0 @@
-        Learner   CA     Brier Score
-        default:  0.473  0.501
-    k-NN (k=11):  0.862  0.236
-    bagged k-NN:  0.844  0.245
-   boosted k-NN:  0.806  0.294

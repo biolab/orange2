@@ -17,7 +17,7 @@
 <h3>Inputs</h3>
 
 <DL class=attributes>
-<DT>Examples (ExampleTable)</DT>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
 <DD>A table with training examples</DD>
 </dl>
 
@@ -30,25 +30,29 @@
 <DD>The classifier</DD>
 </dl>
 
-<P>Signal <code>Classifier</code> sends data only if the learning data (signal <code>Examples</code>) is present.</P>
+<P>Signal <code>Classifier</code> sends data only if the learning data (signal <code>Classified Examples</code> is present.</P>
 
 <h2>Description</h2>
 
-<p>This widget provides a graphical interface to a learner which produces a classifier that always predicts the majority class. When asked for probabilities, it will return the relative frequencies of the classes in the training set. When there are two or more majority classes, the classifier chooses the predicted class randomly, but always returns the same class for a particular example.</p>
+<p>This widget provides a graphical interface to a learner which produces a classifier that always returns the majority class. When asked for probabilities, it will return the relative frequencies of the classes in the training set. When there are two or more majority classes, the classifier chooses the predicted class at random, but it will always return the same class for a particular example.</p>
 
 <P>The widget is typically used to compare other learning algorithms with the default classification accuracy.</P>
 
 <p>As all other widgets for classification, this one provides a learner and classifier, the former can be fed into widgets for testing learners, while the classifier itself is, well, not very useful.</p>
 
-<div>
-<img class="leftscreenshot" src="Majority.png" alt="Majority" border=0 />
+<table>
+<tr><td valign="top"><img class="screenshot" src="Majority.png" alt="Majority" border=0></td>
 
-<P>The only option is the name under which it will appear in, say, <code>Test Learners</code>. The default name is "Majority". When you change it, you need to click <span class="option">Apply</span>.</P>
-</div>
+<td valign="top">
+<P>The only option is the name under which it will appear in, say, <code>Test Learners</code>. The default name is "Majority". When you change it, you need to click "Apply Setting".</P>
+
+</td>
+</tr></table>
+
 
 <h2>Examples</h2>
 
-<P>In a typical use of this widget, it would be connected to <a href="../Evaluate/TestLearners.htm">Test Learners</a> to compare the scores of other learning algorithms (such as kNN, in this schema) with the default scores.</P>
+<P>In a typical use of this widget, you would connect it to <a href="../Evaluate/TestLearners.htm">Test Learners</a> to compare the scores of other learning algorithms (such as kNN, in this schema) with the default scores.</P>
 
 <img class="screenshot"
 src="Majority-Knn-SchemaLearner.png" alt="A Schema with Majority Classifier" border=0>

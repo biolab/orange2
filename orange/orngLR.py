@@ -1,6 +1,8 @@
 import orange
 import orngCI
 import math, os
+from numpy import *
+from numpy.linalg import *
 
 
 #######################
@@ -16,12 +18,9 @@ def printOUT(classifier):
     
     # get the longest attribute name
     longest=0
-    if not classifier.continuizedDomain: # no attributes, only beta_0
-        longest=len("Intercept")
-    else:
-        for at in classifier.continuizedDomain.attributes:
-            if len(at.name)>longest:
-                longest=len(at.name);
+    for at in classifier.continuizedDomain.attributes:
+        if len(at.name)>longest:
+            longest=len(at.name);
 
     # print out the head
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
@@ -29,10 +28,9 @@ def printOUT(classifier):
     print
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"
-    if classifier.continuizedDomain:
-        for i in range(len(classifier.continuizedDomain.attributes)):
-            print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1]))
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
+    for i in range(len(classifier.continuizedDomain.attributes)):
+        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1]))
         
 
 def hasDiscreteValues(domain):

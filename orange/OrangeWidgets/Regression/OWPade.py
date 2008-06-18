@@ -5,7 +5,7 @@
 <priority>3500</priority>
 """
 
-
+import orngOrangeFoldersQt4
 import orange, orngPade
 from OWWidget import *
 import OWGUI
@@ -15,11 +15,11 @@ class OWPade(OWWidget):
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", selected="dimensions")])}
 
-    methodNames = ["First Triangle", "Star Univariate Regression", "Tube Regression"]    
+    methodNames = ["First Triangle", "Star Univariate Regression", "Tube Regression"]
     methods = [orngPade.firstTriangle, orngPade.starUnivariateRegression, orngPade.tubedRegression]
-    
+
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
-        OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
         self.inputs = [("Examples", ExampleTable, self.onDataInput)]
         self.outputs = [("Examples", ExampleTable)]
 
@@ -38,12 +38,12 @@ class OWPade(OWWidget):
         self.useMQCNotation = False
         #self.persistence = 40
 
-        self.nNeighbours = 30        
-        
+        self.nNeighbours = 30
+
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
-        lb = self.lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListBox.Multi, callback=self.dimensionsChanged)
+        lb = self.lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.dimensionsChanged)
         hbox = OWGUI.widgetBox(box, orientation=0)
         OWGUI.button(hbox, self, "All", callback=self.onAllAttributes)
         OWGUI.button(hbox, self, "None", callback=self.onNoAttributes)
@@ -59,7 +59,7 @@ class OWPade(OWWidget):
         hbox = OWGUI.widgetBox(box, orientation=0)
         threshCB = OWGUI.checkBox(hbox, self, "enableThreshold", "Ignore differences below ")
         OWGUI.rubber(hbox, orientation = 0)
-        ledit = OWGUI.lineEdit(hbox, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""), controlWidth=50)
+        ledit = OWGUI.lineEdit(hbox, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self), controlWidth=50)
         threshCB.disables.append(ledit)
         threshCB.makeConsistent()
         OWGUI.checkBox(box, self, "useMQCNotation", label = "Use MQC notation")
@@ -67,7 +67,7 @@ class OWPade(OWWidget):
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative constraint", "Quantitative differences"], box="Output class", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
 
-        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)      
+        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Qualitative constraint")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Derivatives of selected attributes")
         OWGUI.checkBox(box, self, "correlationsAsMeta", label="Absolute values of derivatives")
@@ -75,12 +75,11 @@ class OWPade(OWWidget):
 
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
-        self.adjustSize()
+        #self.adjustSize()
         self.activateLoadedSettings()
-        
+
         #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
-        
-        self.setFixedWidth(self.sizeHint().width())
+        #self.setFixedWidth(self.sizeHint().width())
 
 
     def onAllAttributes(self):
@@ -123,8 +122,8 @@ class OWPade(OWWidget):
             icons = OWGUI.getAttributeIcons()
             self.outputLB.clear()
             for attr in self.contAttributes:
-                self.outputLB.insertItem(icons[attr.varType], attr.name)
-           
+                self.outputLB.addItem(QListWidgetItem(icons[attr.varType], attr.name))
+
             self.dimensions = range(len(self.attributes))
         else:
             orngPade.makeEmptyCache(self)
@@ -159,17 +158,16 @@ class OWPade(OWWidget):
                                                              self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, False, self.originalAsMeta)
         self.send("Examples", paded)
 
-                            
-       
+
+
 if __name__=="__main__":
     import sys
 
     a=QApplication(sys.argv)
     ow=OWPade()
-    a.setMainWidget(ow)
     ow.show()
     #ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
-    ow.onDataInput(orange.ExampleTable(r"C:\delo\PADE\JJ_testi\sinxsiny\sinxsiny_noise05.tab"))
-    a.exec_loop()
-    
+    #ow.onDataInput(orange.ExampleTable(r"C:\delo\PADE\JJ_testi\sinxsiny\sinxsiny_noise05.tab"))
+    a.exec_()
+
     ow.saveSettings()

@@ -53,7 +53,6 @@ H1 {
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
-    clear: both;
 }
 
 .wide {         width: 0px;
@@ -69,7 +68,6 @@ H2 {
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
-    clear: both;
 }
 
 H3 {
@@ -77,7 +75,6 @@ H3 {
     font-family: Verdana;
     font-size: 11px;
     white-space: nowrap;
-    clear: both;
 }
 
 h4 {
@@ -241,15 +238,6 @@ div.separator
     height: 89px;
 }
 
-span.option
-{
-    font-weight: bold;
-    font-family: Arial;
-    padding: 1px;
-    padding-left: 3px;
-    padding-right: 3px;
-    background-color: #eeeeee;
-}
 
 TABLE {
     font-family: Verdana;
@@ -267,33 +255,5 @@ DL.attributes P { margin-top: 0pt; margin-bottom: 0pt}
 DL.attributes DT.notcode { font-family: }
 DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
 P.header { margin-bottom: 0mm; margin-top: 1em}
-
-/*XMP.code { background-color: #FCD179; margin-top: 3px; padding-left: 6px}
+XMP.code { background-color: #FCD179; margin-top: 3px; padding-left: 6px}
 PRE.code { background-color: #FCD179; margin-top: 3px}
-*/
-
-.schema {
-    margin-left: 10px;
-    margin-right: 10px;
-}
-
-.snapshot {
-    margin-left: 10px;
-    margin-right: 10px;
-}
-
-.leftscreenshot { 
-    float:left;
-    margin-top: 10px;
-    margin-right: 10px;
-    margin-bottom: 10px;
-}
-
-XMP.code, PRE.code {
-/*    background-color: #fdf2b4; */
-    background-color: #FCD179;
-    margin-top: 3px;
-    padding: 6px;
-    padding-left: 12px;
-    border: #ebe1a7 thin dotted;
-}

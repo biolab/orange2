@@ -2,14 +2,11 @@
 <name>Association Rules Viewer</name>
 <description>Association rules filter and viewer.</description>
 <icon>icons/AssociationRulesViewer.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>200</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange, sys
-from qt import *
-from qtcanvas import *
-from qttable import *
 from OWWidget import *
 import OWGUI
 
@@ -25,8 +22,8 @@ class AssociationRulesViewerCanvas(QCanvas):
         if self.rect:
             self.rect.hide()
             self.rect = None
-        
-        
+
+
     def draw(self):
         master = self.master
         nc, nr, cw, ch, ig = master.numcols, master.numrows, master.cellwidth, master.cellheight, master.ingrid
@@ -36,7 +33,7 @@ class AssociationRulesViewerCanvas(QCanvas):
 
         for a in self.allItems():
             a.hide()
-                
+
         maxcount = max([max([len(cell) for cell in row]) for row in master.ingrid])
         maxcount = float(max(10, maxcount))
 
@@ -138,44 +135,40 @@ class OWAssociationRulesViewer(OWWidget):
         self.support = self.confidence = True
         self.sortedBy = 0
         self.autoSend = True
-        
+
         self.loadSettings()
 
         self.rules = None
         self.selectedRules = []
         self.noZoomButton()
 
-
-        self.mainLayout = QHBoxLayout(self.mainArea)
-        self.mainLayout.setAutoAdd(True)
         mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
         OWGUI.separator(self.mainArea, 16, 0)
         mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
         mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
+        infoGrid = QGridLayout()
+        info = OWGUI.widgetBox(mainLeft, orientation = infoGrid)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Shown", addToLayout = 0), 1, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Selected", addToLayout = 0), 2, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Support (H)", addToLayout = 0), 0, 1)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Confidence (V)", addToLayout = 0), 0, 2)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "# Rules", addToLayout = 0), 0, 3)
 
-        info = QWidget(mainLeft)
-        infoGrid = QGridLayout(info, 3, 4, 0, 5)
-        infoGrid.addWidget(OWGUI.widgetLabel(info, "Shown"), 1, 0)
-        infoGrid.addWidget(OWGUI.widgetLabel(info, "Selected"), 2, 0)
-        infoGrid.addWidget(OWGUI.widgetLabel(info, "Support (H)"), 0, 1)
-        infoGrid.addWidget(OWGUI.widgetLabel(info, "Confidence (V)"), 0, 2)
-        infoGrid.addWidget(OWGUI.widgetLabel(info, "# Rules"), 0, 3)
-        
-        self.shownSupport = OWGUI.widgetLabel(info, " ")
+        self.shownSupport = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.shownSupport, 1, 1)
-        self.shownConfidence = OWGUI.widgetLabel(info, " ")
+        self.shownConfidence = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.shownConfidence, 1, 2)
-        self.shownRules = OWGUI.widgetLabel(info, " ")
+        self.shownRules = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.shownRules, 1, 3)
 
-        self.selSupport = OWGUI.widgetLabel(info, " ")
+        self.selSupport = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.selSupport, 2, 1)
-        self.selConfidence = OWGUI.widgetLabel(info, " ")
+        self.selConfidence = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.selConfidence, 2, 2)
-        self.selRules = OWGUI.widgetLabel(info, " ")
+        self.selRules = OWGUI.widgetLabel(info, " ", addToLayout = 0)
         infoGrid.addWidget(self.selRules, 2, 3)
-        
+
         OWGUI.separator(mainLeft, 0, 4)
         self.ruleCanvas = AssociationRulesViewerCanvas(self, mainLeft)
         self.canvasView = AssociationRulesViewerView(self, self.ruleCanvas, mainLeft)
@@ -186,12 +179,11 @@ class OWAssociationRulesViewer(OWWidget):
         OWGUI.button(boxb, self, 'No Zoom', callback = self.noZoomButton)
         OWGUI.separator(boxb, 16, 8)
         OWGUI.button(boxb, self, 'Unselect', callback = self.unselect)
-        
 
-        rightUpRight = QWidget(mainRight)
-        self.grid=QGridLayout(rightUpRight,2,3,5,5)
+        self.grid = QGridLayout()
+        rightUpRight = OWGUI.widgetBox(mainRight, orientation = self.grid)
         for i, m in enumerate(self.measures):
-            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns)
+            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns, addToLayout = 0)
             self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
 
 #        rightUpRight = OWGUI.widgetBox(mainRight, orientation=0)
@@ -214,11 +206,11 @@ class OWAssociationRulesViewer(OWWidget):
         header.setLabel(len(self.measures), "Rule")
         self.connect(header, SIGNAL("clicked(int)"), self.sort)
 
-        bottom = QWidget(mainRight)
-        bottomGrid = QGridLayout(bottom, 2, 2, 5, 5)
+        bottomGrid = QGridLayout()
+        bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
 
         self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules)
-        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules)        
+        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules)
         autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)])
         autoSend.makeConsistent()
 
@@ -226,11 +218,10 @@ class OWAssociationRulesViewer(OWWidget):
         bottomGrid.addWidget(autoSend.parentWidget(), 0, 1)
         bottomGrid.addWidget(commitButton, 1, 1)
 
-
         self.controlArea.setFixedSize(0, 0)
         self.resize(1000, 380)
 
-    
+
     def checkScale(self):
         if self.supp_min == self.supp_max:
             self.supp_max += 0.01
@@ -249,7 +240,7 @@ class OWAssociationRulesViewer(OWWidget):
                 for rule in cell:
                     self.selectedRules.append(rule)
 
-        self.displayRules()                
+        self.displayRules()
         if hasattr(self, "selConfidence"):
             self.updateConfSupp()
 
@@ -257,7 +248,7 @@ class OWAssociationRulesViewer(OWWidget):
             self.ruleCanvas.unselect()
             self.ruleCanvas.draw()
 
-        self.sendIfAuto()            
+        self.sendIfAuto()
 
 
     def updateConfSupp(self):
@@ -267,12 +258,12 @@ class OWAssociationRulesViewer(OWWidget):
         else:
             smin, cmin = self.supp_min, self.conf_min
             smax, cmax = self.supp_max, self.conf_max
-            
+
         self.selConfidence.setText("%3i%% - %3i%%" % (round(100*cmin), round(100*cmax)))
         self.selSupport.setText("%3i%% - %3i%%" % (round(100*smin), round(100*smax)))
         self.selRules.setText("%3i" % len(self.selectedRules))
 
-    # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)            
+    # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)
     def updateRuleList(self):
         self.selectedRules = []
         for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
@@ -322,7 +313,7 @@ class OWAssociationRulesViewer(OWWidget):
         
             
     def saveRules(self):
-        fileName = QFileDialog.getSaveFileName( "myRules.txt", "Textfiles (*.txt)", self );
+        fileName = QFileDialog.getSaveFileName(self, "Save Rules", "myRules.txt", "Textfiles (*.txt)" );
         if not fileName.isNull() :
             f = open(str(fileName), 'w')
             if self.selectedRules:
@@ -343,7 +334,7 @@ class OWAssociationRulesViewer(OWWidget):
 
     def coordToSuppConf(self, col, row):
         return self.supp_min + col * self.suppInCell, self.conf_min + row * self.confInCell
-    
+
     def zoomButton(self):
         if self.sel_rowmin >= 0:
             # have to compute both at ones!
@@ -375,20 +366,20 @@ class OWAssociationRulesViewer(OWWidget):
         if hasattr(self, "ruleCanvas"):
             self.ruleCanvas.draw()
         self.sendIfAuto()
-        
+
     def showAllButton(self):
         self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
 
     def noZoomButton(self):
         self.rezoom(0., 1., 0., 1.)
-        
+
     def sendIfAuto(self):
         if self.autoSend:
             self.sendRules()
-        
+
     def sendRules(self):
         self.send("Association Rules", orange.AssociationRules(self.selectedRules))
-    
+
     def arules(self,rules):
         self.rules = rules
         if self.rules:
@@ -407,17 +398,15 @@ class OWAssociationRulesViewer(OWWidget):
         self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
 
 
-       
+
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRulesViewer()
-    a.setMainWidget(ow)
-
 
     dataset = orange.ExampleTable('../../doc/datasets/car.tab')
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

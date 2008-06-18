@@ -24,47 +24,31 @@
 <DL class=attributes>
 <DT>Examples (ExampleTable)</DT>
 <DD>Attribute-valued data set read from the input file.</DD>
+
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>Attribute-valued data set with class information read from the
+input file. Used only if input file includes a special class attribute
+(disrete or continuous).</DD>
+
+<DT>Attribute Definition (orange.Domain)</DT>
+<DD>A list of attributes used in the data. This signal is usually fed into <a href="ExtendedFile.htm">Extended File</a> widget.</DD>
 </dl>
 
 <h2>Description</h2>
 
-<img class="leftscreenshot" src="File.png" align="left">
+<p>This is the widget you will probably use most often. It reads the
+input data file (data table with examples) and sends the token with
+the data set to the output channel. It maintains a list of most
+recently used data files. To open a new data file, "..." button opens
+a standard file dialog. To reread the file, just choose it again from
+the pulldown menu.</p>
 
-<p>This is the widget you will probably use in every schema. It reads the
-input data file (data table with examples) and sends the data set to the
-output channel. It maintains a history of most recently used data files.
-For convenience, the history also includes a directory with the sample data
-sets that come with Orange.</p>
-
-<p>To browse for a data file press <span class="option">...</span>. <span class="option">Reload</span> button reloads the file.</p>
-
-<p>The widget can read data from simple tab-delimited or comma-separated files,
-as well as files in C4.5 format and Weka's .arrf files.</p>
-
-<p>The info box at the bottom of the widget displays information on the number of
+<p>In the info box, this widget displays information on number of
 examples, attributes and meta attributes, and information on class
 variable (if defined in a file).</p>
 
-<p>The controls in between are for more advanced users.</p>
-
-<p>Tab-delimited file
-can have user defined symbols for undefined values. The symbols for "don't care"
-and "don't know" values can be specified in the corresponding edit lines. The default
-values for "don't know" and "don't care" depend upon format. Most users will use
-tab-delimited files: keep the field empty or put a question mark in there and that's
-it. Most algorithms do not differ between <em>don't know</em> and <em>don't care</em>
-values, so consider them both to mean <em>undefined</em>.</p>
-
-<p>The part which most will probably neither understand nor need is related to
-construction of new attributes. It becomes important when multiple data sets are
-loaded, usually with multiple File widgets. A typical example is loading separate
-training and testing data from two files. In this case Orange will usually treat
-the attributes with the same name but appearing in different files as the same
-attribute, so a classifier which uses the attribute "petal length" from the first
-will use the attribute of the same name from the second. In cases when attributes
-from different files just accidentally bear different names, one can instruct Orange
-to either always construct new attribute or construct them when they differ in
-their domains. Use this option with great care (if at all).</p>
+<a href="File.png"><img class="schema"
+src="File-S.png" alt="File widget"></a>
 
 <h2>Examples</h2>
 
@@ -74,8 +58,8 @@ sent to both <a href="DataTable.htm">Data Table</a> widget and to
 widget that displays <a
 href="../Visualize/AttributeStatistics">AttributeStatistics.htm</a>.</p>
 
-<img class="schema"
-src="File-Example.png" alt="Schema with File widget">
+<a href="File-Example.png"><img class="schema"
+src="File-Example-S.png" alt="Schema with File widget"></a>
 
 </body>
 </html>

@@ -7,6 +7,15 @@ import orngVisFuncts
 from OWGraphTools import UnconnectedLinesCurve
 
 # ####################################################################
+# calculate Euclidean distance between two points
+def euclDist(v1, v2):
+    val = 0
+    for i in range(len(v1)):
+        val += (v1[i]-v2[i])**2
+    return math.sqrt(val)
+
+
+# ####################################################################
 # get a list of all different permutations
 def getPermutationList(elements, tempPerm, currList, checkReverse):
     for i in range(len(elements)):
@@ -63,6 +72,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScalePolyvizData.__init__(self)
+        self.enableGridXB(0)
+        self.enableGridYL(0)
 
         self.lineLength = 2
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
@@ -85,16 +96,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.showProbabilities = 0
         self.squareGranularity = 3
         self.spaceBetweenCells = 1
+        self.scaleFactor = 1.0
 
         # init axes
-        self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
-        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
+        self.enableXaxis(0)
+        self.enableYLaxis(0)
+        self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
     def createAnchors(self, anchorNum):
@@ -106,9 +113,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             anchors[1].append(float(strY))
         return anchors
 
-    def setData(self, data):
+    def setData(self, data, subsetData = None, **args):
         OWGraph.setData(self, data)
-        orngScalePolyvizData.setData(self, data)
+        orngScalePolyvizData.setData(self, data, subsetData, **args)
 
     #
     # update shown data. Set labels, coloring by className ....
@@ -117,7 +124,6 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         #self.removeCurves()
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
-        self.tips.removeAll()
 
         # initial var values
         self.showKNNModel = 0
@@ -170,7 +176,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         # draw text at lines
         for i in range(length):
             # print attribute name
-            self.addMarker(labels[i], 0.6*(self.XAnchor[i]+ self.XAnchor[(i+1)%length]), 0.6*(self.YAnchor[i]+ self.YAnchor[(i+1)%length]), Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
+            self.addMarker(labels[i], 0.6*(self.XAnchor[i]+ self.XAnchor[(i+1)%length]), 0.6*(self.YAnchor[i]+ self.YAnchor[(i+1)%length]), Qt.AlignHCenter | Qt.AlignVCenter, bold = 1)
 
             if self.rawData.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
@@ -179,15 +185,15 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 k = 1.08
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
-                    self.addMarker(values[j], k*(1-pos)*self.XAnchor[i]+k*pos*self.XAnchor[(i+1)%length], k*(1-pos)*self.YAnchor[i]+k*pos*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
+                    self.addMarker(values[j], k*(1-pos)*self.XAnchor[i]+k*pos*self.XAnchor[(i+1)%length], k*(1-pos)*self.YAnchor[i]+k*pos*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
             else:
                 # min and max value
                 if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
                     names = ["%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
-                self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
-                self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
+                self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
+                self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
 
         XAnchorPositions = numpy.zeros([length, dataSize], numpy.float)
         YAnchorPositions = numpy.zeros([length, dataSize], numpy.float)
@@ -304,7 +310,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.yLinesToAdd = {}
 
         # draw polygon
-        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
+        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
 
         #################
         # draw the legend
@@ -323,7 +329,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     else:                             curveSymbol = self.curveSymbols[index]
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
-                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignVCenter)
+                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)
 
             # show legend for continuous class
             elif hasContinuousClass:
@@ -333,19 +339,20 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 for i in range(count):
                     y = -1.0 + i*2.0/float(count)
                     col = self.contPalette[i/float(count)]
-                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-                    newCurveKey = self.insertCurve(curve)
-                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
+                    c = PolygonCurve(QPen(col), QBrush(col), xs, [y,y, y+height, y+height])
+                    c.attach(self)
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
                 self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
                 self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
+        self.replot()
+
 
     def addAnchorLine(self, x, y, xAnchors, yAnchors, color, index, count):
         for j in range(count):
-            dist = EuclDist([x, y], [xAnchors[j] , yAnchors[j]])
+            dist = euclDist([x, y], [xAnchors[j] , yAnchors[j]])
             if dist == 0: continue
             kvoc = float(self.lineLength * 0.05) / dist
             lineX1 = x; lineY1 = y
@@ -362,8 +369,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
     def showAnchorLines(self):
         for i, color in enumerate(self.xLinesToAdd.keys()):
-            curve = UnconnectedLinesCurve(self, QPen(QColor(*color)), self.xLinesToAdd[color], self.yLinesToAdd[color])
-            self.insertCurve(curve)
+            curve = UnconnectedLinesCurve("", QPen(QColor(*color)), self.xLinesToAdd[color], self.yLinesToAdd[color])
+            curve.attach(self)
 
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available
@@ -410,15 +417,15 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 for i in range(len(self.shownAttributes)):
 
                     # draw lines
-                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
+                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
                     self.tooltipCurveKeys.append(key)
 
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawData[index][self.shownAttributes[i]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawData[index][self.shownAttributes[i]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter | Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[self.shownAttributes[i]]][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[self.shownAttributes[i]]][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter | Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
@@ -452,7 +459,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, addProjectedPositions = 0):
         if not self.rawData: return (None, None)
-        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawData)       # if no selections exist
+        if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawData)       # if no selections exist
 
         xAttr = orange.FloatVariable("X Positions")
         yAttr = orange.FloatVariable("Y Positions")
@@ -818,8 +825,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                         listOfCanditates.append((acc, attrList, reverse))
                         if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
                     else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %(n)s projections (attribute %(attra)s/%(attrb)s). Last accuracy was: %2.2(acc)f%%" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "attra": orngVisFuncts.createStringFromNumber(attrIndex), "attrb": strTotalAtts, "acc": acc})
-                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
+                       self.kNNOptimization.setStatusBarText("Evaluated %(n)s projections (attribute %(attra)s/%(attrb)s). Last accuracy was: %2.2(acc)f%%" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "attra": orngVisFuncts.createStringFromNumber(attrIndex), "attrb": strTotalAtts, "acc": acc})
+                       if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 
 
@@ -838,4 +845,4 @@ if __name__== "__main__":
 
     a.setMainWidget(c)
     c.show()
-    a.exec_loop()
+    a.exec_()

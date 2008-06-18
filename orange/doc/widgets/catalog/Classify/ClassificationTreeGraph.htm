@@ -27,6 +27,9 @@
 <DD>Attribute-valued data set associated with a classification tree
 node selected by the user.</DD>
 
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>Same as above, but used for compatibility with widgets that used
+class-labelled data only.</DD>
 </dl>
 
 <h2>Description</h2>
@@ -62,14 +65,14 @@ src="ClassificationTreeGraph-TreeTab-S.png" alt="Classification Tree Graph
 display the tree (may be useful when very large trees are
 induced). The edges between the nodes in the tree graph are drawn
 according to the maximum width defined in this tab. All the edges will
-be of equal width if <span class="option">No dependency</span> is chosen in the
-<span class="option">Reference for Edge Width</span> box. When <span class="option">Root node</span> is selected
+be of equal width if <b>No dependency</b> is chosen in the
+<b>Reference for Edge Width</b> box. When <b>Root node</b> is selected
 instead, the width of the edge will correspond to the proportion of
 instances in the corresponding node with respect to all the instances
 in the training data set (that is, instances in the root node). That
 is, under this selection, the edge will get thinner and thinner when
-traversing toward the bottom of the tree. Selection of <span class="option">Parent
-node</span> makes the edge width correspond to proportion of instances in
+traversing toward the bottom of the tree. Selection of <b>Parent
+node</b> makes the edge width correspond to proportion of instances in
 the nodes with respect to the instances in their parent node.</p>
 
 <br clear="all">
@@ -82,8 +85,8 @@ src="ClassificationTreeGraph-NodeTab-S.png" alt="Classification Tree Graph
 
 <p>Parameters from the Node Tab govern the appearance of tree nodes
 and define what is displayed in the node box, of which the size can be
-set manually (<span class="option">Node Width</span>). Tree nodes can display two lines of
-information selected by the user (<span class="option">Show Info</span> box). In the
+set manually (<b>Node Width</b>). Tree nodes can display two lines of
+information selected by the user (<b>Show Info</b> box). In the
 snapshot the probability for the target class (republican) was
 reported in the first line in the node, and number of instances from
 the training set that reached this node in the second text
@@ -92,32 +95,32 @@ necessary be integers.</p>
 
 <p>The color of the node:
 <ul>
-<li>may be uniform (<span class="option">Node Color</span> set to
-<span class="option">Default</span>),</li>
+<li>may be uniform (<b>Node Color</b> set to
+<b>Default</b>),</li>
 <li>correspond to number of instances in the node
-with respect to the number of instances in the root node (<span class="option">Instances
-in node</span>),</li>
+with respect to the number of instances in the root node (<b>Instances
+in node</b>),</li>
 <li>may report on the probability of the majority class
-(<span class="option">Majority class probability</span>) where one would expect that the
+(<b>Majority class probability</b>) where one would expect that the
 color intensity would be higher towards the leaves of the node,</li>
-<li>may report on probability of the target class (<span class="option">Target class
-probability</span>), with more intense colors marking the nodes where
+<li>may report on probability of the target class (<b>Target class
+probability</b>), with more intense colors marking the nodes where
 instances of target class are more frequent, and</li>
 <li>may report on the distribution of instances with target class,
 where the intensity of node color corresponds to proportion of the
 target class instances in the node with respect to the target class
-instances in the root node (<span class="option">Target class
-distribution</span>).</li>
+instances in the root node (<b>Target class
+distribution</b>).</li>
 </ul>
 
 <h3>Navigation</h3>
 
-<p><span class="option">Find Root</span> aligns the position of the window such that the
+<p><b>Find Root</b> aligns the position of the window such that the
 root node is displayed in the center. If user selects the node
-(left-click on the node), <span class="option">Find Selected</span> would bring the widow
+(left-click on the node), <b>Find Selected</b> would bring the widow
 in position to display the selected node in the center. More advanced
 navigation is supported by a navigator window (click on the
-<span class="option">Navigator</span> button), which displays a complete tree with a box
+<b>Navigator</b> button), which displays a complete tree with a box
 signifying the currently viewed part of the tree in the main
 window. This box can be moved around thus exposing different parts of
 the tree in the main window. The tree visualization in the navigator

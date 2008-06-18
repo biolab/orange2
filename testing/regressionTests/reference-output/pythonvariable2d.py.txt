@@ -1,7 +1,0 @@
-['reduced', '[0, 0, 0, 0, 0]', 'none']
-['normal', 'value: 3.14', 'soft']
-['reduced', '4.0', 'none']
-['normal', '60', 'hard']
-['reduced', '[0, 1, 0, 0, 0]', 'none']
-['normal', '[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]', 'soft']
-['reduced', '[0, 12, 1, 0, 0]', 'none']

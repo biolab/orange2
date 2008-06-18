@@ -1,10 +1,11 @@
-"""
+r"""
 <name>Data Sampler</name>
 <description>Selects a subset of instances from the data set.</description>
 <icon>icons/DataSampler.png</icon>
 <contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact>
 <priority>1125</priority>
 """
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import random
@@ -14,10 +15,10 @@ class OWDataSampler(OWWidget):
     "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases", "selPercentage", "LOO",
     "CVFolds", "CVFoldsInternal", "nGroups", "pGroups", "GroupText"]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'SampleData')
+        OWWidget.__init__(self, parent, signalManager, 'SampleData', wantMainArea = 0)
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Sample", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
 
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
@@ -44,71 +45,66 @@ class OWDataSampler(OWWidget):
         self.GroupText = '0.1,0.25,0.5'         # assigned to Groups Control (for internal use)
 
         # GUI
-        # Info Box
-        box1 = QVGroupBox("Information", self.controlArea)
-        self.infoa = QLabel('No data on input.', box1)
-        self.infob = QLabel('', box1)
-        self.infoc = QLabel('', box1)
-        OWGUI.separator(self.controlArea)
-
+        
         # Options Box
-        box2 = QVGroupBox('Options', self.controlArea)
+        box2 = OWGUI.widgetBox(self.controlArea, 'Options')
         OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)')
         OWGUI.checkWithSpin(box2, self, 'Set random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed')
         OWGUI.separator(self.controlArea)
 
         # Sampling Type Box
         self.s = [None, None, None, None]
-        self.sBox = QVButtonGroup("Sampling Type", self.controlArea)
+        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling type")
+        self.sBox.buttons = []
 
         # Random Sampling
-        self.s[0] = QRadioButton('Random sampling', self.sBox)
+        self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Random sampling')
         # repeat checkbox
-        self.h1Box = QHBox(self.sBox)
-        QWidget(self.h1Box).setFixedSize(19, 8)
+        self.h1Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.checkBox(self.h1Box, self, 'Repeat', 'Repeated sampling')
+
         # specified number of elements checkbox
-        self.h2Box = QHBox(self.sBox)
-        QWidget(self.h2Box).setFixedSize(19, 8)
+        self.h2Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=self.uCases)
+        OWGUI.rubber(self.h2Box)
+        
         # percentage slider
-        self.h3Box = QHBox(self.sBox)
-        QWidget(self.h3Box).setFixedSize(19, 8)
-        QLabel("Sample size:", self.h3Box)
-        self.slidebox = QHBox(self.sBox)
-        QWidget(self.slidebox).setFixedSize(19, 8)
+        self.h3Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        OWGUI.widgetLabel(self.h3Box, "Sample size:")
+        self.slidebox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
 
         # Cross Validation
-        self.s[1] = QRadioButton('Cross validation', self.sBox)
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
+        self.s[1] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Cross validation')
+        box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=self.changeCombo)
+        OWGUI.rubber(box)
 
         # Leave-One-Out
-        self.s[2] = QRadioButton('Leave-one-out', self.sBox)
+        self.s[2] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Leave-one-out')
 
         # Multiple Groups
-        self.s[3] = QRadioButton('Multiple subsets', self.sBox)
-        gbox = QHBox(self.sBox)
-        QWidget(gbox).setFixedSize(19, 8)
+        self.s[3] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Multiple subsets')
+        gbox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
 
         # Output Group Box
         OWGUI.separator(self.controlArea)
-        self.foldBox = QHGroupBox('Output Data for Fold / Group', self.controlArea)
-        QLabel('Fold / group:', self.foldBox)
-        self.foldcombo = QComboBox(self.foldBox)
-        # fill the combo box (later make it sensitive to number of folds)
-        self.foldcombo.clear()
-        for x in range(100):
-            self.foldcombo.insertItem(str(x+1))
-        self.foldBox.setEnabled(False)
+        self.foldcombo = OWGUI.comboBox(self.controlArea, self, "outFold", 'Ouput Data for Fold / Group', 'Fold / group:', orientation = "horizontal", items = range(1,101), callback = self.foldChanged, sendSelectedValue = 1, valueType = int)
+        self.foldcombo.setEnabled(False)
 
         # Select Data Button
         OWGUI.separator(self.controlArea)
         OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
         self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
+        OWGUI.separator(self.controlArea)
+        
+        # Info Box
+        box1 = OWGUI.widgetBox(self.controlArea, "Information")
+        self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
+        self.infob = OWGUI.widgetLabel(box1, ' ')
+        self.infoc = OWGUI.widgetLabel(box1, ' ')
+        
 
         # CONNECTIONS
         # set connections for RadioButton (SelectType)
@@ -117,11 +113,11 @@ class OWDataSampler(OWWidget):
             self.dummy1[i] = lambda x, v=i: self.sChanged(x, v)
             self.connect(self.s[i], SIGNAL("toggled(bool)"), self.dummy1[i])
 
-        # set connection for ComboBox (fold to output)
-        self.connect(self.foldcombo, SIGNAL('activated(int)'), self.foldChanged)
-
         # final touch
         self.resize(200, 275)
+
+    def test(self):
+        print "taqeasdf"
 
     # CONNECTION TRIGGER AND GUI ROUTINES
     # enables RadioButton switching
@@ -142,22 +138,24 @@ class OWDataSampler(OWWidget):
     def changeCombo(self):
         # refill combobox
         self.Folds = 1
-        if self.SelectType == 1: self.Folds = self.CVFolds
-        if self.SelectType == 2:
+        if self.SelectType == 1:
+            self.Folds = self.CVFolds
+        elif self.SelectType == 2:
             if self.data:
                 self.Folds = len(self.data)
             else:
                 self.Folds = 1
-        if self.SelectType == 3:
+        elif self.SelectType == 3:
             self.Folds = self.nGroups
         self.foldcombo.clear()
         for x in range(self.Folds):
-            self.foldcombo.insertItem(str(x+1))
+            self.foldcombo.addItem(str(x+1))
 
     # triggered on change in output fold combobox
-    def foldChanged(self, ix):
-        self.outFold = int(ix+1)
-        if self.data: self.sdata()
+    def foldChanged(self):
+        #self.outFold = int(ix+1)
+        if self.data:
+            self.sdata()
 
     # switches between cases and percentage (random sampling)
     def uCases(self):
@@ -179,7 +177,7 @@ class OWDataSampler(OWWidget):
             self.infoa.setText('No data on input.')
             self.infob.setText('')
             self.infoc.setText('')
-            self.send("Sample", None)
+            self.send("Examples", None)
             self.send("Remaining Examples", None)
             self.data = None
 
@@ -212,7 +210,7 @@ class OWDataSampler(OWWidget):
         if remainder:
             remainder.name = self.data.name
         # send data
-        self.send("Sample", sample)
+        self.send("Examples", sample)
         self.send("Remaining Examples", remainder)
 
     # MAIN SWITCH
@@ -290,9 +288,9 @@ class OWDataSampler(OWWidget):
 
         # enable fold selection and fill combobox if applicable
         if self.SelectType == 0:
-            self.foldBox.setEnabled(False)
+            self.foldcombo.setEnabled(False)
         else:
-            self.foldBox.setEnabled(True)
+            self.foldcombo.setEnabled(True)
             self.changeCombo()
 
         # call data output routine
@@ -304,10 +302,9 @@ class OWDataSampler(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSampler()
-    appl.setMainWidget(ow)
-
-    data = orange.ExampleTable('iris.tab')
+    #data = orange.ExampleTable('iris.tab')
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     ow.setData(data)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()
     ow.saveSettings()

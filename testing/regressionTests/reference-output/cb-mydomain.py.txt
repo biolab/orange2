@@ -1,2 +1,0 @@
-['young', 'myope', 'no', 'reduced', 'none']
-['young', 'myope', 'no', 'reduced', '?']

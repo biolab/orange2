@@ -4,14 +4,15 @@
 #
 import os, sys, string, re, user
 import xml.dom.minidom
+from orngOrangeFoldersQt4 import *
 
 class WidgetsToXML:
 
     # read all installed widgets, build a registry and store widgets.pth with directory names in python dir
-    def ParseWidgetRoot(self, widgetDirName, outputDir):
+    def ParseWidgetRoot(self, widgetDirName, canvasSettingsDir):
         widgetDirName = os.path.realpath(widgetDirName)
-        outputDir = os.path.realpath(outputDir)
-
+        canvasSettingsDir = os.path.realpath(canvasSettingsDir)
+        
         # create xml document
         doc = xml.dom.minidom.Document()
         canvas = doc.createElement("orangecanvas")
@@ -24,7 +25,7 @@ class WidgetsToXML:
             if os.path.isdir(full_filename):
                 self.ParseDirectory(doc, categories, full_filename, filename)
 
-        additionalFile = os.path.join(outputDir, "additionalCategories")
+        additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
         if os.path.exists(additionalFile):
             for lne in open(additionalFile, "rt"):
                 try:
@@ -36,9 +37,9 @@ class WidgetsToXML:
 
         # we put widgets that are in the root dir of widget directory to category "Other"
         self.ParseDirectory(doc, categories, widgetDirName, "Other")
-
+        
         xmlText = doc.toprettyxml()
-        file = open(os.path.join(outputDir, "widgetregistry.xml"), "wt")
+        file = open(os.path.join(canvasSettingsDir, "widgetregistry.xml"), "wt")
         file.write(xmlText)
         file.flush()
         file.close()
@@ -46,9 +47,9 @@ class WidgetsToXML:
 
     # parse all widgets in directory widgetDirName\categoryName into new category named categoryName
     def ParseDirectory(self, doc, categories, full_dirname, categoryName, plugin = False):
-        if sys.path.count(full_dirname) == 0:       # add directory to orange path
-            sys.path.append(full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
-
+        if full_dirname not in sys.path:        # add directory to orange path
+            sys.path.insert(0, full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
+        
         for filename in os.listdir(full_dirname):
             full_filename = os.path.join(full_dirname, filename)
             if os.path.isdir(full_filename) or os.path.islink(full_filename) or os.path.splitext(full_filename)[1] != ".py":
@@ -74,19 +75,19 @@ class WidgetsToXML:
 
             if (name == None):      # if the file doesn't have a name, we treat it as a non-widget file
                 continue
-
+            
             # create XML node for the widget
             child = categories.firstChild
             while (child != None and child.attributes.get("name").nodeValue != categoryName):
                 child= child.nextSibling
-
+    
             if (child == None):
                 child = doc.createElement("category")
                 child.setAttribute("name", categoryName)
                 if plugin:
                     child.setAttribute("directory", full_dirname)
                 categories.appendChild(child)
-
+    
             widget = doc.createElement("widget")
             widget.setAttribute("file", filename[:-3])
             widget.setAttribute("name", name)
@@ -96,8 +97,8 @@ class WidgetsToXML:
             widget.setAttribute("priority", priorityStr)
             widget.setAttribute("author", author)
             widget.setAttribute("contact", contact)
-
-            # description
+            
+            # description            
             if (description != ""):
                 desc = doc.createElement("description")
                 descText = doc.createTextNode(description)
@@ -122,12 +123,12 @@ class WidgetsToXML:
         search = re.search(searchString, data)
         if (search == None):
             return None
-
+        
         text = search.group(0)
         text = text[text.find(">")+1:-text[::-1].find("<")-1]    #delete the <...> </...>
         return text.strip()
 
-
+        
     def GetAllInputs(self, data):
         #result = re.search('self.inputs *= *[[].*]', data)
         result = re.search('[ \t]+self.inputs *= *[[].*]', data)
@@ -167,12 +168,11 @@ class WidgetsToXML:
 def rebuildRegistry():
     dirs = __getDirectoryNames()
     parse = WidgetsToXML()
-    widgetDir = os.path.join(dirs["canvasDir"], "../OrangeWidgets")
-    parse.ParseWidgetRoot(widgetDir, dirs["outputDir"])
+    parse.ParseWidgetRoot(dirs["widgetDir"], dirs["canvasSettingsDir"])
 
 def readAdditionalCategories():
     dirs = __getDirectoryNames()
-    addCatFile = os.path.join(dirs["outputDir"], "additionalCategories")
+    addCatFile = os.path.join(dirs["canvasDir"], "additionalCategories")
     if os.path.exists(addCatFile):
         return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(addCatFile, "r")]
     else:
@@ -180,7 +180,7 @@ def readAdditionalCategories():
 
 def writeAdditionalCategories(categories):
     dirs = __getDirectoryNames()
-    open(os.path.join(dirs["outputDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+    open(os.path.join(dirs["canvasDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
 
 def addWidgetCategory(category, directory, add = True):
     if os.path.isfile(directory):
@@ -188,90 +188,6 @@ def addWidgetCategory(category, directory, add = True):
     writeAdditionalCategories([x for x in readAdditionalCategories() if x[0] != category and x[1] != directory] + (add and [(category, directory)] or []))
     rebuildRegistry()
 
-
-
-def __getDirectoryNames():
-    try:
-        canvasDir = os.path.split(os.path.abspath(__file__))[0]
-        orangeDir = canvasDir[:-13]
-    except:
-        import orange
-        orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
-        canvasDir = os.path.join(orangeDir, "OrangeCanvas")
-
-    widgetDir = os.path.join(orangeDir, "OrangeWidgets")
-    if not os.path.exists(widgetDir):
-        print "Error. Directory %s not found. Unable to locate widgets." % widgetDir
-
-    reportsDir = os.path.join(orangeDir, "report")
-    if not os.path.exists(reportsDir):
-        try: os.mkdir(reportsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
-
-    picsDir = os.path.join(widgetDir, "icons")
-    if not os.path.exists(picsDir):
-        print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
-
-    home = user.home
-    if home[-1] == ":":
-        home += "\\"
-    if os.name == "nt":
-        applicationDir = os.path.join(home, "Application Data")
-        if not os.path.exists(applicationDir):
-            try: os.mkdir(applicationDir)
-            except: pass
-        outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
-    elif sys.platform == "darwin":
-        applicationDir = os.path.join(home, "Library")
-        applicationDir = os.path.join(applicationDir, "Application Support")
-        outputDir = os.path.join(applicationDir, "Orange")
-    else:
-        outputDir = os.path.join(home, "Orange")                  # directory for saving settings and stuff
-    if not os.path.exists(outputDir):
-        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
-
-    widgetSettingsDir = os.path.join(outputDir, "widgetSettings")
-    if not os.path.exists(widgetSettingsDir):
-        try: os.mkdir(widgetSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
-
-    bufferDir = os.path.join(outputDir, "buffer")
-    if not os.path.exists(bufferDir):
-        try: os.mkdir(bufferDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
-
-    outputDir = os.path.join(outputDir, "OrangeCanvas")
-    if not os.path.exists(outputDir):
-        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
- 
-
-    registryFileName = os.path.join(outputDir, "widgetregistry.xml")
-    if not os.path.exists(registryFileName):
-        WidgetsToXML().ParseWidgetRoot(widgetDir, outputDir)
-
-    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetSettingsDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName", "bufferDir" ]])
-
-
-def addWidgetDirectories():
-    sys.path.append(orangeDir)
-    sys.path.append(widgetDir)
-    if os.path.exists(widgetDir):
-        for name in os.listdir(widgetDir):
-            fullName = os.path.join(widgetDir, name)
-            if os.path.isdir(fullName):
-                sys.path.append(fullName)
-
-    doc = xml.dom.minidom.parse(registryFileName)
-    for category in doc.getElementsByTagName("category"):
-        directory = category.getAttribute("directory")
-        if directory:
-            sys.path.append(directory)
-
-
-directoryNames = __getDirectoryNames()
-vars().update(directoryNames)
 
 if __name__=="__main__":
     rebuildRegistry()

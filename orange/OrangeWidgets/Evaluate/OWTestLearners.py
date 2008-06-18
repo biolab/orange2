@@ -8,8 +8,7 @@
 #
 # OWTestLearners.py
 #
-
-from qttable import *
+import orngOrangeFoldersQt4
 from OWWidget import *
 import orngTest, orngStat, OWGUI
 import time
@@ -100,21 +99,27 @@ class OWTestLearners(OWWidget):
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
         OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1, label='Number of folds:',
                    callback=lambda p=0: self.conditionalRecompute(p))
-
-        for i in range(1,3):
-            OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[i])
+        OWGUI.separator(self.sBtns, height = 3)
+        
+        OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[1])      # leave one out
+        OWGUI.separator(self.sBtns, height = 3)
+        OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[2])      # random sampling
+                        
         ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
         OWGUI.spin(ibox, self, 'pRepeat', 1, 100, step=1,
                    label='Repeat train/test:',
                    callback=lambda p=2: self.conditionalRecompute(p))
-        OWGUI.separator(ibox)
-        QLabel("Relative training set size:", ibox)
-        OWGUI.separator(ibox)
+        
+        OWGUI.widgetLabel(ibox, "Relative training set size:")
+        
         OWGUI.hSlider(ibox, self, 'pLearning', minValue=10, maxValue=100,
                       step=1, ticks=10, labelFormat="   %d%%",
                       callback=lambda p=2: self.conditionalRecompute(p))
-        for i in range(3,5):
-            OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[i])
+        
+        OWGUI.separator(self.sBtns, height = 3)
+        OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[3])  # test on train
+        OWGUI.separator(self.sBtns, height = 3)
+        OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[4])  # test on test
 
         self.trainDataBtn = self.sBtns.buttons[-2]
         self.testDataBtn = self.sBtns.buttons[-1]
@@ -134,11 +139,11 @@ class OWTestLearners(OWWidget):
         OWGUI.separator(self.controlArea)
 
         # statistics
-        self.cbox = QVBox(self.controlArea)
+        self.cbox = OWGUI.widgetBox(self.controlArea)
         self.cStatLabels = [s.name for s in self.cStatistics]
         self.cstatLB = OWGUI.listBox(self.cbox, self, 'selectedCScores',
                                      'cStatLabels', box = "Performance scores",
-                                     selectionMode = QListBox.Multi,
+                                     selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
         OWGUI.separator(self.cbox)
         self.targetCombo=OWGUI.comboBox(self.cbox, self, "targetClass", orientation=0,
@@ -148,21 +153,17 @@ class OWTestLearners(OWWidget):
         self.rStatLabels = [s.name for s in self.rStatistics]
         self.rstatLB = OWGUI.listBox(self.controlArea, self, 'selectedRScores',
                                      'rStatLabels', box = "Performance scores",
-                                     selectionMode = QListBox.Multi,
+                                     selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
         self.rstatLB.box.hide()
 
 
         # score table
-        self.layout=QVBoxLayout(self.mainArea)
-        self.g = QVGroupBox(self.mainArea)
-        self.g.setTitle('Evaluation results')
+        # table with results
+        self.g = OWGUI.widgetBox(self.mainArea, 'Evaluation Results')
+        self.tab = OWGUI.table(self.g, selectionMode = QTableWidget.NoSelection)
 
-        self.tab=QTable(self.g)
-        self.tab.setSelectionMode(QTable.NoSelection)
-        self.layout.add(self.g)
-
-        self.lab = QLabel(self.g)
+        #self.lab = QLabel(self.g)
 
         self.resize(680,470)
 
@@ -174,42 +175,39 @@ class OWTestLearners(OWWidget):
         
     def paintscores(self):
         """paints the table with evaluation scores"""
-        def adjustcolumns():
-            """adjust the width of the score table cloumns"""
-            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
-            for i in range(len(self.stat)+1):
-                self.tab.adjustColumn(i)
-            for i in range(len(self.stat)):
-                if i not in usestat:
-                    self.tab.hideColumn(i+1)
 
-        self.tab.setNumCols(len(self.stat)+1)
-        self.tabHH=self.tab.horizontalHeader()
-        self.tabHH.setLabel(0, 'Method')
-        for (i,s) in enumerate(self.stat):
-            self.tabHH.setLabel(i+1, s.label)
-
+        self.tab.setColumnCount(len(self.stat)+1)
+        self.tab.setHorizontalHeaderLabels(["Method"] + [s.label for s in self.stat])
+        
         prec="%%.%df" % self.precision
 
         learners = [(l.time, l) for l in self.learners.values()]
         learners.sort()
         learners = [lt[1] for lt in learners]
 
-        self.tab.setNumRows(len(self.learners))
+        self.tab.setRowCount(len(self.learners))
         for (i, l) in enumerate(learners):
-            self.tab.setText(i, 0, l.name)
+            OWGUI.tableItem(self.tab, i,0, l.name)
             
         for (i, l) in enumerate(learners):
             if l.scores:
                 for j in range(len(self.stat)):
                     if l.scores[j] is not None:
-                        self.tab.setText(i, j+1, prec % l.scores[j])
+                        OWGUI.tableItem(self.tab, i, j+1, prec % l.scores[j])
                     else:
-                        self.tab.setText(i, j+1, "N/A")
+                        OWGUI.tableItem(self.tab, i, j+1, "N/A")
             else:
                 for j in range(len(self.stat)):
-                    self.tab.setText(i, j+1, "")
-        adjustcolumns()
+                    OWGUI.tableItem(self.tab, i, j+1, "")
+        
+        # adjust the width of the score table cloumns
+        self.tab.resizeColumnsToContents()
+        self.tab.resizeRowsToContents()
+        usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+        for i in range(len(self.stat)):
+            if i not in usestat:
+                self.tab.hideColumn(i+1)
+
 
     def score(self, ids):
         """compute scores for the list of learners"""
@@ -349,12 +347,12 @@ class OWTestLearners(OWWidget):
             return
 
         domain = self.data.domain
-        for v in domain.classVar.values:
-            self.targetCombo.insertItem(str(v))
+        self.targetCombo.addItems([str(v) for v in domain.classVar.values])
+        
         if self.targetClass<len(domain.classVar.values):
-            self.targetCombo.setCurrentItem(self.targetClass)
+            self.targetCombo.setCurrentIndex(self.targetClass)
         else:
-            self.targetCombo.setCurrentItem(0)
+            self.targetCombo.setCurrentIndex(0)
             self.targetClass=0
 
     def setLearner(self, learner, id=None):
@@ -428,7 +426,7 @@ class OWTestLearners(OWWidget):
         for i in range(len(self.stat)):
             if i in usestat:
                 self.tab.showColumn(i+1)
-                self.tab.adjustColumn(i+1)
+                self.tab.resizeColumnToContents(i+1)
             else:
                 self.tab.hideColumn(i+1)
 
@@ -460,7 +458,9 @@ class OWTestLearners(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWTestLearners()
-    a.setMainWidget(ow)
+    ow.show()
+    a.exec_()
+
 
     data1 = orange.ExampleTable('voting')
     data2 = orange.ExampleTable('golf')
@@ -519,6 +519,4 @@ if __name__=="__main__":
         ow.setLearner(l2, 5)
         ow.setTestData(None)
 
-    ow.show()
-    a.exec_loop()
     ow.saveSettings()

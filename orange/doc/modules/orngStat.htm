@@ -3,22 +3,18 @@
 </HEAD>
 <body>
 
-<h1>orngStat: Orange Statistics for Predictors</h1>
+<h1>orngStat: Orange Statistics for Classifiers</h1>
 <index name="modules/performance of classifiers">
-<index name="modules/performance of regressors">
 <index name="classifiers/accuracy of">
-<index name="regression/evaluation of">
 
-<P>This module contains various measures of quality for classification
-and regression. Most functions require an argument named
-<code>res</code>, an instance of <code><INDEX
-name="classes/ExperimentResults (in
+<P>This module contains various measures of quality, such as
+classification accuracy, ROC statistics and similar. Most functions
+require an argument named <code>res</code>, an instance of
+<code><INDEX name="classes/ExperimentResults (in
 orngTest)">ExperimentResults</code> as computed by functions from <a
-href="orngTest.htm">orngTest</a> and which contains predictions
-obtained through cross-validation, leave one-out, testing on training
-data or test set examples.</P>
-
-<h2>Classification</h2>
+href="orngTest.htm">orngTest</a> and which contains classifications
+and probabilities obtained through cross-validation, leave one-out,
+testing on training or new examples...</P>
 
 <P>To prepare some data for examples on this page, we shall load the
 voting data set (problem of predicting the congressman's party
@@ -49,7 +45,7 @@ argument. Another way of disabling weights is to clear the
 <code>ExperimentResults</code>' flag <code>weights</code>.</P>
 
 
-<H3>General Measures of Quality</H3>
+<H2>General Measures of Quality</H2>
 
 <DL class="attributes">
 
@@ -128,7 +124,7 @@ majrty  0.614   0.526   0.474   -0.000
 
 <P>Script <a href="statExamples.py">statExamples.py</a> contains another example that also prints out the standard errors.</P>
 
-<H3>Confusion Matrix</H3>
+<H2>Confusion Matrix</H2>
 <index name="performance scores+confusion matrix">
 
 <DL class="attributes">
@@ -248,16 +244,14 @@ vans.</P>
 
 </DD>
 
-<dt>sens(confm), spec(confm), PPV(confm), NPV(confm), precision(confm), recall(confm), F2(conf), Falpha(conf, alpha=2.0)
+<dt>sens(confm), spec(confm), PPV(confm), NPV(confm), precision(confm), recall(confm), fmeasure(conf)
 <index name="performance scores+sensitivity">
 <index name="performance scores+specificity">
 <index name="performance scores+positive prediction value">
 <index name="performance scores+negative prediction value">
 <index name="performance scores+precision">
 <index name="performance scores+recall">
-<index name="performance scores+F-measure">
-<index name="performance scores+F1">
-<index name="performance scores+Falpha"></dt>
+<index name="performance scores+F-measure"></dt>
 
 <dd><p>With the confusion matrix defined in terms of positive and
 negative classes, you can also compute the <a
@@ -271,16 +265,12 @@ href="http://en.wikipedia.org/wiki/Negative_predictive_value">negative
 predictive value</a> [TN/(TN+FN)]. In information retrieval, positive
 predictive value is called precision (the ratio of the number of
 relevant records retrieved to the total number of irrelevant and
-relevant records retrieved), and sensitivity is called <a
-href="http://en.wikipedia.org/wiki/Information_retrieval">recall</a>
-(the ratio of the number of relevant records retrieved to the total
-number of relevant records in the database). The <a
+relevant records retrieved), and sensitivity is called recall (the
+ratio of the number of relevant records retrieved to the total number
+of relevant records in the database). The <a
 href="http://en.wikipedia.org/wiki/Harmonic_mean">harmonic mean</a> of
 precision and recall [] is called an <a
-href="http://en.wikipedia.org/wiki/Sensitivity_(tests)">F-measure</a>,
-where, depending on the ratio of the weight between precision and
-recall is implemented as <code>F1</code> or, for a general case,
-<code>Falpha</code>.</p>
+href="http://en.wikipedia.org/wiki/Sensitivity_(tests)">F-measure</a>.</p>
 
 <br>
 
@@ -308,7 +298,7 @@ for l in range(len(learners)):
 </DL>
 
 
-<H3>ROC Analysis</H3>
+<H2>ROC Analysis</H2>
 <index name="performance scores+ROC analysis">
 <index name="performance scores+AUC">
 
@@ -453,100 +443,17 @@ AUC (for AROCFromCDT), and compare2AUCs (for compare2AROCs).</em></dd><p>
 
 </DL>
 
-<H3>Comparison of Algorithms</H3>
+<H2>Comparison of Algorithms</H2>
 
 <DL>
 <DT><B>McNemar(res)</B>
 <index name="performance scores+McNemar test"></DT>
-<DD>Computes a triangular matrix with McNemar statistics for each pair
-of classifiers. The statistics is distributed by chi-square
-distribution with one degree of freedom; critical value for 5%
-significance is around 3.84.</DD>
+<DD>Computes a triangular matrix with McNemar statistics for each pair of classifiers. The statistics is distributed by chi-square distribution with one degree of freedom; critical value for 5% significance is around 3.84.</DD><P>
+
 <DT><B>McNemarOfTwo(res, learner1, learner2)</B></DT>
-<DD>McNemarOfTwo computes a McNemar statistics for a pair of
-classifier, specified by indices learner1 and learner2.</DD>
+<DD>McNemarOfTwo computes a McNemar statistics for a pair of classifier, specified by indices learner1 and learner2.</DD><P>
+
 </DL>
-
-<H2>Regression</H2>
-
-<p>Several alternative measures, as given below, can be used to
-evaluate the sucess of numeric prediction:</p>
-
-<img src="orngStat-regression.png">
-
-<dl class="attributes">
-
-<dt>MSE(res)
-<index name="performance scores+mean-squared error"></dt>
-<dd>Computes mean-squared error.</dd>
-    
-<dt>RMSE(res)
-<index name="performance scores+root mean-squared error"></dt>
-<dd>Computes root mean-squared error.</dd>
-
-<dt>MAE(res)
-<index name="performance scores+mean absolute error"></dt>
-<dd>Computes mean absolute error.</dd>
-
-<dt>RSE(res)
-<index name="performance scores+relative squared error"></dt>
-<dd>Computes relative squared error.</dd>
-
-<dt>RRSE(res)
-<index name="performance scores+root relative squared error"></dt>
-<dd>Computes root relative squared error.</dd>
-
-<dt>RAE(res)
-<index name="performance scores+relative absolute error"></dt>
-<dd>Computes relative absolute error.</dd>
-
-<dt>R2(res)
-<index name="performance scores+R-squared"></dt>
-<dd>Computes the coefficient of determination, R-squared.</dd>
-
-</dl>
-
-<p> The following code uses most of the above measures to score
-several regression methods.</p>
-
-<p class="header"><a href="statExamples-regression.py">statExamples-regression.py</a></p>
-<xmp class="code">import orange
-import orngRegression as r
-import orngTree
-import orngStat, orngTest
-
-data = orange.ExampleTable("housing")
-
-# definition of regressors
-lr = r.LinearRegressionLearner(name="lr")
-rt = orngTree.TreeLearner(measure="retis", mForPruning=2,
-                          minExamples=20, name="rt")
-maj = orange.MajorityLearner(name="maj")
-knn = orange.kNNLearner(k=10, name="knn")
-
-learners = [maj, rt, knn, lr]
-
-# cross validation, selection of scores, report of results
-results = orngTest.crossValidation(learners, data, folds=3)
-scores = [("MSE", orngStat.MSE),   ("RMSE", orngStat.RMSE),
-          ("MAE", orngStat.MAE),   ("RSE", orngStat.RSE),
-          ("RRSE", orngStat.RRSE), ("RAE", orngStat.RAE),
-          ("R2", orngStat.R2)]
-
-print "Learner   " + "".join(["%-8s" % s[0] for s in scores])
-for i in range(len(learners)):
-    print "%-8s " % learners[i].name + \
-    "".join(["%7.3f " % s[1](results)[i] for s in scores])
-</xmp>
-
-<p>The code above produces the following output:</p>
-
-<xmp class="code">Learner   MSE     RMSE    MAE     RSE     RRSE    RAE     R2
-maj       84.585   9.197   6.653   1.002   1.001   1.001  -0.002
-rt        40.015   6.326   4.592   0.474   0.688   0.691   0.526
-knn       21.248   4.610   2.870   0.252   0.502   0.432   0.748
-lr        24.092   4.908   3.425   0.285   0.534   0.515   0.715
-</xmp>
 
 <H2>Plotting Functions</H2>
 

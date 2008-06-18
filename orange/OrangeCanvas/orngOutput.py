@@ -2,34 +2,36 @@
 # Description:
 #     print system output and exceptions into a window. Enables copy/paste
 #
-from qt import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import sys
 import string
 from time import localtime
 import traceback
 import os.path, os
 
-class OutputWindow(QMainWindow):
+class OutputWindow(QMdiSubWindow):
     def __init__(self, canvasDlg, *args):
-        apply(QMainWindow.__init__,(self,) + args)
+        apply(QMdiSubWindow.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
+        #self.canvasDlg.workspace.addWindow(self)
 
-        self.textOutput = QTextView(self)
-        self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
-        self.setCentralWidget(self.textOutput)
-        self.setCaption("Output Window")
-        self.setIcon(QPixmap(canvasDlg.outputPix))
+        self.textOutput = QTextEdit(self)
+        self.textOutput.setReadOnly(1)
 
-        self.defaultExceptionHandler = sys.excepthook
-        self.defaultSysOutHandler = sys.stdout
+        self.setWidget(self.textOutput)
+        self.setWindowTitle("Output Window")
+        self.setWindowIcon(QIcon(canvasDlg.outputPix))
+
+        #self.defaultExceptionHandler = sys.excepthook
+        #self.defaultSysOutHandler = sys.stdout
         self.focusOnCatchException = 1
         self.focusOnCatchOutput  = 0
         self.printOutput = 1
         self.printException = 1
         self.writeLogFile = 1
 
-        self.logFile = open(os.path.join(canvasDlg.outputDir, "outputLog.htm"), "w") # create the log file
-        #self.printExtraOutput = 0
+        self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.htm"), "w") # create the log file
         self.unfinishedText = ""
         self.verbosity = 0
 
@@ -47,16 +49,11 @@ class OutputWindow(QMainWindow):
 
     def closeEvent(self,ce):
         #QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
-        if getattr(self.canvasDlg, "canvasIsClosing", 0):
-            self.catchException(0)
-            self.catchOutput(0)
-            ce.accept()
-            QMainWindow.closeEvent(self, ce)
-        else:
-            wins = self.canvasDlg.workspace.getDocumentList()
-            if wins != []:
-                wins[0].setFocus()
-            ce.ignore()
+        self.catchException(0)
+        self.catchOutput(0)
+        wins = self.canvasDlg.workspace.getDocumentList()
+        if wins != []:
+            wins[0].setFocus()
 
     def focusInEvent(self, ev):
         self.canvasDlg.enableSave(1)
@@ -88,7 +85,7 @@ class OutputWindow(QMainWindow):
         self.writeLogFile = write
 
     def clear(self):
-        self.textOutput.setText("")
+        self.textOutput.clear()
 
     # print text produced by warning and error widget calls
     def widgetEvents(self, text, eventVerbosity = 1):
@@ -105,13 +102,19 @@ class OutputWindow(QMainWindow):
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
-            self.canvasDlg.workspace.cascade()    # cascade shown windows
+            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
+            #self.logFile.write(str(text) + "<br>\n")
             self.logFile.write(Text)
 
-        self.textOutput.setText(str(self.textOutput.text()) + Text)
-        self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+        cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
+        self.textOutput.setTextCursor(cursor)                             # existing text
+        if text == " ": self.textOutput.insertHtml("&nbsp;")
+        else:           self.textOutput.insertHtml(Text)                                  # then append the text
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
+        self.textOutput.setTextCursor(cursor)
 
         if Text[-1:] == "\n":
             if self.printOutput:
@@ -126,20 +129,17 @@ class OutputWindow(QMainWindow):
 
     def flush(self):
         pass
-
-    def keyReleaseEvent (self, event):
-        if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:    # user pressed CTRL+"C"
-            self.textOutput.copy()
-
     def getSafeString(self, s):
         return str(s).replace("<", "&lt;").replace(">", "&gt;")
 
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
-            self.canvasDlg.workspace.cascade()    # cascade shown windows
+            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         text = ""
+        if str(self.textOutput.toPlainText()) not in ["", "\n"]:
+            text += "<hr>"
         t = localtime()
         text += "<hr><nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
@@ -161,11 +161,14 @@ class OutputWindow(QMainWindow):
         lines = traceback.format_exception_only(type, value)
         for line in lines[:-1]:
             text += "<nobr>" + totalSpace + self.getSafeString(line) + "</nobr><br>\n"
-        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n"
-        
-        text += "<hr>\n"
-        self.textOutput.setText(str(self.textOutput.text()) + text)
-        self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n<hr>\n"
+
+        cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
+        self.textOutput.setTextCursor(cursor)                             # existing text
+        self.textOutput.insertHtml(text)                                  # then append the text
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
+        self.textOutput.setTextCursor(cursor)
 
         if self.writeLogFile:
-            self.logFile.write(str(text) + "<br>")
+            self.logFile.write(str(text) + "<br>\n")

@@ -3,13 +3,23 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
-from OWTools import *
+import orngOrangeFoldersQt4
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
 import orngDebugging
 from string import *
 from orngSignalManager import *
+import OWGUI
+
+ERROR = 0
+WARNING = 1
+
+TRUE=1
+FALSE=0
 
 def unisetattr(self, name, value, grandparent):
     if "." in name:
@@ -61,7 +71,7 @@ def unisetattr(self, name, value, grandparent):
 
 
     # if there are any context handlers, call the fastsave to write the value into the context
-    if hasattr(self, "contextHandlers") and hasattr(self, "currentContexts"):
+    if hasattr(self, "contextHandlers"):
         for contextName, contextHandler in self.contextHandlers.items():
             contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
 
@@ -85,9 +95,6 @@ class ControlledAttributesDict(dict):
 class ExampleTable(orange.ExampleTable):
     pass
 
-#class ExampleTableWithClass(ExampleTable):
-#    pass
-
 class AttributeList(list):
     pass
 
@@ -95,7 +102,7 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False):
+    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
@@ -110,42 +117,17 @@ class OWBaseWidget(QDialog):
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
 
-        self.title = title.replace("&","")
+        #if resizingEnabled: QDialog.__init__(self, parent, Qt.Dialog)
+        #else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
-        QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
+        if resizingEnabled: QDialog.__init__(self, parent, Qt.Window)
+        else:               QDialog.__init__(self, parent, Qt.Window | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
-        self.widgetDir = os.path.dirname(__file__) + "/"
+        self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
 
-        # create output directory for widget settings
-        home = user.home
-        if home[-1] == ":":
-            home += "\\"
-        if os.name == "nt":
-            if not os.path.exists(os.path.join(home, "Application Data")):
-                os.mkdir(os.path.join(home, "Application Data"))
-            self.outputDir = os.path.join(os.path.join(home, "Application Data"), "Orange")                  # directory for saving settings and stuff
-        elif sys.platform == "darwin":
-            self.outputDir = os.path.join(home, "Library")
-            self.outputDir = os.path.join(self.outputDir, "Application Support")
-            self.outputDir = os.path.join(self.outputDir, "Orange")
-        else:
-            self.outputDir = os.path.join(home, "Orange")                  # directory for saving settings and stuff
-
-        if not os.path.exists(self.outputDir):
-            try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-            except: pass
-
-        self.outputDir = os.path.join(self.outputDir, "widgetSettings")
-        if not os.path.exists(self.outputDir):
-            try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-            except: pass
-
-        self.captionTitle = title.replace("&","")     # used for widget caption
-
-        # if we want the widget to show the title then the title must start with "Qt"
-        if (int(qVersion()[0]) < 3) and self.captionTitle[:2].upper() != "QT":
-            self.captionTitle = "Qt " + self.captionTitle
+        title = title.replace("&","")
+        self.setCaption(title) # used for widget caption
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
@@ -170,36 +152,35 @@ class OWBaseWidget(QDialog):
         self.widgetStateHandler = None
         self.widgetState = {"Info":{}, "Warning":{}, "Error":{}}
 
-        #the title
-        self.setCaption(self.captionTitle)
-
         if hasattr(self, "contextHandlers"):
             for contextHandler in self.contextHandlers.values():
                 contextHandler.initLocalContext(self)
 
+
     # uncomment this when you need to see which events occured
     """
     def event(self, e):
-        eventDict = dict([(0, 'None'), (1, 'Timer'), (2, 'MouseButtonPress'), (3, 'MouseButtonRelease'), (4, 'MouseButtonDblClick'), (5, 'MouseMove'), (6, 'KeyPress'), (7, 'KeyRelease'), (8, 'FocusIn'), (9, 'FocusOut'), (10, 'Enter'), (11, 'Leave'), (12, 'Paint'), (13, 'Move'), (14, 'Resize'), (15, 'Create'), (16, 'Destroy'), (17, 'Show'), (18, 'Hide'), (19, 'Close'), (20, 'Quit'), (21, 'Reparent'), (22, 'ShowMinimized'), (23, 'ShowNormal'), (24, 'WindowActivate'), (25, 'WindowDeactivate'), (26, 'ShowToParent'), (27, 'HideToParent'), (28, 'ShowMaximized'), (30, 'Accel'), (31, 'Wheel'), (32, 'AccelAvailable'), (33, 'CaptionChange'), (34, 'IconChange'), (35, 'ParentFontChange'), (36, 'ApplicationFontChange'), (37, 'ParentPaletteChange'), (38, 'ApplicationPaletteChange'), (40, 'Clipboard'), (42, 'Speech'), (50, 'SockAct'), (51, 'AccelOverride'), (60, 'DragEnter'), (61, 'DragMove'), (62, 'DragLeave'), (63, 'Drop'), (64, 'DragResponse'), (70, 'ChildInserted'), (71, 'ChildRemoved'), (72, 'LayoutHint'), (73, 'ShowWindowRequest'), (80, 'ActivateControl'), (81, 'DeactivateControl'), (1000, 'User')])
-        print self, eventDict[e.type()]
+        #eventDict = dict([(0, 'None'), (1, 'Timer'), (2, 'MouseButtonPress'), (3, 'MouseButtonRelease'), (4, 'MouseButtonDblClick'), (5, 'MouseMove'), (6, 'KeyPress'), (7, 'KeyRelease'), (8, 'FocusIn'), (9, 'FocusOut'), (10, 'Enter'), (11, 'Leave'), (12, 'Paint'), (13, 'Move'), (14, 'Resize'), (15, 'Create'), (16, 'Destroy'), (17, 'Show'), (18, 'Hide'), (19, 'Close'), (20, 'Quit'), (21, 'Reparent'), (22, 'ShowMinimized'), (23, 'ShowNormal'), (24, 'WindowActivate'), (25, 'WindowDeactivate'), (26, 'ShowToParent'), (27, 'HideToParent'), (28, 'ShowMaximized'), (30, 'Accel'), (31, 'Wheel'), (32, 'AccelAvailable'), (33, 'CaptionChange'), (34, 'IconChange'), (35, 'ParentFontChange'), (36, 'ApplicationFontChange'), (37, 'ParentPaletteChange'), (38, 'ApplicationPaletteChange'), (40, 'Clipboard'), (42, 'Speech'), (50, 'SockAct'), (51, 'AccelOverride'), (60, 'DragEnter'), (61, 'DragMove'), (62, 'DragLeave'), (63, 'Drop'), (64, 'DragResponse'), (70, 'ChildInserted'), (71, 'ChildRemoved'), (72, 'LayoutHint'), (73, 'ShowWindowRequest'), (80, 'ActivateControl'), (81, 'DeactivateControl'), (1000, 'User')])
+        eventDict = dict([(0, "None"), (130, "AccessibilityDescription"), (119, "AccessibilityHelp"), (86, "AccessibilityPrepare"), (114, "ActionAdded"), (113, "ActionChanged"), (115, "ActionRemoved"), (99, "ActivationChange"), (121, "ApplicationActivated"), (122, "ApplicationDeactivated"), (36, "ApplicationFontChange"), (37, "ApplicationLayoutDirectionChange"), (38, "ApplicationPaletteChange"), (35, "ApplicationWindowIconChange"), (68, "ChildAdded"), (69, "ChildPolished"), (71, "ChildRemoved"), (40, "Clipboard"), (19, "Close"), (82, "ContextMenu"), (52, "DeferredDelete"), (60, "DragEnter"), (62, "DragLeave"), (61, "DragMove"), (63, "Drop"), (98, "EnabledChange"), (10, "Enter"), (150, "EnterEditFocus"), (124, "EnterWhatsThisMode"), (116, "FileOpen"), (8, "FocusIn"), (9, "FocusOut"), (97, "FontChange"), (159, "GraphicsSceneContextMenu"), (164, "GraphicsSceneDragEnter"), (166, "GraphicsSceneDragLeave"), (165, "GraphicsSceneDragMove"), (167, "GraphicsSceneDrop"), (163, "GraphicsSceneHelp"), (160, "GraphicsSceneHoverEnter"), (162, "GraphicsSceneHoverLeave"), (161, "GraphicsSceneHoverMove"), (158, "GraphicsSceneMouseDoubleClick"), (155, "GraphicsSceneMouseMove"), (156, "GraphicsSceneMousePress"), (157, "GraphicsSceneMouseRelease"), (168, "GraphicsSceneWheel"), (18, "Hide"), (27, "HideToParent"), (127, "HoverEnter"), (128, "HoverLeave"), (129, "HoverMove"), (96, "IconDrag"), (101, "IconTextChange"), (83, "InputMethod"), (6, "KeyPress"), (7, "KeyRelease"), (89, "LanguageChange"), (90, "LayoutDirectionChange"), (76, "LayoutRequest"), (11, "Leave"), (151, "LeaveEditFocus"), (125, "LeaveWhatsThisMode"), (88, "LocaleChange"), (153, "MenubarUpdated"), (43, "MetaCall"), (102, "ModifiedChange"), (4, "MouseButtonDblClick"), (2, "MouseButtonPress"), (3, "MouseButtonRelease"), (5, "MouseMove"), (109, "MouseTrackingChange"), (13, "Move"), (12, "Paint"), (39, "PaletteChange"), (131, "ParentAboutToChange"), (21, "ParentChange"), (75, "Polish"), (74, "PolishRequest"), (123, "QueryWhatsThis"), (14, "Resize"), (117, "Shortcut"), (51, "ShortcutOverride"), (17, "Show"), (26, "ShowToParent"), (50, "SockAct"), (112, "StatusTip"), (100, "StyleChange"), (87, "TabletMove"), (92, "TabletPress"), (93, "TabletRelease"), (171, "TabletEnterProximity"), (172, "TabletLeaveProximity"), (1, "Timer"), (120, "ToolBarChange"), (110, "ToolTip"), (78, "UpdateLater"), (77, "UpdateRequest"), (111, "WhatsThis"), (118, "WhatsThisClicked"), (31, "Wheel"), (132, "WinEventAct"), (24, "WindowActivate"), (103, "WindowBlocked"), (25, "WindowDeactivate"), (34, "WindowIconChange"), (105, "WindowStateChange"), (33, "WindowTitleChange"), (104, "WindowUnblocked"), (126, "ZOrderChange"), (169, "KeyboardLayoutChange"), (170, "DynamicPropertyChange")])
+        if eventDict.has_key(e.type()):
+            print str(self.windowTitle()), eventDict[e.type()]
         return QDialog.event(self, e)
     """
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
-            QDialog.setIcon(self, QPixmap(iconName))
+            self.setWindowIcon(QIcon(iconName))
         elif os.path.exists(os.path.join(self.widgetDir, iconName)):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, iconName)))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, iconName)))
         elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/" + iconName)))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/" + iconName)))
         elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
-            QDialog.setIcon(self, QPixmap(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
+            self.setWindowIcon(QIcon(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
         elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/Unknown.png")))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/Unknown.png")))
 
     # ##############################################
     def createAttributeIconDict(self):
-        import OWGUI
         return OWGUI.getAttributeIcons()
 
     def isDataWithClass(self, data, wantedVarType = None):
@@ -229,9 +210,9 @@ class OWBaseWidget(QDialog):
     def restoreWidgetPosition(self):
         if self.savePosition:
             if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
-##                print self.title, "restoring position", self.widgetXPosition, self.widgetYPosition
+                #print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition
                 self.move(self.widgetXPosition, self.widgetYPosition)
-            if getattr(self, "widgetWidth", None) != None and getattr(self, "widgetHeight", None) != None:
+            if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
                 self.resize(self.widgetWidth, self.widgetHeight)
 
     # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
@@ -246,7 +227,6 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetWidth = self.width()
             self.widgetHeight = self.height()
-##            print self.title, "saving resize", self.widgetWidth, self.widgetHeight
 
 
     # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
@@ -254,15 +234,21 @@ class OWBaseWidget(QDialog):
     def moveEvent(self, ev):
         QDialog.moveEvent(self, ev)
         if self.savePosition:
-            self.widgetXPosition = ev.pos().x()
-            self.widgetYPosition = ev.pos().y()
-##            print self.title, "saving position", self.widgetXPosition, self.widgetYPosition
+            self.widgetXPosition = self.frameGeometry().x()
+            self.widgetYPosition = self.frameGeometry().y()
 
     # set widget state to hidden
     def hideEvent(self, ev):
         QDialog.hideEvent(self, ev)
         if self.savePosition:
             self.widgetShown = 0
+
+    # override the default show function. 
+    # after show() we must call processEvents because show puts some LayoutRequests in queue
+    # and we must process them immediately otherwise the width(), height(), ... of elements in the widget will be wrong
+    def show(self):
+        QDialog.show(self)
+        qApp.processEvents()
 
     # set widget state to shown
     def showEvent(self, ev):
@@ -271,21 +257,24 @@ class OWBaseWidget(QDialog):
             self.widgetShown = 1
 
     def setCaption(self, caption):
-        if self.parent != None and isinstance(self.parent, QTabWidget): self.parent.changeTab(self, caption)
-        else: QDialog.setCaption(self, caption)
-
-    def setCaptionTitle(self, caption):
-        self.captionTitle = caption     # we have to save caption title in case progressbar will change it
-        self.setCaption(caption)
+        if self.parent != None and isinstance(self.parent, QTabWidget):
+            self.parent.setTabText(self.parent.indexOf(self), caption)
+        else:
+            self.captionTitle = caption     # we have to save caption title in case progressbar will change it
+            self.setWindowTitle(caption)
 
     # put this widget on top of all windows
     def reshow(self):
+        x,y = getattr(self, "widgetXPosition", None), getattr(self, "widgetYPosition", None)
         self.hide()
+        if x != None and y != None:
+            self.move(x,y)
         self.show()
+
 
     def send(self, signalName, value, id = None):
         if not self.hasOutputName(signalName):
-            print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.title)
+            print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.captionTitle)
 
         if self.linksOut.has_key(signalName):
             self.linksOut[signalName][id] = value
@@ -297,7 +286,7 @@ class OWBaseWidget(QDialog):
 
     def getdeepattr(self, attr, **argkw):
         try:
-            return reduce(lambda o, n: getattr(o, n),  attr.split("."), self)
+            return reduce(lambda o, n: getattr(o, n, None),  attr.split("."), self)
         except:
             if argkw.has_key("default"):
                 return argkw[default]
@@ -321,15 +310,15 @@ class OWBaseWidget(QDialog):
                 try:
                     settings[name] =  self.getdeepattr(name)
                 except:
-                    #print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
+                    #print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.captionTitle)
                     pass
         return settings
 
 
     def getSettingsFile(self, file):
         if file==None:
-            if os.path.exists(os.path.join(self.outputDir, self.title + ".ini")):
-                file = os.path.join(self.outputDir, self.title + ".ini")
+            if os.path.exists(os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")):
+                file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
             else:
                 return
         if type(file) == str:
@@ -384,7 +373,7 @@ class OWBaseWidget(QDialog):
 
         if settings:
             if file==None:
-                file = os.path.join(self.outputDir, self.title + ".ini")
+                file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
             if type(file) == str:
                 file = open(file, "w")
             cPickle.dump(settings, file)
@@ -517,6 +506,12 @@ class OWBaseWidget(QDialog):
 
         return None
 
+
+    def handleNewSignals(self):
+        # this is called after all new signals have been handled
+        # implement this in your widget if you want to process something only after you received multiple signals
+        pass
+
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
@@ -531,7 +526,7 @@ class OWBaseWidget(QDialog):
                     if not (handler and dirty): continue
                     newSignal = 1
 
-                    qApp.setOverrideCursor(QWidget.waitCursor)
+                    qApp.setOverrideCursor(Qt.WaitCursor)
                     try:
                         for (value, id, nameFrom) in signalData:
                             if self.signalIsOnlySingleConnection(key):
@@ -543,9 +538,9 @@ class OWBaseWidget(QDialog):
                     except:
                         type, val, traceback = sys.exc_info()
                         sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
-
                     qApp.restoreOverrideCursor()
-                    self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
+                    
+                self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
         if hasattr(self, "handleNewSignals") and newSignal == 1:
             self.handleNewSignals()
@@ -579,7 +574,7 @@ class OWBaseWidget(QDialog):
     def progressBarInit(self):
         self.progressBarValue = 0
         self.startTime = time.time()
-        self.setCaption(self.captionTitle + " (0% complete)")
+        self.setWindowTitle(self.captionTitle + " (0% complete)")
         if self.progressBarHandler:
             self.progressBarHandler(self, -1)
 
@@ -596,9 +591,9 @@ class OWBaseWidget(QDialog):
                 text = "%(h)d h, %(min)d min, %(sec)d sec" % vars()
             else:
                 text = "%(min)d min, %(sec)d sec" % vars()
-            self.setCaption(self.captionTitle + " (%(value).2f%% complete, remaining time: %(text)s)" % vars())
+            self.setWindowTitle(self.captionTitle + " (%(value).2f%% complete, remaining time: %(text)s)" % vars())
         else:
-            self.setCaption(self.captionTitle + " (0% complete)" )
+            self.setWindowTitle(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
         qApp.processEvents()
 
@@ -606,7 +601,7 @@ class OWBaseWidget(QDialog):
         self.progressBarSet(self.progressBarValue+value)
 
     def progressBarFinished(self):
-        self.setCaption(self.captionTitle)
+        self.setWindowTitle(self.captionTitle)
         if self.progressBarHandler: self.progressBarHandler(self, 101)
 
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
@@ -622,20 +617,21 @@ class OWBaseWidget(QDialog):
     def setWidgetStateHandler(self, handler):
         self.widgetStateHandler = handler
 
+
     # if we are in debug mode print the event into the file
     def printEvent(self, text, eventVerbosity = 1):
-        self.signalManager.addEvent(self.captionTitle[3:] + ": " + text, eventVerbosity = eventVerbosity)
+        self.signalManager.addEvent(self.captionTitle + ": " + text, eventVerbosity = eventVerbosity)
         if self.eventHandler:
-            self.eventHandler(self.captionTitle[3:] + ": " + text, eventVerbosity)
+            self.eventHandler(self.captionTitle + ": " + text, eventVerbosity)
 
     def openWidgetHelp(self):
         if orangedir:
-#            try:
-#                import win32help
-#                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
-#                    return
-#            except:
-#                pass
+            try:
+                import win32help
+                win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC)
+                return
+            except:
+                pass
 
             try:
                 import webbrowser
@@ -660,11 +656,12 @@ class OWBaseWidget(QDialog):
             QDialog.keyPressEvent(self, e)
 
     def information(self, id = 0, text = None):
-        #self.setState("Info", id, text)
-        self.setState("Warning", id, text)      # if we want information just set warning
+        self.setState("Info", id, text)
+        #self.setState("Warning", id, text)
 
     def warning(self, id = 0, text = ""):
         self.setState("Warning", id, text)
+        #self.setState("Info", id, text)        # if we want warning just set information
 
     def error(self, id = 0, text = ""):
         self.setState("Error", id, text)
@@ -744,6 +741,9 @@ class OWBaseWidget(QDialog):
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
 
+
+    # ##################################################################
+    # a function for randomly changing settings in the widget - used in automatic widget debugging
     def randomlyChangeSettings(self, verboseMode = 0):
         if len(self._guiElements) == 0: return
 
@@ -774,17 +774,17 @@ class OWBaseWidget(QDialog):
                 setattr(self, value, not self.getdeepattr(value))
             elif elementType == "button":
                 elementType, widget, callback = self._guiElements[index]
-                if widget.isToggleButton():
-                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isOn())
-                    widget.setOn(not widget.isOn())
+                if widget.isCheckable():
+                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isChecked())
+                    widget.setChecked(not widget.isChecked())
                 else:
                     newValue = "Pressed button %s" % (str(widget.text()).strip())
             elif elementType == "listBox":
                 elementType, widget, value, callback = self._guiElements[index]
                 if widget.count():
                     itemIndex = random.randint(0, widget.count()-1)
-                    newValue = "Listbox %s. Changed selection of item %d to %s" % (value, itemIndex, not widget.isSelected(itemIndex))
-                    widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+                    newValue = "Listbox %s. Changed selection of item %d to %s" % (value, itemIndex, not widget.item(itemIndex).isSelected())
+                    widget.item(itemIndex).setSelected(not widget.item(itemIndex).isSelected())
                 else:
                     callback = None
             elif elementType == "radioButtonsInBox":
@@ -810,15 +810,15 @@ class OWBaseWidget(QDialog):
                 elementType, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
                 if widget.count():
                     pos = random.randint(0, widget.count()-1)
-                    newValue = "Changed value of combo %s to %s" % (value, str(widget.text(pos)))
+                    newValue = "Changed value of combo %s to %s" % (value, str(widget.itemText(pos)))
                     if sendSelectedValue:
-                        setattr(self, value, valueType(str(widget.text(pos))))
+                        setattr(self, value, valueType(str(widget.itemText(pos))))
                     else:
                         setattr(self, value, pos)
                 else:
                     callback = None
             if newValue != "":
-                self.printEvent("Widget %s. %s" % (str(self.caption()), newValue), eventVerbosity = 1)
+                self.printEvent("Widget %s. %s" % (str(self.windowTitle()), newValue), eventVerbosity = 1)
             if callback:
                 if type(callback) == list:
                     for c in callback:
@@ -830,17 +830,18 @@ class OWBaseWidget(QDialog):
             if not self.signalManager.exceptionSeen(type, value, tracebackInfo):
                 sys.stderr.write("------------------\n")
                 if newValue != "":
-                    sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
+                    sys.stderr.write("Widget %s. %s\n" % (str(self.windowTitle()), newValue))
                 sys.excepthook(excType, value, tracebackInfo)  # print the exception
                 sys.stderr.write("Widget settings are:\n")
                 for i, setting in enumerate(getattr(self, "settingsList", [])):
+                    if setting in ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]:
+                        continue
                     sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
 
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     oww=OWBaseWidget()
-    a.setMainWidget(oww)
     oww.show()
-    a.exec_loop()
+    a.exec_()
     oww.saveSettings()

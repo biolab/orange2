@@ -2,7 +2,6 @@ from OWBaseWidget import *
 from OWWidget import OWWidget
 import os
 import OWGUI, orngVisFuncts, OWQCanvasFuncts
-from qtcanvas import QCanvas, QCanvasView
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
@@ -18,7 +17,7 @@ mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),
 
 allExamplesText = "<All examples>"
 
-class OWMosaicOptimization(OWBaseWidget, orngMosaic):
+class OWMosaicOptimization(OWWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["optimizationType", "attributeCount", "attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
@@ -31,17 +30,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
 
     def __init__(self, mosaicWidget = None, signalManager = None):
-        OWBaseWidget.__init__(self, None, signalManager, "Mosaic Evaluation Dialog", savePosition = True)
+        OWWidget.__init__(self, None, signalManager, "Mosaic Evaluation Dialog", savePosition = True, wantMainArea = 0, wantStatusBar = 1)
         orngMosaic.__init__(self)
 
         self.resize(390,620)
-
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Mosaic Evaluation Dialog")
-        else:
-            self.setCaption("Qt "+"Mosaic Evaluation Dialog")
-        self.controlArea = QVBoxLayout(self)
-
+        self.setCaption("Mosaic Evaluation Dialog")
+        
         # loaded variables
         self.mosaicWidget = mosaicWidget
         self.showConfidence = 1
@@ -67,37 +61,28 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.shownResults = []
 
         self.loadSettings()
-
-        self.tabs = QTabWidget(self, 'tabWidget')
-        self.controlArea.addWidget(self.tabs)
-
-        self.MainTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self)
-        self.TreeTab = QVGroupBox(self)
-        self.ManageTab = QVGroupBox(self)
-        self.ArgumentationTab = QVGroupBox(self)
-        self.ClassificationTab = QVGroupBox(self)
-
-        self.tabs.insertTab(self.MainTab, "Main")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
-        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
-        self.tabs.insertTab(self.ClassificationTab, "Classification")
-        self.tabs.insertTab(self.TreeTab, "Tree")
-        self.tabs.insertTab(self.ManageTab, "Manage")
+        self.layout().setMargin(0)
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.MainTab = OWGUI.createTabPage(self.tabs, "Main")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        self.ArgumentationTab = OWGUI.createTabPage(self.tabs, "Argumentation")
+        self.ClassificationTab = OWGUI.createTabPage(self.tabs, "Classification")
+        self.TreeTab = OWGUI.createTabPage(self.tabs, "Tree")
+        self.ManageTab = OWGUI.createTabPage(self.tabs, "Manage")
 
         # ###########################
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection list, most interesting projections first")
-        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, "Attribute and value order")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting Projections First")
+        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, "Attribute and Value Order")
         self.optimizeOrderSubBox = OWGUI.widgetBox(self.optimizeOrderBox, orientation = "horizontal")
         self.buttonsBox = OWGUI.widgetBox(self.MainTab, box = 1)
 
-        self.label1 = QLabel('Projections with ', self.buttonBox)
-        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["  exactly  ", "  maximum  "])
+        self.label1 = OWGUI.widgetLabel(self.buttonBox, 'Projections with ')
+        self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
         self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(1, 5), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int)
-        self.attributeLabel = QLabel(' attributes', self.buttonBox)
+        self.attributeLabel = OWGUI.widgetLabel(self.buttonBox, ' attributes')
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections", callback = self.evaluateProjections)
         f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
@@ -105,34 +90,33 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
 
-        self.resultList = QListBox(self.resultsBox)
-        self.resultList.setMinimumSize(200,200)
-        self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
+        self.resultList = OWGUI.listBox(self.resultsBox, self, callback = self.showSelectedAttributes)
+        self.resultList.setMinimumHeight(200)
 
-        OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeOrder", "Optimize order of attributes", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order the visualized attributes so that it will enhance class separation")
-        OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeValueOrder", "Optimize order of attribute values", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order also the values of visualized attributes so that it will enhance class separation.\nWARNING: This can take a lot of time when visualizing attributes with many values.")
+        OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeOrder", "Optimize attributes", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order the visualized attributes so that it will enhance class separation")
+        OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeValueOrder", "Optimize attribute values", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order also the values of visualized attributes so that it will enhance class separation.\nWARNING: This can take a lot of time when visualizing attributes with many values.")
 
         self.optimizeOrderButton = OWGUI.button(self.buttonsBox, self, "Optimize Current Attribute Order", callback = self.optimizeCurrentAttributeOrder, tooltip = "Optimize the order of currently visualized attributes", debuggingEnabled=0)
 
-
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of projection interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore small cells")
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore Small Cells" )
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
 
-        self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing method")
-        self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times"], tooltip = "Method for evaluating the class separation in the projection.")
+        self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing Method")
+        self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
 
-        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for ranking attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for Ranking Attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
-        self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing method used for optimizing attribute orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
+        self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
-        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "Stopping evaluation or optimization")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:"+"                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:"+"  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to Stop Evaluation or Optimization?")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
+        OWGUI.rubber(self.SettingsTab)
 
         # ##########################
         # ARGUMENTATION TAB
@@ -143,32 +127,29 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
 
-        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, "Show arguments for class:", orientation = "horizontal")
-        self.classValueList = OWGUI.comboBox(self.argumentsClassBox, self, "argumentationClassValue", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
+        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, "Show Arguments for Class:", orientation = "horizontal")
+        self.classValueCombo = OWGUI.comboBox(self.argumentsClassBox, self, "argumentationClassValue", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
         self.logitLabel = OWGUI.widgetLabel(self.argumentsClassBox, " ", labelWidth = 100)
 
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments/Odds ratios for the selected class value")
-        self.argumentList = QListBox(self.argumentBox)
-        self.argumentList.setMinimumSize(200,200)
-        self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
-        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown details in arguments list" , orientation = "horizontal")
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments/Odds Ratios for the Selected Class Value")
+        self.argumentList = OWGUI.listBox(self.argumentBox, self, callback = self.argumentSelected)
+        self.argumentList.setMinimumHeight(200)
+        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown Details in Arguments List" , orientation = "horizontal")
         self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% confidence interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
 
         # ##########################
         # CLASSIFICATION TAB
-        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = 'Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
-        probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability estimation")
-        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-estimate"], callback = self.updateMestimateComboState)
+        probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability Estimation")
+        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"], callback = self.updateMEstimateComboState)
 
-        mValid = QDoubleValidator(self)
-        mValid.setRange(0,10000,1)
-        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
+        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = QDoubleValidator(0,10000,1, self))
 
-        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluation time")
+        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluation Time")
         OWGUI.checkWithSpin(b, self, "Use time limit:    ", 1, 1000, "useTimeLimit", "timeLimit", "(minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        classBox = OWGUI.widgetBox(self.ClassificationTab, "Class prediction settings")
+        classBox = OWGUI.widgetBox(self.ClassificationTab, "Class Prediction Settings")
         classMethodsCombo = OWGUI.comboBox(classBox, self, "classificationMethod", items = ["Top-ranked projections", "Semi-naive Bayes", "Naive Bayes with combining attribute values"], callback = self.updateClassMethodsCombo)
 
         # top projection settings
@@ -185,28 +166,37 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.spin(self.classConfidenceBox, self, "classConfidence", 0, 99, 1, label = 'Confidence Interval (%):    ', tooltip = 'Confidence interval used in deciding whether to use a set of attributes independently or dependently')
 
         OWGUI.button(self.ClassificationTab, self, "Resend Learner", callback = self.resendLearner, tooltip = "Resend learner with new settings. You need to press this \nonly when you are sending mosaic learner signal to other widgets.")
+        OWGUI.rubber(self.ClassificationTab)
 
         # ##########################
         # TREE TAB
-        subsetBox = OWGUI.widgetBox(self.TreeTab, "Example subset analysis")
-        self.splitter = QSplitter(Qt.Vertical, subsetBox, "main")
-        self.subsetTree = QListView(self.splitter)
-        self.subsetTree.setRootIsDecorated(1)
-        self.subsetTree.setAllColumnsShowFocus(1)
-        self.subsetTree.addColumn('Visualized Attributes')
-        self.subsetTree.addColumn('# inst.')
-        self.subsetTree.setColumnWidth(0, 300)
-        self.subsetTree.setColumnWidthMode(0, QListView.Maximum)
-        self.subsetTree.setColumnAlignment(0, QListView.AlignLeft)
-        self.subsetTree.setColumnWidth(1, 50)
-        self.subsetTree.setColumnWidthMode(1, QListView.Manual)
-        self.subsetTree.setColumnAlignment(1, QListView.AlignRight)
-        self.connect(self.subsetTree, SIGNAL("selectionChanged(QListViewItem *)"), self.mtSelectedTreeItemChanged)
-        self.connect(self.subsetTree, SIGNAL("rightButtonPressed(QListViewItem *, const QPoint &, int )"), self.mtSubsetTreeRemoveItemPopup)
+        subsetBox = OWGUI.widgetBox(self.TreeTab, "Example Subset Analysis")
+        self.splitter = QSplitter(Qt.Vertical, subsetBox)
+        subsetBox.layout().addWidget(self.splitter)
+        self.subsetTree = QTreeWidget(self.splitter)
+        self.splitter.addWidget(self.subsetTree)
+        self.subsetTree.setColumnCount(2)
+        self.subsetTree.setHeaderLabels(['Visualized Attributes', '# inst.'])
+        #self.subsetTree.setAllColumnsShowFocus(1)
+        self.subsetTree.header().setStretchLastSection(True)
+        self.subsetTree.header().setClickable(0)
+        self.subsetTree.header().setSortIndicatorShown(0)
+        self.subsetTree.header().setResizeMode(0, QHeaderView.Stretch)
 
-        self.selectionsList = QListBox(self.splitter)
-        self.connect(self.selectionsList, SIGNAL("selectionChanged()"), self.mtSelectedListItemChanged)
-        self.connect(self.selectionsList, SIGNAL('doubleClicked(QListBoxItem *)'), self.mtSelectedListItemDoubleClicked)
+#        self.subsetTree.addColumn()
+#        self.subsetTree.addColumn()
+#        self.subsetTree.setColumnWidth(0, 300)
+#        self.subsetTree.setColumnWidthMode(0, QListView.Maximum)
+#        self.subsetTree.setColumnAlignment(0, QListView.AlignLeft)
+#        self.subsetTree.setColumnWidth(1, 50)
+#        self.subsetTree.setColumnWidthMode(1, QListView.Manual)
+#        self.subsetTree.setColumnAlignment(1, QListView.AlignRight)
+
+        self.connect(self.subsetTree, SIGNAL("itemSelectionChanged()"), self.mtSelectedTreeItemChanged)
+        #self.connect(self.subsetTree, SIGNAL("rightButtonPressed(QListViewItem *, const QPoint &, int )"), self.mtSubsetTreeRemoveItemPopup)
+
+        self.selectionsList = OWGUI.listBox(self.splitter, self, callback = self.mtSelectedListItemChanged)
+        self.connect(self.selectionsList, SIGNAL('itemDoubleClicked(QListWidgetItem *)'), self.mtSelectedListItemDoubleClicked)
 
         self.subsetItems = {}
         self.subsetUpdateInProgress = 0
@@ -217,35 +207,31 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.checkBox(explorerBox, self, 'showDataSubset', 'Show unselected data as example subset', tooltip = "This option determines what to do with the examples that are not selected in the projection.\nIf checked then unselected examples will be visualized in the same way as examples that are received through the 'Example Subset' signal.")
 
         self.mosaic = orngMosaic()
-        autoBuildTreeBox = OWGUI.widgetBox(self.TreeTab, "Mosaic tree", orientation = "vertical")
+        autoBuildTreeBox = OWGUI.widgetBox(self.TreeTab, "Mosaic Tree", orientation = "vertical")
         autoBuildTreeButtonBox = OWGUI.widgetBox(autoBuildTreeBox, orientation = "horizontal")
         self.autoBuildTreeButton = OWGUI.button(autoBuildTreeButtonBox, self, "Build Tree", callback = self.mtMosaicAutoBuildTree, tooltip = "Evaluate different mosaic diagrams and automatically build a tree of mosaic diagrams with clear class separation", debuggingEnabled = 0)
         OWGUI.button(autoBuildTreeButtonBox, self, "Visualize Tree", callback = self.mtVisualizeMosaicTree, tooltip = "Visualize a tree where each node is a mosaic diagram", debuggingEnabled = 0)
         OWGUI.lineEdit(autoBuildTreeBox, self, "mosaicSize", "Size of individual mosaic diagrams: ", orientation = "horizontal", tooltip = "What are the X and Y dimensions of individual mosaics in the tree?", valueType = int, validator = QIntValidator(self))
 
-        loadSaveBox = OWGUI.widgetBox(self.TreeTab, "Load/Save mosaic tree", orientation = "horizontal")
+        loadSaveBox = OWGUI.widgetBox(self.TreeTab, "Load/Save Mosaic Tree", orientation = "horizontal")
         OWGUI.button(loadSaveBox, self, "Load", callback = self.mtLoadTree, tooltip = "Load a tree from a file", debuggingEnabled = 0)
         OWGUI.button(loadSaveBox, self, "Save", callback = self.mtSaveTree, tooltip = "Save tree to a file", debuggingEnabled = 0)
 
-        self.subsetPopupMenu = QPopupMenu(self)
-        self.subsetPopupMenu.insertItem("Explore currently selected examples", self.mtEploreCurrentSelection)
-        self.subsetPopupMenu.insertItem("Find interesting projection", self.evaluateProjections)
-        self.subsetPopupMenu.insertSeparator()
-        self.subsetPopupMenu.insertItem("Remove node", self.mtRemoveSelectedItem)
-        self.subsetPopupMenu.insertItem("Clear tree", self.mtInitSubsetTree)
-
-
+        self.subsetPopupMenu = QMenu(self)
+        self.subsetPopupMenu.addAction("Explore currently selected examples", self.mtEploreCurrentSelection)
+        self.subsetPopupMenu.addAction("Find interesting projection", self.evaluateProjections)
+        self.subsetPopupMenu.addSeparator()
+        self.subsetPopupMenu.addAction("Remove node", self.mtRemoveSelectedItem)
+        self.subsetPopupMenu.addAction("Clear tree", self.mtInitSubsetTree)
 
         # ##########################
         # SAVE TAB
-        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of concurrently visualized attributes")
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
         self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage projections")
 
-        self.attrLenList = QListBox(self.visualizedAttributesBox)
-        self.attrLenList.setSelectionMode(QListBox.Multi)
-        self.attrLenList.setMinimumSize(60,60)
-        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+        self.attrLenList = OWGUI.listBox(self.visualizedAttributesBox, self, selectionMode = QListWidget.MultiSelection, callback = self.attrLenListChanged)
+        self.attrLenList.setMinimumHeight(60)
 
         self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
         OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
@@ -262,11 +248,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
 
-        # ###########################
-        self.statusBar = QStatusBar(self)
-        self.controlArea.addWidget(self.statusBar)
-        self.controlArea.activate()
-        
         # reset some parameters if we are debugging so that it won't take too much time
         if orngDebugging.orngDebuggingEnabled:
             self.useTimeLimit = 1
@@ -274,14 +255,13 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             self.useProjectionLimit = 1
             self.projectionLimit = 100
 
-        self.updateMestimateComboState()
+        self.updateMEstimateComboState()
         self.updateClassMethodsCombo()
         self.updateGUI()
 
 
 
-    # ##############################################################
-    # EVENTS
+    # a group of attributes was selected in the list box - draw the mosic plot of them
     def showSelectedAttributes(self, attrs = None):
         if not self.mosaicWidget: return
         if not attrs:
@@ -331,7 +311,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if self.qualityMeasure == AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION: self.testingBox.show()
         else:   self.testingBox.hide()
 
-    def updateMestimateComboState(self):
+    def updateMEstimateComboState(self):
         self.mEditBox.setEnabled(self.probabilityEstimation == M_ESTIMATE)
 
     # based on selected classification method show or hide specific controls
@@ -361,7 +341,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.attrLenDict = {}
         for i in range(self.attrLenList.count()):
-            self.attrLenDict[int(str(self.attrLenList.text(i)))] = self.attrLenList.isSelected(i)
+            self.attrLenDict[int(str(self.attrLenList.item(i).text()))] = self.attrLenList.item(i).isSelected()
         self.updateShownProjections()
 
     def clearResults(self):
@@ -380,18 +360,19 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         for i in range(len(self.results)):
             if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
-                self.resultList.insertItem("%.3f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
+                self.resultList.addItem("%.3f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
                 self.resultListIndices.append(i)
                 self.shownResults.append(self.results[i])
         qApp.processEvents()
 
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
+        if self.resultList.count() > 0:
+            self.resultList.setCurrentItem(self.resultList.item(0))
 
     def setData(self, data, removeUnusedValues = 0):
         orngMosaic.setData(self, data, removeUnusedValues)
 
         self.setStatusBarText("")
-        self.classValueList.clear()
+        self.classValueCombo.clear()
         self.argumentList.clear()
         self.selectedClasses = []
 
@@ -408,12 +389,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if not (self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete): return
 
         # add class values
-        for val in getVariableValuesSorted(self.data, self.data.domain.classVar.name):
-            self.classValueList.insertItem(val)
+        self.classValueCombo.addItems(getVariableValuesSorted(self.data, self.data.domain.classVar.name))
         self.updateShownArguments()
 
         if len(self.data.domain.classVar.values) > 0:
-            self.classValueList.setCurrentItem(0)
+            self.classValueCombo.setCurrentIndex(0)
         return self.data
 
 
@@ -423,7 +403,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.cancelArgumentation = 0
 
         self.argumentList.clear()
-        self.arguments = [[] for i in range(self.classValueList.count())]
+        self.arguments = [[] for i in range(self.classValueCombo.count())]
 
         if not example and not self.mosaicWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
@@ -433,7 +413,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             return None, None
 
         if not self.data:
-            QMessageBox.critical(None, 'No data', 'There is no data or no class value is selected in the Manage tab.', QMessageBox.Ok)
+            QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
             return None, None
 
         if example == None: example = self.mosaicWidget.subsetData[0]
@@ -449,7 +429,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         values = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
         self.argumentationClassValue = values.index(classValue)     # activate the class that has the highest probability
         self.updateShownArguments()
-        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentIndex(0)
 
         if showClassification:
             s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": str(classValue), "prob": max(dist)*100. / float(sum(dist))}
@@ -468,12 +448,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.attrLenList.clear()
         for i in range(1,5):
             if self.attrLenDict.has_key(i):
-                self.attrLenList.insertItem(str(i))
+                self.attrLenList.addItem(str(i))
 
-        self.attrLenList.selectAll(1)
+        self.attrLenList.selectAll()
         delattr(self, "skipUpdate")
         self.updateShownProjections()
-        self.resultList.setCurrentItem(0)
+        self.resultList.setCurrentItem(self.resultList.item(0))
 
 
     # ##############################################################
@@ -488,7 +468,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], "Mosaic plots")
             else:
                 filename = "%s" % (self.parentName)
-            qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting mosaic visualizations (*.mproj)", self, "", "Save List of Visualizations")
+            qname = QFileDialog.getSaveFileName(self, "Save List of Visualizations",  os.path.join(self.lastSaveDirName, filename), "Interesting mosaic visualizations (*.mproj)")
             if qname.isEmpty(): return
             name = str(qname)
         else:
@@ -511,11 +491,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def load(self, name = None, ignoreCheckSum = 0):
         self.setStatusBarText("Loading visualizations")
         if self.data == None:
-            QMessageBox.critical(None, 'Load', 'There is no data. First load a data set and then load projection file', QMessageBox.Ok)
+            QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
             return
 
         if name == None:
-            name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting mosaic visualizations (*.mproj)", self, "", "Open List of Visualizations")
+            name = QFileDialog.getOpenFileName(self, "Open List of Visualizations", self.lastSaveDirName, "Interesting mosaic visualizations (*.mproj)")
             if name.isEmpty(): return
             name = str(name)
 
@@ -546,6 +526,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def attrsToString(self, attrList):
         return ", ".join(attrList)
 
+    def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
+        orngMosaic.insertItem(self, score, attrList, index, tryIndex, extraInfo)
+        self.resultList.insertItem(index, "%.3f : %s" % (score, self.buildAttrString(attrList)))
+        self.resultListIndices.insert(index, index)
+
+
     # ######################################################
     # Mosaic tree functions
     # ######################################################
@@ -555,17 +541,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.subsetTree.clear()
         self.selectionsList.clear()
         self.treeRoot = None
-        self.subsetTree.setColumnWidth(0, self.subsetTree.width() - self.subsetTree.columnWidth(1)-4)
+        #self.subsetTree.setColumnWidth(0, self.subsetTree.width() - self.subsetTree.columnWidth(1)-4)
 
         if self.wholeDataSet:
-            root = QListViewItem(self.subsetTree, allExamplesText, str(len(self.wholeDataSet)))
+            root = QTreeWidgetItem(self.subsetTree, [allExamplesText, str(len(self.wholeDataSet))])
             root.details = {"data": self.wholeDataSet, "exampleCount": len(self.wholeDataSet)}
             root.selections = {}
             self.treeRoot = root
-            root.setOpen(1)
-            self.subsetTree.insertItem(root)
+            root.setExpanded(1)
             self.processingSubsetData = 1
-            self.subsetTree.setSelected(root, 1)
+            root.setSelected(1)
             self.processingSubsetData = 0
 
     # find out which attributes are currently visualized, which examples are selected and what is the additional info
@@ -593,34 +578,36 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         selectedData = self.mosaicWidget.data.selectref(selectedIndices)
         unselectedData = self.mosaicWidget.data.selectref(selectedIndices, negate = 1)
-        selectedTreeItem = self.subsetTree.selectedItem()     # current selection
+
+        if self.subsetTree.selectedItems() == []: return
+        selectedTreeItem = self.subsetTree.selectedItems()[0]     # current selection
 
         # add a new item into the list box
-        newListItem = QListBoxText(self.selectionsList, self.mtSelectionsToString(selectionDict))
+        newListItem = QListWidgetItem(self.mtSelectionsToString(selectionDict), self.selectionsList)
         newListItem.selections = selectionDict
-        self.selectionsList.setSelected(newListItem, 1)
+        newListItem.setSelected(1)
 
         # add a child into the tree view
         attrListStr = self.attrsToString(attrList)
-        newTreeItem = QListViewItem(selectedTreeItem, attrListStr)
+        newTreeItem = QTreeWidgetItem(selectedTreeItem, [attrListStr, str(len(selectedData))])
         newTreeItem.details = {"attrs": list(attrList), "exampleCount": len(selectedData)}
         newTreeItem.selections = selectionDict
-        newTreeItem.setText(1, str(len(selectedData)))
-        newTreeItem.setOpen(1)
+        newTreeItem.setExpanded(1)
 
 
     # a different attribute set was selected in mosaic. update the attributes in the selected node
     def mtUpdateState(self):
         if not self.wholeDataSet: return
         if self.processingSubsetData: return
+        if self.subsetTree.selectedItems() == []: return
 
-        selectedTreeItem = self.subsetTree.selectedItem()
-        selectedListItem = self.selectionsList.currentItem() != -1 and self.selectionsList.item(self.selectionsList.currentItem()) or None
+        selectedTreeItem = self.subsetTree.selectedItems()[0]
+        selectedListItem = self.selectionsList.currentItem()
         attrList, selectionIndices, projDict, selectionDict = self.mtGetProjectionState(getSelectionIndices = 0)
         if not selectedTreeItem: return
 
         # if this is the last element in the tree, then update the element's values
-        if selectedTreeItem.firstChild() == None:
+        if selectedTreeItem.child(0) == None:
             selectedTreeItem.setText(0, self.attrsToString(attrList))
             selectedTreeItem.details.update(projDict)
             if selectedListItem:
@@ -630,18 +617,24 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         else:
             # did we change the visualized attributes. If yes then we have to add a new node into the tree
             if 0 in [selectedTreeItem.details[key] == projDict[key] for key in projDict.keys()]:
-                newTreeItem = QListViewItem(selectedTreeItem.parent() or self.subsetTree, self.attrsToString(attrList), str(selectedTreeItem.text(1)))
-                newTreeItem.setOpen(1)
+                newTreeItem = QTreeWidgetItem(selectedTreeItem.parent() or self.subsetTree, [self.attrsToString(attrList), str(selectedTreeItem.text(1))])
+                newTreeItem.setExpanded (1)
                 newTreeItem.details = projDict
                 newTreeItem.selections = {}
-                self.subsetTree.setSelected(newTreeItem, 1)
+                self.mtClearTreeSelections()
+                newTreeItem.setSelected(1)
                 self.selectionsList.clear()
 
 
     # we selected a different item in the tree
-    def mtSelectedTreeItemChanged(self, newSelection):
+    def mtSelectedTreeItemChanged(self, newSelection = None):
         if self.processingSubsetData:
             return
+        if newSelection == None:
+            items = self.subsetTree.selectedItems()
+            if len(items) == 0: return
+            newSelection = items[0]
+
         self.processingSubsetData = 1
 
         indices = self.mtGetItemIndices(newSelection)
@@ -664,12 +657,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.mosaicWidget.handleNewSignals()
 
         self.selectionsList.clear()
-        child = newSelection.firstChild()
-        while child:
+        for i in range(newSelection.childCount()):
+            child = newSelection.child(i)
             selectionDict = child.selections
-            newListItem = QListBoxText(self.selectionsList, self.mtSelectionsToString(selectionDict))
+            newListItem = QListWidgetItem(self.mtSelectionsToString(selectionDict), self.selectionsList)
             newListItem.selections = selectionDict
-            child = child.nextSibling()
 
         self.mosaicWidget.setShownAttributes(newSelection.details.get("attrs", None))
         self.mosaicWidget.updateGraph()
@@ -677,7 +669,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     # a new selection was selected in the selection list. update the graph
     def mtSelectedListItemChanged(self):
-        selectedListItem = self.selectionsList.currentItem() != -1 and self.selectionsList.item(self.selectionsList.currentItem())
+        selectedListItem = self.selectionsList.currentItem()
         if not selectedListItem:
             return
 
@@ -687,12 +679,19 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.mosaicWidget.updateGraph()
 
     def mtSelectedListItemDoubleClicked(self, item):
-        pos = self.selectionsList.currentItem()
-        treeItem = self.subsetTree.selectedItem().firstChild()
-        for i in range(pos):
-            treeItem = treeItem.nextSibling()
-        self.subsetTree.setSelected(treeItem, 1)
+        if self.subsetTree.selectedItems() == []: return
+        pos = self.selectionsList.currentRow()
+        treeItem = self.subsetTree.selectedItems()[0].child(pos)
+        self.mtClearTreeSelections()
+        treeItem.setSelected(1)
         self.mtSelectedTreeItemChanged(treeItem)
+
+    def mtClearTreeSelections(self, item = None):
+        if item == None:
+            item  = self.subsetTree.invisibleRootItem()
+        item.setSelected(0)
+        for i in range(item.childCount()):
+            self.mtClearTreeSelections(item.child(i))
 
     def mtGetItemIndices(self, item):
         indices = []
@@ -713,15 +712,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     # popup menu items
     def mtRemoveSelectedItem(self):
-        item = self.subsetTree.selectedItem()
-        if not item:
-            return
-        parent = item.parent()
+        items = self.subsetTree.selectedItems()
+        if not items: return
+
+        parent = items[0].parent()
         if parent == None:
             self.mtInitSubsetTree()
         else:
             self.mtRemoveTreeItem(item)
-            self.subsetTree.setSelected(parent, 1)
+            self.mtClearTreeSelections()
+            parent.setSelected(1)
             self.mtSelectedTreeItemChanged(parent)
 
     def mtSubsetTreeRemoveItemPopup(self, item, point, i):
@@ -729,8 +729,14 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def resizeEvent(self, ev):
         OWBaseWidget.resizeEvent(self, ev)
-        self.subsetTree.setColumnWidth(0, self.subsetTree.width()-self.subsetTree.columnWidth(1)-4 - 20)
+        #self.subsetTree.setColumnWidth(0, self.subsetTree.width()-self.subsetTree.columnWidth(1)-4 - 20)
 
+    def getTreeItemSibling(self, item):
+        parent = item.parent()
+        if not parent:
+            parent = self.subsetTree.invisibleRootItem()
+        ind = parent.indexOfChild(item)
+        return parent.child(ind+1)
 
     def mtSelectionsToString(self, settings):
         attrCombs = ["-".join(sel) for sel in settings.get("selectionConditions", [])]
@@ -740,23 +746,23 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # return actual item in the tree to that str(item) == strItem
     def mtStrToItem(self, strItem, currItem = -1):
         if currItem == -1:
-            currItem = self.treeRoot
+            currItem = self.subsetTree.invisibleRootItem()
         if currItem == None:
             return None
-        if str(currItem) == strItem:
+        if currItem.text(0) == strItem:
             return currItem
-        child = currItem.firstChild()
-        if child:
-            item = self.mtStrToItem(strItem, child)
+        i = 0
+        for i in range(currItem.childCount()):
+            item = self.mtStrToItem(strItem, currItem.child(i))
             if item:
                 return item
-        return self.mtStrToItem(strItem, currItem.nextSibling())
+        return self.mtStrToItem(strItem, self.getTreeItemSibling(currItem))
 
 
     # save tree to a file
     def mtSaveTree(self, name = None):
         if name == None:
-            qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, "explorer tree.tree"), "Explorer tree (*.tree)", self, "", "Save tree")
+            qname = QFileDialog.getSaveFileName(self, "Save tree", os.path.join(self.lastSaveDirName, "explorer tree.tree"), "Explorer tree (*.tree)")
             if qname.isEmpty():
                 return
             name = str(qname)
@@ -776,7 +782,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.treeRoot = None
 
         if name == None:
-            name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Explorer tree (*.tree)", self, "", "Load tree")
+            name = QFileDialog.getOpenFileName(self, "Load tree", self.lastSaveDirName, "Explorer tree (*.tree)")
             if name.isEmpty(): return
             name = str(name)
 
@@ -785,22 +791,22 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         f = open(name, "r")
         tree = cPickle.load(f)
         self.mtDictToTree(tree, "None", self.subsetTree)
-        root = self.subsetTree.firstChild()
+        root = self.subsetTree.invisibleRootItem().child(0)
         if root:
             self.treeRoot = root
-            self.subsetTree.setSelected(root, 1)
-            self.selectedTreeItemChanged(root)
+            root.setSelected(1)
+            self.mtSelectedTreeItemChanged(root)
 
     # generate a dictionary from the tree that can be pickled
     def mtTreeToDict(self, node, tree):
         if not node: return
 
-        child = node.firstChild()
+        child = node.child(0)
         if child:
             self.mtTreeToDict(child, tree)
 
         tree[str(node.parent())] = tree.get(str(node.parent()), []) + [(str(node), node.details, node.selections)]
-        self.mtTreeToDict(node.nextSibling(), tree)
+        self.mtTreeToDict(self.getTreeItemSibling(node), tree)
 
     # create a tree from a dictionary
     def mtDictToTree(self, tree, currItemKey, parentItem):
@@ -809,10 +815,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             for (strChildNode, details, selections) in children:
                 strAttrs = self.attrsToString(details["attrs"])
                 exampleCount = details["exampleCount"]
-                item = QListViewItem(parentItem, strAttrs, str(exampleCount))
+                item = QTreeWidgetItem(parentItem, [strAttrs, str(exampleCount)])
                 item.details = details
                 item.selections = selections
-                item.setOpen(1)
+                item.setExpanded(1)
                 self.mtDictToTree(tree, strChildNode, item)
 
     #################################################
@@ -829,17 +835,25 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 qApp.processEvents()
 
                 examples = self.mosaicWidget.data
-                selectedItem = self.subsetTree.selectedItem()
+                #selectedItems = self.subsetTree.selectedItems()
+                selectedItem = self.subsetTree.currentItem()
+
                 if selectedItem and selectedItem.parent() != None:
-                    res = QMessageBox.information(self, "Tree Building", "Currently you are visualizing only a subset of examples. Do you want to build the tree\nonly for these examples or for all examples?", "Only for These", "For All Examples", "", 0, 1)
-                    if res == 1:
+                    box = QMessageBox()
+                    box.setIcon(QMessageBox.Question)
+                    box.setWindowTitle("Tree Building")
+                    box.setText("Currently you are visualizing only a subset of examples. Do you want to build the tree only for these examples or for all examples?")
+                    onlyTheseButton = box.addButton("Only for these", QMessageBox.YesRole)
+                    allExamplesButton = box.addButton("For all examples", QMessageBox.NoRole)
+                    box.exec_()
+                    if box.clickedButton() == allExamplesButton:
                         examples = self.wholeDataSet
                         parent = self.subsetTree
                     else:
                         parent = selectedItem.parent()
                 else:
                     parent = self.subsetTree
-                    selections = selectedItem and selectedItem.selections or {}
+                selections = selectedItem and selectedItem.selections or {}
 
                  #create a mosaic and use a classifier to generate a mosaic tree so that we don't set data to the main mosaic (which would mean that we would have to prevent the user from clicking the current tree)
                 for setting in self.settingsList:
@@ -854,13 +868,13 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                     # if the selected item doesn't have any children we remove it and it will be replaced with the root of the tree that we generate
                     if not selectedItem:
                         self.subsetTree.clear()
-                    elif selectedItem.firstChild() == None:
+                    elif selectedItem.child(0) == None:
                         self.mtRemoveTreeItem(selectedItem)
 
-                    item = QListViewItem(parent, self.attrsToString(root.attrs), str(len(root.branchSelector.data)))
+                    item = QTreeWidgetItem(parent, [self.attrsToString(root.attrs), str(len(root.branchSelector.data))])
                     item.details = {"attrs": root.attrs, "exampleCount": len(root.branchSelector.data)}
                     item.selections = selections
-                    item.setOpen(1)
+                    item.setExpanded(1)
                     if parent == self.subsetTree:
                         self.treeRoot = item
                     self.mtGenerateTreeFromClassifier(root, item)
@@ -876,10 +890,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             strAttrs = self.attrsToString(branch.attrs)
             selections = treeNode.branchSelector.values[key]
             exampleCount = len(branch.branchSelector.data)
-            item = QListViewItem(parentTreeItem, strAttrs, str(exampleCount))
+            item = QTreeWidgetItem(parentTreeItem, [strAttrs, str(exampleCount)])
             item.details = {"attrs": branch.attrs, "exampleCount": exampleCount}
             item.selections = {'selectionConditions': selections, 'selectionConditionsHistorically': [selections], "selectedIndices": self.mosaicWidget.getSelectedExamples(asExampleTable = 0, selectionConditions = selections, data = treeNode.branchSelector.data, attrs = treeNode.attrs)}
-            item.setOpen(1)
+            item.setExpanded(1)
             self.mtGenerateTreeFromClassifier(branch, item)
 
     # remove a tree item and also remove selections dict from its parent
@@ -887,23 +901,21 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         parent = item.parent()
         if parent == None:
             parent = self.subsetTree
-        parent.takeItem(item)
+        ind = parent.indexOfChild(item)
+        parent.takeChild(ind)
 
     def mtVisualizeMosaicTree(self):
         tree = {}
         self.mtTreeToDict(self.treeRoot, tree)
-        #dialog = MosaicTreeDialog(self, self.mosaicWidget, self.signalManager)
-        #dialog.visualizeTree(tree)
-        #dialog.show()
         treeDialog = OWBaseWidget(self, self.signalManager, "Mosaic Tree")
-        treeDialog.canvasLayout = QVBoxLayout(treeDialog)
-        treeDialog.canvasWidget = QWidget(treeDialog)
+        treeDialog.setLayout(QVBoxLayout())
+        treeDialog.layout().setMargin(2)
 
-        treeDialog.canvas = QCanvas(10000, 10000)
-        treeDialog.canvasView = QCanvasView(treeDialog.canvas, treeDialog)
-        treeDialog.canvasLayout.addWidget(treeDialog.canvasView)
-        treeDialog.canvasLayout.activate()
-        treeDialog.canvasView.show()
+        treeDialog.canvas = QGraphicsScene()
+        treeDialog.canvasView = QGraphicsView(treeDialog.canvas, treeDialog)
+        treeDialog.canvasView.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        treeDialog.layout().addWidget(treeDialog.canvasView)
+        #treeDialog.canvasView.show()
         treeDialog.resize(800, 800)
         treeDialog.move(0,0)
 
@@ -1005,7 +1017,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                         parentXPos = parent["currXPos"] + xMosaicSize/2 + 10*(-(len(parent["childNodes"])-1)/2 + nodeIndex)
                         OWQCanvasFuncts.OWCanvasLine(treeDialog.canvas, parentXPos, yPos - 30, node["currXPos"] + xMosaicSize/2, yPos - 10, penWidth = 4, penColor = colors[nodeIndex])
 
-        treeDialog.canvas.resize(maxX + self.mosaicSize + 200, maxY)
+        #treeDialog.canvas.resize(maxX + self.mosaicSize + 200, maxY)
+        treeDialog.canvasView.setSceneRect(0,0,maxX + self.mosaicSize + 200, maxY)
 
         # restore the original canvas and canvas view
         self.mosaicWidget.canvas = mosaicCanvas
@@ -1035,10 +1048,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # ######################################################
 
     def getSelectedProjection(self):
-        currentItem = self.resultList.currentItem()
-        if self.resultList.count() == 0 or currentItem == -1:
-            return None
-        return self.results[self.resultListIndices[currentItem]]      # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
+        if self.resultList.selectedItems() == []: return None
+        return self.results[self.resultListIndices[self.resultList.row(self.resultList.selectedItems()[0])]]  # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
 
     def stopEvaluationClick(self):
         self.cancelEvaluation = 1
@@ -1050,20 +1061,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
-    def setStatusBarText(self, text):
-        self.statusBar.message(text)
-        qApp.processEvents()
-
     def insertArgument(self, argScore, error, attrList, index):
         s = "%.3f " % argScore
         if self.showConfidence and type(error) != tuple: s += "+-%.2f " % error
         s += "- " + self.buildAttrString(attrList)
-        self.argumentList.insertItem(s, index)
+        self.argumentList.insertItem(index, s)
 
     def updateShownArguments(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
-        classVal = str(self.classValueList.currentText())
+        classVal = str(self.classValueCombo.currentText())
         self.logitLabel.setText("log odds = %.2f" % self.logits.get(classVal, -1))
 
         if self.classificationMethod == MOS_COMBINING:
@@ -1079,7 +1086,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
-        classVal = str(self.classValueList.currentText())
+        classVal = str(self.classValueCombo.currentText())
         self.showSelectedAttributes(self.arguments[classVal][ind][2])
 
 
@@ -1116,7 +1123,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         dialog.setData(self.results, self.data, OWkNNOptimization.VIZRANK_MOSAIC)
         dialog.show()
 
-
 #test widget appearance
 if __name__=="__main__":
     import sys
@@ -1124,4 +1130,4 @@ if __name__=="__main__":
     ow = OWMosaicOptimization()
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()

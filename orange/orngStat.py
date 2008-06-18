@@ -271,12 +271,11 @@ def RMSE_old(res, **argkw):
 # Scores for evaluation of classifiers
 
 def CA(res, reportSE = False, **argkw):
-    """Return classification accuracy."""
     if res.numberOfIterations==1:
         if type(res)==ConfusionMatrix:
-            div = nm.TP + nm.FN + nm.FP + nm.TN
+            div = nm.TP+nm.FN+nm.FP+nm.TN
             checkNonZero(div)
-            ca = [(nm.TP + nm.TN) / div]
+            ca = [(nm.TP+nm.TN)/div]
         else:
             CAs = [0.0]*res.numberOfLearners
             if argkw.get("unweighted", 0) or not res.weights:
@@ -314,53 +313,12 @@ def CA(res, reportSE = False, **argkw):
         return statisticsByFolds(CAsByFold, foldN, reportSE, False)
 
 
-def cost(res, costmatrix, reportSE = False, **argkw):
-    """Returns the classification cost (given the cost matrix)."""
-    if res.numberOfIterations==1:
-        costs = [0.0] * res.numberOfLearners
-        if argkw.get("unweighted", 0) or not res.weights:
-            totweight = gettotsize(res)
-            for tex in res.results:
-                costs = map(lambda res, cls: res + costmatrix[cls][tex.actualClass], costs, tex.classes)
-        else:
-            totweight = 0.
-            for tex in res.results:
-                costs = map(lambda res, cls: res + costmatrix[cls][tex.actualClass] * tex.weight, costs, tex.classes)
-                totweight += tex.weight
-        checkNonZero(totweight)
-        c = [x / totweight for x in costs]
-            
-        if reportSE:
-            return [(x, x*(1-x)/math.sqrt(totweight)) for x in c]
-        else:
-            return c
-        
-    else:
-        costByFold = [[0.0]*res.numberOfIterations for i in range(res.numberOfLearners)]
-        foldN = [0.0]*res.numberOfIterations
-
-        if argkw.get("unweighted", 0) or not res.weights:
-            for tex in res.results:
-                for lrn in range(res.numberOfLearners):
-                    costByFold[lrn][tex.iterationNumber] += costmatrix[tex.classes[lrn]][tex.actualClass]
-                foldN[tex.iterationNumber] += 1
-        else:
-            for tex in res.results:
-                for lrn in range(res.numberOfLearners):
-                    costByFold[lrn][tex.iterationNumber] += costmatrix[tex.classes[lrn]][tex.actualClass] * tex.weight
-                foldN[tex.iterationNumber] += tex.weight
-
-        return statisticsByFolds(costByFold, foldN, reportSE, False)
-
-
 # Obsolete, but kept for compatibility
 def CA_se(res, **argkw):
-    """Return standard deviation of classification accuracy."""
     return CA(res, True, **argkw)
 
 
 def AP(res, reportSE = False, **argkw):
-    """Return probability assigned to the actual class."""
     if res.numberOfIterations == 1:
         APs=[0.0]*res.numberOfLearners
         if argkw.get("unweighted", 0) or not res.weights:
@@ -390,16 +348,16 @@ def AP(res, reportSE = False, **argkw):
 
 
 def BrierScore(res, reportSE = False, **argkw):
-    """Return Brier score.
-    Computes an average (over examples) of sum_x(t(x) - p(x))^2, where
-       x is class,
-       t(x) is 0 for 'wrong' and 1 for 'correct' class
-       p(x) is predicted probabilty.
-    There's a trick: since t(x) is zero for all classes but the
-    correct one (c), we compute the sum as sum_x(p(x)^2) - 2*p(c) + 1
-    Since +1 is there for each example, it adds 1 to the average
-    We skip the +1 inside the sum and add it just at the end of the function
-    We take max(result, 0) to avoid -0.0000x due to rounding errors."""
+    """Computes Brier score"""
+    # Computes an average (over examples) of sum_x(t(x) - p(x))^2, where
+    #    x is class,
+    #    t(x) is 0 for 'wrong' and 1 for 'correct' class
+    #    p(x) is predicted probabilty.
+    # There's a trick: since t(x) is zero for all classes but the
+    # correct one (c), we compute the sum as sum_x(p(x)^2) - 2*p(c) + 1
+    # Since +1 is there for each example, it adds 1 to the average
+    # We skip the +1 inside the sum and add it just at the end of the function
+    # We take max(result, 0) to avoid -0.0000x due to rounding errors
 
     if res.numberOfIterations == 1:
         MSEs=[0.0]*res.numberOfLearners
@@ -497,15 +455,13 @@ def BSS(res, **argkw):
 ##
 
 def IS_ex(Pc, P):
-    """Return information score of an example from posterior and prior class probability."""
-    # Pc posterior probability, P prior probability
+    "Pc aposterior probability, P aprior"
     if (Pc>=P):
         return -log2(P)+log2(Pc)
     else:
         return -(-log2(1-P)+log2(1-Pc))
     
 def IS(res, apriori=None, reportSE = False, **argkw):
-    """Return information score (Bratko & Kononenko, 1991)."""
     if not apriori:
         apriori = classProbabilitiesFromRes(res)
 
@@ -693,12 +649,10 @@ def sens(confm):
         return confm.TP/tot
 
 def recall(confm):
-    """Return recall (from confusion matrix)."""
     return sens(confm)
 
 
 def spec(confm):
-    """Return specificity (from confusion matrix)."""
     if type(confm) == list:
         return [spec(cm) for cm in confm]
     else:
@@ -711,7 +665,6 @@ def spec(confm):
   
 
 def PPV(confm):
-    """Return positive preditive value (from confusion matrix)."""
     if type(confm) == list:
         return [PPV(cm) for cm in confm]
     else:
@@ -724,12 +677,10 @@ def PPV(confm):
 
 
 def precision(confm):
-    """Return precision (from confusion matrix)."""
     return PPV(confm)
 
 
 def NPV(confm):
-    """Return negative predictive value (from confusion matrix)."""
     if type(confm) == list:
         return [NPV(cm) for cm in confm]
     else:
@@ -741,16 +692,12 @@ def NPV(confm):
         return confm.TP/tot
 
 def F1(confm):
-    """Return F1 measure(harmonic mean of precision and recall, from confusion matrix)."""
     if type(confm) == list:
         return [F1(cm) for cm in confm]
     else:
         p = precision(confm)
         r = recall(confm)
-        if (p + r) != 0:
-            return 2. * p * r / (p + r)
-        else:
-            return None
+        return 2. * p * r / (p + r)
 
 def Falpha(confm, alpha=1.0):
     if type(confm) == list:

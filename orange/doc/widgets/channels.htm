@@ -52,7 +52,8 @@ like:</p>
 <p>Now back to channels and tokens. Input and output channels for our
 widget are defined by:</p>
 
-<xmp class="code">self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">
+self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
 </xmp>
 
 <p>Notice that everything is pretty much the same as it was with
@@ -71,7 +72,8 @@ which the receiving function is called. For our <code>Learner</code>
 channel the receiving function is <code>learner</code>, and this looks
 like the following:</p>
 
-<xmp class="code">def learner(self, learner, id=None):
+<xmp class="code">
+def learner(self, learner, id=None):
     ids = [x[0] for x in self.learners]
     if not learner: # remove a learner and corresponding results
         if not ids.count(id):
@@ -148,7 +150,8 @@ href="/orange/doc/modules/orngStat.htm">orngStat</a>. I rather like
 the easy by which new scoring functions are added to the widget, since
 all that is needed is the augmenting the list</p>
 
-<xmp class="code">self.scoring = [("Classification Accuracy", orngStat.CA),\
+<xmp class="code">
+self.scoring = [("Classification Accuracy", orngStat.CA),\
                 ("AUC", orngStat.AUC), \
                 ("BrierScore", orngStat.BrierScore),\
                 ("Information Score", orngStat.IS),\
@@ -176,7 +179,8 @@ send out the sampled data to one channel, and all other data to
 another channel. The corresponding channel definition of this widget
 is:</p>
 
-<xmp class="code">self.outputs = [("Sampled Data", ExampleTable), ("Other Data", ExampleTable)]
+<xmp class="code">
+self.outputs = [("Sampled Data", ExampleTable), ("Other Data", ExampleTable)]
 </xmp>
 
 </p>We used this in the third incarnation of <a
@@ -184,7 +188,8 @@ href="OWDataSamplerC.py">data sampler widget</a>, with essentially the
 only other change in the code in the <code>selection</code> and
 <code>commit</code> functions:</p>
 
-<xmp class="code">def selection(self):
+<xmp class="code">
+def selection(self):
     indices = orange.MakeRandomIndices2(p0=self.proportion / 100.)
     ind = indices(self.dataset)
     self.sample = self.dataset.select(ind, 0)
@@ -227,7 +232,8 @@ channels have a special fourth value in the channel specification
 list. So for our new <a href="OWLearningCurveB.py">learning curve</a>
 widget, the channel specification is:</p>
 
-<xmp class="code">self.inputs = [("Train Data", ExampleTable, self.trainset), ("Test Data", ExampleTable, self.testset, 1, 1), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">
+self.inputs = [("Train Data", ExampleTable, self.trainset), ("Test Data", ExampleTable, self.testset, 1, 1), ("Learner", orange.Learner, self.learner, 0)]
 </xmp>
 
 <p>That is, the <code>Test Data</code> channel is a single-token

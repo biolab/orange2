@@ -3,14 +3,14 @@
 <description>Constructs a tree regression learner and given data a regression tree classifier
 </description>
 <icon>RegressionTree.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
 
+import orngOrangeFoldersQt4
 import orange
 import orngTree
 import OWGUI
-import qt
 from OWWidget import *
 import sys
 
@@ -19,7 +19,7 @@ class OWRegressionTree(OWWidget):
                   "MaxMajCheck", "MaxMajVal", "PostMaj", "PostMPCheck", "PostMPVal", "Bin"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Regression Tree")
+        OWWidget.__init__(self, parent, signalManager, "Regression Tree", wantMainArea = 0, resizingEnabled = 0)
         self.Name="Regression Tree"
         self.MinInstCheck=1
         self.MinInstVal=5
@@ -37,7 +37,7 @@ class OWRegressionTree(OWWidget):
 
         self.inputs=[("Example Table",ExampleTable,self.dataset)]
         self.outputs=[("Learner",orange.Learner),("Regressor",orange.Classifier),("Regression Tree",orange.TreeClassifier)]
-        
+
         ##
         #GUI
         ##
@@ -45,7 +45,7 @@ class OWRegressionTree(OWWidget):
 
         OWGUI.separator(self.controlArea)
         OWGUI.checkBox(self.controlArea, self, "Bin", label="Binarization", box ="Tree structure")
-        
+
         OWGUI.separator(self.controlArea)
         self.prePBox=OWGUI.widgetBox(self.controlArea, "Pre-Pruning")
 
@@ -54,7 +54,7 @@ class OWRegressionTree(OWWidget):
 
         OWGUI.checkWithSpin(self.prePBox, self, "Stop splitting nodes with ", 1, 1000,
                             "MinNodeCheck", "MinNodeVal", " or fewer instances")
-        
+
         #OWGUI.checkWithSpin(self.prePBox, self, "Stop splitting nodes with ", 1, 100,
         #                    "MaxMajCheck", "MaxMajVal", "% of majority class")
 
@@ -80,7 +80,7 @@ class OWRegressionTree(OWWidget):
 
         if not self.data:
             return
-        
+
         try:
             classifier=learner(self.data)
             classifier.name=self.Name
@@ -92,7 +92,7 @@ class OWRegressionTree(OWWidget):
             self.send("Regressor",None)
             self.send("Regression Tree", None)
         #orngTree.printTxt(classifier)
-    
+
     def dataset(self, data):
         self.data=data
         if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
@@ -105,8 +105,7 @@ class OWRegressionTree(OWWidget):
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWRegressionTree()
-    data=orange.ExampleTable("../../doc/datasets/housing.tab")
-    w.dataset(data)
-    app.setMainWidget(w)
+    #data=orange.ExampleTable("../../doc/datasets/housing.tab")
+    #w.dataset(data)
     w.show()
-    app.exec_loop()
+    app.exec_()

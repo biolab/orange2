@@ -6,10 +6,9 @@
 <priority>1500</priority>
 """
 
+import orngOrangeFoldersQt4
 import orange, math
 import OWGUI, OWToolbars
-from qt import *
-from qtcanvas import *
 from OWWidget import *
 
 from ColorPalette import *
@@ -63,7 +62,7 @@ class OWDistanceMap(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Distance Map')
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Examples", ExampleTable), ("Attribute List", orange.VarList)]
+        self.outputs = [("Examples", ExampleTable), ("Examples", ExampleTable),("Attribute List", orange.VarList)]
 
         self.clicked = False
         self.offsetX = 5
@@ -93,11 +92,6 @@ class OWDistanceMap(OWWidget):
         self.SendOnRelease = 1
 
         self.loadSettings()
-        
-        ### !!!!!!!!!!!!!!
-        ### I added this since I removed the setting and don't want anyone to get
-        ### stuck with a save setting
-        self.Gamma = 1
 
         self.maxHSize = 30; self.maxVSize = 30
         self.sorting = [("No sorting", self.sortNone),
@@ -107,14 +101,15 @@ class OWDistanceMap(OWWidget):
         self.matrix = self.order = None
 
         # GUI definition
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
+        self.tabs = OWGUI.tabWidget(self.controlArea)
 
         # SETTINGS TAB
-        tab = QVGroupBox(self)
-        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)", addSpace=True)
+        tab = OWGUI.createTabPage(self.tabs, "Settings")
+        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)")
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
+        
                          callback=[lambda f="CellWidth", t="CellHeight": self.adjustCellSize(f,t), self.drawDistanceMap, self.manageGrid])
         OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ',
                          labelWidth=38, minValue=1, maxValue=self.maxVSize,
@@ -122,28 +117,19 @@ class OWDistanceMap(OWWidget):
                          callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t), self.drawDistanceMap,self.manageGrid])
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares",
                          callback = [self.setSquares, self.drawDistanceMap])
-        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
+        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
-        OWGUI.qwtHSlider(tab, self, "Merge", box="Merge" ,label='Elements:', labelWidth=50,
-                         minValue=1, maxValue=100, step=1,
-                         callback=self.createDistanceMap, ticks=0, addSpace=True)
-        
-        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
-                         items=[x[0] for x in self.sorting],
-                         tooltip="Sorting method for items in distance matrix.",
-                         callback=self.sortItems)
+        OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1,
+                         step=0.1, callback=self.drawDistanceMap)
 
+        self.colorPalette = ColorPalette(tab, self, "",
+                         additionalColors =["Cell outline", "Selected cells"],
+                         callback = self.setColor)
         self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
-        tab = QVGroupBox(self)
-        box = OWGUI.widgetBox(tab, "Color settings", addSpace=True)
-        OWGUI.widgetLabel(box, "Gamma")
-        OWGUI.qwtHSlider(box, self, "Gamma", minValue=0.1, maxValue=1,
-                         step=0.1, maxWidth=100, callback=self.drawDistanceMap)
-
-        OWGUI.separator(box)
-
+        tab = OWGUI.createTabPage(self.tabs, "Filter")
+        box = OWGUI.widgetBox(tab, "Threshold Values")
         OWGUI.checkBox(box, self, 'CutEnabled', "Enable thresholds", callback=self.setCutEnabled)
         self.sliderCutLow = OWGUI.qwtHSlider(box, self, 'CutLow', label='Low:',
                               labelWidth=33, minValue=-100, maxValue=0, step=0.1,
@@ -157,27 +143,31 @@ class OWDistanceMap(OWWidget):
             self.sliderCutLow.box.setDisabled(1)
             self.sliderCutHigh.box.setDisabled(1)
 
-
-        self.colorPalette = ColorPalette(tab, self, "",
-                         additionalColors =["Cell outline", "Selected cells"],
-                         callback = self.setColor)
-
-        self.tabs.insertTab(tab, "Colors")
+        box = QVButtonGroup("Merge", tab)
+        OWGUI.qwtHSlider(box, self, "Merge", label='Elements:', labelWidth=50,
+                         minValue=1, maxValue=100, step=1,
+                         callback=self.createDistanceMap, ticks=0)
+        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
+                         items=[x[0] for x in self.sorting],
+                         tooltip="Sorting method for items in distance matrix.",
+                         callback=self.sortItems)
+        self.tabs.insertTab(tab, "Filter")
 
         # INFO TAB
-        tab = QVGroupBox(self)
-        box = QVButtonGroup("Annotation && Legends", tab)
+        tab = OWGUI.widgetBox(self.tabs, "Info")
+        box = OWGUI.widgetBox(tab, "Annotation && Legends")
         OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend',
                        callback=self.drawDistanceMap)
         OWGUI.checkBox(box, self, 'ShowLabels', 'Show labels',
                        callback=self.drawDistanceMap)
 
-        box = QVButtonGroup("Balloon", tab)
-        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon")
-        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names")
+        box = OWGUI.widgetBox(tab, "Balloon")
+        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon", callback=None)
+        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names",
+                       callback=None)
 
-        box = QVButtonGroup("Select", tab)
-        box2 = QHBox(box)
+        box = OWGUI.widgetBox(tab, "Select")
+        box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.box2 = box2
         self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo,
                               QPixmap(OWToolbars.dlg_undo), toggle = 0)
@@ -187,21 +177,19 @@ class OWDistanceMap(OWWidget):
 
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections',
                               self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
-        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
+        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release",
+                              callback=None)
 
-        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
 
-        self.layout = QVBoxLayout(self.mainArea)
-        self.canvas = QCanvas()
+        self.canvas = QGraphicsScene()
         self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
-
-        self.layout.add(self.canvasView)
-
+        self.mainArea.layout().addWidget(self.canvasView)
 
         #construct selector
-        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
+        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight,
+                                         self.canvas)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZ(20)
@@ -245,7 +233,7 @@ class OWDistanceMap(OWWidget):
 
     def qrgbToQColor(self, color):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF)
-        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # if color cannot be negative number we convert it manually
+        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # on Mac color can not be negative number in this case so we convert it manually
 
     def getItemFromPos(self, i):
         if (len(self.distanceMap.elementIndices)==0):
@@ -299,6 +287,8 @@ class OWDistanceMap(OWWidget):
                 selected = orange.ExampleTable(items[0].domain, ex)
                 self.send("Examples", selected)
 
+
+    # callbacks (rutines called after some GUI event, like click on a button)
 
     def setColor(self):
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
@@ -612,12 +602,9 @@ class OWDistanceMap(OWWidget):
         self.createDistanceMap()
 
     def setMatrix(self, matrix):
-        self.send("Examples", None)
-        self.send("Attribute List", None)
-
         if not matrix:
+            # should remove the data where necessary
             return
-
         # check if the same length
         self.matrix = matrix
         self.constructDistanceMap()
@@ -650,7 +637,7 @@ class OWDistanceMap(OWWidget):
 class ImageItem(QCanvasRectangle):
     def __init__(self, bitmap, canvas, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
         QCanvasRectangle.__init__(self, canvas)
-	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
+	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
         self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
         self.canvas = canvas
         self.setSize(width, height)
@@ -808,6 +795,208 @@ class BubbleInfo(QCanvasRectangle):
         for item in self.items:
             item.hide()
 
+
+#############################################################
+# color palette
+
+class ColorPalette(QWidget):
+    def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):
+        QWidget.__init__(self, parent)
+
+        self.constructing = TRUE
+        self.callback = callback
+        self.schema = ""
+        self.passThroughBlack = 0
+
+        self.colorSchemas = {}
+
+        self.setMinimumHeight(300)
+        self.setMinimumWidth(200)
+
+        self.box = OWGUI.widgetBox(self, label, orientation = "vertical")
+
+        self.schemaCombo = OWGUI.comboBox(self.box, self, "schema", callback = self.onComboBoxChange)
+
+        self.interpolationHBox = OWGUI.widgetBox(self.box, orientation = "horizontal")
+        self.colorButton1 = ColorButton(self, self.interpolationHBox)
+        self.interpolationView = InterpolationView(self.interpolationHBox)
+        self.colorButton2 = ColorButton(self, self.interpolationHBox)
+
+        self.chkPassThroughBlack = OWGUI.checkBox(self.box, self, "passThroughBlack", "Pass through black", callback = self.onCheckBoxChange)
+        #OWGUI.separator(self.box, 10, 10)
+        self.box.layout().addSpacing(10)
+
+        #special colors buttons
+
+        self.NAColorButton = ColorButton(self, self.box, "N/A")
+        self.underflowColorButton = ColorButton(self, self.box, "Underflow")
+        self.overflowColorButton = ColorButton(self, self.box, "Overflow")
+        self.backgroundColorButton = ColorButton(self, self.box, "Background (Grid)")
+
+        #set up additional colors
+        self.additionalColorButtons = {}
+
+        if additionalColors<>None:
+            for colorName in additionalColors:
+                self.additionalColorButtons[colorName] = ColorButton(self, self.box, colorName)
+
+        #set up new and delete buttons
+        self.buttonHBox = OWGUI.widgetBox(self.box, orientation = "horizontal")
+        self.newButton = OWGUI.button(self.buttonHBox, self, "New", self.OnNewButtonClicked)
+        self.deleteButton = OWGUI.button(self.buttonHBox, self, "Delete", self.OnDeleteButtonClicked)
+
+        self.setInitialColorPalettes()
+        self.paletteSelected()
+        self.constructing = FALSE
+
+    def onComboBoxChange(self, string):
+        self.paletteSelected()
+
+    def onCheckBoxChange(self, state):
+        self.colorSchemaChange()
+
+    def OnNewButtonClicked(self):
+        message = "Please enter new color schema name"
+        ok = FALSE
+        while (not ok):
+            s = QInputDialog.getText(self, "New Schema", message)
+            ok = TRUE
+            if (s[1]==TRUE):
+                for i in range(self.schemaCombo.count()):
+                    if s[0].lower().compare(self.schemaCombo.itemText(i).lower())==0:
+                        ok = FALSE
+                        message = "Color schema with that name already exists, please enter another name"
+                if (ok):
+                    self.colorSchemas[str(s[0])] = ColorSchema(self.getCurrentColorSchema().getName(),
+                                                               self.getCurrentColorSchema().getPalette(),
+                                                               self.getCurrentColorSchema().getAdditionalColors(),
+                                                               self.getCurrentColorSchema().getPassThroughBlack())
+                    self.schemaCombo.addItem(s[0])
+                    self.schemaCombo.setCurrentIndex(self.schemaCombo.count()-1)
+            self.deleteButton.setEnabled(self.schemaCombo.count()>1)
+
+
+    def OnDeleteButtonClicked(self):
+        i = self.schemaCombo.currentIndex()
+        self.schemaCombo.removeItem(i)
+        self.schemaCombo.setCurrentIndex(i)
+        self.deleteButton.setEnabled(self.schemaCombo.count()>1)
+        self.paletteSelected()
+
+    def getCurrentColorSchema(self):
+        return self.colorSchemas[str(self.schemaCombo.currentText())]
+
+    def setCurrentColorSchema(self, schema):
+        self.colorSchemas[str(self.schemaCombo.currentText())] = schema
+
+
+    def getColorSchemas(self):
+        return self.colorSchemas
+
+    def setColorSchemas(self, schemas):
+        self.colorSchemas = schemas
+        self.schemaCombo.clear()
+        self.schemaCombo.addItems(schemas)
+        self.paletteSelected()
+
+    def createPalette(self,color1,color2, passThroughBlack):
+        palette = []
+        if passThroughBlack:
+            for i in range(paletteInterpolationColors/2):
+                palette += [qRgb(color1.red() - color1.red()*i*2./paletteInterpolationColors,
+                                 color1.green() - color1.green()*i*2./paletteInterpolationColors,
+                                 color1.blue() - color1.blue()*i*2./paletteInterpolationColors)]
+
+            for i in range(paletteInterpolationColors - (paletteInterpolationColors/2)):
+                palette += [qRgb(color2.red()*i*2./paletteInterpolationColors,
+                                 color2.green()*i*2./paletteInterpolationColors,
+                                 color2.blue()*i*2./paletteInterpolationColors)]
+        else:
+            for i in range(paletteInterpolationColors):
+                palette += [qRgb(color1.red() + (color2.red()-color1.red())*i/paletteInterpolationColors,
+                                 color1.green() + (color2.green()-color1.green())*i/paletteInterpolationColors,
+                                 color1.blue() + (color2.blue()-color1.blue())*i/paletteInterpolationColors)]
+        return palette
+
+    def paletteSelected(self):
+        schema = self.getCurrentColorSchema()
+        self.interpolationView.setPalette1(schema.getPalette())
+        self.colorButton1.setColor(self.rgbToQColor(schema.getPalette()[0]))
+        self.colorButton2.setColor(self.rgbToQColor(schema.getPalette()[249]))
+
+        self.chkPassThroughBlack.setChecked(schema.getPassThroughBlack())
+
+        self.NAColorButton.setColor(self.rgbToQColor(schema.getPalette()[255]))
+        self.overflowColorButton.setColor(self.rgbToQColor(schema.getPalette()[254]))
+        self.underflowColorButton.setColor(self.rgbToQColor(schema.getPalette()[253]))
+        self.backgroundColorButton.setColor(self.rgbToQColor(schema.getPalette()[252]))
+
+        for buttonName in self.additionalColorButtons:
+            self.additionalColorButtons[buttonName].setColor(self.rgbToQColor(schema.getAdditionalColors()[buttonName]))
+
+        if not self.constructing:
+            self.callback()
+
+    def rgbToQColor(self, rgb):
+        # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+        # why this was not used before so I am leaving it as it is
+
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
+
+    def qRgbFromQColor(self, qcolor):
+        return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
+
+    def colorSchemaChange(self):
+        white = qRgb(255,255,255)
+        gray = qRgb(200,200,200)
+        name = self.getCurrentColorSchema().getName()
+        passThroughBlack = self.chkPassThroughBlack.isChecked()
+        palette = self.createPalette(self.colorButton1.getColor(), self.colorButton2.getColor(), passThroughBlack)
+        palette += [white]*2 + [self.qRgbFromQColor(self.backgroundColorButton.getColor())] + \
+                               [self.qRgbFromQColor(self.underflowColorButton.getColor())] + \
+                               [self.qRgbFromQColor(self.overflowColorButton.getColor())] + \
+                               [self.qRgbFromQColor(self.NAColorButton.getColor())]
+
+        self.interpolationView.setPalette1(palette)
+
+        additionalColors = {}
+        for buttonName in self.additionalColorButtons:
+            additionalColors[buttonName] = self.qRgbFromQColor(self.additionalColorButtons[buttonName].getColor())
+
+        schema = ColorSchema(name, palette, additionalColors, passThroughBlack)
+        self.setCurrentColorSchema(schema)
+
+        if not self.constructing and self.callback:
+            self.callback()
+
+
+    def setInitialColorPalettes(self):
+        white = qRgb(255,255,255)
+        gray = qRgb(200,200,200)
+
+        additionalColors = {}
+        for buttonName in self.additionalColorButtons:
+            additionalColors[buttonName] = gray
+
+
+        self.schemaCombo.addItem("Blue - Yellow")
+        palette = self.createPalette(QColor(0,0,255), QColor(255,255,0),FALSE)
+        palette += [white]*3 + [qRgb(0., 0., 255.), qRgb(255., 255., 0.), gray]
+        self.colorSchemas["Blue - Yellow"] = ColorSchema("Blue - Yellow", palette, additionalColors, FALSE)
+
+        self.schemaCombo.addItem("Black - Red")
+        palette = self.createPalette(QColor(0,0,0), QColor(255,0,0),FALSE)
+        palette += [white]*3 + [qRgb(0., 0, 0), qRgb(255., 0, 0), gray]
+        self.colorSchemas["Black - Red"] = ColorSchema("Black - Red", palette, additionalColors, FALSE)
+
+        self.schemaCombo.addItem("Green - Black - Red")
+        palette = self.createPalette(QColor(0,255,0), QColor(255,0,0),TRUE)
+        palette += [white]*3 + [qRgb(0, 255., 0), qRgb(255., 0, 0), gray]
+        self.colorSchemas["Green - Black - Red"] = ColorSchema("Green - Black - Red", palette, additionalColors, TRUE)
+
+
+
+
 #############################################################
 # test script
 
@@ -824,8 +1013,6 @@ if __name__=="__main__":
     import orange
     a = QApplication(sys.argv)
     ow = OWDistanceMap()
-    a.setMainWidget(ow)
-
     ow.show()
 
     data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
@@ -835,6 +1022,6 @@ if __name__=="__main__":
     matrix = distanceMatrix(data)
     ow.setMatrix(matrix)
 
-    a.exec_loop()
+    a.exec_()
 
     ow.saveSettings()

@@ -54,7 +54,8 @@ how does Orange Canvas distinguish those that define widgets? Well,
 widgets are Python script files that start with a header. Here is a
 header for OWTestLearners.py:</p>
 
-<xmp class="code">"""
+<xmp class="code">
+"""
 <name>Test Learners</name>
 <description>Estimates the predictive performance of learners on a data set.</description>
 <icon>icons/TestLearners.png</icon>
@@ -83,7 +84,8 @@ subgroups of the widgets within the same group can be imposed.</P>
 tokens. Each widget would define its input and output channels in
 something like:</P>
 
-<xmp class="code">self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">
+self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
 self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 </xmp>
 
@@ -135,7 +137,8 @@ prototype a number of this widgets in our tutorial.</P>
 
 <P>The script defining the OWDataSamplerA widget starts with a follwing header:</P>
 
-<xmp class="code"><name>Data Sampler</name>
+<xmp class="code">
+<name>Data Sampler</name>
 <description>Randomly selects a subset of instances from the data set</description>
 <icon>icons/DataSamplerA.png</icon>
 <priority>10</priority>
@@ -150,7 +153,8 @@ with a question mark).</P>
 the class should be match the file name, so the lines following the
 header in our Data Sampler widget should look something like:</P>
 
-<xmp class="code">from OWWidget import *
+<xmp class="code">
+from OWWidget import *
 import OWGUI
 
 class OWDataSamplerA(OWWidget):
@@ -209,7 +213,8 @@ handle the input data. This is done in a function called
 <code>data</code> (remember, we did introduce this name in the
 specification of the input channel):</p>
 
-<xmp class="code">    def data(self, dataset):
+<xmp class="code">
+    def data(self, dataset):
         if dataset:
             self.infoa.setText('%d instances in input data set' % len(dataset))
             indices = orange.MakeRandomIndices2(p0=0.1)
@@ -300,7 +305,8 @@ icons to get widget windows. There are two options to bypass this. The
 first one is to add a testing script at the end of your widget. To do
 this, we finished Data Sampler with:</p>
 
-<xmp class="code">if __name__=="__main__":
+<xmp class="code">
+if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerA()
     appl.setMainWidget(ow)

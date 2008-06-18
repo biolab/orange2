@@ -394,7 +394,7 @@ class OWCorrAnalysisGraph(OWGraph):
 ##            font.setPixelSize(self.labelSize)
 ##            self.marker(mkey).setFont(font)
 ##            #self.showTip(x, y, text)
-            self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtCurve.Lines, xData = [x, x1], yData = [y, y1] ))
+            self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtPlotCurve.Lines, xData = [x, x1], yData = [y, y1] ))
             
 
 ##    def checkPerc(self, x, textLen):

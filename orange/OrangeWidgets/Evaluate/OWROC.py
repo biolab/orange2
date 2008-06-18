@@ -5,13 +5,11 @@
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
-
-from OWTools import *
+import orngOrangeFoldersQt4
+from OWColorPalette import ColorPixmap
 from OWWidget import *
 from OWGraph import *
-
 import OWGUI
-
 import orngStat, orngTest
 import statc, math
 
@@ -95,54 +93,46 @@ class singleClassROCgraph(OWGraph):
             self.classifierIterationConvexCKeys.append([])
             self.classifierIterationROCdata.append([])
             for iNum in range(iterationsNum):
-                ckey = self.insertCurve('')
-                self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 3))
-                self.classifierIterationCKeys[cNum].append(ckey)
-                ckey = self.insertCurve('')
-                self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 1))
-                self.classifierIterationConvexCKeys[cNum].append(ckey)
+                curve = self.addCurve('', pen = QPen(self.classifierColor[cNum], 3))
+                self.classifierIterationCKeys[cNum].append(curve)
+                curve = self.addCurve('', pen = QPen(self.classifierColor[cNum], 1))
+                self.classifierIterationConvexCKeys[cNum].append(curve)
                 self.classifierIterationROCdata[cNum].append(None)
 
             self.showClassifiers.append(0)
             self.showIterations.append(0)
 
             ## 'merge' average curve keys
-            ckey = self.insertCurve('')
-            self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 2))
-            self.mergedCKeys.append(ckey)
+            curve = self.addCurve('', pen = QPen(self.classifierColor[cNum], 2))
+            self.mergedCKeys.append(curve)
 
-            ckey = self.insertCurve('')
-            self.setCurveSymbol(ckey, self.defaultLineSymbol)
-            self.setCurvePen(ckey, QPen(Qt.black, 5))
-            self.mergedCThresholdKeys.append(ckey)
+            curve = self.addCurve('', symbol = self.defaultLineSymbol, pen = QPen(Qt.black, 5))
+            self.mergedCThresholdKeys.append(curve)
             self.mergedCThresholdMarkers.append([])
 
-            ckey = self.insertCurve('')
-            self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 1))
-            self.mergedConvexCKeys.append(ckey)
+            curve = self.addCurve('', pen = QPen(self.classifierColor[cNum], 1))
+            self.mergedConvexCKeys.append(QPen(Qt.black, 5))
 
-            newSymbol = QwtSymbol(QwtSymbol.None, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 2), QSize(0,0))
+            newSymbol = QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 2), QSize(0,0))
             ## 'vertical' average curve keys
             curve = errorBarQwtPlotCurve(self, '', connectPoints = 1, tickXw = 1.0/self.VTAsamples/5.0)
-            ckey = self.insertCurve(curve)
-            self.setCurveSymbol(ckey, newSymbol)
-            self.setCurveStyle(ckey, QwtCurve.UserCurve)
+            curve.attach(self)
+            curve.setSymbol(newSymbol)
+            curve.setStyle(QwtPlotCurve.UserCurve)
             self.verticalCKeys.append(ckey)
 
             ## 'threshold' average curve keys
             curve = errorBarQwtPlotCurve(self, '', connectPoints = 1, tickXw = 1.0/self.VTAsamples/5.0, tickYw = 1.0/self.VTAsamples/5.0, showVerticalErrorBar = 1, showHorizontalErrorBar = 1)
-            ckey = self.insertCurve(curve)
-            self.setCurveSymbol(ckey, newSymbol)
-            self.setCurveStyle(ckey, QwtCurve.UserCurve)
+            curve.attach(self)
+            curve.setSymbol(newSymbol)
+            curve.setStyle(QwtPlotCurve.UserCurve)
             self.thresholdCKeys.append(ckey)
 
         ## iso-performance line on top of all curves
-        self.performanceLineCKey = self.insertCurve('')
-        self.setCurvePen(self.performanceLineCKey, QPen(Qt.black, 2))
-        self.setCurveSymbol(self.performanceLineCKey, self.performanceLineSymbol)
+        self.performanceLineCKey = self.addCurve('', pen = QPen(Qt.black, 2), symbol = self.performanceLineSymbol)
 
     def removeCurves(self):
-        OWGraph.removeCurves(self)
+        self.clear()
         self.classifierColor = []
         self.classifierNames = []
         self.classifierIterationROCdata = []
@@ -175,19 +165,13 @@ class singleClassROCgraph(OWGraph):
         self.hullCurveDataForPerfLine = [] ## for performance analysis
 
         ## diagonal curve
-        self.diagonalCKey = self.insertCurve('')
-        self.setCurvePen(self.diagonalCKey, QPen(Qt.black, 1))
-        self.setCurveData(self.diagonalCKey, [0.0, 1.0], [0.0, 1.0])
-        
+        self.diagonalCKey = self.addCurve('', pen = QPen(Qt.black, 1), symbol = QwtSymbol.NoSymbol, xData = [0.0, 1.0], yData = [0.0, 1.0])
+
         ## convex hull curve keys
-        self.mergedConvexHullCKey = self.insertCurve('')
-        self.setCurvePen(self.mergedConvexHullCKey, self.convexHullPen)
-        self.verticalConvexHullCKey = self.insertCurve('')
-        self.setCurvePen(self.verticalConvexHullCKey, self.convexHullPen)
-        self.thresholdConvexHullCKey = self.insertCurve('')
-        self.setCurvePen(self.thresholdConvexHullCKey, self.convexHullPen)
-        self.classifierConvexHullCKey = self.insertCurve('')
-        self.setCurvePen(self.classifierConvexHullCKey, self.convexHullPen)
+        self.mergedConvexHullCKey = self.addCurve('', pen = self.convexHullPen)
+        self.verticalConvexHullCKey = self.addCurve('', pen = self.convexHullPen)
+        self.thresholdConvexHullCKey = self.addCurve('', pen = self.convexHullPen)
+        self.classifierConvexHullCKey = self.addCurve('', pen = self.convexHullPen)
 
         ## iso-performance line
         self.performanceLineCKey = -1
@@ -197,8 +181,8 @@ class singleClassROCgraph(OWGraph):
         for c in curves:
             x = [px for (px, py, pf) in c]
             y = [py for (px, py, pf) in c]
-            ckey = self.classifierIterationCKeys[classifier][iteration]
-            self.setCurveData(ckey, x, y)
+            curve = self.classifierIterationCKeys[classifier][iteration]
+            curve.setData(x, y)
             self.classifierIterationROCdata[classifier][iteration] = c
             classifier += 1
 
@@ -207,8 +191,8 @@ class singleClassROCgraph(OWGraph):
         for c in curves:
             x = [px for (px, py, pf) in c]
             y = [py for (px, py, pf) in c]
-            ckey = self.classifierIterationConvexCKeys[classifier][iteration]
-            self.setCurveData(ckey, x, y)
+            curve = self.classifierIterationConvexCKeys[classifier][iteration]
+            curve.setData(x, y)
             classifier += 1
 
     def setTestSetData(self, splitByIterations, targetClass):
@@ -227,7 +211,7 @@ class singleClassROCgraph(OWGraph):
             iteration += 1
 
     def updateCurveDisplay(self):
-        self.curve(self.diagonalCKey).setEnabled(self.showDiagonal)
+        self.diagonalCKey.setVisible(self.showDiagonal)
 
         showSomething = 0
         for cNum in range(len(self.showClassifiers)):
@@ -236,63 +220,61 @@ class singleClassROCgraph(OWGraph):
             ## 'merge' averaging
             b = (self.averagingMethod == 'merge') and showCNum
             showSomething = showSomething or b
-            curve =  self.curve(self.mergedCKeys[cNum])
-            if curve <> None: curve.setEnabled(b)
+            if self.mergedCKeys[cNum]:
+                self.mergedCKeys[cNum].setVisible(b)
 
             b2 = b and self.showDefaultThresholdPoint
-            curve =  self.curve(self.mergedCThresholdKeys[cNum])
-            if curve <> None: curve.setEnabled(b2)
-            for mkey in self.mergedCThresholdMarkers[cNum]:
-            	marker = self.marker(mkey)
-            	if marker <> None: marker.setEnabled(b2)
+            if self.mergedCThresholdKeys[cNum] <> None:
+                self.mergedCThresholdKeys[cNum].setVisible(b2)
+
+            for marker in self.mergedCThresholdMarkers[cNum]:
+            	marker.setVisible(b2)
 
             b = b and self.showConvexCurves
-            curve =  self.curve(self.mergedConvexCKeys[cNum])
-            if curve <> None: curve.setEnabled(b)
-
+            if self.mergedConvexCKeys[cNum] <> None:
+                self.mergedConvexCKeys[cNum].setVisible(b)
 
             ## 'vertical' averaging
             b = (self.averagingMethod == 'vertical') and showCNum
             showSomething = showSomething or b
-            curve =  self.curve(self.verticalCKeys[cNum])
-            if curve <> None: curve.setEnabled(b)
+            self.verticalCKeys[cNum].setVisible(b)
 
             ## 'threshold' averaging
             b = (self.averagingMethod == 'threshold') and showCNum
             showSomething = showSomething or b
-            curve =  self.curve(self.thresholdCKeys[cNum])
-            if curve <> None: curve.setEnabled(b)
+            self.thresholdCKeys[cNum].setVisible(b)
 
             ## 'None' averaging
             for iNum in range(len(self.showIterations)):
                 b = (self.averagingMethod == None) and showCNum and (self.showIterations[iNum] <> 0)
                 showSomething = showSomething or b
-                self.curve(self.classifierIterationCKeys[cNum][iNum]).setEnabled(b)
+                self.classifierIterationCKeys[cNum][iNum].setVisible(b)
                 b = b and self.showConvexCurves
-                self.curve(self.classifierIterationConvexCKeys[cNum][iNum]).setEnabled(b)
+                self.classifierIterationConvexCKeys[cNum][iNum].setVisible(b)
 
         chb = (showSomething) and (self.averagingMethod == None) and self.showConvexHull
-        curve =  self.curve(self.classifierConvexHullCKey)
-        if curve <> None: curve.setEnabled(chb)
+        if self.classifierConvexHullCKey:
+            self.classifierConvexHullCKey.setVisible(chb)
 
         chb = (showSomething) and (self.averagingMethod == 'merge') and self.showConvexHull
-        curve =  self.curve(self.mergedConvexHullCKey)
-        if curve <> None: curve.setEnabled(chb)
+        if self.mergedConvexHullCKey:
+            self.mergedConvexHullCKey.setVisible(chb)
 
         chb = (showSomething) and (self.averagingMethod == 'vertical') and self.showConvexHull
-        curve =  self.curve(self.verticalConvexHullCKey)
-        if curve <> None: curve.setEnabled(chb)
+        if self.verticalConvexHullCKey:
+            self.verticalConvexHullCKey.setVisible(chb)
 
         chb = (showSomething) and (self.averagingMethod == 'threshold') and self.showConvexHull
-        curve =  self.curve(self.thresholdConvexHullCKey)
-        if curve <> None: curve.setEnabled(chb)
+        if self.thresholdConvexHullCKey:
+            self.thresholdConvexHullCKey.setVisible(chb)
 
         ## performance line
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
-        for mkey in self.performanceMarkerKeys:
-            self.marker(mkey).setEnabled(b)
-        curve = self.curve(self.performanceLineCKey)
-        if curve <> None: curve.setEnabled(b)
+        for marker in self.performanceMarkerKeys:
+            marker.setVisible(b)
+
+        if self.performanceLineCKey:
+            curve.setVisible(b)
 
         self.updateLayout()
         self.update()
@@ -308,7 +290,7 @@ class singleClassROCgraph(OWGraph):
     def setShowPerformanceLine(self, b):
         self.showPerformanceLine = b
         self.updateCurveDisplay()
-        
+
     def setShowDefaultThresholdPoint(self, b):
     	self.showDefaultThresholdPoint = b
     	self.updateCurveDisplay()
@@ -345,8 +327,7 @@ class singleClassROCgraph(OWGraph):
             for c in curves:
                 x = [px for (px, py, pf) in c]
                 y = [py for (px, py, pf) in c]
-                ckey = self.mergedCKeys[classifier]
-                self.setCurveData(ckey, x, y)
+                self.mergedCKeys[classifier].setData(x, y)
 
 		# points of defualt threshold classifiers
                 defPoint = [(abs(pf-0.5), pf, px, py) for (px, py, pf) in c]
@@ -358,37 +339,33 @@ class singleClassROCgraph(OWGraph):
                 	defPoints = []
                 defX = [px for (px, py, pf) in defPoints]
                 defY = [py for (px, py, pf) in defPoints]
-                ckey = self.mergedCThresholdKeys[classifier]
-                self.setCurveData(ckey, defX, defY)
-                
-                for mkey in self.mergedCThresholdMarkers[classifier]:
-                	self.removeMarker(mkey)
+                self.mergedCThresholdKeys[classifier].setData(defX, defY)
+
+                for marker in self.mergedCThresholdMarkers[classifier]:
+                	marker.detach()
                 self.mergedCThresholdMarkers[classifier] = []
                 for (dx, dy, pf) in defPoints:
-                	mkey = self.insertMarker('%3.2g' % (pf))
-                	dx = max(min(0.95, dx + 0.01), 0.01)
-                	dy = min(max(0.01, dy - 0.02), 0.95)
-                	self.marker(mkey).setXValue(dx)
-                	self.marker(mkey).setYValue(dy)
-                	self.marker(mkey).setLabelAlignment(Qt.AlignRight)
-                	self.mergedCThresholdMarkers[classifier].append(mkey)
+                    dx = max(min(0.95, dx + 0.01), 0.01)
+                    dy = min(max(0.01, dy - 0.02), 0.95)
+                    marker = self.addMarker('%3.2g' % (pf), dx, dy, alignment = Qt.AlignRight)
+                    self.mergedCThresholdMarkers[classifier].append(marker)
                 classifier += 1
             classifier = 0
             for c in convexCurves:
                 self.mergedConvexHullData.append(c) ## put all points of all curves into one big array
                 x = [px for (px, py, pf) in c]
                 y = [py for (px, py, pf) in c]
-                ckey = self.mergedConvexCKeys[classifier]
-                self.setCurveData(ckey, x, y)
+                curve = self.mergedConvexCKeys[classifier]
+                curve.setData(x, y)
                 classifier += 1
         else:
             for c in range(len(self.mergedCKeys)):
-                self.setCurveData(self.mergedCKeys[c], [], [])
-                self.setCurveData(self.mergedCThresholdKeys[c], [], [])
-                for mkey in self.mergedCThresholdMarkers[c]:
-                	self.removeMarker(mkey)
+                self.mergedCKeys[c].setData([], [])
+                self.mergedCThresholdKeys[c].setCurveData([], [])
+                for marker in self.mergedCThresholdMarkers[c]:
+                	marker.detach()
                 self.mergedCThresholdMarkers[c] = []
-                self.setCurveData(self.mergedConvexCKeys[c], [], [])
+                self.mergedConvexCKeys[c].setData([], [])
 
         ## prepare a common input structure for vertical and threshold averaging
         ROCS = []
@@ -407,11 +384,11 @@ class singleClassROCgraph(OWGraph):
         self.thresholdConvexHullData = []
 
         if somethingToShow == 0:
-            for ckey in self.verticalCKeys:
-                self.setCurveData(ckey, [], [])
+            for curve in self.verticalCKeys:
+                curve.setData([], [])
 
-            for ckey in self.thresholdCKeys:
-                self.setCurveData(ckey, [], [])
+            for curve in self.thresholdCKeys:
+                curve.setData([], [])
             return
 
         ##
@@ -478,7 +455,7 @@ class singleClassROCgraph(OWGraph):
         convexHullCurve = TCconvexHull(hullData)
         x = [px for (px, py, pf) in convexHullCurve]
         y = [py for (px, py, pf) in convexHullCurve]
-        self.setCurveData(self.classifierConvexHullCKey, x, y)
+        self.classifierConvexHullCKey.setData(x, y)
 
         ## self.mergedConvexHullCKey = -1
         hullData = []
@@ -492,7 +469,7 @@ class singleClassROCgraph(OWGraph):
         self.hullCurveDataForPerfLine = TCconvexHull(hullData) # keep data about curve for performance line drawing
         x = [px for (px, py, pf) in self.hullCurveDataForPerfLine]
         y = [py for (px, py, pf) in self.hullCurveDataForPerfLine]
-        self.setCurveData(self.mergedConvexHullCKey, x, y)
+        self.mergedConvexHullCKey.setData(x, y)
 
         ## self.verticalConvexHullCKey = -1
         hullData = []
@@ -503,7 +480,7 @@ class singleClassROCgraph(OWGraph):
         convexHullCurve = TCconvexHull(hullData)
         x = [px for (px, py, pf) in convexHullCurve]
         y = [py for (px, py, pf) in convexHullCurve]
-        self.setCurveData(self.verticalConvexHullCKey, x, y)
+        self.verticalConvexHullCKey.setData(x, y)
 
         ## self.thresholdConvexHullCKey = -1
         hullData = []
@@ -514,7 +491,7 @@ class singleClassROCgraph(OWGraph):
         convexHullCurve = TCconvexHull(hullData)
         x = [px for (px, py, pf) in convexHullCurve]
         y = [py for (px, py, pf) in convexHullCurve]
-        self.setCurveData(self.thresholdConvexHullCKey, x, y)
+        self.thresholdConvexHullCKey.setData(x, y)
 
     def setAveragingMethod(self, m):
         self.averagingMethod = m
@@ -531,8 +508,8 @@ class singleClassROCgraph(OWGraph):
         lpy = []
         first = 1
         ## remove old markers
-        for mkey in self.performanceMarkerKeys:
-        	self.removeMarker(mkey)
+        for marker in self.performanceMarkerKeys:
+        	marker.detach()
        	self.performanceMarkerKeys = []
         for (x, y, fscorelist) in closestpoints:
             if first:
@@ -547,18 +524,15 @@ class singleClassROCgraph(OWGraph):
                 s = "%1.3f %s" % (threshold, self.classifierNames[cNum])
                	px = max(min(0.95, px + 0.01), 0.01)
                 py = min(max(0.01, py - 0.02), 0.95)
-                mkey = self.insertMarker(s)
-                self.marker(mkey).setXValue(px)
-                self.marker(mkey).setYValue(py)
-                self.marker(mkey).setLabelAlignment(Qt.AlignRight)
-                self.marker(mkey).setEnabled(b)
-                self.performanceMarkerKeys.append(mkey)
+                marker = self.addMarker(s, px, py, alignment = Qt.AlignRight)
+                marker.setVisible(b)
+                self.performanceMarkerKeys.append(marker)
         if len(closestpoints) > 0:
             lpx.append(x + 2.0)
             lpy.append(y + 2.0*m)
 
-        self.setCurveData(self.performanceLineCKey, lpx, lpy)
-        self.curve(self.performanceLineCKey).setEnabled(b)
+        self.performanceLineCKey.setData(lpx, lpy)
+        self.performanceLineCKey.setVisible(b)
         self.update()
 
     def costChanged(self, FPcost, FNcost):
@@ -572,23 +546,23 @@ class singleClassROCgraph(OWGraph):
 
     def setPointWidth(self, v):
         self.performanceLineSymbol.setSize(v, v)
-        self.setCurveSymbol(self.performanceLineCKey, self.performanceLineSymbol)
+        self.performanceLineCKey.setSymbol(self.performanceLineSymbol)
         self.update()
 
     def setCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
-            self.setCurvePen(self.mergedCKeys[cNum], QPen(self.classifierColor[cNum], v))
-            self.setCurvePen(self.verticalCKeys[cNum], QPen(self.classifierColor[cNum], v))
-            self.setCurvePen(self.thresholdCKeys[cNum], QPen(self.classifierColor[cNum], v))
+            self.mergedCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
+            self.verticalCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
+            self.thresholdCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             for iNum in range(len(self.showIterations)):
-                self.setCurvePen(self.classifierIterationCKeys[cNum][iNum], QPen(self.classifierColor[cNum], v))
+                self.classifierIterationCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
         self.update()
 
     def setConvexCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
-            self.setCurvePen(self.mergedConvexCKeys[cNum], QPen(self.classifierColor[cNum], v))
+            self.mergedConvexCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             for iNum in range(len(self.showIterations)):
-                self.setCurvePen(self.classifierIterationConvexCKeys[cNum][iNum], QPen(self.classifierColor[cNum], v))
+                self.classifierIterationConvexCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
         self.update()
 
     def setShowDiagonal(self, v):
@@ -597,18 +571,18 @@ class singleClassROCgraph(OWGraph):
 
     def setConvexHullCurveWidth(self, v):
         self.convexHullPen.setWidth(v)
-        self.setCurvePen(self.mergedConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.verticalConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.thresholdConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.classifierConvexHullCKey, self.convexHullPen)
+        self.mergedConvexHullCKey.setPen(self.convexHullPen)
+        self.verticalConvexHullCKey.setPen(self.convexHullPen)
+        self.thresholdConvexHullCKey.setPen(self.convexHullPen)
+        self.classifierConvexHullCKey.setPen(self.convexHullPen)
         self.update()
 
     def setHullColor(self, c):
         self.convexHullPen.setColor(c)
-        self.setCurvePen(self.mergedConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.verticalConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.thresholdConvexHullCKey, self.convexHullPen)
-        self.setCurvePen(self.classifierConvexHullCKey, self.convexHullPen)
+        self.mergedConvexHullCKey.setPen(self.convexHullPen)
+        self.verticalConvexHullCKey.setPen(self.convexHullPen)
+        self.thresholdConvexHullCKey.setPen(self.convexHullPen)
+        self.classifierConvexHullCKey.setPen(self.convexHullPen)
         self.update()
 
     def sizeHint(self):
@@ -633,7 +607,7 @@ class OWROC(OWWidget):
         self.ConvexCurveWidth = 1
         self.ShowDiagonal = TRUE
         self.ConvexHullCurveWidth = 3
-        self.HullColor = str(Qt.yellow.name())
+        self.HullColor = str(QColor(Qt.yellow).name())
         self.AveragingMethodIndex = 0 ##'merge'
         self.ShowConvexHull = TRUE
         self.ShowConvexCurves = FALSE
@@ -668,37 +642,34 @@ class OWROC(OWWidget):
         self.AveragingMethod = self.AveragingMethodNames[self.AveragingMethodIndex]
 
         # GUI
-        self.grid.expand(3, 3)
+        import sip
+        sip.delete(self.mainArea.layout())
         self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
+        self.mainArea.setLayout(self.graphsGridLayoutQGL)
         # save each ROC graph in separate file
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
         ## general tab
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
-        self.generalTab = QVGroupBox(self)
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.generalTab = OWGUI.createTabPage(self.tabs, "General")
 
         ## target class
         self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target class', items=[], callback=self.target)
-        self.classCombo.setMaximumSize(150, 20)
+        #self.classCombo.setMaximumSize(150, 20)
 
         ## classifiers selection (classifiersQLB)
-        self.classifiersQVGB = QVGroupBox(self.generalTab)
-        self.classifiersQVGB.setTitle("Classifiers")
-        self.classifiersQLB = QListBox(self.classifiersQVGB)
-        self.classifiersQLB.setSelectionMode(QListBox.Multi)
-        self.connect(self.classifiersQLB, SIGNAL("selectionChanged()"), self.classifiersSelectionChange)
-        self.unselectAllClassifiersQLB = QPushButton("(Un)select All", self.classifiersQVGB)
-        self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
+        self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
+        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
+        self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select All", callback = self.SUAclassifiersQLB)
 
         # show convex ROC curves and show ROC convex hull
         self.convexCurvesQCB = OWGUI.checkBox(self.generalTab, self, 'ShowConvexCurves', 'Show convex ROC curves', tooltip='', callback=self.setShowConvexCurves)
         OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show ROC convex hull', tooltip='', callback=self.setShowConvexHull)
-        self.tabs.insertTab(self.generalTab, "General")
         
 
         # performance analysis
-        self.performanceTab = QVGroupBox(self)
-        self.performanceTabCosts = QVGroupBox(self.performanceTab)
+        self.performanceTab = OWGUI.createTabPage(self.tabs, "Analysis")
+        self.performanceTabCosts = OWGUI.widgetBox(self.performanceTab, box = 1)
         OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show performance line', tooltip='', callback=self.setShowPerformanceAnalysis)
         OWGUI.checkBox(self.performanceTabCosts, self, 'DefaultThresholdPoint', 'Default threshold (0.5) point', tooltip='', callback=self.setShowDefaultThresholdPoint)
 
@@ -715,24 +686,19 @@ class OWROC(OWWidget):
         OWGUI.button(ptc, self, 'Compute from data', self.setDefaultPValues) ## reset p values to default
 
         ## test set selection (testSetsQLB)
-        self.testSetsQVGB = QVGroupBox(self.performanceTab)
-        self.testSetsQVGB.setTitle("Test sets")
-        self.testSetsQLB = QListBox(self.testSetsQVGB)
-        self.testSetsQLB.setSelectionMode(QListBox.Multi)
-        self.connect(self.testSetsQLB, SIGNAL("selectionChanged()"), self.testSetsSelectionChange)
-        self.unselectAllTestSetsQLB = QPushButton("(Un)select All", self.testSetsQVGB)
-        self.connect(self.unselectAllTestSetsQLB, SIGNAL("clicked()"), self.SUAtestSetsQLB)
-        self.tabs.insertTab(self.performanceTab, "Analysis")
+        self.testSetsQVGB = OWGUI.widgetBox(self.performanceTab, "Test sets")
+        self.testSetsQLB = OWGUI.listBox(self.testSetsQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.testSetsSelectionChange)
+        self.unselectAllTestSetsQLB = OWGUI.button(self.testSetsQVGB, self, "(Un)select All", callback = self.SUAtestSetsQLB)
 
         # settings tab
-        self.settingsTab = QVGroupBox(self)
+        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
         OWGUI.radioButtonsInBox(self.settingsTab, self, 'AveragingMethodIndex', ['Merge (expected ROC perf.)', 'Vertical', 'Threshold', 'None'], box='Averaging ROC curves', callback=self.selectAveragingMethod)
         OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=3, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='ROC curve width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexCurveWidth', box='ROC convex curve width', minValue=1, maxValue=5, step=1, callback=self.setConvexCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='ROC convex hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
         OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal ROC line', tooltip='', callback=self.setShowDiagonal)
-        self.tabs.insertTab(self.settingsTab, "Settings")
+        self.settingsTab.layout().addStretch(100)
       
         self.resize(800, 600)
 
@@ -770,10 +736,11 @@ class OWROC(OWWidget):
     def selectUnselectAll(self, qlb):
         selected = 0
         for i in range(qlb.count()):
-            if qlb.isSelected(i):
+            if qlb.item(i).isSelected():
                 selected = 1
                 break
-        qlb.selectAll(not(selected))
+        if selected: qlb.clearSelection()
+        else: qlb.selectAll()
 
     def SUAclassifiersQLB(self):
         self.selectUnselectAll(self.classifiersQLB)
@@ -800,7 +767,7 @@ class OWROC(OWWidget):
             g.setAveragingMethod(self.AveragingMethod)
 
     ## class selection (classQLB)
-    def target(self):   
+    def target(self):
         for i in range(len(self.graphs)):
             self.graphs[i].hide()
 
@@ -821,7 +788,7 @@ class OWROC(OWWidget):
     def classifiersSelectionChange(self):
         list = []
         for i in range(self.classifiersQLB.count()):
-            if self.classifiersQLB.isSelected(i):
+            if self.classifiersQLB.item(i).isSelected():
                 list.append( 1 )
             else:
                 list.append( 0 )
@@ -849,7 +816,7 @@ class OWROC(OWWidget):
     def testSetsSelectionChange(self):
         list = []
         for i in range(self.testSetsQLB.count()):
-            if self.testSetsQLB.isSelected(i):
+            if self.testSetsQLB.item(i).isSelected():
                 list.append( 1 )
             else:
                 list.append( 0 )
@@ -940,7 +907,7 @@ class OWROC(OWWidget):
         self.pvalueList = []
 
         self.closeContext()
-        
+
         if not dres:
             self.targetClass = None
             self.classCombo.clear()
@@ -965,7 +932,7 @@ class OWROC(OWWidget):
                 self.FNcostList.append( 500)
                 graph = singleClassROCgraph(self.mainArea, "", "Predicted class: " + self.dres.classValues[i])
                 self.graphs.append( graph )
-                self.classCombo.insertItem(self.dres.classValues[i])
+                self.classCombo.addItem(self.dres.classValues[i])
 
             ## classifiersQLB
             self.classifierColor = []
@@ -988,12 +955,12 @@ class OWROC(OWWidget):
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
                 newColor = self.classifierColor[i]
-                self.classifiersQLB.insertItem(ColorPixmap(newColor), self.dres.classifierNames[i])
-            self.classifiersQLB.selectAll(1)
+                self.classifiersQLB.addItem(QListWidgetItem(ColorPixmap(newColor), self.dres.classifierNames[i]))
+            self.classifiersQLB.selectAll()
 
             ## testSetsQLB
-            self.testSetsQLB.insertStrList([str(i) for i in range(self.numberOfIterations)])
-            self.testSetsQLB.selectAll(1)
+            self.testSetsQLB.addItems([str(i) for i in range(self.numberOfIterations)])
+            self.testSetsQLB.selectAll()
 
             ## calculate default pvalues
             reminder = self.maxp
@@ -1016,6 +983,5 @@ class OWROC(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     owdm = OWROC()
-    a.setMainWidget(owdm)
     owdm.show()
-    a.exec_loop()
+    a.exec_()

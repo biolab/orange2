@@ -15,7 +15,7 @@ class IdentifierReplacer:
     def __init__(self, reinserted, attributes):
         self.reinserted = reinserted
         self.attributes = attributes
-        
+
     def __call__(self, id):
         id = id.group()
         if id in self.reinserted:
@@ -30,18 +30,17 @@ class IdentifierReplacer:
 class AttrComputer:
     def __init__(self, expression):
         self.expression = expression
-        
+
     def __call__(self, ex, weight):
         try:
             return float(eval(self.expression, math.__dict__, {"_ex": ex}))
         except:
             return "?"
-    
-builtinfuncs = ["round", "cmp", "sum", "abs", "len", "ord", "float", "int", "pow", "divmod", "oct", "hex", "str", "min", "max"]    
+
 
 class OWFeatureConstructor(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler()}
-    
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "FeatureConstructor")
 
@@ -53,32 +52,32 @@ class OWFeatureConstructor(OWWidget):
         self.defLabels = []
         self.data = None
         self.definitions = []
-        
+
         self.selectedAttr = 0
         self.selectedFunc = 0
         self.autosend = True
-        
+
         db = OWGUI.widgetBox(self.controlArea, "Attribute definitions", addSpace = True)
-        
+
         OWGUI.separator(db, 4)
 
         hb = OWGUI.widgetBox(db, None, "horizontal")
-        
+
         vb = OWGUI.widgetBox(hb, None, "vertical")
         self.leAttrName = OWGUI.lineEdit(vb, self, "attrname", "New attribute")
         OWGUI.rubber(vb)
-        
+
         OWGUI.separator(hb, 8, 8)
-        
+
         vb = OWGUI.widgetBox(hb, None, "vertical")
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
         self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
-        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + [m for m in math.__dict__.keys() if m[:2]!="__"] + builtinfuncs, callback = self.funcListSelected)
-        
+        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + [m for m in math.__dict__.keys() if m[:2]!="__"], callback = self.funcListSelected)
+
         OWGUI.separator(hb, 8, 8)
         OWGUI.button(hb, self, "Clear", callback = self.clearLineEdits)
-        
+
         OWGUI.separator(db)
 
         hb = OWGUI.widgetBox(db, None, "horizontal")
@@ -86,7 +85,7 @@ class OWFeatureConstructor(OWWidget):
         OWGUI.button(hb, self, "Update", callback = self.updateAttr)
         OWGUI.button(hb, self, "Remove", callback = self.removeAttr)
         OWGUI.button(hb, self, "Remove All", callback = self.removeAllAttr)
-        
+
         OWGUI.separator(db)
         self.lbDefinitions = OWGUI.listBox(db, self, "selectedDef", "defLabels", callback=self.selectAttr)
         self.lbDefinitions.setFixedHeight(160)
@@ -113,25 +112,25 @@ class OWFeatureConstructor(OWWidget):
         self.closeContext()
         self.data = data
         self.cbAttrs.clear()
-        self.cbAttrs.insertItem("(all attributes)")
+        self.cbAttrs.addItem("(all attributes)")
         if self.data:
-            for attr in self.data.domain:
-                self.cbAttrs.insertItem(attr.name)
+            self.cbAttrs.addItems([attr.name for attr in self.data.domain])
+
         self.removeAllAttr()
         self.openContext("", data)
         self.apply()
-        
-        
+
+
     def clearLineEdits(self):
         self.expression = self.attrname = ""
-        
-        
+
+
     def addAttr(self):
         attrname = self.attrname.strip()
         if not attrname:
             self.leAttrName.setFocus()
             return
-        
+
         expression = self.expression.strip()
         if not expression:
             self.leExpression.setFocus()
@@ -140,8 +139,8 @@ class OWFeatureConstructor(OWWidget):
         self.definitions.append((attrname, expression))
         self.expression = self.attrname = ""
         self.applyIf()
-        
-        
+
+
     def removeAttr(self):
         if self.selectedDef:
             selected = self.selectedDef[0]
@@ -157,8 +156,8 @@ class OWFeatureConstructor(OWWidget):
         self.selectedDef = []
         self.clearLineEdits()
         self.applyIf()
-        
-        
+
+
     def updateAttr(self):
         if self.selectedDef:
             selected = self.selectedDef[0]
@@ -166,74 +165,62 @@ class OWFeatureConstructor(OWWidget):
                 self.defLabels = self.defLabels[:selected] + ["%s := %s" % (self.attrname, self.expression)] + self.defLabels[selected+1:]
                 self.definitions[selected] = (self.attrname, self.expression)
                 self.applyIf()
-    
-    
+
+
     def selectAttr(self):
         selected = self.selectedDef[0]
         if 0 <= selected < self.lbDefinitions.count():
             self.attrname, self.expression = self.definitions[selected]
         else:
             self.attrname = self.expression = ""
-        
-        
+
+
     def insertIntoExpression(self, what):
-        # a little compatibility for QT 3.3 (on Mac at least)
-        if hasattr(self.leExpression, "hasSelectedText"):
-            if self.leExpression.hasSelectedText():
-                 self.leExpression.delChar()
-        elif self.leExpression.hasMarkedText():
+        if self.leExpression.hasMarkedText():
             self.leExpression.delChar()
-        
+
         cp = self.leExpression.cursorPosition()
         self.expression = self.expression[:cp] + what + self.expression[cp:]
         self.leExpression.setFocus()
-    
-    
+
+
     def attrListSelected(self):
         if self.selectedAttr:
             attr = str(self.cbAttrs.text(self.selectedAttr))
             mo = re_identifier.match(attr)
             if not mo or mo.span()[1] != len(attr):
                 attr = '"%s"' % attr
-            
+
             self.insertIntoExpression(attr)
             self.selectedAttr = 0
-        
-        
+
+
     def funcListSelected(self):
         if self.selectedFunc:
             func = str(self.cbFuncs.text(self.selectedFunc))
             if func in ["atan2", "fmod", "ldexp", "log", "pow"]:
                 self.insertIntoExpression(func + "(,)")
-                # a little compatibility for QT 3.3 (on Mac at least)
-                if hasattr(self.leExpression, "cursorBackward"):
-                    self.leExpression.cursorBackward(False, 2)
-                else:
-                    self.leExpression.cursorLeft(False, 2)
+                self.leExpression.cursorLeft(False, 2)
             elif func == "pi":
                 self.insertIntoExpression(func)
             else:
                 self.insertIntoExpression(func + "()")
-                # a little compatibility for QT 3.3 (on Mac at least)
-                if hasattr(self.leExpression, "cursorBackward"):
-                    self.leExpression.cursorBackward(False)
-                else:
-                    self.leExpression.cursorLeft(False)
-            
+                self.leExpression.cursorLeft(False)
+
             self.selectedFunc = 0
-        
-    
+
+
     def applyIf(self):
         self.dataChanged = True
         if self.autosend:
             self.apply()
-            
-            
+
+
     def enableAuto(self):
         if self.dataChanged:
             self.apply()
 
-    
+
     def apply(self):
         self.dataChanged = False
         if not self.data:
@@ -248,7 +235,7 @@ class OWFeatureConstructor(OWWidget):
                 self.error(1, "Multiple attributes with the same name (%s)" % name)
                 self.send("Examples", None)
                 return
-            
+
         unknown = [[name, exp, set([id[0] or id[1] for id in re_identifier.findall(exp) if id[0] in names or id[1][1:-1] in names])] for name, exp in self.definitions]
         reinserted = {}
         replacer = IdentifierReplacer(reinserted, [n.name for n in oldDomain])

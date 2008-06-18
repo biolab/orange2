@@ -6,18 +6,20 @@
 <priority>10</priority>
 """
 
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, orange
 from exceptions import Exception
 
 import warnings
 warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
+warnings.filterwarnings("ignore", "'BayesLearner': threshold can only be optimized for binary classes", orange.KernelWarning, ".*OWNaiveBayes", 136)
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
 
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
@@ -48,14 +50,14 @@ class OWNaiveBayes(OWWidget):
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        box = QGroupBox('Probability estimation', self.controlArea)
-        glay = QGridLayout(box, 7, 3, 10, 5)
+        glay = QGridLayout()
+        box = OWGUI.widgetBox(self.controlArea, 'Probability estimation', orientation = glay)
 
-        glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
+        #glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
 
         glay.addWidget(OWGUI.widgetLabel(box, "Prior"), 1, 0)
 
-        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method for estimating the prior probability.'),
+        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
                         1, 2)
 
         glay.addWidget(OWGUI.widgetLabel(box, "Conditional (for discrete)"), 2, 0)
@@ -94,7 +96,6 @@ class OWNaiveBayes(OWWidget):
         applyButton = OWGUI.button(box, self, "&Apply", callback=self.applyLearner)
 
         self.refreshControls()
-        self.adjustSize()
         self.applyLearner()
 
 
@@ -114,7 +115,7 @@ class OWNaiveBayes(OWWidget):
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
             self.warning(0, "Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
-
+    
         else:
             self.learner = orange.BayesLearner(name = self.name, adjustThreshold = self.adjustThreshold)
             self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
@@ -122,7 +123,7 @@ class OWNaiveBayes(OWWidget):
                 self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
                 self.learner.conditionalEstimatorConstructorContinuous = orange.ConditionalProbabilityEstimatorConstructor_loess(
                    windowProportion = self.windowProportion, nPoints = self.loessPoints)
-
+    
             self.send("Learner", self.learner)
             self.applyData()
             self.changed = False
@@ -149,24 +150,23 @@ class OWNaiveBayes(OWWidget):
         self.applyData()
 
 
-#    def sendReport(self):
-#        self.startReport(self.name)
-#        self.reportSection("Learning parameters")
-#        self.reportSettings([("Probability estimation", self.estMethods[self.probEstimation][0]),
-#                             ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
-#                             self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m_estimator.m),
-#                             ("LOESS window size", "%.1f" % self.windowProportion),
-#                             ("Number of points in LOESS", "%i" % self.loessPoints),
-#                             ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
-#                            ])
-#        self.finishReport()
+    def sendReport(self):
+        self.startReport(self.name)
+        self.reportSection("Learning parameters")
+        self.reportSettings([("Probability estimation", self.estMethods[self.probEstimation][0]),
+                             ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
+                             self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m_estimator.m),
+                             ("LOESS window size", "%.1f" % self.windowProportion),
+                             ("Number of points in LOESS", "%i" % self.loessPoints),
+                             ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
+                            ])
+        self.finishReport()
 
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNaiveBayes()
-    a.setMainWidget(ow)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

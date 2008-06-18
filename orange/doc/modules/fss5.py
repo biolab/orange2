@@ -1,3 +1,5 @@
+# Author:      B Zupan
+# Version:     1.0
 # Description: Recursively eliminates attributes using Relief measure, until
 #              the estimate relevants of all attributes is beyond certain threshold.
 #              Makes use of filterRelieff from orngFSS

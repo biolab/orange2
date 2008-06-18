@@ -1,13 +1,27 @@
 import orange
 
 def entropyDiscretization(data):
-  """discretize continuous attributes, removing those discretized to a constant"""
+  """
+  Discretizes continuous attributes using the entropy based discretization.
+  It removes the attributes discretized to a single interval and prints their names.
+  Arguments: data
+  Returns:   table of examples with discretized atributes. Attributes that are
+             categorized to a single value (constant) are removed.
+  """
   orange.setrandseed(0)
   tablen=orange.Preprocessor_discretize(data, method=orange.EntropyDiscretization())
 
-  attrlist=[a for a in tablen.domain.attributes if len(a.values)>1]
+  attrlist=[]
+  nrem=0
+  for i in tablen.domain.attributes:
+    if (len(i.values)>1):
+      attrlist.append(i)
+    else:
+      nrem=nrem+1
+
   attrlist.append(tablen.domain.classVar)
   return tablen.select(attrlist)
+
 
 class EntropyDiscretization:
   def __call__(self, data):

@@ -1,17 +1,11 @@
-# Description: Uses MDS on iris data set and plots the scatterplot to illustrate the effect and observe the degree of separation between groups of different classes
-# Category:    association
-# Classes:     orngMDS.MDS
-# Uses:        iris.tab
-# Referenced:  orngMDS.htm
-
 import orange
 import orngMDS
 
 data=orange.ExampleTable("../datasets/iris.tab")
 euclidean = orange.ExamplesDistanceConstructor_Euclidean(data)
 distance = orange.SymMatrix(len(data))
-for i in range(len(data)-1):
-   for j in range(i+1, len(data)):
+for i in range(len(data)):
+   for j in range(i+1):
        distance[i, j] = euclidean(data[i], data[j])
 
 mds=orngMDS.MDS(distance)
