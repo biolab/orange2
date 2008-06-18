@@ -2,6 +2,8 @@ pushd
 
 set WIN=orange-win-%verstr
 set WIN_PYTHON=orange-w-python-%verstr
+set ADDON_GENOMICS=orangeAddon-genomics-%verstr
+set ADDON_TEXTMINING=orangeAddon-genomics-%verstr
 set SOURCE=orange-source-%verstr.zip
 set VERSION=%verstr
 set STABLE_DATE=%nicedate
