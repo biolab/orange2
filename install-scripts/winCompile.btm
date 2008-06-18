@@ -1,0 +1,23 @@
+pushd
+cdd %WEBDIR
+rem del /sye source
+rem rmdir /sq source
+svn checkout http://www.ailab.si/svn/orange/trunk/source source
+
+cd source
+call _pyxtract.bat
+
+call "c:\Program Files\Microsoft Visual Studio 8\vc\vcvarsall.bat"
+
+for %ver in (23 24 25) (
+  set PYTHON=%pythonbase%%ver
+  set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-%ver.log
+
+  echo *** Compiling for Python %ver
+  if exist %COMPILELOG del %COMPILELOG
+  start /wait vcexpress orange.sln /build Release /out %COMPILELOG
+  flag_on_error
+)
+
+popd
+

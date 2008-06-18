@@ -1,0 +1,17 @@
+EnumVariable
+attr name
+
+AssociationRulesInducer
+conf confidence
+supp support
+
+AssociationRulesSparseInducer
+conf confidence
+supp support
+
+AssociationLearner
+conf confidence
+supp support
+
+EquiDistDiscretizer
+firstVal firstCut

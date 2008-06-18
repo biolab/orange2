@@ -1,0 +1,107 @@
+@echo off
+
+call updateSetConstants__.btm
+
+call winCompile.btm
+
+call winCompileAddOns.btm
+
+cdd %SNAPSHOTDIR
+rem del /sye orange
+rem rmdir /sq orange
+svn checkout http://www.ailab.si/svn/orange/trunk/orange orange
+break_on_error
+
+cdd %SCRIPTDIR
+buildInstFileList.py %SNAPSHOTDIR snapshotfiles
+break_on_error
+
+
+for %pyver in (%PYTHONVERSIONS) do (
+  set BINDIR=%WEBDOWNLOAD\binaries\%pyver
+  if not exist %BINDIR mkdir %BINDIR
+
+  cdd %PYTHONBASE%%pyver\lib\site-packages\orange
+  for %pydf in (*.pyd) do (
+    if exist %BINDIR\%pydf del %BINDIR\%pydf
+    upx %pydf -o %BINDIR\%pydf
+  )
+
+  cdd %BINDIR
+  if exist stamps_pyd.txt del stamps_pyd.txt
+  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\snapshotfiles_binaries.inc
+  for %fle in (*.pyd) do (
+    set MD5=%@MD5[%fle]
+    echo %fle %MD5 >> stamps_pyd.txt
+    echo File %BINDIR\%fle >> %SCRIPTDIR\snapshotfiles_binaries.inc
+    echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
+  )
+
+  REM ### BASE
+  cdd %SCRIPTDIR
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+  set OUTNAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe"
+  nsis /O%WEBDOWNLOAD\regressionResults\nsis_%pyver.log /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+  if %errorlevel != 0 (
+    set ERRORS=%errorlevel
+    ren %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
+  )
+
+  REM ### GENOMICS
+REM  set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
+REM  nsis /O%WEBDOWNLOAD\regressionResults\nsis_genomics_%pyver.log /DINCLUDEGENOMICS /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+REM  if %errorlevel != 0 (
+REM    set ERRORS=%errorlevel
+REM    ren %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe %OUTNAME
+REM  ) else (
+REM    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe
+REM  )
+
+  REM ### TEXT MINING Add-On
+  set OUTNAME="%WEBDOWNLOAD\%WIN_TEXTMINING_SNAPSHOT-py%npver.exe"
+  move /Z %WEBDIR\orngText\dist\orngText-*.win32-py%npver.exe %OUTNAME
+  if %errorlevel != 0 (
+REM    set ERRORS=%errorlevel
+    echo "ignore error"
+    ren %WEBDOWNLOAD\orangeAddOn-snapshot-textmining-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orangeAddOn-snapshot-textmining-????-??-??-py%npver.exe
+  )
+
+  REM ### GOlib
+  set OUTNAME="%WEBDOWNLOAD\%WIN_GOLIB_SNAPSHOT-py%npver.exe"
+  move /Z %WEBDIR\GOlib\dist\GOlib-*.win32-py%npver.exe %OUTNAME
+  if %errorlevel != 0 (
+REM    set ERRORS=%errorlevel
+    echo "ignore error"
+    ren %WEBDOWNLOAD\GOlib-snapshot-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\GOlib-snapshot-????-??-??-py%npver.exe
+  )
+
+  REM ### Genomics Add-On
+  set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
+  move /Z %WEBDIR\Genomics\dist\Genomics-*.win32-py%npver.exe %OUTNAME
+rem  copy /Z %WEBDIR\Genomics\dist\Genomics-*.win32.exe %OUTNAME  
+  if %errorlevel != 0 (
+REM    set ERRORS=%errorlevel
+    echo "ignore error"
+    ren %WEBDOWNLOAD\orangeAddOn-snapshot-genomics-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orangeAddOn-snapshot-genomics-????-??-??-py%npver.exe
+  )
+)
+
+del /qke snapshotfiles_*.inc
+
+cdd %SCRIPTDIR/doc
+call compileDocumentation.btm
+cdd %WEBDOCDIR
+"c:\program files\winrar\winrar.exe" a %WEBDOWNLOAD\orange-chm.zip *.chm
+flag_on_error
+
+cdd %SCRIPTDIR
+call updateVersionsPy__.btm

@@ -1,0 +1,3 @@
+call updateSetConstants__.btm
+set verstr=%orangeReleaseVersion.%orangeMajorVersion.%orangeMinorVersion
+call updateCommon__.btm
