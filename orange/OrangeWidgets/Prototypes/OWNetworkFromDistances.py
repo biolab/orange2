@@ -171,7 +171,7 @@ class OWNetworkFromDistances(OWWidget):
         
         nEdgesEstimate = 2 * sum([self.histogram.yData[i] for i,e in enumerate(self.histogram.xData) if self.spinLowerThreshold <= e <= self.spinUpperThreshold])
         
-        if nEdgesEstimate > 100000:
+        if nEdgesEstimate > 200000:
             self.graph = None
             nedges = 0
             n = 0
