@@ -24,11 +24,11 @@ def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Dat
         docpath += "/"
     
     for category in mergeCategories(categoriesOrder, xmlCategories):
-        catalogPage += '<tr><td style="padding-top:32px" COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % category
-        catalogPage += '<tr>\n'
+        catalogPage += '<tr><td COLSPAN="6" style="border-bottom: 2px solid #F8CB66; padding-left: 4px; font-weight:bold; padding-top: 12px; padding-bottom: 4px; margin-bottom: 12px;">%s</td></tr>\n\n\n' % category
+        catalogPage += '<tr valign="top">\n'
         for i, widget in enumerate(xmlCategories[category]):
-            if i and not i % 3:
-                catalogPage += '</tr><tr>'
+            if i and not i % 6:
+                catalogPage += '</tr><tr valign="top">'
             name = widget["name"]
             namep = name.replace(" ", "")
             htmlfile = docpath + category + "/" + namep + ".htm"
@@ -41,15 +41,13 @@ def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Dat
                 contact = widget["contact"]
                 if "(" in contact:
                     widget["contact"] = contact[:contact.index("(")]
-                verb = '<font color="#bbbbbb"><small><br>%(file)s, %(priority)s<br>%(contact)s<br></small></font>' % widget
+                verb = '<br/><font color="#bbbbbb"><small><br>%(file)s, %(priority)s<br>%(contact)s<br></small></font>' % widget
             else:
                 verb = ""
             if exists(htmlfile):
-                catalogPage += '<td><a href="%s"><img src="%s"></a></td>\n' % (htmlfile, icon) + \
-                               '<td style="padding-right: 15"><a href="%s">%s</a>%s</td>\n\n' % (htmlfile, name, verb)
+                catalogPage += '<td align="center" style="padding-bottom: 12px; padding-top: 6px"><a href="%s"><img src="%s"><br/>%s</a>%s</td>' % (htmlfile, icon, name, verb)
             else:
-                catalogPage += '<td><img style="padding: 2;" src="%s"></td>\n' % icon + \
-                               '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a>%s</td>\n\n' % (name, verb)
+                catalogPage += '<td align="center" style="padding-bottom: 12px; padding-top: 6px"><img src="%s"><br/><FONT COLOR="#bbbbbb">%s</FONT>%s</td>\n\n' % (icon, name, verb)
         catalogPage += '</tr>'
 
     catalogPage += "</table>"
