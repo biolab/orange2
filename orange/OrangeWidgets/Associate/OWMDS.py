@@ -559,7 +559,7 @@ class MDSGraph(OWGraph):
 ##        for axis in [QwtPlot.xBottom, QwtPlot.yLeft]:
             self.setAxisAutoScale(axis)
         self.updateAxes()
-        self.repaint()
+        self.replot()
 
     def updateDistanceLines(self):
 ##        for k in self.distanceLineKeys:
