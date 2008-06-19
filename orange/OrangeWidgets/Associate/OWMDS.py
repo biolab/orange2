@@ -25,8 +25,9 @@ except:
         pass
 
 class OWMDS(OWWidget):
-    settingsList=["graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
-                  "StressFunc", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress"]
+    settingsList=["graph.PointSize", "graph.proportionGraphed", "graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
+                  "StressFunc", "applyLSMT", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress",
+                  "RefreshMode"]
     contextHandlers={"":DomainContextHandler("", [ContextField("graph.ColorAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.SizeAttr", DomainContextHandler.Optional),
                                                   ContextField("graph.ShapeAttr", DomainContextHandler.Optional),
@@ -47,37 +48,25 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=1
         self.RefreshMode=0
+        self.applyLSMT = 0
         self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
                               ("Sammon stress", orngMDS.SammonStress),
-                              ("Signed sammon stress", orngMDS.SgnSammonStress),
-                              ("Signed reative stress", orngMDS.SgnRelStress)]
+                              ("Signed Sammon stress", orngMDS.SgnSammonStress),
+                              ("Signed relative stress", orngMDS.SgnRelStress)]
 
 
         self.graph=MDSGraph(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
 
-        tabs = OWGUI.tabWidget(self.controlArea)
-        mds = OWGUI.createTabPage(tabs, "MDS")
-        graph = OWGUI.createTabPage(tabs, "Graph")
+        tabs=OWGUI.tabWidget(self.controlArea)
+        
+        mds=OWGUI.createTabPage(tabs, "Graph")
+        graph=OWGUI.createTabPage(tabs, "MDS")
 
-        OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
-        self.colorCombo=OWGUI.comboBox(graph, self, "graph.ColorAttr", box="Color", callback=self.graph.updateData)
-        self.sizeCombo=OWGUI.comboBox(graph, self, "graph.SizeAttr", box="Size", callback=self.graph.updateData)
-        self.shapeCombo=OWGUI.comboBox(graph, self, "graph.ShapeAttr", box="Shape", callback=self.graph.updateData)
-        self.nameCombo=OWGUI.comboBox(graph, self, "graph.NameAttr", box="Label", callback=self.graph.updateData)
-        OWGUI.checkWithSpin(graph, self, checked="graph.ShowStress", value="graph.NumStressLines",label="Show", min=0, max=1000,
-                            posttext="lines",spinCallback=self.graph.updateLines, checkCallback=self.graph.updateData)
-
-        self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
-        self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
-        self.graph.autoSendSelectionCallback = lambda :self.autoSendSelection and self.sendSelections()
-
-        OWGUI.checkBox(graph, self, "autoSendSelection", "Auto send selected")
-        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coord.", "Append coord. as meta"], box="Append coordinates")
-
+        ##MDS Tab        
         init=OWGUI.widgetBox(mds, "Initialization")
         OWGUI.button(init, self, "Randomize", self.randomize)
         OWGUI.button(init, self, "Jitter", self.jitter)
@@ -85,30 +74,47 @@ class OWMDS(OWWidget):
         opt=OWGUI.widgetBox(mds, "Optimization")
 
         self.startButton=OWGUI.button(opt, self, "Optimize", self.testStart)
-        OWGUI.button(opt, self, "LSMT", self.LSMT)
-        OWGUI.button(opt, self, "Step", self.smacofStep)
-        #OWGUI.button(opt, self, "Stop", self.stop)
-        #OWGUI.button(opt, self, "Redraw graph", callback=self.graph.updateData)
-        #OWGUI.checkBox(opt, self, "ReDraw", "Redraw graph after each step")
-        #OWGUI.spin(opt, self, "NumIter",box="Num. Iterations per Step",min=1, max=1000)
-        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh After Optimization")
-
-
+        OWGUI.button(opt, self, "Single Step", self.smacofStep)
+        box = OWGUI.widgetBox(opt, "Stress Function")
+        OWGUI.comboBox(box, self, "StressFunc", items=[a[0] for a in self.stressFunc], callback=self.updateStress)        
+        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization") 
+        
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
-        #OWGUI.checkBox(stopping, self, "computeStress", "Compute stress")
-        stress=OWGUI.widgetBox(self.stopping, "Min. Avg. Stress Delta")
-        OWGUI.comboBox(self.stopping, self, "StressFunc", box="Stress Function", items=[a[0] for a in self.stressFunc], callback=self.updateStress)
-        OWGUI.qwtHSlider(stress, self, "minStressDelta", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=5000)
-        #OWGUI.spin(stopping, self, "maxImprovment", box="Max. improvment of a run", min=0, max=100, postfix="%")
+        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Minimal average stress change", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
+        OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Maximal number of steps", minValue=10, maxValue=5000, step=10, precision=0)
 
-        #self.controlArea.setMinimumWidth(250)
-        infoBox = OWGUI.widgetBox(self.controlArea, "Info")
-        self.infoA=OWGUI.widgetLabel(infoBox, "Avg. stress:")
-        self.infoB=OWGUI.widgetLabel(infoBox, "Num. steps")
+        ##Graph Tab        
+        OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
+        self.colorCombo=OWGUI.comboBox(graph, self, "graph.ColorAttr", box="Color", callback=self.graph.updateData)
+        self.sizeCombo=OWGUI.comboBox(graph, self, "graph.SizeAttr", box="Size", callback=self.graph.updateData)
+        self.shapeCombo=OWGUI.comboBox(graph, self, "graph.ShapeAttr", box="Shape", callback=self.graph.updateData)
+        self.nameCombo=OWGUI.comboBox(graph, self, "graph.NameAttr", box="Label", callback=self.graph.updateData)
+        box = OWGUI.widgetBox(graph, "Similar pairs")
+        cb = OWGUI.checkBox(box, self, "graph.ShowStress", "Show similar pairs", callback = self.graph.updateLinesRepaint)
+        b2 = OWGUI.widgetBox(box)
+        OWGUI.widgetLabel(b2, "Proportion of connected pairs")
+        OWGUI.separator(b2, height=3)
+        sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint)
+        cb.disables.append(b2)
+        cb.makeConsistent()
+
+        self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
+        self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
+        self.graph.autoSendSelectionCallback = lambda :self.autoSendSelection and self.sendSelections()
+
+        OWGUI.checkBox(graph, self, "autoSendSelection", "Auto send selected")
+        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coordinates", "Append coordinates as meta"], box="Append coordinates")
+
+        mds.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
+        graph.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
+        self.controlArea.setMinimumWidth(250)
+        OWGUI.separator(self.controlArea)
+        infoBox=OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoA=QLabel("Avg. stress:", infoBox)
+        self.infoB=QLabel("Num. steps", infoBox)
+        OWGUI.rubber(self.controlArea)
         OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
-        #self.info
-        self.resize(800,700)
+        self.resize(900,630)
 
         self.done=True
         self.data=None
@@ -131,8 +137,9 @@ class OWMDS(OWWidget):
         self.graph.SizeAttr=0
         self.graph.ShapeAttr=0
         self.graph.NameAttr=0
-
-
+        self.graph.closestPairs = None
+            
+                
         if matrix:
             self.mds=orngMDS.MDS(matrix)
             self.mds.points=numpy.random.random(size=[self.mds.n, self.mds.dim])
@@ -159,13 +166,13 @@ class OWMDS(OWWidget):
         discAttributes=filter(lambda a: a.varType==orange.VarTypes.Discrete, attributes)
         contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, attributes)
         attrName=[attr.name for attr in attributes]
-        for name in ["One color"]+attrName:
+        for name in ["Same color"]+attrName:
             self.colorCombo.addItem(name)
-        for name in ["One size"]+map(lambda a:a.name, contAttributes):
+        for name in ["Same size"]+map(lambda a:a.name, contAttributes):
             self.sizeCombo.addItem(name)
-        for name in ["One shape"]+map(lambda a: a.name, discAttributes):
+        for name in ["Same shape"]+map(lambda a: a.name, discAttributes):
             self.shapeCombo.addItem(name)
-        for name in ["No  name"]+attrName:
+        for name in ["No name"]+attrName:
             self.nameCombo.addItem(name)
 
         self.attributes=attributes
@@ -226,7 +233,7 @@ class OWMDS(OWWidget):
         self.sizeCombo.clear()
         self.shapeCombo.clear()
         self.nameCombo.clear()
-        for name in ["One color", "strain"]:
+        for name in ["Same color", "strain"]:
             self.colorCombo.addItem(name)
         for name in ["No name", "name", "strain"]:
             self.nameCombo.addItem(name)
@@ -241,7 +248,6 @@ class OWMDS(OWWidget):
         else:
             self.names=[[""]*4 for i in range(len(data))]
             try:
-                #print dir(data[0][1][0])
                 strains=list(Set([d.strain for d in data]))
                 c=OWColorPalette.ColorPaletteHSV(len(strains))
                 for i, d in enumerate(data):
@@ -256,7 +262,7 @@ class OWMDS(OWWidget):
         self.sizeCombo.clear()
         self.shapeCombo.clear()
         self.nameCombo.clear()
-        for name in ["One color", "Variable"]:
+        for name in ["Same color", "Variable"]:
             self.colorCombo.addItem(name)
         for name in ["No name", "Var name"]:
             self.nameCombo.addItem(name)
@@ -286,6 +292,12 @@ class OWMDS(OWWidget):
             self.graph.updateData()
         #print "Update:", time.clock()-st
 
+## I (Janez) disabled LSMT because it is implemented terribly wrong:
+#  orngMDS.LSMT transforms the distance matrix itself (indeed there is
+#  the original stored, too), and from that point on there is no way the
+#  user can "untransform" it, except for resending the signal
+#  Since the basic problem is in bad design of orngMDS, I removed the option
+#  from the widget. If somebody has time to fix orngMDS first, he's welcome. 
     def LSMT(self):
         if not getattr(self, "mds", None):
             return
@@ -486,7 +498,7 @@ class OWMDS(OWWidget):
         if not getattr(self, "mds", None):
             return
         self.mds.getStress(self.stressFunc[self.StressFunc][1])
-        self.graph.setLines(True)
+#        self.graph.setLines(True)
         self.graph.replot()
 
 class MDSGraph(OWGraph):
@@ -501,6 +513,7 @@ class MDSGraph(OWGraph):
         self.NameAttr=0
         self.ShowStress=False
         self.NumStressLines=10
+        self.proportionGraphed = 20
         self.ShowName=True
         #self.curveKeys=[]
         self.pointKeys=[]
@@ -510,6 +523,7 @@ class MDSGraph(OWGraph):
         self.distanceLineKeys=[]
         self.colors=[]
         self.sizes=[]
+        self.closestPairs = None
         self.shapeList=[QwtSymbol.Ellipse,
                                 QwtSymbol.Rect,
                                 QwtSymbol.Diamond,
@@ -548,29 +562,50 @@ class MDSGraph(OWGraph):
         self.repaint()
 
     def updateDistanceLines(self):
-        for k in self.distanceLineKeys:
-            self.removeCurve(k)
+##        for k in self.distanceLineKeys:
+####            self.removeCurve(k)
+##            k.detach()
 
-        matrix = self.mds.originalDistances
-        mindist = min([min(r) for r in matrix])
-        maxdist = max([max(r) for r in matrix])
-        diff = maxdist - mindist
-# DBLP
-#        maxdist = 0.85 * (mindist + diff)
-        maxdist = 0.5 * (mindist + diff)
-        k = 10 / diff
-        if self.mds:
-            black = QColor(192,192,192)
-            for i, pti in enumerate(self.mds.points):
-                for j, ptj in enumerate(self.mds.points):
-                    dist =  matrix[i, j]
-                    if dist < maxdist:
-                        self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = (maxdist - dist) * k))
+        N = len(self.mds.points)
+        np = int(N*(N-1)/2. * self.proportionGraphed/100.)
+        needlines = int(math.ceil((1 + math.sqrt(1+8*np)) / 2)) 
+
+        if self.closestPairs is None or len(self.closestPairs) < np:
+            matrix = self.mds.originalDistances
+            hdist = [(-matrix[i,j], i, j) for i in range(needlines+1) for j in range(i)]
+            import heapq
+            heapq.heapify(hdist)
+            while len(hdist) > np:
+                heapq.heappop(hdist)
+            for i in range(needlines+1, N):
+                for j in range(i):
+                    heapq.heappush(hdist, (-matrix[i, j], i, j))
+                    heapq.heappop(hdist)
+            self.closestPairs = []
+            while hdist:
+                d, i, j = heapq.heappop(hdist)
+                self.closestPairs.append((-d, i, j))
+                
+        hdist = self.closestPairs[:np]
+    
+        black = QColor(192,192,192)
+        maxdist = hdist[0][0]
+        mindist = hdist[-1][0]
+        if maxdist != mindist:
+            k = 5 / (maxdist - mindist)**2
+            for dist, i, j in hdist:
+                pti, ptj = self.mds.points[i], self.mds.points[j]
+                self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = max(1, (maxdist - dist)**2 * k)))
+        else:
+            for dist, i, j in hdist:
+                pti, ptj = self.mds.points[i], self.mds.points[j]
+                self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = 2))
+        
                     
-    def updateLines(self):
+    def updateLinesRepaint(self):
         if self.mds:
-            self.setLines()
-        self.repaint()
+            self.updateDistanceLines()
+            self.repaint()
 
     def setPoints(self):
         import sets
