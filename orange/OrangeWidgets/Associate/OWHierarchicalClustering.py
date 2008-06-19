@@ -2,7 +2,7 @@
 <name>Hierarchical Clustering</name>
 <description>Hierarchical clustering based on distance matrix, and a dendrogram viewer.</description>
 <icon>HierarchicalClustering.png</icon>
-<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <prority>1550</priority>
 """
 
@@ -27,9 +27,12 @@ except:
 
 class OWHierarchicalClustering(OWWidget):
     settingsList=["Linkage", "OverwriteMatrix", "Annotation", "Brightness", "PrintDepthCheck",
-                "PrintDepth", "HDSize", "VDSize", "FitToWindow","AutoResize",
+                "PrintDepth", "HDSize", "VDSize", "ManualHorSize","AutoResize",
                 "TextSize", "LineSpacing", "ZeroOffset", "SelectionMode", "DisableHighlights",
-                "DisableBubble", "ClassifySelected", "CommitOnChange", "ClassifyName"]
+                "DisableBubble", "ClassifySelected", "CommitOnChange", "ClassifyName", "addIdAs"]
+    
+    contextHandlers={"":DomainContextHandler("", [ContextField("Annotation", DomainContextHandler.Required)])}
+    
     def __init__(self, parent=None, signalManager=None):
         #OWWidget.__init__(self, parent, 'Hierarchical Clustering')
         OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering')
@@ -48,7 +51,7 @@ class OWHierarchicalClustering(OWWidget):
         self.PrintDepth=100
         self.HDSize=500         #initial horizontal and vertical dendrogram size
         self.VDSize=800
-        self.FitToWindow=0
+        self.ManualHorSize=0
         self.AutoResize=0
         self.TextSize=8
         self.LineSpacing=4
@@ -66,6 +69,8 @@ class OWHierarchicalClustering(OWWidget):
         self.rootCluster=None
         self.selectedExamples=None
         self.ctrlPressed=FALSE
+        self.addIdAs = 0
+        self.settingsChanged = False
 
         self.linkageMethods=[a[0] for a in self.linkage]
 
@@ -76,53 +81,66 @@ class OWHierarchicalClustering(OWWidget):
         #Tabs
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
-        self.selectionTab= OWGUI.createTabPage(self.tabs, "Selection")
+##        self.selectionTab= OWGUI.createTabPage(self.tabs, "Selection")
 
         #HC Settings
         OWGUI.comboBox(self.settingsTab, self, "Linkage", box="Linkage",
                 items=self.linkageMethods, tooltip="Choose linkage method",
-                callback=self.constructTree)
+                callback=self.constructTree, addSpace = 16)
         #Label
-        self.labelCombo=OWGUI.comboBox(self.settingsTab, self, "Annotation",
-                box="Annotation", items=["None"],tooltip="Choose label attribute",
+        box = OWGUI.widgetBox(self.settingsTab, "Annotation", addSpace = 16)
+        self.labelCombo=OWGUI.comboBox(box, self, "Annotation",
+                items=["None"],tooltip="Choose label attribute",
                 callback=self.updateLabel)
 
+        OWGUI.spin(box, self, "TextSize", label="Text font size",
+                        min=5, max=15, step=1, callback=self.applySettings, controlWidth=40)
+        OWGUI.spin(box,self, "LineSpacing", label="Line spacing",
+                        min=2,max=8,step=1, callback=self.applySettings, controlWidth=40)
+        
+#        OWGUI.checkBox(box, self, "DisableBubble", "Disable bubble info")
+
+
         #Dendrogram graphics settings
-        dendrogramBox = OWGUI.widgetBox(self.settingsTab, "Dendrogram setings")
+        dendrogramBox=OWGUI.widgetBox(self.settingsTab, "Dendrogram settings", addSpace=16)
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
-        OWGUI.checkWithSpin(dendrogramBox, self, "Print depth", 1, 100, "PrintDepthCheck",
-                "PrintDepth")
+        cblp = OWGUI.checkBox(dendrogramBox, self, "PrintDepthCheck", "Limit print depth", callback = self.applySettings)
+        ib = OWGUI.indentedBox(dendrogramBox, orientation = 0)
+        OWGUI.widgetLabel(ib, "Depth"+ "  ")
+        slpd = OWGUI.hSlider(ib, self, "PrintDepth", minValue=1, maxValue=50, callback=self.applySettings)
+        cblp.disables.append(ib)
+        cblp.makeConsistent()
+        
+        OWGUI.separator(dendrogramBox)
         #OWGUI.spin(dendrogramBox, self, "VDSize", label="Vertical size", min=100,
         #        max=10000, step=10)
-        self.hSizeBox=OWGUI.spin(dendrogramBox, self, "HDSize", label="Horizontal size", min=200,
-                max=10000, step=10)
-        OWGUI.checkBox(dendrogramBox, self, "FitToWindow","Fit hor. size to window",
-                callback=lambda:self.hSizeBox.setDisabled(self.FitToWindow))
-        self.hSizeBox.setDisabled(self.FitToWindow)
-        #OWGUI.checkBox(dendrogramBox, self, "FitToWindow", "Fit horizontal size")
+        cbhs = OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Manually set horizontal size",
+                callback=[lambda:self.hSizeBox.setDisabled(self.ManualHorSize), self.applySettings])
+        self.hSizeBox=OWGUI.spin(OWGUI.indentedBox(dendrogramBox), self, "HDSize", label="Size"+"  ", min=200,
+                max=10000, step=10, callback=self.applySettings, callbackOnReturn = True, controlWidth=45)
+        cbhs.disables.append(self.hSizeBox)
+        cbhs.makeConsistent()
+        
+        #OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Fit horizontal size")
         #OWGUI.checkBox(dendrogramBox, self, "AutoResize", "Auto resize")
-        OWGUI.spin(dendrogramBox, self, "TextSize", label="Text font size",
-                        min=5, max=15, step=1)
-        OWGUI.spin(dendrogramBox,self, "LineSpacing", label="Line spacing",
-                        min=2,max=8,step=1)
-        OWGUI.button(dendrogramBox, self, "&Apply",self.applySettings)
+
+        box = OWGUI.widgetBox(self.settingsTab, "Selection")
+        OWGUI.checkBox(box, self, "SelectionMode", "Show cutoff line", callback=self.updateCutOffLine)
+        cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster indices", callback=self.commitDataIf)
+        self.classificationBox = ib = OWGUI.indentedBox(box)
+        le = OWGUI.lineEdit(ib, self, "ClassifyName", "Name" + "  ", callback=self.commitDataIf, orientation=0, controlWidth=75)
+        OWGUI.separator(ib, height = 4)
+        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 0, items = ["Class attribute", "Attribute", "Meta attribute"], callback=self.commitDataIf)
+        cb.disables.append(ib)
+        cb.makeConsistent()
+        
+        OWGUI.separator(box)
+        cbAuto = OWGUI.checkBox(box, self, "CommitOnChange", "Commit on change")
+        btCommit = OWGUI.button(box, self, "&Commit", self.commitData)
+        OWGUI.setStopper(self, btCommit, cbAuto, "settingsChanged", self.commitData)
+        
+        
         OWGUI.rubber(self.settingsTab)
-
-        #Selection options
-        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line",
-              callback=self.updateCutOffLine)
-        self.classificationBox = OWGUI.widgetBox(self.selectionTab, box = 1)
-        #self.classificationBox.setTitle("Classification")
-        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected", "Classify selected examples", callback=self.selectionChange)
-        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name", callback=self.selectionChange)
-        #selectionBox=QVGroupBox(self.selectionTab)
-        commitBox = OWGUI.widgetBox(self.selectionTab, "Commit settings")
-        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change", callback=self.selectionChange)
-
-        OWGUI.button(commitBox, self, "&Commit", self.commitData)
-        OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
-        OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
-        OWGUI.rubber(self.selectionTab)
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout()
@@ -150,6 +168,7 @@ class OWHierarchicalClustering(OWWidget):
 
     def dataset(self, data):
         self.matrix=data
+        self.closeContext()
         if not self.matrix:
             self.rootCluster=None
             self.selectedExamples=None
@@ -162,9 +181,9 @@ class OWHierarchicalClustering(OWWidget):
 
         self.matrixSource="Unknown"
         items=getattr(self.matrix, "items")
-        if type(items)==orange.ExampleTable: #Example Table from Example Distance
+        if isinstance(items, orange.ExampleTable): #Example Table from Example Distance
 
-            self.labels=["None","Default"]+ \
+            self.labels=["None", "Default"]+ \
                          [a.name for a in items.domain.attributes]
             if items.domain.classVar:
                 self.labels.append(items.domain.classVar.name)
@@ -175,13 +194,13 @@ class OWHierarchicalClustering(OWWidget):
             self.numMeta=len(items.domain.getmetas())
             self.metaLabels=items.domain.getmetas().values()
             self.matrixSource="Example Distance"
-        elif  type(items)==list:   #Structured data files from Data Distance
+        elif isinstance(items, list):   #Structured data files from Data Distance
             self.labels=["None", "Default", "Name", "Strain"]
             self.Annotation=0
             self.matrixSource="Data Distance"
         else:   #From Attribute Distance
-            self.labels=["None","Attribute Name"]
-            self.Annotation=0
+            self.labels=["None", "Attribute Name"]
+            self.Annotation=1
             self.matrixSource="Attribute Distance"
         self.labelCombo.clear()
         for a in self.labels:
@@ -193,7 +212,8 @@ class OWHierarchicalClustering(OWWidget):
             self.classificationBox.setDisabled(False)
         else:
             self.classificationBox.setDisabled(True)
-
+        if self.matrixSource=="Example Distance":
+            self.openContext("", items)
         self.constructTree()
 
     def updateLabel(self):
@@ -269,14 +289,21 @@ class OWHierarchicalClustering(OWWidget):
         if self.matrixSource=="Attribute Distance":
             return
         self.selectionList=selection
-        if self.CommitOnChange and self.dendrogram.cutOffLineDragged==False:
+        if self.dendrogram.cutOffLineDragged==False:
+            self.commitDataIf()
+
+    def commitDataIf(self):
+        if self.CommitOnChange:
             self.commitData()
+        else:
+            self.settingsChanged = True
 
     def selectionChange(self):
         if self.CommitOnChange:
             self.commitData()
 
     def commitData(self):
+        self.settingsChanged = False
         self.selection=[]
         selection=self.selectionList
         maps=[self.rootCluster.mapping[c.first:c.last] for c in [e.rootCluster for e in selection]]
@@ -286,20 +313,31 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Selected Examples",None)
             self.send("Structured Data Files", None)
             return
-        if self.matrixSource=="Example Distance":
+        items = getattr(self.matrix, "items")
+        if self.matrixSource == "Example Distance":
             if self.ClassifySelected:
-                classVar=orange.EnumVariable(str(self.ClassifyName) ,
+                clustVar=orange.EnumVariable(str(self.ClassifyName) ,
                             values=[str(i) for i in range(len(maps))])
-                domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
-                domain.addmetas(self.matrix.items.domain.getmetas())
-                if self.matrix.items.domain.classVar:
-                    id=orange.newmetaid()
-                    domain.addmeta(id, self.matrix.items.domain.classVar)
+                c=[i for i in range(len(maps)) for j in maps[i]]
+                origDomain = items.domain
+                if self.addIdAs == 0:
+                    domain=orange.Domain(origDomain.attributes,clustVar)
+                    if origDomain.classVar:
+                        domain.addmeta(orange.newmetaid(), origDomain.classVar)
+                    aid = -1
+                elif self.addIdAs == 1:
+                    domain=orange.Domain(origDomain.attributes+[clustVar], origDomain.classVar)
+                    aid = len(origDomain.attributes)
+                else:
+                    domain=orange.Domain(origDomain.attributes, origDomain.classVar)
+                    aid=orange.newmetaid()
+                    domain.addmeta(aid, clustVar)
+
+                domain.addmetas(origDomain.getmetas())
                 table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
                 table1.extend(orange.ExampleTable(self.selection))
-                c=[i for i in range(len(maps)) for j in maps[i]]
                 for i in range(len(self.selection)):
-                    table1[i].setclass(classVar(str(c[i])))
+                    table1[i][aid] = clustVar(str(c[i]))
 
                 self.selectedExamples=table1
             else:
@@ -351,7 +389,7 @@ class DendrogramView(QGraphicsView):
 
     def resizeEvent(self, e):
         QGraphicsView.resizeEvent(self,e)
-        if self.scene().parent.FitToWindow:
+        if not self.scene().parent.ManualHorSize:
             self.scene().displayTree(self.scene().rootCluster)
         #self.updateContents()
 
@@ -386,7 +424,7 @@ class Dendrogram(QGraphicsScene):
         self.rootCluster=root
         if not self.rootCluster:
             return
-##        if self.parent.FitToWindow:
+##        if not self.parent.ManualHorSize:
         width=self.parent.dendrogramView.size().width()
         self.setSceneRect(0, 0, width, self.height())
         self.textAreaWidth=100
@@ -605,7 +643,7 @@ class Dendrogram(QGraphicsScene):
             self.setCutOffLine(e.scenePos().x())
 
     def mouseMoveEvent(self, e):
-        print "mouse move"
+##        print "mouse move"
         if not self.rootCluster:
             return
         if self.parent.SelectionMode==1 and self.cutOffLineDragged:
@@ -628,7 +666,7 @@ class Dendrogram(QGraphicsScene):
         else:
             self.bubbleRect.hide()
             self.update()
-        print objList
+##        print objList
         if objList and objList[0].__class__==MyCanvasText and not self.parent.DisableBubble:
             head="Items: %i" %len(objList[0].cluster)
             body=""
@@ -639,7 +677,7 @@ class Dendrogram(QGraphicsScene):
                 body="\n"+"\n".join(bodyItems)
             self.bubbleRect.setText(head+body)
             self.bubbleRect.setPos(e.scenePos().x(),e.scenePos().y())
-            print head+body
+##            print head+body
             if body!="":
                 self.bubbleRect.show()
             self.update()
