@@ -1,0 +1,92 @@
+<html>
+<head>
+<title>MDS</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>MDS</h1>
+
+<img class="screenshot" src="../icons/MDS.png">
+<p>Multidimensional scaling (MDS) - a projection into a plane fitted to the given distances between the points</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Distance Matrix</DT>
+<DD>A matrix of (desired) distances between points</DD>
+
+<DT>Example Subset (ExampleTable)</DT>
+<DD>A subset of examples to be marked in the graph</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class="attributes">
+<DT>Selected Examples</DT>
+<DD>A table of selected examples</DD>
+
+<DT>Structured Data Files</DT>
+<DD>???</DD>
+</dl>
+
+<p>Signals Example Subset and Selected Examples are only applicable if Distance Matrix describes distances between examples, for instance if the matrix comes from <a href="ExampleDistance.htm">Example Distance</a>.</p>
+
+<h2>Description</h2>
+
+<p>Multidimensional scaling is a technique which finds a low-dimensional (in our case a two-dimensional) projection of points, where it tries to fit the given distances between points as well is possible. The perfect fit is typically impossible to obtain since the data is higher dimensional or the distances are not Euclidean.</p>
+
+<p>To do its work, the widget needs a matrix of distances. The distances can correspond to any kinds of object. However, the widget has some functionality dedicated to distances between examples, such as coloring the points and changing their shapes, marking them, and outputting them upon selection.</p>
+
+<p>The algorithm iteratively moves the points around in a kind of simulation of a physical model: if two points are too close to each other (or too far away), there is a force pushing them apart (together). The change of the point's position at each time interval corresponds to the sum of forces acting on it.</p>
+
+<img class="screenshot" src="MDS.png" border=0 />
+
+<p>The first group of buttons set the position of points. <span class="option">Randomize</span> sets the to a random position; the initial positions are also random. <span class="option">Jitter</span> randomly moves the points for a short distance; this may be useful if the optimization is stuck in a (seemingly) local minimum. <span class="option">Torgerson</span> positions the points using Torgerson's method.</p>
+
+<p>Optimization is run by pushing <span class="option">Optimize</span>. <span class="option">Single Step</span> makes a single step of optimization; this is primarily useful for educative purposes.</p>
+
+<p>Stress function defines how the difference between the desired and the actual distance between points translates into the forces acting on them. Several are available. Let <em>current</em> and <em>desired</em> be the distance in the current projection and the desired distances, and <em>diff=current-desired</em>. Then the stress functions are defined as follows:
+<ul>
+<li><span class="option">Kruskal stress</span>: <em>diff</em><sup>2</sup></li>
+<li><span class="option">Sammon stress</span>: <em>diff</em><sup>2</sup>/<em>current</em></li>
+<li><span class="option">Signed Sammon stress</span>: <em>diff</em>/<em>current</em></li>
+<li><span class="option">Signed relative stress</span>: <em>diff</em>/<em>desired</em></li>
+</ul>
+</p>
+
+<p>The widget redraws the projection during optimization. It can do so at <span class="option">Every step</span>, <span class="option">Every 10 steps</span> or <span class="option">Every 100 steps</span>. Setting a lower refresh interval makes the animation more visually appealing, but can be slow if the number of points is high.</p>
+
+<p>The optimization stops either when the projection changes only minimally at the last iteration or when a specified number of steps have been made. The two conditions are given with options <span class="option">Minimal average stress change</span> and <span class="option">Maximal number of steps</span>.</p>
+
+<p>The bottom of the settings pane shows the average stress (the lower the better) and the number of steps made in the last optimization.</p>
+
+<img class="leftscreenshot" src="MDS-Graph.png" border=0 />
+
+<p>The second tab with settings defines how the points are visualized and the settings related to outputting the data. The user can set the size of points (<span class="option">Point Size</span>) or let the size depend on the value of some continuous attribute (<span class="option">Size</span>) of the example the point represents. The color and shape of the point (<span class="option">Color</span>, <span class="option">Shape</span>) can depend upon values of discrete attributes. Any attribute can serve as a label.</p>
+
+<p>These options are only active if the points represents examples (that is, if there is a table of examples attached to the distance matrix on the widget's input). If the points represent attributes (e.g. the distance matrix comes from <a href="AttributeDistance.htm">Attribute Distance</a>), the points can be labeled by attribute names. If the points come from a labeled distance file (see <a href="DistanceFile.htm">Distance File</a>), the labels can be used for annotating the points.</p>
+
+<p>The widget can superimpose a graph onto the projection, where the specified proportion of the most similar pairs is connected, with the width of connection showing the similarity. This is enabled by checking <span class="option">Show similar pairs</span> and setting the proportion of connected pairs below. Enabling this option during the optimization can illustrate how the algorithm works, though drawing too many connections at each refresh can make the optimization very slow. The picture below shows a rendering of the zoo data set with this option enable.</p>
+
+<img src="MSD-Connected.png"/>
+
+<p>The remaining options deal with zooming selecting the points and sending them on. The magnifying glass enables zooming, and the other two icons enable selection of examples with rectangular or arbitrary selection areas. The buttons in the left group undo the last action, remove all selection and send the selected examples. Sending the examples can be automatic if <span class="option">Auto send selected</span> is checked.</p>
+
+<p>The output data can have the coordinates of each point appended, either as normal attributes (<span class="option">Append coordinates</span>) or as meta attributes (<span class="option">Append coordinates as meta</span>).</p>
+
+<p>The MDS graph performs many of the functions of the visualizations widget. It is in many respects similar to the <a href="../Visuzalize/ScatterPlot.htm">Scatter Plot</a>, so we recommend reading its description as well.</p>
+
+<h2>Examples</h2>
+
+<p>The above graphs were drawn using the following simple schema.</p>
+
+<img class="screenshot" src="MDS-Schema.png"/>
+
+<p>Interactive functions of the MDS widget - marking subsets of examples, selecting examples, etc. - are similar to those of the <a href="../Visuzalize/ScatterPlot.htm">Scatter Plot</a> widget, so see its documentation for more examples.</p>
+
+</body>
+</html>

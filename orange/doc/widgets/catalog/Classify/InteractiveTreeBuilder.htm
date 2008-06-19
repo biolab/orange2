@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Classification Tree Viewer</title>
+<title>Interactive Tree Builder</title>
 <link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
 <link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
 </head>
@@ -26,7 +26,7 @@
 
 <h3>Outputs</h3>
 <DL class=attributes>
-<DT>Classified Examples (orange.ExampleTable)</DT>
+<DT>Examples (orange.ExampleTable)</DT>
 <DD>Examples from the selected tree node.</DD>
 
 <DT>Classifier (orange.TreeClassifier)</DT>
@@ -36,7 +36,7 @@
 <DD>A learner which always returns the same tree - the one constructed in the widget</DD>
 </dl>
 
-<P>Signal <code>Classified Examples</code> sends data only if some tree node is selected and contains some examples.</P>
+<P>Signal <code>Examples</code> sends data only if some tree node is selected and contains some examples.</P>
 
 <h2>Description</h2>
 
@@ -48,25 +48,25 @@
 <tr><td valign="top"><img class="screenshot" src="InteractiveTreeBuilder.png" alt="Interactive Tree Builder widget" border=0></td>
 </tr></table>
 
-<P>Button <b>Split</b> splits the selected tree node according to the criterion above the button. For instance, if we pressed Split in the above widget, the animals that don't give milk and have no feathers (the pictures shows a tree for the zoo data set) would be split according to whether they are <code>aquatic</code> or not. In case of continuous attributes, a cut off point needs to be specified as well.</P>
+<P>Button <span class="option">Split</span> splits the selected tree node according to the criterion above the button. For instance, if we pressed Split in the above widget, the animals that don't give milk and have no feathers (the pictures shows a tree for the zoo data set) would be split according to whether they are <code>aquatic</code> or not. In case of continuous attributes, a cut off point needs to be specified as well.</P>
 
 <P>If Split is used on a node which is not a leaf, the criterion at that node is replaced. If we, for instance, selected the &lt;root&gt; node and pushed Split, the criterion <code>milk</code> would be replaced with <code>aquatic</code> and the nodes below (<code>feathers</code>) are removed.</P>
 
-<P>Button <b>Cut</b> cuts the tree at the selected node. If we pushed Cut in the situation in the picture, nothing would happen since the selected node (<code>feathers=0</code>) is already a leaf. If we selected <code>&lt;root&gt;</code> and pushed Cut, the entire tree would be cut off.</P>
+<P>Button <span class="option">Cut</span> cuts the tree at the selected node. If we pushed Cut in the situation in the picture, nothing would happen since the selected node (<code>feathers=0</code>) is already a leaf. If we selected <code>&lt;root&gt;</code> and pushed Cut, the entire tree would be cut off.</P>
 
 <P>Cut is especially useful in combination with <code>Build</code> which builds a subtree at the current node. So, if we push Build in the situation depicted above, a subtree would be built for the milkless featherless animals, leaving the rest of the tree (that is, the existing two nodes) intact. If Build is pressed at a node which is not leaf, the entire subtree at that node is replaced with an automatically induced tree.</P>
 
-<P>Build uses some reasonable default parameters for tree learning (information gain ratio is used for attribute selection with a minimum of 2 examples per leaf, which gives an algorithm equivalent to Quinlan's C4.5). To gain more control on the tree construction arguments, use a <a href="ClassificationTree.htm">Classification Tree widget</a> or <a href="C4.5.htm">C4.5</a> widget, set its parameters and connect it to the input of Interactive Tree Builder. The set parameters will the be used for the tree induction. (If you use C4.5, the original Quinlan's algorithm, don't forget to check <b>Convert to orange tree structure</b>.)</P>
+<P>Build uses some reasonable default parameters for tree learning (information gain ratio is used for attribute selection with a minimum of 2 examples per leaf, which gives an algorithm equivalent to Quinlan's C4.5). To gain more control on the tree construction arguments, use a <a href="ClassificationTree.htm">Classification Tree widget</a> or <a href="C4.5.htm">C4.5</a> widget, set its parameters and connect it to the input of Interactive Tree Builder. The set parameters will the be used for the tree induction. (If you use C4.5, the original Quinlan's algorithm, don't forget to check <span class="option">Convert to orange tree structure</span>.)</P>
 
-<P>The widget has several outputs. <b>Classified Examples</b> gives, as in <a href="ClassificationTreeViewer.htm">Classification Tree Viewer</a> the list of examples from the selected node. This output can be used to observe the statistical properties or visualizations of various attributes for a specific node, based on which we should decide whether we should split the examples and how.</P>
+<P>The widget has several outputs. <span class="option">Examples</span> gives, as in <a href="ClassificationTreeViewer.htm">Classification Tree Viewer</a> the list of examples from the selected node. This output can be used to observe the statistical properties or visualizations of various attributes for a specific node, based on which we should decide whether we should split the examples and how.</P>
 
-<P>Signal <b>Classification Tree</b> can be attached to another tree viewer. Using a Classification Tree Viewer is not really useful as it will show the same picture as Interactive Tree Builder. We can however connect the more colorful <a href="ClassificationTreeGraph.htm">Classification Tree Graph</a>.</P>
+<P>Signal <span class="option">Classification Tree</span> can be attached to another tree viewer. Using a Classification Tree Viewer is not really useful as it will show the same picture as Interactive Tree Builder. We can however connect the more colorful <a href="ClassificationTreeGraph.htm">Classification Tree Graph</a>.</P>
 
-<P>The last output is <b>Tree Learner</b>. This is a tree learner which always gives the same tree - the one we constructed in this widget. This can be used to assess the tree's quality with the <a href="../Evaluate/TestLearners.htm">Test Learners</a> widget. This requires some caution, though: you should not test the tree on the same data you used to induce it. See the Examples section below for the correct procedure.</P>
+<P>The last output is <span class="option">Tree Learner</span>. This is a tree learner which always gives the same tree - the one we constructed in this widget. This can be used to assess the tree's quality with the <a href="../Evaluate/TestLearners.htm">Test Learners</a> widget. This requires some caution, though: you should not test the tree on the same data you used to induce it. See the Examples section below for the correct procedure.</P>
 
 <h2>Examples</h2>
 
-<P>The first snapshot shows the typical "environment" of the Interactive Tree Builder.</P> 
+<P>The first snapshot shows the typical "environment" of the Interactive Tree Builder.</P>
 
 <img class="screenshot"
 src="InteractiveTreeBuilder-SchemaInduction.png" alt="A schema with Interactive Tree Builder" border=0>
@@ -85,14 +85,14 @@ src="InteractiveTreeBuilder-SchemaInduction.png" alt="A schema with Interactive 
 <img class="screenshot"
 src="InteractiveTreeBuilder-SchemaSampling.png" alt="A schema with Interactive Tree Builder" border=0>
 
-<P>We have used the <a href="../Data/DataSampler">Data Sampler</a> widget for splitting the data; in most cases we recommend using stratified random sampling with a sample size of 70% for training. These examples (denoted as "Classified Examples" in the snapshot) are fed to the Interactive Tree Builder where we employ the Orange's armory to construct the tree as described above.</P>
+<P>We have used the <a href="../Data/DataSampler">Data Sampler</a> widget for splitting the data; in most cases we recommend using stratified random sampling with a sample size of 70% for training. These examples (denoted as "Examples" in the snapshot) are fed to the Interactive Tree Builder where we employ the Orange's armory to construct the tree as described above.</P>
 
-<P>The tricky part is connecting the <code>Test Learners</code>: Data Sampler's Classified Examples should be used as Test Learners' Data, and Data Sampler's Remaining Classified Examples are the Test Learners' Separate Test Data.</P>
+<P>The tricky part is connecting the <code>Test Learners</code>: Data Sampler's Examples should be used as Test Learners' Data, and Data Sampler's Remaining Examples are the Test Learners' Separate Test Data.</P>
 
 <img class="screenshot"
 src="InteractiveTreeBuilder-SchemaSampling-Wiring.png" alt="Connecting Data Sampler to Test Learners when using Interactive Tree Builder" border=0>
 
-<P>In Test Learners, don't forget to set the Sampling type to <b>Test on test data</b>. Interactive Tree Builder should then give its Tree Learner to Test Learners. To compare the manually constructed tree with, say, an automatically constructed one and with a Naive Bayesian classifier, we can include these two in the schema.</P>
+<P>In Test Learners, don't forget to set the Sampling type to <span class="option">Test on test data</span>. Interactive Tree Builder should then give its Tree Learner to Test Learners. To compare the manually constructed tree with, say, an automatically constructed one and with a Naive Bayesian classifier, we can include these two in the schema.</P>
 
 <P>Test Learners will now feed the training data (70% sample it gets from Data Sampler) to all three learning algorithms. While Naive Bayes and Classification Tree will actually learn, Interactive Tree Builder will ignore the training examples and return the manually built tree. All three models will then be tested on the remaining 30% examples.</P>
 

@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>Attribute Distance</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Attribute Distance</h1>
+
+<img class="screenshot" src="../icons/AttributeDistance.png">
+<p>Computes distances between examples in the data set</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples</DT>
+<DD>A list of examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class="attributes">
+<DT>Distance Matrix</DT>
+<DD>A matrix of attribute distances</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Widget Attribute Distances computes the distances between the attributes in the data sets. Don't confuse it with a similar widget for computing the distances between examples.</p>
+
+<img class="leftscreenshot" src="AttributeDistance.png" alt="Association Rules Widget" border=0>
+
+<p>Since the widget cannot compute distances between discrete and continuous attributes, all attributes are first either discretized, by splitting the attribute into four quartiles, or "continuized" by treating any discrete attributes as ordinal with values equivalent to 0, 1, 2, 3... For other, possibly better methods of discretization/continuization, see widgets <a href="../Data/Discretize.htm">Discretize</a> and <a href="../Data/Continuize.htm">Continuize</a>.</p>
+
+<p>The two kinds of attributes then have different measures of distance.</p>
+
+<p>For discrete attributes, the distance can be computed as <span class="option">Pearson's chi-square</span>, where the more the two attributes are dependent, the closer they are. The measure actually returns the p-value of the common chi-square test of independence. The other two measures are as defined by Aleks Jakulin in his work on <a href="http://stat.columbia.edu/~jakulin/Int/">attribute interactions</a>: <span class="option">2-way interaction</span> is defined as I(A;B)/H(A,B) and <span class="option">3-way interaction</span> is I(A;B;C), respectively.</p>
+
+
+<h2>Examples</h2>
+
+<P>This widget is an intermediate widget: it shows no user readable results and its output needs to be fed to a widget that can do something useful with the computed distances, for instance the <a href="DistanceMap.htm">Distance Map</a>, <a href="HierarchicalClustering.htm">Hierarchical Clustering</a> to cluster the attributes, or <a href="MDS.htm">MDS</a> to visualize the distances between them.</P>
+
+<img class="screenshot" src="AttributeDistance-Schema.png" alt="Association Rules" border=0>
+
+</body>
+</html>

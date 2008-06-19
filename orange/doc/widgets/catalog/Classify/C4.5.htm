@@ -17,7 +17,7 @@
 <h3>Inputs</h3>
 
 <DL class=attributes>
-<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DT>Examples (ExampleTable)</DT>
 <DD>A table with training examples</DD>
 </dl>
 
@@ -36,7 +36,7 @@
 <DD>Induced tree in Orange's native format</DD>
 </dl>
 
-<P><code>Classifier</code>, <code>C45 Tree</code> and <code>Classification Tree</code> are available only if examples are present on the input. Which of the latter two output signals is active is determined by setting <b>Convert to orange tree structure</b> (see the description below.</P>
+<P><code>Classifier</code>, <code>C45 Tree</code> and <code>Classification Tree</code> are available only if examples are present on the input. Which of the latter two output signals is active is determined by setting <span class="option">Convert to orange tree structure</span> (see the description below.</P>
 
 <h2>Description</h2>
 
@@ -46,23 +46,19 @@
 
 <p>As all widgets for classification, C4.5 widget provides learner and classifier on the output. Learner is a learning algorithm with settings as specified by the user. It can be fed into widgets for testing learners, namely <code>Test Learners</code>. Classifier is a classification tree build from the training examples on the input. If examples are not given, the widget outputs no classifier.</p>
 
-<table>
-<tr><td valign="top"><img class="screenshot" src="C4.5.gif" alt="C4.5 Widget" border=0></td>
+<img class="leftscreenshot" src="C4.5.png" alt="C4.5 Widget" border=0>
 
-<td valign="top">
 <P>Learner can be given a name under which it will appear in, say, <code>Test Learners</code>. The default name is "C4.5".</P>
 
-<P>The next block of options deals with splitting. C4.5 uses gain ratio by default; to override this, check <b>Use information gain instead of ratio</b>, which is equivalent to C4.5's command line option <code>-g</code>. If you enable <b>subsetting</b> (equivalent to <code>-s</code>), C4.5 will merge values of multivalued discrete attributes instead of creating one branch for each node. <b>Probabilistic threshold for continuous attributes</b> (<code>-p</code>) makes C4.5 compute the lower and upper boundaries for values of continuous attributes for which the number of misclassified examples would be within one standard deviation from the base error.</P>
+<P>The next block of options deals with splitting. C4.5 uses gain ratio by default; to override this, check <span class="option">Use information gain instead of ratio</span>, which is equivalent to C4.5's command line option <code>-g</code>. If you enable <span class="option">subsetting</span> (equivalent to <code>-s</code>), C4.5 will merge values of multivalued discrete attributes instead of creating one branch for each node. <span class="option">Probabilistic threshold for continuous attributes</span> (<code>-p</code>) makes C4.5 compute the lower and upper boundaries for values of continuous attributes for which the number of misclassified examples would be within one standard deviation from the base error.</P>
 
-<P>As for pruning, you can set the <b>Minimal number of examples in the leaves</b> (Quinlan's default is 2, but you may want to disable this for noiseless data), and the <b>Post prunning with confidence level</b>; the default confidence is 25.</P>
+<P>As for pruning, you can set the <span class="option">Minimal number of examples in the leaves</span> (Quinlan's default is 2, but you may want to disable this for noiseless data), and the <span class="option">Post prunning with confidence level</span>; the default confidence is 25.</P>
 
-<P>Trees can be constructed iteratively, with ever larger number of examples. If enable, you can set the <b>Number of trials</b>, the <b>initial windows size</b> and <b>window increment</b>.</P>
+<P>Trees can be constructed iteratively, with ever larger number of examples. If enable, you can set the <span class="option">Number of trials</span>, the <span class="option">initial windows size</span> and <span class="option">window increment</span>.</P>
 
-<P>The resulting classifier can be left in the original Quinlan's structure, as returned by his underlying code, or <b>converted to orange the structure</b> that is used by Orange's tree induction algorithm. This setting decides which of the two signals that output the tree - <code>C45 Classifier</code> or <code>Tree Classifier</code> will be active. As Orange's structure is more general and can easily accommodate all the data that C4.5 tree needs for classification, we believe that the converted tree behave exactly the same as the original tree, so the results should not depend on this setting. You should therefore leave it enabled since only the converted trees can be shown in the tree displaying widgets.</P>
+<P>The resulting classifier can be left in the original Quinlan's structure, as returned by his underlying code, or <span class="option">converted to orange the structure</span> that is used by Orange's tree induction algorithm. This setting decides which of the two signals that output the tree - <code>C45 Classifier</code> or <code>Tree Classifier</code> will be active. As Orange's structure is more general and can easily accommodate all the data that C4.5 tree needs for classification, we believe that the converted tree behave exactly the same as the original tree, so the results should not depend on this setting. You should therefore leave it enabled since only the converted trees can be shown in the tree displaying widgets.</P>
 
-<P>When you change one or more settings, you need to push <b>Apply Setting</b>; this will put the new learner on the output and, if the training examples are given, construct a new classifier and output it as well.</P>
-</td>
-</tr></table>
+<P>When you change one or more settings, you need to push <span class="option">Apply</span>; this will put the new learner on the output and, if the training examples are given, construct a new classifier and output it as well.</P>
 
 
 <h2>Examples</h2>
