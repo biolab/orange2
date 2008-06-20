@@ -18,7 +18,7 @@ class OWDataSampler(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'SampleData', wantMainArea = 0)
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
+        self.outputs = [("Sample", ExampleTable), ("Remaining Examples", ExampleTable)]
 
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
@@ -90,7 +90,7 @@ class OWDataSampler(OWWidget):
 
         # Output Group Box
         OWGUI.separator(self.controlArea)
-        self.foldcombo = OWGUI.comboBox(self.controlArea, self, "outFold", 'Ouput Data for Fold / Group', 'Fold / group:', orientation = "horizontal", items = range(1,101), callback = self.foldChanged, sendSelectedValue = 1, valueType = int)
+        self.foldcombo = OWGUI.comboBox(self.controlArea, self, "outFold", 'Output Data for Fold / Group', 'Fold / group:', orientation = "horizontal", items = range(1,101), callback = self.foldChanged, sendSelectedValue = 1, valueType = int)
         self.foldcombo.setEnabled(False)
 
         # Select Data Button
@@ -177,7 +177,7 @@ class OWDataSampler(OWWidget):
             self.infoa.setText('No data on input.')
             self.infob.setText('')
             self.infoc.setText('')
-            self.send("Examples", None)
+            self.send("Sample", None)
             self.send("Remaining Examples", None)
             self.data = None
 
@@ -210,7 +210,7 @@ class OWDataSampler(OWWidget):
         if remainder:
             remainder.name = self.data.name
         # send data
-        self.send("Examples", sample)
+        self.send("Sample", sample)
         self.send("Remaining Examples", remainder)
 
     # MAIN SWITCH
