@@ -85,4 +85,4 @@ def addOrangeDirectoriesToPath(registryFileName = None):
 
 directoryNames = __getDirectoryNames()
 #vars().update(directoryNames)
-addOrangeDirectoriesToPath()
+addOrangeDirectoriesToPath(directoryNames["registryFileName"])
