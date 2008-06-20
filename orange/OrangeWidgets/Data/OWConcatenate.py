@@ -13,7 +13,7 @@ class OWConcatenate(OWWidget):
     settingsList = ["mergeAttributes"]
     
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "FeatureConstructor")
+        OWWidget.__init__(self, parent, signalManager, "Concatenate", wantMainArea=0)
         self.inputs = [("Primary Table", orange.ExampleTable, self.setData), ("Additional Tables", orange.ExampleTable, self.setMoreData, Multiple)]
         self.outputs = [("Examples", ExampleTable)]
 
