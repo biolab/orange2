@@ -13,6 +13,7 @@ def call(f,*args,**keyargs):
 import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, string, os.path, user, sys, warnings
+import orngIO
 
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
@@ -23,14 +24,19 @@ class FileNameContextHandler(ContextHandler):
         
 
 class OWFile(OWWidget):
-    settingsList=["recentFiles", "createNewOn"]
+    settingsList=["recentFiles", "createNewOn", "showAdvanced"]
     contextHandlers = {"": FileNameContextHandler()}
 
+    registeredFileTypes = [ft for ft in orange.getRegisteredFileTypes() if len(ft)>2 and ft[2]]
+    dlgFormats = 'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\n' \
+                 + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
+                 + "\nAll files(*.*)"
+                 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 0)
+        OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 1)
 
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+        self.outputs = [("Examples", ExampleTable)]
 
         #set default settings
         self.recentFiles=["(none)"]
@@ -39,6 +45,7 @@ class OWFile(OWWidget):
         self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
         self.domain = None
         self.loadedFile = ""
+        self.showAdvanced = 0
         #get settings from the ini file, if they exist
         self.loadSettings()
 
@@ -54,18 +61,17 @@ class OWFile(OWWidget):
         self.infob = OWGUI.widgetLabel(box, ' ')
         self.warnings = OWGUI.widgetLabel(box, ' ')
         
-        box = OWGUI.widgetBox(self.controlArea, "Advanced Settings")
-        smallWidget = OWGUI.SmallWidgetButton(box, text = "Show advanced settings")
+        smallWidget = OWGUI.collapsableWidgetBox(self.controlArea, "Advanced settings", self, "showAdvanced", callback=self.adjustSize0)
         
-        box = OWGUI.widgetBox(smallWidget.widget, "Missing Value Symbols", addSpace = True, orientation=1)
+        box = OWGUI.widgetBox(smallWidget, "Missing Value Symbols", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
         
         hbox = OWGUI.indentedBox(box)
-        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
         #OWGUI.separator(hbox, 16, 0)
-        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
 
-        OWGUI.radioButtonsInBox(smallWidget.widget, self, "createNewOn", box="New Attributes",
+        OWGUI.radioButtonsInBox(smallWidget, self, "createNewOn", box="New Attributes",
                        label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
                                     "Have no common values with the new (recommended)",
@@ -74,6 +80,10 @@ class OWFile(OWWidget):
                                ])
 
         #self.adjustSize()
+
+    def adjustSize0(self):
+        qApp.processEvents()
+        QTimer.singleShot(0, self.adjustSize)
 
     # set the file combo box
     def setFileList(self):
@@ -164,10 +174,10 @@ class OWFile(OWWidget):
             else:
                 startfile=self.recentFiles[0]
 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile,
-        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)'))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, self.dlgFormats))
 
-        if filename == "": return
+        if filename == "":
+            return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
         self.setFileList()
@@ -186,7 +196,6 @@ class OWFile(OWWidget):
         
         if fn == "(none)":
             self.send("Examples", None)
-            self.send("Attribute Definitions", None)
             self.infoa.setText("No data loaded")
             self.infob.setText("")
             self.warnings.setText("")
@@ -217,7 +226,7 @@ class OWFile(OWWidget):
             if data is None:
                 self.error(str(errValue))
                 self.dataDomain = None
-                self.infoa.setText('No data loaded due to an error')
+                self.infoa.setText('Data was not loaded due to an error.')
                 self.infob.setText("")
                 self.warnings.setText("")
                 if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
@@ -233,9 +242,9 @@ class OWFile(OWWidget):
             elif cl.varType == orange.VarTypes.Discrete:
                     self.infob.setText('Classification; Discrete class with %d value(s).' % len(cl.values))
             else:
-                self.infob.setText("Class neither descrete nor continuous.")
+                self.infob.setText("Class is neither discrete nor continuous.")
         else:
-            self.infob.setText("Data without a dependent variable.")
+            self.infob.setText("Data has no dependent variable.")
 
         warnings = ""
         metas = data.domain.getmetas()
@@ -259,7 +268,13 @@ class OWFile(OWWidget):
             attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
                   + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
             if attrs:
-                warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
+                jattrs = ", ".join(attrs)
+                if len(jattrs) > 80:
+                    jattrs = jattrs[:80] + "..."
+                if len(jattrs) > 30: 
+                    warnings += "<li>%s:<br/> %s</li>" % (message, jattrs)
+                else:
+                    warnings += "<li>%s: %s</li>" % (message, jattrs)
 
         self.warnings.setText(warnings)
         #qApp.processEvents()
@@ -273,7 +288,6 @@ class OWFile(OWWidget):
             data.name = fName
 
         self.send("Examples", data)
-        self.send("Attribute Definitions", data.domain)
         if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
 
 if __name__ == "__main__":
