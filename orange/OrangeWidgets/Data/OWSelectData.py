@@ -249,9 +249,9 @@ class OWSelectData(OWWidget):
                 filter = orange.Filter_disjunction([orange.Filter_conjunction(l) for l in filterList])
             else:
                 filter = orange.Filter_conjunction([]) # a filter that does nothing
-            matchingOutput = filter(self.data)
+            matchingOutput = filter(self.data, 1)
             matchingOutput.name = self.data.name
-            nonMatchingOutput = filter(self.data, negate=1)
+            nonMatchingOutput = filter(self.data, 1, negate=1)
             nonMatchingOutput.name = self.data.name
 
             if self.purgeAttributes or self.purgeClasses:
@@ -631,7 +631,7 @@ class OWSelectData(OWWidget):
             else:
                 cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
                 cw.setChecked(cond.enabled)
-                self.connect(cw, SIGNAL("toggled(bool)"), lambda val: self.criteriaActiveChange(cond, val))
+                self.connect(cw, SIGNAL("toggled(bool)"), lambda val, cond=cond: self.criteriaActiveChange(cond, val))
 
             self.criteriaTable.setCellWidget(row, 0, cw)
 
