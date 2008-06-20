@@ -996,6 +996,7 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
 class collapsableWidgetBox(QGroupBox):
     def __init__(self, widget, box = "", master = None, value = "", orientation = "vertical", callback = None):
         QGroupBox.__init__(self, widget)
+        self.setFlat(1)
         if orientation == 'vertical': self.setLayout(QVBoxLayout())
         else:                         self.setLayout(QHBoxLayout())
 
@@ -1017,6 +1018,7 @@ class collapsableWidgetBox(QGroupBox):
         if self.value:
             self.master.__setattr__(self.value, self.isChecked())
             self.updateControls()
+            self.setFlat(1)
         if self.callback != None:
             self.callback()
 
