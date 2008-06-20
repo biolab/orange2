@@ -488,7 +488,7 @@ class OWDiscretize(OWWidget):
         self.classIntervalsLabel = OWGUI.widgetLabel(box, "Current splits: ")
         OWGUI.separator(box)
         OWGUI.checkBox(box, self, "outputOriginalClass", "Output original class", callback = self.commitIf)
-        OWGUI.widgetLabel(box, "(Widget always uses discretized class internally.)")
+        OWGUI.widgetLabel(box, "("+"Widget always uses discretized class internally."+")")
 
         OWGUI.separator(vbox)
         #OWGUI.rubber(vbox)
@@ -693,6 +693,7 @@ class OWDiscretize(OWWidget):
             le.setText(" ".join(cs))
 
         self.indiDiscretization, self.indiIntervals = indiData[:2]
+        self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
 
         self.graph.setData(attr, self.data)
         if hasattr(self, "discretizers"):
@@ -760,7 +761,7 @@ class OWDiscretize(OWWidget):
             if not dontSetACustom and which >= 0 and not self.customSplits[which]:
                 attr = self.data.domain[idx]
                 splitsTxt = self.indiData[idx][2+which] = [str(attr(x)) for x in self.graph.curCutPoints]
-                self.customSplits[which] = " ".join(splitsTxt)
+                self.customSplits[which] = splitsTxt # " ".join(splitsTxt)
                 self.customLineEdits[which].setText(" ".join(splitsTxt))
                 self.computeDiscretizer(i, idx)
             else:
@@ -845,9 +846,9 @@ class OWDiscretize(OWWidget):
         idx = self.continuousIndices[self.selectedAttr]
 
         if self.indiDiscretization >= self.D_N_METHODS + 1:
-            splits = str(self.customSplits[self.indiDiscretization - self.D_N_METHODS - 1])
+            splits = self.customSplits[self.indiDiscretization - self.D_N_METHODS - 1]
             try:
-                valid = bool([float(i) for i in self.customSplits[which]])
+                valid = bool([float(i) for i in self.customSplits[which]].split())
             except:
                 valid = False
         else:
@@ -864,7 +865,7 @@ class OWDiscretize(OWWidget):
 
 
     # This weird construction of the list is needed for easier translation into other languages
-    shortDiscNames = [""] + [" (%s)" % x for x in ["leave continuous", "entropy", "equal frequency", "equal width", "removed"] + ["custom %i" % x for x in range(1, 4)]] 
+    shortDiscNames = [""] + [" (%s)" % x for x in ("leave continuous", "entropy", "equal frequency", "equal width", "removed")] + [(" ("+"custom %i"+")") % x for x in range(1, 4)]
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
         attr = self.data.domain[idx]
@@ -920,10 +921,10 @@ class OWDiscretize(OWWidget):
         elif discType == self.D_REMOVE:
             discInts = ""
         elif not discretizer:
-            discInts = ": <can't discretize>"
+            discInts = ": "+"<can't discretize>"
         else:
             points = discretizer.getValueFrom.transformer.points
-            discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
+            discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": "+"<removed>"
         self.indiLabels[i] = discInts + discName
         self.attrList.reset()
 
