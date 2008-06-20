@@ -223,7 +223,7 @@ class OWDataTable(OWWidget):
         qApp.restoreOverrideCursor()
         #table.setCurrentCell(-1,-1)
         #table.show()
-
+ 
 
     def sortByColumn(self, index):
         table = self.tabs.currentWidget()
@@ -309,7 +309,7 @@ class OWDataTable(OWWidget):
                 elif data.domain.classVar.varType == orange.VarTypes.Continuous:
                     self.infoClass.setText('Continuous class.')
                 else:
-                    self.infoClass.setText("Class neither discrete nor continuous.")
+                    self.infoClass.setText("Class is neither discrete nor continuous.")
             else:
                 self.infoClass.setText('Classless domain.')
 
