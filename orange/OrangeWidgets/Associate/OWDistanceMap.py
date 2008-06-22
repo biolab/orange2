@@ -62,7 +62,7 @@ class OWDistanceMap(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Distance Map')
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Examples", ExampleTable), ("Examples", ExampleTable),("Attribute List", orange.VarList)]
+        self.outputs = [("Examples", ExampleTable), ("Attribute List", orange.VarList)]
 
         self.clicked = False
         self.offsetX = 5
@@ -105,11 +105,10 @@ class OWDistanceMap(OWWidget):
 
         # SETTINGS TAB
         tab = OWGUI.createTabPage(self.tabs, "Settings")
-        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)")
+        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)", addSpace=True)
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
-        
                          callback=[lambda f="CellWidth", t="CellHeight": self.adjustCellSize(f,t), self.drawDistanceMap, self.manageGrid])
         OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ',
                          labelWidth=38, minValue=1, maxValue=self.maxVSize,
@@ -117,19 +116,28 @@ class OWDistanceMap(OWWidget):
                          callback=[lambda f="CellHeight", t="CellWidth": self.adjustCellSize(f,t), self.drawDistanceMap,self.manageGrid])
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares",
                          callback = [self.setSquares, self.drawDistanceMap])
-        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=min(self.CellWidth, self.CellHeight) <= c_smallcell)
+        self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
-        OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1,
-                         step=0.1, callback=self.drawDistanceMap)
+        OWGUI.qwtHSlider(tab, self, "Merge", box="Merge" ,label='Elements:', labelWidth=50,
+                         minValue=1, maxValue=100, step=1,
+                         callback=self.createDistanceMap, ticks=0, addSpace=True)
+        
+        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
+                         items=[x[0] for x in self.sorting],
+                         tooltip="Sorting method for items in distance matrix.",
+                         callback=self.sortItems)
 
-        self.colorPalette = ColorPalette(tab, self, "",
-                         additionalColors =["Cell outline", "Selected cells"],
-                         callback = self.setColor)
         self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
-        tab = OWGUI.createTabPage(self.tabs, "Filter")
-        box = OWGUI.widgetBox(tab, "Threshold Values")
+        tab = OWGUI.createTabPage(self.tabs, "Colors")
+        box = OWGUI.widgetBox(tab, "Color settings", addSpace=True)
+        OWGUI.widgetLabel(box, "Gamma")
+        OWGUI.qwtHSlider(box, self, "Gamma", minValue=0.1, maxValue=1,
+                         step=0.1, maxWidth=100, callback=self.drawDistanceMap)
+
+        OWGUI.separator(box)
+
         OWGUI.checkBox(box, self, 'CutEnabled', "Enable thresholds", callback=self.setCutEnabled)
         self.sliderCutLow = OWGUI.qwtHSlider(box, self, 'CutLow', label='Low:',
                               labelWidth=33, minValue=-100, maxValue=0, step=0.1,
@@ -143,18 +151,15 @@ class OWDistanceMap(OWWidget):
             self.sliderCutLow.box.setDisabled(1)
             self.sliderCutHigh.box.setDisabled(1)
 
-        box = QVButtonGroup("Merge", tab)
-        OWGUI.qwtHSlider(box, self, "Merge", label='Elements:', labelWidth=50,
-                         minValue=1, maxValue=100, step=1,
-                         callback=self.createDistanceMap, ticks=0)
-        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
-                         items=[x[0] for x in self.sorting],
-                         tooltip="Sorting method for items in distance matrix.",
-                         callback=self.sortItems)
-        self.tabs.insertTab(tab, "Filter")
+
+        self.colorPalette = ColorPalette(tab, self, "",
+                         additionalColors =["Cell outline", "Selected cells"],
+                         callback = self.setColor)
+
+        self.tabs.insertTab(tab, "Colors")
 
         # INFO TAB
-        tab = OWGUI.widgetBox(self.tabs, "Info")
+        tab = OWGUI.createTabPage(self.tabs, "Info")
         box = OWGUI.widgetBox(tab, "Annotation && Legends")
         OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend',
                        callback=self.drawDistanceMap)
@@ -162,9 +167,8 @@ class OWDistanceMap(OWWidget):
                        callback=self.drawDistanceMap)
 
         box = OWGUI.widgetBox(tab, "Balloon")
-        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon", callback=None)
-        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names",
-                       callback=None)
+        OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon")
+        OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names")
 
         box = OWGUI.widgetBox(tab, "Select")
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
@@ -177,9 +181,9 @@ class OWDistanceMap(OWWidget):
 
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections',
                               self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
-        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release",
-                              callback=None)
+        OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
 
+        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
 
@@ -188,8 +192,7 @@ class OWDistanceMap(OWWidget):
         self.mainArea.layout().addWidget(self.canvasView)
 
         #construct selector
-        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight,
-                                         self.canvas)
+        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZ(20)
@@ -233,7 +236,7 @@ class OWDistanceMap(OWWidget):
 
     def qrgbToQColor(self, color):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF)
-        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # on Mac color can not be negative number in this case so we convert it manually
+        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # if color cannot be negative number we convert it manually
 
     def getItemFromPos(self, i):
         if (len(self.distanceMap.elementIndices)==0):
@@ -287,8 +290,6 @@ class OWDistanceMap(OWWidget):
                 selected = orange.ExampleTable(items[0].domain, ex)
                 self.send("Examples", selected)
 
-
-    # callbacks (rutines called after some GUI event, like click on a button)
 
     def setColor(self):
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
@@ -602,9 +603,12 @@ class OWDistanceMap(OWWidget):
         self.createDistanceMap()
 
     def setMatrix(self, matrix):
+        self.send("Examples", None)
+        self.send("Attribute List", None)
+
         if not matrix:
-            # should remove the data where necessary
             return
+
         # check if the same length
         self.matrix = matrix
         self.constructDistanceMap()
@@ -637,7 +641,7 @@ class OWDistanceMap(OWWidget):
 class ImageItem(QCanvasRectangle):
     def __init__(self, bitmap, canvas, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
         QCanvasRectangle.__init__(self, canvas)
-	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
+	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
         self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
         self.canvas = canvas
         self.setSize(width, height)
