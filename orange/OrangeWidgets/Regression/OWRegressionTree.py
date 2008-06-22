@@ -52,8 +52,8 @@ class OWRegressionTree(OWWidget):
         #OWGUI.checkWithSpin(self.prePBox, self, "Min. instances in leaves: ", 1, 1000,
         #                    "MinInstCheck", "MinInstVal")
 
-        OWGUI.checkWithSpin(self.prePBox, self, "Stop splitting nodes with ", 1, 1000,
-                            "MinNodeCheck", "MinNodeVal", " or fewer instances")
+        OWGUI.checkWithSpin(self.prePBox, self, "Do not split nodes with less instances than", 1, 1000,
+                            "MinNodeCheck", "MinNodeVal")
 
         #OWGUI.checkWithSpin(self.prePBox, self, "Stop splitting nodes with ", 1, 100,
         #                    "MaxMajCheck", "MaxMajVal", "% of majority class")
