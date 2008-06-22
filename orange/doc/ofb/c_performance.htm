@@ -69,8 +69,8 @@ for i in range(len(learners)):
 
 <p>The output of this script is:</p>
 <xmp class="code">Learner  CA     IS     Brier    AUC
-bayes    0.903  0.759  0.175  0.974
-tree     0.961  0.850  0.070  0.960
+bayes    0.901  0.758  0.176  0.976
+tree     0.961  0.845  0.075  0.956
 </xmp>
 
 
@@ -83,10 +83,46 @@ score, Brier score and area under ROC curve (AUC) for each of the
 learners are computed (function <code>CA</code>,
 <code>IS</code> and <code>AUC</code>).</p>
 
-<p>Apart from statistics that we have mentioned above, 
-<a href="../modules/orngStat.htm">orngStat</a> has build-in functions that can compute other performance
-metrics, and <a href="../modules/orngTest.htm">orngTest</a> includes other testing schemas and includes caching of results. 
-If you need to test your learners with standard statistics, these are probably all you need.</p>
+<p>Apart from statistics that we have mentioned above, <a
+href="../modules/orngStat.htm">orngStat</a> has build-in functions
+that can compute other performance metrics, and <a
+href="../modules/orngTest.htm">orngTest</a> includes other testing
+schemas. If you need to test your learners with standard statistics,
+these are probably all you need. Compared to the script above, we
+below show the use of some other statistics, with perhaps more modular
+code as above.</p>
+
+<p class="header">part of <a href="accuracy8.py">accuracy8.py</a> (uses <a
+href="voting.tab">voting.tab</a>)</p>
+<xmp class="code">data = orange.ExampleTable("voting")
+res = orngTest.crossValidation(learners, data, folds=10)
+cm = orngStat.computeConfusionMatrices(res,
+        classIndex=data.domain.classVar.values.index('democrat'))
+
+stat = (('CA', 'CA(res)'),
+        ('Sens', 'sens(cm)'),
+        ('Spec', 'spec(cm)'),
+        ('AUC', 'AUC(res)'),
+        ('IS', 'IS(res)'),
+        ('Brier', 'BrierScore(res)'),
+        ('F1', 'F1(cm)'),
+        ('F2', 'Falpha(cm, alpha=2.0)'))
+
+scores = [eval("orngStat."+s[1]) for s in stat]
+print "Learner  " + "".join(["%-7s" % s[0] for s in stat])
+for (i, l) in enumerate(learners):
+    print "%-8s " % l.name + "".join(["%5.3f  " % s[i] for s in scores])
+</xmp>
+
+<p>Notice that for a number of scoring measures we needed to compute
+the confusion matrix, for which we also needed to specify the target
+class (democrats, in our case). This script has a similar output to
+the previous one:</p>
+
+<xmp class="code">Learner  CA     Sens   Spec   AUC    IS     Brier  F1     F2
+bayes    0.901  0.891  0.917  0.976  0.758  0.176  0.917  0.908
+tree     0.961  0.974  0.940  0.956  0.845  0.075  0.968  0.970
+</xmp>
 
 
 <h2>Do It On Your Own: A Warm-Up</h2>

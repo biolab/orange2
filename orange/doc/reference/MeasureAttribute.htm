@@ -155,7 +155,7 @@ for t in meas.thresholdFunction("petal length", data):
     print "%5.3f: %5.3f" % t
 </xmp>
 
-<P>If we didn't construct the attribute in advance, we could write <code>orange.MeasureAttribute_relief().thresholdFunction("petal length", data)</code>. This is not recommendable for ReliefF, since it may be a lot slower.</P>
+<P>If we hadn't constructed the attribute in advance, we could write <code>orange.MeasureAttribute_relief().thresholdFunction("petal length", data)</code>. This is not recommendable for ReliefF, since it may be a lot slower.</P>
 
 <P>The script below finds and prints out the best threshold for binarization of an attribute, that is, the threshold with which the resulting binary attribute will have the optimal ReliefF (or any other measure).</P>
 <xmp class="code">thresh, score, distr = meas.bestThreshold("petal length", data)
@@ -237,9 +237,12 @@ their potential value in the formation of decision rules.</P>
 
 <DT>m</DT>
 <DD>Number of reference examples. Default is 100. Set to -1 to take all the examples.</DD>
+
+<DT>checkCachedData</DT>
+<DD>A flag best left alone unless you know what you do.</DD>
 </DL>
 
-<P>Computation of ReliefF is rather slow since it needs to find <CODE>k</CODE> nearest neighbours for each of <CODE>m</CODE> reference examples (or all examples, if <code>m</code> is set to -1). Since we normally compute ReliefF for all attributes in the dataset, <CODE>MeasureAttribute_relief</CODE> caches the results. When it is called to compute a quality of certain attribute, it computes qualities for all attributes in the dataset. When called again, it uses the stored results if the domain is still the same and the example table has not changed (this is done by checking the example tables <CODE>version</CODE> and is not foolproof; it won't detect if you change values of existing examples, but will notice adding and removing examples; see the page on <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> for details).</P>
+<P>Computation of ReliefF is rather slow since it needs to find <CODE>k</CODE> nearest neighbours for each of <CODE>m</CODE> reference examples (or all examples, if <code>m</code> is set to -1). Since we normally compute ReliefF for all attributes in the dataset, <CODE>MeasureAttribute_relief</CODE> caches the results. When it is called to compute a quality of certain attribute, it computes qualities for all attributes in the dataset. When called again, it uses the stored results if the data has not changeddomain is still the same and the example table has not changed. Checking is done by comparing the data table version <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> for details) and then computing a checksum of the data and comparing it with the previous checksum. The latter can take some time on large tables, so you may want to disable it by setting <code>checkCachedData</code> to <code>False</code>. In most cases it will do no harm, except when the data is changed in such a way that it passed unnoticed by the 'version' control, in which cases the computed ReliefFs can be false. Hence: disable it if you know that the data does not change or if you know what kind of changes are detected by the version control.</P>
 
 <P>Caching will only have an effect if you use the same instance for all attributes in the domain. So, don't do this:</P>
 
@@ -259,6 +262,20 @@ for attr in data.domain.attributes:
 <P>Class <CODE>MeasureAttribute_relief</CODE> works on discrete and continuous classes and thus implements functionality of algorithms ReliefF and RReliefF.</P>
 
 <P>Note that ReliefF can also compute the threshold function, that is, the attribute quality at different thresholds for binarization.</P>
+
+<p>Finally, here is an example which shows what can happen if you disable the computation of checksums.</p>
+
+<xmp>data = orange.ExampleTable("iris")
+r1 = orange.MeasureAttribute_relief()
+r2 = orange.MeasureAttribute_relief(checkCachedData = False)
+
+print "%.3f\t%.3f" % (r1(0, data), r2(0, data))
+for ex in data:
+    ex[0] = 0
+print "%.3f\t%.3f" % (r1(0, data), r2(0, data))
+</xmp>
+
+<p>The first print prints out the same number, 0.321 twice. Then we annulate the first attribute. <code>r1</code> notices it and returns -1 as it's ReliefF, while <code>r2</code> does not and returns the same number, 0.321, which is now wrong.</p>
 
 
 <H2>Measure for Attributes for Regression Problems</H2>

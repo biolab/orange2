@@ -15,6 +15,8 @@ list and this is what it basically is: an ordered sequence of
 examples, supporting the usual Python procedures for lists, including
 the more advanced operations such as slicing and sorting.</P>
 
+<small>This is a bit advanced, but we should write it here so nobody overlooks it: if <code>data</code> is an instance of <code>ExampleTable</code>, <code>data[0]</code> is not a <em>reference</em> to the first element but the first element itself. About the only case in which this is important is when we try to swap two elements, either like <code>data[0], data[1] = data[1], data[0]</code> or with an intermediate variable: it won't work. For the same reason: <b>random.shuffle</b> doesn't work on <code>ExampleTable</code> (as it doesn't on numpy, by the way). Use <code>ExampleTable</code>'s own <code>shuffle</code> method instead.</small>
+
 <P><CODE>ExampleTable</CODE> is derived from a more general abstract class <CODE>ExampleGenerator</CODE>. </P>
 
 <p class=section>Attributes</p>
@@ -34,6 +36,9 @@ the more advanced operations such as slicing and sorting.</P>
 
 <DT>randomGenerator</DT>
 <DD>Random generator that is used by method <CODE>randomexample</CODE>. If the method is called and <CODE>randomGenerator</CODE> is <CODE>None</CODE> a new generator is constructed with random seed 0, and stored here for subsequent use. If you would like to have different random examples each time your script is run, use a random number from Python for a random seed.</DD>
+
+<dt>attributeLoadStatus, metaAttributeLoadStatus</dt>
+<dd>A list and a dictionary describing how the attributes were created. They exist only for example tables which were loaded from files. A detailed description is available on the page about <a href="fileformats.htm">loading the data</a>.</dd>
 </DL>
 
 
@@ -42,7 +47,7 @@ the more advanced operations such as slicing and sorting.</P>
 <P><CODE>ExampleTable</CODE> can be constructed by reading from file, packing existing examples or creating an empty table. To save the data, see the documentation on <a href="fileformats.htm#saving">file formats</a>.</P>
 
 <DL class=attributes>
-<DT>ExampleTable([filename])</DT>
+<DT>ExampleTable(filename[, createNewOn])</DT>
 <DD><index name="data input">This constructor reads from files. If filename
 includes extension,
 it must be an extension for one of the <A href="fileformats.htm">known
@@ -69,7 +74,7 @@ classattr = orange.EnumVariable("y", values = ["0", "1"])
 
 card = [3, 3, 2, 3, 4, 2]
 values = ["1", "2", "3", "4"]
-attributes = [  name = orange.EnumVariable(chr(97+i),
+attributes = [  orange.EnumVariable(chr(97+i),
                 values = values[:card[i]])
               for i in range(6)]
 
@@ -445,6 +450,9 @@ data.randomGenerator = random.randint(0, 10000)
 <DD>Sorts examples by attribute values. The order of attributes can be given, beginning with the most important attribute. Note that the ordering is not given by symbolic names (such as "young", "psby"...) but by the order in which values are listed in <CODE>values</CODE> table (see documentation on <a href="Variable.htm"><CODE>Variable</CODE></A>).
 
 <P>Examples in dataset "bridges" can be sorted by lengths and years they were erected by <CODE>data.sort("LENGTH", "ERECTED")</CODE>.</P>
+
+<DT>shuffle()</DT>
+<DD>Randomly shuffles the examples in the table. This function should always be used instead of <code>random.shuffle</code>, which does not work for <code>ExampleTable</code>.</DD>
 
 <DT>changeDomain(domain)</DT>
 <DD>Changes the table's domain, converting all examples in place. Returns <CODE>None</CODE>. This function is not available for tables that contain references to examples.</P>

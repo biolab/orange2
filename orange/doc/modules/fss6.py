@@ -1,5 +1,3 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Same as fss5.py but uses FilterRelieff class from orngFSS
 # Category:    preprocessing
 # Uses:        adult_saple.tab

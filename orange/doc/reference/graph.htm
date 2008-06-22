@@ -114,6 +114,10 @@ graph.objects[orange] = 4
 <DD>Returns true if the edge between <CODE>v1</CODE> and <CODE>v2</CODE> exists. For multiple edge type graphs you can also specify the type of the edge you check for. If the third argument is omitted, the method returns true if there is any kind of edge between the two vertices.</DD>
 
 <DD>It is recommended to use this method when you want to check for a node. In single edge type graphs, <CODE>if graph[v1, v2]:</CODE> will fail when there is an edge but it has a weight of zero. With multiple edge types, <CODE>if graph[v1, v2]:</CODE> will always success since <CODE>graph[v1, v2]</CODE> returns a non-empty list; if there is no edges, this will be a list of <CODE>None</CODE>s, but Python still treats it as "true".</DD>
+
+<DT>addCluster(list_of_vertices)</DT>
+<DD>Creates a cluster - adds edges between all listed vertices.</DD>
+
 </DL>
 
 
@@ -146,8 +150,87 @@ graph.objects[orange] = 4
 
 <P>However, this is all programmed in C++, so whatever you do, the bottleneck will probably still be in your Python code and not in C++. You probably cannot miss by using <CODE>GraphAsTree</CODE> disregarding the size of the graph and the operations you perform on it.</P>
 
+<H2>Graph Analyses</H2>
+
+<H3>Methods</H3>
+
+<DL class=attributes>
+<DT>getConnectedComponents()</DT>
+<DD>Returns list of all connected compnents sorted descending by component size.</DD>
+
+<DT>getDegreeDistribution()</DT>
+<DD>Returns degree distribution as dictionary of type {degree:number_of_vertices}.</DD>
+
+<DT>getDegrees()</DT>
+<DD>Returns list of degrees. List size matches number of vertices. Index of given degree matches index of corresponding vertex.</DD>
+
+<DT>getHubs(n)</DT>
+<DD>Returns list of n largest hubs.</DD>
+
+<DT>getShortestPaths(u, v)</DT>
+<DD>Returns list of vertices in the shortest path between u and v.</DD>
+
+<DT>getDistance(u, v)</DT>
+<DD>Returns a distance between vertices u and v.</DD>
+
+<DT>getDiameter()</DT>
+<DD>Returns a diameter of the graph.</DD>
+</DL>
+
+<H3>Examples</H3>
+<p class="header">part of <a href="graph_analyses.py">graph_analyses.py</a> (uses <a href="combination.net">combination.net</a>)</p>
+
+<xmp class=code>components = graph.getConnectedComponents()
+print components
+
+distribution = graph.getDegreeDistribution()
+print distribution
+
+degrees = graph.getDegrees()
+print degrees
+
+hubs = graph.getHubs(3)
+print hubs
+
+path = graph.getShortestPaths(0, 2)
+print path
+
+distance = graph.getDistance(0, 2)
+print distance
+
+diameter = graph.getDiameter()
+print diameter
+
+subgraph = graph.getSubGraph([0, 1, 2, 3])
+subNetwork = NetworkOptimization(subgraph)
+</xmp>
+
+<p>Results:</p>
+<xmp class=code>Conneceted components
+[[0, 1, 2, 3, 4, 5, 6, 7, 8], [13, 14, 15, 16, 17, 18], [9, 10, 11, 12]]
+
+Degree distribution
+{1: 5, 2: 4, 3: 8, 4: 1, 5: 1}
+
+Degrees
+[4, 3, 3, 2, 2, 3, 2, 3, 2, 3, 3, 3, 3, 5, 1, 1, 1, 1, 1]
+
+Hubs
+[13, 0, 1]
+
+Shortest path
+[2, 0]
+
+Distance
+1
+
+Diameter
+4
+</xmp>
+<p>Subgraph image:</p>
+<img src="graph_subgraph.png">
 <H3>Additional functionality</H3>
 
-<P>Should you need any additional <EM>basic functionality</EM>, just tell us. Many things are trivial to implement in C++ and will be much faster than the corresponding scripts in Python. (In this regard, minimal span trees, maximal flows, coloring and shortest path search are, of course, not considered basic functionality. :)</P>
+<P>Should you need any additional <EM>functionality</EM>, just tell us. Many things are trivial to implement in C++ and will be much faster than the corresponding scripts in Python. (In this regard, minimal span trees, maximal flows, coloring and shortest path search are, of course, not considered basic functionality. :)</P>
 
 </BODY></HTML>

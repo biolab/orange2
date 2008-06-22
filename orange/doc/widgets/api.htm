@@ -19,8 +19,7 @@ what your widget does.
 
 Following is an example that defines two output channels:</p>
 
-<xmp class="code">
-self.outputs = [("Sampled Data", orange.ExampleTable), ("Learner", orange.Learner)]
+<xmp class="code">self.outputs = [("Sampled Data", orange.ExampleTable), ("Learner", orange.Learner)]
 </xmp>
 
 <p><code>self.outputs</code> should thus be a list of tuples, within
@@ -32,8 +31,7 @@ anything you may define as class in Python.</p>
 <p>Widgets send the data by using <code>self.send</code> call,
 like:</p>
 
-<xmp class="code">
-self.send("Sampled Data", mydata)
+<xmp class="code">self.send("Sampled Data", mydata)
 </xmp>
 
 <p>Parameters of <code>send</code> are channel name and a token to be
@@ -48,8 +46,7 @@ few tokens one after the other and you would like to enable a receiving widget
 recognize these are different tokens (and not updates of the same
 one):</p>
 
-<xmp class="code">
-id = 10
+<xmp class="code">id = 10
 self.send("Sampled Data", mydata, id)
 </xmp>
 
@@ -57,8 +54,7 @@ self.send("Sampled Data", mydata, id)
 
 <p>An example of the simplest definition of an input channel is:</p>
 
-<xmp class="code">
-self.inputs = [("Data", orange.ExampleTable, self.receiveData)]
+<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.receiveData)]
 </xmp>
 
 <p>Again, <code>self.inputs</code> is a list of tuples, where the
@@ -68,8 +64,7 @@ channel defined above, a corresponding receiving function would be of
 the type (we would most often define it within the widget class
 defintion, hence <code>self</code> for the first attribute):</p>
 
-<xmp class="code">
-def receiveData(self, data):
+<xmp class="code">def receiveData(self, data):
    # handle data in some way
 </xmp>
 
@@ -95,8 +90,7 @@ passed around with IDs (pointers to widgets that sent them). To
 declare a widget is interested about these IDs, one needs to define an
 input channel in the following way:</p>
 
-<xmp class="code">
-self.inputs = [("Learners", orange.Learner, self.learner, 0)]
+<xmp class="code">self.inputs = [("Learners", orange.Learner, self.learner, 0)]
 </xmp>
 
 <p>where the last argument refers if we have a "single token channel"
@@ -105,8 +99,7 @@ fourth element of the list holding channel definition). For the above
 declared channel, the receiving function should include an extra
 argument for the ID, like:</p>
 
-<xmp class="code">
-def learner(self, learnertoken, tokenid):
+<xmp class="code">def learner(self, learnertoken, tokenid):
    # handle learnertoken and tokeid in some way
 </xmp>
 
@@ -116,8 +109,7 @@ schema.</p>
 <p>Finally, we may have input channels of the same type. If a widget
 would declare input channels like:</p>
 
-<xmp class="code">
-self.inputs = [("Data", orange.ExampleTable, self.maindata), ("Additional Data", orange.ExampleTable, self.otherdata)]
+<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata), ("Additional Data", orange.ExampleTable, self.otherdata)]
 </xmp>
 
 <p>and we connect this widget in Orange Canvas to a sending widget
@@ -130,8 +122,7 @@ channels to which we do not want an automatic connection into a "minor
 mode". We do this by the using the fifth element in the channel
 definition list, like:</p>
 
-<xmp class="code">
-self.inputs = [("Data", orange.ExampleTable, self.maindata),
+<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata),
 ("Additional Data", orange.ExampleTable, self.otherdata, 1, 1)]
 </xmp>
 

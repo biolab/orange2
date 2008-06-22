@@ -18,6 +18,8 @@ this lesson, we will see that using regression is just like using
 classifiers, and evaluation techniques are not much different
 either.</p>
 
+<h2>Few Simple Regressors</h2>
+
 <p>Let us start with <index name="regression/regression
 trees"></index>regression trees. Below is an example script that builds
 the tree from <a href="housing.tab">housing</a> data set and prints
@@ -100,6 +102,8 @@ for i in range(10):
       20.2        50.0        21.7        23.1
 </xmp>
 
+<h2>Evaluation and Scoring</h2>
+
 <p>For our third and last example for regression, let us see how we
 can use cross-validation testing and for a score function use <index>mean
 squared error</index>.</p>
@@ -134,17 +138,58 @@ function (<code>orngStat.MSE</code>). The scripts prints out the
 following report:</p>
 
 <xmp class="code">Learner        MSE
-default         862.838
-regression tree 53.378
-k-NN (k=5)      23.285
+default         84.777
+regression tree 40.096
+k-NN (k=5)      17.532
 </xmp>
 
-<p>Currently, mean squared error is the only evaluation function we
-provide for regression. If you need to implement something more
-advanced or meaningful for your data, you should check how
-<code>MSE</code> is implemented in <code>orngStat</code>: it really
-takes only about a single line of code to compute this statistics, so
-you should have no problems implementing your scoring functions.</p>
+<p>Other scoring techniques are available to evaluate the success of
+regression. Script below uses a range of them, plus features a nice
+implementation where a list of scoring techniques is defined
+independetly from the code that reports on the results.</p>
+
+<p class="header">part of <a href="regression4.py">regression4.py</a> (uses <a href=
+"housing.tab">housing.tab</a>)</p>
+<xmp class="code">lr = orngRegression.LinearRegressionLearner(name="lr")
+rt = orngTree.TreeLearner(measure="retis", mForPruning=2,
+                          minExamples=20, name="rt")
+maj = orange.MajorityLearner(name="maj")
+knn = orange.kNNLearner(k=10, name="knn")
+learners = [maj, lr, rt, knn]
+
+# evaluation and reporting of scores
+results = orngTest.learnAndTestOnTestData(learners, train, test)
+scores = [("MSE", orngStat.MSE),
+          ("RMSE", orngStat.RMSE),
+          ("MAE", orngStat.MAE),
+          ("RSE", orngStat.RSE),
+          ("RRSE", orngStat.RRSE),
+          ("RAE", orngStat.RAE),
+          ("R2", orngStat.R2)]
+
+print "Learner  " + "".join(["%-7s" % s[0] for s in scores])
+for i in range(len(learners)):
+    print "%-8s " % learners[i].name + "".join(["%6.3f " % s[1](results)[i] for s in scores])
+</xmp>
+
+<p>Here, we used a number of different scores, including:</P>
+<ul>
+  <li>MSE - mean squared errror</li>
+  <li>RMSE - root mean squared error</li>
+  <li>MAE - mean absolute error</li>
+  <li>RSE - relative squared error</li>
+  <li>RRSE - root relative squared error</li>
+  <li>RAE - relative absolute error</li>
+  <li>R2 - coefficient of determinatin, also referred to as R-squared</li>
+</ul>
+<p>For precise definition of these measures, see <a href="../modules/orngStat.htm">orngStat documentation</a>. Running the script above yields:</p>
+
+<xmp class="code">Learner  MSE    RMSE   MAE    RSE    RRSE   RAE    R2
+maj      84.777  9.207  6.659  1.004  1.002  1.002 -0.004
+lr       23.729  4.871  3.413  0.281  0.530  0.513  0.719
+rt       40.096  6.332  4.569  0.475  0.689  0.687  0.525
+knn      17.244  4.153  2.670  0.204  0.452  0.402  0.796
+</xmp>
 
 <hr><br><p class="Path">
 Prev: <a href="c_bagging.htm">Bagging</a>,

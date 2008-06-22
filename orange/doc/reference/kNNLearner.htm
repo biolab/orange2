@@ -21,7 +21,7 @@
 <P class=section>Attributes</P>
 <DL class=attributes>
 <DT>k</DT>
-<DD>Number of neighbours (default: 1)</DD>
+<DD>Number of neighbours. If set to 0 (which is also the default value), the square root of the number of examples is used. <b>Changed:</b> the default used to be 1.</DD>
 
 <DT>rankWeight</DT>
 <DD>Enables weighting by ranks (default: <CODE>true</CODE>)</DD>
@@ -43,13 +43,16 @@
 <DD>A component that finds nearest neighbours of a given example.</DD>
 
 <DT>k</DT>
-<DD>Number of neighbours.</DD>
+<DD>Number of neighbours.  If set to 0 (which is also the default value), the square root of the number of examples is used. <b>Changed:</b> the default used to be 1.</DD>
 
 <DT>rankWeight</DT>
 <DD>Enables weighting by ranks (default: <CODE>true</CODE>).</DD>
 
 <DT>weighID</DT>
 <DD>ID of meta attribute with weights of examples</DD>
+
+<DT>nExamples</DT>
+<DD>The number of learning examples. It is used to compute the number of neighbours if k is zero.</DD>
 </DL>
 
 <P>When called to classify an example, the classifier first calls <CODE>findNearest</CODE> to retrieve a list with <CODE>k</CODE> nearest neighbours. The component <CODE>findNearest</CODE> has a stored table of examples (those that have been passed to the learner) together with their weights. If examples are weighted (non-zero <CODE>weightID</CODE>), weights are considered when counting the neighbours.</P>
