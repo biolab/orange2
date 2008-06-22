@@ -34,12 +34,13 @@ class OWKMeans(OWWidget):
 
         # GUI definition
         # settings
-        OWGUI.qwtHSlider(self.controlArea, self, "K", box="Number of Clusters", label="K: ", minValue=1, maxValue=30, step=1, callback=self.settingsChanged)
-        OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
-        QWidget(self.controlArea).setFixedSize(0, 8)
-        self.applyBtn = OWGUI.button(self.controlArea, self, "Apply Settings", callback = self.cluster)
+        box = OWGUI.widgetBox(self.controlArea, "Settings")
+        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1, callback=self.settingsChanged)
+        OWGUI.separator(box)
+        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
+        OWGUI.separator(box)
+        self.applyBtn = OWGUI.button(box, self, "&Apply", callback = self.cluster)
         self.applyBtn.setDisabled(TRUE)
-        OWGUI.rubber(self.controlArea)
 
         # display of clustering results
         self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
