@@ -71,7 +71,7 @@ def unisetattr(self, name, value, grandparent):
 
 
     # if there are any context handlers, call the fastsave to write the value into the context
-    if hasattr(self, "contextHandlers"):
+    if hasattr(self, "contextHandlers") and hasattr(self, "currentContexts"):
         for contextName, contextHandler in self.contextHandlers.items():
             contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
 
@@ -626,12 +626,12 @@ class OWBaseWidget(QDialog):
 
     def openWidgetHelp(self):
         if orangedir:
-            try:
-                import win32help
-                win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC)
-                return
-            except:
-                pass
+#            try:
+#                import win32help
+#                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
+#                    return
+#            except:
+#                pass
 
             try:
                 import webbrowser
