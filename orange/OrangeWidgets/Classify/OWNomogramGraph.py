@@ -283,9 +283,9 @@ class AttValueMarker(QGraphicsEllipseItem):
     def showSelected(self):
         #self.borderCircle.show()
         self.setBrush(QBrush(QColor(253,151,51), self.brush().style()))
-        if self.scene().parent.bubble:
-            self.descriptor.showAll()
-
+#        if self.canvas().parent.bubble:
+        self.descriptor.showAll()
+        
     def hideSelected(self):
         #self.borderCircle.hide()
         self.setBrush(QBrush(Qt.blue, self.brush().style()))
@@ -1207,10 +1207,10 @@ class BasicNomogram(QGraphicsScene):
 
     def paint(self, rect, mapper):
         self.zeroLine.setLine(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()-self.parent.verticalSpacing/2 + 25)
-        if self.parent.showBaseLine:
-            self.zeroLine.show()
-        else:
-            self.zeroLine.hide()
+#        if self.parent.showBaseLine:
+        self.zeroLine.show()
+#        else:
+#            self.zeroLine.hide()
         curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         disc = False
 
@@ -1543,7 +1543,7 @@ class Mapper_Linear_Fixed:
 
         k = (self.maxGraphBeta-self.minGraphBeta)/max((self.maxGraphValue-self.minGraphValue), aproxZero)
         dSumValues = [(d,self.minGraphBeta + (d-self.minGraphValue)*k) for d in dSum]
-        headerLine = AttrLine("Points", canvas)
+        headerLine = AttrLine("Total", canvas)
         for d_i,d in enumerate(dSumValues):
             headerLine.addAttValue(AttValue(" "+str(conv(d[0]))+" ", d[1], markerWidth = 1))
             if d != dSumValues[-1]:

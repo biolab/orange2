@@ -48,7 +48,7 @@ def avg(l):
 
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
+    settingsList = ["alignType", "verticalSpacing", "contType", "verticalSpacingContinuous", "yAxis", "probability", "confidence_check", "confidence_percent", "histogram", "histogram_size", "sort_type"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
 
     def __init__(self,parent=None, signalManager = None):
@@ -63,88 +63,68 @@ class OWNomogram(OWWidget):
         self.contType = 0
         self.yAxis = 0
         self.probability = 0
-        self.showBaseLine = 1
-        self.table = 0
         self.verticalSpacing = 60
         self.verticalSpacingContinuous = 100
         self.diff_between_ordinal = 30
         self.fontSize = 9
         self.lineWidth = 1
-        self.bubble = 1
         self.histogram = 1
         self.histogram_size = 10
         self.data = None
         self.cl = None
         self.confidence_check = 0
         self.confidence_percent = 95
-#        self.notTargetClassIndex = 1
         self.sort_type = 0
 
         self.loadSettings()
 
-        self.pointsName = ["Points","Log OR"]
-        self.totalPointsName = ["Total Points","Log OR Sum"]
+        self.pointsName = ["Total", "Total"]
+        self.totalPointsName = ["Probability", "Probability"]
         self.bnomogram = None
 
 
-        #inputs
         self.inputs=[("Classifier", orange.Classifier, self.classifier)]
 
-        # GUI definition
-        self.tabs = OWGUI.tabWidget(self.controlArea)
 
-        # GENERAL TAB
-        GeneralTab = OWGUI.createTabPage(self.tabs, "General")
-        NomogramStyleTab = OWGUI.createTabPage(self.tabs, "Settings")
-
-        self.alignRadio = OWGUI.radioButtonsInBox(GeneralTab, self,  'alignType', ['Left', '0-point'], box='Align',
-                                                  tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
-                                                  callback=self.showNomogram)
-        self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log OR'], 'yAxis',
-                                tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
-                                callback=self.showNomogram)
-        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous',
-                                tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
-                                callback=self.showNomogram)
-
-        #target combo box
         self.TargetClassIndex = 0
-        self.targetCombo = OWGUI.comboBox(GeneralTab, self, "TargetClassIndex", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
+        self.targetCombo = OWGUI.comboBox(self.controlArea, self, "TargetClassIndex", " Target Class ", addSpace=True, tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
 
-        #self.yAxisRadio.setDisabled(True)
-        self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability','Show prediction',  tooltip='', callback = self.setProbability)
-        #self.probabilityCheck.setDisabled(True)
-        self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table','Show table',  tooltip='Show table of selected attribute values?')
-        self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
-        self.tableCheck.setDisabled(True)
+        self.alignRadio = OWGUI.radioButtonsInBox(self.controlArea, self,  'alignType', ['Align left', 'Align by zero influence'], box='Attribute placement',
+                                                  tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
+                                                  addSpace=True,
+                                                  callback=self.showNomogram)
+        self.verticalSpacingLabel = OWGUI.spin(self.alignRadio, self, 'verticalSpacing', 15, 200, label = 'Vertical spacing:',  orientation = 0, tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
 
-        self.sortBox = OWGUI.comboBox(GeneralTab, self, "sort_type", box="Sorting", label="Criteria: ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram)
+        self.ContRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'contType',   ['1D projection', '2D curve'], 'Continuous attributes',
+                                tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
+                                addSpace=True,
+                                callback=[lambda:self.verticalSpacingContLabel.setDisabled(not self.contType), self.showNomogram])
 
-        # TREE TAB
-        self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 200, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
-        self.verticalSpacingContLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacingContinuous', 15, 200, box = 'Vertical spacing 2d.:',  tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
-##        self.verticalSpacingLabel.setDisabled(True)
-##        self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.', callback = self.showNomogram)
-##        self.fontSizeLabel.setDisabled(True)
-##        self.lineWidthLabel = OWGUI.spin(NomogramStyleTab, self, 'lineWidth', 1, 10, box = 'Line width:',  tooltip='Define width of lines shown in nomogram.', callback = self.showNomogram)
-##        self.lineWidthLabel.setDisabled(True)
-        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Histogram, max. size:', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
-        self.histogramCheck.setChecked(False)
-        self.histogramCheck.setDisabled(True)
-        self.histogramLabel.setDisabled(True)
+        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+        self.verticalSpacingContLabel.setDisabled(not self.contType)
 
-        # save button
+        self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['Point scale', 'Log odds ratios'], 'Scale',
+                                tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
+                                addSpace=True,
+                                callback=self.showNomogram)
+
+        layoutBox = OWGUI.widgetBox(self.controlArea, "Display", orientation=1, addSpace=True)
+
+        self.probabilityCheck = OWGUI.checkBox(layoutBox, self, 'probability', 'Show prediction',  tooltip='', callback = self.setProbability)
+
+        self.CICheck, self.CILabel = OWGUI.checkWithSpin(layoutBox, self, 'Confidence intervals (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+
+        self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+
+        OWGUI.separator(layoutBox)
+        self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
+
+
+        OWGUI.rubber(self.controlArea)
+
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
 
-        # objects/gui widgets in settings tab for showing and adjusting confidence intervals properties
-        self.CICheck, self.CILabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Confidence Interval (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
-        self.CICheck.setChecked(False)
-        self.CICheck.setDisabled(True)
-        self.CILabel.setDisabled(True)
-        self.showBaseLineCB = OWGUI.checkBox(NomogramStyleTab, self, 'showBaseLine', 'Show Base Line (at 0-point)', callback = self.setBaseLine)
 
-        OWGUI.rubber(NomogramStyleTab)
-        OWGUI.rubber(GeneralTab)
 
         #add a graph widget
         self.header = OWNomogramHeader(None, self.mainArea)
@@ -290,6 +270,7 @@ class OWNomogram(OWWidget):
             if a and len(a.attValues)>1:
                 self.bnomogram.addAttribute(a)
 
+        self.alignRadio.setDisabled(False)
         self.graph.setScene(self.bnomogram)
         self.bnomogram.show()
 
@@ -312,11 +293,12 @@ class OWNomogram(OWWidget):
         except:
             aprox_prior_error = 0
 
-        if cl.continuizedDomain:
-            for at in cl.continuizedDomain.attributes:
+        domain = cl.continuizedDomain or cl.domain
+        if domain:
+            for at in domain.attributes:
                 at.setattr("visited",0)
 
-            for at in cl.continuizedDomain.attributes:
+            for at in domain.attributes:
                 if at.getValueFrom and at.visited==0:
                     name = at.getValueFrom.variable.name
                     var = at.getValueFrom.variable
@@ -327,7 +309,7 @@ class OWNomogram(OWWidget):
                     listOfExcludedValues = []
                     for val in var.values:
                         foundValue = False
-                        for same in cl.continuizedDomain.attributes:
+                        for same in domain.attributes:
                             if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
                                 same.setattr("visited",1)
                                 a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
@@ -358,11 +340,11 @@ class OWNomogram(OWWidget):
                         minAtValue = -1.
                     numOfPartitions = 50.
                     d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-    
+
                     # get curr_num = starting point for continuous att. sampling
                     curr_num = getStartingPoint(d, minAtValue)
                     rndFac = getRounding(d)
-    
+
                     while curr_num<maxAtValue+d:
                         if abs(mult*curr_num*cl.beta[at])<aproxZero:
                             a.addAttValue(AttValue("0.0", 0))
@@ -532,20 +514,30 @@ class OWNomogram(OWWidget):
 
     def classifier(self, cl):
         self.closeContext()
-        if not self.cl or not cl or not self.cl.domain == cl.domain:
-            if cl:
-                self.initClassValues(cl.domain.classVar)
-            self.TargetClassIndex = 0
-        self.cl = cl
-        if hasattr(self.cl, "data"):
-            self.data = self.cl.data
-        else:
-            self.data = None
+        self.error(2) 
 
-        self.error(2)
+        oldcl = self.cl
+        self.cl = None
+        
+        if cl:
+            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier):
+                if isinstance(cl, acceptable):
+                    self.cl = cl
+                    break
+            else:
+                self.error(2, "Nomograms can be drawn for only for Bayesian classifier and logistic regression")
+                 
+        if not oldcl or not self.cl or not oldcl.domain == self.cl.domain:
+            if self.cl:
+                self.initClassValues(self.cl.domain.classVar)
+            self.TargetClassIndex = 0
+            
+        self.data = getattr(self.cl, "data", None)
+
         if self.data and self.data.domain and not self.data.domain.classVar:
             self.error(2, "Classless domain")
-            return
+            # Here it said "return", but let us report an error and clean up the widget
+            self.cl = self.data = None
 
         self.openContext("", self.data)
         if not self.data:
@@ -557,9 +549,9 @@ class OWNomogram(OWWidget):
             self.CILabel.setDisabled(True)
         else:
             self.histogramCheck.setEnabled(True)
-            self.histogramLabel.setEnabled(True)
+            self.histogramCheck.makeConsistent()
             self.CICheck.setEnabled(True)
-            self.CILabel.setEnabled(True)
+            self.CICheck.makeConsistent()
         self.updateNomogram()
 
     def setTarget(self):
@@ -585,16 +577,16 @@ class OWNomogram(OWWidget):
                     if not at in self.data.domain:
                         return
 
-        if type(self.cl) == orange.BayesClassifier:
+        if isinstance(self.cl, orange.BayesClassifier):
 #            if len(self.cl.domain.classVar.values)>2:
 #                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
 #                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
 #            else:
                 self.nbClassifier(self.cl)
-##        elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
+##        elif isinstance(self.cl, orngLR_Jakulin.MarginMetaClassifier) and self.data:
 ##            self.svmClassifier(self.cl)
 
-        elif type(self.cl) == orange.LogRegClassifier:
+        elif isinstance(self.cl, orange.LogRegClassifier):
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
             if self.cl.continuizedDomain:
@@ -655,7 +647,7 @@ class OWNomogram(OWWidget):
 
     def setBaseLine(self):
         if self.bnomogram:
-            self.bnomogram.showBaseLine(self.showBaseLine)
+            self.bnomogram.showBaseLine(True)
 
     def saveToFileCanvas(self):
         EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
@@ -664,7 +656,7 @@ class OWNomogram(OWWidget):
         sizeH = self.graph.scene().sceneRect().height() + self.header.scene().sceneRect().height() + self.footer.scene().sceneRect().height()+EMPTY_SPACE
         size = QSize(sizeW, sizeH)
 
-        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
+        qfileName = QFileDialog.getSaveFileName(None, "Save to...", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
