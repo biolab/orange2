@@ -94,7 +94,7 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(box, self, "attrSize", label = "Point size:", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same size)", indent = 10)
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
-        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes", debuggingEnabled = 0)
+        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog in which you can search for interesting projections with different subsets of attributes", debuggingEnabled = 0)
 
         # zooming / selection
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -109,9 +109,9 @@ class OWScatterPlot(OWWidget):
 
         # #####
         # jittering options
-        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
-        self.jitterLabel = OWGUI.widgetLabel(box3, 'Jittering size (% of size): ')
+        self.jitterLabel = OWGUI.widgetLabel(box3, 'Jittering size (% of size)'+'  ')
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
@@ -126,14 +126,14 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
 
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
-        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         smallWidget = OWGUI.SmallWidgetLabel(box5, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
         #OWGUI.rubber(box5)
 
         box6 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
         box7 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
 
-        OWGUI.widgetLabel(box6, "Granularity:  ")
+        OWGUI.widgetLabel(box6, "Granularity:"+"  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
