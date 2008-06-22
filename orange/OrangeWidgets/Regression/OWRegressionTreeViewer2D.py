@@ -176,7 +176,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                                nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviance', 'Error'], box='Node Color',
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviation', 'Error'], box='Node Color',
                                 callback=self.toggleNodeColor)
         
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
