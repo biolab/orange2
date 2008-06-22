@@ -234,7 +234,7 @@ class OWSieveMultigramOptions(QVGroupBox):
         QToolTip.add(self.hbox2, "The maximum expected Pearson standardized residual. Greater the maximum, brighter the colors.")
 
         self.hbox3 = QHBox(self.pearsonGroup, "minimum")
-        self.residualLabel2 = QLabel('Min residual   ', self.hbox3)
+        self.residualLabel2 = QLabel('Min residual'+'   ', self.hbox3)
         self.minResidualEdit = QLineEdit(self.hbox3)
         QToolTip.add(self.hbox3, "The minimal absolute residual value that will be shown in graph.")
 
