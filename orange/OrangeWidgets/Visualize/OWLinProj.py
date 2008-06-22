@@ -115,7 +115,7 @@ class OWLinProj(OWVisWidget):
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
-        self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
 
         # freeviz dialog
@@ -193,7 +193,7 @@ class OWLinProj(OWVisWidget):
 
         box6 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
         box7 = OWGUI.widgetBox(smallWidget.widget, orientation = "horizontal")
-        OWGUI.widgetLabel(box6, "Granularity:  ")
+        OWGUI.widgetLabel(box6, "Granularity:"+"  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
