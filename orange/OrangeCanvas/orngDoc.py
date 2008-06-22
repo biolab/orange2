@@ -18,7 +18,7 @@ class SchemaDoc(QMdiSubWindow):
         self.canSave = 0
         #self.resize(700,500)
         #self.showNormal()
-        self.setWindowTitle("Schema " + str(self.canvasDlg.iDocIndex))
+        self.setWindowTitle("Schema"+" " + str(self.canvasDlg.iDocIndex))
         self.autoSaveName = os.path.join(self.canvasDlg.canvasSettingsDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
         self.ctrlPressed = 0
@@ -516,7 +516,7 @@ class SchemaDoc(QMdiSubWindow):
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
                 if inWidget == None or outWidget == None:
-                    failureText += "<nobr>Failed to create a signal line between widgets <b>%s</b> and <b>%s</b></nobr><br>" % (outCaption, inCaption)
+                    failureText += "<nobr>"+"Unable to connect widgets <b>%s</b> and <b>%s</b>"+"</nobr><br>" % (outCaption, inCaption)
                     loadedOk = 0
                     continue
 
