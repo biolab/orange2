@@ -409,11 +409,11 @@ class ParallelOptimization(OWWidget):
         self.optimizeBox.layout().addWidget(self.allAttributesRadio)
         self.connect(self.allAttributesRadio, SIGNAL("clicked()"), self.setAllAttributeRadio)
         box = OWGUI.widgetBox(self.optimizeBox, orientation = "horizontal")
-        self.subsetAttributeRadio = QRadioButton("find subsets of      ", box)
+        self.subsetAttributeRadio = QRadioButton("find subsets of"+"      ", box)
         self.optimizeBox.layout().addWidget(self.subsetAttributeRadio)
         self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
-        label  = OWGUI.widgetLabel(box, "   attributes")
+        label  = OWGUI.widgetLabel(box, "   "+"attributes")
 
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, "Start Optimization", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
