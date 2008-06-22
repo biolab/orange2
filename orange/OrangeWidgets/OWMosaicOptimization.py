@@ -113,9 +113,9 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
-        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to Stop Evaluation or Optimization?")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "Stopping evaluation or optimization")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:"+"                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:"+"  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
         OWGUI.rubber(self.SettingsTab)
 
         # ##########################
