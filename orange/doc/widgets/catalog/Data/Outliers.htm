@@ -1,0 +1,75 @@
+<html>
+<head>
+<title>Outliers</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Outliers</h1>
+
+<img class="screenshot" src="../icons/Outliers.png">
+<p>Simple outlier detection by comparing distances between examples.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<DL class=attributes>
+<DT>Distance matrix</DT>
+<DD>A matrix of example distances.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Outliers (ExampleTable)</DT>
+<DD>Attribute-valued data set containing only examples 
+that are outliers. Meta attribute Z-score is added.</DD>
+</dl>
+
+<DL class=attributes>
+<DT>Inliers (ExampleTable)</DT>
+<DD>Attribute-valued data set containing only examples 
+that are not outliers. Meta attribute Z-score is added.</DD>
+</dl>
+
+<DL class=attributes>
+<DT>Examples with Z-scores (ExampleTable)</DT>
+<DD>Attribute-valued data set containing examples from input data with 
+corresponding Z-scores as meta attribute.</DD>
+</dl>
+
+
+
+<h2>Description</h2>
+
+<p>Outliers widget first computes distances between each pair of examples in input 
+Examples. Average distance between example to its nearest examples is valued by a
+Z-score. Z-scores higher than zero denote an example that is more distant to other examples 
+than average. Input can also be a distance matrix: in this case precalculated distances are used.</p>
+
+<p>Two parameters for Z-score calculation can be choosen: distance metrics and number of nearest examples to which 
+example's average distance is computed. Also, minimum Z-score to consider an example as outlier
+can be set. Note, that higher the example's Z-score, more distant is the example from other examples. </p>
+
+<p>Changes are applied automatically.</p>
+
+<img class="screenshot" src="Outliers.gif" alt="Outliers" border=0>
+
+<h2>Examples</h2>
+
+<p>Below is a simple example how to use this widget. The input is fed
+directly from the <a href="File.htm">File</a> widget, and the output Examples with Z-score
+to the <a href="DataTable.htm">Data Table</a> widget.</p>
+
+<img src="Outliers-Example1.gif" alt="Schema with Outliers" class="schema">
+
+</body>
+</html>

@@ -26,12 +26,8 @@
 <DL class=attributes>
 <DT>Matching Examples (ExampleTable)</DT>
 <DD>Attribute-valued data set composed from instances from input data set that match user-defined condition.</DD>
-<DT>Matching Classified Examples (ExampleTable)</DT>
-<DD>Same as above, but used only if input file includes a special class attribute (disrete or continuous).</DD>
 <DT>Non-Matching Examples (ExampleTable)</DT>
 <DD>Data instances from input data set that do not match the user-defined condition.</DD>
-<DT>Non-Matching Classified Examples (ExampleTable)</DT>
-<DD>Same as above, but used only if input file includes a special class attribute (disrete or continuous).</DD>
 </dl>
 
 <h2>Description</h2>
@@ -41,8 +37,8 @@ input data set based on the condition defined over a set of data's
 attributes. Data instances that match the selection rule are placed on
 the output channel.</p>
 
-<a href="SelectData.png"><img class="screenshot" 
-src="SelectData-S.png" alt="Select Data" border=0></a>
+<img class="screenshot"
+src="SelectData.png" alt="Select Data" border=0>
 
 <p>Condition is presented in disjunctive normal form, that is, as
 collection of conjuncted terms (AND operator) with optional disjunction
@@ -57,20 +53,20 @@ condition term. Operators are different for discrete, continuous and
 string attributes.</p>
 
 <p>After the terms is defined, it is included in the condition by
-pressing Add button.</p>
+pressing <span class="option">Add button</span>.</p>
 
 <p>To update or change the condition term, select the corresponding
-line in the Data Selection Criteria, change the term's definition
-(Attribute/Operator/Values) and press Update.</p>
+line in the <span class="option">Data Selection Criteria, change the term's definition
+(<span class="option">Attribute</span>/<span class="option">Operator</span>/<span class="option">Values</span>) and press <span class="option">Update</span>.</p>
 
 <p>Notice that any change in composition of the condition will trigger
 updates in information pane that displays the number of data instances
-being selected (Data Out). Number of instances that match specific
+being selected (<span class="option">Data Out</span>). Number of instances that match specific
 condition terms are also displayed at the start of the condition term
 line.</p>
 
 <p>Data set composed of instances that match the defined condition is
-placed on the output channel. If Update on any changed is selected,
+placed on the output channel. If <span class="option">Update on any change</span> is selected,
 than the output is updated on any change in the composition of the
 condition or any of its terms.</p>
 
