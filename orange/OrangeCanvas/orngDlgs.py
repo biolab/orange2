@@ -464,7 +464,7 @@ class CanvasOptionsDlg(QDialog):
             lineBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
             self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
             lineBox.layout().addWidget(self.lineIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(lineBox, " Lines")
+            selectedWidgetLabel = orngGui.widgetLabel(lineBox, " Connections")
         GeneralTab.layout().addStretch(1)
 
         # #################################################################
