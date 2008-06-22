@@ -172,12 +172,16 @@ class OWDistributionGraph(OWGraph):
             "use orange.EquiDistDiscretization(numberOfIntervals)"
             equiDist = orange.EquiDistDiscretization(numberOfIntervals = self.numberOfBars)
             d_variable = equiDist(self.attributeName, self.data)
-            d_data = self.data.select([d_variable, self.data.domain.classVar])
-            tmphdata = orange.DomainContingency(d_data)[0]
-            dc = orange.DomainContingency(self.data) #!!!
-            g = orange.ConditionalProbabilityEstimatorConstructor_loess(dc[self.attributeName]) #!!!
-            # print [ps.variances for (x, ps) in g.probabilities.items()]
+#            d_data = self.data.select([d_variable, self.data.domain.classVar])
+#            tmphdata = orange.DomainContingency(d_data)[0]
+#            dc = orange.DomainContingency(self.data) #!!!
+            tmphdata = orange.ContingencyAttrClass(d_variable, self.data)
+            try:
+                g = orange.ConditionalProbabilityEstimatorConstructor_loess(self.dc[self.attributeName], nPoints=200) #!!!
             self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
+            except:
+                self.probGraphValues = [] 
+            # print [ps.variances for (x, ps) in g.probabilities.items()]
             # calculate the weighted CI=math.sqrt(prob*(1-prob)/(0.0+self.sums[curcol])),
             # where self.sums[curcol] = g.probabilities.items()[example][1].cases
 
@@ -429,7 +433,7 @@ class OWDistributions(OWWidget):
         self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
         self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
 
-        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
+        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box="Bar size", minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
 
         box = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
         box.setMinimumWidth(180)
