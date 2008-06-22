@@ -13,7 +13,10 @@ import OWGUI, OWToolbars, OWColorPalette
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
-import orngText
+try:
+    import orngText
+except:
+    pass
 
 textCorpusModul = 1
 
