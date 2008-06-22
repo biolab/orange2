@@ -128,18 +128,18 @@ class OWClassificationTreeViewer(OWWidget):
             try:
                 p_majclass = f % float(dist[int(ncl.defaultVal)]/a)
             except:
-                p_majclass = "NA"
+                p_majclass = "N/A"
             try:
                 p_tarclass = f % float(dist[self.targetClass]/a)
             except:
-                p_tarclass = "NA"
+                p_tarclass = "N/A"
             
             colf = (str(ncl.defaultValue), 
                     p_majclass, 
                     p_tarclass, 
                     "%d" % dist.cases, 
-                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA", 
-                    len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "NA"
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "N/A", 
+                    len(dist) and reduce(lambda x, y: x+':'+y, ["%d" % int(x) for x in dist]) or "N/A"
                    )
 
             col = 1
@@ -213,14 +213,14 @@ class OWClassificationTreeViewer(OWWidget):
             self.targetClass = 0
             self.openContext("", tree.domain)
         else:
-            self.infoa.setText('No tree.')
+            self.infoa.setText('No tree on input.')
             self.infob.setText('')
             self.openContext("", None)
 
     def setTarget(self):
         def updatetarget(listviewitem):
             dist = self.nodeClassDict[listviewitem].distribution
-            listviewitem.setText(targetindex, f % (dist[self.targetClass]/dist.abs))
+            listviewitem.setText(targetindex, f % (dist[self.targetClass]/max(1, dist.abs)))
 
             child = listviewitem.firstChild()
             while child:
