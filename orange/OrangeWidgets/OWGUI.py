@@ -1,7 +1,6 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import math
-import orange
 #import sys, traceback
 
 YesNo = NoYes = ("No", "Yes")
@@ -410,6 +409,7 @@ def createAttributePixmap(char, color = Qt.black):
 attributeIconDict = None
 
 def getAttributeIcons():
+    import orange
     global attributeIconDict
     if not attributeIconDict:
         attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
@@ -578,12 +578,13 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     return slider
 
 
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, showValueLabel = 1, debuggingEnabled = 1):
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, showValueLabel = 1, debuggingEnabled = 1, addSpace=False, orientation=0):
     import PyQt4.Qwt5 as qwt
 
     init = getdeepattr(master, value)
     if box:
         sliderBox = widgetBox(widget, box, orientation = "horizontal")
+        separator(widget)
     else:
         sliderBox = widget
 
@@ -956,6 +957,13 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     combo = QComboBox(hb)
     combo.setEditable(editable)
     combo.box = hb
+
+    if addSpace:
+        if isinstance(addSpace, int):
+            separator(widget, height=addSpace)
+        else:
+            separator(widget)
+
     if indent:
         hb = widgetBox(hb, orientation = "horizontal")
         hb.layout().addSpacing(indent)
