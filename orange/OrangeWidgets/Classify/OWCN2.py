@@ -45,7 +45,7 @@ class OWCN2(OWWidget):
 
         ##GUI
         labelWidth = 150
-        self.learnerName = OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/classifier name",tooltip="Name to be used by other widgets to identify yor learner/classifier")
+        self.learnerName = OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/classifier name", tooltip="Name to be used by other widgets to identify the learner/classifier")
         #self.learnerName.setText(self.name)
         OWGUI.separator(self.controlArea)
 
@@ -85,21 +85,21 @@ class OWCN2(OWWidget):
 
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
+                tooltip="Required significance of the difference between the class distribution on all example and covered examples")
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
                 orientation="horizontal", labelWidth=labelWidth,
                 tooltip="Required significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
-        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximum rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
-                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")
+        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximal rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
+                            tooltip="Maximal number of conditions in the left\npart of the rule (use 0 for don't care)")
 
         """
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
                             btnLabels=["Exclusive covering ","Weighted Covering"],
                             tooltips=["Each example will only be used once\n for the construction of a rule",
-                                      "Examples can take part in the construction\n of many rules(CN2-SD Algorthim)"],
+                                      "Examples can take part in the construction\n of many rules(CN2-SD Algorithm)"],
                             box="Covering algorithm", callback=self.coveringAlgButtonPressed)
         self.weightSpin=OWGUI.doubleSpin(self.coveringAlgGroup, self, "Weight",0, 0.95,0.05,label= "Weight",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
@@ -182,9 +182,9 @@ class OWCN2(OWWidget):
 ##            except Exception:
 ##                self.classifier=None
 ##                if not self.data.domain.classVar:
-##                    self.error("Classless domain!")
+##                    self.error("Classless domain.")
 ##                elif self.data.domain.classVar.varType == orange.VarTypes.Continuous:
-##                    self.error("CN2 can learn only from discrete class!")
+##                    self.error("CN2 can learn only from discrete class.")
 ##                else:
 ##                    self.error("Unknown error")
         self.send("Classifier", self.classifier)
