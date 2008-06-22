@@ -90,7 +90,7 @@ class OWC45Tree(OWWidget):
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
                                              convertToOrange = self.convertToOrange, storeExamples = 1)
         except:
-            QMessageBox.warning(None, "Missing C4.5 plug-in", "C4.5 classifier requires a plug-in which needs to be built separately by the user due to copyright issues.\nSee: http://www.ailab.si/orange/doc/reference/C45Learner.htm for detailed instructions" , QMessageBox.Ok)
+            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
             return
 
         self.learner.name = self.name
