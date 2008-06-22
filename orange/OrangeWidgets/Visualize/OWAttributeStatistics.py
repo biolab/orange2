@@ -134,7 +134,7 @@ class DisplayStatistics (QGraphicsScene):
             if not dist[ind]:
                 attr_name.setPlainText("The widget cannot show distributions for attributes of this type.")
             else:
-                attr_name.setPlainText("This attribute has no defined values.")
+                attr_name.setPlainText("The attribute has no defined values.")
             return
         
         title_str = "Category"
