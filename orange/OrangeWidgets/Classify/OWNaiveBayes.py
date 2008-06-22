@@ -13,7 +13,6 @@ from exceptions import Exception
 
 import warnings
 warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
-warnings.filterwarnings("ignore", "'BayesLearner': threshold can only be optimized for binary classes", orange.KernelWarning, ".*OWNaiveBayes", 136)
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
@@ -57,7 +56,7 @@ class OWNaiveBayes(OWWidget):
 
         glay.addWidget(OWGUI.widgetLabel(box, "Prior"), 1, 0)
 
-        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
+        glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method for estimating the prior probability.'),
                         1, 2)
 
         glay.addWidget(OWGUI.widgetLabel(box, "Conditional (for discrete)"), 2, 0)
@@ -150,17 +149,17 @@ class OWNaiveBayes(OWWidget):
         self.applyData()
 
 
-    def sendReport(self):
-        self.startReport(self.name)
-        self.reportSection("Learning parameters")
-        self.reportSettings([("Probability estimation", self.estMethods[self.probEstimation][0]),
-                             ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
-                             self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m_estimator.m),
-                             ("LOESS window size", "%.1f" % self.windowProportion),
-                             ("Number of points in LOESS", "%i" % self.loessPoints),
-                             ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
-                            ])
-        self.finishReport()
+#    def sendReport(self):
+#        self.startReport(self.name)
+#        self.reportSection("Learning parameters")
+#        self.reportSettings([("Probability estimation", self.estMethods[self.probEstimation][0]),
+#                             ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
+#                             self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m_estimator.m),
+#                             ("LOESS window size", "%.1f" % self.windowProportion),
+#                             ("Number of points in LOESS", "%i" % self.loessPoints),
+#                             ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
+#                            ])
+#        self.finishReport()
 
 
 if __name__=="__main__":
