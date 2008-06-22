@@ -104,7 +104,7 @@ class OWVizRank(VizRank, OWWidget):
             OWGUI.checkBox(self.optimizationSettingsBox, self, 'storeEachPermutation', 'Save all projections for each permutation of attributes', tooltip = "Do you want to see in the projection list all evaluated projections or only the best projection for each attribute permutation.\nUsually this value is unchecked.")
 
         if visualizationMethod == LINEAR_PROJECTION:
-            OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least square"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
+            OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least squares"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
         else:
             self.projOptimizationMethod = 0
 
@@ -144,8 +144,8 @@ class OWVizRank(VizRank, OWWidget):
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.argumentCountEdit = OWGUI.lineEdit(self.argumentationBox , self, "argumentCount", "Number of best projections to consider:     ", orientation = "horizontal", tooltip = "How many of the top ranked projections do you wish to consider?", valueType = int, validator = QIntValidator(self))
 
-        self.classValueCombo = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for Class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the Selected Class Value")
+        self.classValueCombo = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the selected class value")
         self.argumentList = OWGUI.listBox(self.argumentBox, self, callback = self.argumentSelected)
         self.argumentList.setMinimumSize(200,200)
 
@@ -799,7 +799,7 @@ class OWVizRank(VizRank, OWWidget):
             self.argumentSelected()
 
         if showClassification or (example.getclass() and example.getclass().value != classValue):
-            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
             for key in dist.keys(): s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
             QMessageBox.information(None, "Classification results", s[:-4], QMessageBox.Ok + QMessageBox.Default)
 
@@ -1452,12 +1452,12 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.loadSettings()
         self.projectionCountStr = str(self.projectionCount)
 
-        b1 = OWGUI.widgetBox(self.controlArea, 'Projection Count')
+        b1 = OWGUI.widgetBox(self.controlArea, 'Projection count')
         self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCountStr", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
 
         b2 = OWGUI.widgetBox(self.controlArea, 'Example index', orientation="horizontal")
         self.selectedExampleCombo = OWGUI.comboBox(b2, self, "selectedExampleIndex", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
-        butt = OWGUI.button(b2, self, "Get From Projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
+        butt = OWGUI.button(b2, self, "Get from Projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
 ##        butt.setMaximumWidth(60)
 
         b3 = OWGUI.widgetBox(self.controlArea, 'Graph settings')
