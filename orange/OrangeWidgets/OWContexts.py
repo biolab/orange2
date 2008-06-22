@@ -180,7 +180,7 @@ class DomainContextHandler(ContextHandler):
             else:
                 attributes = False
 
-            metas = self.hasMetaAttributes and dict([(attr.name, attr.varType) for attr in domain.getmetas().values()])
+            metas = self.hasMetaAttributes and dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]) or {}
 
         return attributes, metas
     
@@ -277,7 +277,7 @@ class DomainContextHandler(ContextHandler):
 
         for name, values in excluded.items():
             addOrd, addMeta = name in addOrdinaryTo, name in addMetaTo
-            ll = [a for a in context.orderedDomain if a not in values and (addOrd or a in context.metas) and (addMeta or a in context.attributes)]
+            ll = [a for a in context.orderedDomain if a not in values and ((addOrd and context.attributes.get(a[0], None) == a[1]) or (addMeta and context.metas.get(a[0], None) == a[1]))]
             setattr(widget, name, ll)
             
 
@@ -403,7 +403,7 @@ class DomainContextHandler(ContextHandler):
         if not self.syncWithGlobal:
             self.globalContexts.extend(getattr(widget, self.localContextName))
         mp = self.maxAttributesToPickle
-        self.globalContexts = filter(lambda c: len(c.attributes) + len(c.metas) < mp, self.globalContexts)
+        self.globalContexts = filter(lambda c: (c.attributes and len(c.attributes) or 0) + (c.metas and len(c.metas) or 0) < mp, self.globalContexts)
         self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
         self.globalContexts = self.globalContexts[:self.maxSavedContexts]
 
