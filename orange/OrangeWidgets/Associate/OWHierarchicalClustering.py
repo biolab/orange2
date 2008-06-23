@@ -79,16 +79,16 @@ class OWHierarchicalClustering(OWWidget):
         #################################
 
         #Tabs
-        self.tabs = OWGUI.tabWidget(self.controlArea)
-        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+##        self.tabs = OWGUI.tabWidget(self.controlArea)
+##        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 ##        self.selectionTab= OWGUI.createTabPage(self.tabs, "Selection")
 
         #HC Settings
-        OWGUI.comboBox(self.settingsTab, self, "Linkage", box="Linkage",
+        OWGUI.comboBox(self.controlArea, self, "Linkage", box="Linkage",
                 items=self.linkageMethods, tooltip="Choose linkage method",
                 callback=self.constructTree, addSpace = 16)
         #Label
-        box = OWGUI.widgetBox(self.settingsTab, "Annotation", addSpace = 16)
+        box = OWGUI.widgetBox(self.controlArea, "Annotation", addSpace = 16)
         self.labelCombo=OWGUI.comboBox(box, self, "Annotation",
                 items=["None"],tooltip="Choose label attribute",
                 callback=self.updateLabel)
@@ -102,7 +102,7 @@ class OWHierarchicalClustering(OWWidget):
 
 
         #Dendrogram graphics settings
-        dendrogramBox=OWGUI.widgetBox(self.settingsTab, "Dendrogram settings", addSpace=16)
+        dendrogramBox=OWGUI.widgetBox(self.controlArea, "Dendrogram settings", addSpace=16)
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
         cblp = OWGUI.checkBox(dendrogramBox, self, "PrintDepthCheck", "Limit print depth", callback = self.applySettings)
         ib = OWGUI.indentedBox(dendrogramBox, orientation = 0)
@@ -124,7 +124,7 @@ class OWHierarchicalClustering(OWWidget):
         #OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Fit horizontal size")
         #OWGUI.checkBox(dendrogramBox, self, "AutoResize", "Auto resize")
 
-        box = OWGUI.widgetBox(self.settingsTab, "Selection")
+        box = OWGUI.widgetBox(self.controlArea, "Selection")
         OWGUI.checkBox(box, self, "SelectionMode", "Show cutoff line", callback=self.updateCutOffLine)
         cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster indices", callback=self.commitDataIf)
         self.classificationBox = ib = OWGUI.indentedBox(box)
@@ -140,7 +140,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.setStopper(self, btCommit, cbAuto, "settingsChanged", self.commitData)
         
         
-        OWGUI.rubber(self.settingsTab)
+        OWGUI.rubber(self.controlArea)
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout()
