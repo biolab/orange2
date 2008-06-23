@@ -76,7 +76,7 @@ def addOrangeDirectoriesToPath(registryFileName = None):
                 sys.path.insert(0, fullName)
 
     if registryFileName != None and os.path.exists(registryFileName):
-        import xml
+        import xml.dom.minidom
         doc = xml.dom.minidom.parse(registryFileName)
         for category in doc.getElementsByTagName("category"):
             directory = category.getAttribute("directory")
