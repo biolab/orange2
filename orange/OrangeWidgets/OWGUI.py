@@ -748,13 +748,14 @@ class OrangeListBox(QListWidget):
                     if index < self.count():
                         while index > 0 and self.item(index).isSelected():      # if we are dropping items on a selected item, we have to select some previous unselected item as the drop target
                             index -= 1
-                    strs = [str(source.item(i).text()) for i in selectedItemIndices]
+                    items = [source.item(i) for i in selectedItemIndices]
                     for ind in selectedItemIndices[::-1]:
                         source.takeItem(ind)
                         if ind <= index: index-= 1
-                    self.insertItems(index, strs)
+                    for item in items[::-1]:
+                        self.insertItem(index, item)
                     self.clearSelection()
-                    for i in range(index, index+len(strs)):
+                    for i in range(index, index+len(items)):
                         self.item(i).setSelected(1)
 
             if self.dragDopCallback:        # call the callback
@@ -1014,8 +1015,7 @@ class collapsableWidgetBox(QGroupBox):
             self.setTitle(" " + box.strip() + " ")
 
         self.setCheckable(1)
-        self.childWidgetVisibility = {}
-
+        
         self.master = master
         self.value = value
         self.callback = callback
@@ -1030,13 +1030,6 @@ class collapsableWidgetBox(QGroupBox):
         if self.callback != None:
             self.callback()
 
-    # call when all widgets are added into the widget box to update the correct state (shown or hidden)
-    def syncControls(self):
-        for c in self.children():
-            if isinstance(c, QLayout): continue
-            self.childWidgetVisibility[str(c)] = not c.isHidden()
-        self.updateControls()
-
     def updateControls(self):
         val = self.master.getdeepattr(self.value)
         self.setChecked(val)
@@ -1045,10 +1038,8 @@ class collapsableWidgetBox(QGroupBox):
         for c in self.children():
             if isinstance(c, QLayout): continue
             if val:
-                if self.childWidgetVisibility.get(str(c), 1):       # we don't show controls that were supposed to be hidden
-                    c.show()
+                c.show()
             else:
-                self.childWidgetVisibility[str(c)] = not c.isHidden()      # before hiding, save its visibility so that we'll know to show it or not later
                 c.hide()
 
 
@@ -1395,6 +1386,8 @@ class CallFrontComboBox(ControlledCallFront):
                 for i in range(self.control.count()):
                     values += str(self.control.itemText(i)) + (i < self.control.count()-1 and ", " or ".")
                 print "unable to set %s to value '%s'. Possible values are %s" % (self.control, value, values)
+                #import traceback
+                #traceback.print_stack()
             else:
                 if value < self.control.count():
                     self.control.setCurrentIndex(value)
