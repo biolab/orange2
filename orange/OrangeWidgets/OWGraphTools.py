@@ -38,7 +38,7 @@ class TooltipManager:
     #Decides whether to pop up a tool tip and which text to pop up
     def maybeTip(self, x, y):
         if len(self.positions) == 0: return ("", -1, -1)
-        dists = [abs(x-position[0]) + abs(y-position[1]) for position in self.positions]
+        dists = [max(abs(x-position[0])- position[2],0) + max(abs(y-position[1])-position[3], 0) for position in self.positions]
         nearestIndex = dists.index(min(dists))
 
         intX = abs(self.qwtplot.transform(self.qwtplot.xBottom, x) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][0]))
