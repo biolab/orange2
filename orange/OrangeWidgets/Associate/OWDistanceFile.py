@@ -44,7 +44,6 @@ class OWDistanceFile(OWWidget):
         if self.recentFiles:
             self.loadFile()
 
-
     def browseFile(self):
         if self.recentFiles:
             lastPath = os.path.split(self.recentFiles[0])[0]
@@ -59,6 +58,7 @@ class OWDistanceFile(OWWidget):
         self.loadFile()
 
     def loadFile(self):
+        #print 'loading file'
         if self.fileIndex:
             fn = self.recentFiles[self.fileIndex]
             self.recentFiles.remove(fn)
@@ -76,9 +76,10 @@ class OWDistanceFile(OWWidget):
         msg = None
         try:
             if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
-                #print fn
                 pkl_file = open(fn, 'rb')
                 self.matrix = pickle.load(pkl_file)
+                if hasattr(self.matrix, 'items'):
+                    self.data = self.matrix.items
                 pkl_file.close()
             else:    
                 fle = open(fn)
@@ -119,12 +120,13 @@ class OWDistanceFile(OWWidget):
                             except:
                                 msg = "Invalid number in line %i, column %i" % (li+2, lj)
                                 raise exceptions.Exception 
-
+                            
             self.relabel()
         except:
             self.error(msg or "Error while reading the file")
-
+            
     def relabel(self):
+        #print 'relabel'
         self.error()
         matrix = self.matrix
 
@@ -146,7 +148,8 @@ class OWDistanceFile(OWWidget):
         else:
             matrix.setattr("items", self.labels)
 
-        self.send("Distance Matrix", matrix)
+        #print 'send'#, matrix
+        self.send("Distance Matrix", self.matrix)
 
     def getExamples(self, data):
         self.data = data
