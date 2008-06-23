@@ -11,6 +11,7 @@
 #
 import orngOrangeFoldersQt4
 from OWWidget import *
+import OWColorPalette
 from OWScatterPlotGraph import OWScatterPlotGraph
 import orngInteract
 import statc
