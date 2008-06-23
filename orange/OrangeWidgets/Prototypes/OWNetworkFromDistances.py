@@ -26,15 +26,14 @@ class OWNetworkFromDistances(OWWidget):
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
         self.outputs = [("Network", Network), ("Examples", ExampleTable)]
 
+        # set default settings
         self.spinLowerThreshold = 0
         self.spinLowerChecked = False
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
         self.netOption = 0
-        
-        # set default settings
         self.data = None
-        self.threshold = 0.2
+        
         # get settings from the ini file, if they exist
         self.loadSettings()
         
@@ -49,20 +48,12 @@ class OWNetworkFromDistances(OWWidget):
         
         boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
         OWGUI.separator(self.controlArea)
-        #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
-        #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
         
         OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeLowerSpin, valueType=float)
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
         
-        # options
-        #boxOptions = OWGUI.widgetBox(self.controlArea, box = "Options")
-        
+        # Options
         self.attrColor = ""
-        #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
-        #OWGUI.checkBox(boxOptions, self, 'excludeUnconnected', 'Exclude unconnected vertices', callback = self.generateGraph)
-        #OWGUI.checkBox(boxOptions, self, 'largestComponent', 'Largest connected component only', callback = self.generateGraph)
-        
         ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude unconnected vertices", callback = self.generateGraph)
@@ -75,7 +66,6 @@ class OWNetworkFromDistances(OWWidget):
         self.searchString = OWGUI.lineEdit(self.attributeCombo.box, self, "label", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
         self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.generateGraph)
-        #self.vertexForComponentSpin = OWGUI.spin(ribg, self, "vertexForComponent", min=0, max=0, step=1, label="Vertex:", callback=self.generateGraph)
         
         if str(self.netOption) != '3':
             self.attributeCombo.box.setEnabled(False)
@@ -89,7 +79,6 @@ class OWNetworkFromDistances(OWWidget):
         self.resize(700, 322)
         
     def enableAttributeSelection(self):
-        print 'juhej'
         self.attributeCombo.box.setEnabled(True)
         
     def setSearchStringTimer(self):
@@ -97,28 +86,20 @@ class OWNetworkFromDistances(OWWidget):
         self.searchStringTimer.start(750)
 
     def cdata(self, data):
-        if data == None:
-            return
+        if data == None: return
         
         self.data = data
         
         # draw histogram
-        t1 = time.time()
         data.matrixType = data.Lower
         values = data.getValues()
-        t2 = time.time()
         self.histogram.setValues(values)
-        t3 = time.time()
-        #print maxValue
+        
         low = min(values)
         upp = max(values)
         self.spinLowerThreshold = self.spinUpperThreshold = low - (0.03 * (upp - low))
-        print self.spinLowerThreshold
-        t4 = time.time()
+        
         self.generateGraph()
-        t5 = time.time()
-        #self.vertexForComponentSpin.control.setMaximum(data.dim - 1)
-        #print t1-t2,t2-t3,t3-t4,t4-t5
         
         self.attributeCombo.clear()
         vars = []
@@ -136,7 +117,6 @@ class OWNetworkFromDistances(OWWidget):
         for var in vars:
             self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
 
-        
     def changeLowerSpin(self):
         if self.spinLowerThreshold < self.histogram.minValue:
             self.spinLowerThreshold = self.histogram.minValue
