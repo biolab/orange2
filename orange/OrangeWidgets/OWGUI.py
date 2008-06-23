@@ -582,15 +582,19 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     import PyQt4.Qwt5 as qwt
 
     init = getdeepattr(master, value)
-    if box:
-        sliderBox = widgetBox(widget, box, orientation = "horizontal")
-        separator(widget)
-    else:
-        sliderBox = widget
 
-    hb = widgetBox(sliderBox, orientation = "horizontal")
     if label:
-        lbl = widgetLabel(hb, label, labelWidth)
+        hb = widgetBox(widget, box, orientation) 
+        lbl = widgetLabel(hb, label)
+        if labelWidth:
+            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+        print orientation
+        if orientation and orientation!="horizontal":
+            separator(hb, height=2)
+            hb = widgetBox(hb, 0)
+            print "hb"
+    else:
+        hb = widgetBox(widget, box, 0)
 
     if ticks:
         slider = qwt.QwtSlider(hb, Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
