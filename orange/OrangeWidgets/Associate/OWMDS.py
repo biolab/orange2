@@ -555,9 +555,9 @@ class MDSGraph(OWGraph):
                 self.updateDistanceLines()
             self.setPoints()
                 #self.setLines(True)
-        for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
+##        for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
 ##        for axis in [QwtPlot.xBottom, QwtPlot.yLeft]:
-            self.setAxisAutoScale(axis)
+##            self.setAxisAutoScale(axis)
         self.updateAxes()
         self.replot()
 
@@ -608,7 +608,6 @@ class MDSGraph(OWGraph):
             self.repaint()
 
     def setPoints(self):
-        import sets
         if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0:
             colors=[c[self.ColorAttr] for c in self.colors]
 
@@ -626,6 +625,8 @@ class MDSGraph(OWGraph):
                     dict[hsv].append(i)
                 else:
                     dict[hsv]=[i]
+            maxX, maxY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
+            minX, minY = self.mds.points[0] if len(self.mds.points)>0 else (0, 0)
             for color in set:
                 #print len(dict[color.getHsv()]), color.name()
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
@@ -635,13 +636,17 @@ class MDSGraph(OWGraph):
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
                 Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
                 self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y, showFilledSymbols=False)
-            return 
-        for i in range(len(self.colors)):
-            self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
-                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
-            if self.NameAttr!=0:
-                self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
-        self.update()
+        else:
+            for i in range(len(self.colors)):
+                self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
+                              symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
+                if self.NameAttr!=0:
+                    self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+        if len(self.mds.points)>0:
+            X = [point[0] for point in self.mds.points]
+            Y = [point[1] for point in self.mds.points]
+            self.setAxisScale(QwtPlot.xBottom, min(X), max(X))
+            self.setAxisScale(QwtPlot.yLeft, min(Y), max(Y))
             
                                
     def setLines(self, reset=False):
