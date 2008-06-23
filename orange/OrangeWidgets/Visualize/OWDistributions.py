@@ -23,8 +23,8 @@ class distribErrorBarQwtPlotCurve(QwtPlotCurve):
         QwtPlotCurve.__init__(self, text)
 
     def drawCurve(self, p, style, xMap, yMap, f, t):
-        self.setPen( self.symbol().pen() )
-        p.setPen( self.symbol().pen() )
+        self.setPen(self.symbol().pen())
+        p.setPen(self.symbol().pen())
         if self.style() == QwtPlotCurve.UserCurve:
             p.setBackgroundMode(Qt.OpaqueMode)
             if t < 0: t = self.dataSize() - 1
@@ -178,7 +178,7 @@ class OWDistributionGraph(OWGraph):
             tmphdata = orange.ContingencyAttrClass(d_variable, self.data)
             try:
                 g = orange.ConditionalProbabilityEstimatorConstructor_loess(self.dc[self.attributeName], nPoints=200) #!!!
-            self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
+                self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
             except:
                 self.probGraphValues = [] 
             # print [ps.variances for (x, ps) in g.probabilities.items()]
@@ -210,7 +210,7 @@ class OWDistributionGraph(OWGraph):
                         ci = 0
                     ps.append(p)
                     cis.append(ci)
-                self.probGraphValues.append( (x, ps, cis) )
+                self.probGraphValues.append((x, ps, cis))
 
     def refreshPureVisibleOutcomes(self):
         if self.dataHasDiscreteClass:
@@ -219,6 +219,7 @@ class OWDistributionGraph(OWGraph):
         if self.variableContinuous:
             keys.sort()
         self.clear()
+        self.tips.removeAll()
         self.tips.removeAll()
         cn=0
         for key in keys:
@@ -294,15 +295,15 @@ class OWDistributionGraph(OWGraph):
                         ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                         ff = "%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
                         text = "N(%s=%s|%s in ("+ff+","+ff+"])=<b>%i</b><br>P(%s=%s|%s in ("+ff+","+ff+"])=<b>%.3f</b><br>"
-                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, subBarHeight,
-                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, float(subBarHeight/sum(self.hdata[key]))) #self.probGraphValues[cn][1][oi])
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key, key+self.subIntervalStep, subBarHeight, 
+                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key, key+self.subIntervalStep, float(subBarHeight/sum(self.hdata[key]))) #self.probGraphValues[cn][1][oi])
                         self.tips.addToolTip(key+self.subIntervalStep/2.0, currentBarsHeight[cn] + subBarHeight/2.0, text, self.subIntervalStep/2.0, subBarHeight/2.0)
                     else:
                         tmpx = cn - (self.barSize/2.0)/100.0
                         tmpx2 = cn + (self.barSize/2.0)/100.0
                         ckey.setData([tmpx, tmpx2, tmpx2, tmpx], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                         text = "N(%s=%s|%s=%s)=<b>%i</b><br>P(%s=%s|%s=%s)=<b>%.3f</b>"
-                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight,
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight, 
                                      str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), float(subBarHeight/sum(self.hdata[key])))
                         self.tips.addToolTip(cn, currentBarsHeight[cn]+subBarHeight/2.0, text, (self.barSize/2.0)/100.0, subBarHeight/2.0)
                     currentBarsHeight[cn] += subBarHeight
@@ -346,7 +347,7 @@ class OWDistributionGraph(OWGraph):
             if self.variableContinuous:
                 newSymbol = QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(0,0))
             else:
-                newSymbol = QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7,7))
+                newSymbol = QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7, 7))
 
             self.probCurveKey.setData(xs, mps)
             self.probCurveKey.setSymbol(newSymbol)
@@ -379,7 +380,7 @@ class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
     contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes", "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], matchValues=DomainContextHandler.MatchValuesClass)}
 
-    def __init__(self,parent=None, signalManager = None):
+    def __init__(self, parent=None, signalManager = None):
         "Constructor"
         OWWidget.__init__(self, parent, signalManager, "&Distributions", TRUE)
         # settings
@@ -464,7 +465,7 @@ class OWDistributions(OWWidget):
 
         OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
 
-        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
+        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box='Line width', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
 
         #add controls to self.controlArea widget
         self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Variable", valueType = str, sendSelectedValue = True, callback=self.setVariable)
@@ -506,10 +507,10 @@ class OWDistributions(OWWidget):
         self.graph.setXaxisTitle(self.xaxisTitle)
 
     def setShowYaxisTitle(self):
-        self.graph.setShowYLaxisTitle(self.showYaxisTitle )
+        self.graph.setShowYLaxisTitle(self.showYaxisTitle)
 
     def setYaxisTitle(self):
-        self.graph.setYLaxisTitle(self.yaxisTitle )
+        self.graph.setYLaxisTitle(self.yaxisTitle)
 
     def setShowYPaxisTitle(self):
         self.graph.setShowYRaxisTitle(self.showYPaxisTitle)
@@ -518,7 +519,7 @@ class OWDistributions(OWWidget):
         self.graph.setYRaxisTitle(self.yPaxisTitle)
 
     def setBarSize(self):
-        self.graph.setBarSize(self.barSize )
+        self.graph.setBarSize(self.barSize)
 
     # Sets whether the probabilities are drawn or not
     def setShowProbabilities(self):
@@ -655,10 +656,9 @@ class OWDistributions(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     owd = OWDistributions()
-    a.setMainWidget(owd)
+##    a.setMainWidget(owd)
     owd.show()
     data=orange.ExampleTable("../../doc/datasets/titanic.tab")
     owd.setData(data)
     a.exec_()
     owd.saveSettings()
-    orange.VarTypes.Continuous
