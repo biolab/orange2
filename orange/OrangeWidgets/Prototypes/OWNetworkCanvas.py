@@ -259,27 +259,15 @@ class OWNetworkCanvas(OWGraph):
   
   def hideSelectedVertices(self):
     self.networkCurve.hideSelectedVertices()
-    self.drawLabels()
-    self.drawToolTips()
-    self.drawWeights()
-    self.drawIndexes()
-    self.replot()
+    self.drawPlotItems()
     
   def hideUnSelectedVertices(self):
     self.networkCurve.hideUnSelectedVertices()
-    self.drawLabels()
-    self.drawToolTips()
-    self.drawWeights()
-    self.drawIndexes()
-    self.replot()
+    self.drawPlotItems()
     
   def showAllVertices(self):
     self.networkCurve.showAllVertices()
-    self.drawLabels()
-    self.drawToolTips()
-    self.drawWeights()
-    self.drawIndexes()
-    self.replot()
+    self.drawPlotItems()
     
   def optimize(self, frSteps):
       qApp.processEvents()
@@ -310,19 +298,11 @@ class OWNetworkCanvas(OWGraph):
               
   def markedToSelection(self):
       self.networkCurve.markToSel()
-      self.drawLabels()
-      self.drawToolTips()
-      self.drawWeights()
-      self.drawIndexes()
-      self.replot()
+      self.drawPlotItems()
       
   def selectionToMarked(self):
       self.networkCurve.selToMark()
-      self.drawLabels()
-      self.drawToolTips()
-      self.drawWeights()
-      self.drawIndexes()
-      self.replot()
+      self.drawPlotItems()
       
       if self.sendMarkedNodes != None:
           self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
@@ -384,31 +364,25 @@ class OWNetworkCanvas(OWGraph):
               toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
           
           self.networkCurve.setMarkedVertices(toMark)
-          self.drawLabels()
-          self.drawToolTips()
-          self.drawWeights()
-          self.drawIndexes()
-          self.replot()
+          self.drawPlotItems()
+              
+      elif not self.freezeNeighbours and self.selectionNeighbours == 0:
+          self.networkCurve.setMarkedVertices(self.networkCurve.getSelectedVertices())
+          self.drawPlotItems()
           
-          if self.sendMarkedNodes != None:
-              self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
+      if self.sendMarkedNodes != None:
+          self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
               
   def unMark(self):
     self.networkCurve.unMark()
-    self.drawLabels()
-    self.drawToolTips()
-    self.drawWeights()
-    self.drawIndexes()
+    self.drawPlotItems(replot=0)
     
     if self.sendMarkedNodes != None:
           self.sendMarkedNodes([])
           
   def setMarkedVertices(self, vertices):
     self.networkCurve.setMarkedVertices(vertices)
-    self.drawLabels()
-    self.drawToolTips()
-    self.drawWeights()
-    self.drawIndexes()
+    self.drawPlotItems(replot=0)
     
     if self.sendMarkedNodes != None:
           self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
@@ -451,18 +425,13 @@ class OWNetworkCanvas(OWGraph):
           if ndx != -1 and mind < 50:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
               self.networkCurve.setMarkedVertices(toMark)
-              self.drawLabels()
-              self.drawWeights()
-              self.drawIndexes()
-              self.replot()
+              self.drawPlotItems()
               
               if self.sendMarkedNodes != None:
                   self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
           else:
               self.networkCurve.unMark()
-              self.drawLabels()
-              self.drawIndexes()
-              self.replot()
+              self.drawPlotItems()
               
               if self.sendMarkedNodes != None:
                   self.sendMarkedNodes([])
@@ -544,8 +513,15 @@ class OWNetworkCanvas(OWGraph):
       py = self.invTransform(0, pos.y())   
 
       ndx, min = self.visualizer.closestVertex(px, py)
-
-      if min < 50 and ndx != -1:
+      
+      minx1 = self.invTransform(2, 0)
+      miny1 = self.invTransform(0, 0)
+      minx2 = self.invTransform(2, 10)
+      miny2 = self.invTransform(0, 10)
+      
+      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      
+      if min < d and ndx != -1:
           if self.insideview:
               self.networkCurve.unSelect()
               self.vertices[ndx].selected = True
@@ -596,11 +572,19 @@ class OWNetworkCanvas(OWGraph):
     
       self.networkCurve.showEdgeLabels = self.showEdgeLabels
       self.networkCurve.attach(self)
+      self.drawPlotItems(replot=0)
+      #self.zoomExtent()
+      
+  def drawPlotItems(self, replot=1):
+      self.markerKeys = {}
+      self.removeMarkers()
       self.drawLabels()
       self.drawToolTips()
       self.drawWeights()
       self.drawIndexes()
-      #self.zoomExtent()
+      
+      if replot:
+          self.replot()
  
   def drawToolTips(self):
     # add ToolTips
@@ -615,9 +599,16 @@ class OWNetworkCanvas(OWGraph):
         x1 = self.visualizer.coors[0][vertex.index]
         y1 = self.visualizer.coors[1][vertex.index]
         lbl = ""
+        values = self.visualizer.graph.items[vertex.index]
         for ndx in self.tooltipText:
-          values = self.visualizer.graph.items[vertex.index]
-          lbl = lbl + str(values[ndx]) + "\n"
+            value = str(values[ndx])
+            # wrap text
+            i=0
+            while i < len(value) / 100:
+                value = value[:((i + 1) * 100) + i] + "\n" + value[((i + 1) * 100) + i:]
+                i += 1
+                
+            lbl = lbl + str(value) + "\n"
   
         if lbl != '':
           lbl = lbl[:-1]
@@ -625,8 +616,6 @@ class OWNetworkCanvas(OWGraph):
           self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
                  
   def drawLabels(self):
-      self.markerKeys = {}
-      self.removeMarkers()
       if len(self.labelText) > 0:
           for vertex in self.vertices:
               if not vertex.show:
@@ -639,7 +628,7 @@ class OWNetworkCanvas(OWGraph):
               y1 = self.visualizer.coors[1][vertex.index]
               lbl = ""
               values = self.visualizer.graph.items[vertex.index]
-              lbl = " ".join([str(values[ndx]) for ndx in self.labelText])
+              lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
               if lbl:
                   mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom)
                   self.markerKeys[vertex.index] = mkey    
@@ -677,6 +666,9 @@ class OWNetworkCanvas(OWGraph):
               self.markerKeys[(edge.u,edge.v)] = mkey     
           
   def setVertexColor(self, attribute):
+      if self.visualizer == None:
+          return
+      
       if attribute == "(one color)":
           colorIndex = -1
       else:
@@ -739,31 +731,31 @@ class OWNetworkCanvas(OWGraph):
       self.visualizer = visualizer
       self.clear()
       
-      self.nVertices = visualizer.graph.nVertices
+      self.nVertices = 0
       self.nEdges = 0
       self.vertexDegree = []
-      
-      #add nodes
       self.vertices_old = {}
       self.vertices = []
+      self.edges_old = {}
+      self.nEdges = 0
+      self.networkCurve = NetworkCurve(self)
+      self.edges = []
+      self.minEdgeWeight = sys.maxint
+      self.maxEdgeWeight = 0
+      
+      if visualizer == None:
+          self.replot()
+          return
+      
+      self.nVertices = visualizer.graph.nVertices
+      #add nodes
       for v in range(0, self.nVertices):
           self.vertices_old[v] = (None, [])
           vertex = NetworkVertex()
           vertex.index = v
           self.vertices.append(vertex)
-          
-          
-      #print "done."
-      
-      #add edges
-      self.edges_old = {}
-      self.nEdges = 0
-      self.networkCurve = NetworkCurve(self)
-      self.edges = []
-      
-      self.minEdgeWeight = sys.maxint
-      self.maxEdgeWeight = 0
 
+      #add edges
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
           edge = NetworkEdge()
@@ -837,7 +829,10 @@ class OWNetworkCanvas(OWGraph):
           minVertexWeight = float(min(values))
           maxVertexWeight = float(max(values))
           
-          k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
+          if maxVertexWeight - minVertexWeight == 0:
+              k = 1 #doesn't matter
+          else:
+              k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
           
           if inverted:
               for vertex in self.vertices:

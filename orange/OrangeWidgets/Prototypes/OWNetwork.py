@@ -77,7 +77,8 @@ class OWNetwork(OWWidget):
         self.loadSettings()
 
         self.visualize = None
-
+        self.markInputItems = None
+        
         self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
         self.mainArea.layout().addWidget(self.graph)
         
@@ -143,11 +144,11 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.displayTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
         OWGUI.button(self.displayTab, self, "Save network", callback=self.saveNetwork)
         
-        ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical", addSpace = True)
+        ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
-        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode, addSpace = True)
+        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain", callback = self.setMarkMode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
@@ -158,7 +159,7 @@ class OWNetwork(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
         self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
-        self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
+        #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.setMarkMode)
@@ -170,6 +171,12 @@ class OWNetwork(OWWidget):
         self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setMarkMode(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
 #        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
+        
+        #self.markInputBox = OWGUI.widgetBox(self.markTab, "Mark by input signal", orientation="vertical")
+        #self.markInputBox.setEnabled(False)
+        self.markInput = 0
+        self.markInputCombo = OWGUI.comboBox(self.markTab, self, "markInput", box = "Mark by input signal", callback=self.setMarkInput)
+        self.markInputCombo.box.setEnabled(False)
         
         T = OWToolbars.NavigateSelectToolbar
         self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
@@ -226,6 +233,8 @@ class OWNetwork(OWWidget):
         self.setOptMethod()
          
         self.resize(1000, 600)
+        self.controlArea.setEnabled(False)
+        self.information('No network loaded.')
         
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
@@ -312,7 +321,8 @@ class OWNetwork(OWWidget):
     def setMarkMode(self, i = None):
         if not i is None:
             self.hubs = i
-            
+        
+        print self.hubs
         self.graph.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
         self.graph.markWithRed = False
 
@@ -388,6 +398,9 @@ class OWNetwork(OWWidget):
         print "replot in " + str(stop - start)
         
     def saveNetwork(self):
+        if self.visualizer == None:
+            return
+        
         filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK networks (*.net)')
         if filename:
             fn = ""
@@ -414,9 +427,14 @@ class OWNetwork(OWWidget):
             if items != None:
                 self.send("Selected Examples", items)
       
-    def setGraph(self, graph):
+    def setGraph(self, graph):        
         if graph == None:
+            self.visualize = None
+            self.graph.addVisualizer(self.visualize)
+            self.information('No network loaded.')
+            self.controlArea.setEnabled(False)
             return
+        
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkOptimization(graph)
         
@@ -508,7 +526,8 @@ class OWNetwork(OWWidget):
             
         self.optButton.setChecked(1)
         self.optLayout()
-
+        self.information(0)
+        self.controlArea.setEnabled(True)
         #self.random()
         
     def setItems(self, items=None):
@@ -522,29 +541,45 @@ class OWNetwork(OWWidget):
         self.visualize.graph.setattr("items", items)
         self.setGraph(self.visualize.graph)
         
+    def setMarkInput(self):
+        var = str(self.markInputCombo.currentText())
+        
+        if self.markInputItems != None and len(self.markInputItems) > 0:
+            values = [str(x[var]).upper() for x in self.markInputItems]
+            #print 'values',values
+            toMark = [i for i,x in enumerate(self.visualize.graph.items) if str(x[var]).upper() in values]
+            #print toMark
+            self.graph.setMarkedVertices(list(toMark))
+            self.graph.replot()
+            
+        else:
+            self.graph.setMarkedVertices([])
+            self.graph.replot()            
+    
     def markItems(self, items):
+        self.markInputCombo.clear()
+        self.markInputCombo.box.setEnabled(False)
+        self.markInputItems = items
+        
         if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None or items == None:
-            print 'return 1'
             return
         
         if len(items) > 0:
-            commonVars = set(items.domain) & set(self.visualize.graph.items.domain)
-            
+            lstOrgDomain = [x.name for x in self.visualize.graph.items.domain]
+            lstNewDomain = [x.name for x in items.domain]
+            commonVars = set(lstNewDomain) & set(lstOrgDomain)
+
             if len(commonVars) > 0:
                 for var in commonVars:
                     orgVar = self.visualize.graph.items.domain[var]
                     mrkVar = items.domain[var]
                     
                     if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
-                        values = [str(x[var]) for x in items]
-                        toMark = [i for i,x in enumerate(self.visualize.graph.items) if str(x[var]) in values]
-                        self.graph.setMarkedVertices(list(toMark))
-                        self.graph.replot()
-                        break
-        else:
-            self.graph.setMarkedVertices([])
-            self.graph.replot()
-        
+                        self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
+                        self.markInputCombo.box.setEnabled(True)
+                
+        self.setMarkInput()
+              
     def setExampleSubset(self, subset):
         if self.graph == None:
             return
@@ -604,6 +639,9 @@ class OWNetwork(OWWidget):
 #            OWWidget.keyPressEvent(self, e)
 
     def showDegreeDistribution(self):
+        if self.visualize == None:
+            return
+        
         from matplotlib import rcParams
         import pylab as p
         
