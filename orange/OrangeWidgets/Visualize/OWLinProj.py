@@ -198,7 +198,7 @@ class OWLinProj(OWVisWidget):
 
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
 
-        box3.syncControls()
+#        box3.syncControls()
 
         OWGUI.button(box8, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
         self.SettingsTab.layout().addStretch(100)
