@@ -2,13 +2,15 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 class OWCanvasText(QGraphicsTextItem):
-    def __init__(self, canvas, text = "", x  = 0, y = 0, alignment = 0, bold = 0, font = None, z = 0, tooltip = None, show = 1):
+    def __init__(self, canvas, text = "", x  = 0, y = 0, alignment = 0, bold = 0, font = None, z = 0, htmlText=None, tooltip = None, show = 1):
         QGraphicsTextItem.__init__(self, text, None, canvas)
 
         if font:
             self.setFont(font)
         if bold:
             font = self.font(); font.setBold(bold); self.setFont(font)
+        if htmlText:
+            self.setHtml(htmlText)
 
         self.alignment = alignment
 

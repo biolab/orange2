@@ -137,9 +137,12 @@ class ColorPaletteDlg(OWBaseWidget):
     def editPalette(self):
         for paletteName in self.discPaletteNames:
             if self.__dict__["disc"+paletteName+"EditButt"].isChecked():
-                dlg = PaletteEditor(self, self.__dict__["disc"+paletteName+"View"].rgbColors)
-                if dlg.exec_() and self.__dict__["disc"+paletteName+"View"].getRgbColors() != dlg.rgbColors:
-                    self.__dict__["disc"+paletteName+"View"].rgbColors = dlg.getRgbColors()
+                colors = self.__dict__["disc"+paletteName+"View"].rgbColors
+                if type(colors) == dict:
+                    colors = colors[max(colors.keys())]
+                dlg = PaletteEditor(self, colors)
+                if dlg.exec_() and colors != dlg.getRgbColors():
+                    self.__dict__["disc"+paletteName+"View"].setDiscPalette(dlg.getRgbColors())
                 self.__dict__["disc"+paletteName+"EditButt"].setChecked(0)
                 return
                 
@@ -214,16 +217,16 @@ class ColorPaletteDlg(OWBaseWidget):
 
         # if we selected "Save current palette as..." option then add another option to the list
         if self.selectedSchemaIndex == self.schemaCombo.count()-1:
-            message = "Please enter a new name for the current color schema:"
-            ok = FALSE
+            message = "Please enter a name for the current color settings.\nPressing 'Cancel' will cancel your changes and close the dialog."
+            ok = 0
             while not ok:
-                text, ok = QInputDialog.getText(self, "New Schema Name", message)
+                text, ok = QInputDialog.getText(self, "Name Your Color Settings", message)
                 if (ok):
                     newName = str(text)
                     oldNames = [str(self.schemaCombo.itemText(i)).lower() for i in range(self.schemaCombo.count()-1)]
                     if newName.lower() == "default":
                         ok = FALSE
-                        message = "Can not change the 'Default' schema. Please enter a different name:"
+                        message = "The 'Default' settings cannot be changed. Please enter a different name:"
                     elif newName.lower() in oldNames:
                         index = oldNames.index(newName.lower())
                         self.colorSchemas.pop(index)
@@ -234,6 +237,7 @@ class ColorPaletteDlg(OWBaseWidget):
                         #self.schemaCombo.setCurrentIndex(0)
                         self.selectedSchemaIndex = 0
                 else:
+                    ok = 1
                     state = self.getCurrentState()  # if we pressed cancel we have to select a different item than the "Save current palette as..."
                     self.selectedSchemaIndex = 0    # this will change the color buttons, so we have to restore the colors
                     self.setCurrentState(state)
@@ -353,13 +357,8 @@ class PaletteEditor(OWBaseWidget):
         OWGUI.button(box, self, "OK", self.accept)
         OWGUI.button(box, self, "Cancel", self.reject)
                 
-        if type(rgbColors) == dict:
-            colors = rgbColors[max(rgbColors.keys())]
-        else:
-            colors = rgbColors
-        
         self.discListbox.setIconSize(QSize(25, 25))
-        for ind, (r,g,b) in enumerate(colors):
+        for ind, (r,g,b) in enumerate(rgbColors):
             item = QListWidgetItem(ColorPixmap(QColor(r,g,b), 25), "Color %d" % (ind+1))
             item.rgbColor = (r,g,b)
             self.discListbox.addItem(item)
@@ -368,12 +367,11 @@ class PaletteEditor(OWBaseWidget):
                  
                  
     def changeDiscreteColor(self, item):
-        ind = self.discListbox.indexFromItem(item).row()
-        r,g,b = self.rgbColors[ind]
+        r,g,b = item.rgbColor
         color = QColorDialog.getColor(QColor(r,g,b), self)
         if color.isValid():
-            self.discListBox.item(ind).setIcon(ColorPixmap(color, 25))
-            self.discListBox.item(ind).rgbColor = (color.red(), color.green(), color.blue())
+            item.setIcon(ColorPixmap(color, 25))
+            item.rgbColor = (color.red(), color.green(), color.blue())
 
 
     # move selected attribute in "Attribute Order" list one place up
@@ -444,13 +442,16 @@ class ColorPaletteGenerator:
         
         if hasattr(self, "rgbColorsDict") and self.rgbColorsDict.has_key(max(3, numberOfColors)):
             self.rgbColors = self.rgbColorsDict[max(3, numberOfColors)][:numberOfColors]
+        else:
+            self.rgbColors = defaultRGBColors
         self.rgbQColors = [QColor(*color) for color in self.rgbColors]
         
 
     def __getitem__(self, index, brightness = None):
         if type(index) == tuple:
             index, brightness = index
-
+        index = int(index)
+        
         if self.numberOfColors == -1:     # is this color for continuous attribute?
             col = QColor()
             col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
@@ -470,6 +471,7 @@ class ColorPaletteGenerator:
                 return col
 
     def getRGB(self, index, brightness = None):
+        index = int(index)
         if self.numberOfColors == -1:     # is this color for continuous attribute?
             col = QColor()
             col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
@@ -513,7 +515,8 @@ class ColorPaletteBW:
         if self.numberOfColors == -1:                # is this color for continuous attribute?
             val = int(self.brightest + (self.darkest-self.brightest)*index)
             return QColor(val, val, val)
-        else:                                                                           # get color for discrete attribute
+        else:                   
+            index = int(index)                       # get color for discrete attribute
             return QColor(self.values[index], self.values[index], self.values[index])   # index must be between 0 and self.numberofColors
 
     # get QColor instance for given index
@@ -660,20 +663,6 @@ class ColorButton(QWidget):
             if self.master and hasattr(self.master, "colorSchemaChange"):
                 self.master.colorSchemaChange()
 
-
-###########################################################################
-class TestWidget(OWWidget):
-    def __init__(self, parent=None, name='TestWidget'):
-        OWWidget.__init__(self, parent, name, 'Microarray Heat Map', FALSE)
-        #self.controlArea = self
-        #self.setLayout(QVBoxLayout())
-
-        self.colorPalette = ColorPalette(self, self.controlArea, "", additionalColors = None)
-        self.controlArea.layout().addWidget(self.colorPalette)
-        #a = ColorButton(self)
-        #self.controlArea.layout().addWidget(a)
-
-###########################################################################
 
 if __name__== "__main__":
     a = QApplication(sys.argv)

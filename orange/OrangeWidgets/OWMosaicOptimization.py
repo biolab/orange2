@@ -6,7 +6,8 @@ from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
 mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),
-                  ("Cramer's Phi (correlation with class)", CRAMERS_PHI),
+                  ("Pearson's Chi Square (with class)", CHI_SQUARE_CLASS),
+                  ("Cramer's Phi (with class)", CRAMERS_PHI_CLASS),
                   ("Information Gain (in % of class entropy removed)", INFORMATION_GAIN),
                   ("Distance Measure", DISTANCE_MEASURE),
                   ("Minimum Description Length", MDL),
@@ -26,10 +27,10 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                     "classificationMethod", "classConfidence", "lastSaveDirName",
                     "projectionLimit", "useProjectionLimit"]
 
-    percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
+    percentDataNums = [1, 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
 
-    def __init__(self, mosaicWidget = None, signalManager = None):
+    def __init__(self, visualizationWidget = None, signalManager = None):
         OWWidget.__init__(self, None, signalManager, "Mosaic Evaluation Dialog", savePosition = True, wantMainArea = 0, wantStatusBar = 1)
         orngMosaic.__init__(self)
 
@@ -37,7 +38,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.setCaption("Mosaic Evaluation Dialog")
         
         # loaded variables
-        self.mosaicWidget = mosaicWidget
+        self.visualizationWidget = visualizationWidget
         self.showConfidence = 1
         self.optimizeAttributeOrder = 0
         self.optimizeAttributeValueOrder = 0
@@ -48,11 +49,10 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
         self.cancelArgumentation = 0
-        self.useTimeLimit = 0
 
         # explorer variables
         self.wholeDataSet = None
-        self.processingSubsetData = 0       # this is a flag that we set when we call mosaicWidget.setData function
+        self.processingSubsetData = 0       # this is a flag that we set when we call visualizationWidget.setData function
         self.showDataSubset = 1
         self.invertSelection = 0
         self.mosaicSize = 300
@@ -102,20 +102,21 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         # SETTINGS TAB
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore Small Cells" )
-        self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore small cells")
+        OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
+        
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "percentDataUsed", "Percent of data used: ", box = "Data settings", items = self.percentDataNums, sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
 
         self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing Method")
         self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
-        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
 
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for Ranking Attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
-        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "Stopping evaluation or optimization")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:"+"                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:"+"  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to Stop Evaluation or Optimization?")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
         OWGUI.rubber(self.SettingsTab)
 
         # ##########################
@@ -263,7 +264,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     # a group of attributes was selected in the list box - draw the mosic plot of them
     def showSelectedAttributes(self, attrs = None):
-        if not self.mosaicWidget: return
+        if not self.visualizationWidget: return
         if not attrs:
             projection = self.getSelectedProjection()
             if not projection: return
@@ -272,14 +273,14 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                 ruleVals = []   # for which values of the attributes do we have a rule
                 for (q, a, vals) in extraInfo:
                     ruleVals.append([vals[a.index(attr)] for attr in attrs])
-                self.mosaicWidget.activeRule = (attrs, ruleVals)
+                self.visualizationWidget.activeRule = (attrs, ruleVals)
         valueOrder = None
         if self.optimizeAttributeOrder:
             self.resultList.setEnabled(0)
             self.optimizeCurrentAttributeOrder(attrs)
             self.resultList.setEnabled(1)
         else:
-            self.mosaicWidget.setShownAttributes(attrs)
+            self.visualizationWidget.setShownAttributes(attrs)
         self.resultList.setFocus()
 
 
@@ -289,14 +290,14 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             self.optimizeOrderButton.setText("Stop Optimization")
 
             if not attrs:
-                attrs = self.mosaicWidget.getShownAttributeList()
+                attrs = self.visualizationWidget.getShownAttributeList()
 
             bestPlacements = self.findOptimalAttributeOrder(attrs, self.optimizeAttributeValueOrder)
             if updateGraph:
-                self.mosaicWidget.bestPlacements = bestPlacements
+                self.visualizationWidget.bestPlacements = bestPlacements
                 if bestPlacements:
                     attrList, valueOrder = bestPlacements[0][1], bestPlacements[0][2]
-                    self.mosaicWidget.setShownAttributes(attrList, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
+                    self.visualizationWidget.setShownAttributes(attrList, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
 
             self.optimizeOrderButton.setText("Optimize Current Attribute Order")
             return bestPlacements
@@ -306,7 +307,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
 
     def updateGUI(self):
-        if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]: self.ignoreSmallCellsBox.show()
+        if self.qualityMeasure in [CHI_SQUARE, CHI_SQUARE_CLASS, CRAMERS_PHI_CLASS]: 
+            self.ignoreSmallCellsBox.show()
         else:                                                self.ignoreSmallCellsBox.hide()
         if self.qualityMeasure == AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION: self.testingBox.show()
         else:   self.testingBox.hide()
@@ -381,19 +383,15 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             self.wholeDataSet = self.data        # we have to use self.data and not data, since in self.data we already have discretized attributes
             self.mtInitSubsetTree()
 
-        if not self.data: return
+        if not self.data: return None
 
-        if hasattr(self.data, "name"): self.datasetName = data.name
-        else: self.datasetName = ""
+        if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            # add class values
+            self.classValueCombo.addItems(getVariableValuesSorted(self.data.domain.classVar))
+            self.updateShownArguments()
+            if len(self.data.domain.classVar.values) > 0:
+                self.classValueCombo.setCurrentIndex(0)
 
-        if not (self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete): return
-
-        # add class values
-        self.classValueCombo.addItems(getVariableValuesSorted(self.data, self.data.domain.classVar.name))
-        self.updateShownArguments()
-
-        if len(self.data.domain.classVar.values) > 0:
-            self.classValueCombo.setCurrentIndex(0)
         return self.data
 
 
@@ -405,7 +403,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.argumentList.clear()
         self.arguments = [[] for i in range(self.classValueCombo.count())]
 
-        if not example and not self.mosaicWidget.subsetData:
+        if not example and not self.visualizationWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
         if len(self.results) == 0:
@@ -416,7 +414,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
             return None, None
 
-        if example == None: example = self.mosaicWidget.subsetData[0]
+        if example == None: example = self.visualizationWidget.subsetData[0]
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
@@ -426,7 +424,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
 
-        values = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+        values = getVariableValuesSorted(self.data.domain.classVar)
         self.argumentationClassValue = values.index(classValue)     # activate the class that has the highest probability
         self.updateShownArguments()
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentIndex(0)
@@ -464,11 +462,12 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def save(self, filename = None):
         if filename == None:
             # get file name
-            if self.datasetName != "":
-                filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], "Mosaic plots")
+            datasetName = getattr(self.data, "name", "")
+            if datasetName != "":
+                filename = "%s - Interesting plots" % (os.path.splitext(os.path.split(datasetName)[1])[0])
             else:
                 filename = "%s" % (self.parentName)
-            qname = QFileDialog.getSaveFileName(self, "Save List of Visualizations",  os.path.join(self.lastSaveDirName, filename), "Interesting mosaic visualizations (*.mproj)")
+            qname = QFileDialog.getSaveFileName(self, "Save the List of Visualizations",  os.path.join(self.lastSaveDirName, filename), "Interesting visualizations (*.mproj)")
             if qname.isEmpty(): return
             name = str(qname)
         else:
@@ -495,7 +494,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             return
 
         if name == None:
-            name = QFileDialog.getOpenFileName(self, "Open List of Visualizations", self.lastSaveDirName, "Interesting mosaic visualizations (*.mproj)")
+            name = QFileDialog.getOpenFileName(self, "Open a List of Visualizations", self.lastSaveDirName, "Interesting visualizations (*.mproj)")
             if name.isEmpty(): return
             name = str(name)
 
@@ -556,12 +555,12 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     # find out which attributes are currently visualized, which examples are selected and what is the additional info
     def mtGetProjectionState(self, getSelectionIndices = 1):
         selectedIndices = None
-        attrList = self.mosaicWidget.getShownAttributeList()
-        exampleCount = self.mosaicWidget.data and len(self.mosaicWidget.data) or 0
+        attrList = self.visualizationWidget.getShownAttributeList()
+        exampleCount = self.visualizationWidget.data and len(self.visualizationWidget.data) or 0
         projDict = {"attrs": list(attrList), "exampleCount": exampleCount}
-        selectionDict = {"selectionConditions": list(self.mosaicWidget.selectionConditions), "selectionConditionsHistorically": list(self.mosaicWidget.selectionConditionsHistorically)}
+        selectionDict = {"selectionConditions": list(self.visualizationWidget.selectionConditions), "selectionConditionsHistorically": list(self.visualizationWidget.selectionConditionsHistorically)}
         if getSelectionIndices:
-            selectedIndices = self.mosaicWidget.getSelectedExamples(asExampleTable = 0)
+            selectedIndices = self.visualizationWidget.getSelectedExamples(asExampleTable = 0)
             selectionDict["selectedIndices"] = selectedIndices
         return attrList, selectedIndices, projDict, selectionDict
 
@@ -576,8 +575,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             QMessageBox.information(self, "No data selection", "To explore a subset of examples you first have to select them in the projection.", QMessageBox.Ok)
             return
 
-        selectedData = self.mosaicWidget.data.selectref(selectedIndices)
-        unselectedData = self.mosaicWidget.data.selectref(selectedIndices, negate = 1)
+        selectedData = self.visualizationWidget.data.selectref(selectedIndices)
+        unselectedData = self.visualizationWidget.data.selectref(selectedIndices, negate = 1)
 
         if self.subsetTree.selectedItems() == []: return
         selectedTreeItem = self.subsetTree.selectedItems()[0]     # current selection
@@ -649,12 +648,12 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             temp = selectedData
             selectedData = unselectedData
             unselectedData = temp
-        self.mosaicWidget.setData(selectedData)  #self.mosaicWidget.setData(selectedData, onlyDrilling = 1)
+        self.visualizationWidget.setData(selectedData)  #self.visualizationWidget.setData(selectedData, onlyDrilling = 1)
         if self.showDataSubset and len(unselectedData) > 0:
-            self.mosaicWidget.setSubsetData(unselectedData)      #self.mosaicWidget.subsetData = unselectedData
+            self.visualizationWidget.setSubsetData(unselectedData)      #self.visualizationWidget.subsetData = unselectedData
         else:
-            self.mosaicWidget.setSubsetData(None)
-        self.mosaicWidget.handleNewSignals()
+            self.visualizationWidget.setSubsetData(None)
+        self.visualizationWidget.handleNewSignals()
 
         self.selectionsList.clear()
         for i in range(newSelection.childCount()):
@@ -663,8 +662,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             newListItem = QListWidgetItem(self.mtSelectionsToString(selectionDict), self.selectionsList)
             newListItem.selections = selectionDict
 
-        self.mosaicWidget.setShownAttributes(newSelection.details.get("attrs", None))
-        self.mosaicWidget.updateGraph()
+        self.visualizationWidget.setShownAttributes(newSelection.details.get("attrs", None))
+        self.visualizationWidget.updateGraph()
         self.processingSubsetData = 0
 
     # a new selection was selected in the selection list. update the graph
@@ -674,9 +673,9 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             return
 
         selectionDict = selectedListItem.selections
-        self.mosaicWidget.selectionConditions = list(selectionDict.get("selectionConditions", []))
-        self.mosaicWidget.selectionConditionsHistorically = list(selectionDict.get("selectionConditionsHistorically", []))
-        self.mosaicWidget.updateGraph()
+        self.visualizationWidget.selectionConditions = list(selectionDict.get("selectionConditions", []))
+        self.visualizationWidget.selectionConditionsHistorically = list(selectionDict.get("selectionConditionsHistorically", []))
+        self.visualizationWidget.updateGraph()
 
     def mtSelectedListItemDoubleClicked(self, item):
         if self.subsetTree.selectedItems() == []: return
@@ -834,7 +833,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                 self.autoBuildTreeButton.setText("Stop Building")
                 qApp.processEvents()
 
-                examples = self.mosaicWidget.data
+                examples = self.visualizationWidget.data
                 #selectedItems = self.subsetTree.selectedItems()
                 selectedItem = self.subsetTree.currentItem()
 
@@ -892,7 +891,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             exampleCount = len(branch.branchSelector.data)
             item = QTreeWidgetItem(parentTreeItem, [strAttrs, str(exampleCount)])
             item.details = {"attrs": branch.attrs, "exampleCount": exampleCount}
-            item.selections = {'selectionConditions': selections, 'selectionConditionsHistorically': [selections], "selectedIndices": self.mosaicWidget.getSelectedExamples(asExampleTable = 0, selectionConditions = selections, data = treeNode.branchSelector.data, attrs = treeNode.attrs)}
+            item.selections = {'selectionConditions': selections, 'selectionConditionsHistorically': [selections], "selectedIndices": self.visualizationWidget.getSelectedExamples(asExampleTable = 0, selectionConditions = selections, data = treeNode.branchSelector.data, attrs = treeNode.attrs)}
             item.setExpanded(1)
             self.mtGenerateTreeFromClassifier(branch, item)
 
@@ -923,14 +922,14 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         xMosaicSize = self.mosaicSize + 2 * 50     # we need some space also for text labels
         yMosaicSize = self.mosaicSize + 2 * 25
 
-        mosaicCanvas = self.mosaicWidget.canvas
-        mosaicCanvasView = self.mosaicWidget.canvasView
-        cellSpace = self.mosaicWidget.cellspace
-        self.mosaicWidget.canvas = treeDialog.canvas
-        self.mosaicWidget.canvasView = treeDialog.canvasView
-        self.mosaicWidget.cellspace = 5
-        oldMosaicSelectionConditions = self.mosaicWidget.selectionConditions;                         self.mosaicWidget.selectionConditions = []
-        oldMosaicSelectionConditionsHistorically = self.mosaicWidget.selectionConditionsHistorically; self.mosaicWidget.selectionConditionsHistorically = []
+        mosaicCanvas = self.visualizationWidget.canvas
+        mosaicCanvasView = self.visualizationWidget.canvasView
+        cellSpace = self.visualizationWidget.cellspace
+        self.visualizationWidget.canvas = treeDialog.canvas
+        self.visualizationWidget.canvasView = treeDialog.canvasView
+        self.visualizationWidget.cellspace = 5
+        oldMosaicSelectionConditions = self.visualizationWidget.selectionConditions;                         self.visualizationWidget.selectionConditions = []
+        oldMosaicSelectionConditionsHistorically = self.visualizationWidget.selectionConditionsHistorically; self.visualizationWidget.selectionConditionsHistorically = []
 
         nodeDict = {}
         rootNode = {"treeNode": tree["None"][0][0], "parentNode": None, "childNodes": []}
@@ -990,7 +989,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                 treeDepth -= 1
 
         # visualize each mosaic diagram
-        colors = self.mosaicWidget.selectionColorPalette
+        colors = self.visualizationWidget.selectionColorPalette
 
         maxX = 0
         maxY = 100 + (max(itemsToDraw.keys())+1) * yMosaicSize
@@ -1007,7 +1006,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                             selectionDict[tuple(selection)] = colors[ind]
                     data, unselectedData = self.mtGetData(self.mtGetItemIndices(self.mtStrToItem(node["treeNode"])))
                     # draw the mosaic
-                    self.mosaicWidget.updateGraph(data, unselectedData, node["attrs"], erasePrevious = 0, positions = (node["currXPos"]+xMosOffset, yPos, self.mosaicSize), drawLegend = (depth == 0), drillUpdateSelection = 0, selectionDict = selectionDict)
+                    self.visualizationWidget.updateGraph(data, unselectedData, node["attrs"], erasePrevious = 0, positions = (node["currXPos"]+xMosOffset, yPos, self.mosaicSize), drawLegend = (depth == 0), drillUpdateSelection = 0, selectionDict = selectionDict)
                     maxX = max(maxX, node["currXPos"])
 
                     # draw a line between the parent and this node
@@ -1021,11 +1020,11 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         treeDialog.canvasView.setSceneRect(0,0,maxX + self.mosaicSize + 200, maxY)
 
         # restore the original canvas and canvas view
-        self.mosaicWidget.canvas = mosaicCanvas
-        self.mosaicWidget.canvasView = mosaicCanvasView
-        self.mosaicWidget.cellspace = cellSpace
-        self.mosaicWidget.selectionConditions = oldMosaicSelectionConditions
-        self.mosaicWidget.selectionConditionsHistorically = oldMosaicSelectionConditionsHistorically
+        self.visualizationWidget.canvas = mosaicCanvas
+        self.visualizationWidget.canvasView = mosaicCanvasView
+        self.visualizationWidget.cellspace = cellSpace
+        self.visualizationWidget.selectionConditions = oldMosaicSelectionConditions
+        self.visualizationWidget.selectionConditionsHistorically = oldMosaicSelectionConditionsHistorically
         treeDialog.show()
 
     # find the node nodeToMove in the groups and move it to newPos. reposition also all nodes that follow this node.
@@ -1091,7 +1090,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
 
     def resendLearner(self):
-        self.mosaicWidget.send("Learner", self.mosaicWidget.VizRankLearner)
+        self.visualizationWidget.send("Learner", self.visualizationWidget.VizRankLearner)
 
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
@@ -1100,27 +1099,27 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     # create different dialogs
     def interactionAnalysis(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWInteractionAnalysis(self, signalManager = self.signalManager)
-        dialog.setResults(self.shownResults, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog = OWkNNOptimization.OWInteractionAnalysis(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager)
+        dialog.setResults(self.data, self.shownResults)
         dialog.show()
 
 
     def attributeAnalysis(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWGraphAttributeHistogram(self, signalManager = self.signalManager)
-        dialog.setResults(self.shownResults, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog = OWkNNOptimization.OWGraphAttributeHistogram(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager)
+        dialog.setResults(self.data, self.shownResults)
         dialog.show()
 
     def graphProjectionQuality(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWGraphProjectionQuality(self, signalManager = self.signalManager)
-        dialog.setResults(self.results, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog = OWkNNOptimization.OWGraphProjectionQuality(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager)
+        dialog.setResults(self.results)
         dialog.show()
 
     def identifyOutliers(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.mosaicWidget)
-        dialog.setData(self.results, self.data, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager, widget = self.visualizationWidget)
+        dialog.setResults(self.data, self.results)
         dialog.show()
 
 #test widget appearance

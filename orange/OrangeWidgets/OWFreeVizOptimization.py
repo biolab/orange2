@@ -28,7 +28,6 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.disableAttractive = 0
         self.disableRepulsive = 0
         self.graph = graph
-        self.rawData = None
 
         if self.graph:
             self.graph.hideRadius = 0
@@ -148,15 +147,6 @@ class FreeVizOptimization(OWWidget, FreeViz):
     def setManualPosition(self):
         self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isChecked()
 
-    def setData(self, data):
-        self.rawData = data
-        self.s2nMixData = None
-        self.classPermutationList = None
-
-    # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
-    def setSubsetData(self, subsetdata):
-        self.subsetdata = subsetdata
-
     def updateForces(self):
         if self.disableAttractive or self.disableRepulsive:
             self.attractG, self.repelG = 1 - self.disableAttractive, 1 - self.disableRepulsive
@@ -225,7 +215,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
             if t[0]**2 + t[1]**2 >= rad2:
                 shownAttrList.append(t[2])
                 newAnchorData.append(t)
-        self.parentWidget.setShownAttributeList(self.parentWidget.data, shownAttrList)
+        self.parentWidget.setShownAttributeList(shownAttrList)
         self.graph.anchorData = newAnchorData
         self.graph.updateData()
         self.graph.repaint()
@@ -253,25 +243,27 @@ class FreeVizOptimization(OWWidget, FreeViz):
     def stopOptimization(self):
         self.cancelOptimization = 1
 
-    # #############################################################
-    # DIFFERENTIAL EVOLUTION
-    # #############################################################
-    def createPopulation(self):
-        l = len(self.rawData.domain.attributes)
-        self.DERadvizSolver = RadvizSolver(self.parentWidget, l * 2 , self.differentialEvolutionPopSize)
-        Min = [0.0] * 2* l
-        Max = [1.0] * 2* l
-        self.DERadvizSolver.Setup(Min, Max, 0, 0.95, 1)
-
-    def evolvePopulation(self):
-        if not self.DERadvizSolver:
-            QMessageBox.critical( None, "Differential evolution", 'To evolve a population you first have to create one by pressing "Create population" button', QMessageBox.Ok)
-
-        self.DERadvizSolver.Solve(5)
-        solution = self.DERadvizSolver.Solution()
-        self.graph.anchorData = [(solution[2*i], solution[2*i+1], self.rawData.domain.attributes[i].name) for i in range(len(self.rawData.domain.attributes))]
-        self.graph.updateData([attr.name for attr in self.rawData.domain.attributes], 0)
-        self.graph.repaint()
+#    # #############################################################
+#    # DIFFERENTIAL EVOLUTION
+#    # #############################################################
+#    def createPopulation(self):
+#        if not self.graph.haveData: return
+#        l = len(self.graph.dataDomain.attributes)
+#        self.DERadvizSolver = RadvizSolver(self.parentWidget, l * 2 , self.differentialEvolutionPopSize)
+#        Min = [0.0] * 2* l
+#        Max = [1.0] * 2* l
+#        self.DERadvizSolver.Setup(Min, Max, 0, 0.95, 1)
+#
+#    def evolvePopulation(self):
+#        if not self.graph.haveData: return
+#        if not self.DERadvizSolver:
+#            QMessageBox.critical( None, "Differential evolution", 'To evolve a population you first have to create one by pressing "Create population" button', QMessageBox.Ok)
+#
+#        self.DERadvizSolver.Solve(5)
+#        solution = self.DERadvizSolver.Solution()
+#        self.graph.anchorData = [(solution[2*i], solution[2*i+1], self.graph.dataDomain.attributes[i].name) for i in range(len(self.graph.dataDomain.attributes))]
+#        self.graph.updateData([attr.name for attr in self.graph.dataDomain.attributes], 0)
+#        self.graph.repaint()
 
     def findPCAProjection(self):
         self.findProjection(DR_PCA, setAnchors = 1)
@@ -283,28 +275,28 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.findProjection(DR_PLS, setAnchors = 1)
 
 
-# ###############################################################
-# Optimize anchor position using differential evolution
-class RadvizSolver(DESolver.DESolver):
-    def __init__(self, radvizWidget, dim, pop):
-        DESolver.DESolver.__init__(self, dim, pop) # superclass
-        self.count = 0
-        self.radviz = radvizWidget
-        self.testGenerations = 20
-        self.classes = [int(x.getclass()) for x in self.radviz.data]
-
-        ai = self.radviz.graph.attributeNameIndex
-        self.attrIndices = [ai[attr] for attr in self.radviz.getShownAttributeList()]
-        self.data = numpy.transpose(self.radviz.graph.scaledData).tolist()
-
-    def EnergyFunction(self, trial, bAtSolution):
-        import orangeom
-        anchorData = [(trial[2*i], trial[2*i+1], self.radviz.data.domain.attributes[i].name) for i in self.attrIndices]
-        for (x,y,a) in anchorData:
-            if x**2 + y**2 > 1: return 999999999999, 0
-        E = orangeom.computeEnergy(self.data, self.classes, anchorData, self.attrIndices, self.radviz.attractG, -self.radviz.repelG)
-        return E, 0
-
+## ###############################################################
+## Optimize anchor position using differential evolution
+#class RadvizSolver(DESolver.DESolver):
+#    def __init__(self, radvizWidget, dim, pop):
+#        DESolver.DESolver.__init__(self, dim, pop) # superclass
+#        self.count = 0
+#        self.radviz = radvizWidget
+#        self.testGenerations = 20
+#        self.classes = [int(x.getclass()) for x in self.radviz.graph.rawData]
+#
+#        ai = self.radviz.graph.attributeNameIndex
+#        self.attrIndices = [ai[attr] for attr in self.radviz.getShownAttributeList()]
+#        self.data = numpy.transpose(self.radviz.graph.scaledData).tolist()
+#
+#    def EnergyFunction(self, trial, bAtSolution):
+#        import orangeom
+#        anchorData = [(trial[2*i], trial[2*i+1], self.radviz.graph.dataDomain.attributes[i].name) for i in self.attrIndices]
+#        for (x,y,a) in anchorData:
+#            if x**2 + y**2 > 1: return 999999999999, 0
+#        E = orangeom.computeEnergy(self.radviz.graph.rawData, self.classes, anchorData, self.attrIndices, self.radviz.attractG, -self.radviz.repelG)
+#        return E, 0
+#
 
 
 
@@ -330,7 +322,7 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         anchorData = self.radvizWidget.graph.anchorData
         attributeNameIndex = self.radvizWidget.graph.attributeNameIndex
-        scaleFunction = self.radvizWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
+        scaleFunction = self.radvizWidget.graph.scaleExampleValue
 
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]

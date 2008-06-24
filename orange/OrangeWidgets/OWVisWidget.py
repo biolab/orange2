@@ -2,11 +2,6 @@ import OWGUI
 from OWWidget import *
 
 class OWVisWidget(OWWidget):
-    def hasDiscreteClass(self, data = -1):
-        if data == -1:
-            data = getattr(self, "data", None)
-        return data != None and data.domain.classVar != None and data.domain.classVar.varType == orange.VarTypes.Discrete
-
     def createShowHiddenLists(self, placementTab, callback = None):
         maxWidth = 180
         self.updateCallbackFunction = callback
@@ -42,6 +37,14 @@ class OWVisWidget(OWWidget):
         #self.hiddenAttribsLB.setMaximumWidth(maxWidth + 27)
 
 
+    def getDataDomain(self):
+#        if hasattr(self, "graph") and hasattr(self.graph, "dataDomain"):
+#            return self.graph.dataDomain
+        if hasattr(self, "data") and self.data:
+            return self.data.domain
+        else:
+            return None
+
     def resetAttrManipulation(self):
         if self.selectedShown:
             mini, maxi = min(self.selectedShown), max(self.selectedShown)
@@ -50,13 +53,16 @@ class OWVisWidget(OWWidget):
         self.buttonDOWNAttr.setEnabled(self.selectedShown != [] and tightSelection and maxi < len(self.shownAttributes)-1)
         self.attrAddButton.setDisabled(not self.selectedHidden or self.showAllAttributes)
         self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
-        if self.data and self.hiddenAttributes and self.data.domain.classVar and self.hiddenAttributes[0][0] != self.data.domain.classVar.name:
+        domain = self.getDataDomain()
+        if domain and self.hiddenAttributes and domain.classVar and self.hiddenAttributes[0][0] != domain.classVar.name:
             self.showAllCB.setChecked(0)
 
 
     def moveAttrSelection(self, labels, selection, dir):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
+        if hasattr(self, "graph"):
+            self.graph.insideColors = None
+            self.graph.clusterClosure = None
+            self.graph.potentialsBmp = None
 
         labs = getattr(self, labels)
         sel = getattr(self, selection)
@@ -68,11 +74,13 @@ class OWVisWidget(OWWidget):
         setattr(self, selection, map(lambda x:x+dir, sel))
 
         self.resetAttrManipulation()
-        self.sendShownAttributes()
+        if hasattr(self, "sendShownAttributes"):
+            self.sendShownAttributes()
         self.graph.potentialsBmp = None
         if self.updateCallbackFunction:
             self.updateCallbackFunction()
-        self.graph.removeAllSelections()
+        if hasattr(self, "graph"):
+            self.graph.removeAllSelections()
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
@@ -89,67 +97,67 @@ class OWVisWidget(OWWidget):
         self.resetAttrManipulation()
 
     def addAttribute(self, addAll = False):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
+        if hasattr(self, "graph"):
+            self.graph.insideColors = None
+            self.graph.clusterClosure = None
 
         if addAll:
-            if self.data:
-                self.setShownAttributeList(self.data, [attr.name for attr in self.data.domain.attributes])
+            self.setShownAttributeList()
         else:
-            self.setShownAttributeList(self.data, self.shownAttributes + [self.hiddenAttributes[i] for i in self.selectedHidden])
+            self.setShownAttributeList(self.shownAttributes + [self.hiddenAttributes[i] for i in self.selectedHidden])
         self.selectedHidden = []
         self.selectedShown = []
         self.resetAttrManipulation()
 
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.getShownAttributeList())
-
-        self.sendShownAttributes()
-        if self.updateCallbackFunction: self.updateCallbackFunction()
-        #self.graph.replot()
-        self.graph.removeAllSelections()
+        if hasattr(self, "sendShownAttributes"):
+            self.sendShownAttributes()
+        if self.updateCallbackFunction: 
+            self.updateCallbackFunction()
+        if hasattr(self, "graph"):
+            self.graph.removeAllSelections()
 
     def removeAttribute(self):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
+        if hasattr(self, "graph"):
+            self.graph.insideColors = None
+            self.graph.clusterClosure = None
 
         newShown = self.shownAttributes[:]
         self.selectedShown.sort(lambda x,y:-cmp(x, y))
         for i in self.selectedShown:
             del newShown[i]
-        self.setShownAttributeList(self.data, newShown)
+        self.setShownAttributeList(newShown)
 
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.getShownAttributeList())
-        self.sendShownAttributes()
-        if self.updateCallbackFunction: self.updateCallbackFunction()
-        #self.graph.replot()
-        self.graph.removeAllSelections()
+        if hasattr(self, "sendShownAttributes"):
+            self.sendShownAttributes()
+        if self.updateCallbackFunction: 
+            self.updateCallbackFunction()
+        if hasattr(self, "graph"):
+            self.graph.removeAllSelections()
 
     def getShownAttributeList(self):
         return [a[0] for a in self.shownAttributes]
 
 
-    def setShownAttributeList(self, data, shownAttributes = None):
+    def setShownAttributeList(self, shownAttributes = None):
         shown = []
         hidden = []
-
-        if data:
+        
+        domain = self.getDataDomain()
+        if domain:
             if shownAttributes:
                 if type(shownAttributes[0]) == tuple:
                     shown = shownAttributes
                 else:
-                    domain = self.data.domain
                     shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in domain.attributes])
             else:
-                shown = [(a.name, a.varType) for a in data.domain.attributes]
+                shown = [(a.name, a.varType) for a in domain.attributes]
                 if not self.showAllAttributes:
                     hidden = shown[10:]
                     shown = shown[:10]
 
-            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown:
-                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
+            if domain.classVar and (domain.classVar.name, domain.classVar.varType) not in shown:
+                hidden += [(domain.classVar.name, domain.classVar.varType)]
 
         self.shownAttributes = shown
         self.hiddenAttributes = hidden
@@ -157,5 +165,6 @@ class OWVisWidget(OWWidget):
         self.selectedShown = []
         self.resetAttrManipulation()
 
-        self.sendShownAttributes()
+        if hasattr(self, "sendShownAttributes"):
+            self.sendShownAttributes()
 

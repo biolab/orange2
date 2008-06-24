@@ -25,9 +25,7 @@ if not os.path.exists(orangedir+"/orngStat.py"):
     orangedir = None
 
 def getHtmlCompatibleString(strVal):
-    strVal = strVal.replace("<", "&#60;")
-    strVal = strVal.replace(">", "&#62;")
-    return strVal
+    return strVal.replace("<=", "&#8804;").replace(">=","&#8805;").replace("<", "&#60;").replace(">","&#62;").replace("=\\=", "&#8800;")
 
 
 

@@ -102,7 +102,7 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1):
+    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1, **args):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
@@ -116,9 +116,6 @@ class OWBaseWidget(QDialog):
         self.savePosition = savePosition
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
-
-        #if resizingEnabled: QDialog.__init__(self, parent, Qt.Dialog)
-        #else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
         if resizingEnabled: QDialog.__init__(self, parent, Qt.Window)
         else:               QDialog.__init__(self, parent, Qt.Window | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
@@ -243,7 +240,7 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetShown = 0
 
-    # override the default show function. 
+    # override the default show function.
     # after show() we must call processEvents because show puts some LayoutRequests in queue
     # and we must process them immediately otherwise the width(), height(), ... of elements in the widget will be wrong
     def show(self):
@@ -539,10 +536,10 @@ class OWBaseWidget(QDialog):
                         type, val, traceback = sys.exc_info()
                         sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
                     qApp.restoreOverrideCursor()
-                    
+
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
-        if hasattr(self, "handleNewSignals") and newSignal == 1:
+        if newSignal == 1:
             self.handleNewSignals()
 
         if self.processingHandler:
@@ -581,16 +578,14 @@ class OWBaseWidget(QDialog):
     def progressBarSet(self, value):
         if value > 0:
             self.progressBarValue = value
-            diff = time.time() - self.startTime
-            total = diff * 100.0/float(value)
-            remaining = max(total - diff, 0)
-            h = int(remaining/3600)
-            min = int((remaining - h*3600)/60)
-            sec = int(remaining - h*3600 - min*60)
-            if h > 0:
-                text = "%(h)d h, %(min)d min, %(sec)d sec" % vars()
-            else:
-                text = "%(min)d min, %(sec)d sec" % vars()
+            usedTime = max(1, time.time() - self.startTime)
+            totalTime = (100.0*usedTime)/float(value)
+            remainingTime = max(0, totalTime - usedTime)
+            h = int(remainingTime/3600)
+            min = int((remainingTime - h*3600)/60)
+            sec = int(remainingTime - h*3600 - min*60)
+            if h > 0: text = "%(h)d:%(min)02d:%(sec)02d" % vars()
+            else:     text = "%(min)d:%(sec)02d" % vars()
             self.setWindowTitle(self.captionTitle + " (%(value).2f%% complete, remaining time: %(text)s)" % vars())
         else:
             self.setWindowTitle(self.captionTitle + " (0% complete)" )
@@ -741,102 +736,6 @@ class OWBaseWidget(QDialog):
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
 
-
-    # ##################################################################
-    # a function for randomly changing settings in the widget - used in automatic widget debugging
-    def randomlyChangeSettings(self, verboseMode = 0):
-        if len(self._guiElements) == 0: return
-
-        try:
-            newValue = ""
-            callback = None
-
-            #index = random.randint(0, len(self._guiElements)-1)
-            index = random.randint(0, len(self._guiElements))
-            if index == len(self._guiElements):
-                elementType = "signalChange"
-                widget = None
-            else:
-                elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
-                if not widget.isEnabled(): return
-
-            if elementType == "signalChange":
-                if len(self.outputs) > 0:
-                    output = self.outputs[random.randint(0, len(self.outputs)-1)][0]
-                    self.send(output, None)
-                    newValue = "Sending None to output signal " + output
-            elif elementType == "qwtPlot":
-                widget.randomChange()
-                newValue = "Random change in qwtPlot"
-            elif elementType == "checkBox":
-                elementType, widget, value, callback = self._guiElements[index]
-                newValue = "Changing checkbox %s to %s" % (value, not self.getdeepattr(value))
-                setattr(self, value, not self.getdeepattr(value))
-            elif elementType == "button":
-                elementType, widget, callback = self._guiElements[index]
-                if widget.isCheckable():
-                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isChecked())
-                    widget.setChecked(not widget.isChecked())
-                else:
-                    newValue = "Pressed button %s" % (str(widget.text()).strip())
-            elif elementType == "listBox":
-                elementType, widget, value, callback = self._guiElements[index]
-                if widget.count():
-                    itemIndex = random.randint(0, widget.count()-1)
-                    newValue = "Listbox %s. Changed selection of item %d to %s" % (value, itemIndex, not widget.item(itemIndex).isSelected())
-                    widget.item(itemIndex).setSelected(not widget.item(itemIndex).isSelected())
-                else:
-                    callback = None
-            elif elementType == "radioButtonsInBox":
-                elementType, widget, value, callback = self._guiElements[index]
-                radioIndex = random.randint(0, len(widget.buttons)-1)
-                if widget.buttons[radioIndex].isEnabled():
-                    newValue = "Set radio button %s to index %d" % (value, radioIndex)
-                    setattr(self, value, radioIndex)
-                else:
-                    callback = None
-            elif elementType == "radioButton":
-                elementType, widget, value, callback = self._guiElements[index]
-                newValue = "Set radio button %s to %d" % (value, not self.getdeepattr(value))
-                setattr(self, value, not self.getdeepattr(value))
-            elif elementType in ["hSlider", "qwtHSlider", "spin"]:
-                elementType, widget, value, min, max, step, callback = self._guiElements[index]
-                currentValue = self.getdeepattr(value)
-                if currentValue == min:   setattr(self, value, currentValue+step)
-                elif currentValue == max: setattr(self, value, currentValue-step)
-                else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
-                newValue = "Changed value of %s to %f" % (value, self.getdeepattr(value))
-            elif elementType == "comboBox":
-                elementType, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
-                if widget.count():
-                    pos = random.randint(0, widget.count()-1)
-                    newValue = "Changed value of combo %s to %s" % (value, str(widget.itemText(pos)))
-                    if sendSelectedValue:
-                        setattr(self, value, valueType(str(widget.itemText(pos))))
-                    else:
-                        setattr(self, value, pos)
-                else:
-                    callback = None
-            if newValue != "":
-                self.printEvent("Widget %s. %s" % (str(self.windowTitle()), newValue), eventVerbosity = 1)
-            if callback:
-                if type(callback) == list:
-                    for c in callback:
-                        c()
-                else:
-                    callback()
-        except:
-            excType, value, tracebackInfo = sys.exc_info()
-            if not self.signalManager.exceptionSeen(type, value, tracebackInfo):
-                sys.stderr.write("------------------\n")
-                if newValue != "":
-                    sys.stderr.write("Widget %s. %s\n" % (str(self.windowTitle()), newValue))
-                sys.excepthook(excType, value, tracebackInfo)  # print the exception
-                sys.stderr.write("Widget settings are:\n")
-                for i, setting in enumerate(getattr(self, "settingsList", [])):
-                    if setting in ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]:
-                        continue
-                    sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
 
 
 if __name__ == "__main__":

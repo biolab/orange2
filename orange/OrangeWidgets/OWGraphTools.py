@@ -62,7 +62,6 @@ class TooltipManager:
 class SelectionCurve(QwtPlotCurve):
     def __init__(self, name = "", pen = Qt.SolidLine ):
         QwtPlotCurve.__init__(self, name)
-        self.pointArrayValid = 0
         self.setStyle(QwtPlotCurve.Lines)
         self.setPen(QPen(QColor(128,128,128), 1, pen))
         self.setItemAttribute(QwtPlotItem.Legend, 0)
@@ -72,38 +71,34 @@ class SelectionCurve(QwtPlotCurve):
 
     def addPoint(self, xPoint, yPoint):
         self.setData([self.x(i) for i in range(self.dataSize())] + [xPoint], [self.y(i) for i in range(self.dataSize())] + [yPoint])
-        self.pointArrayValid = 0        # invalidate the point array
 
     def removeLastPoint(self):
         self.setData([self.x(i) for i in range(self.dataSize()-1)], [self.y(i) for i in range(self.dataSize()-1)])
-        self.pointArrayValid = 0        # invalidate the point array
 
     def replaceLastPoint(self, xPoint, yPoint):
         self.setData([self.x(i) for i in range(self.dataSize()-1)] + [xPoint], [self.y(i) for i in range(self.dataSize()-1)] + [yPoint])
-        self.pointArrayValid = 0        # invalidate the point array
 
-    def createPointArray(self):
-        self.pointArray = QPolygonF()
-        for i in range(self.dataSize()):
-            self.pointArray.append(QPointF(self.x(i), self.y(i)))
-        self.pointArray.append(QPointF(self.x(0), self.y(0)))
-        self.pointArrayValid = 1
+    def getPointArray(self):
+        return QPolygonF([QPointF(self.x(i), self.y(i)) for i in range(self.dataSize())] + [QPointF(self.x(0), self.y(0))])
 
     def getSelectedPoints(self, xData, yData, validData):
-        self.createPointArray()
+        pointArray = self.getPointArray()
         selected = numpy.zeros(len(xData))
 
         for i in range(len(xData)):
             if validData[i]:
-                selected[i] = self.pointArray.containsPoint(QPointF(xData[i], yData[i]), Qt.OddEvenFill)
+                selected[i] = pointArray.containsPoint(QPointF(xData[i], yData[i]), Qt.OddEvenFill)
         return selected
 
     # is point defined at x,y inside a rectangle defined with this curve
     def isInside(self, x, y):
-        if not self.pointArrayValid:
-            self.createPointArray()
+        return self.getPointArray().containsPoint(QPointF(x, y), Qt.OddEvenFill)
 
-        return self.pointArray.containsPoint(QPointF(x, y), Qt.OddEvenFill)
+    def moveBy(self, dx, dy):
+        xData = [self.x(i) + dx for i in range(self.dataSize())]
+        yData = [self.y(i) + dy for i in range(self.dataSize())]
+        self.setData(xData, yData)
+
 
     # test if the line going from before last and last point intersect any lines before
     # if yes, then add the intersection point and remove the outer points
@@ -159,6 +154,78 @@ class SelectionCurve(QwtPlotCurve):
             return (1, xi, yi)
         else:
             return (0, xi, yi)
+        
+    def isOnEdge(self, x, y):
+        return 0
+
+class RectangleSelectionCurve(SelectionCurve):
+    def __init__(self, name = "", pen = Qt.SolidLine):
+        SelectionCurve.__init__(self, name, pen)
+        self.point1 = (0,0)
+        self.point2 = (0,0)
+        self.appropriateCursor = Qt.ArrowCursor
+    
+    def setPoints(self, x1, y1, x2, y2):
+        self.point1, self.point2 = (x1,y1), (x2,y2)
+        self.setData([x1, x1, x2, x2, x1], [y1, y2, y2, y1, y1])
+        
+    def approxEqual(self, p1, p2, axis = None):
+        if type(p1) == tuple and type(p2) == tuple:
+            x1, y1 = self.plot().transform(self.plot().xBottom, p1[0]), self.plot().transform(self.plot().yLeft, p1[1])
+            x2, y2 = self.plot().transform(self.plot().xBottom, p2[0]), self.plot().transform(self.plot().yLeft, p2[1])
+            return abs(x1-x2) + abs(y1-y2) <= 4
+        else:
+            v1, v2 = self.plot().transform(axis, p1), self.plot().transform(axis, p2)
+            return abs(v1-v2) <= 2
+    
+    def between(self, val, v1, v2):
+        return val >= min(v1, v2) and val <= max(v1, v2)
+        
+    # check if based on the mouse position (x,y) we should show a different cursor and enable resizing
+    def isOnEdge(self, x, y):
+        xData = [self.x(i) for i in range(self.dataSize())]
+        yData = [self.y(i) for i in range(self.dataSize())]
+        if len(xData) == 0: return 0
+        x1, y1 = min(xData), min(yData)
+        x2, y2 = max(xData), max(yData)
+        
+        if self.approxEqual((min(x1,x2), min(y1,y2)), (x,y)):
+            self.point1, self.point2 = (max(x1,x2), max(y1,y2)), (min(x1,x2), min(y1,y2))
+            self.appropriateCursor = Qt.SizeBDiagCursor
+        elif self.approxEqual((max(x1,x2), max(y1,y2)), (x,y)):
+            self.point1, self.point2 = (min(x1,x2), min(y1,y2)), (max(x1,x2), max(y1,y2))
+            self.appropriateCursor = Qt.SizeBDiagCursor
+        elif self.approxEqual((min(x1,x2), max(y1,y2)), (x,y)):
+            self.point1, self.point2 = (max(x1,x2), min(y1,y2)), (min(x1,x2), max(y1,y2))
+            self.appropriateCursor = Qt.SizeFDiagCursor
+        elif self.approxEqual((max(x1,x2), min(y1,y2)), (x,y)):
+            self.point1, self.point2 = (min(x1,x2), max(y1,y2)), (max(x1,x2), min(y1,y2))
+            self.appropriateCursor = Qt.SizeFDiagCursor
+        elif self.approxEqual(x1, x, self.plot().xBottom) and self.between(y, y1, y2):
+            self.point1, self.point2 = (x2, y2), (x1,y1)
+            self.appropriateCursor = Qt.SizeHorCursor
+        elif self.approxEqual(x2, x, self.plot().xBottom) and self.between(y, y1, y2) :
+            self.point1, self.point2 = (x1, y1), (x2,y2)
+            self.appropriateCursor = Qt.SizeHorCursor
+        elif self.approxEqual(y1, y, self.plot().yLeft) and self.between(x, x1, x2):
+            self.point1, self.point2 = (x2, y2), (x1,y1)
+            self.appropriateCursor = Qt.SizeVerCursor
+        elif self.approxEqual(y2, y, self.plot().yLeft) and self.between(x, x1, x2):
+            self.point1, self.point2 = (x1, y1), (x2,y2)
+            self.appropriateCursor = Qt.SizeVerCursor
+        else:
+            self.appropriateCursor = Qt.ArrowCursor
+        return self.appropriateCursor != Qt.ArrowCursor
+    
+    # update the curve with new x and y coordinates of one edge
+    # here we assume that the isOnEdge was called first since it takes care of preparing the values in point1 and point2
+    def updateCurve(self, x, y):
+        if self.appropriateCursor in [Qt.SizeBDiagCursor, Qt.SizeFDiagCursor]:
+            self.setPoints(self.point1[0], self.point1[1], x, y)
+        elif self.appropriateCursor == Qt.SizeHorCursor:
+            self.setPoints(self.point1[0], self.point1[1], x, self.point2[1])
+        elif self.appropriateCursor == Qt.SizeVerCursor:
+            self.setPoints(self.point1[0], self.point1[1], self.point2[0], y)
 
 # a class that draws unconnected lines. first two points in the xData and yData are considered as the first line,
 # the second two points as the second line, etc.

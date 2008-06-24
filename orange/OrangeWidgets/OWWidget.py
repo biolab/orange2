@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = False, wantStatusBar = False, savePosition = True, wantMainArea = 1, noReport = False, resizingEnabled = 1):
+    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = False, wantStatusBar = False, savePosition = True, wantMainArea = 1, noReport = False, showSaveGraph = 1, resizingEnabled = 1, **args):
         """
         Initialization
         Parameters:
@@ -15,7 +15,7 @@ class OWWidget(OWBaseWidget):
             wantGraph - displays a save graph button or not
         """
 
-        OWBaseWidget.__init__(self, parent, signalManager, title, savePosition = savePosition, resizingEnabled = resizingEnabled)
+        OWBaseWidget.__init__(self, parent, signalManager, title, savePosition = savePosition, resizingEnabled = resizingEnabled, **args)
 
         self.setLayout(QVBoxLayout())
         self.layout().setMargin(2)
@@ -32,7 +32,7 @@ class OWWidget(OWBaseWidget):
 
         self.space = self.controlArea
 
-        if wantGraph:
+        if wantGraph and showSaveGraph:
             self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = 2)
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)

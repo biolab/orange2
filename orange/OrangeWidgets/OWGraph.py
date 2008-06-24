@@ -37,7 +37,7 @@ class OWGraph(QwtPlot):
         self.setAxisTitle(QwtPlot.xTop, text)
         self.setAxisTitle(QwtPlot.yLeft, text)
         self.setAxisTitle(QwtPlot.yRight, text)
-        
+
         ticksFont = QFont('Helvetica', 9)
         self.setAxisFont(QwtPlot.xBottom, ticksFont)
         self.setAxisFont(QwtPlot.xTop, ticksFont)
@@ -48,6 +48,7 @@ class OWGraph(QwtPlot):
         self.tipLeft = None
         self.tipRight = None
         self.tipBottom = None
+        self._cursor = Qt.ArrowCursor
 
         self.showAxisScale = 1
         self.showMainTitle = 0
@@ -61,10 +62,10 @@ class OWGraph(QwtPlot):
         self.useAntialiasing = 0
 
         self.state = ZOOMING
-        self.zoomCurve = None
         self.tempSelectionCurve = None
         self.selectionCurveList = []
         self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
+        self.sendSelectionOnUpdate = 0
         self.insertLegend(QwtLegend(), QwtPlot.BottomLegend)
 
         self.gridCurve = QwtPlotGrid()
@@ -100,9 +101,15 @@ class OWGraph(QwtPlot):
         self.mousePressEventHandler = None
         self.mouseMoveEventHandler = None
         self.mouseReleaseEventHandler = None
+        self.mouseStaticClickHandler = self.staticMouseClick
+        self.enableGridXB(0)
+        self.enableGridYL(0)
 
         #self.updateLayout()
 
+    def setCursor(self, cursor):
+        self._cursor = cursor
+        self.canvas().setCursor(cursor)
 
     def __setattr__(self, name, value):
         unisetattr(self, name, value, QwtPlot)
@@ -210,18 +217,6 @@ class OWGraph(QwtPlot):
         "Sets the tooltip for the left x axis"
         self.tipBottom = explain
 
-#    def resizeEvent(self, event):
-#        "Makes sure that the plot resizes"
-#        self.updateLayout()
-#        QwtPlot.resizeEvent(self, event)
-
-    def paintEvent(self, qpe):
-        for curve in self.selectionCurveList:     # the selection curves must set new point array
-            curve.pointArrayValid = 0    # at any change in the graphics otherwise the right examples will not be selected
-
-        QwtPlot.paintEvent(self, qpe) #let the ancestor do its job
-        #self.replot()
-
     def setShowMainTitle(self, b):
         self.showMainTitle = b
         if self.showMainTitle:
@@ -328,31 +323,40 @@ class OWGraph(QwtPlot):
 
     # ####################################################################
     # return string with attribute names and their values for example example
-    def getExampleTooltipText(self, data, example, indices = None, maxIndices = 20):
-        if not indices: indices = range(len(data.domain.attributes))
-
-        text = "<b>"+"Attributes:"+"</b><br>"
+    def getExampleTooltipText(self, example, indices = None, maxIndices = 20):
+        if indices and type(indices[0]) == str:
+            indices = [self.attributeNameIndex[i] for i in indices]
+        if not indices: 
+            indices = range(len(self.dataDomain.attributes))
+        
+        # don't show the class value twice
+        if example.domain.classVar:
+            classIndex = self.attributeNameIndex[example.domain.classVar.name]
+            while classIndex in indices:
+                indices.remove(classIndex)      
+      
+        text = "<b>Attributes:</b><br>"
         for index in indices[:maxIndices]:
-            if example[index].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain[index].name)
-            else:                          text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[index].name, str(example[index]))
+            attr = self.attributeNames[index]
+            if attr not in example.domain:  text += "&nbsp;"*4 + "%s = ?<br>" % (attr)
+            elif example[attr].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (attr)
+            else:                           text += "&nbsp;"*4 + "%s = %s<br>" % (attr, str(example[attr]))
         if len(indices) > maxIndices:
             text += "&nbsp;"*4 + " ... <br>"
 
-
-        if data.domain.classVar:
+        if example.domain.classVar:
             text = text[:-4]
             text += "<hr><b>Class:</b><br>"
-            if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain.classVar.name)
-            else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain.classVar.name, str(example.getclass().value))
+            if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (example.domain.classVar.name)
+            else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (example.domain.classVar.name, str(example.getclass()))
 
-        if len(self.rawData.domain.getmetas()) != 0:
+        if len(example.domain.getmetas()) != 0:
             text = text[:-4]
-            text += "<hr><b>"+"Meta attributes:"+"</b><br>"
+            text += "<hr><b>Meta attributes:</b><br>"
             # show values of meta attributes
-            for key in data.domain.getmetas():
-                try: text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[key].name, str(example[data.domain[key]]))
+            for key in example.domain.getmetas():
+                try: text += "&nbsp;"*4 + "%s = %s<br>" % (example.domain[key].name, str(example[key]))
                 except: pass
-
         return text[:-4]        # remove the last <br>
 
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
@@ -426,13 +430,15 @@ class OWGraph(QwtPlot):
     def activateSelection(self):
         self.state = SELECT
 
-
-    def removeDrawingCurves(self, removeLegendItems = 1):
+    def removeDrawingCurves(self, removeLegendItems = 1, removeSelectionCurves = 0, removeMarkers = 0):
         for curve in self.itemList():
             if not removeLegendItems and curve.testItemAttribute(QwtPlotItem.Legend):
                 continue
-            if not isinstance(curve, SelectionCurve) and not isinstance(curve, QwtPlotMarker):
-                curve.detach()
+            if not removeSelectionCurves and isinstance(curve, SelectionCurve):
+                continue
+            if not removeMarkers and isinstance(curve, QwtPlotMarker):
+                continue
+            curve.detach()
         self.gridCurve.attach(self)        # we also removed the grid curve
 
     def removeMarkers(self):
@@ -468,10 +474,11 @@ class OWGraph(QwtPlot):
 
     def setNewZoom(self, newXMin, newXMax, newYMin, newYMax):
         oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
-        oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound() 
-        oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound() 
+        oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
+        oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
         oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
-        
+        stepX, stepY = self.axisStepSize(QwtPlot.xBottom), self.axisStepSize(QwtPlot.yLeft)
+
         if len(self.itemList()) > 1000 or sum([item.dataSize() for item in self.itemList() if isinstance(item, QwtPlotCurve)]) > 1000:    # if too many curves then don't be smooth
             steps = 1
         else:
@@ -481,9 +488,8 @@ class OWGraph(QwtPlot):
             midXMax = oldXMax * (steps-i)/float(steps) + newXMax * i/float(steps)
             midYMin = oldYMin * (steps-i)/float(steps) + newYMin * i/float(steps)
             midYMax = oldYMax * (steps-i)/float(steps) + newYMax * i/float(steps)
-            self.setAxisScale(QwtPlot.yLeft, midYMin, midYMax)
-            self.setAxisScale(QwtPlot.xBottom, midXMin, midXMax)
-
+            self.setAxisScale(QwtPlot.xBottom, midXMin, midXMax, stepX)
+            self.setAxisScale(QwtPlot.yLeft, midYMin, midYMax, stepY)
             #if i == steps:
             #    self.removeCurve(zoomOutCurveKey)
             self.replot()
@@ -526,18 +532,24 @@ class OWGraph(QwtPlot):
             handled = self.mousePressEventHandler(e)
             if handled: return
         QwtPlot.mousePressEvent(self, e)
-        self.mouseCurrentlyPressed = 1
-        self.mouseCurrentButton = e.button()
         canvasPos = self.canvas().mapFrom(self, e.pos())
+        xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, canvasPos.y())
         self.xpos = canvasPos.x()
         self.ypos = canvasPos.y()
+
+        self.mouseCurrentlyPressed = 1
+        self.mouseCurrentButton = e.button()
+
+        if self.state not in [ZOOMING, PANNING]:
+            insideRects = [rect.isInside(xFloat, yFloat) for rect in self.selectionCurveList]
+            onEdgeRects = [rect.isOnEdge(xFloat, yFloat) for rect in self.selectionCurveList]
 
         # ####
         # ZOOM
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
-            self.tempSelectionCurve = SelectionCurve(pen = Qt.DashLine)
+            self.tempSelectionCurve = RectangleSelectionCurve(pen = Qt.DashLine)
             self.tempSelectionCurve.attach(self)
-            self.zoomCurve = self.tempSelectionCurve
 
         # ####
         # PANNING
@@ -546,10 +558,18 @@ class OWGraph(QwtPlot):
             self.paniniX = self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound()
             self.paniniY = self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()
 
+        elif e.button() == Qt.LeftButton and 1 in onEdgeRects and self.tempSelectionCurve == None:
+            self.resizingCurve = self.selectionCurveList[onEdgeRects.index(1)]
+
+        # have we pressed the mouse inside one of the selection curves?
+        elif e.button() == Qt.LeftButton and 1 in insideRects and self.tempSelectionCurve == None:
+            self.movingCurve = self.selectionCurveList[insideRects.index(1)]
+            self.movingCurve.mousePosition = (xFloat, yFloat)
+
         # ####
         # SELECT RECTANGLE
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
-            self.tempSelectionCurve = SelectionCurve()
+            self.tempSelectionCurve = RectangleSelectionCurve()
             self.tempSelectionCurve.attach(self)
             self.selectionCurveList.append(self.tempSelectionCurve)
 
@@ -560,12 +580,15 @@ class OWGraph(QwtPlot):
                 self.tempSelectionCurve = SelectionCurve()
                 self.tempSelectionCurve.attach(self)
                 self.selectionCurveList.append(self.tempSelectionCurve)
+                self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
             self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
 
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
                 self.tempSelectionCurve = None
                 self.replot()
                 if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+            
+        
 
 
     # only needed to show the message in statusbar
@@ -587,42 +610,67 @@ class OWGraph(QwtPlot):
             self.statusBar.showMessage(text)
         if text != "":
             self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text)
-
+        
         if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
             x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
             y1 = self.invTransform(QwtPlot.yLeft, self.ypos)
-            self.tempSelectionCurve.setData([x1, x1, xFloat, xFloat, x1], [y1, yFloat, yFloat, y1, y1])
+            self.tempSelectionCurve.setPoints(x1, y1, xFloat, yFloat)
             self.replot()
 
-        elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
+        elif self.tempSelectionCurve != None and self.state == SELECT_POLYGON:
             self.tempSelectionCurve.replaceLastPoint(xFloat,yFloat)
             self.replot()
 
+        elif hasattr(self, "resizingCurve"):
+            self.resizingCurve.updateCurve(xFloat, yFloat)            
+            self.replot()
+            if self.sendSelectionOnUpdate and self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback()
+            
+        # do we have a selection curve we are currently moving?
+        elif hasattr(self, "movingCurve"):
+            self.movingCurve.moveBy(xFloat-self.movingCurve.mousePosition[0], yFloat-self.movingCurve.mousePosition[1])
+            self.movingCurve.mousePosition = (xFloat, yFloat)
+            self.replot()
+            if self.sendSelectionOnUpdate and self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback() 
+
         elif self.state == PANNING and self.panPosition:
             if hasattr(self, "paniniX") and hasattr(self, "paniniY"):
-                dx = self.invTransform(QwtPlot.xBottom, self.panPosition[0]) - self.invTransform(QwtPlot.xBottom, e.globalX()) 
+                dx = self.invTransform(QwtPlot.xBottom, self.panPosition[0]) - self.invTransform(QwtPlot.xBottom, e.globalX())
                 dy = self.invTransform(QwtPlot.yLeft, self.panPosition[1]) - self.invTransform(QwtPlot.yLeft, e.globalY())
                 xEnabled, xMin, xMax = getattr(self, "xPanningInfo", (1, self.paniniX[0] + dx, self.paniniX[1] + dx))
                 yEnabled, yMin, yMax = getattr(self, "yPanningInfo", (1, self.paniniY[0] + dy, self.paniniY[1] + dy))
-                
+
                 if self.paniniX[0] + dx < xMin:  # if we reached the left edge, don't change the right edge
                     xMax = self.paniniX[1] - (self.paniniX[0] - xMin)
                 elif self.paniniX[1] + dx > xMax:   # if we reached the right edge, don't change the left edge
                     xMin = self.paniniX[0] + (xMax - self.paniniX[1])
                 else:
                     xMin, xMax = self.paniniX[0] + dx, self.paniniX[1] + dx
-                if xEnabled: self.setAxisScale(QwtPlot.xBottom, xMin, xMax)
-                
+                if xEnabled: self.setAxisScale(QwtPlot.xBottom, xMin, xMax, self.axisStepSize(QwtPlot.xBottom))
+
                 if self.paniniY[0] + dy < yMin:  # if we reached the left edge, don't change the right edge
                     yMax = self.paniniY[1] - (self.paniniY[0] - yMin)
                 elif self.paniniY[1] + dy > yMax:   # if we reached the right edge, don't change the left edge
                     yMin = self.paniniY[0] + (yMax - self.paniniY[1])
                 else:
                     yMin, yMax = self.paniniY[0] + dy, self.paniniY[1] + dy
-                if yEnabled: self.setAxisScale(QwtPlot.yLeft, yMin, yMax)
+                if yEnabled: self.setAxisScale(QwtPlot.yLeft, yMin, yMax, self.axisStepSize(QwtPlot.yLeft))
 
                 if xEnabled or yEnabled: self.replot()
-                
+
+        # if we are in the selection state then we perhaps show the cursors to move or resize the selection curves
+        if self.state not in [ZOOMING, PANNING] and getattr(self, "resizingCurve", None) == None and self.tempSelectionCurve == None:
+            onEdge = [rect.isOnEdge(xFloat, yFloat) for rect in self.selectionCurveList]
+            if 1 in onEdge:
+                self.canvas().setCursor(self.selectionCurveList[onEdge.index(1)].appropriateCursor)
+            # check if we need to change the cursor if we are at some selection box
+            elif 1 in [rect.isInside(xFloat, yFloat) for rect in self.selectionCurveList]:
+                self.canvas().setCursor(Qt.OpenHandCursor)
+            else:
+                self.canvas().setCursor(self._cursor)
+
 
 
     def mouseReleaseEvent(self, e):
@@ -637,33 +685,42 @@ class OWGraph(QwtPlot):
         staticClick = 0
         canvasPos = self.canvas().mapFrom(self, e.pos())
 
-        if e.button() != Qt.RightButton:
-            if self.xpos == canvasPos.x() and self.ypos == canvasPos.y():
-                handled = self.staticMouseClick(e)
-                if handled: return
-                staticClick = 1
+        if hasattr(self, "movingCurve"):
+            del self.movingCurve
+            if self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback() # send the new selection
+                
+        if hasattr(self, "resizingCurve"):
+            del self.resizingCurve
+            if self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback() # send the new selection
+
 
         if e.button() == Qt.LeftButton:
+            if self.xpos == canvasPos.x() and self.ypos == canvasPos.y():
+                handled = self.mouseStaticClickHandler(e)
+                if handled: return
+                staticClick = 1
+                
             if self.state == ZOOMING:
-                if self.zoomCurve: self.zoomCurve.detach()
-                self.zoomCurve = None
+                xmin, xmax = min(self.xpos, canvasPos.x()), max(self.xpos, canvasPos.x())
+                ymin, ymax = min(self.ypos, canvasPos.y()), max(self.ypos, canvasPos.y())
+                if self.tempSelectionCurve:
+                    self.tempSelectionCurve.detach()
                 self.tempSelectionCurve = None
-
-                xmin = min(self.xpos, canvasPos.x());  xmax = max(self.xpos, canvasPos.x())
-                ymin = min(self.ypos, canvasPos.y());  ymax = max(self.ypos, canvasPos.y())
 
                 if staticClick or xmax-xmin < 4 or ymax-ymin < 4:
                     x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
                     y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
                     diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
                     diffY = (self.axisScaleDiv(QwtPlot.yLeft).hBound() -  self.axisScaleDiv(QwtPlot.yLeft).lBound()) / 2.
-                    
-                    # use this to zoom to the center of the screen 
+
+                    # use this to zoom to the center of the screen
                     #xmin = x - diffX/2.; xmax = x + diffX/2.
                     #ymin = y + diffY/2.; ymax = y - diffY/2.
-                    
+
                     # use this to zoom to the place where the mouse cursor is
-                    xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX   
+                    xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
                     xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
                     ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).hBound() - y) / diffY
                     ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).lBound()) / diffY
@@ -675,10 +732,9 @@ class OWGraph(QwtPlot):
                 self.setNewZoom(xmin, xmax, ymax, ymin)
 
             elif self.state == SELECT_RECTANGLE:
-                if self.tempSelectionCurve:
-                    self.tempSelectionCurve = None
+                self.tempSelectionCurve = None
                 if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-
+            
         elif e.button() == Qt.RightButton:
             if self.state == ZOOMING:
                 ok = self.zoomOut()
@@ -714,12 +770,12 @@ class OWGraph(QwtPlot):
         if getattr(self, "controlPressed", False):
             ys = self.axisScaleDiv(QwtPlot.yLeft)
             yoff = d * (ys.hBound() - ys.lBound()) / 100.
-            self.setAxisScale(QwtPlot.yLeft, ys.lBound() + yoff, ys.hBound() + yoff)
+            self.setAxisScale(QwtPlot.yLeft, ys.lBound() + yoff, ys.hBound() + yoff, self.axisStepSize(QwtPlot.yLeft))
 
         elif getattr(self, "altPressed", False):
             xs = self.axisScaleDiv(QwtPlot.xBottom)
             xoff = d * (xs.hBound() - xs.lBound()) / 100.
-            self.setAxisScale(QwtPlot.xBottom, xs.lBound() - xoff, xs.hBound() - xoff)
+            self.setAxisScale(QwtPlot.xBottom, xs.lBound() - xoff, xs.hBound() - xoff, self.axisStepSize(QwtPlot.xBottom))
 
         else:
             ro, rn = .9**d, 1-.9**d
@@ -729,11 +785,11 @@ class OWGraph(QwtPlot):
 
             xs = self.axisScaleDiv(QwtPlot.xBottom)
             x = self.invTransform(QwtPlot.xBottom, ex)
-            self.setAxisScale(QwtPlot.xBottom, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x)
+            self.setAxisScale(QwtPlot.xBottom, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x, self.axisStepSize(QwtPlot.xBottom))
 
             ys = self.axisScaleDiv(QwtPlot.yLeft)
             y = self.invTransform(QwtPlot.yLeft, ey)
-            self.setAxisScale(QwtPlot.yLeft, ro*ys.lBound() + rn*y, ro*ys.hBound() + rn*y)
+            self.setAxisScale(QwtPlot.yLeft, ro*ys.lBound() + rn*y, ro*ys.hBound() + rn*y, self.axisStepSize(QwtPlot.yLeft))
 
         self.replot()
 
