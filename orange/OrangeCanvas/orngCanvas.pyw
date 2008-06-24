@@ -16,7 +16,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
         self.recentDocs = []
         self.iDocIndex = 1
-        self.iconSizeList = ["30 x 30", "40 x 40", "50 x 50", "60 x 60"]
+        self.iconSizeList = ["32 x 32", "48 x 48", "60 x 60"]
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
 
@@ -105,7 +105,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.iconSizeCombo.addItems(self.iconSizeList)
         self.widgetListTypeToolbar.addWidget(self.iconSizeCombo)
         self.connect(self.iconSizeCombo, SIGNAL("activated(int)"), self.iconSizeChanged)
-        self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index(self.settings["iconSize"]))
+        try:
+            self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index(self.settings["iconSize"]))
+        except:
+            self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index("48 x 48"))
 
         self.addToolBarBreak()
 

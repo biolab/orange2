@@ -263,7 +263,7 @@ class WidgetButton(QFrame):
             hs.setValue(min(max(hs.minimum(), hs.value()-ev.delta()), hs.maximum()))
         else:
             QFrame.wheelEvent(self, ev)
-
+            
 class WidgetScrollArea(QScrollArea):
     def wheelEvent(self, ev):
         #qApp.sendEvent(self.parent.horizontalScrollBar(), ev)
@@ -371,12 +371,15 @@ class WidgetListBase:
                 outputList.insert(i, outputs)
             except:
                 print "Error at reading settings for %s widget." % (name)
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # print the exception
+                tpe, val, traceback = sys.exc_info()
+                sys.excepthook(tpe, val, traceback)  # print the exception
 
         exIndex = 0
         widgetTypeList = self.canvasDlg.settings["widgetListType"]
-        iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
+        try:
+            iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
+        except:
+            iconSize = 48
         for i in range(len(priorityList)):
             button = WidgetButton(tab, widgetTypeList, iconSize)
             self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
