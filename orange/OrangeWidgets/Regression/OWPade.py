@@ -58,7 +58,7 @@ class OWPade(OWWidget):
         OWGUI.separator(box)
         hbox = OWGUI.widgetBox(box, orientation=0)
         threshCB = OWGUI.checkBox(hbox, self, "enableThreshold", "Ignore differences below ")
-        OWGUI.rubber(hbox, orientation = 0)
+#        OWGUI.rubber(hbox, orientation = 0)
         ledit = OWGUI.lineEdit(hbox, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self), controlWidth=50)
         threshCB.disables.append(ledit)
         threshCB.makeConsistent()
