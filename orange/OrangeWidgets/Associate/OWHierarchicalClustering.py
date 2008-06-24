@@ -143,7 +143,6 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.rubber(self.controlArea)
         OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
-        self.mainAreaLayout=QVBoxLayout()
         scale=QGraphicsScene(self)
         self.headerView=ScaleView(self, scale, self.mainArea)
         self.footerView=ScaleView(self, scale, self.mainArea)
@@ -153,7 +152,6 @@ class OWHierarchicalClustering(OWWidget):
         self.mainArea.layout().addWidget(self.headerView)
         self.mainArea.layout().addWidget(self.dendrogramView)
         self.mainArea.layout().addWidget(self.footerView)
-        self.mainArea.setLayout(self.mainAreaLayout)
         
         self.dendrogram.header=self.headerView
         self.dendrogram.footer=self.footerView
@@ -357,20 +355,20 @@ class OWHierarchicalClustering(OWWidget):
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
-        dSize= self.dendrogram.size()
-        sSize= self.footerView.scene().size()
-        buffer = QPixmap(dSize.width(),dSize.height()+2*sSize.height()) # any size can do, now using the window size
-        bufferTmp= QPixmap(dSize)
+        dSize= self.dendrogram.sceneRect().size()
+        sSize= self.footerView.scene().sceneRect().size()
+        buffer = QPixmap(int(dSize.width()),int(dSize.height()+2*sSize.height())) # any size can do, now using the window size
+        bufferTmp= QPixmap(int(dSize.width()), int(dSize.height()))
         painter = QPainter(buffer)
         painterTmp=QPainter(bufferTmp)
 
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
         painterTmp.fillRect(bufferTmp.rect(), QBrush(QColor(255, 255, 255)))
-        self.dendrogramView.drawContents(painterTmp,0,0,dSize.width(), dSize.height())
+##        self.dendrogramView.drawContents(painterTmp,0,0,dSize.width(), dSize.height())
+        self.dendrogramView.scene().render(painterTmp,QRectF(0, sSize.height(),dSize.width(), dSize.height()), )
         painterTmp.end()
-        self.headerView.drawContents(painter,0,0,sSize.width(),sSize.height())
-        self.footerView.drawContents(painter,0,dSize.height()+scaleHeight, sSize.width(),
-                sSize.height())
+        self.headerView.scene().render(painter, QRectF(0, 0, sSize.width(), sSize.height()))
+        self.footerView.scene().render(painter, QRectF(0, dSize.height()+sSize.height(), sSize.width(), sSize.height()))
         painter.drawPixmap(0,scaleHeight,bufferTmp)
         painter.end()
         buffer.save(fileName, ext)
