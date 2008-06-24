@@ -12,7 +12,7 @@
 import orngOrangeFoldersQt4
 from OWWidget import *
 from OWTimeDataVisualizerGraph import *
-import OWGUI, OWToolbars, OWDlgs
+import OWGUI, OWToolbars, OWColorPalette
 from orngScaleData import *
 from OWGraph import OWGraph
 
@@ -21,8 +21,8 @@ from OWGraph import OWGraph
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWTimeDataVisualizer(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "graph.showAxisScale",
-                    "graph.showLegend", "graph.useAntialiasing",
+    settingsList = ["graph.pointWidth", "graph.showXaxisTitle",
+                    "graph.showLegend", "graph.useAntialiasing", 'graph.drawPoints', 'graph.drawLines',
                     "graph.alphaValue", "autoSendSelection", "toolbarSelection",
                     "colorSettings", "selectedSchemaIndex"]
     contextHandlers = {"": DomainContextHandler("", ["graph.timeAttr", "graph.attributes", "graph.shownAttributeIndices"], loadImperfect = 0)}
@@ -87,8 +87,7 @@ class OWTimeDataVisualizer(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.drawLines', 'Draw lines', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.drawPoints', 'Draw points (slower)', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showGrayRects', 'Show gray rectangles', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
-        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'Show x axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.antialiasingChange)
 
@@ -112,7 +111,7 @@ class OWTimeDataVisualizer(OWWidget):
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
@@ -224,16 +223,16 @@ class OWTimeDataVisualizer(OWWidget):
         self.graph.colorAttr = "(Same color)"
 
 
-    def majorUpdateGraph(self, **args):
+    def majorUpdateGraph(self):
         self.graph.zoomStack = []
         self.graph.removeAllSelections()
-        self.updateGraph(**args)
+        self.updateGraph(setScale = 1)
 
     def updateGraph(self, **args):
         if not self.data:
             return
 
-        self.graph.updateData()
+        self.graph.updateData(**args)
 
 
     # ##############################################################################################################################################################
@@ -280,16 +279,16 @@ class OWTimeDataVisualizer(OWWidget):
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+            self.graph.setGridColor(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette("Discrete Palette")
-        c.createContinuousPalette("contPalette", "Continuous palette")
-        box = c.createBox("otherColors", "Other colors")
+        c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.layout().addSpacing(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)

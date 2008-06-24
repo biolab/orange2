@@ -138,39 +138,22 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
 
         # we must have at least 3 attributes to be able to show anything
-        if self.scaledData == None or len(labels) < 3:
+        if not self.haveData or len(labels) < 3:
             self.updateLayout()
             return
 
         dataSize = len(self.rawData)
-        hasClass = self.rawData and self.rawData.domain.classVar != None
-        hasDiscreteClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete
-        hasContinuousClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Continuous
 
-        if hasClass: useDifferentColors = self.useDifferentColors   # don't use colors if we don't have a class
-        else:        useDifferentColors = 0
+        if self.dataHasClass: useDifferentColors = self.useDifferentColors   # don't use colors if we don't have a class
+        else:                 useDifferentColors = 0
 
         self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20 + 0.05 * self.showLegend, 1)
 
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
 
-        classNameIndex = -1
-        if hasClass:
-            classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
-
-        if hasDiscreteClass:        # if we have a discrete class
-            valLen = len(self.rawData.domain.classVar.values)
-            classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)    # we create a hash table of variable values and their indices
-        else:
-            valLen = 1
-
         # will we show different symbols?
-        useDifferentSymbols = 0
-        if self.useDifferentSymbols and hasDiscreteClass and valLen < len(self.curveSymbols):
-            useDifferentSymbols = 1
-
-        dataSize = len(self.rawData)
+        useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) < len(self.curveSymbols)
 
         # ##########
         # draw text at lines
@@ -178,9 +161,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             # print attribute name
             self.addMarker(labels[i], 0.6*(self.XAnchor[i]+ self.XAnchor[(i+1)%length]), 0.6*(self.YAnchor[i]+ self.YAnchor[(i+1)%length]), Qt.AlignHCenter | Qt.AlignVCenter, bold = 1)
 
-            if self.rawData.domain[labels[i]].varType == orange.VarTypes.Discrete:
+            if self.dataDomain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
-                values = getVariableValuesSorted(self.rawData, labels[i])
+                values = getVariableValuesSorted(self.dataDomain[labels[i]])
                 count = len(values)
                 k = 1.08
                 for j in range(count):
@@ -191,7 +174,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    names = ["%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
+                    names = ["%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
 
@@ -226,9 +209,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.xLinesToAdd = {}   # this is filled in addAnchorLine function
         self.yLinesToAdd = {}
 
-        if self.showKNNModel == 1 and hasClass:
+        if self.showKNNModel == 1 and self.dataHasClass:
             # variables and domain for the table
-            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.dataDomain.classVar])
             table = orange.ExampleTable(domain)
 
             # build an example table
@@ -239,7 +222,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             kNNValues, probabilities = self.kNNOptimization.kNNClassifyData(table)
             accuracy = copy(kNNValues)
             measure = self.kNNOptimization.getQualityMeasure()
-            if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+            if self.dataDomain.classVar.varType == orange.VarTypes.Discrete:
                 if ((measure == CLASS_ACCURACY or measure == AVERAGE_CORRECT) and self.showCorrect) or (measure == BRIER_SCORE and not self.showCorrect):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
@@ -249,7 +232,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             # fill and edge color palettes
             bwColors = ColorPaletteBW(-1, 55, 255)
 
-            if hasContinuousClass:
+            if self.dataHasContinuousClass:
                 preText = 'Mean square error : '
                 classColors = self.contPalette
             else:
@@ -260,7 +243,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
             for i in range(len(table)):
                 fillColor = bwColors.getRGB(kNNValues[i])
-                edgeColor = classColors.getRGB(classValueIndices[table[i].getclass().value])
+                edgeColor = classColors.getRGB(self.originalData[self.dataClassIndex][i])
                 if not xPointsToAdd.has_key((fillColor, edgeColor, QwtSymbol.Ellipse, 1)):
                     xPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
                     yPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
@@ -269,10 +252,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addAnchorLine(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], fillColor, i, length)
 
         # CONTINUOUS class
-        elif hasContinuousClass:
+        elif self.dataHasContinuousClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+                if useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[self.dataClassIndex][i]]
                 else:                   newColor = QColor(0,0,0)
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], newColor, i)
@@ -284,12 +267,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             symbol = self.curveSymbols[0]
             for i in range(dataSize):
                 if not validData[i]: continue
-                if hasClass:
-                    ind = classValueIndices[self.rawData[i].getclass().value]
+                if self.dataHasClass:
                     if self.useDifferentSymbols:
-                        symbol = self.curveSymbols[ind]
+                        symbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
                     if useDifferentColors:
-                        color = self.discPalette.getRGB(ind)
+                        color = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
                 if not xPointsToAdd.has_key((color, color, symbol, 1)):
                     xPointsToAdd[(color, color, symbol, 1)] = []
                     yPointsToAdd[(color, color, symbol, 1)] = []
@@ -314,12 +296,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         #################
         # draw the legend
-        if self.showLegend and hasClass:
+        if self.showLegend and self.dataHasClass:
             # show legend for discrete class
-            if hasDiscreteClass:
-                self.addMarker(self.rawData.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
+            if self.dataHasDiscreteClass:
+                self.addMarker(self.dataDomain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
 
-                classVariableValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+                classVariableValues = getVariableValuesSorted(self.dataDomain.classVar)
                 for index in range(len(classVariableValues)):
                     if useDifferentColors: color = self.discPalette[index]
                     else:                       color = QColor(0,0,0)
@@ -332,7 +314,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)
 
             # show legend for continuous class
-            elif hasContinuousClass:
+            elif self.dataHasContinuousClass:
                 xs = [1.15, 1.20, 1.20, 1.15]
                 count = 200
                 height = 2 / float(count)
@@ -343,9 +325,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     c.attach(self)
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
-                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                [minVal, maxVal] = self.attrValues[self.dataDomain.classVar.name]
+                self.addMarker("%s = %%.%df" % (self.dataDomain.classVar.name, self.dataDomain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.dataDomain.classVar.name, self.dataDomain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
         self.replot()
 
@@ -435,7 +417,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if self.tooltipKind == VISIBLE_ATTRIBUTES: labels = self.shownAttributes
                 else:                                      labels = self.attributeNames
 
-                text = self.getExampleTooltipText(self.rawData, self.rawData[index], labels)
+                text = self.getExampleTooltipText(self.rawData[index], labels)
                 self.showTip(self.transform(QwtPlot.xBottom, x_i), self.transform(QwtPlot.yLeft, y_i), text)
 
         OWGraph.onMouseMoved(self, e)
@@ -458,21 +440,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, addProjectedPositions = 0):
-        if not self.rawData: return (None, None)
+        if not self.haveData: return (None, None)
         if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawData)       # if no selections exist
 
         xAttr = orange.FloatVariable("X Positions")
         yAttr = orange.FloatVariable("Y Positions")
         if addProjectedPositions == 1:
-            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawData.domain.variables])
+            domain=orange.Domain([xAttr,yAttr] + [v for v in self.dataDomain.variables])
         elif addProjectedPositions == 2:
-            domain=orange.Domain(self.rawData.domain)
+            domain=orange.Domain(self.dataDomain)
             domain.addmeta(orange.newmetaid(), xAttr)
             domain.addmeta(orange.newmetaid(), yAttr)
         else:
-            domain = orange.Domain(self.rawData.domain)
+            domain = orange.Domain(self.dataDomain)
 
-        domain.addmetas(self.rawData.domain.getmetas())
+        domain.addmetas(self.dataDomain.getmetas())
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
@@ -481,7 +463,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if array == None:       # if all examples have missing values
             return (None, None)
 
-        selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
+        #selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
+        selIndices, unselIndices = self.getSelectedPoints(array.T[0], array.T[1], validData)
 
         if addProjectedPositions:
             selected = orange.ExampleTable(domain, self.rawData.selectref(selIndices))
@@ -506,7 +489,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
 
     def getSelectionsAsIndices(self, attrList, validData = None):
-        if not self.rawData: return [], []
+        if not self.haveData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if validData == None:
@@ -517,324 +500,6 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
-
-
-
-    def createCombinations(self, attrList, count):
-        if count > len(attrList): return []
-        answer = []
-        indices = range(count)
-        indices[-1] = indices[-1] - 1
-        while 1:
-            limit = len(attrList) - 1
-            i = count - 1
-            while i >= 0 and indices[i] == limit:
-                i = i - 1
-                limit = limit - 1
-            if i < 0: break
-
-            val = indices[i]
-            for i in xrange( i, count ):
-                val = val + 1
-
-                indices[i] = val
-            temp = []
-            for i in indices:
-                temp.append( attrList[i] )
-            answer.append( temp )
-        return answer
-
-
-    def createAttrReverseList(self, attrLen):
-        res = [[]]
-        for i in range(attrLen):
-            res2 = deepcopy(res)
-            for l in res: l.append(0)
-            for l in res2: l.append(1)
-            res += res2
-        return res
-
-    # #######################################
-    # try to find the optimal attribute order by trying all diferent circular permutations
-    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    #def getOptimalSeparation(self, attrListLength, attrReverseDict, projections, addResultFunct):
-    def getOptimalSeparation(self, attributes, minLength, maxLength, attrReverseDict, addResultFunct):
-        dataSize = len(self.rawData)
-        self.triedPossibilities = 0
-        startTime = time.time()
-        self.polyvizWidget.progressBarInit()
-
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
-        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
-        allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-
-        for z in range(minLength-1, len(attributes)):
-            for u in range(minLength-1, maxLength):
-                attrListLength = u+1
-
-                combinations = self.createCombinations(attributes[:z], u)
-
-                if attrReverseDict == None:
-                    if not allAttrReverse.has_key(attrListLength):
-                        allAttrReverse[attrListLength] = self.createAttrReverseList(attrListLength)
-                    attrReverse = allAttrReverse[attrListLength]
-
-                XAnchors = anchorList[u+1-minLength][0]
-                YAnchors = anchorList[u+1-minLength][1]
-
-                for attrList in combinations:
-                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
-                    indices = [self.attributeNameIndex[attr] for attr in attrs]
-
-                    indPermutations = {}
-                    getPermutationList(indices, [], indPermutations, attrReverseDict == None)
-
-                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
-                        attrReverse = [[attrReverseDict[attr] for attr in attrs]]
-
-                    permutationIndex = 0 # current permutation index
-                    totalPermutations = len(indPermutations.values())*len(attrReverse)
-
-                    validData = self.getValidList(indices)
-                    classList = numpy.compress(validData, classListFull)
-                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, indices, axis = 0))
-                    sum_i = self._getSum_i(selectedData)
-
-                    tempList = []
-
-                    # for every permutation compute how good it separates different classes
-                    for permutation in indPermutations.values():
-                        for attrOrder in attrReverse:
-                            if self.kNNOptimization.isOptimizationCanceled():
-                                secs = time.time() - startTime
-                                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
-                                self.polyvizWidget.progressBarFinished()
-                                return
-                            permutationIndex += 1
-
-                            table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
-                            accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-
-                            # save the permutation
-                            if not self.onlyOnePerSubset:
-                                addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
-                            else:
-                                tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
-
-                            self.triedPossibilities += 1
-                            self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
-
-                    if self.onlyOnePerSubset:
-                        (acc, other_results, lenTable, attrList, order) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": order})
-
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
-        self.polyvizWidget.progressBarFinished()
-
-
-    def getOptimalSeparationUsingHeuristicSearch(self, attributes, attrsByClass, minLength, maxLength, attrReverseDict, addResultFunct):
-        # variables and domain for the table
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawData.domain.classVar])
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        attrsByClass = [[self.attributeNameIndex[name] for name in arr] for arr in attrsByClass]
-        if attrReverseDict != None:
-            d = {}
-            for key in attrReverseDict.keys():
-                d[self.attributeNameIndex[key]] = attrReverseDict[key]
-            attrReverseDict = d
-
-        numClasses = len(self.rawData.domain.classVar.values)
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
-        allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
-        startTime = time.time()
-
-        for z in range(minLength-1, len(attributes)):
-            for u in range(minLength-1, maxLength):
-                projs = orngVisFuncts.createProjections(numClasses, u+1)
-                attrListLength = u+1
-
-                combinations = orngVisFuncts.combinations(range(z), u)
-
-                if attrReverseDict == None:
-                    if not allAttrReverse.has_key(attrListLength):
-                        allAttrReverse[attrListLength] = self.createAttrReverseList(attrListLength)
-                    attrReverse = allAttrReverse[attrListLength]
-
-                XAnchors = anchorList[u+1-minLength][0]
-                YAnchors = anchorList[u+1-minLength][1]
-
-                for comb in combinations:
-                    comb = comb + [z]  # remove the value of this attribute subset
-                    counts = [0 for i in range(numClasses)]
-                    for v in comb: counts[v%numClasses] += 1
-                    if min(counts) < (u+1) / numClasses: continue   # ignore combinations that don't have good attributes for all class values
-
-                    attrList = [[] for i in range(numClasses)]
-                    for v in comb:
-                        attrList[v%numClasses].append(attributes[v])
-
-                    attrs = [attributes[c] for c in comb]
-
-                    indPermutations = {}
-                    getPermutationList(attrs, [], indPermutations, attrReverseDict == None)
-
-                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
-                        attrReverse = [[attrReverseDict[attr] for attr in attrs]]
-
-                    permutationIndex = 0 # current permutation index
-                    totalPermutations = len(indPermutations.values())*len(attrReverse)
-
-                    validData = self.getValidList(attrs)
-                    classList = numpy.compress(validData, classListFull)
-                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrs, axis = 0))
-                    sum_i = self._getSum_i(selectedData)
-
-                    tempList = []
-
-                    # for every permutation compute how good it separates different classes
-                    for proj in projs:
-                        try:
-                            permutation = [attrList[i][j] for (i,j) in proj]
-
-                            for attrOrder in attrReverse:
-                                if self.kNNOptimization.isOptimizationCanceled():
-                                    secs = time.time() - startTime
-                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %(n)s projections in %(min)d min, %(sec)d sec)" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "min": secs/60, "sec": secs%60})
-                                    return
-                                permutationIndex += 1
-
-                                table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors,  YAnchors = YAnchors, domain = domain)
-                                accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-
-                                # save the permutation
-                                if not self.onlyOnePerSubset:
-                                    addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
-                                else:
-                                    tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
-
-                                self.triedPossibilities += 1
-                                self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), z))
-                        except:
-                            pass
-
-                    if self.onlyOnePerSubset and tempList:
-                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": attrOrder})
-
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-        self.polyvizWidget.progressBarFinished()
-
-
-    def optimizeGivenProjection(self, projection, attrReverseList, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
-        dataSize = len(self.rawData)
-        classIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        lenOfAttributes = len(attributes)
-        projection = [self.attributeNameIndex[name] for name in projection]
-
-        # variables and domain for the table
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
-        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
-        allAttrReverse = {}
-
-        optimizedProjection = 1
-        while optimizedProjection:
-            optimizedProjection = 0
-            significantImprovement = 0
-
-            # in the first step try to find a better projection by substituting an existent attribute with a new one
-            # in the second step try to find a better projection by adding a new attribute to the circle
-            for iteration in range(2):
-                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue
-                if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
-                listOfCanditates = []
-
-                if attrReverseList == None:
-                    if not allAttrReverse.has_key(len(projection) + iteration):
-                        allAttrReverse[len(projection) + iteration] = self.createAttrReverseList(len(projection) + iteration)
-                    attrReverse = allAttrReverse[len(projection) + iteration]
-
-                for (attrIndex, attr) in enumerate(attributes):
-                    if attr in projection: continue
-                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
-
-                    if attrReverseList != None:
-                        projections = [(copy(projection), copy(attrReverseList)) for i in range(len(projection))]
-                    else:
-                        rev = [0 for i in range(len(projection))]
-                        projections = [(copy(projection), rev) for i in range(len(projection))]
-
-                    if iteration == 0:  # replace one attribute in each projection with attribute attr
-                        count = len(projection)
-                        for i in range(count): projections[i][0][i] = attr
-                    elif iteration == 1:
-                        count = len(projection) + 1
-                        for i in range(count-1):
-                            projections[i][0].insert(i, attr)
-                            projections[i][1].insert(i, 0)
-
-                    if attrReverseList != None:
-                        projections2 = deepcopy(projections)
-                        for i in range(len(projections2)):
-                            projections2[i][1][i] = 1 - projections2[i][1][i]
-                        projections += projections2
-
-                    if len(anchorList) < count-3: anchorList.append((self.createXAnchors(count), self.createYAnchors(count)))
-
-                    XAnchors = anchorList[count-3][0]
-                    YAnchors = anchorList[count-3][1]
-                    validData = self.getValidList(projections[0][0])
-                    classList = numpy.compress(validData, classListFull)
-
-                    tempList = []
-                    for (testProj, reverse) in projections:
-                        if self.kNNOptimization.isOptimizationCanceled(): return
-
-                        table = self.createProjectionAsExampleTable(testProj, reverse = reverse, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
-                        acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-
-                        # save the permutation
-                        tempList.append((acc, other_results, len(table), testProj, reverse))
-
-                        self.triedPossibilities += 1
-                        qApp.processEvents()        # allow processing of other events
-                        if self.kNNOptimization.isOptimizationCanceled(): return
-
-
-                    # return only the best attribute placements
-                    (acc, other_results, lenTable, attrList, reverse) = self.kNNOptimization.getMaxFunct()(tempList)
-                    if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
-                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0, generalDict = {"reverse": reverse})
-                        self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        optimizedProjection = 1
-                        listOfCanditates.append((acc, attrList, reverse))
-                        if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
-                    else:
-                       self.kNNOptimization.setStatusBarText("Evaluated %(n)s projections (attribute %(attra)s/%(attrb)s). Last accuracy was: %2.2(acc)f%%" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "attra": orngVisFuncts.createStringFromNumber(attrIndex), "attrb": strTotalAtts, "acc": acc})
-                       if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
-
-
-                # select the best new projection and say this is now our new projection to optimize
-                if len(listOfCanditates) > 0:
-                    (accuracy, projection, reverse) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
-                    if attrReverseList != None: attrReverseList = reverse
-                    self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
 
 

@@ -206,21 +206,16 @@ class OWMosaicDisplay(OWWidget):
         self.icons = self.createAttributeIconDict()
         self.resize(830, 550)
 
-        self.activateLoadedSettings()
-        dlg = self.createColorDialog()
-        self.colorPalette = dlg.getDiscretePalette("discPalette")
-        
-        self.selectionColorPalette = [QColor(*col) for col in OWColorPalette.defaultRGBColors]
-
         self.VizRankLearner = MosaicTreeLearner(self.optimizationDlg)
         self.send("Learner", self.VizRankLearner)
 
-        # this is needed so that the tabs are wide enough!
-        self.safeProcessEvents()
         self.wdChildDialogs = [self.optimizationDlg]        # used when running widget debugging
 
     def activateLoadedSettings(self):
-        self.collapsableWBox.syncControls()
+        self.collapsableWBox.updateControls()
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getDiscretePalette("discPalette")
+        self.selectionColorPalette = [QColor(*col) for col in OWColorPalette.defaultRGBColors]
 
     def permutationListToggle(self):
         if self.exploreAttrPermutations:
@@ -245,7 +240,7 @@ class OWMosaicDisplay(OWWidget):
         elif self.sort4.isChecked(): attr = self.attr4
 
         if self.data and attr  != "" and attr != "(None)":
-            dlg = SortAttributeValuesDlg(self, attr, self.manualAttributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
+            dlg = SortAttributeValuesDlg(self, attr, self.manualAttributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data.domain[attr]))
             if dlg.exec_() == QDialog.Accepted:
                 self.manualAttributeValuesDict[attr] = [str(dlg.attributeList.item(i).text()) for i in range(dlg.attributeList.count())]
 
@@ -305,8 +300,8 @@ class OWMosaicDisplay(OWWidget):
                 self.information(0, "Continuous attributes were discretized using entropy discretization.")
             if data.domain.classVar and data.hasMissingClasses():
                 self.information(1, "Examples with missing classes were removed.")
-            if self.removeUnusedValues and len(data) != len(self.data):
-                self.information(2, "Unused attribute values were removed.")
+#            if self.removeUnusedValues and len(data) != len(self.data):
+#                self.information(2, "Unused attribute values were removed.")
 
             if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.interiorColoring = CLASS_DISTRIBUTION
@@ -332,7 +327,7 @@ class OWMosaicDisplay(OWWidget):
                 self.warning(10)
             except:
                 self.subsetData = None
-                self.warning(10, data and "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data." or "")
+                self.warning(10, data and "'Examples' and 'Example Subset' data do not have compatible domains. Unable to draw 'Example Subset' data." or "")
 
 
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
@@ -487,7 +482,7 @@ class OWMosaicDisplay(OWWidget):
 
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
-        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr)
+        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data.domain[attr])
         if side%2: values = values[::-1]        # reverse names if necessary
 
         if side%2 == 0:                                     # we are drawing on the x axis
@@ -505,7 +500,7 @@ class OWMosaicDisplay(OWWidget):
         # otherwise, if the last cell, nearest to the labels of the fourth attribute, is empty, we wouldn't be able to position the labels
         valRange = range(len(values))
         if len(attrList + usedAttrs) == 4 and len(usedAttrs) == 2:
-            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data, usedAttrs[0])
+            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data.domain[usedAttrs[0]])
             if usedVals[0] == attr1Values[-1]:
                 valRange = valRange[::-1]
 
@@ -534,7 +529,7 @@ class OWMosaicDisplay(OWWidget):
 
         # the text on the right will be drawn when we are processing visualization of the last value of the first attribute
         if side == RIGHT:
-            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data, usedAttrs[0])
+            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data.domain[usedAttrs[0]])
             if usedVals[0] != attr1Values[-1]:
                 return
 
@@ -546,7 +541,7 @@ class OWMosaicDisplay(OWWidget):
 
         self.drawnSides[side] = 1
 
-        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr)
+        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data.domain[attr])
         if side % 2:  values = values[::-1]
 
         width  = x1-x0 - (side % 2 == 0) * self.cellspace*(totalAttrs-side)*(len(values)-1)
@@ -593,7 +588,7 @@ class OWMosaicDisplay(OWWidget):
         if self.activeRule and len(usedAttrs) == len(self.activeRule[0]) and sum([v in usedAttrs for v in self.activeRule[0]]) == len(self.activeRule[0]):
             for vals in self.activeRule[1]:
                 if usedVals == [vals[self.activeRule[0].index(a)] for a in usedAttrs]:
-                    values = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+                    values = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data.domain.classVar)
                     counts = [self.conditionalDict[attrVals + "-" + val] for val in values]
                     d = 2
                     r = OWCanvasRectangle(self.canvas, x0-d, y0-d, x1-x0+2*d+1, y1-y0+2*d+1, z = 50)
@@ -634,7 +629,7 @@ class OWMosaicDisplay(OWWidget):
         # draw class distribution - actual and apriori
         # we do have a discrete class
         else:
-            clsValues = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+            clsValues = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data.domain.classVar)
             aprioriDist = orange.Distribution(self.data.domain.classVar.name, self.data)
             total = 0
             for i in range(len(clsValues)):
@@ -734,7 +729,7 @@ class OWMosaicDisplay(OWWidget):
         tooltipText = "Examples in this area have:<br>" + condition
 
         if aprioriDist:
-            clsValues = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+            clsValues = list(self.attributeValuesDict.get(self.data.domain.classVar.name, [])) or getVariableValuesSorted(self.data.domain.classVar)
             actual = [self.conditionalDict[attrVals + "-" + clsValues[i]] for i in range(len(aprioriDist))]
             if sum(actual) > 0:
                 apriori = [aprioriDist[key] for key in clsValues]
@@ -757,7 +752,7 @@ class OWMosaicDisplay(OWWidget):
             names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
             colors = self.redColors[::-1] + self.blueColors[1:]
         else:
-            names = (list(self.attributeValuesDict.get(data.domain.classVar.name, [])) or getVariableValuesSorted(data, data.domain.classVar.name)) + [data.domain.classVar.name+":"]
+            names = (list(self.attributeValuesDict.get(data.domain.classVar.name, [])) or getVariableValuesSorted(data.domain.classVar)) + [data.domain.classVar.name+":"]
             colors = [self.colorPalette[i] for i in range(len(data.domain.classVar.values))]
 
         self.names = [OWCanvasText(self.canvas, name, alignment = Qt.AlignVCenter) for name in names]
@@ -917,6 +912,7 @@ class SortAttributeValuesDlg(OWBaseWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow = OWMosaicDisplay()
+    ow.activateLoadedSettings()
     ow.show()
     data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
     ow.setData(data)

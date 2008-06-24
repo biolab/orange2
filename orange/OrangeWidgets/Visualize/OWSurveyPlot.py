@@ -24,6 +24,7 @@ class OWSurveyPlot(OWVisWidget):
                     "graph.tooltipKind", "showAllAttributes", "colorSettings", "selectedSchemaIndex"]
     attributeContOrder = ["Unordered","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["Unordered","ReliefF","GainRatio"]
+    contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
@@ -108,12 +109,17 @@ class OWSurveyPlot(OWVisWidget):
 
     # #####################
     def setSortCombo(self):
+        items = [str(self.primaryAttrCombo.itemText(i)) for i in range(1, self.primaryAttrCombo.count())]
+        attrs = self.graph.dataDomain and [attr.name for attr in self.graph.dataDomain]
+        if items == attrs:
+            return
+        
         self.primaryAttrCombo.clear()
         self.secondaryAttrCombo.clear()
         self.primaryAttrCombo.addItem("(None)")
         self.secondaryAttrCombo.addItem("(None)")
-        if not self.data: return
-        for attr in self.data.domain:
+        if not self.graph.haveData: return
+        for attr in self.graph.dataDomain:
             self.primaryAttrCombo.addItem(self.icons[attr.varType], attr.name)
             self.secondaryAttrCombo.addItem(self.icons[attr.varType], attr.name)
         self.primaryAttribute = "(None)"
@@ -130,7 +136,7 @@ class OWSurveyPlot(OWVisWidget):
         if attrs and self.data:
             self.data.sort(attrs)
 
-        self.graph.setData(self.data, sortValuesForDiscreteAttrs = 0)
+        self.graph.setData(self.data, sortValuesForDiscreteAttrs = 0, skipIfSame = 0)
         self.updateGraph()
 
 
@@ -142,35 +148,36 @@ class OWSurveyPlot(OWVisWidget):
             data.name = name
             if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
                 data = None
-        if self.data != None and data != None and self.data.checksum() == data.checksum():
+        if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
+        self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.data = data
-
+        
+        self.graph.setData(self.data)
+        if self.graph.dataHasDiscreteClass:
+            self.graph.discPalette.setNumberOfColors(len(self.graph.dataDomain.classVar.values))
         if not sameDomain:
+            self.setShownAttributes(self.attributeSelectionList)
             self.resetAttrManipulation()
             self.setSortCombo()
-            self.setShownAttributeList(self.data)
-            if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.graph.discPalette.setNumberOfColors(len(self.data.domain.classVar.values))
-        self.sortingClick()
-
+        self.openContext("", self.data)
+        self.resetAttrManipulation()
+        self.updateGraph()
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
     def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
-        if self.data and self.attributeSelectionList:
-            for attr in self.attributeSelectionList:
-                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
-                    return
-            self.setShownAttributeList(self.data, self.attributeSelectionList)
-        self.updateGraph()
+        if self.graph.haveData and self.attributeSelectionList and 0 not in [self.graph.attributeNameIndex.has_key(attr) for attr in self.attributeSelectionList]:
+            self.setShownAttributeList(self.attributeSelectionList)
+        else:
+            self.setShownAttributeList()
 
     # update attribute ordering
     def updateShownAttributeList(self):
-        self.setShownAttributeList(self.data)
+        self.setShownAttributeList()
         self.updateGraph()
 
     def sendShownAttributes(self):

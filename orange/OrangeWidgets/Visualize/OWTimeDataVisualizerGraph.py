@@ -1,20 +1,11 @@
-#
-# OWScatterPlotGraph.py
-#
 from OWGraph import *
-import time
-from orngCI import FeatureByCartesianProduct
-##import OWClusterOptimization
-import orngVisFuncts
 from orngScaleScatterPlotData import *
-import ColorPalette
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
 ALL_ATTRIBUTES = 2
 
 MIN_SHAPE_SIZE = 6
-
 
 ###########################################################################################
 ##### CLASS : OWTIMEDATAVISUALIZERGRAPH
@@ -65,9 +56,6 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             return
 
-
-        self.__dict__.update(args)      # set value from args dictionary
-
         (xVarMin, xVarMax) = self.attrValues[self.timeAttr]
         xVar = max(xVarMax - xVarMin, 1e-10)
 
@@ -78,9 +66,10 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
         haveSubsetData = bool(self.rawSubsetData and self.rawData and self.rawSubsetData.domain.checksum() == self.rawData.domain.checksum())
         showContinuousColorLegend = self.showLegend and colorIndex != -1 and self.rawData.domain[colorIndex].varType == orange.VarTypes.Continuous
 
-        self.setAxisScale(QwtPlot.xBottom, xVarMin, xVarMax + showContinuousColorLegend * 0.05 * xVar, 0)
-        self.setYLlabels([self.rawData.domain[ind].name for ind in self.shownAttributeIndices[::-1]])
-        self.setAxisScale(QwtPlot.yLeft, -0.5, len(self.shownAttributeIndices)-0.5, 1)
+        if args.get("setScale", 0):
+            self.setAxisScale(QwtPlot.xBottom, xVarMin, xVarMax + showContinuousColorLegend * 0.05 * xVar, 0)
+            self.setYLlabels([self.rawData.domain[ind].name for ind in self.shownAttributeIndices[::-1]])
+            self.setAxisScale(QwtPlot.yLeft, -0.5, len(self.shownAttributeIndices)-0.5, 1)
 
         timeAttrMin, timeAttrMax = self.originalData[timeAttrIndex].min(), self.originalData[timeAttrIndex].max()
         if self.showGrayRects:
@@ -105,11 +94,12 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
         if colorIndex == -1 or self.rawData.domain[colorIndex].varType == orange.VarTypes.Discrete:
             if colorIndex != -1:
                 classCount = len(colorIndices)
-                colorIndices = getVariableValueIndices(self.rawData, colorIndex)
+                colorIndices = getVariableValueIndices(self.dataDomain[colorIndex])
                 validData = self.getValidList([timeAttrIndex, colorIndex])      # get examples that have valid data for each used attribute
             else:
-                classCount = 1            
+                classCount = 1
                 validData = self.getValidList([timeAttrIndex])      # get examples that have valid data for each used attribute
+            self.discPalette.setNumberOfColors(classCount)
 
             xs = [[[] for a in range(numAttrs)] for i in range(classCount)]
             ys = [[[] for a in range(numAttrs)] for i in range(classCount)]
@@ -241,7 +231,7 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
             self.legend().clear()
             if colorIndex != -1:
                 if self.rawData.domain[colorIndex].varType == orange.VarTypes.Discrete:
-                    varValues = getVariableValuesSorted(self.rawData, colorIndex)
+                    varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
                     for ind in range(len(varValues)):
                         self.addCurve(self.rawData.domain[colorIndex].name + "=" + varValues[ind], self.discPalette[ind], self.discPalette[ind], enableLegend = 1)
     
@@ -279,11 +269,11 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
             
         if self.tooltipKind == VISIBLE_ATTRIBUTES:
             if self.attributeNameIndex[self.timeAttr] in self.shownAttributeIndices:
-                text = self.getExampleTooltipText(data, data[index], self.shownAttributeIndices)
+                text = self.getExampleTooltipText(data[index], self.shownAttributeIndices)
             else:
-                text = self.getExampleTooltipText(data, data[index], [self.attributeNameIndex[self.timeAttr]] + self.shownAttributeIndices)
+                text = self.getExampleTooltipText(data[index], [self.attributeNameIndex[self.timeAttr]] + self.shownAttributeIndices)
         elif self.tooltipKind == ALL_ATTRIBUTES:        
-            text = self.getExampleTooltipText(data, data[index], range(len(data.domain)))
+            text = self.getExampleTooltipText(data[index], range(len(data.domain)))
         return text
 
 
@@ -305,6 +295,26 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
 
         return (selected, unselected)
 
+    def staticMouseClick(self, e):
+        if e.button() == Qt.LeftButton and self.state == ZOOMING:
+            if self.tempSelectionCurve: self.tempSelectionCurve.detach()
+            self.tempSelectionCurve = None
+            canvasPos = self.canvas().mapFrom(self, e.pos())
+            x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+            y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
+            diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
+
+            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
+            xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
+            ymin = self.axisScaleDiv(QwtPlot.yLeft).hBound() 
+            ymax = self.axisScaleDiv(QwtPlot.yLeft).lBound()
+
+            self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound(), self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()))
+            self.setNewZoom(xmin, xmax, ymax, ymin)
+
+            return 1
+        else:
+            return 0
 
     def getSelectionsAsIndices(self, attrList, validData = None):
         [xAttr, yAttr] = attrList
@@ -314,7 +324,7 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
         if validData == None:
             validData = self.getValidList(attrIndices)
 
-        (xArray, yArray) = self.getXYPositions(xAttr, yAttr)
+        (xArray, yArray) = self.getXYDataPositions(xAttr, yAttr)
 
         return self.getSelectedPoints(xArray, yArray, validData)
 

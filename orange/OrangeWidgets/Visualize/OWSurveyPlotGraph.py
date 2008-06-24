@@ -56,7 +56,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         if self.rawData.domain.classVar:
             classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
             if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
-                classValDict = getVariableValueIndices(self.rawData, self.rawData.domain.classVar)
+                classValDict = getVariableValueIndices(self.dataDomain.classVar)
                 #self.discPalette.setNumberOfColors(len(classValDict.keys()))
 
         y = 0
@@ -79,7 +79,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             RectangleCurve(QPen(QColor(*key)), QBrush(QColor(*key)), xRectsToAdd[key], yRectsToAdd[key]).attach(self)
 
         if self.enabledLegend and self.rawData.domain.classVar and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
-            classValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+            classValues = getVariableValuesSorted(self.dataDomain.classVar)
             self.addCurve("<b>" + self.rawData.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
             for ind in range(len(classValues)):
                 self.addCurve(classValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
@@ -110,8 +110,8 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
             if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
                 if int(yFloat) >= len(self.rawData): return
-                if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawData, self.rawData[int(yFloat)], self.attrLabels)
-                else:                                           text = self.getExampleTooltipText(self.rawData, self.rawData[int(yFloat)], [])
+                if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawData[int(yFloat)], self.attrLabels)
+                else:                                           text = self.getExampleTooltipText(self.rawData[int(yFloat)], [])
                 OWGraph.mouseMoveEvent(self, e)
                 self.showTip(e.x(), e.y(), text)
 
