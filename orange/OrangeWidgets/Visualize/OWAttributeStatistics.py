@@ -38,16 +38,16 @@ class OWAttributeStatistics(OWWidget):
         self.canvas = None
         self.HighlightedAttribute = None
         #list inputs and outputs
-        self.inputs = [("Examples", ExampleTable, self.data, Default)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
 
         #GUI
 
         AttsBox = OWGUI.widgetBox(self.controlArea, 'Attributes')
         self.attributes = OWGUI.listBox(AttsBox, self, selectionMode = QListWidget.SingleSelection, callback = self.attributeHighlighted)
-        self.attributes.setMinimumSize(150, 200)
+        #self.attributes.setMinimumSize(150, 200)
         #connect controls to appropriate functions
 
-        OWGUI.separator(self.controlArea, 0,16)
+        #OWGUI.separator(self.controlArea, 0,16)
 
         #give mainArea a layout
         self.canvas = DisplayStatistics(self)
@@ -58,10 +58,11 @@ class OWAttributeStatistics(OWWidget):
 
         self.icons = self.createAttributeIconDict()
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+        self.resize(300, 400)
 
 
     def resizeEvent(self, event):
-        if self.canvas and self.data and self.HighlightedAttribute>=0:
+        if self.canvas and self.dataset and self.HighlightedAttribute>=0 and len(self.dataset.domain) < self.HighlightedAttribute:
             # canvas height should be a bit less than the height of the widget frame
             self.ch = self.height()-20
             self.canvas.canvasW, self.canvas.canvasH = self.cw, self.ch
@@ -85,7 +86,7 @@ class OWAttributeStatistics(OWWidget):
         #self.canvas.update()
 
 
-    def data(self, data):
+    def setData(self, data):
         self.closeContext()
 
         self.attributes.clear()
