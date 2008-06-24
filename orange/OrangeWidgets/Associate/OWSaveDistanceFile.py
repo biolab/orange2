@@ -2,7 +2,7 @@
 <name>Save Distance File</name>
 <description>Loads a distance matrix from a file</description>
 <contact>Miha Stajdohar</contact>
-<icon>icons/DistanceFile.png</icon>
+<icon>icons/SaveDistanceFile.png</icon>
 <priority>1155</priority>
 """
 
