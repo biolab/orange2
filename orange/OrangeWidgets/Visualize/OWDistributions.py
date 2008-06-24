@@ -264,6 +264,10 @@ class OWDistributionGraph(OWGraph):
             self.enableYRaxis(0)
             self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
 
+        self.probCurveKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)
+        self.probCurveUpperCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)
+        self.probCurveLowerCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)            
+
         self.replot()
 
     def refreshVisibleOutcomes(self):
