@@ -83,9 +83,9 @@ class OrangeCanvasDlg(QMainWindow):
         # create menu
         self.initMenu()
 
-        self.toolbar.addAction(QIcon(self.file_new), "New Schema" , self.menuItemNewSchema)
-        self.toolbar.addAction(QIcon(self.file_open), "Open Schema", self.menuItemOpen)
-        self.toolSave = self.toolbar.addAction(QIcon(self.file_save), "Save Schema", self.menuItemSave)
+        self.toolbar.addAction(QIcon(self.file_new), "New schema" , self.menuItemNewSchema)
+        self.toolbar.addAction(QIcon(self.file_open), "Open schema", self.menuItemOpen)
+        self.toolSave = self.toolbar.addAction(QIcon(self.file_save), "Save schema", self.menuItemSave)
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
 
@@ -153,7 +153,7 @@ class OrangeCanvasDlg(QMainWindow):
         for fname in os.listdir(self.canvasSettingsDir):
             if "TempSchema " in fname:
                 tempSchemaNames.append(os.path.join(self.canvasSettingsDir, fname))
-        mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session closed unexpectedly.\nYou can restore the last unsaved schema or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
+        mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
         mb.setButtonText(QMessageBox.Ok, "Reload")
         mb.setButtonText(QMessageBox.Cancel, "New schema")
         if tempSchemaNames != [] and mb.exec_() == QMessageBox.Ok:
@@ -367,7 +367,7 @@ class OrangeCanvasDlg(QMainWindow):
         for id in self.windowsDict.keys():
             self.menuWindow.removeAction(id)
         self.windowsDict = {}
-        wins = self.workspace.subWindowList()
+        wins = [w for w in self.workspace.subWindowList() if w.isVisible()]
         for i in range(len(wins)):
             txt = str(i+1) + ' ' + str(wins[i].windowTitle())
             if i<10: txt = "&" + txt
@@ -652,7 +652,7 @@ class OrangeCanvasDlg(QMainWindow):
                 shf.write("%s: %s\n" % (k, v.nameKey))
 
     def menuItemDeleteWidgetSettings(self):
-        if QMessageBox.warning(self,'Orange Canvas','Delete all settings?\nNote that for a complete reset there should be no open schema with any widgets in it.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schemas.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
             if os.path.exists(self.widgetSettingsDir):
                 for f in os.listdir(self.widgetSettingsDir):
                     if os.path.splitext(f)[1].lower() == ".ini":
@@ -684,7 +684,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog")
+        webbrowser.open("http://www.ailab.si/orange")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
@@ -959,6 +959,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.saveSettings()
         if closedDocs == totalDocs:
+            self.canvasIsClosing = 1        # output window (and possibly report window also) will check this variable before it will close the window
             self.output.logFile.close()
             ce.accept()
         else:

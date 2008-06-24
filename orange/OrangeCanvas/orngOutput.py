@@ -18,6 +18,7 @@ class OutputWindow(QMdiSubWindow):
 
         self.textOutput = QTextEdit(self)
         self.textOutput.setReadOnly(1)
+        self.textOutput.zoomIn(1)
 
         self.setWidget(self.textOutput)
         self.setWindowTitle("Output Window")
@@ -49,11 +50,16 @@ class OutputWindow(QMdiSubWindow):
 
     def closeEvent(self,ce):
         #QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
-        self.catchException(0)
-        self.catchOutput(0)
-        wins = self.canvasDlg.workspace.getDocumentList()
-        if wins != []:
-            wins[0].setFocus()
+        if getattr(self.canvasDlg, "canvasIsClosing", 0):
+            self.catchException(0)
+            self.catchOutput(0)
+            ce.accept()
+            QMdiSubWindow.closeEvent(self, ce)
+        else:
+            wins = self.canvasDlg.workspace.getDocumentList()
+            if wins != []:
+                wins[0].setFocus()
+            ce.ignore()
 
     def focusInEvent(self, ev):
         self.canvasDlg.enableSave(1)
@@ -138,10 +144,10 @@ class OutputWindow(QMdiSubWindow):
             #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         text = ""
-        if str(self.textOutput.toPlainText()) not in ["", "\n"]:
-            text += "<hr>"
+#        if str(self.textOutput.toPlainText()) not in ["", "\n"]:
+#            text += "<hr>"
         t = localtime()
-        text += "<hr><nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
+        text += "<nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
@@ -161,7 +167,7 @@ class OutputWindow(QMdiSubWindow):
         lines = traceback.format_exception_only(type, value)
         for line in lines[:-1]:
             text += "<nobr>" + totalSpace + self.getSafeString(line) + "</nobr><br>\n"
-        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n<hr>\n"
+        text += "<nobr><b>" + totalSpace + self.getSafeString(lines[-1]) + "</b></nobr><br>\n"
 
         cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the

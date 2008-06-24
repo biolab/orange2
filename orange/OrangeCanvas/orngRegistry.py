@@ -12,7 +12,7 @@ class WidgetsToXML:
     def ParseWidgetRoot(self, widgetDirName, canvasSettingsDir):
         widgetDirName = os.path.realpath(widgetDirName)
         canvasSettingsDir = os.path.realpath(canvasSettingsDir)
-        
+
         # create xml document
         doc = xml.dom.minidom.Document()
         canvas = doc.createElement("orangecanvas")
@@ -26,7 +26,6 @@ class WidgetsToXML:
                 self.ParseDirectory(doc, categories, full_filename, filename)
 
         additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
-
         if os.path.exists(additionalFile):
             for lne in open(additionalFile, "rt"):
                 try:
@@ -38,7 +37,7 @@ class WidgetsToXML:
 
         # we put widgets that are in the root dir of widget directory to category "Other"
         self.ParseDirectory(doc, categories, widgetDirName, "Other")
-        
+
         xmlText = doc.toprettyxml()
         file = open(os.path.join(canvasSettingsDir, "widgetregistry.xml"), "wt")
         file.write(xmlText)
@@ -50,7 +49,7 @@ class WidgetsToXML:
     def ParseDirectory(self, doc, categories, full_dirname, categoryName, plugin = False):
         if full_dirname not in sys.path:        # add directory to orange path
             sys.path.insert(0, full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
-        
+
         for filename in os.listdir(full_dirname):
             full_filename = os.path.join(full_dirname, filename)
             if os.path.isdir(full_filename) or os.path.islink(full_filename) or os.path.splitext(full_filename)[1] != ".py":
@@ -76,19 +75,19 @@ class WidgetsToXML:
 
             if (name == None):      # if the file doesn't have a name, we treat it as a non-widget file
                 continue
-            
+
             # create XML node for the widget
             child = categories.firstChild
             while (child != None and child.attributes.get("name").nodeValue != categoryName):
                 child= child.nextSibling
-    
+
             if (child == None):
                 child = doc.createElement("category")
                 child.setAttribute("name", categoryName)
                 if plugin:
                     child.setAttribute("directory", full_dirname)
                 categories.appendChild(child)
-    
+
             widget = doc.createElement("widget")
             widget.setAttribute("file", filename[:-3])
             widget.setAttribute("name", name)
@@ -98,8 +97,8 @@ class WidgetsToXML:
             widget.setAttribute("priority", priorityStr)
             widget.setAttribute("author", author)
             widget.setAttribute("contact", contact)
-            
-            # description            
+
+            # description
             if (description != ""):
                 desc = doc.createElement("description")
                 descText = doc.createTextNode(description)
@@ -124,12 +123,12 @@ class WidgetsToXML:
         search = re.search(searchString, data)
         if (search == None):
             return None
-        
+
         text = search.group(0)
         text = text[text.find(">")+1:-text[::-1].find("<")-1]    #delete the <...> </...>
         return text.strip()
 
-        
+
     def GetAllInputs(self, data):
         #result = re.search('self.inputs *= *[[].*]', data)
         result = re.search('[ \t]+self.inputs *= *[[].*]', data)
@@ -151,7 +150,8 @@ class WidgetsToXML:
         text = data[result.start():result.end()]
         text = text[text.index("[")+1:text.index("]")]
         text= text.replace('"',"'")
-        outputs = re.findall("\(.*?\)", text)
+        #outputs = re.findall("\(.*?\)", text)
+        outputs = re.findall("\(.*?[\"\'].*?[\"\'].*?\)", text)
         outputList = []
         for output in outputs:
             outputList.append(self.GetAllValues(output))
@@ -167,27 +167,28 @@ class WidgetsToXML:
 
 
 def rebuildRegistry():
-    dirs = directoryNames
+    dirs = __getDirectoryNames()
     parse = WidgetsToXML()
     parse.ParseWidgetRoot(dirs["widgetDir"], dirs["canvasSettingsDir"])
 
 def readAdditionalCategories():
-    dirs = directoryNames
-    addCatFile = os.path.join(dirs["canvasSettingsDir"], "additionalCategories")
+    dirs = __getDirectoryNames()
+    addCatFile = os.path.join(dirs["canvasDir"], "additionalCategories")
     if os.path.exists(addCatFile):
         return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(addCatFile, "r")]
     else:
         return []
 
 def writeAdditionalCategories(categories):
-    dirs = directoryNames
-    open(os.path.join(dirs["canvasSettingsDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+    dirs = __getDirectoryNames()
+    open(os.path.join(dirs["canvasDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
 
 def addWidgetCategory(category, directory, add = True):
     if os.path.isfile(directory):
         directory = os.path.dirname(directory)
     writeAdditionalCategories([x for x in readAdditionalCategories() if x[0] != category and x[1] != directory] + (add and [(category, directory)] or []))
     rebuildRegistry()
+
 
 if __name__=="__main__":
     rebuildRegistry()

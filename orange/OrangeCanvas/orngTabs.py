@@ -114,18 +114,12 @@ class WidgetButton(QFrame):
 
     def getFullIconName(self):
         name = self.getIconName()
-        widgetDir = str(self.widgetTabs.widgetInfo[self.nameKey]["directory"])#os.path.split(self.getFileName())[0]
-
-        for paths in [(self.canvasDlg.picsDir, name),
-                      (self.canvasDlg.widgetDir, name),
-                      (name,),
-                      (widgetDir, name),
-                      (widgetDir, "icons", name)]:
-            fname = os.path.join(*paths)
-            if os.path.exists(fname):
-                return fname
-
-        return self.canvasDlg.defaultPic
+        if os.path.exists(os.path.join(self.canvasDlg.picsDir, name)):
+            return os.path.join(self.canvasDlg.picsDir, name)
+        elif os.path.exists(os.path.join(self.canvasDlg.widgetDir, name)):
+            return os.path.join(self.canvasDlg.widgetDir, name)
+        else:
+            return self.canvasDlg.defaultPic
 
     def getIconName(self):
         return str(self.widgetTabs.widgetInfo[self.nameKey]["iconName"])
@@ -371,8 +365,8 @@ class WidgetListBase:
                 outputList.insert(i, outputs)
             except:
                 print "Error at reading settings for %s widget." % (name)
-                tpe, val, traceback = sys.exc_info()
-                sys.excepthook(tpe, val, traceback)  # print the exception
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
 
         exIndex = 0
         widgetTypeList = self.canvasDlg.settings["widgetListType"]
@@ -397,7 +391,6 @@ class WidgetTabs(WidgetListBase, QTabWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
         apply(QTabWidget.__init__,(self,) + args)
-        self.setMinimumWidth(10)    # this way the < and > button will show if tab dialog is too small
 
 
     def insertWidgetTab(self, name, show = 1):
