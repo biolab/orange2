@@ -1098,7 +1098,7 @@ def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
     stopCheckbox.disables.append((-1, sendButton))
     sendButton.setDisabled(stopCheckbox.isChecked())
     master.connect(stopCheckbox, SIGNAL("toggled(bool)"),
-                   lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getdeepattr(master, changedFlag, True) and callback())
+                   lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getdeepattr(master, changedFlag, default=True) and callback())
 
 
 class ControlledList(list):
