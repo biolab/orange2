@@ -48,8 +48,8 @@ class OWNetworkFromDistances(OWWidget):
         
         boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
         
-        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeLowerSpin, valueType=float)
-        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
+        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", orientation='horizontal', callback=self.changeLowerSpin, valueType=float)
+        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", orientation='horizontal', callback=self.changeUpperSpin, valueType=float)
         
         # Options
         self.attrColor = ""
@@ -75,7 +75,7 @@ class OWNetworkFromDistances(OWWidget):
         self.infob = OWGUI.widgetLabel(boxInfo, '')
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
-        self.resize(700, 200)
+        self.resize(700, 100)
         
     def enableAttributeSelection(self):
         self.attributeCombo.box.setEnabled(True)
