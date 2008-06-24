@@ -47,14 +47,13 @@ class OWNetworkFromDistances(OWWidget):
         boxHistogram.setMinimumHeight(300)
         
         boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
-        OWGUI.separator(self.controlArea)
         
         OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeLowerSpin, valueType=float)
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
         
         # Options
         self.attrColor = ""
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph, addSpace = True)
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude unconnected vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback = self.generateGraph)
@@ -76,7 +75,7 @@ class OWNetworkFromDistances(OWWidget):
         self.infob = OWGUI.widgetLabel(boxInfo, '')
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
-        self.resize(700, 322)
+        self.resize(700, 200)
         
     def enableAttributeSelection(self):
         self.attributeCombo.box.setEnabled(True)
