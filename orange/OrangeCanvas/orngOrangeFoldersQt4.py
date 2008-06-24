@@ -41,6 +41,11 @@ def __getDirectoryNames():
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
+        
+    bufferDir = os.path.join(outputDir, "buffer")
+    if not os.path.exists(bufferDir):
+        try: os.mkdir(bufferDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
 
     widgetSettingsDir = os.path.join(outputDir, "widgetSettingsQt4")
     if not os.path.exists(widgetSettingsDir):
@@ -54,7 +59,7 @@ def __getDirectoryNames():
 
     registryFileName = os.path.join(canvasSettingsDir, "widgetregistry.xml")
 
-    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "widgetSettingsDir", "canvasSettingsDir", "registryFileName"]])
+    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "widgetSettingsDir", "canvasSettingsDir", "registryFileName", "bufferDir"]])
 
 
 def addOrangeDirectoriesToPath(registryFileName = None):
@@ -80,4 +85,4 @@ def addOrangeDirectoriesToPath(registryFileName = None):
 
 directoryNames = __getDirectoryNames()
 #vars().update(directoryNames)
-addOrangeDirectoriesToPath()
+addOrangeDirectoriesToPath(directoryNames["registryFileName"])
