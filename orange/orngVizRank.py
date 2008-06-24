@@ -6,6 +6,7 @@ from math import sqrt
 import numpy, time
 from copy import copy, deepcopy
 from orngLinProj import FreeViz
+from orngScaleData import getVariableValuesSorted
 
 # used for outlier detection
 VIZRANK_POINT = 0
@@ -113,9 +114,6 @@ class VizRank:
         self.freeviz = FreeViz(graph)
         self.visualizationMethod = visualizationMethod
 
-        self.data = None
-        self.subsetData = None
-
         self.results = []
         self.arguments = []                                 # a list of arguments
 
@@ -169,8 +167,6 @@ class VizRank:
         self.rankArgumentsByStrength = 0  # how do you want to compute arguments. if 0 then we go through the top ranked projection and classify. If 1 we rerank projections to projections with strong class prediction and use them for classification
         self.storeEachPermutation = 0       # do we want to save information for each fold when evaluating projection - used to compute VizRank's accuracy
 
-        self.datasetName = ""
-
         # 0 - set to sqrt(N)
         # 1 - set to N / c
         self.kValueFormula = 1
@@ -179,6 +175,8 @@ class VizRank:
 
     def clearResults(self):
         self.results = []
+        self.evaluationData = {}    # clear all previous data about tested permutations and stuff
+        self.evaluationData["triedCombinations"] = {}
 
     def clearArguments(self):
         self.arguments = []
@@ -202,17 +200,18 @@ class VizRank:
         return 0
 
     def getkValue(self, kValueFormula = -1):
+        if not self.graph.haveData: return 1
         if kValueFormula == -1:
             kValueFormula = self.kValueFormula
-        if kValueFormula == 0 or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
-            kValue = int(sqrt(len(self.data)))
+        if kValueFormula == 0 or not self.graph.dataHasDiscreteClass or self.graph.dataHasContinuousClass:
+            kValue = int(sqrt(len(self.graph.rawData)))
         else:
-            kValue = int(len(self.data) / max(1, len(self.data.domain.classVar.values)))    # k = N / c (c = # of class values)
+            kValue = int(len(self.graph.rawData) / max(1, len(self.graph.dataDomain.classVar.values)))    # k = N / c (c = # of class values)
         return kValue
 
     def createkNNLearner(self, k = -1, kValueFormula = -1):
         if k == -1:
-            if kValueFormula == -1 or not self.data or len(self.data) == 0:
+            if kValueFormula == -1 or not self.graph.haveData or len(self.graph.rawData) == 0:
                 kValue = self.kValue
             else:
                 kValue = self.getkValue(kValueFormula)
@@ -226,42 +225,33 @@ class VizRank:
 
 
     def setData(self, data):
-        self.data = data
-
         self.clearResults()
-        self.clearArguments()
-        self.evaluationData = {}    # clear all previous data about tested permutations and stuff
-        self.evaluationData["triedCombinations"] = {}
-        if self.__class__ != VizRank:
-            self.graph.setData(self.data, self.subsetData)
+        self.selectedClasses = []
+        if self.__class__ == VizRank:
+            self.graph.setData(data, self.graph.rawSubsetData)
 
-        hasDiscreteClass = self.data != None and len(self.data) > 0 and self.data.domain.classVar != None and self.data.domain.classVar.varType == orange.VarTypes.Discrete
-        if not hasDiscreteClass:
+        if not self.graph.dataHasDiscreteClass:
             return
 
-        self.selectedClasses = range(len(self.data.domain.classVar.values))
+        self.selectedClasses = range(len(self.graph.dataDomain.classVar.values))
 
         if self.autoSetTheKValue:
-            if self.kValueFormula == 0 or not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
-                self.kValue = int(sqrt(len(data)))                                 # k = sqrt(N)
-            elif self.kValueFormula == 1:
-                self.kValue = int(len(data) / max(1, len(data.domain.classVar.values)))    # k = N / c (c = # of class values)
-
+            self.kValue = self.getkValue(self.kValueFormula)
+            
         self.correctSettingsIfNecessary()
 
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subData):
-        self.subsetData = subData
-        if self.__class__ != VizRank:
-            self.graph.setData(self.data, self.subsetData)
+        if self.__class__ == VizRank:
+            self.graph.setData(self.graph.rawData, subData)
         self.clearArguments()
 
     def getEvaluatedAttributes(self):
-        return orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        return orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
 
     # return a function that is appropriate to find the best projection in a list in respect to the selected quality measure
     def getMaxFunct(self):
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.qualityMeasure != BRIER_SCORE: return max
+        if self.graph.dataHasDiscreteClass and self.qualityMeasure != BRIER_SCORE: return max
         else: return min
 
     def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}):
@@ -495,16 +485,16 @@ class VizRank:
     # Argumentation functions
     def findArguments(self, example):
         self.clearArguments()
-        if not self.data or not self.data.domain or not self.data.domain.classVar or len(self.results) == 0:
+        if not self.graph.haveData or not self.graph.dataHasClass or len(self.results) == 0:
             if len(self.results) == 0: print 'To classify an example using VizRank you first have to evaluate some projections.'
-            return orange.MajorityLearner(self.data)(example, orange.GetBoth)
+            return orange.MajorityLearner(self.graph.rawData)(example, orange.GetBoth)
 
-        self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
+        self.arguments = [[] for i in range(len(self.graph.dataDomain.classVar.values))]
         vals = [0.0 for i in range(len(self.arguments))]
 
         if self.rankArgumentsByStrength == 1:
             for index in range(min(len(self.results), self.argumentCount + 50)):
-                classValue, dist = self.computeClassificationForExample(index, example, kValue = len(self.data))
+                classValue, dist = self.computeClassificationForExample(index, example, kValue = len(self.graph.rawData))
                 if classValue and dist:
                     for i in range(len(self.arguments)):
                         self.arguments[i].insert(self.getArgumentIndex(dist[i], i), (dist[i], dist, self.results[index][ATTR_LIST], index))
@@ -529,12 +519,12 @@ class VizRank:
 
         suma = sum(vals)
         if suma == 0:
-            dist = orange.Distribution(self.data.domain.classVar.name, self.data)
+            dist = orange.Distribution(self.graph.dataDomain.classVar.name, self.graph.rawData)
             vals = [dist[i] for i in range(len(dist))]; suma = sum(vals)
 
         classValue = example.domain.classVar[vals.index(max(vals))]
         dist = orange.DiscDistribution([val/float(suma) for val in vals])
-        dist.variable = self.data.domain.classVar
+        dist.variable = self.graph.dataDomain.classVar
         return classValue, dist
 
 
@@ -570,9 +560,9 @@ class VizRank:
         else:                                                        return bottom
 
     def correctSettingsIfNecessary(self):
-        if not self.data: return
+        if not self.graph.haveData: return
         # check if we have discrete attributes. if yes, then make sure we are not using s2nMix measure and GAMMA_SINGLE
-        if 1 in [self.data.domain[attr].varType == orange.VarTypes.Discrete for attr in self.data.domain.attributes]:
+        if orange.VarTypes.Discrete in [attr.varType for attr in self.graph.dataDomain.attributes]:
             if self.attrCont == CONT_MEAS_S2NMIX:           self.attrCont = CONT_MEAS_S2N
             if self.attrSubsetSelection == GAMMA_SINGLE:    self.attrSubsetSelection = GAMMA_ALL
 
@@ -599,7 +589,7 @@ class VizRank:
         # if we use heuristic to find attribute orders
         if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             if not self.evaluationData.has_key("attrs"):
-                attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.data, orngVisFuncts.S2NMeasureMix())
+                attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.graph.rawData, orngVisFuncts.S2NMeasureMix())
                 attributes = [self.graph.attributeNameIndex[name] for name in attributes]
                 attrsByClass = [[self.graph.attributeNameIndex[name] for name in arr] for arr in attrsByClass]
                 self.evaluationData["attrs"] = (attributes, attrsByClass)
@@ -607,7 +597,7 @@ class VizRank:
                 attributes, attrsByClass = self.evaluationData["attrs"]
 
             if z >= len(attributes): return None      # did we already try all the attributes
-            numClasses = len(self.data.domain.classVar.values)
+            numClasses = len(self.graph.dataDomain.classVar.values)
             if self.attrSubsetSelection in [GAMMA_ALL, GAMMA_SINGLE]:
                 combinations = self.getAttributeSubsetUsingGammaDistribution(u+1)
             else:
@@ -627,7 +617,7 @@ class VizRank:
         else:
             if not self.evaluationData.has_key("attrs"):
                 # evaluate attributes
-                evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+                evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
                 attributes = [self.graph.attributeNameIndex[name] for name in evaluatedAttributes]
                 self.evaluationData["attrs"] = attributes
                 self.totalPossibilities = 0
@@ -654,7 +644,7 @@ class VizRank:
                 if self.attrCont == CONT_MEAS_NONE and self.attrDisc == DISC_MEAS_NONE:
                     combination = []
                     while len(combination) < u+1:
-                        v = random.randint(0, len(self.data.domain.attributes)-1)
+                        v = random.randint(0, len(self.graph.dataDomain.attributes)-1)
                         if v not in combination: combination.append(v)
                     combinations = [combination]
                 elif self.attrSubsetSelection == DETERMINISTIC_ALL:
@@ -682,13 +672,13 @@ class VizRank:
         projCountWidth = len(triedDict.keys()) / 1000
 
         if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
-            numClasses = len(self.data.domain.classVar.values)
+            numClasses = len(self.graph.dataDomain.classVar.values)
             attributes, attrsByClass = self.evaluationData["attrs"]
 
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
                 tried = 0
-                while len(attrs) < min(attrCount, len(self.data.domain.attributes)):
+                while len(attrs) < min(attrCount, len(self.graph.dataDomain.attributes)):
                     ind = tried%numClasses
                     #ind = random.randint(0, numClasses-1)       # warning: this can generate uneven groups for each class value!!!
                     attr = attrsByClass[ind][int(random.gammavariate(1, 5 + i/10 + projCountWidth))%len(attrsByClass[ind])]
@@ -742,20 +732,9 @@ class VizRank:
             elif self.projOptimizationMethod != 0 or self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
                 permutations.append(reduce(operator.add, combination))
             else:
-                for proj in orngVisFuncts.createProjections(len(self.data.domain.classVar.values), sum([len(group) for group in combination])):
+                for proj in orngVisFuncts.createProjections(len(self.graph.dataDomain.classVar.values), sum([len(group) for group in combination])):
                     try: permutations.append([combination[i][j] for (i,j) in proj])
                     except: pass
-                """
-                print "c=%d, g = %s, before = %d" % (len(self.data.domain.classVar.values), str([len(group) for group in combination]), len(permutations)),
-                for p in permutations:
-                    for i in range(len(p)-1):
-                        p = p[1:] + [p[0]]
-                        if p in permutations:
-                            permutations.remove(p)
-                        if p[::-1] in permutations:
-                            permutations.remove(p[::-1])
-                print ", after=%d" % (len(permutations))
-                """
         else:
             permutationIndices = self.evaluationData["permutationIndices"]
 ##            sys.stderr.write("getNextPermutations " + str(permutationIndices.keys()) + "\n")
@@ -770,7 +749,7 @@ class VizRank:
     # ##########################################################################
     def evaluateProjections(self, clearPreviousProjections = 1):
         random.seed(0)      # always use the same seed to make results repeatable
-        if not self.data: return 0
+        if not self.graph.haveData: return 0
         self.correctSettingsIfNecessary()
         if self.timeLimit == self.projectionLimit == 0 and self.__class__.__name__ == "VizRank":
             print "Evaluation of projections was started without any time or projection restrictions. To prevent an indefinite projection evaluation a time limit of 2 hours was set."
@@ -791,15 +770,14 @@ class VizRank:
         if self.__class__ != VizRank:
             from PyQt4.QtGui import qApp
 
-        if not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+        if not self.graph.dataHasDiscreteClass:
             print "Projections can be evaluated only for data with a discrete class."
             return 0
 
         if self.visualizationMethod == SCATTERPLOT:
-            evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-            contVars = [orange.FloatVariable(attr.name) for attr in self.data.domain.attributes]
-            contDomain = orange.Domain(contVars + [self.data.domain.classVar])
-            attrCount = len(self.data.domain.attributes)
+            evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+            contVars = [orange.FloatVariable(attr.name) for attr in self.graph.dataDomain.attributes]
+            attrCount = len(self.graph.dataDomain.attributes)
 
             count = len(evaluatedAttributes)*(len(evaluatedAttributes)-1)/2
             strCount = orngVisFuncts.createStringFromNumber(count)
@@ -815,7 +793,7 @@ class VizRank:
                     table = self.graph.createProjectionAsExampleTable([attr1, attr2])
                     if len(table) < self.minNumOfExamples: continue
                     accuracy, other_results = self.kNNComputeAccuracy(table)
-                    self.addResult(accuracy, other_results, len(table), [self.data.domain[attr1].name, self.data.domain[attr2].name], self.evaluatedProjectionsCount, {})
+                    self.addResult(accuracy, other_results, len(table), [self.graph.dataDomain[attr1].name, self.graph.dataDomain[attr2].name], self.evaluatedProjectionsCount, {})
 
                     if self.__class__ != VizRank:
                         self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
@@ -827,14 +805,11 @@ class VizRank:
                 self.freeviz.useGeneralizedEigenvectors = 1
                 self.graph.normalizeExamples = 0
 
-            # replace attribute names with indices in domain - faster searching
-            classIndex = self.graph.attributeNameIndex[self.data.domain.classVar.name]
-
             # variables and domain for the table
-            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.graph.dataDomain.classVar.name, values = getVariableValuesSorted(self.graph.dataDomain.classVar))])
             minLength = (self.optimizationType == EXACT_NUMBER_OF_ATTRS and self.attributeCount) or 3
             maxLength = self.attributeCount
-            classListFull = numpy.transpose(self.data.toNumpy("c")[0])[0]
+            classListFull = self.originalData[self.dataClassIndex]
 
             # each call to selectNextAttributeSubset gets a new combination of attributes in a range from minLength to maxLength. if we return None for a given number of attributes this
             # doesn't mean yet that there are no more possible combinations. it may be just that we wanted a combination of 6 attributes in a domain with 4 attributes. therefore we have
@@ -852,9 +827,9 @@ class VizRank:
                     # if we use SPCA, PLS or KNN_IN_ORIGINAL_SPACE
                     if self.projOptimizationMethod != 0 or self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
                         if self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
-                            table = self.data.select([self.data.domain[attr] for attr in attrIndices] + [self.data.domain.classVar] )
+                            table = self.graph.rawData.select([self.graph.dataDomain[attr] for attr in attrIndices] + [self.graph.dataDomain.classVar] )
                             xanchors, yanchors = self.graph.createXAnchors(len(attrIndices)), self.graph.createYAnchors(len(attrIndices))
-                            attrNames = [self.data.domain[attr].name for attr in attrIndices]
+                            attrNames = [self.graph.dataDomain[attr].name for attr in attrIndices]
                         else:
                             xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
                             table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
@@ -909,7 +884,7 @@ class VizRank:
         return self.evaluatedProjectionsCount
 
     def getProjectionQuality(self, attrList, useAnchorData = 0):
-        if not self.data: return 0.0, None
+        if not self.graph.haveData: return 0.0, None
         table = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], useAnchorData = useAnchorData)
         return self.kNNComputeAccuracy(table)
 
@@ -949,15 +924,14 @@ class VizRank:
         accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
         projections = [(accuracys[i], attrs[i]) for i in range(len(accuracys))]
 
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
-        attributes = [self.graph.attributeNameIndex[name] for name in orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.graph.dataDomain.classVar.name, values = getVariableValuesSorted(self.graph.dataDomain.classVar))])
+        attributes = [self.graph.attributeNameIndex[name] for name in orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
         self.startTime = time.time()
         lenOfAttributes = len(attributes)
         maxFunct = self.getMaxFunct()
 
         if self.visualizationMethod == SCATTERPLOT:
-            classIndex = self.graph.attributeNameIndex[self.data.domain.classVar.name]
-            classListFull = numpy.transpose(self.data.toNumpy("c")[0])[0]
+            classListFull = self.originalData[self.dataClassIndex]
 
             tempDict = {}
             projIndex = 0
@@ -994,9 +968,9 @@ class VizRank:
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
         elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
-            numClasses = len(self.data.domain.classVar.values)
+            numClasses = len(self.graph.dataDomain.classVar.values)
 
-            classListFull = numpy.transpose(self.data.toNumpy("c")[0])[0]
+            classListFull = self.originalData[self.dataClassIndex]
             newProjDict = {}
             projIndex = 0
 
@@ -1151,7 +1125,7 @@ class VizRank:
         attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "projOptimizationMethod", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "timeLimit", "projectionLimit"]
         dict = {}
         for attr in attrs: dict[attr] = self.__dict__.get(attr)
-        dict["dataCheckSum"] = self.data.checksum()
+        dict["dataCheckSum"] = self.graph.rawData.checksum()
         dict["totalProjectionsEvaluated"] = self.evaluatedProjectionsCount + self.optimizedProjectionsCount  # let's also save the total number of projections that we evaluated in order to get this list
 
         file.write("%s\n%s\n" % (str(dict), str(self.selectedClasses)))
@@ -1202,7 +1176,7 @@ class VizRank:
             file.close()
             return [], 0
 
-        if settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
+        if settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.graph.rawData.checksum():
             if not ignoreCheckSum and self.__class__.__name__ == "OWVizRank":
                 if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()
@@ -1251,40 +1225,40 @@ class VizRank:
 # ######           VIZRANK OUTLIERS            ##############################################################################################
 # ###############################################################################################################################################
 class VizRankOutliers:
-    def __init__(self, vizrank):
+    def __init__(self, vizrank, dialogType):
         self.vizrank = vizrank
-        if hasattr(vizrank, "graph"):
-            self.widgetGraph = vizrank.graph
-        else:
-            self.widgetGraph = None
-
+        self.dialogType = dialogType
+        
+        self.data = None
+        self.results = None
+        
         self.projectionIndices = []
         self.matrixOfPredictions = None
         self.graphMatrix = None
-        self.results = None
-        self.data = None
-        self.dialogType = -1
         self.evaluatedExamples = []
         self.projectionCount = 20
-
-
-    def setData(self, results, data, dialogType):
-        self.results = results
-        self.data = data
-        self.dialogType = dialogType
-        self.matrixOfPredictions = None
-
-        if dialogType == VIZRANK_POINT:
+        
+        if self.dialogType == VIZRANK_POINT:
             self.ATTR_LIST = ATTR_LIST
             self.ACCURACY = ACCURACY
-        elif dialogType == VIZRANK_MOSAIC:
+        elif self.dialogType == VIZRANK_MOSAIC:
             import orngMosaic
             self.ATTR_LIST = orngMosaic.ATTR_LIST
             self.ACCURACY = orngMosaic.SCORE
 
-    def evaluateProjections(self, qApp = None):
-        if not self.results or not self.data: return
 
+    def setResults(self, data, results):
+        self.data = data
+        self.results = results
+        self.matrixOfPredictions = None
+
+
+    def evaluateProjections(self, qApp = None):
+        if self.dialogType == VIZRANK_POINT:
+            graph = self.vizrank.graph
+        
+        if not self.results or not self.data: return
+        
         projCount = min(int(self.projectionCount), len(self.results))
         classCount = max(len(self.data.domain.classVar.values), 1)
         existing = 0
@@ -1298,14 +1272,14 @@ class VizRankOutliers:
             self.matrixOfPredictions = -100 * numpy.ones((projCount*classCount, len(self.data)), numpy.float)
 
         # compute the matrix of predictions
-        results = self.results[existing:min(len(self.results),projCount)]
+        results = self.results[existing:min(len(self.results), projCount)]
         index = 0
         for result in results:
             if self.dialogType == VIZRANK_POINT:
                 acc, other, tableLen, attrList, tryIndex, generalDict = result
-                attrIndices = [self.widgetGraph.attributeNameIndex[attr] for attr in attrList]
-                validDataIndices = self.widgetGraph.getValidIndices(attrIndices)
-                table = self.widgetGraph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)    # TO DO: this does not work with polyviz!!!
+                attrIndices = [graph.attributeNameIndex[attr] for attr in attrList]
+                validDataIndices = graph.getValidIndices(attrIndices)
+                table = graph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)    # TO DO: this does not work with polyviz!!!
                 acc, probabilities = self.vizrank.kNNClassifyData(table)
 
             elif self.dialogType == VIZRANK_MOSAIC:
@@ -1314,7 +1288,7 @@ class VizRankOutliers:
                 probabilities = numpy.zeros((len(self.data), len(self.data.domain.classVar.values)), numpy.float)
                 newFeature, quality = FeatureByCartesianProduct(self.data, attrList)
                 dist = orange.ContingencyAttrClass(newFeature, self.data)
-                data = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
+                data = self.data.select([newFeature, self.data.classVar])     # create a dataset that has only this new feature and class info
                 clsVals = len(self.data.domain.classVar.values)
                 validDataIndices = range(len(data))
                 for i, ex in enumerate(data):
@@ -1362,9 +1336,11 @@ class VizRankOutliers:
             print "no data or outliers not found yet. Run evaluateProjections() first."
             return
 
+        correctedData = orange.ExampleTable(self.data)
         for (aveAcc, exInd, classPredictions) in self.evaluatedExamples:
             (acc, clsVal) = max(classPredictions)
-            self.data[exInd].setclass(clsVal)
+            correctedData[exInd].setclass(clsVal)
+        return correctedData
 
 
 # ###############################################################################################################################################
@@ -1378,7 +1354,7 @@ class VizRankClassifier(orange.Classifier):
 
         if self.VizRank.__class__.__name__ == "OWVizRank":
             self.VizRank.parentWidget.setData(data)
-            #self.VizRank.useTimeLimit = 1
+            self.VizRank.parentWidget.handleNewSignals()
             self.VizRank.timeLimit = self.VizRank.evaluationTime
             if self.VizRank.optimizeBestProjection:
                 self.VizRank.optimizeTimeLimit = self.VizRank.optimizeBestProjectionTime
@@ -1402,7 +1378,8 @@ class VizRankClassifier(orange.Classifier):
         if self.VizRank.__class__.__name__ == "OWVizRank":
             table = orange.ExampleTable(example.domain)
             table.append(example)
-            self.VizRank.parentWidget.subsetdata(table)       # show the example is we use the widget
+            self.VizRank.parentWidget.setSubsetData(table)       # show the example is we use the widget
+            self.VizRank.parentWidget.handleNewSignals()
             classVal, dist = self.VizRank.findArguments(example, 0, 0)
         else:
             classVal, dist = self.VizRank.findArguments(example)

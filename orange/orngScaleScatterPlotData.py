@@ -5,10 +5,10 @@ class orngScaleScatterPlotData(orngScaleData):
     def getOriginalData(self, indices):
         data = self.originalData.take(indices, axis = 0)
         for i, ind in enumerate(indices):
-            [minVal, maxVal] = self.attrValues[self.rawData.domain[ind].name]
-            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
-                data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawData)) - 0.5)
-            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+            [minVal, maxVal] = self.attrValues[self.dataDomain[ind].name]
+            if self.dataDomain[ind].varType == orange.VarTypes.Discrete:
+                data[i] += (self.jitterSize/50.0)*(numpy.random.random(len(self.rawData)) - 0.5)
+            elif self.dataDomain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
                 data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawData)) - 0.5)
         return data
     
@@ -16,27 +16,42 @@ class orngScaleScatterPlotData(orngScaleData):
         data = self.originalSubsetData.take(indices, axis = 0)
         for i, ind in enumerate(indices):
             [minVal, maxVal] = self.attrValues[self.rawSubsetData.domain[ind].name]
-            if self.rawData.domain[ind].varType == orange.VarTypes.Discrete:
+            if self.dataDomain[ind].varType == orange.VarTypes.Discrete:
                 data[i] += (self.jitterSize/(50.0*max(1, maxVal)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
-            elif self.rawData.domain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
+            elif self.dataDomain[ind].varType == orange.VarTypes.Continuous and self.jitterContinuous:
                 data[i] += (self.jitterSize/(50.0*(maxVal-minVal or 1)))*(numpy.random.random(len(self.rawSubsetData)) - 0.5)
         return data
 
     # create x-y projection of attributes in attrList
-    def getXYPositions(self, xAttr, yAttr):
+    def getXYDataPositions(self, xAttr, yAttr):
         xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
 
         xData = self.scaledData[xAttrIndex].copy()
         yData = self.scaledData[yAttrIndex].copy()
         
-        if self.rawData.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawData.domain[xAttrIndex].values)) - 1.0) / 2.0
+        if self.dataDomain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.dataDomain[xAttrIndex].values)) - 1.0) / 2.0
         else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
 
-        if self.rawData.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawData.domain[yAttrIndex].values)) - 1.0) / 2.0
+        if self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.dataDomain[yAttrIndex].values)) - 1.0) / 2.0
         else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
-
         return (xData, yData)
+    
+    
+    # create x-y projection of attributes in attrList
+    def getXYSubsetDataPositions(self, xAttr, yAttr):
+        xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
 
+        xData = self.scaledSubsetData[xAttrIndex].copy()
+        yData = self.scaledSubsetData[yAttrIndex].copy()
+        
+        if self.dataDomain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.dataDomain[xAttrIndex].values)) - 1.0) / 2.0
+        else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
+
+        if self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.dataDomain[yAttrIndex].values)) - 1.0) / 2.0
+        else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
+        return (xData, yData)
+    
+    
 
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # this function has more sense in radviz and polyviz methods
@@ -47,10 +62,10 @@ class orngScaleScatterPlotData(orngScaleData):
     # create the projection of attribute indices given in attrIndices and create an example table with it.
     #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        if self.rawData.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.rawData.domain[attrIndices[0]].name), orange.FloatVariable(self.rawData.domain[attrIndices[1]].name), self.rawData.domain.classVar])
+        if self.dataHasClass:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.dataDomain[attrIndices[0]].name), orange.FloatVariable(self.dataDomain[attrIndices[1]].name), orange.EnumVariable(self.dataDomain.classVar.name, values = getVariableValuesSorted(self.dataDomain.classVar))])
         else:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.rawData.domain[attrIndices[0]].name), orange.FloatVariable(self.rawData.domain[attrIndices[1]].name)])
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.dataDomain[attrIndices[0]].name), orange.FloatVariable(self.dataDomain[attrIndices[1]].name)])
 
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
         if data != None:
@@ -69,11 +84,8 @@ class orngScaleScatterPlotData(orngScaleData):
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawData.domain.classVar:
-            #classIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
-            #if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawData.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
-            #else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
-            classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
+        if classList == None and self.dataHasClass:
+            classList = self.originalData[self.dataClassIndex]
 
         xArray = self.noJitteringScaledData[attrIndices[0]]
         yArray = self.noJitteringScaledData[attrIndices[1]]
@@ -89,11 +101,11 @@ class orngScaleScatterPlotData(orngScaleData):
 
 
     def getOptimalClusters(self, attributeNameOrder, addResultFunct):
-        if not self.rawData.domain.classVar or self.rawData.domain.classVar.varType == orange.VarTypes.Continuous:
+        if not self.dataHasClass or self.dataHasContinuousClass:
             return
         
         jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.dataDomain.classVar])
 
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         startTime = time.time()

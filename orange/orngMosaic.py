@@ -3,7 +3,7 @@ from orngEvalAttr import MeasureAttribute_Distance, MeasureAttribute_MDL, mergeA
 from orngCN2 import CN2UnorderedLearner
 from orngContingency import Entropy
 from math import sqrt, log, e
-from orngScaleData import getVariableValuesSorted, getVariableValueIndices, discretizeDomain
+from orngScaleData import getVariableValuesSorted, discretizeDomain
 import orange, orngVisFuncts
 import time, operator, numpy, sys
 import orngTest, orngStat, statc
@@ -12,14 +12,15 @@ from orngMisc import LimitedCounter
 
 # quality measures
 CHI_SQUARE = 0
-CRAMERS_PHI = 1
-INFORMATION_GAIN = 2
-DISTANCE_MEASURE = 3
-MDL = 4
-INTERACTION_GAIN = 5
-AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 6
-GINI_INDEX = 7
-CN2_RULES = 8
+CHI_SQUARE_CLASS = 1
+CRAMERS_PHI_CLASS = 2
+INFORMATION_GAIN = 3
+DISTANCE_MEASURE = 4
+MDL = 5
+INTERACTION_GAIN = 6
+AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 7
+GINI_INDEX = 8
+CN2_RULES = 9
 
 # conditional probability estimation
 RELATIVE = 0
@@ -89,6 +90,7 @@ class orngMosaic:
         self.probabilityEstimation = M_ESTIMATE
         self.learnerName = "Mosaic Classifier"
         self.resultListIndices = []
+        self.saveSettingsList = ["attrDisc", "qualityMeasure", "percentDataUsed"]       # this is the default list of settings to save when saving interesting projections. change the list to get different behavior
 
         # classification
         self.clsTau = 0.8               # semi naive bayes parameter
@@ -103,6 +105,7 @@ class orngMosaic:
         self.cancelOptimization = 0           # used to stop attribute and value order
         self.cancelEvaluation = 0
         self.cancelTreeBuilding = 0        # used in mosaic tree building
+        self.attributeDistributions = {}
 
         self.data = None
         self.results = []
@@ -115,6 +118,7 @@ class orngMosaic:
         self.aprioriDistribution = None
         self.aprioriProbabilities = None
         self.attributeNameIndex = {}
+        self.attributeDistributions = {}
         self.logits = {}
         self.arguments = {}
         self.classVals = []
@@ -150,13 +154,14 @@ class orngMosaic:
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
     def getEvaluatedAttributes(self, data):
         if not data.domain.classVar or data.domain.classVar.varType != orange.VarTypes.Discrete:
-            if self.__class__.__name__ == "OWMosaicOptimization":
+            if self.__class__.__name__ != "orngMosaic":
+                from PyQt4.QtGui import QMessageBox
                 QMessageBox.information( None, "Mosaic Dialog", 'In order to be able to find interesing projections the data set has to have a discrete class.', QMessageBox.Ok + QMessageBox.Default)
             return []
         if self.evaluatedAttributes:
             return self.evaluatedAttributes
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             from PyQt4.QtGui import qApp, QWidget
             from PyQt4.QtCore import Qt
             self.setStatusBarText("Evaluating attributes...")
@@ -173,7 +178,7 @@ class orngMosaic:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             self.setStatusBarText("")
             qApp.restoreOverrideCursor()
 
@@ -230,7 +235,7 @@ class orngMosaic:
     def evaluateProjections(self):
         self.cancelEvaluation = 0
         self.evaluatedProjectionsCount = 0
-        if not self.data or not self.classVals: return
+        if not self.data or len(self.data) == 0 or (not self.classVals and self.qualityMeasure != CHI_SQUARE): return
         fullData = self.data
 
         try:
@@ -240,13 +245,20 @@ class orngMosaic:
             self.clearResults()
             self.resultListIndices = []
 
-            if self.__class__.__name__ == "OWMosaicOptimization":
+            if len(self.data) == 0:
+                self.data = fullData
+                self.setStatusBarText("The dataset is empty. Unable to evaluate projections...")
+                self.finishEvaluation(0)
+                return
+
+            if self.__class__.__name__ != "orngMosaic":
                 self.disableControls()
-                self.mosaicWidget.progressBarInit()
+                self.visualizationWidget.progressBarInit()
                 from PyQt4.QtGui import qApp
                 self.qApp = qApp
 
             self.startTime = time.time()
+            triedPossibilities = 0
 
             maxLength = self.attributeCount
             if self.optimizationType == 0: minLength = self.attributeCount
@@ -264,9 +276,9 @@ class orngMosaic:
                 learner.ruleFinder = ruleFinder
                 learner.coverAndRemove = orange.RuleCovererAndRemover_Default()
 
-                if self.__class__.__name__ == "OWMosaicOptimization":
+                if self.__class__.__name__ != "orngMosaic":
                     from OWCN2 import CN2ProgressBar
-                    learner.progressCallback = CN2ProgressBar(self.mosaicWidget)
+                    learner.progressCallback = CN2ProgressBar(self.visualizationWidget)
 
                 classifier = learner(self.data)
 
@@ -287,14 +299,18 @@ class orngMosaic:
                     self.insertItem(score, el[0][1], self.findTargetIndex(score, max), 0, extraInfo = el)
 
             else:
-                evaluatedAttrs = self.getEvaluatedAttributes(self.data)
+                if self.qualityMeasure == CHI_SQUARE:
+                    evaluatedAttrs = [attr.name for attr in self.data.domain.variables]
+                else:
+                    evaluatedAttrs = self.getEvaluatedAttributes(self.data)
+                    
                 if evaluatedAttrs == []:
                     self.data = fullData
                     self.finishEvaluation(0)
                     return
 
                 # total number of possible projections
-                triedPossibilities = 0; totalPossibilities = 0
+                totalPossibilities = 0
                 for i in range(minLength, maxLength+1):
                     totalPossibilities += orngVisFuncts.combinationsCount(i, len(evaluatedAttrs))
                 totalStr = orngVisFuncts.createStringFromNumber(totalPossibilities)
@@ -324,8 +340,8 @@ class orngMosaic:
                             self.insertItem(val, attrs, ind, triedPossibilities)
                             self.evaluatedProjectionsCount += 1
 
-                            if self.__class__.__name__ == "OWMosaicOptimization":
-                                self.mosaicWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
+                            if self.__class__.__name__ != "orngMosaic":
+                                self.visualizationWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
                                 self.setStatusBarText("Evaluated %s/%s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities), totalStr))
                             if hasattr(self, "qApp"):
                                 self.qApp.processEvents()        # allow processing of other events
@@ -343,10 +359,10 @@ class orngMosaic:
 
 
     def finishEvaluation(self, evaluatedProjections):
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             secs = time.time() - self.startTime
             self.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
-            self.mosaicWidget.progressBarFinished()
+            self.visualizationWidget.progressBarFinished()
             self.enableControls()
             self.finishedAddingResults()
 
@@ -355,7 +371,29 @@ class orngMosaic:
         newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
 
         retVal = -1
-        if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]:
+        if self.qualityMeasure in [CHI_SQUARE]:
+            dists = []
+            for attr in attrs:
+                if not self.attributeDistributions.has_key(attr):
+                    self.attributeDistributions[attr] = orange.Distribution(attr, self.data)
+                dists.append(self.attributeDistributions[attr]) 
+                        
+            # create cartesian product of selected attributes and compute contingency 
+            dXY = orange.Distribution(newFeature, self.data)   # distribution of the merged attribute
+            
+            # compute chi-square
+            retVal = 0.0
+            domain = self.data.domain
+            for vs in LimitedCounter([len(domain[attr].values) for attr in attrs]):
+                expected = len(self.data) * reduce(lambda x, y: x*y, [dists[i][v]/float(len(self.data)) for i,v in enumerate(vs)])
+                actual = dXY["-".join([domain[attrs[i]].values[v] for i, v in enumerate(vs)])]
+                if expected == 0: continue
+                pearson2 = (actual - expected)*(actual - expected) / expected
+                retVal += pearson2
+                
+            
+                
+        if self.qualityMeasure in [CHI_SQUARE_CLASS, CRAMERS_PHI_CLASS]:
             aprioriSum = sum(self.aprioriDistribution)
             retVal = 0.0
 
@@ -366,7 +404,7 @@ class orngMosaic:
                     if not expected: continue                                    # prevent division by zero
                     retVal += (dist[i] - expected)**2 / expected
 
-            if self.qualityMeasure == CRAMERS_PHI:
+            if self.qualityMeasure == CRAMERS_PHI_CLASS:
                 vals = min(len(newFeature.values), len(self.data.domain.classVar.values))-1
                 if vals:
                     retVal = sqrt(retVal / (len(self.data) * vals))
@@ -436,7 +474,7 @@ class orngMosaic:
         if not example or len(self.results) == 0: return None, None
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             from PyQt4.QtGui import qApp
 
         usedArguments = 0
@@ -451,7 +489,7 @@ class orngMosaic:
             for val in self.classVals:
                 pos = self.getArgumentIndex(args[val][0], val)
                 self.arguments[val].insert(pos, (args[val][0], score, attrList, index, args[val][1]))
-                if self.__class__.__name__ == "OWMosaicOptimization" and val == str(self.classValueList.currentText()):
+                if self.__class__.__name__ != "orngMosaic" and val == str(self.classValueList.currentText()):
                     self.insertArgument(args[val][0], args[val][1], attrList, pos)
                     qApp.processEvents()
             usedArguments += 1
@@ -798,12 +836,12 @@ class orngMosaic:
         attrPerms = orngVisFuncts.permutations(range(len(attrs)))
         valuePerms = {}     # for each attribute we generate permutations of its values (if optimizeValueOrder = 1)
         for attr in attrs:
-            if optimizeValueOrder:  valuePerms[attr] = orngVisFuncts.permutations(getVariableValuesSorted(self.data, attr))
-            else:                   valuePerms[attr] = [getVariableValuesSorted(self.data, attr)]
+            if optimizeValueOrder:  valuePerms[attr] = orngVisFuncts.permutations(getVariableValuesSorted(self.data.domain[attr]))
+            else:                   valuePerms[attr] = [getVariableValuesSorted(self.data.domain[attr])]
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             self.setStatusBarText("Generating possible attribute orders...")
-            self.mosaicWidget.progressBarInit()
+            self.visualizationWidget.progressBarInit()
 
         possibleOrders = []
         triedIndices = [0]*(len(attrs))                 # list of indices that point to the next permutation of values that will be tried
@@ -831,15 +869,15 @@ class orngMosaic:
                 val = self.evaluateAttributeOrder(currAttrs, currValueOrder, conditions, map(attrPerm.index, range(len(attrPerm))), domain)
                 tempPerms.append((val*100, currAttrs, currValueOrder))
                 self.evaluatedProjectionsCount += 1
-                if self.evaluatedProjectionsCount % 10 == 0 and self.__class__.__name__ == "OWMosaicOptimization":
+                if self.evaluatedProjectionsCount % 10 == 0 and self.__class__.__name__ != "orngMosaic":
                     self.setStatusBarText("Evaluated %s/%s attribute orders..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
-                    self.mosaicWidget.progressBarSet(100*self.evaluatedProjectionsCount/float(total))
+                    self.visualizationWidget.progressBarSet(100*self.evaluatedProjectionsCount/float(total))
                     if self.isOptimizationCanceled(): break
             bestPlacements.append(max(tempPerms))
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
+        if self.__class__.__name__ != "orngMosaic":
             self.setStatusBarText("")
-            self.mosaicWidget.progressBarFinished()
+            self.visualizationWidget.progressBarFinished()
 
         bestPlacements.sort()
         bestPlacements.reverse()
@@ -895,7 +933,7 @@ class orngMosaic:
     # save evaluated projections into a file
     def save(self, filename):
         dict = {}
-        for attr in ["attrDisc", "qualityMeasure", "percentDataUsed"]:
+        for attr in self.saveSettingsList:
             dict[attr] = self.__dict__[attr]
         dict["dataCheckSum"] = self.data.checksum()
 
@@ -912,7 +950,7 @@ class orngMosaic:
         settings = eval(file.readline()[:-1])
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if self.__class__.__name__ == "OWMosaicOptimization":
+            if self.__class__.__name__ != "orngMosaic":
                 from PyQt4.QtGui import QMessageBox
                 if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate visualizations in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()

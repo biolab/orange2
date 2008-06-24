@@ -87,8 +87,8 @@ class orngScaleLinProjData(orngScaleData):
 
     # create the projection of attribute indices given in attrIndices and create an example table with it.
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        if self.rawData.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+        if self.dataDomain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.dataDomain.classVar.name, values = getVariableValuesSorted(self.dataDomain.classVar))])
         else:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
@@ -123,9 +123,9 @@ class orngScaleLinProjData(orngScaleData):
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawData.domain.classVar:
-            if useSubsetData: classList = numpy.transpose(self.rawSubsetData.toNumpy("c")[0])[0]
-            else:             classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
+        if classList == None and self.dataDomain.classVar:
+            if useSubsetData: classList = self.originalSubsetData[self.dataClassIndex]
+            else:             classList = self.originalData[self.dataClassIndex]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
         if useSubsetData:
@@ -178,7 +178,10 @@ class orngScaleLinProjData(orngScaleData):
             else:
                 x_validData = x_positions
                 y_validData = y_positions
-            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData)) or 1
+            try:
+                dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData)) or 1
+            except:
+                print "asdf"
             self.trueScaleFactor = scaleFactor / dist
 
         self.unscaled_x_positions = numpy.array(x_positions)

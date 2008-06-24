@@ -30,8 +30,8 @@ class orngScalePolyvizData(orngScaleLinProjData):
 
         # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
     def createProjectionAsExampleTable(self, attrList, **settingsDict):
-        if self.rawData.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+        if self.dataDomain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.dataDomain.classVar.name, values = getVariableValuesSorted(self.dataDomain.classVar))])
         else:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrList, **settingsDict)
@@ -40,7 +40,6 @@ class orngScalePolyvizData(orngScaleLinProjData):
         else:
             return orange.ExampleTable(domain)
         
-    #def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
     def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         # load the elements from the settings dict
         attributeReverse = settingsDict.get("reverse", [0]*len(attrIndices))
@@ -58,8 +57,8 @@ class orngScalePolyvizData(orngScaleLinProjData):
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawData.domain.classVar:
-            classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]    
+        if classList == None and self.dataHasClass:
+            classList = self.originalData[self.dataClassIndex]  
 
         if removeMissingData:
             selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
