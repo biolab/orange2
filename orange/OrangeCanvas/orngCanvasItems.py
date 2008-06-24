@@ -81,7 +81,7 @@ class CanvasLine(QGraphicsLineItem):
         return signals
 
     def paint(self, painter, option, widget = None):
-        x1, x2 = self.line().x1(), self.line().x2()
+        x1, x2 = self.line().x1(), self.line().x2() + 4
         y1, y2 = self.line().y1(), self.line().y2()
 
         if self.getEnabled(): lineStyle = Qt.SolidLine
@@ -155,6 +155,8 @@ class CanvasWidget(QGraphicsRectItem):
 
         self.imageLeftEdge = QPixmap(os.path.join(canvasDlg.picsDir,"leftEdge.png"))
         self.imageRightEdge = QPixmap(os.path.join(canvasDlg.picsDir,"rightEdge.png"))
+        self.imageFrame = QPixmap(os.path.join(canvasDlg.picsDir,"frame.png"))
+        self.imageCircle = QPixmap(os.path.join(canvasDlg.picsDir,"circle.png"))
 
         self.setRect(0,0, WidgetWidth, WidgetHeight)
         self.selected = False
@@ -338,10 +340,15 @@ class CanvasWidget(QGraphicsRectItem):
             painter.setBrush(QBrush(color))
             painter.drawRect(IOBoxWidth+1-RectWidth, 0, WidgetIconWidth+2*RectWidth, WidgetIconHeight+2*RectWidth)
 
+#        if self.widget.getInputs() != []:    painter.drawPixmap(8, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageCircle)
+#        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth - 7, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageCircle)
+        painter.drawPixmap(IOBoxWidth + 1, RectWidth, self.imageFrame)
         painter.drawPixmap(IOBoxWidth + 1, RectWidth, self.image)
 
-        if self.widget.getInputs() != []:    painter.drawPixmap(0, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageLeftEdge)
-        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth + 2, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageRightEdge)
+        if self.widget.getInputs() != []:    painter.drawPixmap(8, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageLeftEdge)
+        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageRightEdge)
+#        if self.widget.getInputs() != []:    painter.drawPixmap(0, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageLeftEdge)
+#        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth + 2, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageRightEdge)
 
         # draw the label
         painter.setPen(QPen(QColor(0,0,0)))
