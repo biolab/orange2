@@ -77,7 +77,7 @@ class OWMDS(OWWidget):
         OWGUI.button(opt, self, "Single Step", self.smacofStep)
         box = OWGUI.widgetBox(opt, "Stress Function")
         OWGUI.comboBox(box, self, "StressFunc", items=[a[0] for a in self.stressFunc], callback=self.updateStress)        
-        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization") 
+        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization", callback=lambda :1)
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
         OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Minimal average stress change", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
@@ -103,7 +103,7 @@ class OWMDS(OWWidget):
         self.graph.autoSendSelectionCallback = lambda :self.autoSendSelection and self.sendSelections()
 
         OWGUI.checkBox(graph, self, "autoSendSelection", "Auto send selected")
-        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coordinates", "Append coordinates as meta"], box="Append coordinates")
+        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coordinates", "Append coordinates as meta"], box="Append coordinates", callback=self.sendIf)
 
         mds.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         graph.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
@@ -208,7 +208,7 @@ class OWMDS(OWWidget):
                 attrI+=1
                 discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
-                c=OWColorPalette.ColorPaletteHSV(-1)                
+                c=OWColorPalette.ColorPaletteBW(-1)
                 #val=[e[attr] for e in data if not e[attr].isSpecial()]
                 val=[e[attr] for e in data if check(e, attr)]
                 minVal=min(val or [0])
@@ -429,6 +429,10 @@ class OWMDS(OWWidget):
         return total/(self.mds.n*self.mds.n)
         """
 
+    def sendIf(self, i=-1):
+        if self.autoSendSelection:
+            self.sendSelections()
+        
     def sendSelections(self):
         if not getattr(self, "mds", None):
             return
@@ -690,7 +694,8 @@ class MDSGraph(OWGraph):
                     k1=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=2)
                     self.lineKeys.append( (k1,) )
 
-
+    def sendData(self, *args):
+        pass
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
