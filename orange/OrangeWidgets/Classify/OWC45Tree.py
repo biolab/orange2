@@ -23,7 +23,7 @@ class OWC45Tree(OWWidget):
         self.callbackDeposit = []
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Tree", orange.C45Classifier)]
+        self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]#, ("C45 Tree", orange.C45Classifier)]
 
         # Settings
         self.name = 'C4.5'
@@ -64,9 +64,9 @@ class OWC45Tree(OWWidget):
         self.cbIterative.disables = [self.spTrial, self.csWindow, self.csIncrement]
         self.cbIterative.makeConsistent()
 
-        OWGUI.separator(self.controlArea)
+#        OWGUI.separator(self.controlArea)
 
-        OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure', box = 1)
+#        OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure', box = 1)
 
         OWGUI.separator(self.controlArea)
 
@@ -88,7 +88,8 @@ class OWC45Tree(OWWidget):
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
                                              minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100.,
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
-                                             convertToOrange = self.convertToOrange, storeExamples = 1)
+                                             convertToOrange = 1, #self.convertToOrange, 
+                                             storeExamples = 1)
         except:
             QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
             return
@@ -118,11 +119,11 @@ class OWC45Tree(OWWidget):
         else:
             self.classifier = None
 
-        self.send("Classifier", self.classifier)
-        if self.convertToOrange:
-            self.send("Classification Tree", self.classifier)
-        else:
-            self.send("C45 Tree", self.classifier)
+#        self.send("Classifier", self.classifier)
+#        if self.convertToOrange:
+        self.send("Classification Tree", self.classifier)
+#        else:
+#            self.send("C45 Tree", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
