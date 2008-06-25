@@ -12,7 +12,7 @@ enter_icon = None
 
 def getdeepattr(obj, attr, **argkw):
     try:
-        return reduce(lambda o, n: getattr(o, n, None),  attr.split("."), obj)
+        return reduce(lambda o, n: getattr(o, n),  attr.split("."), obj)
     except:
         if argkw.has_key("default"):
             return argkw[default]
