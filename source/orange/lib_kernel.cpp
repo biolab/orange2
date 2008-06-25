@@ -3159,6 +3159,12 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           args = Py_BuildValue("OOiOO", X, Py_None, 1, Py_None, mask);
           maskedX = PyObject_CallObject(*maskedArray, args);
           Py_DECREF(args);
+          if (!maskedX) {
+            PyErr_Clear();
+            args = Py_BuildValue("OOOi", X, mask, Py_None, 1);
+            maskedX = PyObject_CallObject(*maskedArray, args);
+            Py_DECREF(args);
+          }
           err = !maskedX;
         }
 
@@ -3166,6 +3172,12 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           args = Py_BuildValue("OOiOO", y, Py_None, 1, Py_None, masky);
           maskedy = PyObject_CallObject(*maskedArray, args);
           Py_DECREF(args);
+          if (!maskedy) {
+            PyErr_Clear();
+            args = Py_BuildValue("OOOi", y, masky, Py_None, 1);
+            maskedy = PyObject_CallObject(*maskedArray, args);
+            Py_DECREF(args);
+          }
           err = !maskedy;
         }
 
