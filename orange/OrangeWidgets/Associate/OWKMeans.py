@@ -11,36 +11,50 @@ import orange, orngCluster
 import OWGUI
 import math, statc
 from OWWidget import *
+from itertools import izip
 
 ##############################################################################
 # main class
 
 class OWKMeans(OWWidget):
-    settingsList = ["K", "DistanceMeasure"]
+    settingsList = ["K", "DistanceMeasure", "classifySelected", "addIdAs", "classifyName"]
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering')
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable), ("Medoids", ExampleTable)]
 
         #set default settings
         self.K = 3
         self.DistanceMeasure = 0
+        self.classifySelected = 1
+        self.addIdAs = 0
+        self.classifyName = "clusterId"
         self.loadSettings()
 
         self.data = None
 
         # GUI definition
         # settings
-        box = OWGUI.widgetBox(self.controlArea, "Settings")
-        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1, callback=self.settingsChanged)
+        box = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
+        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1)
+        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=["Euclidean", "Manhattan"], tooltip=None)
+        OWGUI.button(box, self, "Run Clustering", callback = self.cluster)
+        OWGUI.rubber(box)
+
+        box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
+        cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
+        self.classificationBox = ib = OWGUI.indentedBox(box)
+        le = OWGUI.lineEdit(ib, self, "classifyName", "Name" + "  ", orientation=0, controlWidth=75, valueType = str)
+        OWGUI.separator(ib, height = 4)
+        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 0, items = ["Class attribute", "Attribute", "Meta attribute"])
+        cb.disables.append(ib)
+        cb.makeConsistent()
         OWGUI.separator(box)
-        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=["Euclidean", "Manhattan"], tooltip=None, callback=self.settingsChanged)
-        OWGUI.separator(box)
-        self.applyBtn = OWGUI.button(box, self, "&Apply", callback = self.cluster)
-        self.applyBtn.setDisabled(TRUE)
+        OWGUI.button(box, self, "Apply Changes", callback = self.sendData)
+
 
         # display of clustering results
         self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
@@ -49,16 +63,26 @@ class OWKMeans(OWWidget):
         self.resize(100,100)
 
 
-    def settingsChanged(self):
+    def cluster(self):
         if self.data:
-            self.applyBtn.setDisabled(FALSE)
+            examples = [[float(x) for x in d] for d in self.data]
+            self.mc = orngCluster.MClustering(examples, int(self.K), self.DistanceMeasure+1)
+            self.mc.medoids = [x-1 for x in self.mc.medoids]
+        else:
+            self.mc = None
+
+        self.showResults()
+        self.sendData()
+        
 
     def showResults(self):
         self.table.clear() # clears the table
+        if not self.mc:
+            return
+        
         self.table.setColumnCount(4)
         self.table.setRowCount(self.K+1)
 
-        # set the header (attribute names)
         self.header = self.table.horizontalHeader()
         header = ["ID", "Items", "Fitness", "BIC"]
         for (i, h) in enumerate(header):
@@ -68,7 +92,7 @@ class OWKMeans(OWWidget):
         for m in self.mc.mapping:
             dist[m-1] += 1
 
-        bic, cbic = compute_bic(self.cdata, self.mc.medoids)
+        bic, cbic = self.compute_bic()
         for k in range(self.K):
             self.table.setItem(k, 0, QTableWidgetItem(str(k+1)))
             self.table.setItem(k, 1, QTableWidgetItem(str(dist[k])))
@@ -80,78 +104,85 @@ class OWKMeans(OWWidget):
         colorItem(self.table, self.K, 2, "%5.3f" % self.mc.disp)
         colorItem(self.table, self.K, 3, "%6.2f" % bic)
 
-        # adjust the width of the table
         for i in range(4):
             self.table.resizeColumnToContents(i)
         self.table.show()
 
-    def cluster(self):
-        self.K = int(self.K)
-        if not self.data:
+
+    def sendData(self):
+        if not self.data or not self.mc:
+            self.send("Examples", None)
+            self.send("Medoids", None)
             return
 
-        examples = []
-        for d in self.data:
-            examples.append([float(x) for x in d])
-        # call the clustering method
-        self.mc = orngCluster.MClustering(examples, self.K, self.DistanceMeasure+1)
+        clustVar = orange.EnumVariable(self.classifyName, values = [str(x) for x in range(1, 1+self.K)])
+
+        origDomain = self.data.domain
+        if self.addIdAs == 0:
+            domain=orange.Domain(origDomain.attributes,clustVar)
+            if origDomain.classVar:
+                domain.addmeta(orange.newmetaid(), origDomain.classVar)
+            aid = -1
+        elif self.addIdAs == 1:
+            domain=orange.Domain(origDomain.attributes+[clustVar], origDomain.classVar)
+            aid = len(origDomain.attributes)
+        else:
+            domain=orange.Domain(origDomain.attributes, origDomain.classVar)
+            aid=orange.newmetaid()
+            domain.addmeta(aid, clustVar)
+
+        domain.addmetas(origDomain.getmetas())
 
         # construct a new data set, with a class as assigned by k-means clustering
-        cl = orange.EnumVariable("cluster")
-        cl.values = [str(x+1) for x in range(self.K)]
-        domain = orange.Domain(self.data.domain.attributes, cl)
-        metas = self.data.domain.getmetas()
-        for id in metas:
-            domain.addmeta(id, metas[id])
-        if self.data.domain.classVar:
-            domain.addmeta(orange.newmetaid(), self.data.domain.classVar)
-        self.cdata = orange.ExampleTable(domain, self.data)
-        for (i,d) in enumerate(self.cdata):
-            d.setclass(self.mc.mapping[i]-1)
-        self.mc.medoids = [x-1 for x in self.mc.medoids]
+        table1=orange.ExampleTable(domain)
+        table1.extend(orange.ExampleTable(self.data))
+        for ex, midx in izip(table1, self.mc.mapping):
+            ex[aid] = clustVar(str(midx))
 
-        self.showResults()
-        self.applyBtn.setDisabled(TRUE)
-        self.send("Examples", self.cdata)
+        self.send("Examples", table1)
+        self.send("Medoids", table1.getitems(self.mc.medoids))
+        
 
     def setData(self, data):
         if not data:
-            pass
+            self.data = None
         else:
             self.data = orange.Preprocessor_dropMissing(data)
             self.cluster()
 
-##################################################################################################
-# Clustering (following should be replaced by a call to the rutines in the orngCluster, once
-# they are ready)
+    ##################################################################################################
+    # Clustering (following should be replaced by a call to the rutines in the orngCluster, once
+    # they are ready)
+    
+    # computes BIC for a classified data set, given the medoids
+    # medoids is a matrix (list of lists of attribute values
+    def compute_bic(self):
+        data = self.data
+        medoids = [0] + [data[x] for x in self.mc.medoids] # indices in mapping are 1-based
+        mapping = self.mc.mapping
+        K = self.K
 
-# computes BIC for a classified data set, given the medoids
-# medoids is a matrix (list of lists of attribute values
-def compute_bic(data, medoids):
-    cv = data.domain.classVar
-    M = len(data.domain.attributes)
-    K = len(data.domain.classVar.values)
-    R = float(len(data))
-    Ri = [0] * K
-    for x in data:
-        Ri[int(x.getclass())] += 1
-    numFreePar = (M+1.) * K * math.log(R, 2.) / 2.
-    # sigma**2
-    s2 = 0.
-    cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
-    for x in data:
-        medoid = data[medoids[int(x.getclass())]]
-        s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
-    s2 /= (R - K)
-    # log-lokehood of clusters: l(Dn)
-    # log-likehood of clustering: l(D)
-    ld = 0
-    bicc = []
-    for k in range(K):
-        ldn = -1. * Ri[k] * ((math.log(2. * math.pi, 2) / -2.) - (M * math.log(s2, 2) / 2.) + (K / 2.) + math.log(Ri[k], 2) - math.log(R, 2))
-        ld += ldn
-        bicc.append(ldn - numFreePar)
-    return ld - numFreePar, bicc
+        M = len(data.domain.attributes)
+        R = float(len(data))
+        Ri = [mapping.count(x) for x in range(1+K)]
+        numFreePar = (M+1.) * K * math.log(R, 2.) / 2.
+        # sigma**2
+        s2 = 0.
+        cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+        for x, midx in izip(data, mapping):
+            medoid = medoids[midx] # medoids has a dummy element at the beginning, so we don't need -1 
+            s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
+        s2 /= (R - K)
+        # log-lokehood of clusters: l(Dn)
+        # log-likehood of clustering: l(D)
+        ld = 0
+        bicc = []
+        for k in range(1, 1+K):
+            print Ri[k], M, K, R, k
+            ldn = -1. * Ri[k] * ((math.log(2. * math.pi, 2) / -2.) - (M * math.log(s2, 2) / 2.) + (K / 2.) + math.log(Ri[k], 2) - math.log(R, 2))
+            ld += ldn
+            bicc.append(ldn - numFreePar)
+        return ld - numFreePar, bicc
 
 ##############################################################################
 
