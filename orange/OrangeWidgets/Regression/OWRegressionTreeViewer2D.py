@@ -151,7 +151,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.mainArea.layout().addWidget(self.sceneView)
         self.scene.setSceneRect(0,0,800,800)
 
-        self.sceneView.bubbleConstructor=self.regressionBubbleConstructor
+        self.scene.bubbleConstructor=self.regressionBubbleConstructor
 
         self.navWidget = QWidget(None)
         self.navWidget.lay=QVBoxLayout(self.navWidget)
