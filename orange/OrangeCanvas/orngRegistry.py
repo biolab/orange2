@@ -167,21 +167,21 @@ class WidgetsToXML:
 
 
 def rebuildRegistry():
-    dirs = __getDirectoryNames()
+    dirs = directoryNames
     parse = WidgetsToXML()
     parse.ParseWidgetRoot(dirs["widgetDir"], dirs["canvasSettingsDir"])
 
 def readAdditionalCategories():
-    dirs = __getDirectoryNames()
-    addCatFile = os.path.join(dirs["canvasDir"], "additionalCategories")
+    dirs = directoryNames
+    addCatFile = os.path.join(dirs["canvasSettingsDir"], "additionalCategories")
     if os.path.exists(addCatFile):
         return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(addCatFile, "r")]
     else:
         return []
 
 def writeAdditionalCategories(categories):
-    dirs = __getDirectoryNames()
-    open(os.path.join(dirs["canvasDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+    dirs = directoryNames
+    open(os.path.join(dirs["canvasSettingsDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
 
 def addWidgetCategory(category, directory, add = True):
     if os.path.isfile(directory):
