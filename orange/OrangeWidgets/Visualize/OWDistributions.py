@@ -112,7 +112,8 @@ class OWDistributionGraph(OWGraph):
 
         if self.data.domain[self.attributeName].varType == orange.VarTypes.Continuous:
             self.variableContinuous = TRUE
-        else: self.variableContinuous = FALSE
+        else:
+            self.variableContinuous = FALSE
 
         if self.variableContinuous:
             self.setXlabels(None)
@@ -180,7 +181,7 @@ class OWDistributionGraph(OWGraph):
                 g = orange.ConditionalProbabilityEstimatorConstructor_loess(self.dc[self.attributeName], nPoints=200) #!!!
                 self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
             except:
-                self.probGraphValues = [] 
+                self.probGraphValues = []
             # print [ps.variances for (x, ps) in g.probabilities.items()]
             # calculate the weighted CI=math.sqrt(prob*(1-prob)/(0.0+self.sums[curcol])),
             # where self.sums[curcol] = g.probabilities.items()[example][1].cases
@@ -222,10 +223,12 @@ class OWDistributionGraph(OWGraph):
         self.tips.removeAll()
         self.tips.removeAll()
         cn=0
+        print "pvo"
         for key in keys:
             ckey = PolygonCurve(pen=QPen(Qt.black), brush=QBrush(Qt.gray))
             ckey.attach(self)
             if self.variableContinuous:
+                print "bb"
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
                 ff="%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
                 text = "N(%s in ("+ff+","+ff+"])=<b>%i</b>"
@@ -271,8 +274,9 @@ class OWDistributionGraph(OWGraph):
         self.replot()
 
     def refreshVisibleOutcomes(self):
-        if not self.data or not self.visibleOutcomes: return
+        if not self.data or (not self.visibleOutcomes and not self.pureHistogram): return
         self.tips.removeAll()
+        print "vo"
         if self.pureHistogram:
             self.refreshPureVisibleOutcomes()
             return
@@ -594,7 +598,10 @@ class OWDistributions(OWWidget):
 
         sameDomain = data and self.data and data.domain == self.data.domain
 
-        self.data = orange.Preprocessor_dropMissingClasses(data)
+        if self.dataHasClass and self.dataHasDiscreteClass:
+            self.data = orange.Preprocessor_dropMissingClasses(data)
+        else:
+            self.data = data
 
         if sameDomain:
             self.graph.setData(self.data, self.graph.attributeName)
@@ -661,8 +668,10 @@ if __name__ == "__main__":
     a = QApplication(sys.argv)
     owd = OWDistributions()
 ##    a.setMainWidget(owd)
+##    from pywin.debugger import set_trace
+##    set_trace()
     owd.show()
-    data=orange.ExampleTable("../../doc/datasets/titanic.tab")
+    data=orange.ExampleTable("../../doc/datasets/housing.tab")
     owd.setData(data)
     a.exec_()
     owd.saveSettings()
