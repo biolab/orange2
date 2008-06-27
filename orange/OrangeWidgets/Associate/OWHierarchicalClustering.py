@@ -422,8 +422,10 @@ class Dendrogram(QGraphicsScene):
         self.rootCluster=root
         if not self.rootCluster:
             return
-##        if not self.parent.ManualHorSize:
-        width=self.parent.dendrogramView.size().width()
+        if not self.parent.ManualHorSize:
+            width=self.parent.dendrogramView.size().width()
+        else:
+            width=self.parent.HDSize
         self.setSceneRect(0, 0, width, self.height())
         self.textAreaWidth=100
 ##        else:
