@@ -27,19 +27,19 @@ c_smallcell = 8                 # below this threshold cells are
 #####################################################################
 # canvas with events
 
-class EventfulCanvasView(QCanvasView):
-    def __init__(self, canvas, parent, master):
-        QCanvasView.__init__(self, canvas,parent)
+class EventfulGraphicsView(QGraphicsView):
+    def __init__(self, scene, parent, master):
+        QGraphicsView.__init__(self, scene, parent)
         self.master = master
         self.viewport().setMouseTracking(True)
 
-    def contentsMousePressEvent (self, event):
+    def mousePressEvent (self, event):
         self.master.mousePress(event.pos().x(), event.pos().y())
 
-    def contentsMouseReleaseEvent (self, event):
+    def mouseReleaseEvent (self, event):
         self.master.mouseRelease(event.pos().x(), event.pos().y())
 
-    def contentsMouseMoveEvent (self, event):
+    def mouseMoveEvent (self, event):
         self.master.mouseMove(event.pos().x(), event.pos().y())
 
 #####################################################################
@@ -126,8 +126,9 @@ class OWDistanceMap(OWWidget):
                          items=[x[0] for x in self.sorting],
                          tooltip="Sorting method for items in distance matrix.",
                          callback=self.sortItems)
+        OWGUI.rubber(tab)
 
-        self.tabs.insertTab(tab, "Settings")
+##        self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
         tab = OWGUI.createTabPage(self.tabs, "Colors")
@@ -152,11 +153,13 @@ class OWDistanceMap(OWWidget):
             self.sliderCutHigh.box.setDisabled(1)
 
 
-        self.colorPalette = ColorPalette(tab, self, "",
+        self.colorPalette = ColorPalette(box, self, "",
                          additionalColors =["Cell outline", "Selected cells"],
                          callback = self.setColor)
+        box.layout().addWidget(self.colorPalette)
+        OWGUI.rubber(tab)
 
-        self.tabs.insertTab(tab, "Colors")
+##        self.tabs.insertTab(tab, "Colors")
 
         # INFO TAB
         tab = OWGUI.createTabPage(self.tabs, "Info")
@@ -174,40 +177,41 @@ class OWDistanceMap(OWWidget):
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.box2 = box2
         self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo,
-                              QPixmap(OWToolbars.dlg_undo), toggle = 0)
+                              QIcon(OWToolbars.dlg_undo), toggle = 0)
         self.buttonRemoveAllSelections = OWToolbars.createButton(box2,
                               'Remove all selections', self.actionRemoveAllSelections,
-                              QPixmap(OWToolbars.dlg_clear), toggle = 0)
+                              QIcon(OWToolbars.dlg_clear), toggle = 0)
 
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections',
-                              self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
+                              self.sendOutput, QIcon(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
+        OWGUI.rubber(tab)
 
-        self.tabs.insertTab(tab, "Info")
+##        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
 
-        self.canvas = QGraphicsScene()
-        self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
-        self.mainArea.layout().addWidget(self.canvasView)
+        self.scene = QGraphicsScene()
+        self.sceneView = EventfulGraphicsView(self.scene, self.mainArea, self)
+        self.mainArea.layout().addWidget(self.sceneView)
 
         #construct selector
-        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
+        self.selector = QGraphicsRectItem(0, 0, self.CellWidth, self.CellHeight, None, self.scene)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-        self.selector.setZ(20)
+        self.selector.setZValue(20)
 
-        self.bubble = BubbleInfo(self.canvas)
+##        self.bubble = BubbleInfo(self.scene)
         self.selection = SelectionManager()
 
         self.selectionLines = []
         self.annotationText = []
 
-        self.legendText1 = QCanvasText(self.canvas)
-        self.legendText2 = QCanvasText(self.canvas)
+        self.legendText1 = QGraphicsSimpleTextItem(None, self.scene)
+        self.legendText2 = QGraphicsSimpleTextItem(None, self.scene)
 
-        self.errorText = QCanvasText("Bitmap is too large.", self.canvas)
-        self.errorText.move(10,10)
+        self.errorText = QGraphicsSimpleTextItem("Bitmap is too large.", None, self.scene)
+        self.errorText.setPos(10,10)
 
         #restore color schemas from settings
         if self.ColorSchemas:
@@ -218,7 +222,7 @@ class OWDistanceMap(OWWidget):
         dy = v_legend_height
         bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2
 
-        image = ImageItem(bmp, self.canvas, dx, dy, palette, x=offsetX, y=v_legend_offsetY, z=0)
+        image = ImageItem(bmp, self.scene, dx, dy, palette, x=offsetX, y=v_legend_offsetY, z=0)
         return image
 
     def colFromMousePos(self, x, y):
@@ -343,10 +347,10 @@ class OWDistanceMap(OWWidget):
         self.offsetX = 5
 
         if self.distanceImage:
-            self.distanceImage.setCanvas(None)
+            self.scene.removeItem(self.distanceImage)
 
         if self.legendImage:
-            self.legendImage.setCanvas(None)
+            self.scene.removeItem(self.legendImage)
 
         if self.ShowLegend==1:
             self.offsetY = v_legend_height + 30
@@ -357,10 +361,11 @@ class OWDistanceMap(OWWidget):
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth),
                             int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
-        self.canvas.resize(2000, 2000) # this needs adjustment
+        self.scene.setSceneRect(0, 0, 2000, 2000) # this needs adjustment
 
         for tmpText in self.annotationText:
-            tmpText.setCanvas(None)
+##            tmpText.setScene(None)
+            self.scene.removeItem(tmpText)
 
         # determine the font size to fit the cell width
         fontrows = self.getfont(self.CellHeight)
@@ -388,13 +393,13 @@ class OWDistanceMap(OWWidget):
                 if type(text) not in [str, unicode]:
                     text = text.name
                 if text<>"":
-                    tmpText = QCustomCanvasText(text, self.canvas, -90.0, font=fontcols)
+                    tmpText = QCustomGraphicsText(text, self.scene, -90.0, font=fontcols)
                     tmpText.show()
-                    if tmpText.height() > maxHeight:
-                        maxHeight = tmpText.height()
+                    if tmpText.boundingRect().height() > maxHeight:
+                        maxHeight = tmpText.boundingRect().height()
                     self.annotationText += [tmpText]
 
-                    tmpText = QCanvasText(text, self.canvas)
+                    tmpText = QGraphicsSimpleTextItem(text, None, self.scene)
                     tmpText.setFont(fontrows)
                     tmpText.show()
                     if tmpText.boundingRect().width() > maxWidth:
@@ -402,10 +407,12 @@ class OWDistanceMap(OWWidget):
                     self.annotationText += [tmpText]
 
             for i in range(0, len(self.annotationText)/2):
-                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
-                self.annotationText[i*2].setY(self.offsetY)
-                self.annotationText[i*2 + 1].setX(self.offsetX)
-                self.annotationText[i*2 + 1].setY(self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
+##                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
+##                self.annotationText[i*2].setY(self.offsetY)
+                self.annotationText[i*2].setPos(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth, self.offsetY)
+##                self.annotationText[i*2 + 1].setX(self.offsetX)
+##                self.annotationText[i*2 + 1].setY(self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
+                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
 
             self.offsetX += maxWidth + 10
             self.offsetY += maxHeight + 10
@@ -415,8 +422,8 @@ class OWDistanceMap(OWWidget):
             self.legendImage = self.createColorStripe(self.colorPalette.getCurrentColorSchema().getPalette(), offsetX=self.offsetX)
             self.legendText1.setText("%4.2f" % lo)
             self.legendText2.setText("%4.2f" % hi)
-            self.legendText1.move(self.offsetX, 0)
-            self.legendText2.move(self.offsetX + v_legend_width - self.legendText2.boundingRect().width(), 0)
+            self.legendText1.setPos(self.offsetX, 0)
+            self.legendText2.setPos(self.offsetX + v_legend_width - self.legendText2.boundingRect().width(), 0)
             self.legendText1.show()
             self.legendText2.show()
         else:
@@ -424,7 +431,7 @@ class OWDistanceMap(OWWidget):
             self.legendText2.hide()
 
         # paint distance map
-        self.distanceImage = ImageItem(bitmap, self.canvas, width, height,
+        self.distanceImage = ImageItem(bitmap, self.scene, width, height,
                                        palette, x=self.offsetX, y=self.offsetY, z=0)
         self.distanceImage.height = height
         self.distanceImage.width = width
@@ -434,30 +441,30 @@ class OWDistanceMap(OWWidget):
 
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-        self.selector.setSize(self.CellWidth, self.CellHeight)
+        self.selector.setRect(QRectF(0, 0, self.CellWidth, self.CellHeight))
 
         self.updateSelectionRect()
-        self.canvas.update()
+        self.scene.update()
 
     def addSelectionLine(self, x, y, direction):
-        selLine = QCanvasLine(self.canvas)
+        selLine = QGraphicsLineItem(None, self.scene)
         if direction==0:
             #horizontal line
-            selLine.setPoints(self.offsetX + x*self.CellWidth, self.offsetY + y*self.CellHeight,
+            selLine.setLine(self.offsetX + x*self.CellWidth, self.offsetY + y*self.CellHeight,
                               self.offsetX + (x+1)*self.CellWidth, self.offsetY + y*self.CellHeight)
         else:
             #vertical line
-            selLine.setPoints(self.offsetX + x*self.CellWidth, self.offsetY + y*self.CellHeight,
+            selLine.setLine(self.offsetX + x*self.CellWidth, self.offsetY + y*self.CellHeight,
                               self.offsetX + x*self.CellWidth, self.offsetY + (y+1)*self.CellHeight)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
         selLine.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-        selLine.setZ(20)
+        selLine.setZValue(20)
         selLine.show();
         self.selectionLines += [selLine]
 
     def getfont(self, height):
         """finds the font that for a given height"""
-        dummy = QCanvasText("123", self.canvas)
+        dummy = QGraphicsSimpleTextItem("123", None, self.scene)
         for fontsize in range(8, 2, -1):
             font = QFont("", fontsize)
             dummy.setFont(font)
@@ -469,8 +476,8 @@ class OWDistanceMap(OWWidget):
         entireSelection = []
         newSel = False
         for selLine in self.selectionLines:
-            selLine.setCanvas(None)
-
+            self.scene.removeItem(selLine)
+        
         self.selectionLines = []
         if len(self.selection.getSelection())>0:
             for sel in self.selection.getSelection():
@@ -495,7 +502,7 @@ class OWDistanceMap(OWWidget):
                 #check right
                 if (not (selTuple[0] + 1, selTuple[1]) in entireSelection):
                     self.addSelectionLine(selTuple[0] + 1, selTuple[1], 1)
-        self.canvas.update()
+        self.scene.update()
 
     def mouseMove(self, x, y):
         row = self.rowFromMousePos(x,y)
@@ -506,18 +513,20 @@ class OWDistanceMap(OWWidget):
 
         if (row==-1 or col==-1):
             self.selector.hide()
-            self.bubble.hide()
+##            self.bubble.hide()
         else:
-            self.selector.setX(self.offsetX + col * self.CellWidth)
-            self.selector.setY(self.offsetY + row * self.CellHeight)
+##            self.selector.setX(self.offsetX + col * self.CellWidth)
+##            self.selector.setY(self.offsetY + row * self.CellHeight)
+            self.selector.setPos(self.offsetX + col * self.CellWidth, self.offsetY + row * self.CellHeight)
             self.selector.show()
 
             if self.ShowBalloon == 1:
-                self.bubble.move(x + 20, y + 20)
+##                self.bubble.move(x + 20, y + 20)
 
                 i = self.getItemFromPos(col)
                 j = self.getItemFromPos(row)
-                self.bubble.head.setText(str(self.matrix[i, j]))
+##                self.bubble.head.setText(str(self.matrix[i, j]))
+                head = str(self.matrix[i, j])
 
                 if (self.ShowItemsInBalloon == 1):
                     namei, namej = self.matrix.items[i], self.matrix.items[j]
@@ -526,19 +535,24 @@ class OWDistanceMap(OWWidget):
                     if type(namej) not in [str, unicode]:
                         namej = namej.name
                     if namei or namej:
-                        self.bubble.body.setText(namei + "\n" + namej)
+##                        self.bubble.body.setText(namei + "\n" + namej)
+                        body = namei + "\n" + namej
                     else:
-                        self.bubble.body.setText("")
+##                        self.bubble.body.setText("")
+                        body = ""
                 else:
-                    self.bubble.body.setText("")
+##                    self.bubble.body.setText("")
+                    body = ""
 
-                self.bubble.show()
-            else:
-                self.bubble.hide()
+##                self.bubble.show()
+##                QToolTip.showText(QPoint(x,y), "")
+                QToolTip.showText(self.sceneView.mapToGlobal(QPoint(x,y)), "%s\n%s" % (head, body))
+##            else:
+##                self.bubble.hide()
 
             self.updateSelectionRect()
 
-        self.canvas.update()
+        self.scene.update()
 
     def keyPressEvent(self, e):
         if e.key() == 4128:
@@ -638,55 +652,70 @@ class OWDistanceMap(OWWidget):
 #####################################################################
 # new canvas items
 
-class ImageItem(QCanvasRectangle):
-    def __init__(self, bitmap, canvas, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
-        QCanvasRectangle.__init__(self, canvas)
-	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
+class ImageItem(QGraphicsRectItem):
+    def __init__(self, bitmap, scene, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
+        QGraphicsRectItem.__init__(self, None, scene)
+##        self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
+        self.image = QImage(bitmap, width, height, QImage.Format_Indexed8)
         self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
-        self.canvas = canvas
-        self.setSize(width, height)
-        self.setX(x); self.setY(y); self.setZ(z)
+        self.image.setColorTable(signedPalette(palette))
+        self.scene = scene
+        self.setRect(0, 0 ,width, height)
+##        self.setX(x); self.setY(y); self.setZValue(z)
+        self.setPos(x, y)
+        self.setZValue(z)
         self.show()
 
-    def drawShape(self, painter):
+    def paint(self, painter, option, widget=None):
         painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
 
-class QCustomCanvasText(QCanvasRectangle):
-    def __init__(self, text, canvas = None, rotateAngle = 0.0, font=None):
-        QCanvasRectangle.__init__(self, canvas)
-        self.canvas = canvas
+class QCustomGraphicsText(QGraphicsSimpleTextItem):
+    def __init__(self, text, scene = None, rotateAngle = 0.0, font=None):
+        QGraphicsSimpleTextItem.__init__(self, None, scene)
+        self.scene = scene
         self.font = font
         self.rotateAngle = rotateAngle
+        if font:
+            self.setFont(font)
+        self.rotate(rotateAngle)
         self.setText(text)
         
-    def setText(self, text):
-        self.text = text
-        self.hiddenText = QCanvasText(text, self.canvas)
-        self.hiddenText.setFont(self.font)
-        if self.font:
-            self.hiddenText.setFont(self.font)
-        xsize = self.hiddenText.boundingRect().height()
-        ysize = self.hiddenText.boundingRect().width()
-        self.setSize(xsize, ysize)
-
-    def draw(self, painter):
-        pixmap = QPixmap()
-        xsize = self.hiddenText.boundingRect().height()
-        ysize = self.hiddenText.boundingRect().width()
-        pixmap.resize(xsize, ysize)
-
-        helpPainter = QPainter()
-        helpPainter.begin(pixmap)
-        helpPainter.setFont(self.font)
-
-        helpPainter.setPen( Qt.black );
-        helpPainter.setBrush( Qt.white );
-        helpPainter.drawRect( -1, -1, xsize + 2, ysize + 2);
-        helpPainter.rotate(self.rotateAngle)
-        helpPainter.drawText(-ysize, xsize, self.text)
-        helpPainter.end()
-
-        painter.drawPixmap(self.x(), self.y(), pixmap)
+##class QCustomCanvasText(QCanvasRectangle):
+##    def __init__(self, text, canvas = None, rotateAngle = 0.0, font=None):
+##        QCanvasRectangle.__init__(self, canvas)
+##        self.canvas = canvas
+##        self.font = font
+##        self.rotateAngle = rotateAngle
+##        self.setText(text)
+##        
+##    def setText(self, text):
+##        self.text = text
+##        self.hiddenText = QCanvasText(text, self.canvas)
+##        self.hiddenText.setFont(self.font)
+##        if self.font:
+##            self.hiddenText.setFont(self.font)
+##        xsize = self.hiddenText.boundingRect().height()
+##        ysize = self.hiddenText.boundingRect().width()
+##        self.setSize(xsize, ysize)
+##
+##    def draw(self, painter):
+##        pixmap = QPixmap()
+##        xsize = self.hiddenText.boundingRect().height()
+##        ysize = self.hiddenText.boundingRect().width()
+##        pixmap.resize(xsize, ysize)
+##
+##        helpPainter = QPainter()
+##        helpPainter.begin(pixmap)
+##        helpPainter.setFont(self.font)
+##
+##        helpPainter.setPen( Qt.black );
+##        helpPainter.setBrush( Qt.white );
+##        helpPainter.drawRect( -1, -1, xsize + 2, ysize + 2);
+##        helpPainter.rotate(self.rotateAngle)
+##        helpPainter.drawText(-ysize, xsize, self.text)
+##        helpPainter.end()
+##
+##        painter.drawPixmap(self.x(), self.y(), pixmap)
 
 #####################################################################
 # selection manager class
@@ -749,13 +778,13 @@ class SelectionManager:
 
 bubbleBorder = 4
 
-class BubbleInfo(QCanvasRectangle):
+class BubbleInfo(QGraphicsRectItem):
     def __init__(self, *args):
-        apply(QCanvasRectangle.__init__, (self,) + args)
-        self.canvas = args[0]
+        QGraphicsRectItem.__init__(self, *args)
+        self.scene = args[0]
         self.setBrush(QBrush(Qt.white))
         #self.setPen(QPen(Qt.black, v_sel_width))
-        self.bubbleShadow = QCanvasRectangle(self.canvas)
+        self.bubbleShadow = QGraphicsRectItem(self, self.scene)
         self.bubbleShadow.setBrush(QBrush(Qt.black))
         self.bubbleShadow.setPen(QPen(Qt.black))
         self.head = QCanvasText(self.canvas)
