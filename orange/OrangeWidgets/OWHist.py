@@ -133,18 +133,18 @@ class OWInteractiveHist(OWHist):
             self.setBoundary(cut, cut)
         
     def mousePressEvent(self, e):
-        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
         self.mouseCurrentlyPressed = 1
         self.buttonCurrentlyPressed = e.button()
         self._setBoundary(e.button(), cut)
         
     def mouseMoveEvent(self, e):
         if self.mouseCurrentlyPressed:
-            cut = self.invTransform(QwtPlot.xBottom, e.x())
+            cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
             self._setBoundary(self.buttonCurrentlyPressed, cut)
 
     def mouseReleaseEvent(self, e):
-        cut = self.invTransform(QwtPlot.xBottom, e.x())
+        cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
         self._setBoundary(self.buttonCurrentlyPressed, cut)
         self.mouseCurrentlyPressed = 0
         self.buttonCurrentlyPressed = None
