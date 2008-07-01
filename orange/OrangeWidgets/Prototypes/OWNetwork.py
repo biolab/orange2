@@ -398,7 +398,7 @@ class OWNetwork(OWWidget):
         print "replot in " + str(stop - start)
         
     def saveNetwork(self):
-        if self.visualizer == None:
+        if self.graph == None or self.graph.visualizer == None:
             return
         
         filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK networks (*.net)')
