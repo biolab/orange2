@@ -297,7 +297,7 @@ class CanvasWidget(QGraphicsRectItem):
     def mouseInsideLeftChannel(self, pos):
         if self.widget.getInputs() == []: return False
 
-        LBox = QRectF(self.x(), self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth, IOBoxHeight)
+        LBox = QRectF(self.x()+6, self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth, IOBoxHeight)
         if isinstance(pos, QPointF) and LBox.contains(pos): return True
         elif isinstance(pos, QRectF) and LBox.intersects(pos): return True
         else: return False
@@ -306,7 +306,7 @@ class CanvasWidget(QGraphicsRectItem):
     def mouseInsideRightChannel(self, pos):
         if self.widget.getOutputs() == []: return False
 
-        RBox = QRectF(self.x() + IOBoxWidth + WidgetIconWidth + 2, self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth, IOBoxHeight)
+        RBox = QRectF(self.x() + IOBoxWidth + WidgetIconWidth + 2 - 8, self.y()+ (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, IOBoxWidth+4, IOBoxHeight)
         if isinstance(pos, QPointF) and RBox.contains(pos): return True
         elif isinstance(pos, QRectF) and RBox.intersects(pos): return True
         else: return False
@@ -337,18 +337,19 @@ class CanvasWidget(QGraphicsRectItem):
 
         if self.isProcessing or self.selected:
             painter.setPen(QPen(color))
-            painter.setBrush(QBrush(color))
+#            painter.setBrush(QBrush(color))
             painter.drawRect(IOBoxWidth+1-RectWidth, 0, WidgetIconWidth+2*RectWidth, WidgetIconHeight+2*RectWidth)
+
 
 #        if self.widget.getInputs() != []:    painter.drawPixmap(8, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageCircle)
 #        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth - 7, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageCircle)
         painter.drawPixmap(IOBoxWidth + 1, RectWidth, self.imageFrame)
         painter.drawPixmap(IOBoxWidth + 1, RectWidth, self.image)
 
-        if self.widget.getInputs() != []:    painter.drawPixmap(8, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageLeftEdge)
-        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageRightEdge)
 #        if self.widget.getInputs() != []:    painter.drawPixmap(0, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageLeftEdge)
 #        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth + 2, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth, self.imageRightEdge)
+        if self.widget.getInputs() != []:    painter.drawPixmap(5, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageLeftEdge)
+        if self.widget.getOutputs() != []:   painter.drawPixmap(IOBoxWidth + WidgetIconWidth-6, (WidgetIconHeight-IOBoxHeight)/2 + RectWidth + 5, self.imageRightEdge)
 
         # draw the label
         painter.setPen(QPen(QColor(0,0,0)))
