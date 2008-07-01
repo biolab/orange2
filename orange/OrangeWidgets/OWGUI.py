@@ -75,12 +75,12 @@ def indentedBox(widget, sep=20, orientation = True, addSpace=False):
 
     return widgetBox(r, orientation = orientation)
 
-def widgetLabel(widget, label=None, labelWidth=None):
+def widgetLabel(widget, label=None, labelWidth=None, addToLayout = 1):
     if label is not None:
         lbl = QLabel(label, widget)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-        if widget.layout(): widget.layout().addWidget(lbl)
+        if widget.layout() and addToLayout: widget.layout().addWidget(lbl)
     else:
         lbl = None
 
