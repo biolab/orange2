@@ -10,9 +10,9 @@ import orange, sys
 from OWWidget import *
 import OWGUI
 
-class AssociationRulesViewerCanvas(QCanvas):
+class AssociationRulesViewerScene(QGraphicsScene):
     def __init__(self, master, widget):
-        QCanvas.__init__(self, widget)
+        QGraphicsScene.__init__(self, widget)
         self.master = master
         self.rect = None
         self.unselect()
@@ -29,10 +29,10 @@ class AssociationRulesViewerCanvas(QCanvas):
         nc, nr, cw, ch, ig = master.numcols, master.numrows, master.cellwidth, master.cellheight, master.ingrid
         scmin, scmax, srmin, srmax = master.sel_colmin, master.sel_colmax, master.sel_rowmin, master.sel_rowmax
 
-        self.resize(nc * cw +1, nr * ch +1)
+        self.setSceneRect(0, 0, nc * cw +1, nr * ch +1)
 
-        for a in self.allItems():
-            a.hide()
+        for a in self.items():
+            self.removeItem(a)
 
         maxcount = max([max([len(cell) for cell in row]) for row in master.ingrid])
         maxcount = float(max(10, maxcount))
@@ -44,7 +44,7 @@ class AssociationRulesViewerCanvas(QCanvas):
             selx = x >= scmin and x <= scmax
             for y in range(nr):
                 sel = selx and y >= srmin and y <= srmax
-                cell = QCanvasRectangle(x*cw, y*ch, cw+1, ch+1, self)
+                cell = QGraphicsRectItem(x*cw, y*ch, cw+1, ch+1, None, self)
                 cell.setPen(pens[sel])
                 if not ig[y][x]:
                     cell.setBrush(brushes[sel])
@@ -57,10 +57,10 @@ class AssociationRulesViewerCanvas(QCanvas):
                         cell.setBrush(QBrush(QColor(color-20, color-20, color)))
                 cell.show()
 
-        if self.rect:
-            self.rect.hide()
+##        if self.rect:
+##            self.rect.hide()
         if scmin > -1:
-            self.rect = QCanvasRectangle(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, self)
+            self.rect = QGraphicsRectItem(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, None, self)
             self.rect.setPen(QPen(QColor(128, 128, 255), 2))
             self.rect.show()
         else:
@@ -71,12 +71,40 @@ class AssociationRulesViewerCanvas(QCanvas):
         self.master.shownConfidence.setText('%3i%% - %3i%%' % (int(master.conf_min*100), int(master.conf_max*100)))
         self.master.shownRules.setText('%3i' % sum([sum([len(cell) for cell in row]) for row in master.ingrid]))
 
+    def mousePressEvent(self, ev):
+        self.sel_startX = int(ev.pos().x())
+        self.sel_startY = int(ev.pos().y())
+        master = self.master
+        master.sel_colmin = master.sel_colmax = self.sel_startX / master.cellwidth
+        master.sel_rowmin = master.sel_rowmax = self.sel_startY / master.cellheight
+        self.draw()
+        master.updateRuleList()
 
-class AssociationRulesViewerView(QCanvasView):
-    def __init__(self, master, canvas, widget):
-        QCanvasView.__init__(self, canvas, widget)
+    def mouseMoveEvent(self, ev):
+        self.sel_endX = int(ev.pos().x())
+        self.sel_endY = int(ev.pos().y())
+        t = self.sel_startX /self.master.cellwidth, self.sel_endX /self.master.cellwidth
+        self.master.sel_colmin, self.master.sel_colmax = min(t), max(t)
+        t = self.sel_startY /self.master.cellheight, self.sel_endY /self.master.cellheight
+        self.master.sel_rowmin, self.master.sel_rowmax = min(t), max(t)
+
+        self.master.sel_colmin = max(self.master.sel_colmin, 0)
+        self.master.sel_rowmin = max(self.master.sel_rowmin, 0)
+        self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
+        self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
+
+        self.draw()
+        self.master.updateRuleList()
+
+    def mouseReleaseEvent(self, ev):
+        self.master.sendIfAuto()        
+
+
+class AssociationRulesViewerView(QGraphicsView):
+    def __init__(self, master, scene, widget):
+        QGraphicsView.__init__(self, scene, widget)
         self.master = master
-        self.canvas = canvas
+        self.scene = scene
         self.setFixedSize(365, 365)
         self.selecting = False
         self.update()
@@ -87,7 +115,7 @@ class AssociationRulesViewerView(QCanvasView):
         master = self.master
         master.sel_colmin = master.sel_colmax = self.sel_startX / master.cellwidth
         master.sel_rowmin = master.sel_rowmax = self.sel_startY / master.cellheight
-        self.canvas.draw()
+        self.scene().draw()
         master.updateRuleList()
 
     def contentsMouseMoveEvent(self, ev):
@@ -103,7 +131,7 @@ class AssociationRulesViewerView(QCanvasView):
         self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
         self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
 
-        self.canvas.draw()
+        self.scene.draw()
         self.master.updateRuleList()
 
     def contentsMouseReleaseEvent(self, ev):
@@ -170,8 +198,9 @@ class OWAssociationRulesViewer(OWWidget):
         infoGrid.addWidget(self.selRules, 2, 3)
 
         OWGUI.separator(mainLeft, 0, 4)
-        self.ruleCanvas = AssociationRulesViewerCanvas(self, mainLeft)
-        self.canvasView = AssociationRulesViewerView(self, self.ruleCanvas, mainLeft)
+        self.ruleScene = AssociationRulesViewerScene(self, mainLeft)
+        self.sceneView = AssociationRulesViewerView(self, self.ruleScene, mainLeft)
+        mainLeft.layout().addWidget(self.sceneView)
 
         boxb = OWGUI.widgetBox(mainLeft, box=None, orientation="horizontal")
         OWGUI.button(boxb, self, 'Zoom', callback = self.zoomButton)
@@ -192,26 +221,27 @@ class OWAssociationRulesViewer(OWWidget):
 
         OWGUI.separator(mainRight, 0, 4)
         
-        trules = self.trules = QTable(0, 0, mainRight)
-        trules.setLeftMargin(0)
+        trules = self.trules = QTableWidget(0, 0, mainRight)
+        mainRight.layout().addWidget(trules)
+##        trules.setLeftMargin(0)
         trules.verticalHeader().hide()
-        trules.setSelectionMode(QTable.NoSelection)
-        trules.setNumCols(len(self.measures)+1)
+        trules.setSelectionMode(QTableWidget.NoSelection)
+        trules.setColumnCount(len(self.measures)+1)
 
         header = trules.horizontalHeader()
-        for i, m in enumerate(self.measures):
-            trules.setColumnStretchable(i, 0)
-            header.setLabel(i, m[1])
-        trules.setColumnStretchable(len(self.measures), 1)
-        header.setLabel(len(self.measures), "Rule")
+##        for i, m in enumerate(self.measures):
+##            trules.setColumnStretchable(i, 0)
+        trules.setHorizontalHeaderLabels([m[1] for m in self.measures]+["Rule"])
+##        trules.setColumnStretchable(len(self.measures), 1)
+##        header.setLabel(len(self.measures), "Rule")
         self.connect(header, SIGNAL("clicked(int)"), self.sort)
 
         bottomGrid = QGridLayout()
         bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
 
-        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules)
-        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules)
-        autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)])
+        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
+        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0)
+        autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)], addToLayout=0)
         autoSend.makeConsistent()
 
         bottomGrid.addWidget(self.saveButton, 1, 0)
@@ -244,9 +274,9 @@ class OWAssociationRulesViewer(OWWidget):
         if hasattr(self, "selConfidence"):
             self.updateConfSupp()
 
-        if hasattr(self, "ruleCanvas"):
-            self.ruleCanvas.unselect()
-            self.ruleCanvas.draw()
+        if hasattr(self, "ruleScene"):
+            self.ruleScene.unselect()
+            self.ruleScene.draw()
 
         self.sendIfAuto()
 
@@ -278,16 +308,18 @@ class OWAssociationRulesViewer(OWWidget):
     def displayRules(self):
         if hasattr(self, "trules"):
             trules = self.trules
-            trules.setNumRows(len(self.selectedRules))
+            trules.setRowCount(len(self.selectedRules))
 
             rulecol = len(self.measures)
             for row, rule in enumerate(self.selectedRules):
                 for col, m in enumerate(self.measures):
-                    trules.setText(row, col, "  %.3f  " % getattr(rule, m[2]))
-                trules.setText(row, rulecol, `rule`.replace(" ", "  "))
+##                    trules.setText(row, col, "  %.3f  " % getattr(rule, m[2]))
+                    trules.setItem(row, col, QTableWidgetItem("  %.3f  " % getattr(rule, m[2])))
+##                trules.setText(row, rulecol, `rule`.replace(" ", "  "))
+                trules.setItem(row, rulecol, QTableWidgetItem(`rule`.replace(" ", "  ")))
 
-            for i in range(len(self.measures)+1):
-                self.trules.adjustColumn(i)
+##            for i in range(len(self.measures)+1):
+##                self.trules.adjustColumn(i)
                 
             self.showHideColumns()
             self.sort()
@@ -296,21 +328,20 @@ class OWAssociationRulesViewer(OWWidget):
     def showHideColumns(self):
         for i, m in enumerate(self.measures):
             show = getattr(self, m[2])
-            if bool(self.trules.columnWidth(i)) != bool(show):
+            if bool(self.trules.horizontalHeader().sectionSize(i)) != bool(show):
                 if show:
-                    self.trules.showColumn(i)
-                    self.trules.adjustColumn(i)
+                    self.trules.horizontalHeader().setSectionHidden(i, show)
+##                    self.trules.adjustColumn(i)
                 else:
-                    self.trules.hideColumn(i)
+                    self.trules.horizontalHeader().setSectionHidden(i, show)
 
     def sort(self, i = None):
         if i is None:
             i = self.sortedBy
         else:
             self.sortedBy = i
-        self.trules.sortColumn(i, i == len(self.measures), True)
-        self.trules.horizontalHeader().setSortIndicator(i)
-        
+        self.trules.sortItems(i, Qt.AscendingOrder if i == len(self.measures) else Qt.DescendingOrder)
+        self.trules.horizontalHeader().setSortIndicator(i, Qt.AscendingOrder if i == len(self.measures) else Qt.DescendingOrder)
             
     def saveRules(self):
         fileName = QFileDialog.getSaveFileName(self, "Save Rules", "myRules.txt", "Textfiles (*.txt)" );
@@ -354,7 +385,7 @@ class OWAssociationRulesViewer(OWWidget):
             self.ingrid = newingrid
 
             self.unselect()
-            self.ruleCanvas.draw()
+            self.ruleScene.draw()
             self.sendIfAuto()
 
 
@@ -363,8 +394,8 @@ class OWAssociationRulesViewer(OWWidget):
         self.checkScale() # to set the inCell
         self.setIngrid()
         self.unselect()
-        if hasattr(self, "ruleCanvas"):
-            self.ruleCanvas.draw()
+        if hasattr(self, "ruleScene"):
+            self.ruleScene.draw()
         self.sendIfAuto()
 
     def showAllButton(self):
