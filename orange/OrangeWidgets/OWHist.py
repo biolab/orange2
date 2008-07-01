@@ -133,18 +133,27 @@ class OWInteractiveHist(OWHist):
             self.setBoundary(cut, cut)
         
     def mousePressEvent(self, e):
-        cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-        self.mouseCurrentlyPressed = 1
-        self.buttonCurrentlyPressed = e.button()
-        self._setBoundary(e.button(), cut)
+        if self.state==SELECT:
+            cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
+            self.mouseCurrentlyPressed = 1
+            self.buttonCurrentlyPressed = e.button()
+            self._setBoundary(e.button(), cut)
+        else:
+            return OWHist.mousePressEvent(self, e)
         
     def mouseMoveEvent(self, e):
-        if self.mouseCurrentlyPressed:
-            cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-            self._setBoundary(self.buttonCurrentlyPressed, cut)
+        if self.state==SELECT:
+            if self.mouseCurrentlyPressed:
+                cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
+                self._setBoundary(self.buttonCurrentlyPressed, cut)
+        else:
+            return OWHist.mouseMoveEvent(self ,e)
 
     def mouseReleaseEvent(self, e):
-        cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-        self._setBoundary(self.buttonCurrentlyPressed, cut)
-        self.mouseCurrentlyPressed = 0
-        self.buttonCurrentlyPressed = None
+        if self.state==SELECT:
+            cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
+            self._setBoundary(self.buttonCurrentlyPressed, cut)
+            self.mouseCurrentlyPressed = 0
+            self.buttonCurrentlyPressed = None
+        else:
+            return OWHist.mouseReleaseEvent(self, e)
