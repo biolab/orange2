@@ -54,13 +54,13 @@ class singleClassCalibrationPlotGraph(OWGraph):
             curve = self.addCurve('', pen=QPen(self.classifierColor[cNum], 3))
             self.classifierCalibrationCKeys.append(curve)
 
-            curve = errorBarQwtPlotCurve(self, '', connectPoints = 0, tickXw = 0.0)
+            curve = errorBarQwtPlotCurve('', connectPoints = 0, tickXw = 0.0)
             curve.attach(self)
             curve.setSymbol(QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0)))
             curve.setStyle(QwtPlotCurve.UserCurve)
             self.classifierYesClassRugCKeys.append(curve)
 
-            curve = errorBarQwtPlotCurve(self, '', connectPoints = 0, tickXw = 0.0)
+            curve = errorBarQwtPlotCurve('', connectPoints = 0, tickXw = 0.0)
             curve.attach(self)
             curve.setSymbol(QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(self.classifierColor[cNum], 1), QSize(0,0)))
             curve.setStyle(QwtPlotCurve.UserCurve)
