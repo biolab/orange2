@@ -309,9 +309,12 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
         self.showHorizontalErrorBar = showHorizontalErrorBar
         self.setItemAttribute(QwtPlotItem.Legend, 0)
 
-    def draw(self, p, xMap, yMap, f, t):
+    def draw(self, p, xMap, yMap, f, t=-1):
         # save ex settings
         pen = p.pen()
+
+        if type(f)==QRect:
+            f = 0
 
         self.setPen( self.symbol().pen() )
         p.setPen( self.symbol().pen() )
