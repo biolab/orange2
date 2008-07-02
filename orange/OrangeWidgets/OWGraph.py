@@ -219,7 +219,7 @@ class OWGraph(QwtPlot):
 
     def setShowMainTitle(self, b):
         self.showMainTitle = b
-        if self.showMainTitle:
+        if self.showMainTitle and self.mainTitle:
             self.setTitle(self.mainTitle)
         else:
             self.setTitle(QwtText())
@@ -227,7 +227,7 @@ class OWGraph(QwtPlot):
 
     def setMainTitle(self, t):
         self.mainTitle = t
-        if self.showMainTitle:
+        if self.showMainTitle and self.mainTitle:
             self.setTitle(self.mainTitle)
         else:
             self.setTitle(QwtText())
