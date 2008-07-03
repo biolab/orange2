@@ -7,7 +7,7 @@
 """
 from OWWidget import *
 
-import OWGUI
+import OWGUI, OWColorPalette
 from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
@@ -36,7 +36,9 @@ class OWNetwork(OWWidget):
                     "lastVertexSizeColumn",
                     "showWeights",
                     "showIndexes", 
-                    "showEdgeLabels"] 
+                    "showEdgeLabels", 
+                    "colorSettings", 
+                    "selectedSchemaIndex"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -73,6 +75,8 @@ class OWNetwork(OWWidget):
         self.showWeights = 0
         self.showIndexes = 0
         self.showEdgeLabels = 0
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
         
         self.loadSettings()
 
@@ -119,13 +123,16 @@ class OWNetwork(OWWidget):
         self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
-        OWGUI.checkBox(self.settingsTab, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
-        OWGUI.checkBox(self.settingsTab, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
-        OWGUI.checkBox(self.settingsTab, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
-        
-        OWGUI.checkBox(self.settingsTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
-        
-        OWGUI.spin(self.settingsTab, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        ib = OWGUI.widgetBox(self.settingsTab, "General", orientation="vertical")
+        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
+        OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
+        OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
+        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
+        self.insideView = 0
+        self.insideViewNeighbours = 2
+        OWGUI.spin(ib, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
         
         self.vertexSizeCombo = OWGUI.comboBox(self.settingsTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
         self.vertexSizeCombo.addItem("(none)")
@@ -133,9 +140,7 @@ class OWNetwork(OWWidget):
         OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
         
         OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
-        
-        OWGUI.checkBox(self.settingsTab, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
-        
+         
         self.checkSendMarkedNodes = 0
         OWGUI.checkBox(self.displayTab, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
         
@@ -216,12 +221,15 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
-        self.insideView = 0
-        self.insideViewNeighbours = 2
-        OWGUI.spin(self.settingsTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
         #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
-        OWGUI.button(self.settingsTab, self, "Collapse", callback=self.collapse)
         
+        self.colorButtonsBox = OWGUI.widgetBox(self.settingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
+
+        ib = OWGUI.widgetBox(self.settingsTab, "Prototype")
+        OWGUI.button(ib, self, "Collapse", callback=self.collapse)
+        
+
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
         
@@ -235,6 +243,11 @@ class OWNetwork(OWWidget):
         self.resize(1000, 600)
         self.controlArea.setEnabled(False)
         self.information('No network loaded.')
+        
+    def activateLoadedSettings(self):
+        dlg = self.createColorDialog()
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
@@ -660,6 +673,22 @@ class OWNetwork(OWWidget):
         
         p.show()
         
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
+            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discPalette = dlg.getDiscretePalette("discPalette")
+            
+            self.setVertexColor()
+    
+    def createColorDialog(self):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        return c
     """
     Layout Optimization
     """
