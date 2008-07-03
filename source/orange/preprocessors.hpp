@@ -266,11 +266,12 @@ public:
   __REGISTER_CLASS
 
   enum {linear, km, bayes};
+  CLASSCONSTANTS(Method: Linear=TPreprocessor_addCensorWeight::linear; KM=TPreprocessor_addCensorWeight::km; Bayes=TPreprocessor_addCensorWeight::bayes)
 
   PVariable outcomeVar; //P outcome variable
   PVariable timeVar; //P time variable
   TValue eventValue; //P event (fail) value
-  int method; //P weighting method
+  int method; //P(&Preprocessor_addCensorWeight_Method) weighting method
   float maxTime; //P maximal time
   bool addComplementary; //P if true (default is false), complementary examples are added for censored examples
 

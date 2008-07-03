@@ -865,8 +865,10 @@ int Value_set_value(TPyValue *self, PyObject *arg)
 }
 
 
+PyObject *PyValue_Type_FromLong(long);
+
 PyObject *Value_get_valueType(TPyValue *self)
-{ return PyInt_FromLong((long)self->value.valueType); }
+{ return PyValue_Type_FromLong((long)self->value.valueType); }
 
 
 PyObject *Value_get_variable(TPyValue *self)
@@ -889,8 +891,10 @@ int Value_set_variable(TPyValue *self, PyObject *arg)
 }
 
 
+PyObject *PyVariable_Type_FromLong(long);
+
 PyObject *Value_get_varType(TPyValue *self)
-{ return PyInt_FromLong((long)self->value.varType); }
+{ return PyVariable_Type_FromLong((long)self->value.varType); }
 
 
 
@@ -1107,26 +1111,63 @@ PyObject *ValueList__reduce__(TPyOrange *self, PyObject *) { return TValueListMe
 
 PyObject *VarTypes()
 { PyObject *vartypes=PyModule_New("VarTypes");
-  PyModule_AddIntConstant(vartypes, "None", (int)TValue::NONE);
-  PyModule_AddIntConstant(vartypes, "Discrete", (int)TValue::INTVAR);
-  PyModule_AddIntConstant(vartypes, "Continuous", (int)TValue::FLOATVAR);
-  PyModule_AddIntConstant(vartypes, "Other", (int)TValue::FLOATVAR+1); // for compatibility; don't use!
-  PyModule_AddIntConstant(vartypes, "String", (int)STRINGVAR);
+  PyModule_AddObject(vartypes, "None", PyVariable_Type_FromLong((int)TValue::NONE));
+  PyModule_AddObject(vartypes, "Discrete", PyVariable_Type_FromLong((int)TValue::INTVAR));
+  PyModule_AddObject(vartypes, "Continuous", PyVariable_Type_FromLong((int)TValue::FLOATVAR));
+  PyModule_AddObject(vartypes, "Other", PyVariable_Type_FromLong((int)TValue::FLOATVAR+1)); // for compatibility; don't use!
+  PyModule_AddObject(vartypes, "String", PyVariable_Type_FromLong((int)STRINGVAR));
   return vartypes;
 }
 
+/* Left here for compatibility */
+
 PYCONSTANTFUNC(VarTypes, VarTypes)
 
+/* This cannot be done in the header since Value is not derived from Orange */
+
+TNamedConstantsDef Value_Type_values[] = {{"Regular", 0}, {"DC", valueDC}, {"DK", valueDK}, {0, 0}};
+
+PYXTRACT_IGNORE static PyObject *Value_Type_repr(PyObject *self)
+{
+  return stringFromList(self, Value_Type_values);
+}
+
+PyObject *Value_Type__reduce__(PyObject *self);
+PyMethodDef Value_Type_methods[] = { {"__reduce__", (binaryfunc)Value_Type__reduce__, METH_NOARGS, "reduce"}, {NULL, NULL}};
+PyTypeObject PyValue_Type_Type = {PyObject_HEAD_INIT(&PyType_Type) 0, "Value.Type", sizeof(PyIntObject), 0, 0, 0, 0, 0, 0, (reprfunc)Value_Type_repr, 0, 0, 0, 0, 0, (reprfunc)Value_Type_repr, 0, 0, 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES, 0, 0, 0, 0, 0, 0, 0, Value_Type_methods, 0, 0, &PyInt_Type};
+
+PyObject *PyValue_Type_FromLong(long ok)
+{ PyIntObject *r = PyObject_New(PyIntObject, &PyValue_Type_Type);
+  r->ob_ival = ok;
+  return (PyObject *)r;
+}
+
+void *PTValue_Type(void *l)
+{ return PyValue_Type_FromLong(*(long *)l); }
+
+
+PyObject *Value_Type__reduce__(PyObject *self)
+{ return Py_BuildValue("O(i)", getExportedFunction("__pickleLoaderValueType"), ((PyIntObject *)(self))->ob_ival); }
+
+PyObject *__pickleLoaderValueType(PyObject *, PyObject *args) PYARGS(METH_O, "")
+{ return PyValue_Type_FromLong(PyInt_AsLong(args)); }
+
+/* Left for backward compatibility; also used the opportunity to initialize the type */
 
 PyObject *ValueTypes()
-{ PyObject *valuetypes=PyModule_New("ValueTypes");
-  PyModule_AddIntConstant(valuetypes, "Regular", valueRegular);
-  PyModule_AddIntConstant(valuetypes, "DC", valueDC);
-  PyModule_AddIntConstant(valuetypes, "DK", valueDK);
+{ PyType_Ready(&PyValue_Type_Type);
+  PyValue_Type_Type.tp_print = 0;
+  PyObject *valuetypes=PyModule_New("ValueTypes");
+  PyModule_AddObject(valuetypes, "Regular", PyValue_Type_FromLong(valueRegular));
+  PyModule_AddObject(valuetypes, "DC", PyValue_Type_FromLong(valueDC));
+  PyModule_AddObject(valuetypes, "DK", PyValue_Type_FromLong(valueDK));
   return valuetypes;
 }
 
 PYCONSTANTFUNC(ValueTypes, ValueTypes)
 
+PYCLASSCONSTANT(Value, Regular, PyValue_Type_FromLong(valueRegular))
+PYCLASSCONSTANT(Value, DC, PyValue_Type_FromLong(valueDC))
+PYCLASSCONSTANT(Value, DK, PyValue_Type_FromLong(valueDK))
 
 #include "cls_value.px"

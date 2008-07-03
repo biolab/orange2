@@ -30,10 +30,10 @@ class ORANGE_API TSymMatrix : public TOrange
 public:
   __REGISTER_CLASS
 
-  enum { Lower, Upper, Symmetric, LowerFilled, UpperFilled };
+  CLASSCONSTANTS(Shape) enum { Lower, Upper, Symmetric, LowerFilled, UpperFilled };
 
   int dim; //PR matrix dimension
-  int matrixType; //P 0 lower, 1 upper, 2 symmetric, 3 lower_filled, 4 upper_filled
+  int matrixType; //P(&SymMatrix_Shape) 0 lower, 1 upper, 2 symmetric, 3 lower_filled, 4 upper_filled
 
   float *elements;
 

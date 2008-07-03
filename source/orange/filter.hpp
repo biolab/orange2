@@ -126,7 +126,7 @@ class ORANGE_API TValueFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  enum { None, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, Between, Outside, Contains, NotContains, BeginsWith, EndsWith, Listed };
+  CLASSCONSTANTS(Operator) enum { None, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, Between, Outside, Contains, NotContains, BeginsWith, EndsWith, Listed };
 
   int position; //P attribute's position in domain
   int acceptSpecial; //P tells whether a special value (DK, DC...) is accepted (1), rejected (0) or ignored (-1)
@@ -145,7 +145,7 @@ public:
   float min; //P (+ref) reference value (lower bound for interval operators)
   float max; //P upper bound for interval operators
   bool outside; //P obsolete: if true, the filter accepts the values outside the interval, not inside
-  int oper; //P operator
+  int oper; //P(&ValueFilter_Operator) operator
 
   TValueFilter_continuous();
   TValueFilter_continuous(const int &pos, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = 0);
@@ -174,7 +174,7 @@ public:
 
   string min; //P (+ref) reference value (lower bound for interval operators)
   string max; //P upper bound for interval operators
-  int oper;   //P operator
+  int oper;   //P(&ValueFilter_Operator) operator
   bool caseSensitive; //P if true (default), the operator is case sensitive
 
   TValueFilter_string();
@@ -204,6 +204,8 @@ VWRAPPER(ValueFilterList)
 class ORANGE_API TFilter_values : public TFilter {
 public:
   __REGISTER_CLASS
+
+  CLASSCONSTANTS(Operator: None; Equal; NotEqual; Less; LessEqual; Greater; GreaterEqual; Between; Outside; Contains; NotContains; BeginsWith; EndsWith; Listed)
 
   PValueFilterList conditions; //P a list of filters
 

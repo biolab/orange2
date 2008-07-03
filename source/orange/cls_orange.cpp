@@ -300,50 +300,53 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
     TOrange *me = (TOrange *)self->ptr;
     if (me->hasProperty(name)) {
       try {
-        const type_info &propertyType = me->propertyType(name);
+        const TPropertyDescription *propertyDescription = me->propertyDescription(name);
+        const type_info &propertyType = *propertyDescription->type;
+        TPropertyTransformer *transformer = propertyDescription->transformer;
 
         if (propertyType==typeid(bool)) {
           bool value;
           me->getProperty(name, value);
-          return PyInt_FromLong(value ? 1 : 0);
+          return transformer ? (PyObject *)transformer(&value) : PyBool_FromLong(value ? 1 : 0);
         }
 
         if (propertyType==typeid(int)) {
           int value;
           me->getProperty(name, value);
-          return PyInt_FromLong(value);
+          return transformer ? (PyObject *)transformer(&value) : PyInt_FromLong(value);
         }
 
         if (propertyType==typeid(float)) {
           float value;
           me->getProperty(name, value);
-          return PyFloat_FromDouble(value);
+          return transformer ? (PyObject *)transformer(&value) : PyFloat_FromDouble(value);
         }
 
         if (propertyType==typeid(string)) {
           string value;
           me->getProperty(name, value);
-          return PyString_FromString(value.c_str());
+          return transformer ? (PyObject *)transformer(&value) : PyString_FromString(value.c_str());
         }
 
         if (propertyType==typeid(TValue)) {
           TValue value;
           me->getProperty(name, value);
-          return Value_FromValue(value);
+          return transformer ? (PyObject *)transformer(&value) : Value_FromValue(value);
         }
 
         if (propertyType==typeid(TExample)) {
           POrange mlobj;
           me->wr_getProperty(name, mlobj);
+          if (transformer)
+            return (PyObject *)transformer(&mlobj);
           if (mlobj)
             return Example_FromWrappedExample(PExample(mlobj));
-          else
-            RETURN_NONE;
+          RETURN_NONE;
         }
       
         POrange mlobj;
         me->wr_getProperty(name, mlobj);
-        return (PyObject *)WrapOrange(mlobj);
+        return transformer ? (PyObject *)transformer(&mlobj) : (PyObject *)WrapOrange(mlobj);
       } catch (exception err)
       {}
     }

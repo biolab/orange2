@@ -288,9 +288,11 @@ class ORANGE_API TFeatureByIM : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 
+  CLASSCONSTANTS(Completion: NoCompletion=completion_no; CompletionByDefault=completion_default; CompletionByBayes=completion_bayes)
+
   PIMConstructor IMconstructor; //P incompatibility matrix constructor
   PClustersFromIM clustersFromIM; //P clustering algorithm
-  int completion; //P decides how to determine the class for points not covered by any cluster
+  int completion; //P(&FeatureByIM_Completion) decides how to determine the class for points not covered by any cluster
 
   TFeatureByIM(PIMConstructor = PIMConstructor(), PClustersFromIM=PClustersFromIM(), const int & =completion_bayes);
   PVariable operator()(PExampleGenerator gen, TVarList &boundSet, const string &name, float &quality, const int &weight=0);

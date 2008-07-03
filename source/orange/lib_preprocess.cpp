@@ -122,19 +122,6 @@ C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
 
 C_NAMED(DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
 
-PYCLASSCONSTANT_INT(DomainContinuizer, LowestIsBase, int(TDomainContinuizer::LowestIsBase))
-PYCLASSCONSTANT_INT(DomainContinuizer, FrequentIsBase, int(TDomainContinuizer::FrequentIsBase))
-PYCLASSCONSTANT_INT(DomainContinuizer, NValues, int(TDomainContinuizer::NValues))
-PYCLASSCONSTANT_INT(DomainContinuizer, Ignore, int(TDomainContinuizer::Ignore))
-PYCLASSCONSTANT_INT(DomainContinuizer, IgnoreAllDiscrete, int(TDomainContinuizer::IgnoreAllDiscrete))
-PYCLASSCONSTANT_INT(DomainContinuizer, ReportError, int(TDomainContinuizer::ReportError))
-PYCLASSCONSTANT_INT(DomainContinuizer, AsOrdinal, int(TDomainContinuizer::AsOrdinal))
-PYCLASSCONSTANT_INT(DomainContinuizer, AsNormalizedOrdinal, int(TDomainContinuizer::AsNormalizedOrdinal))
-
-PYCLASSCONSTANT_INT(DomainContinuizer, Leave, int(TDomainContinuizer::Leave))
-PYCLASSCONSTANT_INT(DomainContinuizer, NormalizeBySpan, int(TDomainContinuizer::NormalizeBySpan))
-PYCLASSCONSTANT_INT(DomainContinuizer, NormalizeByVariance, int(TDomainContinuizer::NormalizeByVariance))
-
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
   if (pyval) {
@@ -306,10 +293,6 @@ C_CALL(Preprocessor_imputeByLearner, Preprocessor, "([examples[, weightID]] [lea
 C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
 
 C_NAMED(ImputeClassifier, Classifier, "([classifierFromVar=][imputer=])")
-
-PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, KM, TPreprocessor_addCensorWeight::km)
-PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Linear, TPreprocessor_addCensorWeight::linear)
-PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Bayes, TPreprocessor_addCensorWeight::bayes)
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
 { 
@@ -866,9 +849,6 @@ C_CALL(FeatureByMinComplexity, FeatureInducer, "([examples, bound-attrs, name] [
 
 C_NAMED(ColoredIG, GeneralExampleClustering, "(ig=, colors=)")
 
-PYCLASSCONSTANT_INT(FeatureByMinComplexity, NoCompletion, completion_no)
-PYCLASSCONSTANT_INT(FeatureByMinComplexity, CompletionByDefault, completion_default)
-PYCLASSCONSTANT_INT(FeatureByMinComplexity, CompletionByBayes, completion_bayes)
 
 bool convertFromPython(PyObject *args, TIGNode &ign)
 { PyTRY
@@ -1050,11 +1030,6 @@ C_NAMED(ColumnAssessor_Measure, ColumnAssessor, "(measure=)")
 C_NAMED(ColumnAssessor_Kramer, ColumnAssessor, "()")
 
 C_CALL(MeasureAttribute_IM, MeasureAttribute, "(constructIM=, columnAssessor=) | (attr, examples[, apriori] [,weightID]) -/-> (float, meas-type)")
-
-
-PYCLASSCONSTANT_INT(FeatureByIM, NoCompletion, completion_no)
-PYCLASSCONSTANT_INT(FeatureByIM, CompletionByDefault, completion_default)
-PYCLASSCONSTANT_INT(FeatureByIM, CompletionByBayes, completion_bayes)
 
 
 PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example, bound-attrs[, weightID]) -> IM")
@@ -1425,11 +1400,6 @@ C_NAMED(StopDistributionClustering_noProfit, StopDistributionClustering, "([minP
 C_NAMED(StopDistributionClustering_binary, StopDistributionClustering, "()")
 C_NAMED(StopDistributionClustering_n, StopDistributionClustering, "([n=])")
 C_NAMED(StopDistributionClustering_noBigChange, StopDistributionClustering, "()")
-
-
-PYCLASSCONSTANT_INT(FeatureByDistributions, NoCompletion, completion_no)
-PYCLASSCONSTANT_INT(FeatureByDistributions, CompletionByDefault, completion_default)
-PYCLASSCONSTANT_INT(FeatureByDistributions, CompletionByBayes, completion_bayes)
 
 
 PyObject *ExampleDistConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs[, weightID]) -> ExampleDistVector")

@@ -46,6 +46,8 @@ using namespace std;
   virtual TOrange *clone() const;
 
 
+#define CLASSCONSTANTS(x)
+
 /* traverse vs. visit 
 
 'traverse' should call 'visit' on all wrapped objects it (directly) contains.
@@ -69,6 +71,8 @@ references to those object are 'explained'.
 
 struct _tclassdescription;
 
+typedef void *TPropertyTransformer(void *);
+
 typedef struct {
   const char *name;
   const char *description;
@@ -79,6 +83,7 @@ typedef struct {
 
   bool readOnly;
   bool obsolete;
+  TPropertyTransformer *transformer;
 } TPropertyDescription;
 
 

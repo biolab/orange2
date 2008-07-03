@@ -36,7 +36,7 @@ public:
 	__REGISTER_ABSTRACT_CLASS
 
   // Don't change the order (<= Divergence means that model is fitted, > means error)
-	enum {OK, Infinity, Divergence, Constant, Singularity};
+	CLASSCONSTANTS(ErrorCode) enum {OK, Infinity, Divergence, Constant, Singularity};
 
 	// main function call, fits LR, returns coefficients and their 
 	// corres. standard errors

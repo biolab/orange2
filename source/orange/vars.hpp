@@ -57,8 +57,10 @@ class ORANGE_API TVariable : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
+  CLASSCONSTANTS(Type: None=(int)TValue::NONE; Discrete=(int)TValue::INTVAR; Continuous=(int)TValue::FLOATVAR; Other=(int)(TValue::FLOATVAR+1); String=(int)STRINGVAR);
+  
   string name; //P variable's name
-  int  varType; //P variable type
+  int  varType; //P(&Variable_Type) variable type
   bool ordered; //P variable values are ordered
   bool distributed; //P variable values are distributions
   int defaultMetaId; //P default (proposed, suggested...) meta id for this variable
@@ -104,7 +106,7 @@ public:
                          incompatible with the existing
      NotFound            the variable with that name and type doesn't exist yet
   */
-  enum { OK, MissingValues, NoRecognizedValues, Incompatible, NotFound };
+  CLASSCONSTANTS(MakeStatus) enum { OK, MissingValues, NoRecognizedValues, Incompatible, NotFound };
   
   /* This will search for an existing variable and return it unless the status (above)
      equals or exceeds the failOn argument, Incompatible or NotFound.

@@ -69,10 +69,10 @@ class ORANGE_API TMeasureAttribute : public TOrange {
 public:
   __REGISTER_CLASS
 
-  enum {Contingency_Class, DomainContingency, Generator};
-  enum {IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon, UnknownsAsValue};
+  CLASSCONSTANTS(Needs) enum {Contingency_Class, DomainContingency, Generator};
+  CLASSCONSTANTS(UnknownsTreatment) enum {IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon, UnknownsAsValue};
 
-  int needs; //P describes what kind of data is needed for computation
+  int needs; //P(&MeasureAttribute_Needs) describes what kind of data is needed for computation
   bool handlesDiscrete; //PR tells whether the measure can handle discrete attributes
   bool handlesContinuous; //PR tells whether the measure can handle continuous attributes
   bool computesThresholds; //PR tells whether the measure can compute threshold functions/maxima for continuous attributes
@@ -111,7 +111,7 @@ public:
   PProbabilityEstimatorConstructor estimatorConstructor; //P probability estimator (none by default)
   PConditionalProbabilityEstimatorConstructor conditionalEstimatorConstructor; //P conditional probability estimator (none by default)
 
-  int unknownsTreatment; //P treatment of unknown values
+  int unknownsTreatment; //P(&MeasureAttribute_UnknownsTreatment) treatment of unknown values
 
   TMeasureAttributeFromProbabilities(const bool handlesDiscrete, const bool handlesContinuous = false, const int unkTreat = ReduceByUnknowns);
 
@@ -206,7 +206,7 @@ public:
     __REGISTER_CLASS
 
     float m; //P m for m-estimate
-    int unknownsTreatment; //P treatment of unknown values
+    int unknownsTreatment; //P(&MeasureAttribute_UnknownsTreatment) treatment of unknown values
 
     TMeasureAttribute_MSE(const int &unkTreat = ReduceByUnknowns);
     virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());

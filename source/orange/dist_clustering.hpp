@@ -166,8 +166,10 @@ class ORANGE_API TFeatureByDistributions : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 
+  CLASSCONSTANTS(Completion: NoCompletion=completion_no; CompletionByDefault=completion_default; CompletionByBayes=completion_bayes)
+
   PClustersFromDistributions clustersFromDistributions; //P clustering algorithm
-  int completion; //P decides how to determine the class for points not covered by any cluster
+  int completion; //P(&FeatureByDistributions_Completion) decides how to determine the class for points not covered by any cluster
 
   TFeatureByDistributions(PClustersFromDistributions = PClustersFromDistributions(), const int &completion = completion_bayes);
   PVariable operator()(PExampleGenerator gen, TVarList &boundSet, const string &name, float &quality, const int &weight=0);

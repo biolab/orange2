@@ -237,6 +237,32 @@ PyObject *yieldNoPickleError(PyObject *self, PyObject *)
   return NULL;
 }
 
+
+PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs)
+{
+  const long &val = ((PyIntObject *)self)->ob_ival;
+  TNamedConstantsDef const *ncsi = ncs;
+  for(; ncsi->name && (ncsi->value != val); ncsi++);
+  return ncsi->name ? PyString_FromString(ncsi->name) : self->ob_type->tp_base->tp_repr(self);
+}
+
+
+PyObject *unpickleConstant(TNamedConstantRecord const *constList, PyObject *args)
+{
+  char *s;
+  PyObject *args2;
+  if (!PyArg_ParseTuple(args, "sO:unpickleConstant", &s, &args2))
+    return NULL;
+    
+  TNamedConstantRecord const *cli = constList;
+  for(; cli->name && strcmp(cli->name, s); cli++);
+  if (!cli->name)
+    PYERROR(PyExc_TypeError, "unpickleConstant: Constant type not found", NULL);
+    
+  return PyObject_CallObject((PyObject *)cli->type, args2);
+}
+
+
 ORANGE_API PyObject *orangeModule;
 
 #include "orange.px"

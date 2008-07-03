@@ -63,8 +63,8 @@ class ORANGE_API THierarchicalClustering : public TOrange {
 public:
     __REGISTER_CLASS
 
-    enum {Single, Average, Complete};
-    int linkage; //P linkage
+    CLASSCONSTANTS(Linkage) enum {Single, Average, Complete};
+    int linkage; //P(&HierarchicalClustering_Linkage) linkage
     bool overwriteMatrix; //P if true (default is false) it will use (and destroy) the distance matrix given as argument
 
     PProgressCallback progressCallback; //P progress callback function

@@ -45,7 +45,7 @@ public:
 
   PVariable outerVariable; //P outer attribute
   PVariable innerVariable; //P (+variable) inner attribute
-  int varType;             //PR outer attribute type
+  int varType;             //PR(&Variable_Type) outer attribute type
 
   union {
     TDistributionVector *discrete;

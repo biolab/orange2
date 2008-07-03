@@ -37,7 +37,9 @@ class ORANGE_API TLinRegLearner : public TLearner
 public:
   __REGISTER_CLASS
 
-  int iterativeSelection; //P 0 all, 1 forward, 2 backward, 3 stepwise
+  CLASSCONSTANTS(Iterative) enum {All, Forward, Backward, Stepwise};
+  
+  int iterativeSelection; //P(&LinRegLearner_Iterative) 0 all, 1 forward, 2 backward, 3 stepwise
   float Fin; //P significance limit for an attribute to enter the model
   float Fout; //P significance limit for the attribute to be removed
   int maxIterations; //P maximal number of iterations for stepwise

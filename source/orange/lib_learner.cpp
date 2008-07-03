@@ -60,10 +60,6 @@ C_CALL(CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> C
 PYXTRACT_IGNORE C_CALL(LinRegLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
 PYXTRACT_IGNORE C_NAMED(LinRegClassifier, ClassifierFD, "([classifier=, costs=])")
 
-PYCLASSCONSTANT_INT(LinRegLearner, All, 0)
-PYCLASSCONSTANT_INT(LinRegLearner, Forward, 1)
-PYCLASSCONSTANT_INT(LinRegLearner, Backward, 2)
-PYCLASSCONSTANT_INT(LinRegLearner, Stepwise, 3)
 
 #include "costwrapper.hpp"
 C_CALL(CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
@@ -736,12 +732,6 @@ PyObject *C45Learner_commandline(PyObject *self, PyObject *args) PYARGS(METH_VAR
 
 C_NAMED(C45TreeNode, Orange, "")
 
-PYCLASSCONSTANT_INT(C45TreeNode, Leaf, TC45TreeNode::Leaf)
-PYCLASSCONSTANT_INT(C45TreeNode, Branch, TC45TreeNode::Branch)
-PYCLASSCONSTANT_INT(C45TreeNode, Cut, TC45TreeNode::Cut)
-PYCLASSCONSTANT_INT(C45TreeNode, Subset, TC45TreeNode::Subset)
-
-
 PC45TreeNodeList PC45TreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::P_FromArguments(arg); }
 PyObject *C45TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_FromArguments(type, arg); }
 PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
@@ -1029,12 +1019,6 @@ PyObject *LogRegFitter__reduce__(PyObject *self)
 
 C_CALL(LogRegFitter_Cholesky, LogRegFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
-PYCLASSCONSTANT_INT(LogRegFitter, OK, TLogRegFitter::OK)
-PYCLASSCONSTANT_INT(LogRegFitter, Infinity, TLogRegFitter::Infinity)
-PYCLASSCONSTANT_INT(LogRegFitter, Divergence, TLogRegFitter::Divergence)
-PYCLASSCONSTANT_INT(LogRegFitter, Constant, TLogRegFitter::Constant)
-PYCLASSCONSTANT_INT(LogRegFitter, Singularity, TLogRegFitter::Singularity)
-
 PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
 {
   PyTRY
@@ -1058,6 +1042,8 @@ PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VAR
 }
 
 
+PyObject *PyLogRegFitter_ErrorCode_FromLong(long);
+
 PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 {
   PyTRY
@@ -1078,9 +1064,9 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
     beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute);
 
     if (error <= TLogRegFitter::Divergence)
-      return Py_BuildValue("iNNf", error, WrapOrange(beta), WrapOrange(beta_se), likelihood);
+      return Py_BuildValue("NNNf", PyLogRegFitter_ErrorCode_FromLong(error), WrapOrange(beta), WrapOrange(beta_se), likelihood);
     else
-      return Py_BuildValue("iN", error, WrapOrange(attribute));
+      return Py_BuildValue("NN", PyLogRegFitter_ErrorCode_FromLong(error), WrapOrange(attribute));
 
   PyCATCH
 }
@@ -1090,10 +1076,6 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 C_CALL(LinearLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(LinearClassifier, ClassifierFD, " ")
 
-PYCLASSCONSTANT_INT(LinearLearner, L2_LR, 0)
-PYCLASSCONSTANT_INT(LinearLearner, L2LOSS_SVM_DUAL, 1)
-PYCLASSCONSTANT_INT(LinearLearner, L2LOSS_SVM, 2)
-PYCLASSCONSTANT_INT(LinearLearner, L1LOSS_SVM_DUAL, 3)
 
 
 PyObject *LinearClassifier__reduce__(PyObject *self){
@@ -1133,17 +1115,6 @@ C_CALL(SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
 C_NAMED(SVMClassifier, ClassifierFD," ")
 C_NAMED(SVMClassifierSparse, SVMClassifier," ")
 
-PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
-PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
-PYCLASSCONSTANT_INT(SVMLearner, ONE_CLASS, 2)
-PYCLASSCONSTANT_INT(SVMLearner, EPSILON_SVR, 3)
-PYCLASSCONSTANT_INT(SVMLearner, NU_SVR, 4)
-
-PYCLASSCONSTANT_INT(SVMLearner, LINEAR, 0)
-PYCLASSCONSTANT_INT(SVMLearner, POLY, 1)
-PYCLASSCONSTANT_INT(SVMLearner, RBF, 2)
-PYCLASSCONSTANT_INT(SVMLearner, SIGMOID, 3)
-PYCLASSCONSTANT_INT(SVMLearner, CUSTOM, 4)
 
 
 PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")

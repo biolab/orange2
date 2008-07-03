@@ -58,9 +58,10 @@ class ORANGE_API TExamplesDistance_DTW : public TExamplesDistance_Normalized
 public:
     __REGISTER_CLASS
 
+  CLASSCONSTANTS(DistanceType: Euclidean; Derivative)
 	enum { DTW_EUCLIDEAN, DTW_DERIVATIVE };
 	
-	int dtwDistance; //P distance measure between individual attributes (default: square of difference)
+	int dtwDistance; //P(&ExamplesDistance_DTW_DistanceType) distance measure between individual attributes (default: square of difference)
 		
 	TExamplesDistance_DTW();
     TExamplesDistance_DTW(const int &distance, const bool &normalize, const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat);

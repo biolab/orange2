@@ -1463,9 +1463,6 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
-PYCLASSCONSTANT_INT(ExamplesDistance_DTW, Euclidean, TExamplesDistance_DTW::DTW_EUCLIDEAN)
-PYCLASSCONSTANT_INT(ExamplesDistance_DTW, Derivative, TExamplesDistance_DTW::DTW_DERIVATIVE)
-
 
 bool convertFromPython(PyObject *pyobj, TAlignment &align)
 {
@@ -1554,33 +1551,6 @@ C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, oper=, values=, acceptS
 C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, oper=, min=, max=, acceptSpecial=])")
 C_NAMED(ValueFilter_string, ValueFilter, "([position=, oper=, min=, max=])");
 C_NAMED(ValueFilter_stringList, ValueFilter, "([position=, oper=, values=])");
-
-
-PYCLASSCONSTANT_INT(ValueFilter, Equal, int(TValueFilter::Equal))
-PYCLASSCONSTANT_INT(ValueFilter, NotEqual, int(TValueFilter::NotEqual))
-PYCLASSCONSTANT_INT(ValueFilter, Less, int(TValueFilter::Less))
-PYCLASSCONSTANT_INT(ValueFilter, LessEqual, int(TValueFilter::LessEqual))
-PYCLASSCONSTANT_INT(ValueFilter, Greater, int(TValueFilter::Greater))
-PYCLASSCONSTANT_INT(ValueFilter, GreaterEqual, int(TValueFilter::GreaterEqual))
-PYCLASSCONSTANT_INT(ValueFilter, Between, int(TValueFilter::Between))
-PYCLASSCONSTANT_INT(ValueFilter, Outside, int(TValueFilter::Outside))
-PYCLASSCONSTANT_INT(ValueFilter, Contains, int(TValueFilter::Contains))
-PYCLASSCONSTANT_INT(ValueFilter, NotContains, int(TValueFilter::NotContains))
-PYCLASSCONSTANT_INT(ValueFilter, BeginsWith, int(TValueFilter::BeginsWith))
-PYCLASSCONSTANT_INT(ValueFilter, EndsWith, int(TValueFilter::EndsWith))
-
-PYCLASSCONSTANT_INT(Filter_values, Equal, int(TValueFilter::Equal))
-PYCLASSCONSTANT_INT(Filter_values, NotEqual, int(TValueFilter::NotEqual))
-PYCLASSCONSTANT_INT(Filter_values, Less, int(TValueFilter::Less))
-PYCLASSCONSTANT_INT(Filter_values, LessEqual, int(TValueFilter::LessEqual))
-PYCLASSCONSTANT_INT(Filter_values, Greater, int(TValueFilter::Greater))
-PYCLASSCONSTANT_INT(Filter_values, GreaterEqual, int(TValueFilter::GreaterEqual))
-PYCLASSCONSTANT_INT(Filter_values, Between, int(TValueFilter::Between))
-PYCLASSCONSTANT_INT(Filter_values, Outside, int(TValueFilter::Outside))
-PYCLASSCONSTANT_INT(Filter_values, Contains, int(TValueFilter::Contains))
-PYCLASSCONSTANT_INT(Filter_values, NotContains, int(TValueFilter::NotContains))
-PYCLASSCONSTANT_INT(Filter_values, BeginsWith, int(TValueFilter::BeginsWith))
-PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
@@ -2082,13 +2052,6 @@ C_CALL3(MakeRandomIndicesMultiple, MakeRandomIndicesMultiple, MakeRandomIndices,
 C_CALL3(MakeRandomIndicesN, MakeRandomIndicesN, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
 C_CALL3(MakeRandomIndicesCV, MakeRandomIndicesCV, MakeRandomIndices, "[n | gen [, folds]], [folds=, stratified=, randseed=] -/-> [int]")
 
-PYCLASSCONSTANT_INT(MakeRandomIndices, StratifiedIfPossible, -1L)
-PYCLASSCONSTANT_INT(MakeRandomIndices, NotStratified, 0L)
-PYCLASSCONSTANT_INT(MakeRandomIndices, Stratified, 1L)
-
-PYCONSTANT_INT(StratifiedIfPossible, -1)
-PYCONSTANT_INT(NotStratified, 0)
-PYCONSTANT_INT(Stratified, 1)
 
 PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -2520,16 +2483,6 @@ PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, P
 
 #include "stat.hpp"
 
-PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Minimal, DISTRIBUTE_MINIMAL)
-PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Factor, DISTRIBUTE_FACTOR)
-PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Fixed, DISTRIBUTE_FIXED)
-PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Uniform, DISTRIBUTE_UNIFORM)
-
-PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Minimal, DISTRIBUTE_MINIMAL)
-PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Factor, DISTRIBUTE_FACTOR)
-PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Fixed, DISTRIBUTE_FIXED)
-PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Uniform, DISTRIBUTE_UNIFORM)
-
 /* ************ MEASURES ************ */
 
 #include "measures.hpp"
@@ -2554,23 +2507,6 @@ C_CALL(MeasureAttribute_relief, MeasureAttribute, "(estimate=, m=, k=) | (attr, 
 PYCONSTANT(MeasureAttribute_splitGain, (PyObject *)&PyOrMeasureAttribute_gainRatio_Type)
 PYCONSTANT(MeasureAttribute_retis, (PyObject *)&PyOrMeasureAttribute_MSE_Type)
 
-
-PyObject *MeasureNeeds()
-{ PyObject *vartypes=PyModule_New("MeasureNeeds");
-PyModule_AddIntConstant(vartypes, "Generator", (int)TMeasureAttribute::Generator);
-PyModule_AddIntConstant(vartypes, "DomainContingency", (int)TMeasureAttribute::DomainContingency);
-PyModule_AddIntConstant(vartypes, "Contingency_Class", (int)TMeasureAttribute::Contingency_Class);
-return vartypes;
-}
-
-PYCLASSCONSTANT_INT(MeasureAttribute, NeedsGenerator, TMeasureAttribute::Generator)
-PYCLASSCONSTANT_INT(MeasureAttribute, NeedsDomainContingency, TMeasureAttribute::DomainContingency)
-PYCLASSCONSTANT_INT(MeasureAttribute, NeedsContingency_Class, TMeasureAttribute::Contingency_Class)
-
-PYCLASSCONSTANT_INT(MeasureAttribute, IgnoreUnknowns, TMeasureAttribute::IgnoreUnknowns)
-PYCLASSCONSTANT_INT(MeasureAttribute, ReduceByUnknowns, TMeasureAttribute::ReduceByUnknowns)
-PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsToCommon, TMeasureAttribute::UnknownsToCommon)
-PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsAsValue, TMeasureAttribute::UnknownsAsValue)
 
 PYCLASSCONSTANT_FLOAT(MeasureAttribute, Rejected, ATTRIBUTE_REJECTED)
 
@@ -2935,12 +2871,6 @@ PyObject *ThresholdCA_call(PyObject *self, PyObject *args, PyObject *keywords) P
 
 #include "symmatrix.hpp"
 
-PYCLASSCONSTANT_INT(SymMatrix, Lower, 0)
-PYCLASSCONSTANT_INT(SymMatrix, Upper, 1)
-PYCLASSCONSTANT_INT(SymMatrix, Symmetric, 2)
-PYCLASSCONSTANT_INT(SymMatrix, Lower_Filled, 3)
-PYCLASSCONSTANT_INT(SymMatrix, Upper_Filled, 4)
-
 PyObject *SymMatrix_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(dimension[, initialElement=0] | a list of lists)")
 {
 	PyTRY
@@ -3285,10 +3215,6 @@ PyObject *SymMatrix_repr(PyObject *self)
 
 C_NAMED(HierarchicalCluster, Orange, "()")
 C_CALL3(HierarchicalClustering, HierarchicalClustering, Orange, "(linkage=)")
-
-PYCLASSCONSTANT_INT(HierarchicalClustering, Single, 0)
-PYCLASSCONSTANT_INT(HierarchicalClustering, Average, 1)
-PYCLASSCONSTANT_INT(HierarchicalClustering, Complete, 2)
 
 PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
 {

@@ -95,9 +95,9 @@ class ORANGE_API TC45TreeNode : public TOrange {
 public:
   __REGISTER_CLASS
 
-  enum {Leaf = 0, Branch, Cut, Subset};
+  CLASSCONSTANTS(NodeType) enum {Leaf = 0, Branch, Cut, Subset};
 
-  int nodeType; //P 0 = leaf,  1 = branch,  2 = cut,  3 = subset
+  int nodeType; //P(&C45TreeNode_NodeType) 0 = leaf,  1 = branch,  2 = cut,  3 = subset
   TValue leaf; //P most frequent class at this node
   float items; //P no of items at this node
   PDiscDistribution classDist; //P class distribution of items

@@ -174,9 +174,12 @@ class ORANGE_API TSVMLearner : public TLearner{
 public:
 	__REGISTER_CLASS
 	
+  CLASSCONSTANTS(SVMType: C_SVC=C_SVC; Nu_SVC=NU_SVC; OneClass=ONE_CLASS; Epsilon_SVR=EPSILON_SVR; Nu_SVR=NU_SVR)
+  CLASSCONSTANTS(Kernel: Linear=LINEAR; Polynomial=POLY; RBF=RBF; Sigmoid=SIGMOID; Custom=CUSTOM)
+
 	//parameters
-	int svm_type; //P  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
-	int kernel_type; //P  kernel type (LINEAR=0, POLY, RBF, SIGMOID, CUSTOM=4)
+	int svm_type; //P(&SVMLearner_SVMType)  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
+	int kernel_type; //P(&SVMLearner_Kernel)  kernel type (LINEAR=0, POLY, RBF, SIGMOID, CUSTOM=4)
 	float degree;	//P polynomial kernel degree
 	float gamma;	//P poly/rbf/sigm parameter
 	float coef0;	//P poly/sigm parameter

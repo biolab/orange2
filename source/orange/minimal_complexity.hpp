@@ -132,8 +132,10 @@ class ORANGE_API TFeatureByMinComplexity : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 
+  CLASSCONSTANTS(Completion: NoCompletion=completion_no; CompletionByDefault=completion_default; CompletionByBayes=completion_bayes)
+
   PColorIG colorIG; //P graph coloring algorithm
-  int completion; //P decides how to determine the class for points not covered by any cluster
+  int completion; //P(&FeatureByMinComplexity_Completion) decides how to determine the class for points not covered by any cluster
 
   TFeatureByMinComplexity(PColorIG = PColorIG(), const int &completion = completion_bayes);
   PVariable operator()(PExampleGenerator gen, TVarList &boundSet, const string &name, float &quality, const int &weight=0);

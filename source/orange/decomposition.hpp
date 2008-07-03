@@ -123,7 +123,7 @@ class ORANGE_API TIM : public TOrange {
 public:
   __REGISTER_CLASS
 
-  int varType; //P class variable type
+  int varType; //P(&Variable_Type) class variable type
   PExampleTable rowExamples; //P examples with free attributes for each row
   vector<T_ExampleIMColumnNode> columns;
 
@@ -193,7 +193,7 @@ class ORANGE_API TIMByRows : public TOrange {
 public:
   __REGISTER_CLASS
 
-  int varType; //P class variable type
+  int varType; //P(&Variable_Type) class variable type
   vector<PExample> columnExamples;
   vector<TDIMRow> rows;
 

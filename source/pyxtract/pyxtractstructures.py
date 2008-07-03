@@ -6,6 +6,7 @@ class ClassDefinition:
     self.methods={}
     self.specialmethods={}
     self.constants={}
+    self.subconstants = {}
     self.hidden = 0
     self.imported = 0
     self.used = 0

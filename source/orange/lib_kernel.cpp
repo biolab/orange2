@@ -244,14 +244,16 @@ C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, g
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
+PyObject *PyVariable_MakeStatus_FromLong(long ok);
 
+/* Left for compatibility (also put into the header, as for others */
 PyObject *MakeStatus()
 { PyObject *mt=PyModule_New("MakeStatus");
-  PyModule_AddIntConstant(mt, "OK", (int)TVariable::OK);
-  PyModule_AddIntConstant(mt, "MissingValues", (int)TVariable::MissingValues);
-  PyModule_AddIntConstant(mt, "NoRecognizedValues", (int)TVariable::NoRecognizedValues);
-  PyModule_AddIntConstant(mt, "Incompatible", (int)TVariable::Incompatible);
-  PyModule_AddIntConstant(mt, "NotFound", (int)TVariable::NotFound);
+  PyModule_AddObject(mt, "OK", PyVariable_MakeStatus_FromLong((long)TVariable::OK));
+  PyModule_AddObject(mt, "MissingValues", PyVariable_MakeStatus_FromLong((long)TVariable::MissingValues));
+  PyModule_AddObject(mt, "NoRecognizedValues", PyVariable_MakeStatus_FromLong((long)TVariable::NoRecognizedValues));
+  PyModule_AddObject(mt, "Incompatible", PyVariable_MakeStatus_FromLong((long)TVariable::Incompatible));
+  PyModule_AddObject(mt, "NotFound", PyVariable_MakeStatus_FromLong((long)TVariable::NotFound));
   return mt;
 }
 
@@ -276,7 +278,7 @@ PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS |
       
     int status;
     PVariable var = TVariable::getExisting(varName, varType, values.getUnwrappedPtr(), &unorderedValues, failOn, &status);
-    return Py_BuildValue("Ni", WrapOrange(var), status);
+    return Py_BuildValue("NN", WrapOrange(var), PyVariable_MakeStatus_FromLong(status));
   PyCATCH
 }
 
@@ -299,7 +301,7 @@ PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_S
     
     int status;  
     PVariable var = TVariable::make(varName, varType, values.getUnwrappedPtr(), &unorderedValues, createNewOn, &status);
-    return Py_BuildValue("Ni", WrapOrange(var), status);
+    return Py_BuildValue("NN", WrapOrange(var), PyVariable_MakeStatus_FromLong(status));
   PyCATCH
 }
 
@@ -2928,6 +2930,9 @@ bool load_gsl()
 }
 */
 
+
+/* Not in .hpp (to be parsed by pyprops) since these only occur in arguments to numpy conversion function */
+
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Ignore, 0)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
@@ -5137,6 +5142,9 @@ PyObject *ClassifierList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> Non
 PyObject *ClassifierList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_sort(self, args); }
 PyObject *ClassifierList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_reduce(self); }
 
+
+/* Not in .hpp (to be parsed by pyprops) since these only occur in arguments and only in Python */
+/* Duplicated for compatibility (and also simplicity) */
 
 PYCONSTANT_INT(GetValue, 0)
 PYCONSTANT_INT(GetProbabilities, 1)

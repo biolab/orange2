@@ -39,10 +39,11 @@ WRAPPER(ExampleGenerator);
 class ORANGE_API TMakeRandomIndices : public TOrange {
 public:
   __REGISTER_CLASS
+  CLASSCONSTANTS(Stratification: StratifiedIfPossible=-1; NotStratified; Stratified)
 
   enum { STRATIFIED_IF_POSSIBLE=-1, NOT_STRATIFIED, STRATIFIED};
 
-  int stratified;  //P requests stratified distributions
+  int stratified;  //P(&MakeRandomIndices_Stratification) requests stratified distributions
   int randseed; //P a seed for random generator
   PRandomGenerator randomGenerator; //P a random generator
 

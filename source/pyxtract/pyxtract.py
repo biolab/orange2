@@ -384,7 +384,7 @@ def parseFiles():
 
     for line in infile:
       lineno=lineno+1
-      if line[:15]=="PYXTRACT_IGNORE":
+      if line.strip().startswith("PYXTRACT_IGNORE"):
         continue
       detectHierarchy(line, classdefs) # BASED_ON, DATASTRUCTURE those lines get detected twice!
       for i in [detectConstructors, detectAttrs, detectMethods, detectCallDoc]:
@@ -430,6 +430,16 @@ def classdefsEffects(classdefs):
     if not classdefs[typename].datastructure:
       printNQ("Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename)
       del classdefs[typename]
+      
+    scs = pyprops and pyprops.get("T"+typename, None)
+    classdef.subconstants = scs and scs.constants
+    if scs:
+      for consttype, valuelist in classdef.subconstants.items():
+        for k, v in valuelist:
+          classdef.constants[k]=ConstantDefinition(ccode=("Py%s_%s_FromLong((long)(%s))" % (typename, consttype, v)))
+#        classdef.constants[consttype]=ConstantDefinition(ccode=("(PyObject *)&Py%s_%s_Type" % (typename, consttype)))
+      
+      
 
 
 def readAliases():
@@ -555,6 +565,25 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     if fields.description:
       outfile.write('char '+type+'_doc[] = "'+fields.description+'";\n')
     outfile.write('\n')
+
+    if fields.subconstants:
+      for constname, constvalues in fields.subconstants.items():
+        outfile.write("""
+TNamedConstantsDef %(wholename)s_values[] = {%(valueslist)s, {0, 0}};
+static PyObject *%(wholename)s_repr(PyObject *self) { return stringFromList(self, %(wholename)s_values); }
+PyObject *%(wholename)s__reduce__(PyObject *self);
+PyMethodDef %(wholename)s_methods[] = { {"__reduce__", (binaryfunc)%(wholename)s__reduce__, METH_NOARGS, "reduce"}, {NULL, NULL}};
+PyTypeObject Py%(wholename)s_Type = {PyObject_HEAD_INIT(&PyType_Type) 0, "%(classname)s.%(constname)s", sizeof(PyIntObject), 0, 0, 0, 0, 0, 0, (reprfunc)%(wholename)s_repr, 0, 0, 0, 0, 0, (reprfunc)%(wholename)s_repr, 0, 0, 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES, 0, 0, 0, 0, 0, 0, 0, %(wholename)s_methods, 0, 0, &PyInt_Type};
+PyObject *Py%(wholename)s_FromLong(long ok) { PyIntObject *r = PyObject_New(PyIntObject, &Py%(wholename)s_Type); r->ob_ival = ok; return (PyObject *)r; }
+void *PT%(wholename)s(void *l) { return Py%(wholename)s_FromLong(*(long *)l); }
+PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(s(i))", getExportedFunction("__pickleLoaderNamedConstants"), "%(wholename)s", ((PyIntObject *)(self))->ob_ival); }
+
+""" % {"wholename": type+"_"+constname, "classname": type, "constname": constname, "valueslist": ", ".join('{"%s", %s}' % k for k in constvalues)})
+
+#PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(i)", &PyInt_Type, ((PyIntObject *)(self))->ob_ival); }
+
+
+
 
     # Write constants
     if fields.constants:
@@ -779,6 +808,11 @@ def writeInitialization(functions, constants):
   functionsfile.write('#include "externs.px"\n\n')
 
   myclasses = dict(filter(lambda x:not x[1].imported, classdefs.items()))
+
+  classconstants = [(type, fields.subconstants) for type, fields in myclasses.items() if fields.subconstants]
+  if classconstants:
+    functions["__pickleLoaderNamedConstants"] = FunctionDefinition(cname="__pickleLoaderNamedConstants", argkw="METH_VARARGS", arguments="")
+    
   if len(functions):
     olist=functions.keys()
     olist.sort()
@@ -835,6 +869,19 @@ def writeInitialization(functions, constants):
   functionsfile.write("\n")
 
   printV1NoNL("\nConstants:")
+  if classconstants:
+    for type, subconstants in classconstants:
+      for constname in subconstants:
+        functionsfile.write('extern PyTypeObject Py%s_Type;\n' % (type+"_"+constname))
+
+    functionsfile.write("\nTNamedConstantRecord %sNamedConstants[] = {\n" % modulename)
+    for type, subconstants in classconstants:
+      for constname in subconstants:
+        functionsfile.write('    {"%s_%s", &Py%s_%s_Type},\n' % (type, constname, type, constname))
+    functionsfile.write('    {NULL, NULL}\n};\n\n')
+    functionsfile.write("PyObject *__pickleLoaderNamedConstants(PyObject *, PyObject *args)\n{ return unpickleConstant(%sNamedConstants, args); }\n\n" % modulename)
+    
+
   functionsfile.write("\nvoid add%sConstants(PyObject *mod) {\n" % modulename)
   if olist:
     for constantname in olist:
@@ -853,6 +900,13 @@ def writeInitialization(functions, constants):
     for classname in ks:
       if not classdefs[i].hidden:
         functionsfile.write('     PyModule_AddObject(mod, "%s", (PyObject *)&PyOr%s_Type);\n' % (classname, classname))
+
+  for type, fields in myclasses.items():
+      if fields.subconstants:
+        for constname in fields.subconstants:
+          functionsfile.write('\n     PyType_Ready(&Py%(wholename)s_Type);\n     Py%(wholename)s_Type.tp_print = 0;\n' %
+                              {"wholename": type+"_"+constname, "classname": type, "constname": constname})
+
   functionsfile.write("}\n\n")
 
   printV1("\n")
@@ -1136,7 +1190,8 @@ if action.count("clean"):
   removeFiles()
   action.remove("clean")
 
-if len(action):  
+if len(action):
+  pyprops = pickle.load(open("ppp/stamp", "rt"))
   newfiles=[]
   functions, constants, classdefs, aliases = parseFiles()
     
@@ -1144,3 +1199,7 @@ if len(action):
     listOfExports()
   if action.count("make"):
     make()
+
+
+
+

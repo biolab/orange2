@@ -175,7 +175,10 @@ WRAPPER(ExampleTable)
 class ORANGE_API TLinearLearner : public TLearner{
 public:
 	__REGISTER_CLASS
-	int solver_type;	//P Solver type (L2_LR, L2LOSS_SVM_DUAL, L2LOSS_SVM, L1LOSS_SVM_DUAL)
+	
+	CLASSCONSTANTS(LossFunction) enum {L2_LR, L2Loss_SVM_Dual, L2Loss_SVM, L1Loss_SVM_Dual };
+	
+	int solver_type;	//P(&LinearLearner_LossFunction) Solver type (loss function)
 	float eps;			//P Stopping criteria
 	float C;			//P Regularization parameter
 

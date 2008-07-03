@@ -202,4 +202,19 @@ inline PyObject *getExportedFunction(const char *func)
 inline PyObject *getExportedFunction(PyObject *module, const char *func)
 { return PyDict_GetItemString(PyModule_GetDict(module), func); }
 
+
+typedef struct {
+  const char *name;
+  const long value;
+} TNamedConstantsDef;
+
+typedef struct {
+  char *name;
+  PyTypeObject *type;
+} TNamedConstantRecord;
+
+ORANGE_API PyObject *unpickleConstant(TNamedConstantRecord const *, PyObject *args);
+
+PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs);
+
 #endif
