@@ -165,6 +165,7 @@ TExampleIterator TFileExampleGenerator::begin(TExampleIterator &fei)
     throw;
   }
 
+  fei.privateExample.id = getExampleId();
   return fei;
 }
 
@@ -182,6 +183,9 @@ void TFileExampleGenerator::increaseIterator(TExampleIterator &i)
 { TFileExampleIteratorData *sru = (TFileExampleIteratorData *)(i.data);
   if (feof(sru->file) || !readExample(*sru, i.privateExample))
     deleteIterator(i);
+  else
+    i.privateExample.id = getExampleId();
+
 }
 
 

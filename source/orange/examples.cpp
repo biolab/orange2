@@ -35,10 +35,13 @@
 
 DEFINE_TOrangeVector_classDescription(PExample, "TExampleList", true, ORANGE_API)
 
+long exampleId = 0;
+
 TExample::TExample()
 : values(NULL),
   values_end(NULL),
-  name(NULL)
+  name(NULL),
+  id(getExampleId())
 {}
 
 
@@ -46,7 +49,8 @@ TExample::TExample(PDomain dom, bool initMetas)
 : domain(dom),
   values(NULL),
   values_end(NULL),
-  name(NULL)
+  name(NULL),
+  id(getExampleId())
 { if (!dom)
     raiseError("example needs domain");
 
@@ -66,7 +70,8 @@ TExample::TExample(PDomain dom, bool initMetas)
 TExample::TExample(const TExample &orig, bool copyMetas)
 : domain(orig.domain),
   meta(copyMetas ? orig.meta : TMetaValues()),
-  name(orig.name ? new string(*orig.name) : NULL)
+  name(orig.name ? new string(*orig.name) : NULL),
+  id(orig.id)
 { if (domain) {
     const int attrs = domain->variables->size();
     TValue *vi = values = mlnew TValue[attrs];
@@ -80,7 +85,8 @@ TExample::TExample(const TExample &orig, bool copyMetas)
 TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 : domain(dom),
   meta(),
-  name(NULL)
+  name(NULL),
+  id(orig.id)
 { if (!dom)
     raiseError("example needs a domain");
 
@@ -133,7 +139,8 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID, vect
 
 TExample::TExample(PDomain dom, PExampleList elist)
 : domain(dom),
-  name(NULL)
+  name(NULL),
+  id(elist->size() ? elist->front()->id : getExampleId())
 {
   if (!dom)
     raiseError("example needs a domain");
@@ -245,6 +252,8 @@ TExample &TExample::operator =(const TExample &orig)
   if (orig.name)
     name = new string(*orig.name);
 
+  id = orig.id;
+  
   return *this;
 }
 

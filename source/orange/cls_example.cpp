@@ -239,8 +239,11 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BA
     PyErr_Clear();
 
     PExample example;
-    if (PyArg_ParseTuple(args, "O&", cc_Example, &example)) {
+    int keepId = 0;
+    if (PyArg_ParseTuple(args, "O&|i", cc_Example, &example, &keepId)) {
       PExample ex = mlnew TExample(example.getReference());
+      if (!keepId)
+        ex->id = getExampleId();
       return Example_FromWrappedExample(ex);
     }
       
@@ -816,6 +819,7 @@ void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherVal
     Value_pack(*vali, buf, otherValues);
 
   buf.writeInt(example.meta.size() | (example.name ? 1<<31 : 0));
+  buf.writeLong(example.id);
 
   if (example.name) {
     if (!otherValues)
@@ -842,6 +846,7 @@ void Example_unpack(TExample &example, TCharBuffer &buf, PyObject *&otherValues,
   }
 
   int nMetas = buf.readInt();
+  example.id = buf.readLong();
 
   if (nMetas & (1<<31)) {
     PyObject *pyname = PyList_GetItem(otherValues, otherValuesIndex++);
@@ -966,6 +971,20 @@ PyObject *Example_str(TPyExample *pex)
 PyObject *Example_get_domain(TPyExample *self)
 { PyTRY
     return WrapOrange(PyExample_AS_Example(self)->domain);
+  PyCATCH
+}
+
+PyObject *Example_get_id(TPyExample *self)
+{ PyTRY
+    return PyInt_FromLong(PyExample_AS_Example(self)->id);
+  PyCATCH
+}
+
+PyObject *Example_newId(TPyExample *self)
+{
+  PyTRY
+    PyExample_AS_Example(self)->id = getExampleId();
+    RETURN_NONE;
   PyCATCH
 }
 

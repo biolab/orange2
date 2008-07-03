@@ -128,7 +128,7 @@ public:
   // A pointer to the corresponding generator. Although public, the use this field should be avoided, if possible.
   TExampleGenerator *generator;
   /*  An example that iterator points to; this can be a pointer to a copy stored in generator or to privateExample.
-      The only situation in which this would point to a specially allocated copy in memory would be when it need to point
+      The only situation in which this would point to a specially allocated copy in memory would be when it needs to point
       to an instance of a class derived from TExample (such as TExampleForMissing).
       If NULL, iterator points beyond the last example (i.e. equals end()). */
   TExample *example;

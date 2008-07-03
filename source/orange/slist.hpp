@@ -114,6 +114,13 @@ public:
     bufptr += sizeof(int);
   }
 
+  inline void writeLong(const long &c)
+  {
+    ensure(sizeof(long));
+    (long &)*bufptr = c;
+    bufptr += sizeof(long);
+  }
+
   inline void writeFloat(const float &c)
   {
     ensure(sizeof(float));
@@ -175,6 +182,13 @@ public:
   { 
     int &res = (int &)*bufptr;
     bufptr += sizeof(int);
+    return res;
+  }
+
+  inline long readLong()
+  { 
+    long &res = (long &)*bufptr;
+    bufptr += sizeof(long);
     return res;
   }
 

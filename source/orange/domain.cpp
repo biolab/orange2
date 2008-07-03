@@ -439,6 +439,7 @@ PVariable TDomain::operator[](const string &name)
     'src' or by asking variable[i]->computeValue to deduce its value from 'src'. */
 void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
 {
+  dest.id = src.id; 
   if (src.domain==this) {
     int Nv = variables->size();
     TExample::iterator de = dest.begin();

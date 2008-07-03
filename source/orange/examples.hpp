@@ -31,6 +31,9 @@ WRAPPER(Example)
 #define TExampleList TOrangeVector<PExample> 
 VWRAPPER(ExampleList)
 
+extern long exampleId;
+inline long getExampleId() { return ++exampleId; }
+
 // A vector of attribute and class values
 class ORANGE_API TExample : public TOrange {
 public:
@@ -40,6 +43,7 @@ public:
   TValue *values, *values_end;
   TMetaValues meta;
   string *name;
+  int id; //P
 
   TExample();
   TExample(PDomain dom, bool initMetas = true);
