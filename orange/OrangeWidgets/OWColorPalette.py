@@ -442,8 +442,7 @@ class ColorPaletteGenerator:
         
         if hasattr(self, "rgbColorsDict") and self.rgbColorsDict.has_key(max(3, numberOfColors)):
             self.rgbColors = self.rgbColorsDict[max(3, numberOfColors)][:numberOfColors]
-        else:
-            self.rgbColors = defaultRGBColors
+
         self.rgbQColors = [QColor(*color) for color in self.rgbColors]
         
 
