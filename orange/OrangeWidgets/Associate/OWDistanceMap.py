@@ -33,14 +33,29 @@ class EventfulGraphicsView(QGraphicsView):
         self.master = master
         self.viewport().setMouseTracking(True)
 
+##    def mousePressEvent (self, event):
+##        self.master.mousePress(event.pos().x(), event.pos().y())
+##
+##    def mouseReleaseEvent (self, event):
+##        self.master.mouseRelease(event.pos().x(), event.pos().y())
+##
+##    def mouseMoveEvent (self, event):
+##        self.master.mouseMove(event.pos().x(), event.pos().y())
+
+class EventfulGraphicsScene(QGraphicsScene):
+    def __init__(self, master):
+        QGraphicsScene.__init__(self)
+        self.master = master
+##        self.setMouseTracking(True)
+
     def mousePressEvent (self, event):
-        self.master.mousePress(event.pos().x(), event.pos().y())
+        self.master.mousePress(event.scenePos().x(), event.scenePos().y())
 
     def mouseReleaseEvent (self, event):
-        self.master.mouseRelease(event.pos().x(), event.pos().y())
+        self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
 
     def mouseMoveEvent (self, event):
-        self.master.mouseMove(event.pos().x(), event.pos().y())
+        self.master.mouseMove(event.scenePos().x(), event.scenePos().y())
 
 #####################################################################
 # main class
@@ -191,7 +206,7 @@ class OWDistanceMap(OWWidget):
 
         self.resize(700,400)
 
-        self.scene = QGraphicsScene()
+        self.scene = EventfulGraphicsScene(self)
         self.sceneView = EventfulGraphicsView(self.scene, self.mainArea, self)
         self.mainArea.layout().addWidget(self.sceneView)
 
@@ -667,7 +682,8 @@ class ImageItem(QGraphicsRectItem):
         self.show()
 
     def paint(self, painter, option, widget=None):
-        painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
+##        painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
+        painter.drawImage(0, 0, self.image, 0, 0, -1, -1)
 
 class QCustomGraphicsText(QGraphicsSimpleTextItem):
     def __init__(self, text, scene = None, rotateAngle = 0.0, font=None):
