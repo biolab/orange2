@@ -545,7 +545,7 @@ class OWVizRank(VizRank, OWWidget):
         self.lastSaveDirName = os.path.split(name)[0]
 
         # show button to stop saving
-        butt = OWGUI.button(self.statusBox, self, "Stop Saving", callback = self.abortOperation); butt.show()
+        butt = OWGUI.button(self.widgetStatusArea, self, "Stop Saving", callback = self.abortOperation); butt.show()
 
         self.save(name, self.shownResults, len(self.shownResults))
 
@@ -569,7 +569,7 @@ class OWVizRank(VizRank, OWWidget):
         self.lastSaveDirName = dirName
 
         # show button to stop loading
-        butt = OWGUI.button(self.statusBox, self, "Stop Loading", callback = self.abortOperation); butt.show()
+        butt = OWGUI.button(self.widgetStatusArea, self, "Stop Loading", callback = self.abortOperation); butt.show()
 
         selectedClasses, count = self.load(name, ignoreCheckSum, maxCount)
 
