@@ -237,7 +237,7 @@ class VizRank:
 
         if self.autoSetTheKValue:
             self.kValue = self.getkValue(self.kValueFormula)
-            
+
         self.correctSettingsIfNecessary()
 
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
@@ -809,7 +809,7 @@ class VizRank:
             domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.graph.dataDomain.classVar.name, values = getVariableValuesSorted(self.graph.dataDomain.classVar))])
             minLength = (self.optimizationType == EXACT_NUMBER_OF_ATTRS and self.attributeCount) or 3
             maxLength = self.attributeCount
-            classListFull = self.originalData[self.dataClassIndex]
+            classListFull = self.graph.originalData[self.graph.dataClassIndex]
 
             # each call to selectNextAttributeSubset gets a new combination of attributes in a range from minLength to maxLength. if we return None for a given number of attributes this
             # doesn't mean yet that there are no more possible combinations. it may be just that we wanted a combination of 6 attributes in a domain with 4 attributes. therefore we have
@@ -931,7 +931,7 @@ class VizRank:
         maxFunct = self.getMaxFunct()
 
         if self.visualizationMethod == SCATTERPLOT:
-            classListFull = self.originalData[self.dataClassIndex]
+            classListFull = self.graph.originalData[self.graph.dataClassIndex]
 
             tempDict = {}
             projIndex = 0
@@ -970,7 +970,7 @@ class VizRank:
         elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
             numClasses = len(self.graph.dataDomain.classVar.values)
 
-            classListFull = self.originalData[self.dataClassIndex]
+            classListFull = self.graph.originalData[self.graph.dataClassIndex]
             newProjDict = {}
             projIndex = 0
 
@@ -1228,16 +1228,16 @@ class VizRankOutliers:
     def __init__(self, vizrank, dialogType):
         self.vizrank = vizrank
         self.dialogType = dialogType
-        
+
         self.data = None
         self.results = None
-        
+
         self.projectionIndices = []
         self.matrixOfPredictions = None
         self.graphMatrix = None
         self.evaluatedExamples = []
         self.projectionCount = 20
-        
+
         if self.dialogType == VIZRANK_POINT:
             self.ATTR_LIST = ATTR_LIST
             self.ACCURACY = ACCURACY
@@ -1256,9 +1256,9 @@ class VizRankOutliers:
     def evaluateProjections(self, qApp = None):
         if self.dialogType == VIZRANK_POINT:
             graph = self.vizrank.graph
-        
+
         if not self.results or not self.data: return
-        
+
         projCount = min(int(self.projectionCount), len(self.results))
         classCount = max(len(self.data.domain.classVar.values), 1)
         existing = 0
