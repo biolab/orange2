@@ -131,7 +131,7 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
             costx.append(x)
             costy.append(minc)
 
-        if self.curve(self.performanceLineCKey):
+        if self.performanceLineCKey: #self.curve(self.performanceLineCKey):
             self.performanceLineCKey.setData(costx, costy)
             self.performanceLineCKey.setVisible(b)
         self.update()
@@ -139,7 +139,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         nOnMinc = {}
         for (x, minc, threshold, cNum) in globalMinCostPoints:
             s = "c:%.1f, th:%1.3f %s" % (minc, threshold, self.classifierNames[cNum])
-            marker = self.insertMarker(s, QwtPlot.xBottom, QwtPlot.yRight)
+            marker = self.addMarker(s, 0, 0)
+            marker.setAxis(QwtPlot.xBottom, QwtPlot.yRight)
             onYCn = nOnMinc.get(str(x), 0)
 
             lminc = self.invTransform(QwtPlot.yLeft, self.transform(QwtPlot.yRight, minc)) ## ugly
@@ -164,7 +165,7 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 
     def setPointWidth(self, v):
         self.performanceLineSymbol.setSize(v, v)
-        for marker in self.markerKeys():
+        for marker in [item for item in self.itemList() if isinstance(item, QwtPlotMarker)]:
             marker.setSymbol(self.performanceLineSymbol)
         self.update()
 
@@ -192,6 +193,11 @@ class OWLiftCurve(OWROC):
 
         #load settings
         self.loadSettings()
+
+### Moved here to override the saved settings since the controls do not exist any more
+        self.CurveWidth = 3
+        self.ConvexCurveWidth = 1
+        self.ConvexHullCurveWidth = 3
 
         # temp variables
         self.dres = None
@@ -228,14 +234,17 @@ class OWLiftCurve(OWROC):
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.generalTab = OWGUI.createTabPage(self.tabs, "General")
 
+        
         ## target class
         self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target class', items=[], callback=self.target)
-        self.classCombo.setMaximumSize(150, 20)
+        OWGUI.separator(self.generalTab)
 
         ## classifiers selection (classifiersQLB)
-        self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
+        self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers", addSpace=True)
         self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
         self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select all", callback = self.SUAclassifiersQLB)
+##        OWGUI.checkBox(self.classifiersQVGB, self, 'ShowConvexHull', 'Show convex lift hull', tooltip='', callback=self.setShowConvexHull)
+##        OWGUI.checkBox(self.classifiersQVGB, self, 'ShowDiagonal', 'Show diagonal', tooltip='', callback=self.setShowDiagonal)
 
         # show Lift Curve convex hull
         OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show lift convex hull', tooltip='', callback=self.setShowConvexHull)
@@ -251,12 +260,17 @@ class OWLiftCurve(OWROC):
         self.maxpsum = 100; self.minp = 1; self.maxp = self.maxpsum - self.minp ## need it also in self.pvaluesUpdated
         stepp = 1.0
 
-        OWGUI.hSlider(self.performanceTabCosts, self, 'FPcost', box='FP Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
-        OWGUI.hSlider(self.performanceTabCosts, self, 'FNcost', box='FN Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
+        OWGUI.widgetLabel(self.performanceTabCosts, "False positive cost")
+        OWGUI.hSlider(OWGUI.indentedBox(self.performanceTabCosts), self, 'FPcost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
+        OWGUI.widgetLabel(self.performanceTabCosts, "False negative cost")
+        OWGUI.hSlider(OWGUI.indentedBox(self.performanceTabCosts), self, 'FNcost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
 
-        ptc = OWGUI.widgetBox(self.performanceTabCosts, "Prior target class probability [%]")
+        OWGUI.widgetLabel(self.performanceTabCosts, "Prior target class probability [%]")
+        ptc = OWGUI.indentedBox(self.performanceTabCosts)
         OWGUI.hSlider(ptc, self, 'pvalue', minValue=self.minp, maxValue=self.maxp, step=stepp, callback=self.pvaluesUpdated, ticks=5, labelFormat="%2.1f")
+        OWGUI.separator(ptc)
         OWGUI.button(ptc, self, 'Compute from data', self.setDefaultPValues) ## reset p values to default
+
 
         ## test set selection (testSetsQLB)
         self.testSetsQVGB = OWGUI.widgetBox(self.performanceTab, "Test sets")
@@ -269,9 +283,10 @@ class OWLiftCurve(OWROC):
         OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='Lift curve width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='Lift curve convex hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
         OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal', tooltip='', callback=self.setShowDiagonal)
-        self.SettingsTab.addStretch(100)
+##        self.SettingsTab.addStretch(100)
 
-        self.resize(800, 600)
+        OWGUI.rubber(self.controlArea)
+        self.resize(770, 530)
 
     def calcAllClassGraphs(self):
         for (cl, g) in enumerate(self.graphs):
