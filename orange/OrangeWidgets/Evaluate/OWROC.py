@@ -178,7 +178,7 @@ class singleClassROCgraph(OWGraph):
         self.classifierConvexHullCKey = self.addCurve('', pen = self.convexHullPen, style=QwtPlotCurve.Lines)
 
         ## iso-performance line
-        self.performanceLineCKey = -1
+        self.performanceLineCKey = None
 
     def setIterationCurves(self, iteration, curves):
         classifier = 0
@@ -232,7 +232,7 @@ class singleClassROCgraph(OWGraph):
                 self.mergedCThresholdKeys[cNum].setVisible(b2)
 
             for marker in self.mergedCThresholdMarkers[cNum]:
-            	marker.setVisible(b2)
+                marker.setVisible(b2)
 
             b = b and self.showConvexCurves
             if self.mergedConvexCKeys[cNum] <> None:
@@ -298,8 +298,8 @@ class singleClassROCgraph(OWGraph):
         self.updateCurveDisplay()
 
     def setShowDefaultThresholdPoint(self, b):
-    	self.showDefaultThresholdPoint = b
-    	self.updateCurveDisplay()
+        self.showDefaultThresholdPoint = b
+        self.updateCurveDisplay()
 
     def setShowClassifiers(self, list):
         self.showClassifiers = list
@@ -335,20 +335,20 @@ class singleClassROCgraph(OWGraph):
                 y = [py for (px, py, pf) in c]
                 self.mergedCKeys[classifier].setData(x, y)
 
-		# points of defualt threshold classifiers
+                # points of defualt threshold classifiers
                 defPoint = [(abs(pf-0.5), pf, px, py) for (px, py, pf) in c]
                 defPoints = []
                 if len(defPoint) > 0:
-                	defPoint.sort()
-                	defPoints = [(px, py, pf) for (d, pf, px, py) in defPoint if d == defPoint[0][0]]
+                    defPoint.sort()
+                    defPoints = [(px, py, pf) for (d, pf, px, py) in defPoint if d == defPoint[0][0]]
                 else:
-                	defPoints = []
+                    defPoints = []
                 defX = [px for (px, py, pf) in defPoints]
                 defY = [py for (px, py, pf) in defPoints]
                 self.mergedCThresholdKeys[classifier].setData(defX, defY)
 
                 for marker in self.mergedCThresholdMarkers[classifier]:
-                	marker.detach()
+                    marker.detach()
                 self.mergedCThresholdMarkers[classifier] = []
                 for (dx, dy, pf) in defPoints:
                     dx = max(min(0.95, dx + 0.01), 0.01)
@@ -369,7 +369,7 @@ class singleClassROCgraph(OWGraph):
                 self.mergedCKeys[c].setData([], [])
                 self.mergedCThresholdKeys[c].setData([], [])
                 for marker in self.mergedCThresholdMarkers[c]:
-                	marker.detach()
+                    marker.detach()
                 self.mergedCThresholdMarkers[c] = []
                 self.mergedConvexCKeys[c].setData([], [])
 
@@ -505,8 +505,8 @@ class singleClassROCgraph(OWGraph):
 
     ## performance line
     def calcUpdatePerformanceLine(self):
-    	closestpoints = orngStat.TCbestThresholdsOnROCcurve(self.FPcost, self.FNcost, self.pvalue, self.hullCurveDataForPerfLine)
-    	m = (self.FPcost*(1.0 - self.pvalue)) / (self.FNcost*self.pvalue)
+        closestpoints = orngStat.TCbestThresholdsOnROCcurve(self.FPcost, self.FNcost, self.pvalue, self.hullCurveDataForPerfLine)
+        m = (self.FPcost*(1.0 - self.pvalue)) / (self.FNcost*self.pvalue)
 
         ## now draw the closest line to the curve
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
@@ -515,8 +515,11 @@ class singleClassROCgraph(OWGraph):
         first = 1
         ## remove old markers
         for marker in self.performanceMarkerKeys:
-        	marker.detach()
-       	self.performanceMarkerKeys = []
+            try:
+                marker.detach()
+            except RuntimeError: ## RuntimeError: underlying C/C++ object has been deleted
+                pass
+        self.performanceMarkerKeys = []
         for (x, y, fscorelist) in closestpoints:
             if first:
                 first = 0
@@ -528,7 +531,7 @@ class singleClassROCgraph(OWGraph):
             py = y
             for (cNum, threshold) in fscorelist:
                 s = "%1.3f %s" % (threshold, self.classifierNames[cNum])
-               	px = max(min(0.95, px + 0.01), 0.01)
+                px = max(min(0.95, px + 0.01), 0.01)
                 py = min(max(0.01, py - 0.02), 0.95)
                 marker = self.addMarker(s, px, py, alignment = Qt.AlignRight)
                 marker.setVisible(b)
@@ -537,8 +540,9 @@ class singleClassROCgraph(OWGraph):
             lpx.append(x + 2.0)
             lpy.append(y + 2.0*m)
 
-        self.performanceLineCKey.setData(lpx, lpy)
-        self.performanceLineCKey.setVisible(b)
+        if self.performanceLineCKey:
+            self.performanceLineCKey.setData(lpx, lpy)
+            self.performanceLineCKey.setVisible(b)
         self.update()
 
     def costChanged(self, FPcost, FNcost):
