@@ -1,5 +1,12 @@
 @echo off
 cd orange
 python ..\pyxtract\defvectors.py
+
+rem I know this is stupid, but works under any shell
+cd ..\orange
+call _pyxtract.bat
+cd ..\orangene
+call _pyxtract.bat
+cd ..\orangeom
+call _pyxtract.bat
 cd ..
-for %d in (orange orangene orangeom) (pushd %d %+ call _pyxtract.bat %+ popd)
