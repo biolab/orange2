@@ -14,13 +14,15 @@ import statc
 ##############################################################################
 
 class colorItem(QTableWidgetItem):
-    def __init__(self, table, editType, text):
-        QTableWidgetItem.__init__(self, table, editType, str(text))
+    brush = QBrush(Qt.lightGray)
+    def __init__(self, text, type=0):
+        QTableWidgetItem.__init__(self, str(text), type)
+        self.setBackground(self.brush)
 
-    def paint(self, painter, colorgroup, rect, selected):
-        g = QPalette(colorgroup)
-        g.setColor(QPalette.Base, Qt.lightGray)
-        QTableWidgetItem.paint(self, painter, g, rect, selected)
+##    def paint(self, painter, colorgroup, rect, selected):
+##        g = QPalette(colorgroup)
+##        g.setColor(QPalette.Base, Qt.lightGray)
+##        QTableWidgetItem.paint(self, painter, g, rect, selected)
 
 ##############################################################################
 
@@ -134,24 +136,24 @@ class OWPredictions(OWWidget):
                             s = " : ".join([fmt % p[k] for k in self.selectedClasses])
                             if self.showClass: s += " -> "
                         if self.showClass: s += "%s" % str(cl)
-                        self.table.setText(self.rindx[i], col, s)
+                        self.table.setItem(self.rindx[i], col, QTableWidgetItem(s))
                 else:
                     # regression
                     for (i, d) in enumerate(self.data):
                         cl = c(d)
                         self.classifications[i].append(cl)
-                        self.table.setText(self.rindx[i], col, str(cl))
+                        self.table.setItem(self.rindx[i], col, QTableWidgetItem(str(cl)))
                 col += 1
         else:
             for i in range(len(self.data)):
                 for c in range(len(self.predictors)):
-                    self.table.setText(self.rindx[i], col+c, '')
+                    self.table.setItem(self.rindx[i], col+c, QTableWidgetItem(''))
             col += len(self.predictors)
 
         for i in range(sindx, col):
             if self.showClass or (classification and self.showProb):
                 self.table.showColumn(i)
-                self.table.adjustColumn(i)
+##                self.table.adjustColumn(i)
             else:
                 self.table.hideColumn(i)
 
@@ -159,7 +161,7 @@ class OWPredictions(OWWidget):
         col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
             self.table.showColumn(col)
-            self.table.adjustColumn(col)
+##            self.table.adjustColumn(col)
         else:
             self.table.hideColumn(col)
 
@@ -167,7 +169,7 @@ class OWPredictions(OWWidget):
         if self.ShowAttributeMethod == 0:
             for i in range(len(self.data.domain.attributes)):
                 self.table.showColumn(i)
-                self.table.adjustColumn(i)
+##                self.table.adjustColumn(i)
         else:
             for i in range(len(self.data.domain.attributes)):
                 self.table.hideColumn(i)
@@ -181,19 +183,22 @@ class OWPredictions(OWWidget):
         self.table.setRowCount(len(self.data))
 
         # HEADER: set the header (attribute names)
-        for col in range(len(self.data.domain.attributes)):
-            self.header.setLabel(col, self.data.domain.attributes[col].name)
-        col = len(self.data.domain.attributes)
-        if self.data.domain.classVar != None:
-            self.header.setLabel(col, self.data.domain.classVar.name)
-        col += 1
-        for (i,c) in enumerate(self.predictors.values()):
-            self.header.setLabel(col+i, c.name)
+##        for col in range(len(self.data.domain.attributes)):
+##            self.header.setLabel(col, self.data.domain.attributes[col].name)
+        labels = [attr.name for attr in self.data.domain.variables] + [c.name for c in self.predictors.values()]
+        self.table.setHorizontalHeaderLabels(labels)
+##        col = len(self.data.domain.attributes)
+##        if self.data.domain.classVar != None:
+##            self.header.setLabel(col, self.data.domain.classVar.name)
+##        col += 1
+##        for (i,c) in enumerate(self.predictors.values()):
+##            self.header.setLabel(col+i, c.name)
 
         # ATTRIBUTE VALUES: set the contents of the table (values of attributes), data first
         for i in range(len(self.data)):
             for j in range(len(self.data.domain.attributes)):
-                self.table.setText(i, j, str(self.data[i][j]))
+##                self.table.setText(i, j, str(self.data[i][j]))
+                self.table.setItem(i, j, QTableWidgetItem(str(self.data[i][j])))
         col = len(self.data.domain.attributes)
 
         # TRUE CLASS: set the contents of the table (values of attributes), data first
@@ -201,13 +206,13 @@ class OWPredictions(OWWidget):
         if self.data.domain.classVar:
             for (i, d) in enumerate(self.data):
                 c = d.getclass()
-                item = colorItem(self.table, QTableItem.WhenCurrent, str(c))
+                item = colorItem(str(c))
                 self.table.setItem(i, col, item)
                 self.classifications[i] = [c]
         col += 1
 
-        for i in range(col):
-            self.table.adjustColumn(i)
+##        for i in range(col):
+##            self.table.adjustColumn(i)
 
         # include predictions, handle show/hide columns
         self.updateTableOutcomes()
@@ -218,7 +223,7 @@ class OWPredictions(OWWidget):
     def sort(self, col):
         "sorts the table by column col"
         self.sortby = - self.sortby
-        self.table.sortColumn(col, self.sortby>=0, TRUE)
+        self.table.sortItems(col, self.sortby>=0)
 
         # the table may be sorted, figure out data indices
         for i in range(len(self.data)):
