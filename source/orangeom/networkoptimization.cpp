@@ -1698,7 +1698,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					}
 					
 				}
-				example.id = getExampleId();
+				example->id = getExampleId();
 				table->push_back(example);
 				//cout << "push back" <<endl;
 			}
