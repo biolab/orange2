@@ -212,8 +212,6 @@ class OWImpute(OWWidget):
             self.data = None
             self.send("Examples", data)
             self.attrList.clear()
-            # here's the trick: send the data on, even if it doesn't have any attributes
-            # but set self.data to None to disable the widget
         else:
             self.indibox.setDisabled(False)
             if not self.data or data.domain != self.data.domain:
