@@ -12,27 +12,6 @@ import orngStat, orngTest
 import statc, math
 from operator import add
 
-class ConfusionTable(QTableWidget):
-    def paintEmptyArea(self, p, cx, cy, cw, ch):
-        pass#p.fillRect(cx, cy, cw, ch, QBrush(QColor(255, 0, 0)))
-
-class ConfusionTableItem(QTableWidgetItem):
-    def __init__(self, isBold, *args):
-        QTableWidgetItem.__init__(self, *args)
-        self.isBold = isBold
-
-    def alignment(self):
-        return QWidget.AlignCenter
-
-    def paint(self, painter, cg, cr, selected):
-        painter.font().setBold(self.isBold)
-        QTableWidgetItem.paint(self, painter, cg, cr, selected)
-
-    def sizeHint(self):
-        sze = QTableWidgetItem.sizeHint(self)
-        sze.setWidth(sze.width()*1.15)
-        return sze
-
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
@@ -52,7 +31,7 @@ class OWConfusionMatrix(OWWidget):
         self.shownQuantity = 0
 
         self.learnerList = OWGUI.listBox(self.controlArea, self, "selectedLearner", "learnerNames", box = "Learners", callback = self.learnerChanged)
-        self.learnerList.setMinimumHeight(200)
+        self.learnerList.setMinimumHeight(100)
         OWGUI.separator(self.controlArea)
 
         OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = ["Number of examples", "Observed and expected examples", "Proportions of predicted", "Proportions of true"], box = "Show", callback=self.reprint)
@@ -67,37 +46,22 @@ class OWConfusionMatrix(OWWidget):
         OWGUI.checkBox(box, self, "appendProbabilities", "Append predicted class probabilities", callback = self.sendIf)
         applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically")
-        OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.sendData)
+        OWGUI.setStopper(self, applyButton, autoApplyCB, "selectionDirty", self.sendData)
 
         import sip
         sip.delete(self.mainArea.layout())
         self.layout = QGridLayout(self.mainArea)
-        labpred = OWGUI.widgetLabel(self.mainArea, "Prediction")
-        self.layout.addWidget(labpred, 0, 1, Qt.AlignCenter)
-        self.layout.addWidget(OWGUI.separator(self.mainArea),1, 0)
 
-        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class  ")
-        self.layout.addWidget(labpred, 2, 0, Qt.AlignCenter)
-        #self.layout.addWidget(OWGUI.rubber(self.mainArea), 3, 3, 1, 1)
-        self.layout.setColumnStretch(3, 100)
-        self.layout.setRowStretch(3, 100)
-
+        self.layout.addWidget(OWGUI.widgetLabel(self.mainArea, "Prediction"), 0, 1, Qt.AlignCenter)
+        self.layout.addWidget(OWGUI.widgetLabel(self.mainArea, "Correct Class  "), 2, 0, Qt.AlignCenter)
         self.table = OWGUI.table(self.mainArea, rows = 0, columns = 0, selectionMode = QTableWidget.MultiSelection, addToLayout = 0)
         self.layout.addWidget(self.table, 2, 1)
-        #self.table.setLeftMargin(0)
-        #self.table.setTopMargin(0)
-        self.table.verticalHeader().hide()
-        self.table.horizontalHeader().hide()
-        self.table.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        self.layout.setColumnStretch(1, 100)
+        self.layout.setRowStretch(2, 100)
+        self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.sendIf)
 
-        self.connect(self.table, SIGNAL("selectionChanged()"), self.sendIf)
+        self.resize(700,450)
 
-        self.resize(550,450)
-
-    def resizeEvent(self, *args):
-        if hasattr(self, "table"):
-            self.table.adjustSize()
-        OWWidget.resizeEvent(self, *args)
 
     def setTestResults(self, res):
         self.res = res
@@ -110,36 +74,48 @@ class OWConfusionMatrix(OWWidget):
 
         dim = len(res.classValues)
 
-        self.table.setRowCount(dim+2)
-        self.table.setColumnCount(dim+2)
+        self.table.setRowCount(dim+1)
+        self.table.setColumnCount(dim+1)
 
-        for ri in range(dim+2):
-            for ci in range(dim+2):
-                self.table.setItem(ri, ci, ConfusionTableItem(not ri or not ci or ri==dim+1 or ci==dim+1, self.table, QTableWidgetItem.Never, ""))
+        self.table.setHorizontalHeaderLabels(res.classValues+[""])
+        self.table.setVerticalHeaderLabels(res.classValues+[""])
 
-        for ri, cv in enumerate(res.classValues):
-            self.table.item(0, ri+1).setText(cv)
-            self.table.item(ri+1, 0).setText(cv)
+        for ri in range(dim+1):
+            for ci in range(dim+1):
+                it = QTableWidgetItem()
+                it.setFlags(Qt.ItemIsEnabled | (ri<dim and ci<dim and Qt.ItemIsSelectable or Qt.NoItemFlags))
+                it.setTextAlignment(Qt.AlignRight)
+                self.table.setItem(ri, ci, it)
 
+        boldf = self.table.item(0, dim).font()
+        boldf.setBold(True)
+        for ri in range(dim+1):
+            self.table.item(ri, dim).setFont(boldf)
+            self.table.item(dim, ri).setFont(boldf)
+            
         self.learnerNames = res.classifierNames[:]
-
-        # This also triggers a callback (learnerChanged)
-        # This USED TO trigger a callback! Not any more, though.
-        self.selectedLearner = [self.selectedLearner[0] < res.numberOfLearners and self.selectedLearner[0]]
+        if not self.selectedLearner and self.res.numberOfLearners:
+            self.selectedLearner = [0]
         self.learnerChanged()
-
         self.table.clearSelection()
-        # if the above doesn't call sendIf, you should call it here
+
 
     def learnerChanged(self):
+        if not self.res.numberOfLearners:
+            return
+        
+        if self.selectedLearner and self.selectedLearner[0] > self.res.numberOfLearners:
+            self.selectedLearner = [0]
+        if not self.selectedLearner:
+            return
+        
         cm = self.matrix[self.selectedLearner[0]]
         
+        self.isInteger = " %i "
         for r in reduce(add, cm):
             if int(r) != r:
                 self.isInteger = " %5.3f "
                 break
-        else:
-            self.isInteger = " %i "
 
         self.reprint()
         self.sendIf()
@@ -152,77 +128,64 @@ class OWConfusionMatrix(OWWidget):
         rowSums = [sum(r) for r in cm]
         colSums = [sum([r[i] for r in cm]) for i in range(dim)]
         total = sum(rowSums)
-        rowPriors = [r/total for r in rowSums]
-        colPriors = [r/total for r in colSums]
+        if self.shownQuantity == 1:
+            if total > 1e-5:
+                rowPriors = [r/total for r in rowSums]
+                colPriors = [r/total for r in colSums]
+            else:
+                rowPriors = [0 for r in rowSums]
+                colPriors = [0 for r in colSums]
 
         for ri, r in enumerate(cm):
             for ci, c in enumerate(r):
-                item = self.table.item(ri+1, ci+1)
+                item = self.table.item(ri, ci)
                 if self.shownQuantity == 0:
                     item.setText(self.isInteger % c)
                 elif self.shownQuantity == 1:
                     item.setText((self.isInteger + "/ %5.3f ") % (c, total*rowPriors[ri]*colPriors[ci]))
                 elif self.shownQuantity == 2:
-                    if colSums[ci] > 1e-5:
-                        item.setText(" %2.1f %%  " % (100 * c / colSums[ci]))
-                    else:
-                        item.setText(" N/A ")
+                    item.setText(colSums[ci] > 1e-5 and (" %2.1f %%  " % (100 * c / colSums[ci])) or " "+"N/A"+" ")
                 elif self.shownQuantity == 3:
-                    if rowSums[ri] > 1e-5:
-                        item.setText(" %2.1f %%  " % (100 * c / rowSums[ri]))
-                    else:
-                        item.setText(" N/A ")
-                self.table.updateCell(ri, ci)
+                    item.setText(rowSums[ri] > 1e-5 and (" %2.1f %%  " % (100 * c / rowSums[ri])) or " "+"N/A"+" ")
 
-        for ci in range(len(cm)):
-            self.table.setText(dim+1, ci+1, self.isInteger % colSums[ci])
-            self.table.setText(ci+1, dim+1, self.isInteger % rowSums[ci])
-        self.table.setText(dim+1, dim+1, self.isInteger % total)
+        for ci in range(dim):
+            self.table.item(dim, ci).setText(self.isInteger % colSums[ci])
+            self.table.item(ci, dim).setText(self.isInteger % rowSums[ci])
+        self.table.item(dim, dim).setText(self.isInteger % total)
 
-        for ci in range(len(cm)+2):
-            self.table.adjustColumn(ci)
-
-        self.table.adjustSize()
-
+        self.table.resizeColumnsToContents()
 
 
     def selectCorrect(self):
         if not self.res:
             return
 
+        sa = self.autoApply
+        self.autoApply = False
         self.table.clearSelection()
-        for i in range(1, 1+len(self.matrix[0])):
-            ts = QTableSelection()
-            ts.init(i, i)
-            ts.expandTo(i, i)
-            self.table.addSelection(ts)
-        self.table.setCurrentCell(0, 0)
+        for i in range(len(self.matrix[0])):
+            self.table.setRangeSelected(QTableWidgetSelectionRange(i, i, i, i), True)
+        self.autoApply = sa
         self.sendIf()
+
 
     def selectWrong(self):
         if not self.res:
             return
 
+        sa = self.autoApply
+        self.autoApply = False
         self.table.clearSelection()
         dim = len(self.matrix[0])
-        for i in range(1, 1+dim):
-            if i!=1:
-                ts = QTableSelection()
-                ts.init(i, 1)
-                ts.expandTo(i, i-1)
-                self.table.addSelection(ts)
-            if i < dim:
-                ts = QTableSelection()
-                ts.init(i, i+1)
-                ts.expandTo(i, dim)
-                self.table.addSelection(ts)
-        self.table.setCurrentCell(0, 0)
+        self.table.setRangeSelected(QTableWidgetSelectionRange(0, 0, dim-1, dim-1), True)
+        for i in range(len(self.matrix[0])):
+            self.table.setRangeSelected(QTableWidgetSelectionRange(i, i, i, i), False)
+        self.autoApply = sa
         self.sendIf()
 
 
     def selectNone(self):
         self.table.clearSelection()
-        # clearSelection for some reason calls the callback, while add doesn't
 
 
     def sendIf(self):
@@ -235,18 +198,11 @@ class OWConfusionMatrix(OWWidget):
     def sendData(self):
         self.selectionDirty = False
 
+        selected = [(x.row(), x.column()) for x in self.table.selectedIndexes()]
         res = self.res
-        if not res or not self.table.numSelections():
+        if not res or not selected:
             self.send("Selected Examples", None)
             return
-
-        from sets import Set
-        selected = Set()
-        for seli in range(self.table.numSelections()):
-            sel = self.table.selection(seli)
-            for ri in range(sel.topRow(), sel.bottomRow()+1):
-                for ci in range(sel.leftCol(), sel.rightCol()+1):
-                    selected.add((ri-1, ci-1))
 
         learnerI = self.selectedLearner[0]
         selectionIndices = [i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected]
@@ -274,8 +230,6 @@ class OWConfusionMatrix(OWWidget):
                     for id, p in zip(probIds, res.results[i].probabilities[learnerI]):
                         ex[id] = p
     
-#            print predictionsId, probIds
-
         self.send("Selected Examples", data)
 
 
