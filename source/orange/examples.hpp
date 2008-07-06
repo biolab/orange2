@@ -32,7 +32,7 @@ WRAPPER(Example)
 VWRAPPER(ExampleList)
 
 extern long exampleId;
-inline long getExampleId() { return ++exampleId; }
+ORANGE_API long getExampleId();
 
 // A vector of attribute and class values
 class ORANGE_API TExample : public TOrange {

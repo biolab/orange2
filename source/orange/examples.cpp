@@ -37,6 +37,9 @@ DEFINE_TOrangeVector_classDescription(PExample, "TExampleList", true, ORANGE_API
 
 long exampleId = 0;
 
+long getExampleId()
+{ return ++exampleId; }
+ 
 TExample::TExample()
 : values(NULL),
   values_end(NULL),
