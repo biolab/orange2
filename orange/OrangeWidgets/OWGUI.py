@@ -14,9 +14,11 @@ def getdeepattr(obj, attr, **argkw):
     try:
         return reduce(lambda o, n: getattr(o, n),  attr.split("."), obj)
     except:
-        if argkw.has_key("default"):
-            return argkw[default]
-        else:
+# I (JD) commented this out. This is ugly and dangerous.
+# If any widget wants this behavour, it should redefine its __getattr__ to return defaults. 
+#        if argkw.has_key("default"):
+#            return argkw["default"]
+#        else:
             raise AttributeError, "'%s' has no attribute '%s'" % (obj, attr)
 
 
@@ -57,7 +59,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     if margin != -1:
         b.layout().setMargin(margin)
 
-    if type(addSpace) == int:
+    if isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
         separator(widget)
@@ -68,7 +70,7 @@ def indentedBox(widget, sep=20, orientation = True, addSpace=False):
     r = widgetBox(widget, orientation = "horizontal")
     separator(r, sep, 0)
 
-    if type(addSpace) == int:
+    if isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
         separator(widget)
@@ -665,7 +667,7 @@ class OrangeListBox(QListWidget):
             self.dragStartPosition = 0
 
     def setAttributes(self, data, attributes):
-        if type(shownAttributes[0]) == tuple:
+        if isinstance(shownAttributes[0], tuple):
             setattr(self.widget, self.ogLabels, attributes)
         else:
             domain = data.domain
@@ -1293,7 +1295,7 @@ class FunctionCallback:
                 kwds['id'] = self.id
             if self.getwidget:
                 kwds['widget'] = self.widget
-            if type(self.f)==list:
+            if isinstance(self.f, list):
                 for f in self.f:
                     f(**kwds)
             else:
@@ -1442,7 +1444,7 @@ class CallFrontListBoxLabels(ControlledCallFront):
         if value:
             for i in value:
                 if type(i) == tuple:
-                    if type(i[1]) == int:
+                    if isinstance(i[1], int):
                         self.control.addItem(QListWidgetItem(icons.get(i[1], icons[-1]), i[0]))
                     else:
                         self.control.addItem( QListWidgetItem(i[0],i[1]) )
@@ -1493,7 +1495,7 @@ class Disabler:
 
         for w in self.widget.disables:
             if type(w) == tuple:
-                if type(w[0]) == int:
+                if isinstance(w[0], int):
                     i = 1
                     if w[0] == -1:
                         disabled = not disabled
