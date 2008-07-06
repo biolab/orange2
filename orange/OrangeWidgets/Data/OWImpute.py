@@ -209,11 +209,11 @@ class OWImpute(OWWidget):
         self.methods = {}
         if not data or not len(data.domain):
             self.indibox.setDisabled(True)
+            self.data = None
+            self.send("Examples", data)
             self.attrList.clear()
             # here's the trick: send the data on, even if it doesn't have any attributes
             # but set self.data to None to disable the widget
-            self.data = None
-            self.send("Examples", data)
         else:
             self.indibox.setDisabled(False)
             if not self.data or data.domain != self.data.domain:
@@ -229,7 +229,7 @@ class OWImpute(OWWidget):
                 for i, attr in enumerate(self.data.domain):
                     self.attrList.addItem(QListWidgetItem(self.attrIcons[attr.varType], attr.name))
 
-                if self.selectedAttr < self.attrList.count():
+                if 0 <= self.selectedAttr < self.attrList.count():
                     self.attrList.setCurrentRow(self.selectedAttr)
                 else:
                     self.attrList.setCurrentRow(0)
