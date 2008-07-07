@@ -80,7 +80,7 @@ class ClassificationNode(GraphicsNode):
     def setBrush(self, brush):
         GraphicsTextContainer.setBrush(self, brush)
         if self.textObj:
-            self.textObj[0].setPen(QPen((Qt.black)))
+            self.textObj[0].setBrush(QBrush((Qt.black)))
 
 ##    def show(self):
 ##        GraphicsNode.show(self)
@@ -113,7 +113,7 @@ class ClassificationNode(GraphicsNode):
     def updateText(self):
         self.textAdvance=float(self.rect().height())/3
         self.lineSpacing=0
-        self.setFont(QFont("",self.textAdvance*0.7), False)
+        self.setFont(QFont("",self.textAdvance*0.6), False)
         self.reArangeText(False, -self.textAdvance-self.lineSpacing)
 
 
@@ -209,12 +209,12 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.sceneView=TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
         self.scene.setSceneRect(0,0,800,800)
-        
+
         self.scene.bubbleConstructor=self.classificationBubbleConstructor
-        
+
         self.navWidget=QWidget()
         self.navWidget.lay=QVBoxLayout(self.navWidget)
-        
+
         scene=TreeGraphicsScene(self.navWidget)
         self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
         self.treeNav.setScene(scene)
@@ -264,6 +264,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWTreeViewer2D.activateLoadedSettings(self)
         self.setNodeInfo()
         self.toggleNodeColor()
+
 
     def toggleNodeColor(self):
         for node in self.scene.nodeList:
@@ -362,7 +363,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             fileName = str(qfileName)
             if not fileName:
                 return
-        
+
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
@@ -383,7 +384,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 #        self.saveGraph(directory + "\\tree.png")
 #        self.reportImage(directory + "\\tree.png")
 #        self.finishReport()
-        
+
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWClassificationTreeGraph()
