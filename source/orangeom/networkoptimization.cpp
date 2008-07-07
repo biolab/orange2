@@ -365,6 +365,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				double dif = sqrt(difX * difX + difY * difY);
 				
 				double *w = graphStructure->getEdge(v,u);
+				*w = fabs(*w);
 				
 				double dX = difX * dif / k * (*w);
 				double dY = difY * dif / k * (*w);
