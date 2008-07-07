@@ -279,7 +279,7 @@ int TNetworkOptimization::circular(int type)
 
 	return 0;
 }
-int TNetworkOptimization::fruchtermanReingold(int steps)
+int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 { 
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
@@ -350,26 +350,57 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		}
 		// calculate attractive forces
 		//cout << "attractive" << endl;
-		for (j = 0; j < nLinks; j++)
+		if (weighted)
 		{
-			//int v = links[j][0];
-			//int u = links[j][1];
-			int v = links[0][j];
-			int u = links[1][j];
-
-			double difX = pos[0][v] - pos[0][u];
-			double difY = pos[1][v] - pos[1][u];
-
-			double dif = sqrt(difX * difX + difY * difY);
-
-			double dX = difX * dif / k;
-			double dY = difY * dif / k;
-
-			disp[v][0] = disp[v][0] - dX;
-			disp[v][1] = disp[v][1] - dY;
-
-			disp[u][0] = disp[u][0] + dX;
-			disp[u][1] = disp[u][1] + dY;
+			for (j = 0; j < nLinks; j++)
+			{
+				//int v = links[j][0];
+				//int u = links[j][1];
+				int v = links[0][j];
+				int u = links[1][j];
+	
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
+	
+				double dif = sqrt(difX * difX + difY * difY);
+				
+				double *w = graphStructure->getEdge(v,u);
+				
+				double dX = difX * dif / k * (*w);
+				double dY = difY * dif / k * (*w);
+	
+				disp[v][0] = disp[v][0] - dX;
+				disp[v][1] = disp[v][1] - dY;
+	
+				disp[u][0] = disp[u][0] + dX;
+				disp[u][1] = disp[u][1] + dY;
+			}
+		}
+		else
+		{
+			for (j = 0; j < nLinks; j++)
+			{
+				//int v = links[j][0];
+				//int u = links[j][1];
+				int v = links[0][j];
+				int u = links[1][j];
+	
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
+	
+				double dif = sqrt(difX * difX + difY * difY);
+	
+				
+				
+				double dX = difX * dif / k;
+				double dY = difY * dif / k;
+	
+				disp[v][0] = disp[v][0] - dX;
+				disp[v][1] = disp[v][1] - dY;
+	
+				disp[u][0] = disp[u][0] + dX;
+				disp[u][1] = disp[u][1] + dY;
+			}
 		}
 		//cout << "limit" << endl;
 		// limit the maximum displacement to the temperature t
@@ -1035,15 +1066,16 @@ PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH
   PyCATCH
 }
 
-PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, coolFactor, hiddenNodes) -> temperature")
+PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, coolFactor, hiddenNodes, weighted) -> temperature")
 {
   PyTRY
 	int steps;
 	double temperature = 0;
 	double coolFactor = 0;
 	PyObject* hiddenNodes;
-
-	if (!PyArg_ParseTuple(args, "id|dO:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &coolFactor, &hiddenNodes))
+	bool weighted = false;
+	
+	if (!PyArg_ParseTuple(args, "id|dOb:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &coolFactor, &hiddenNodes, &weighted))
 		return NULL;
 
 	int size = PyList_Size(hiddenNodes);
@@ -1080,7 +1112,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	else
 		graph->coolFactor = coolFactor;
 	
-	if (graph->fruchtermanReingold(steps) > 0)
+	if (graph->fruchtermanReingold(steps, weighted) > 0)
 	{
 		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
 	}

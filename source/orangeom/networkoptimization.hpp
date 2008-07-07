@@ -68,10 +68,8 @@ public:
 	TNetworkOptimization();
 	~TNetworkOptimization();
 	
-	
-	
 	void random();
-	int fruchtermanReingold(int steps);
+	int fruchtermanReingold(int steps, bool weighted);
 	int radialFruchtermanReingold(int steps, int nCircles);
 	int smoothFruchtermanReingold(int steps, int center);
 	int circular(int type);
