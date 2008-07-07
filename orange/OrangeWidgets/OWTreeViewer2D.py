@@ -68,9 +68,9 @@ class GraphicsTextContainer(QGraphicsRectItem):
         for t in self.textObj:
             (th,ts,tv,ta)=t.brush().color().getHsv()
             if (v<tv+200 and tv==0) or (v-tv and tv!=0) or s<ts:
-                t.setPen(QPen(Qt.white))
+                t.setBrush(QBrush(Qt.white))
             else:
-                t.setPen(QPen(Qt.black))
+                t.setBrush(QBrush(Qt.black))
 
     def show(self):
         self.isShown=True
@@ -88,7 +88,7 @@ class GraphicsTextContainer(QGraphicsRectItem):
         self.lines.append((text,color))
         if text!=None:
             t = QGraphicsSimpleTextItem(text, self, self.scene())
-            t.setPen(QPen(color or Qt.black))
+            t.setBrush(QBrush(color or Qt.black))
             t.setZValue(self.zValue()+1)
             t.setPos(1,self.textOffset)
             self.textObj.append(t)
@@ -143,7 +143,7 @@ class GraphicsTextContainer(QGraphicsRectItem):
         w=max([t.boundingRect().width() for t in self.textObj]+[2])
         h=self.textOffset+2
         GraphicsTextContainer.setRect(self, 0, 0, w+2, h)
-        print w, h
+#        print w, h
 ##        GraphicsTextContainer.setRect(self, self.x(), self.y(), w+2, h)
 ##        self.setRect(self.rect().setSize(QSizeF(w+2, h)))
 
@@ -166,7 +166,7 @@ class GraphicsBubbleInfo(GraphicsTextContainer):
     def fitSquare(self):
         w=max([t.boundingRect().width() for t in self.textObj]+[2])
         h=self.textOffset+2
-        print w, h
+#        print w, h
         GraphicsBubbleInfo.setRect(self, 0, 0, w+2, h)
 
 
@@ -330,6 +330,12 @@ class TreeGraphicsView(QGraphicsView):
         self.navigator=None
         self.viewport().setMouseTracking(True)
         self.bubbleConstructor=bubbleConstructor
+#        self.setRenderHint(QPainter.Antialiasing, 0)
+#        self.setRenderHint(QPainter.TextAntialiasing, 0)
+#        self.setRenderHint(QPainter.HighQualityAntialiasing, 0)
+        
+    def sizeHint(self):
+        return QSize(200,200)
 
     def setNavigator(self, nav):
         self.navigator=nav
@@ -646,13 +652,13 @@ class TreeNavigator(TreeGraphicsView):
     def updateRatio(self):
         self.rx=float(self.scene().width())/float(self.masterView.scene().width())
         self.ry=float(self.scene().height())/float(self.masterView.scene().height())
-        print "Ratio: ", self.rx, self.ry
+        #print "Ratio: ", self.rx, self.ry
 
     def updateView(self):
         pos=self.masterView.mapFromScene(0, 0)
 ##        self.viewRect.setRect(self.masterView.sceneRect().x()*self.rx, self.masterView.sceneRect().y()*self.ry, self.masterView.sceneRect().width()*self.rx, self.masterView.sceneRect().height()*self.ry)
         self.viewRect.setRect(-pos.x()*self.rx, -pos.y()*self.ry, self.masterView.width()*self.rx, self.masterView.height()*self.ry)
-        print "UpdateView:", -pos.x()*self.rx, -pos.y()*self.ry
+        #print "UpdateView:", -pos.x()*self.rx, -pos.y()*self.ry
 
     def myBubbleConstructor(self, node, pos, scene):
         return self.masterView.scene().bubbleConstructor(node.masterNode, pos, scene)
@@ -762,6 +768,7 @@ class OWTreeViewer2D(OWWidget):
         OWGUI.rubber(NodeTab)
         self.rootNode=None
         self.tree=None
+        self.resize(800, 500)
 
     def scaleSizes(self):
         pass
