@@ -715,7 +715,7 @@ class OWNetwork(OWWidget):
         self.optButton.setChecked(False)
     
     def setOptMethod(self):
-        if str(self.optMethod) == '1':
+        if str(self.optMethod) == '1' or str(self.optMethod) == '2':
             self.stepsSpin.setEnabled(True)
         else:
             self.stepsSpin.setEnabled(False)
