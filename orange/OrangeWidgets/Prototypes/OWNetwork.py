@@ -104,6 +104,7 @@ class OWNetwork(OWWidget):
         self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
         self.optCombo.addItem("Random")
         self.optCombo.addItem("Fruchterman Reingold")
+        self.optCombo.addItem("Fruchterman Reingold Weighted")
         self.optCombo.addItem("Fruchterman Reingold Radial")
         self.optCombo.addItem("Circular Crossing Reduction")
         self.optCombo.addItem("Circular Original")
@@ -699,14 +700,16 @@ class OWNetwork(OWWidget):
         if self.optMethod == 0:
             self.random()
         elif self.optMethod == 1:
-            self.fr()
+            self.fr(False)
         elif self.optMethod == 2:
-            self.frRadial()
+            self.fr(True)
         elif self.optMethod == 3:
-            self.circularCrossingReduction()
+            self.frRadial()
         elif self.optMethod == 4:
-            self.circularOriginal()
+            self.circularCrossingReduction()
         elif self.optMethod == 5:
+            self.circularOriginal()
+        elif self.optMethod == 6:
             self.circularRandom()
             
         self.optButton.setChecked(False)
@@ -727,7 +730,7 @@ class OWNetwork(OWWidget):
         #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
         
-    def fr(self):
+    def fr(self, weighted):
         if self.visualize == None:   #grafa se ni
             return
               
@@ -754,7 +757,7 @@ class OWNetwork(OWWidget):
                 #print "iteration, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.visualize.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes)
+                initTemp = self.visualize.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
@@ -762,7 +765,7 @@ class OWNetwork(OWWidget):
             #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
             if self.stopOptimization:
                     return
-            initTemp = self.visualize.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes)
+            initTemp = self.visualize.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
             qApp.processEvents()
             self.updateCanvas()
         else:
@@ -770,7 +773,7 @@ class OWNetwork(OWWidget):
                 #print "iteration ostanek, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.visualize.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes)
+                initTemp = self.visualize.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
