@@ -188,6 +188,8 @@ class GraphicsNode(GraphicsTextContainer):
         self.parentEdge=QGraphicsLineItem(self, self.scene())
         self.parentEdge.setPen(QPen())
         self.parentEdge.setZValue(self.zValue()-1)
+        if not parent:
+            self.parentEdge.hide()
         self.sceneObj+=[self.dropplet]
         self.selectionSquare=[]
         if parent:
@@ -252,7 +254,8 @@ class GraphicsNode(GraphicsTextContainer):
 
     def show(self):
         GraphicsTextContainer.show(self)
-        self.parentEdge.show()
+        if self.parent:
+            self.parentEdge.show()
         if not self.nodeList:
             self.dropplet.hide()
         else:
@@ -805,7 +808,7 @@ class OWTreeViewer2D(OWWidget):
             elif self.LineWidthMethod == 1:
                 width = (n.tree.distribution.cases/self.tree.distribution.cases) * self.LineWidth
             elif self.LineWidthMethod == 2:
-                width = (n.tree.distribution.cases/((n.parent!=self.scene and \
+                width = (n.tree.distribution.cases/((n.parent and \
                                     n.parent.tree.distribution.cases) or n.tree.distribution.cases)) * self.LineWidth
             n.setEdgeWidth(width)
         self.scene.update()
