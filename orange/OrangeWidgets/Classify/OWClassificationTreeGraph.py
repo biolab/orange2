@@ -82,18 +82,14 @@ class ClassificationNode(GraphicsNode):
         if self.textObj:
             self.textObj[0].setBrush(QBrush((Qt.black)))
 
-##    def show(self):
-##        GraphicsNode.show(self)
-##        if not self.isPieShown:
-##            for e in self.pieObj:
-##                e.hide()
+    def show(self):
+        GraphicsNode.show(self)
+        self.pieGroup.setVisible(self.isPieShown)
 
     def setPieVisible(self, b=True):
-        if b:
-            self.pieGroup.show()
-        else:
-            self.pieGroup.hide()
-##        self.isPieShown=b
+        if self.isVisible():
+            self.pieGroup.setVisible(b)
+        self.isPieShown=b
 ##        if self.isShown and b:
 ##            for e in self.pieObj:
 ##                e.show()
@@ -194,17 +190,17 @@ BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWClassificationTreeGraph(OWTreeViewer2D):
+    settingsList = OWTreeViewer2D.settingsList+['ShowPies']
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
-
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
+        self.ShowPies=1
+        self.TargetClassIndex=0
+        
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
-        self.settingsList=OWTreeViewer2D.settingsList+["ShowPies"]
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
 
-        self.ShowPies=1
-        self.TargetClassIndex=0
         self.scene=TreeGraphicsScene(self)
         self.sceneView=TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
@@ -324,6 +320,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         else:
             self.openContext("", None)
         OWTreeViewer2D.ctree(self, tree)
+        self.togglePies()
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
         node=ClassificationNode(attrVal, tree, parent, self.scene)
