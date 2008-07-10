@@ -262,24 +262,6 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         b.show()
         return b
 
-    def saveGraph(self):
-        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-        if ext=="DOT":
-            orngTree.printDot(self.tree, fileName)
-            return
-        dSize= self.scene.size()
-        buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
-        painter = QPainter(buffer)
-
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.sceneView.drawContents(painter,0,0,dSize.width(), dSize.height())
-        painter.end()
-        buffer.save(fileName, ext)
 
 if __name__=="__main__":
     a = QApplication(sys.argv)

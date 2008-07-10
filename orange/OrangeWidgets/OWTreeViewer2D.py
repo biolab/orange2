@@ -900,6 +900,28 @@ class OWTreeViewer2D(OWWidget):
             self.centerNodeButton.setDisabled(1)
             self.send("Examples", None)
 
+    def saveGraph(self, fileName = None):
+        if not fileName:
+            qfileName = QFileDialog.getSaveFileName(None, "Save to..", "tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)")
+            fileName = str(qfileName)
+            if not fileName:
+                return
+
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+        if ext=="DOT":
+            orngTree.printDot(self.tree, fileName)
+            return
+        dSize= self.scene.sceneRect().size()
+        buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
+        painter = QPainter(buffer)
+
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        self.scene.render(painter)
+        painter.end()
+        buffer.save(fileName, ext)
+        
 class OWDefTreeViewer2D(OWTreeViewer2D):
     def __init__(self, parent=None, signalManager = None, name='DefTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
