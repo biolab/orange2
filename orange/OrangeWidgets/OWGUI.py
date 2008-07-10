@@ -213,7 +213,10 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
 
-    wa = b.control = DoubleSpinBox(min, max, step, value, master, b)
+    wa = b.control = QDoubleSpinBox() #DoubleSpinBox(min, max, step, value, master, b)
+    wa.setRange(min, max)
+    wa.setSingleStep(step)
+    wa.setDecimals(math.ceil(-math.log10(step)))
     wa.setValue(getdeepattr(master, value))
     if b.layout(): b.layout().addWidget(wa)
 
@@ -223,7 +226,7 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     if tooltip:
         wa.setToolTip(tooltip)
 
-    connectControl(wa, master, value, callback, "valueChanged(int)", CallFrontDoubleSpin(wa), fvcb=wa.clamp)
+    connectControl(wa, master, value, callback, "valueChanged(double)", CallFrontDoubleSpin(wa))
     return b
 
 
@@ -1364,7 +1367,7 @@ class CallFrontSpin(ControlledCallFront):
 class CallFrontDoubleSpin(ControlledCallFront):
     def action(self, value):
         if value is not None:
-            self.control.setValue(self.control.expand(value))
+            self.control.setValue(value)
 
 
 class CallFrontCheckBox(ControlledCallFront):
@@ -1554,32 +1557,6 @@ class ProgressBar:
         self.widget.progressBarFinished()
 
 ##############################################################################
-# float
-class DoubleSpinBox(QSpinBox):
-    def __init__(self,min,max,step,value,master, *args):
-        QSpinBox.__init__(self)
-        self.validator = QDoubleValidator(self)
-        self.min=min
-        self.max=max
-        self.stepSize=step
-        self.steps=(max-min)/step
-        self.master=master
-        self.value=value
-        self.setRange(min, max)
-        self.setSingleStep(self.steps)
-
-    def mapValueToText(self,i):
-        return str(self.min+i*self.stepSize)
-
-    def interpretText(self):
-        QSpinBox.setValue(self, int(math.floor((float(self.text().toFloat()[0])-self.min)/self.stepSize)))
-
-    def clamp(self, val):
-        return self.min+val*self.stepSize
-    def expand(self, val):
-        return int(math.floor((val-self.min)/self.stepSize))
-    def validate(self, text, pos):
-        return self.validator.validate(text, pos)
 
 def tabWidget(widget):
     w = QTabWidget(widget)
