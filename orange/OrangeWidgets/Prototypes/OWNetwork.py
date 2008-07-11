@@ -545,7 +545,9 @@ class OWNetwork(OWWidget):
         #self.random()
         
     def setItems(self, items=None):
-        if self.visualize.graph == None or items == None:
+        self.error('')
+        
+        if self.visualize == None or self.visualize.graph == None or items == None:
             return
         
         if len(items) != self.visualize.graph.nVertices:

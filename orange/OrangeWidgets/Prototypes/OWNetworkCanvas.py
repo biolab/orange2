@@ -669,7 +669,7 @@ class OWNetworkCanvas(OWGraph):
       if self.visualizer == None:
           return
       
-      colorIndices = []
+      colorIndices = {}
       
       if attribute == "(one color)":
           colorIndex = -1
@@ -682,7 +682,8 @@ class OWNetworkCanvas(OWGraph):
                       colorIndices = getVariableValueIndices(var, colorIndex)
                       
               i += 1
-              
+      
+      colorIndices['?'] = len(colorIndices)
       self.discPalette.setNumberOfColors(len(colorIndices))
       
       for v in range(self.nVertices):
