@@ -15,13 +15,14 @@ class AssociationRulesViewerScene(QGraphicsScene):
         QGraphicsScene.__init__(self, widget)
         self.master = master
         self.rect = None
+        self.mousePressed = False
         self.unselect()
         self.draw()
 
     def unselect(self):
         if self.rect:
             self.rect.hide()
-            self.rect = None
+##            self.rect = None
 
 
     def draw(self):
@@ -45,6 +46,7 @@ class AssociationRulesViewerScene(QGraphicsScene):
             for y in range(nr):
                 sel = selx and y >= srmin and y <= srmax
                 cell = QGraphicsRectItem(x*cw, y*ch, cw+1, ch+1, None, self)
+                cell.setZValue(0)
                 cell.setPen(pens[sel])
                 if not ig[y][x]:
                     cell.setBrush(brushes[sel])
@@ -59,45 +61,60 @@ class AssociationRulesViewerScene(QGraphicsScene):
 
 ##        if self.rect:
 ##            self.rect.hide()
-        if scmin > -1:
-            self.rect = QGraphicsRectItem(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, None, self)
-            self.rect.setPen(QPen(QColor(128, 128, 255), 2))
-            self.rect.show()
-        else:
-            self.rect = None
+##        if scmin > -1:
+        self.rect = QGraphicsRectItem(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, None, self)
+        self.rect.setPen(QPen(QColor(128, 128, 255), 2))
+        self.rect.setZValue(1)
+        self.rect.hide()
+##        else:
+##            self.rect = None
 
         self.update()
         self.master.shownSupport.setText('%3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100)))
         self.master.shownConfidence.setText('%3i%% - %3i%%' % (int(master.conf_min*100), int(master.conf_max*100)))
         self.master.shownRules.setText('%3i' % sum([sum([len(cell) for cell in row]) for row in master.ingrid]))
 
+    def updateSelectionRect(self):
+        master = self.master
+        self.rect.setRect(master.sel_colmin*master.cellwidth,
+                          master.sel_rowmin*master.cellheight,
+                          (master.sel_colmax-master.sel_colmin+1)*master.cellwidth,
+                          (master.sel_rowmax-master.sel_rowmin)*master.cellheight)
+        self.update()
+
     def mousePressEvent(self, ev):
-        self.sel_startX = int(ev.pos().x())
-        self.sel_startY = int(ev.pos().y())
+        self.sel_startX = int(ev.scenePos().x())
+        self.sel_startY = int(ev.scenePos().y())
         master = self.master
         master.sel_colmin = master.sel_colmax = self.sel_startX / master.cellwidth
         master.sel_rowmin = master.sel_rowmax = self.sel_startY / master.cellheight
-        self.draw()
+##        self.draw()
+        self.rect.show()
+        self.updateSelectionRect()
         master.updateRuleList()
+        self.mousePressed = True
 
     def mouseMoveEvent(self, ev):
-        self.sel_endX = int(ev.pos().x())
-        self.sel_endY = int(ev.pos().y())
-        t = self.sel_startX /self.master.cellwidth, self.sel_endX /self.master.cellwidth
-        self.master.sel_colmin, self.master.sel_colmax = min(t), max(t)
-        t = self.sel_startY /self.master.cellheight, self.sel_endY /self.master.cellheight
-        self.master.sel_rowmin, self.master.sel_rowmax = min(t), max(t)
+        if self.mousePressed:
+            self.sel_endX = int(ev.scenePos().x())
+            self.sel_endY = int(ev.scenePos().y())
+            t = self.sel_startX /self.master.cellwidth, self.sel_endX /self.master.cellwidth
+            self.master.sel_colmin, self.master.sel_colmax = min(t), max(t)
+            t = self.sel_startY /self.master.cellheight, self.sel_endY /self.master.cellheight
+            self.master.sel_rowmin, self.master.sel_rowmax = min(t), max(t)
 
-        self.master.sel_colmin = max(self.master.sel_colmin, 0)
-        self.master.sel_rowmin = max(self.master.sel_rowmin, 0)
-        self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
-        self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
+            self.master.sel_colmin = max(self.master.sel_colmin, 0)
+            self.master.sel_rowmin = max(self.master.sel_rowmin, 0)
+            self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
+            self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
 
-        self.draw()
-        self.master.updateRuleList()
+##            self.draw()
+            self.updateSelectionRect()
+            self.master.updateRuleList()
 
     def mouseReleaseEvent(self, ev):
-        self.master.sendIfAuto()        
+        self.master.sendIfAuto()
+        self.mousePressed = False
 
 
 class AssociationRulesViewerView(QGraphicsView):
@@ -149,7 +166,7 @@ class OWAssociationRulesViewer(OWWidget):
     settingsList = ["autoSend", "sortedBy"] + [vn[2] for vn in measures]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer")
+        OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer", wantMainArea=0)
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
@@ -169,6 +186,7 @@ class OWAssociationRulesViewer(OWWidget):
         self.rules = None
         self.selectedRules = []
         self.noZoomButton()
+        self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding), margin = 0)
 
         mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
         OWGUI.separator(self.mainArea, 16, 0)
@@ -213,7 +231,8 @@ class OWAssociationRulesViewer(OWWidget):
         rightUpRight = OWGUI.widgetBox(mainRight, orientation = self.grid)
         for i, m in enumerate(self.measures):
             cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns, addToLayout = 0)
-            self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
+            self.grid.addWidget(cb, i % 2, i / 2)
+##            self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
 
 #        rightUpRight = OWGUI.widgetBox(mainRight, orientation=0)
 #        for i, m in enumerate(self.measures):
@@ -245,7 +264,7 @@ class OWAssociationRulesViewer(OWWidget):
         autoSend.makeConsistent()
 
         bottomGrid.addWidget(self.saveButton, 1, 0)
-        bottomGrid.addWidget(autoSend.parentWidget(), 0, 1)
+        bottomGrid.addWidget(autoSend, 0, 1)
         bottomGrid.addWidget(commitButton, 1, 1)
 
         self.controlArea.setFixedSize(0, 0)
