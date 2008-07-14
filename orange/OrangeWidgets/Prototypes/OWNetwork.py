@@ -147,7 +147,6 @@ class OWNetwork(OWWidget):
         
         OWGUI.separator(self.displayTab)
 
-        OWGUI.button(self.displayTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
         OWGUI.button(self.displayTab, self, "Save network", callback=self.saveNetwork)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
@@ -221,6 +220,9 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
+        
+        OWGUI.button(self.infoTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
+        
         
         #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
         

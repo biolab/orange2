@@ -686,10 +686,16 @@ class OWNetworkCanvas(OWGraph):
       colorIndices['?'] = len(colorIndices)
       self.discPalette.setNumberOfColors(len(colorIndices))
       
+      if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+          minValue = float(min([float(x[colorIndex].value) for x in self.visualizer.graph.items]))
+          maxValue = float(max([float(x[colorIndex].value) for x in self.visualizer.graph.items]))
+      
       for v in range(self.nVertices):
           if colorIndex > -1:    
               if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                  newColor = self.contPalette[self.noJitteringScaledData[colorIndex][v]]
+                  value = (float(self.visualizer.graph.items[v][colorIndex].value) - minValue) / (maxValue - minValue)
+                  newColor = self.contPalette[value]
+                  self.networkCurve.setVertexColor(v, newColor)
                   
               elif self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
                   newColor = self.discPalette[colorIndices[self.visualizer.graph.items[v][colorIndex].value]]
