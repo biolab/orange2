@@ -16,7 +16,6 @@ class SchemaView(QGraphicsView):
         self.bMultipleSelection = False            # are we currently in the process of drawing a rectangle containing widgets that we wish to select
         self.movingWidget = None
         self.mouseDownPosition = QPoint(0,0)
-        self.lastMousePosition = QPoint(0,0)
         self.tempLine = None
         self.tempRect = None
         self.selectedLine = None
@@ -24,7 +23,7 @@ class SchemaView(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.ensureVisible(0,0,1,1)
-        
+
         # create popup menus
         self.linePopup = QMenu("Link", self)
         self.lineEnabledAction = self.menupopupLinkEnabledID = self.linePopup.addAction( "Enabled",  self.toggleEnabledLink)
@@ -54,7 +53,7 @@ class SchemaView(QGraphicsView):
         widgets = self.getSelectedWidgets()
         if len(widgets) != 1: return
         widget = widgets[0]
-        
+
         exName = str(widget.caption)
         (newName ,ok) = QInputDialog.getText(self, "Rename Widget", "Enter new name for the \"" + exName + "\" widget:", QLineEdit.Normal, exName)
         newName = str(newName)
@@ -129,7 +128,26 @@ class SchemaView(QGraphicsView):
     def unselectAllWidgets(self):
         for item in self.doc.widgets:
             item.setSelected(0)
-        
+
+    # get a tuple (outWidget, inWidget) that contains the widgets whose 
+    # outputs and inputs are near position pos
+    def widgetChannelsAtPos(self, pos):
+        right = [item.mouseInsideRightChannel(pos) for item in self.doc.widgets]
+        left = [item.mouseInsideLeftChannel(pos) for item in self.doc.widgets]
+        outWidget, inWidget = None, None
+        if True in left:
+            inWidget = self.doc.widgets[left.index(1)]
+        if True in right:
+            outWidget = self.doc.widgets[right.index(1)]
+        return (outWidget, inWidget)
+
+    def getItemsAtPos(self, pos, itemType = None):
+        if type(pos) == QPointF:
+            pos = QGraphicsRectItem(QRectF(pos, QSizeF(1,1)))
+        items = self.scene().collidingItems(pos)
+        if itemType != None:
+            items = [item for item in items if type(item) == itemType]
+        return items
 
     # ###########################################
     # MOUSE events
@@ -143,6 +161,31 @@ class SchemaView(QGraphicsView):
             self.tempRect.hide()
             self.tempRect = None
 
+        # do we start drawing a connection line
+        if ev.button() == Qt.LeftButton:
+            outWidget, inWidget = self.widgetChannelsAtPos(self.mouseDownPosition)
+            activeItem = outWidget or inWidget
+            self.tempWidget = activeItem
+            if activeItem:
+                activeItem.setSelected(1)
+                if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
+                    self.unselectAllWidgets()
+                    self.bLineDragging = True
+                    pos = activeItem.getEdgePoint(self.mouseDownPosition)
+                    self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
+                    self.tempLine.setLine(pos.x(), pos.y(), pos.x(), pos.y())
+                    self.tempLine.setPen(QPen(self.doc.canvasDlg.lineColor, 1))
+                    if activeItem.mouseInsideLeftChannel(self.mouseDownPosition):
+                        for widget in self.doc.widgets:
+                            widget.canConnect(widget, activeItem)
+                    else:
+                        for widget in self.doc.widgets:
+                            widget.canConnect(activeItem, widget)
+                                                        
+                self.scene().update()
+                self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+                return
+            
         activeItem = self.scene().itemAt(self.mouseDownPosition)
         if not activeItem:
             self.tempWidget = None
@@ -157,33 +200,24 @@ class SchemaView(QGraphicsView):
 
                 # did we click inside the boxes to draw connections
                 if ev.button() == Qt.LeftButton:
-                    if activeItem.mouseInsideLeftChannel(self.mouseDownPosition) or activeItem.mouseInsideRightChannel(self.mouseDownPosition):
+                    self.bWidgetDragging = True
+                    if self.doc.ctrlPressed:
+                        activeItem.setSelected(not activeItem.isSelected())
+                    elif activeItem.isSelected() == 0:
+                        self.unselectAllWidgets()
                         activeItem.setSelected(1)
-                        if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
-                            self.unselectAllWidgets()
-                            self.bLineDragging = True
-                            pos = activeItem.getEdgePoint(self.mouseDownPosition)
-                            self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
-                            self.tempLine.setLine(pos.x(), pos.y(), pos.x(), pos.y())
-                            self.tempLine.setPen(QPen(self.doc.canvasDlg.lineColor, 1))
-                            #self.scene().update()
-                    else:   # we clicked inside the widget and we start dragging it
-                        self.bWidgetDragging = True
-                        if self.doc.ctrlPressed:
-                            activeItem.setSelected(not activeItem.isSelected())
-                        elif activeItem.isSelected() == 0:
-                            self.unselectAllWidgets()
-                            activeItem.setSelected(1)
-                            self.bMultipleSelection = False
+                        self.bMultipleSelection = False
 
-                        for w in self.getSelectedWidgets():
-                            w.setCoords(w.x(), w.y())
-                            w.savePosition()
-                            w.setAllLinesFinished(False)
+                    for w in self.getSelectedWidgets():
+                        #w.setCoords(w.x(), w.y())
+                        w.savePosition()
+                        w.setAllLinesFinished(False)
 
                 # is we clicked the right mouse button we show the popup menu for widgets
                 elif ev.button() == Qt.RightButton:
-                    #self.widgetPopup.popup(ev.globalPos())
+                    self.unselectAllWidgets()
+                    activeItem.setSelected(1)
+                    self.bMultipleSelection = False
                     self.doc.canvasDlg.widgetPopup.popup(ev.globalPos())
                 else:
                     self.unselectAllWidgets()
@@ -199,15 +233,11 @@ class SchemaView(QGraphicsView):
                 self.unselectAllWidgets()
 
         self.scene().update()
-        self.lastMousePosition = self.mapToScene(ev.pos())
         self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
 
     # mouse button was pressed and mouse is moving ######################
     def mouseMoveEvent(self, ev):
-        #if not self.bLineDragging and (ev.x() < 0 or ev.x() > self.contentsX() + self.visibleWidth() or ev.y() < 0 or ev.y() > self.contentsY() + self.visibleHeight()):
-        #    self.contentsMouseReleaseEvent(ev)
-        #    return
         point = self.mapToScene(ev.pos())
         if self.tempRect:
             self.tempRect.hide()
@@ -215,20 +245,16 @@ class SchemaView(QGraphicsView):
 
         if self.bWidgetDragging:
             for item in self.getSelectedWidgets():
-                ex_pos = QPoint(item.x(), item.y())
-                item.setCoordsBy(point.x() - self.lastMousePosition.x(), point.y() - self.lastMousePosition.y())
-                if self.doc.canvasDlg.settings["snapToGrid"]:
-                    item.moveToGrid()
-                else:
-                    item.setCoords(item.xPos, item.yPos)
-
-                items = self.scene().collidingItems(item)
-                item.invalidPosition = (self.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
+                newPos = item.oldPos + (point-self.mouseDownPosition)
+                item.setCoords(newPos.x(), newPos.y())
+                item.invalidPosition = (self.findItemTypeCount(self.scene().collidingItems(item), orngCanvasItems.CanvasWidget) > 0)
                 item.updateLineCoords()
+            self.scene().update()
 
         elif self.bLineDragging:
             if self.tempLine:
                 self.tempLine.setLine(self.tempLine.line().x1(), self.tempLine.line().y1(), point.x(), point.y())
+            self.scene().update()
 
         elif self.bMultipleSelection:
             rect = QRectF(min (self.mouseDownPosition.x(), point.x()), min (self.mouseDownPosition.y(), point.y()), abs(self.mouseDownPosition.x() - point.x()), abs(self.mouseDownPosition.y() - point.y()))
@@ -236,16 +262,10 @@ class SchemaView(QGraphicsView):
             self.tempRect.show()
 
             # select widgets in rectangle
-            items = self.scene().collidingItems(self.tempRect)
-            widgets = self.findAllItemType(items, orngCanvasItems.CanvasWidget)
-
+            widgets = self.getItemsAtPos(self.tempRect, orngCanvasItems.CanvasWidget)
             for widget in self.doc.widgets:
                 widget.setSelected(widget in widgets)
-#                if widget in widgets:
-#                    widget.savePosition()
-
-        self.scene().update()
-        self.lastMousePosition = point
+            self.scene().update()
 
 
     # mouse button was released #########################################
@@ -274,30 +294,33 @@ class SchemaView(QGraphicsView):
 
         # if we are drawing line
         elif self.bLineDragging:
-            item = self.scene().itemAt(QPointF(point))
+            # show again the empty input/output boxes
+            for widget in self.doc.widgets:
+              widget.resetLeftRightEdges()      
+            widgets = self.getItemsAtPos(point, orngCanvasItems.CanvasWidget)
+            item = len(widgets) > 0 and widgets[0] or None
+            if not item:
+                outWidget, inWidget = self.widgetChannelsAtPos(point)
+                item = inWidget or outWidget
+
+            p1 = self.tempLine.line().p1()
+            if self.tempLine != None:
+                self.tempLine.hide()
+                self.tempLine = None
 
             # we must check if we have really conected some output to input
-            if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and self.tempLine and item != self.tempWidget:
-                if self.tempWidget.mouseInsideLeftChannel(self.tempLine.line().p1()):
+            if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and item != self.tempWidget:
+                if self.tempWidget.mouseInsideLeftChannel(p1):
                     outWidget = item
                     inWidget  = self.tempWidget
                 else:
                     outWidget = self.tempWidget
                     inWidget  = item
 
-                # hide the temp line
-                self.tempLine.hide()
-                self.tempLine = None
-
                 if self.doc.signalManager.signalProcessingInProgress:
                      QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
                     line = self.doc.addLine(outWidget, inWidget)
-
-            if self.tempLine != None:
-                self.tempLine.setLine(0,0,0,0)
-                self.tempLine.hide()
-                self.tempLine = None
 
         self.scene().update()
         self.bWidgetDragging = False
@@ -353,14 +376,4 @@ class SchemaView(QGraphicsView):
     def findItemTypeCount(self, items, Type):
         return sum([type(item) == Type for item in items])
 
-    # find and return first item of type Type
-    def findFirstItemType(self, items, Type):
-        for item in items:
-            if type(item) == Type:
-                return item
-        return None
-
-    # find and return all items of type "type"
-    def findAllItemType(self, items, Type):
-        return [item for item in items if type(item) == Type]
 

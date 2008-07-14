@@ -16,7 +16,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
         self.recentDocs = []
         self.iDocIndex = 1
-        self.iconSizeList = ["32 x 32", "48 x 48", "60 x 60"]
+        self.iconSizeList = ["32 x 32", "40 x 40", "48 x 48", "60 x 60"]
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
 
@@ -564,7 +564,6 @@ class OrangeCanvasDlg(QMainWindow):
                 if not isinstance(win, orngDoc.SchemaDoc): continue
                 for widget in win.widgets:
                     widget.setCoords(widget.x(), widget.y())
-                    widget.moveToGrid()
                     widget.repaintAllLines()
                 win.canvas.update()
 
@@ -863,7 +862,7 @@ class OrangeCanvasDlg(QMainWindow):
             QApplication.setPalette(qApp.style().standardPalette())
         else:
             QApplication.setPalette(self.originalPalette)
-        
+
 
     def setStatusBarEvent(self, text):
         if text == "" or text == None:

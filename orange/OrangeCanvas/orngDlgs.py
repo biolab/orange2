@@ -29,25 +29,26 @@ class SignalCanvasView(QGraphicsView):
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.setRenderHint(QPainter.Antialiasing)
 
-    def addSignalList(self, outName, inName, outputs, inputs, outIconName, inIconName):
-        for item in self.scene().items(): item.hide()
+    def addSignalList(self, outWidget, inWidget):
+        self.scene().clear()
+        outputs, inputs = outWidget.widget.getOutputs(), inWidget.widget.getInputs()
+        outIconName, inIconName = outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName()
         self.lines = []
         self.outBoxes = []
         self.inBoxes = []
         self.texts = []
         xSpaceBetweenWidgets = 100  # space between widgets
-        xWidgetOff = 10     # offset for widget position
-        yWidgetOffTop = 10     # offset for widget position
-        yWidgetOffBottom = 30     # offset for widget position
-        ySignalOff = 10     # space between the top of the widget and first signal
-        ySignalSpace = 50   # space between two neighbouring signals
-        ySignalSize = 20    # height of the signal box
-        xSignalSize = 20    # width of the signal box
+        xWidgetOff = 10             # offset for widget position
+        yWidgetOffTop = 10          # offset for widget position
+        yWidgetOffBottom = 30       # offset for widget position
+        ySignalOff = 10             # space between the top of the widget and first signal
+        ySignalSpace = 50           # space between two neighbouring signals
+        ySignalSize = 20            # height of the signal box
+        xSignalSize = 20            # width of the signal box
         xIconOff = 10
 
         count = max(len(inputs), len(outputs))
         height = max ((count)*ySignalSpace, 70)
-
 
         # calculate needed sizes of boxes to show text
         maxLeft = 0
@@ -67,19 +68,20 @@ class SignalCanvasView(QGraphicsView):
         self.outWidget = QGraphicsRectItem(xWidgetOff, yWidgetOffTop, width, height, None, self.dlg.canvas)
         self.outWidget.setBrush(brush)
         self.outWidget.setZValue(-100)
-##        self.outWidget.show()
 
         self.inWidget = QGraphicsRectItem(xWidgetOff + width + xSpaceBetweenWidgets, yWidgetOffTop, width, height, None, self.dlg.canvas)
         self.inWidget.setBrush(brush)
         self.inWidget.setZValue(-100)
-##        self.inWidget.show()
 
         # if icons -> show them
         if outIconName:
+            frame = QGraphicsPixmapItem(QPixmap(outWidget.imageFrame), None, self.dlg.canvas)
+            frame.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.outWidgetIcon = QGraphicsPixmapItem(QPixmap(outIconName), None, self.dlg.canvas)
             self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
-##            self.outWidgetIcon.show()
         if inIconName :
+            frame = QGraphicsPixmapItem(QPixmap(inWidget.imageFrame), None, self.dlg.canvas)
+            frame.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - frame.pixmap().width(), yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.inWidgetIcon = QGraphicsPixmapItem(QPixmap(inIconName), None, self.dlg.canvas)
             self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
 
@@ -106,8 +108,8 @@ class SignalCanvasView(QGraphicsView):
             self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft | Qt.AlignVCenter, bold =1, show=1))
             self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft | Qt.AlignVCenter, bold =0, show=1))
 
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
+        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outWidget.caption, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
+        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inWidget.caption, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
 
         return (2*xWidgetOff + 2*width + xSpaceBetweenWidgets, yWidgetOffTop + height + yWidgetOffBottom)
 
@@ -186,7 +188,6 @@ class SignalCanvasView(QGraphicsView):
         line.setLine(outRect.x() + outRect.width()-2, outRect.y() + outRect.height()/2.0, inRect.x()+2, inRect.y() + inRect.height()/2.0)
         line.setPen(QPen(QColor(0,255,0), 6))
         line.setZValue(100)
-##        line.show()
         self.scene().update()
         self.lines.append((line, outName, inName, outBox, inBox))
 
@@ -238,7 +239,7 @@ class SignalDialog(QDialog):
     def setOutInWidgets(self, outWidget, inWidget):
         self.outWidget = outWidget
         self.inWidget = inWidget
-        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.getOutputs(), inWidget.widget.getInputs(), outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName())
+        (width, height) = self.canvasView.addSignalList(outWidget, inWidget)
         self.canvas.setSceneRect(0, 0, width, height)
         self.resize(width+50, height+80)
 
@@ -623,13 +624,8 @@ class WidgetShortcutDlg(QDialog):
             widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tabWidgets)
             rows = (len(widgets)+2) / 3
             layout = QGridLayout(wtab)
-##            for i in range(2, 9, 3):
-##                layout.addItem(QSpacerItem(20, 0), 0, i)
-##            for i in range(0, 2*rows, 2):
-##                layout.addItem(QSpacerItem(0, 20), i, 0)
 
             for i, w in enumerate(widgets):
-##                y, x = 1 + 2 * (i % rows), 3 * (i/rows)
                 x = i / rows
                 y = i % rows
 
