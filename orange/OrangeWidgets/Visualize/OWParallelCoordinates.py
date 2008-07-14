@@ -122,18 +122,14 @@ class OWParallelCoordinates(OWVisWidget):
         self.SettingsTab.layout().addStretch(100)
         self.icons = self.createAttributeIconDict()
 
-        # add a settings dialog and initialize its values
-        self.activateLoadedSettings()
-        self.resize(900, 700)
-
-
-    def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         self.cbShowAllAttributes()
+
+        self.resize(900, 700)
 
     def flipAttribute(self, item):
         if self.graph.flipAttribute(str(item.text())):
@@ -203,7 +199,7 @@ class OWParallelCoordinates(OWVisWidget):
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
-        self.closeContext()        
+        self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.projections = None
         self.correlationDict = {}
@@ -217,13 +213,13 @@ class OWParallelCoordinates(OWVisWidget):
 
     def setSubsetData(self, subData):
         self.subsetData = subData
-            
+
 
     # attribute selection signal - list of attributes to show
     def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
-        
-        
+
+
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
     def handleNewSignals(self):
         self.graph.setData(self.data, self.subsetData)
@@ -234,7 +230,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.attributeSelectionList = None
         self.updateGraph()
         self.sendSelections()
-       
+
 
     def sendShownAttributes(self, attrList = None):
         if attrList == None:
@@ -381,9 +377,6 @@ class ParallelOptimization(OWWidget):
 
         self.changeProjectionFile()
         self.updateGUI()
-        self.activateLoadedSettings()
-
-    def activateLoadedSettings(self):
         if self.orderAllAttributes: self.setAllAttributeRadio()
         else:                       self.setSubsetAttributeRadio()
 
@@ -417,7 +410,7 @@ class ParallelOptimization(OWWidget):
     def getSelectedAttributes(self):
         if self.resultList.count() == 0: return None
         return self.allResults[self.resultList.currentItem()][1]
-    
+
     # called when optimization is in progress
     def canContinueOptimization(self):
         return self.canOptimize

@@ -143,7 +143,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         if self.dataHasDiscreteClass:
             self.discPalette.setNumberOfColors(len(self.dataDomain.classVar.values))
-        
+
         useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) < len(self.curveSymbols)
         dataSize = len(self.rawData)
         validData = self.getValidList(indices)
@@ -155,7 +155,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         y_positions = projData[1]
         xPointsToAdd = {}
         yPointsToAdd = {}
-        
+
 
         if self.showProbabilities and self.haveData and self.dataHasClass:
             # construct potentialsClassifier from unscaled positions
@@ -216,12 +216,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # ##############################################################
         elif self.haveSubsetData:
             shownSubsetCount = 0
-            subsetReferencesToDraw = dict([(example.reference(),1) for example in self.rawSubsetData])
+            subsetIdsToDraw = dict([(example.id,1) for example in self.rawSubsetData])
 
             # draw the rawData data set. examples that exist also in the subset data draw full, other empty
             for i in range(dataSize):
                 if not validData[i]: continue
-                if subsetReferencesToDraw.has_key(self.rawData[i].reference()):
+                if subsetIdsToDraw.has_key(self.rawData[i].id):
                     continue
 
                 if self.dataHasDiscreteClass and self.useDifferentColors:
@@ -266,10 +266,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         newColor = self.discPalette.getRGB(self.originalSubsetData[self.dataClassIndex][i])
                     else:
                         newColor = self.contPalette.getRGB(self.noJitteringScaledSubsetData[self.dataClassIndex][i])
-                        
+
                 if self.useDifferentSymbols and self.dataHasDiscreteClass and self.validSubsetDataArray[self.dataClassIndex][i]:
                     curveSymbol = self.curveSymbols[int(self.originalSubsetData[self.dataClassIndex][i])]
-                else: 
+                else:
                     curveSymbol = self.curveSymbols[0]
 
                 if not xPointsToAdd.has_key((newColor, curveSymbol, 1)):
@@ -544,7 +544,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             return (None, None)
 
         #selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
-        selIndices, unselIndices = self.getSelectedPoints(array.T[0], array.T[1], validData) 
+        selIndices, unselIndices = self.getSelectedPoints(array.T[0], array.T[1], validData)
 
         if addProjectedPositions:
             selected = orange.ExampleTable(domain, self.rawData.selectref(selIndices))

@@ -56,9 +56,9 @@ class OWSieveMultigram(OWVisWidget):
 
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.interestingSubsetSelection)
-        
+
         self.interestingButton = QPushButton("Find Interesting Attr.", self.GeneralTab)
-        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
+        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection)
 
         #connect controls to appropriate functions
         self.connect(self.SettingsTab.lineCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
@@ -67,13 +67,6 @@ class OWSieveMultigram(OWVisWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        # add a settings dialog and initialize its values
-        self.activateLoadedSettings()
-
-    # #########################
-    # OPTIONS
-    # #########################
-    def activateLoadedSettings(self):
         # set loaded options settings
         self.SettingsTab.lineCombo.setCurrentIndex(self.maxLineWidth-1)
         index = self.SettingsTab.pearsonMaxNums.index(self.pearsonMaxRes)

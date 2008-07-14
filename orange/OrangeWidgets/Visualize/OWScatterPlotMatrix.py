@@ -103,18 +103,12 @@ class OWScatterPlotMatrix(OWVisWidget):
 
         # add a settings dialog and initialize its values
         self.icons = self.createAttributeIconDict()
-        self.activateLoadedSettings()
-        self.resize(900, 700)
 
-
-    # #########################
-    # OPTIONS
-    # #########################
-    def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.contPalette = dlg.getContinuousPalette("contPalette")
         self.discPalette = dlg.getDiscretePalette("discPalette")
         self.graphCanvasColor = dlg.getColor("Canvas")
+        self.resize(900, 700)
 
     def createColorDialog(self):
         c = OWColorPalette.ColorPaletteDlg(self, "Color palette")
@@ -151,7 +145,7 @@ class OWScatterPlotMatrix(OWVisWidget):
         self.graphs[0].rescaleData()
 
         for graph in self.graphs[1:]:
-            for attr in ["rawData", "domainDataStat", "scaledData", "scaledSubsetData", "noJitteringScaledData", "noJitteringScaledSubsetData", 
+            for attr in ["rawData", "domainDataStat", "scaledData", "scaledSubsetData", "noJitteringScaledData", "noJitteringScaledSubsetData",
                                      "validDataArray", "validSubsetDataArray", "attrValues", "originalData", "originalSubsetData",
                                      "attributeNames", "domainDataStat", "attributeNameIndex", "dataDomain", "dataHasClass", "dataHasContinuousClass",
                                      "dataHasDiscreteClass", "dataClassName", "dataClassIndex", "haveData", "haveSubsetData",
@@ -220,7 +214,7 @@ class OWScatterPlotMatrix(OWVisWidget):
                 if self.graphs == []:
                     graph.setData(self.data)
                 else:
-                    for attr in ["rawData", "domainDataStat", "scaledData", "scaledSubsetData", "noJitteringScaledData", "noJitteringScaledSubsetData", 
+                    for attr in ["rawData", "domainDataStat", "scaledData", "scaledSubsetData", "noJitteringScaledData", "noJitteringScaledSubsetData",
                                  "validDataArray", "validSubsetDataArray", "attrValues", "originalData", "originalSubsetData",
                                  "attributeNames", "domainDataStat", "attributeNameIndex", "dataDomain", "dataHasClass", "dataHasContinuousClass",
                                  "dataHasDiscreteClass", "dataClassName", "dataClassIndex", "haveData", "haveSubsetData",
@@ -355,7 +349,7 @@ class OWScatterPlotMatrix(OWVisWidget):
 
     def setShownAttributes(self, attrList):
         self.attributeSelectionList = attributeSelectionList
-        
+
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
     def handleNewSignals(self):
         self.graph.setData(self.data, self.subsetData)
@@ -365,7 +359,7 @@ class OWScatterPlotMatrix(OWVisWidget):
             self.setShownAttributeList()
         self.attributeSelectionList = None
         self.updateGraph()
-            
+
 
 #    def resizeEvent(self, e):
 #        OWWidget.resizeEvent(self,e)

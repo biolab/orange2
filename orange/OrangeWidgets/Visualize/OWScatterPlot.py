@@ -154,11 +154,8 @@ class OWScatterPlot(OWWidget):
         self.icons = self.createAttributeIconDict()
 
         self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]
-        self.resize(700, 550)
         self.wdChildDialogs = [self.vizrank]        # used when running widget debugging
 
-
-    def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
@@ -169,6 +166,9 @@ class OWScatterPlot(OWWidget):
         self.graph.enableGridYL(self.showGridlines)
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+
+        self.resize(700, 550)
+
 
     def settingsFromWidgetCallback(self, handler, context):
         context.selectionPolygons = []
@@ -203,7 +203,7 @@ class OWScatterPlot(OWWidget):
                 data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
-        
+
         self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.data = data
@@ -214,7 +214,7 @@ class OWScatterPlot(OWWidget):
         self.classificationResults = None
         self.outlierValues = None
         self.openContext("", self.data)
-        
+
     # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
     def setSubsetData(self, subsetData):
         self.subsetData = subsetData
@@ -235,7 +235,7 @@ class OWScatterPlot(OWWidget):
     # receive information about which attributes we want to show on x and y axis
     def setShownAttributes(self, list):
         if list and len(list[:2]) == 2:
-            self.attributeSelectionList = list[:2] 
+            self.attributeSelectionList = list[:2]
         else:
             self.attributeSelectionList = None
 

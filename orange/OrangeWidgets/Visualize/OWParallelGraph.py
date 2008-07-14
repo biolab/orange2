@@ -34,9 +34,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.visualizedMidLabels = []
         self.selectedExamples = []
         self.unselectedExamples = []
-        self.bottomPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], r"icons\upgreenarrow.png")) 
+        self.bottomPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], r"icons\upgreenarrow.png"))
         self.topPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], r"icons\downgreenarrow.png"))
-        
+
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)
         self.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Backbone, 0)
@@ -53,7 +53,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.removeDrawingCurves(removeLegendItems = 0, removeMarkers = 1)  # don't delete legend items
         if attributes != self.visualizedAttributes:
             self.selectionConditions = {}       # reset selections
-                 
+
         self.visualizedAttributes = []
         self.visualizedMidLabels = []
         self.selectedExamples = []
@@ -65,7 +65,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.visualizedAttributes = attributes
         self.visualizedMidLabels = midLabels
         for name in self.selectionConditions.keys():        # keep only conditions that are related to the currently visualized attributes
-            if name not in self.visualizedAttributes: 
+            if name not in self.visualizedAttributes:
                 self.selectionConditions.pop(name)
 
         # set the limits for panning
@@ -88,7 +88,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         #self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        
+
 
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
@@ -102,12 +102,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # ############################################
         # draw the data
         # ############################################
-        subsetReferencesToDraw = self.haveSubsetData and dict([(self.rawSubsetData[i].reference(), 1) for i in self.getValidSubsetIndices(indices)]) or {}
+        subsetIdsToDraw = self.haveSubsetData and dict([(self.rawSubsetData[i].id, 1) for i in self.getValidSubsetIndices(indices)]) or {}
         validData = self.getValidList(indices)
         mainCurves = {}
         subCurves = {}
         conditions = dict([(name, attributes.index(name)) for name in self.selectionConditions.keys()])
-        
+
         for i in range(dataSize):
             if not validData[i]:
                 continue
@@ -127,7 +127,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curves = subCurves
                 self.unselectedExamples.append(i)
             # if we have subset data then use alpha2 for main data and alpha for subset data
-            elif self.haveSubsetData and not subsetReferencesToDraw.has_key(self.rawData[i].reference()):
+            elif self.haveSubsetData and not subsetIdsToDraw.has_key(self.rawData[i].id):
                 alpha = self.alphaValue2
                 curves = subCurves
                 self.unselectedExamples.append(i)
@@ -135,9 +135,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 alpha = self.alphaValue
                 curves = mainCurves
                 self.selectedExamples.append(i)
-                if subsetReferencesToDraw.has_key(self.rawData[i].reference()):  
-                    subsetReferencesToDraw.pop(self.rawData[i].reference())
-                
+                if subsetIdsToDraw.has_key(self.rawData[i].id):
+                    subsetIdsToDraw.pop(self.rawData[i].id)
+
             newColor += (alpha,)
 
             if not curves.has_key(newColor):
@@ -145,12 +145,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
             curves[newColor].extend(data)
 
         # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-        if subsetReferencesToDraw != {}:
+        if subsetIdsToDraw != {}:
             validSubsetData = self.getValidSubsetList(indices)
 
             for i in range(len(self.rawSubsetData)):
                 if not validSubsetData[i]: continue
-                if not subsetReferencesToDraw.has_key(self.rawSubsetData[i].reference()): continue
+                if not subsetIdsToDraw.has_key(self.rawSubsetData[i].id): continue
 
                 data = [self.scaledSubsetData[index][i] for index in indices]
                 if not self.dataDomain.classVar or self.rawSubsetData[i].getclass().isSpecial():
@@ -166,7 +166,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 else:
                     newColor += (self.alphaValue,)
                     curves = mainCurves
-                    
+
                 if not curves.has_key(newColor):
                     curves[newColor] = []
                 curves[newColor].extend(data)
@@ -272,7 +272,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
             # draw lines with mean/median values
             classCount = 1
-            if not self.dataHasClass or self.dataHasContinuousClass:    
+            if not self.dataHasClass or self.dataHasContinuousClass:
                 classCount = 1 # no class
             else: classCount = len(self.dataDomain.classVar.values)
             for c in range(classCount):
@@ -433,12 +433,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
         canvasPos = self.canvas().mapFrom(self, e.pos())
         xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
         contact, info = self.testArrowContact(int(round(xFloat)), canvasPos.x(), canvasPos.y())
-                
+
         if contact:
             self.pressedArrow = info
         elif self.state in [ZOOMING, PANNING]:
             OWGraph.mousePressEvent(self, e)
-                
+
 
     def mouseMoveEvent(self, e):
         if hasattr(self, "pressedArrow"):
@@ -450,17 +450,17 @@ class OWParallelGraph(OWGraph, orngScaleData):
             oldCondition[pos] = yFloat
             self.selectionConditions[attr.name] = oldCondition
             self.updateData(self.visualizedAttributes, self.visualizedMidLabels, updateAxisScale = 0)
-            
+
             if attr.varType == orange.VarTypes.Continuous:
                 val = self.attrValues[attr.name][0] + oldCondition[pos] * (self.attrValues[attr.name][1] - self.attrValues[attr.name][0])
                 strVal = attr.name + "= %%.%df" % (attr.numberOfDecimals) % (val)
                 QToolTip.showText(e.globalPos(), strVal)
             if self.sendSelectionOnUpdate and self.autoSendSelectionCallback:
                 self.autoSendSelectionCallback()
-                
+
         elif self.state in [ZOOMING, PANNING]:
             OWGraph.mouseMoveEvent(self, e)
-            
+
     def mouseReleaseEvent(self, e):
         if hasattr(self, "pressedArrow"):
             del self.pressedArrow
@@ -514,13 +514,13 @@ class OWParallelGraph(OWGraph, orngScaleData):
     def getSelectionsAsExampleTables(self):
         if not self.haveData:
             return (None, None)
-        
+
         selected = self.rawData.getitemsref(self.selectedExamples)
         unselected = self.rawData.getitemsref(self.unselectedExamples)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        return (selected, unselected)        
+        return (selected, unselected)
 
 
 
@@ -531,7 +531,7 @@ class ParallelCoordinatesCurve(QwtPlotCurve):
         QwtPlotCurve.__init__(self, name)
         self.setItemAttribute(QwtPlotItem.Legend, 0)
 
-        lineCount = len(yData) / attrCount        
+        lineCount = len(yData) / attrCount
         self.attrCount = attrCount
         self.xData = range(attrCount) * lineCount
         self.yData = yData

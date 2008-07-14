@@ -88,16 +88,6 @@ class OWSurveyPlot(OWVisWidget):
 
         self.icons = self.createAttributeIconDict()
 
-        # add a settings dialog and initialize its values
-        self.activateLoadedSettings()
-        self.resize(750,700)
-
-
-
-    # #########################
-    # OPTIONS
-    # #########################
-    def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
@@ -106,6 +96,7 @@ class OWSurveyPlot(OWVisWidget):
 
         #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
+        self.resize(750,700)
 
     # #####################
     def setSortCombo(self):
@@ -113,7 +104,7 @@ class OWSurveyPlot(OWVisWidget):
         attrs = self.graph.dataDomain and [attr.name for attr in self.graph.dataDomain]
         if items == attrs:
             return
-        
+
         self.primaryAttrCombo.clear()
         self.secondaryAttrCombo.clear()
         self.primaryAttrCombo.addItem("(None)")
@@ -154,7 +145,7 @@ class OWSurveyPlot(OWVisWidget):
         self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.data = data
-        
+
         self.graph.setData(self.data)
         if self.graph.dataHasDiscreteClass:
             self.graph.discPalette.setNumberOfColors(len(self.graph.dataDomain.classVar.values))

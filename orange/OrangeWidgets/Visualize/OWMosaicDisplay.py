@@ -211,11 +211,12 @@ class OWMosaicDisplay(OWWidget):
 
         self.wdChildDialogs = [self.optimizationDlg]        # used when running widget debugging
 
-    def activateLoadedSettings(self):
         self.collapsableWBox.updateControls()
         dlg = self.createColorDialog()
         self.colorPalette = dlg.getDiscretePalette("discPalette")
         self.selectionColorPalette = [QColor(*col) for col in OWColorPalette.defaultRGBColors]
+
+
 
     def permutationListToggle(self):
         if self.exploreAttrPermutations:
@@ -311,7 +312,7 @@ class OWMosaicDisplay(OWWidget):
 
         self.initCombos(self.data)
         self.openContext("", self.data)
-        
+
 
         if data and self.unprocessedSubsetData:        # if we first received subset data we now have to call setSubsetData to process it
             self.setSubsetData(self.unprocessedSubsetData)
@@ -874,7 +875,7 @@ class SortAttributeValuesDlg(OWBaseWidget):
         box1 = OWGUI.widgetBox(self, "Select Value Order for Attribute \"" + attr + '"', orientation = "horizontal")
 
         self.attributeList = OWGUI.listBox(box1, self, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1)
-        self.attributeList.addItems(valueList) 
+        self.attributeList.addItems(valueList)
 
         vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
@@ -906,13 +907,12 @@ class SortAttributeValuesDlg(OWBaseWidget):
                 self.attributeList.insertItem(i+2, self.attributeList.item(i).text())
                 self.attributeList.item(i+2).setSelected(TRUE)
                 self.attributeList.takeItem(i)
-                
+
 
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow = OWMosaicDisplay()
-    ow.activateLoadedSettings()
     ow.show()
     data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
     ow.setData(data)

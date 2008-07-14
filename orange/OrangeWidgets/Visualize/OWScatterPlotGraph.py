@@ -94,7 +94,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             sizeIndex = self.attributeNameIndex[sizeShapeAttr]
 
         showContinuousColorLegend = self.showLegend and colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous
-        
+
         (xVarMin, xVarMax) = self.attrValues[xAttr]
         (yVarMin, yVarMax) = self.attrValues[yAttr]
         xVar = max(xVarMax - xVarMin, 1e-10)
@@ -214,17 +214,17 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             while -1 in attrs: attrs.remove(-1)
             validData = self.getValidList(attrs)
             if self.haveSubsetData:
-                subsetReferencesToDraw = dict([(example.reference(), 1) for example in self.rawSubsetData])
+                subsetIdsToDraw = dict([(example.id, 1) for example in self.rawSubsetData])
                 showFilled = 0
             else:
-                subsetReferencesToDraw ={}
+                subsetIdsToDraw ={}
                 showFilled = self.showFilledSymbols
-            
+
             xPointsToAdd = {}
             yPointsToAdd = {}
             for i in range(len(self.rawData)):
                 if not validData[i]: continue
-                if subsetReferencesToDraw.has_key(self.rawData[i].reference()):
+                if subsetIdsToDraw.has_key(self.rawData[i].id):
                     continue
 
                 if colorIndex != -1:

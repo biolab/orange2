@@ -200,14 +200,6 @@ class OWLinProj(OWVisWidget):
         self.icons = self.createAttributeIconDict()
         self.debugSettings = ["hiddenAttributes", "shownAttributes"]
 
-        # add a settings dialog and initialize its values
-        self.activateLoadedSettings()
-        self.resize(900, 700)
-
-    def saveToFile(self):
-        self.graph.saveToFile([("Save PicTex", self.graph.savePicTeX)])
-
-    def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette("discPalette")
@@ -217,6 +209,10 @@ class OWLinProj(OWVisWidget):
 
         self.cbShowAllAttributes()
 
+        self.resize(900, 700)
+
+    def saveToFile(self):
+        self.graph.saveToFile([("Save PicTex", self.graph.savePicTeX)])
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -280,8 +276,8 @@ class OWLinProj(OWVisWidget):
                 data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
-        
-        self.closeContext()        
+
+        self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.resetAnchors = not sameDomain
         self.data = data
@@ -295,12 +291,12 @@ class OWLinProj(OWVisWidget):
             self.setShownAttributeList(self.attributeSelectionList)
         self.openContext("", self.data)
         self.resetAttrManipulation()
-                
+
 
     def setSubsetData(self, subsetData):
         self.subsetData = subsetData
         self.vizrank.clearArguments()
-        
+
     # attribute selection signal - info about which attributes to show
     def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
@@ -319,7 +315,7 @@ class OWLinProj(OWVisWidget):
         self.sendSelections()
         self.resetAnchors = 0
 
-    
+
     # visualize the results of the classification
     def setTestResults(self, results):
         self.classificationResults = None

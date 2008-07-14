@@ -72,7 +72,7 @@ class OWDistributionGraph(OWGraph):
         self.probCurveKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight, 0)
         self.probCurveUpperCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight, 0)
         self.probCurveLowerCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight, 0)
-        
+
         self.tooltipManager = TooltipManager(self)
 
     def addCurve(self, xAxis = QwtPlot.xBottom, yAxis = QwtPlot.yLeft, visible = 1):
@@ -269,7 +269,7 @@ class OWDistributionGraph(OWGraph):
 
         self.probCurveKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)
         self.probCurveUpperCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)
-        self.probCurveLowerCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)            
+        self.probCurveLowerCIKey = self.addCurve(QwtPlot.xBottom, QwtPlot.yRight)
 
         self.replot()
 
@@ -303,7 +303,7 @@ class OWDistributionGraph(OWGraph):
                         ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                         ff = "%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
                         text = "N(%s=%s|%s in ("+ff+","+ff+"])=<b>%i</b><br>P(%s=%s|%s in ("+ff+","+ff+"])=<b>%.3f</b><br>"
-                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key, key+self.subIntervalStep, subBarHeight, 
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key, key+self.subIntervalStep, subBarHeight,
                                      str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key, key+self.subIntervalStep, float(subBarHeight/sum(self.hdata[key]))) #self.probGraphValues[cn][1][oi])
                         self.tips.addToolTip(key+self.subIntervalStep/2.0, currentBarsHeight[cn] + subBarHeight/2.0, text, self.subIntervalStep/2.0, subBarHeight/2.0)
                     else:
@@ -311,7 +311,7 @@ class OWDistributionGraph(OWGraph):
                         tmpx2 = cn + (self.barSize/2.0)/100.0
                         ckey.setData([tmpx, tmpx2, tmpx2, tmpx], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                         text = "N(%s=%s|%s=%s)=<b>%i</b><br>P(%s=%s|%s=%s)=<b>%.3f</b>"
-                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight, 
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight,
                                      str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), float(subBarHeight/sum(self.hdata[key])))
                         self.tips.addToolTip(cn, currentBarsHeight[cn]+subBarHeight/2.0, text, (self.barSize/2.0)/100.0, subBarHeight/2.0)
                     currentBarsHeight[cn] += subBarHeight
@@ -378,12 +378,12 @@ class OWDistributionGraph(OWGraph):
             if curve:
                 curve.setVisible(en)
                 curve.itemChanged()
-                
+
         enableIfExists(self.probCurveKey, self.showProbabilities)
         enableIfExists(self.probCurveUpperCIKey, self.showConfidenceIntervals and self.showProbabilities)
         enableIfExists(self.probCurveLowerCIKey, self.showConfidenceIntervals and self.showProbabilities)
-        self.replot()        
-        
+        self.replot()
+
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
     contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes", "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], matchValues=DomainContextHandler.MatchValuesClass)}
@@ -421,7 +421,7 @@ class OWDistributions(OWWidget):
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
         self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
-        
+
         self.graph = OWDistributionGraph(self, self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
         self.graph.setYRlabels(None)
@@ -459,7 +459,7 @@ class OWDistributions(OWWidget):
         OWGUI.lineEdit(box4, self, 'yaxisTitle', callback = self.setYaxisTitle)
 
         OWGUI.checkBox(box, self, 'showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
-        
+
         box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
 
@@ -482,9 +482,6 @@ class OWDistributions(OWWidget):
 
         self.icons = self.createAttributeIconDict()
 
-        self.activateLoadedSettings()
-
-    def activateLoadedSettings(self):
         self.graph.numberOfBars = self.numberOfBars
         self.graph.barSize = self.barSize
         self.graph.setShowMainTitle(self.showMainTitle)
