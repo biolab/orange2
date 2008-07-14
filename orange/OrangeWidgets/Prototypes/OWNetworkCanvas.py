@@ -686,7 +686,7 @@ class OWNetworkCanvas(OWGraph):
       colorIndices['?'] = len(colorIndices)
       self.discPalette.setNumberOfColors(len(colorIndices))
       
-      if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+      if colorIndex > -1 and self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
           minValue = float(min([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
           maxValue = float(max([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
       
@@ -710,7 +710,8 @@ class OWNetworkCanvas(OWGraph):
                   self.networkCurve.setVertexColor(v, newColor)
                   
           else:
-              self.networkCurve.setVertexColor(v, Qt.blue)
+              newColor = self.discPalette[0]
+              self.networkCurve.setVertexColor(v, newColor)
       
       self.replot()
       
