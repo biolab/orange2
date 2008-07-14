@@ -14,7 +14,7 @@ class ImputeListItemDelegate(QItemDelegate):
     def __init__(self, widget, parent = None):
         QItemDelegate.__init__(self, parent)
         self.widget = widget
-        
+
     def drawDisplay(self, painter, option, rect, text):
         text = str(text)
         meth, val = self.widget.methods.get(text, (0, None))
@@ -37,8 +37,8 @@ class ImputeListItemDelegate(QItemDelegate):
         else:
             QItemDelegate.drawDisplay(self, painter, option, rect, text)
         #QItemDelegate.drawDisplay(self, painter, option, rect, text + " -> " + ntext)
-                                   
-        
+
+
 
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
@@ -101,14 +101,11 @@ class OWImpute(OWWidget):
         self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto, disables = [(-1, self.btApply)])
 
-        self.activateLoadedSettings()
-        self.resize(200,200)
-        
-
-    def activateLoadedSettings(self):
         self.individualSelected(self.selectedAttr)
         self.btApply.setDisabled(self.autosend)
         self.setBtAllToDefault()
+        self.resize(200,200)
+
 
     def allToDefault(self):
         self.methods = {}
@@ -157,7 +154,7 @@ class OWImpute(OWWidget):
                 self.indiValue = self.methods[attrName][1]
             self.indiValueComboBox.hide()
             self.indiValueLineEdit.show()
-            
+
         self.indiValueCtrlBox.update()
 
 
@@ -243,21 +240,21 @@ class OWImpute(OWWidget):
         self.model = model
         self.sendIf()
 
-    
+
     class RemoverAndImputerConstructor:
         def __init__(self, removerConstructor, imputerConstructor):
             self.removerConstructor = removerConstructor
             self.imputerConstructor = imputerConstructor
-            
+
         def __call__(self, data):
             return lambda data2, remover=self.removerConstructor(data), imputer=self.imputerConstructor(data): imputer(remover(data2))
-        
+
     class SelectDefined:
         # This argument can be a list of attributes or a bool
         # in which case it means 'onlyAttributes' (e.g. do not mind about the class)
         def __init__(self, attributes):
             self.attributes = attributes
-            
+
         def __call__(self, data):
             f = orange.Filter_isDefined(domain = data.domain)
             if isinstance(self.attributes, bool):
@@ -266,8 +263,8 @@ class OWImpute(OWWidget):
             else:
                 for attr in data.domain:
                     f.check[attr] = attr in self.attributes
-            return f 
-            
+            return f
+
     def constructImputer(self, *a):
         if not self.methods:
             if self.defaultMethod == 0:
@@ -278,7 +275,7 @@ class OWImpute(OWWidget):
             elif self.defaultMethod == 3:
                 self.imputer = orange.ImputerConstructor_random(imputeClass = self.imputeClass)
             elif self.defaultMethod == 4:
-                self.imputer = self.SelectDefined(not self.imputeClass) 
+                self.imputer = self.SelectDefined(not self.imputeClass)
             else:
                 self.imputer = orange.ImputerConstructor_average(imputeClass = self.imputeClass)
             return
@@ -355,7 +352,7 @@ class OWImpute(OWWidget):
             imputerModels.append(lambda e, wei=0: None)
 
         self.imputer = lambda ex, wei=0, ic=imputerModels: orange.Imputer_model(models=[i(ex, wei) for i in ic])
-        
+
         if toRemove:
             remover = self.SelectDefined(toRemove)
             self.imputer = self.RemoverAndImputerConstructor(remover, self.imputer)

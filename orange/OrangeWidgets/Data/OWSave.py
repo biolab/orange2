@@ -27,13 +27,14 @@ class OWSave(OWWidget):
 
     # exclude C50 since it has the same extension and we do not need saving to it anyway
     registeredFileTypes = [ft for ft in orange.getRegisteredFileTypes() if len(ft)>3 and ft[3] and not ft[0]=="C50"]
-    
+
     dlgFormats = 'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\n' \
                  + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
                  + "\nAll files(*.*)"
 
     savers.update(dict((lower(ft[1][1:]), ft[3]) for ft in registeredFileTypes))
-    
+    re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Save", wantMainArea = 0, resizingEnabled = 0)
 
@@ -62,7 +63,12 @@ class OWSave(OWWidget):
         self.resize(260,100)
         self.filecombo.setCurrentIndex(0)
 
-    re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
+        if self.selectedFileName != "":
+            if os.path.exists(self.selectedFileName):
+                self.openFile(self.selectedFileName)
+            else:
+                self.selectedFileName = ""
+
 
     def dataset(self, data):
         self.data = data
@@ -77,7 +83,7 @@ class OWSave(OWWidget):
         filename = str(QFileDialog.getSaveFileName(self, 'Save Orange Data File', startfile,
                         self.dlgFormats
                         ))
-        
+
         if not filename or not os.path.split(filename)[1]:
             return
 
@@ -127,13 +133,6 @@ class OWSave(OWWidget):
         else:
             self.filecombo.addItem("(none)")
 
-
-    def activateLoadedSettings(self):
-        if self.selectedFileName != "":
-            if os.path.exists(self.selectedFileName):
-                self.openFile(self.selectedFileName)
-            else:
-                self.selectedFileName = ""
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)

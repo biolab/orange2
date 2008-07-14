@@ -71,17 +71,17 @@ class OWRank(OWWidget):
         OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals: ", orientation=0, callback=self.decimalsChanged)
 
         OWGUI.rubber(self.controlArea)
-        
+
         box = OWGUI.widgetBox(self.controlArea, "Distributions", addSpace=True)
         self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions", 'Visualize values', callback = self.cbShowDistributions)
         colBox = OWGUI.indentedBox(box, orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
         self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
         OWGUI.rubber(colBox)
-        
+
         selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select attributes", callback=self.selectMethodChanged)
         OWGUI.spin(OWGUI.indentedBox(selMethBox), self, "nSelected", 1, 100, label="No. selected"+"  ", orientation=0, callback=self.nSelectedChanged)
-        
+
         OWGUI.separator(selMethBox)
 
         applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply)
@@ -90,27 +90,23 @@ class OWRank(OWWidget):
 
         self.table = QTableWidget()
         self.mainArea.layout().addWidget(self.table)
-                        
+
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.MultiSelection)
         self.table.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
         self.table.setItemDelegate(RankItemDelegate(self, self.table))
-        
+
         self.topheader = self.table.horizontalHeader()
         self.topheader.setSortIndicatorShown(1)
         self.topheader.setHighlightSections(0)
-        
-        self.activateLoadedSettings()
+
+        self.setMeasures()
         self.resetInternals()
 
         self.connect(self.table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.headerClick)
         self.connect(self.table, SIGNAL("clicked (const QModelIndex&)"), self.selectItem)
         self.resize(690,500)
         self.updateColor()
-
-
-    def activateLoadedSettings(self):
-        self.setMeasures()
 
     def cbShowDistributions(self):
         self.table.reset()
@@ -222,7 +218,7 @@ class OWRank(OWWidget):
         self.reliefK = 5
         self.reliefN = 20
         self.reliefChanged()
-        
+
 
     def selectItem(self, index):
         row = index.row()
@@ -235,7 +231,7 @@ class OWRank(OWWidget):
 
     def headerClick(self, index):
         if index < 0: return
-        
+
         if index < 2:
             self.sortBy = 1 + index
         else:
@@ -336,12 +332,12 @@ class OWRank(OWWidget):
             OWGUI.tableItem(self.table, row, 1, attr.varType==orange.VarTypes.Continuous and "C" or str(len(attr.values)))
 
         self.minmax = {}
-        
+
         for col, meas_idx in enumerate(self.selectedMeasures):
             mdict = self.getMeasure(meas_idx)
             values = filter(lambda val: val != None, mdict.values())
             if values != []:
-                self.minmax[col] = (min(values), max(values)) 
+                self.minmax[col] = (min(values), max(values))
             else:
                 self.minmax[col] = (0,1)
             for row, attr in enumerate(self.attributeOrder):
@@ -355,15 +351,15 @@ class OWRank(OWWidget):
             self.topheader.setSortIndicator(2 + self.selectedMeasures.index(self.sortBy-3), Qt.DescendingOrder)
         else:
             self.topheader.setSortIndicator(-1, Qt.DescendingOrder)
-        
+
         #self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
         self.table.setColumnWidth(0, 100)
         self.table.setColumnWidth(1, 20)
         for col in range(len(self.selectedMeasures)):
             self.table.setColumnWidth(col+2, 80)
-        
-        
+
+
 
 
     def resendAttributes(self):
@@ -445,29 +441,29 @@ class RankItemDelegate(QItemDelegate):
         QItemDelegate.__init__(self, widget)
         self.table = table
         self.widget = widget
-  
+
     def paint(self, painter, option, index):
         if not self.widget.showDistributions:
             QItemDelegate.paint(self, painter, option, index)
-            return 
-        
+            return
+
         col = index.column()
         row = index.row()
-                        
+
         if col < 2 or not self.widget.minmax.has_key(col-2):        # we don't paint first two columns
             QItemDelegate.paint(self, painter, option, index)
             return
-                
+
         min, max = self.widget.minmax[col-2]
-             
+
         painter.save()
         self.drawBackground(painter, option, index)
         value, ok = index.data(Qt.DisplayRole).toDouble()
-                        
+
         if ok:        # in case we get "?" it is not ok
             smallerWidth = option.rect.width() * (max - value) / (max-min or 1)
             painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
-            
+
         self.drawDisplay(painter, option, option.rect, index.data(Qt.DisplayRole).toString())
         painter.restore()
 

@@ -79,7 +79,16 @@ class OWFile(OWWidget):
                                     "... Always create a new attribute"
                                ])
 
-        #self.adjustSize()
+        # remove missing data set names
+        self.recentFiles=filter(os.path.exists, self.recentFiles)
+        self.setFileList()
+
+        if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
+            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
+
+        # connecting GUI to code
+        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
+        
 
     def adjustSize0(self):
         qApp.processEvents()
@@ -102,16 +111,6 @@ class OWFile(OWWidget):
         if self.recentFiles:
             return self.openFile(self.recentFiles[0], 1, self.symbolDK, self.symbolDC)
 
-    def activateLoadedSettings(self):
-        # remove missing data set names
-        self.recentFiles=filter(os.path.exists, self.recentFiles)
-        self.setFileList()
-
-        if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
-            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
-
-        # connecting GUI to code
-        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
     def settingsFromWidgetCallback(self, handler, context):
         context.filename = self.loadedFile
@@ -293,7 +292,6 @@ class OWFile(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWFile()
-    ow.activateLoadedSettings()
     ow.show()
     a.exec_()
     ow.saveSettings()
