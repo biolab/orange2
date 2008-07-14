@@ -75,9 +75,6 @@ class OWPade(OWWidget):
 
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
-        #self.adjustSize()
-        self.activateLoadedSettings()
-
         #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
         #self.setFixedWidth(self.sizeHint().width())
 
