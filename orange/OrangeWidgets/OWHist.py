@@ -61,7 +61,7 @@ class OWHist(OWGraph):
         self.replot()
             
     def updateData(self):
-        self.removeDrawingCurves(removeLegendItems = 0)
+        self.removeDrawingCurves(removeLegendItems = 0, removeMarkers=1)
                     
         self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
         
