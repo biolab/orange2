@@ -297,7 +297,7 @@ class OWClassificationTreeViewer(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWClassificationTreeViewer()
-    a.setMainWidget(ow)
+    #a.setMainWidget(ow)
 
     data = orange.ExampleTable(r'../../doc/datasets/adult_sample')
 

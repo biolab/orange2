@@ -72,9 +72,8 @@ class OWC45Tree(OWWidget):
 
         OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
 
-
-    def activateLoadedSettings(self):
         self.setLearner()
+
 
     # main part:
 
@@ -88,7 +87,7 @@ class OWC45Tree(OWWidget):
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
                                              minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100.,
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
-                                             convertToOrange = 1, #self.convertToOrange, 
+                                             convertToOrange = 1, #self.convertToOrange,
                                              storeExamples = 1)
         except:
             QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
