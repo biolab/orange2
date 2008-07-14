@@ -127,19 +127,12 @@ class FreeVizOptimization(OWWidget, FreeViz):
             OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
             OWGUI.rubber(self.LinearTransformationTab)
 
-
-        self.resize(320,650)
-        #self.setMinimumWidth(310)
-        #self.tabs.setMinimumWidth(310)
-
-##        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
-        self.activateLoadedSettings()
-
-
-    def activateLoadedSettings(self):
         self.forceLawChanged()
         self.updateForces()
         self.cbforcebal.setDisabled(self.cbDisableAttractive.isChecked() or self.cbDisableRepulsive.isChecked())
+        self.resize(320,650)
+##        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
+
 
     # ##############################################################
     # EVENTS

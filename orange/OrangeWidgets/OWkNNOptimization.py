@@ -1736,6 +1736,5 @@ if __name__=="__main__":
     ow=OWVizRank()
 ##    ow = OWInteractionAnalysis()
 ##    ow = OWGraphAttributeHistogram()
-    a.setMainWidget(ow)
     ow.show()
     a.exec_()

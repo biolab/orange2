@@ -102,16 +102,26 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1, **args):
-        # the "currentContexts" MUST be the first thing assigned to a widget
-        self.currentContexts = {}
-        self._guiElements = []      # used for automatic widget debugging
+    def __new__(cls, *arg, **args):
+        self = QDialog.__new__(cls)
+
+        #print "arg", arg
+        #print "args: ", args
+        self.currentContexts = {}   # the "currentContexts" MUST be the first thing assigned to a widget
         self._useContexts = 1       # do you want to use contexts
         self._owInfo = 1            # currently disabled !!!
         self._owWarning = 1         # do we want to see warnings
         self._owError = 1           # do we want to see errors
         self._owShowStatus = 0      # do we want to see warnings and errors in status bar area of the widget
+        self._guiElements = []      # used for automatic widget debugging
+        for key in args:
+            if key in ["_owInfo", "_owWarning", "_owError", "_owShowStatus", "_useContexts", "_category", "_settingsFromSchema"]:
+                self.__dict__[key] = args[key]        # we cannot use __dict__.update(args) since we can have many other
 
+        return self
+
+
+    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1, **args):
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
         if savePosition:
@@ -123,8 +133,7 @@ class OWBaseWidget(QDialog):
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
 
-        title = title.replace("&","")
-        self.setCaption(title) # used for widget caption
+        self.setCaption(title.replace("&","")) # used for widget caption
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
@@ -166,15 +175,26 @@ class OWBaseWidget(QDialog):
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
-            self.setWindowIcon(QIcon(iconName))
+            pass
         elif os.path.exists(os.path.join(self.widgetDir, iconName)):
-            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, iconName)))
+            iconName = os.path.join(self.widgetDir, iconName)
         elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
-            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/" + iconName)))
+            iconName = os.path.join(self.widgetDir, "icons/" + iconName)
         elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
-            self.setWindowIcon(QIcon(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
+            iconName = os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)
         elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
-            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/Unknown.png")))
+            iconName = os.path.join(self.widgetDir, "icons/Unknown.png")
+            
+        frame = QPixmap(os.path.join(self.widgetDir, "icons/frame.png"))
+        icon = QPixmap(iconName)
+        result = QPixmap(icon.size())
+        painter = QPainter()
+        painter.begin(result)
+        painter.drawPixmap(0,0, frame)
+        painter.drawPixmap(0,0, icon)
+        painter.end()
+        self.setWindowIcon(QIcon(result))
+        
 
     # ##############################################
     def createAttributeIconDict(self):
@@ -333,6 +353,10 @@ class OWBaseWidget(QDialog):
                 settings = cPickle.load(file)
             except:
                 settings = None
+
+            if hasattr(self, "_settingsFromSchema"):
+                if settings: settings.update(self._settingsFromSchema)
+                else:        settings = self._settingsFromSchema
 
             # can't close everything into one big try-except since this would mask all errors in the below code
             if settings:
@@ -623,21 +647,21 @@ class OWBaseWidget(QDialog):
         if orangedir:
 #            try:
 #                import win32help
-#                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
+#                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self._category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
 #                    return
 #            except:
 #                pass
 
             try:
                 import webbrowser
-                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), 0, 1)
+                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (orangedir, self._category, self.__class__.__name__[2:]), 0, 1)
                 return
             except:
                 pass
 
         try:
             import webbrowser
-            webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog/%s/%s.htm" % (self.category, self.__class__.__name__[2:]))
+            webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog/%s/%s.htm" % (self._category, self.__class__.__name__[2:]))
             return
         except:
             pass
@@ -740,7 +764,7 @@ class OWBaseWidget(QDialog):
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
-    oww=OWBaseWidget()
+    oww=OWBaseWidget(adfaf=1)
     oww.show()
     a.exec_()
     oww.saveSettings()
