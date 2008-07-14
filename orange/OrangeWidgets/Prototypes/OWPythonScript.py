@@ -53,6 +53,8 @@ class OWPythonScript(OWWidget):
         self.console.setFont(QFont("Monospace"))
         self.consoleBox.setAlignment(Qt.AlignBottom)
         
+        self.openScript(self.codeFile)
+        
         self.controlArea.layout().addStretch(1)
         self.resize(800,600)
         
@@ -62,11 +64,14 @@ class OWPythonScript(OWWidget):
     def setNetwork(self, net):
         self.inNetwork = net
     
-    def openScript(self):
-        self.codeFile = str(QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)'))
-        
+    def openScript(self, filename=None):
+        if filename == None:
+            self.codeFile = str(QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)'))    
+        else:
+            self.codeFile = filename
+            
         if self.codeFile == "": return
-        
+            
         f = open(self.codeFile, 'r')
         self.text.setPlainText(f.read())
         f.close()
