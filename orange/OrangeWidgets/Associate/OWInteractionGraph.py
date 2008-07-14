@@ -106,7 +106,6 @@ class OWInteractionGraph(OWWidget):
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
-        self.activateLoadedSettings()
 
 
     def mergeAttributesEvent(self):
@@ -550,7 +549,7 @@ class OWInteractionGraph(OWWidget):
     def saveToFileLCanvas(self):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasL)
         sizeDlg.exec_()
-        
+
 
     def saveToFileRCanvas(self):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR)
