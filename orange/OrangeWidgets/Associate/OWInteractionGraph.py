@@ -89,9 +89,9 @@ class OWInteractionGraph(OWWidget):
         self.shownAttribsLB = OWGUI.listBox(self.shownAttribsGroup, self, "selectedShown", "shownAttributes", selectionMode = QListWidget.ExtendedSelection)
 
         self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttributeClick, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_up3.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttributeClick, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_down3.png")))
 
         self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", selectionMode = QListWidget.ExtendedSelection)
 
