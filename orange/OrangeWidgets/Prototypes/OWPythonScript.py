@@ -17,17 +17,18 @@ class OWPythonScript(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
-        self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inNetwork", orangeom.Network, self.setNetwork)]
-        self.outputs = [("outExampleTable", ExampleTable), ("outNetwork", orangeom.Network)]
+        self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inDistanceMatrix", orange.SymMatrix, self.setDistanceMatrix), ("inNetwork", orangeom.Network, self.setNetwork)]
+        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orangeom.Network)]
         
         self.inNetwork = None
         self.inExampleTable = None
+        self.inDistanceMatrix = None
         self.codeFile = ''
         
         self.loadSettings()
         
         self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
-        OWGUI.label(self.infoBox, self, "Execute python script.\n\nInput variables:\n - inExampleTable\n - inNetwork\n\nOutput variables:\n - outExampleTable\n - outNetwork")
+        OWGUI.label(self.infoBox, self, "Execute python script.\n\nInput variables:\n - inExampleTable\n - inDistanceMatrix\n - inNetwork\n\nOutput variables:\n - outExampleTable\n - outDistanceMatrix\n - outNetwork")
         
         self.controlBox = OWGUI.widgetBox(self.controlArea, 'File')
         OWGUI.button(self.controlBox, self, "Open...", callback=self.openScript)
@@ -45,6 +46,7 @@ class OWPythonScript(OWWidget):
         self.textBox.layout().addWidget(self.text)
         self.text.setFont(QFont("Monospace"))
         self.textBox.setAlignment(Qt.AlignVCenter)
+        self.text.setTabStopWidth(4)
         
         self.consoleBox = OWGUI.widgetBox(self, 'Console')
         self.splitCanvas.addWidget(self.consoleBox)
@@ -52,6 +54,7 @@ class OWPythonScript(OWWidget):
         self.consoleBox.layout().addWidget(self.console)
         self.console.setFont(QFont("Monospace"))
         self.consoleBox.setAlignment(Qt.AlignBottom)
+        self.console.setTabStopWidth(4)
         
         self.openScript(self.codeFile)
         
@@ -60,6 +63,9 @@ class OWPythonScript(OWWidget):
         
     def setExampleTable(self, et):
         self.inExampleTable = et
+        
+    def setDistanceMatrix(self, dm):
+        self.inDistanceMatrix = dm
         
     def setNetwork(self, net):
         self.inNetwork = net
@@ -97,13 +103,17 @@ class OWPythonScript(OWWidget):
         try:
             code = self.text.toPlainText()
             inExampleTable = self.inExampleTable
+            inDistanceMatrix = self.inDistanceMatrix
             inNetwork = self.inNetwork
+            
             outExampleTable = None
+            outDistanceMatrix = None
             outNetwork = None
             
             exec(str(code))
             
             self.send("outExampleTable", outExampleTable)
+            self.send("outDistanceMatrix", outDistanceMatrix)
             self.send("outNetwork", outNetwork)
 
         except:
