@@ -24,7 +24,7 @@ class OWDataDomain(OWWidget):
 
 
     def __init__(self,parent = None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Data Domain", wantMainArea = 0) #initialize base class
+        OWWidget.__init__(self, parent, signalManager, "Data Domain", wantMainArea = 0) 
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Subset", AttributeList, self.setAttributeList)]
         self.outputs = [("Examples", ExampleTable)]
@@ -46,12 +46,12 @@ class OWDataDomain(OWWidget):
 
         self.loadSettings()
 
-        w = QWidget(self)
-        self.controlArea.layout().addWidget(w)
+        import sip
+        sip.delete(self.controlArea.layout())
         grid = QGridLayout()
+        self.controlArea.setLayout(grid)
         grid.setMargin(0)
-        w.setLayout(grid)
-
+                
         boxAvail = OWGUI.widgetBox(self, 'Available Attributes', addToLayout = 0)
         grid.addWidget(boxAvail, 0,0,3,1)
 
@@ -90,7 +90,7 @@ class OWDataDomain(OWWidget):
         grid.addWidget(boxMeta, 2,2)
         self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
-        boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal")
+        boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal", addSpace = 1)
         grid.addWidget(boxApply, 3,0,3,3)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
         self.applyButton.setEnabled(False)
@@ -101,7 +101,6 @@ class OWDataDomain(OWWidget):
         grid.setRowStretch(0, 4)
         grid.setRowStretch(1, 0)
         grid.setRowStretch(2, 2)
-         
 
         self.icons = self.createAttributeIconDict()
 
