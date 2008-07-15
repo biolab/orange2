@@ -561,12 +561,11 @@ class OWNetwork(OWWidget):
         
     def setMarkInput(self):
         var = str(self.markInputCombo.currentText())
-        
+        #print 'combo:',self.markInputCombo.currentText()
         if self.markInputItems != None and len(self.markInputItems) > 0:
-            values = [str(x[var]).upper() for x in self.markInputItems]
-            #print 'values',values
-            toMark = [i for i,x in enumerate(self.visualize.graph.items) if str(x[var]).upper() in values]
-            #print toMark
+            values = [str(x[var]).strip().upper() for x in self.markInputItems]
+            toMark = [i for (i,x) in enumerate(self.visualize.graph.items) if str(x[var]).strip().upper() in values]
+            #print "mark:", toMark
             self.graph.setMarkedVertices(list(toMark))
             self.graph.replot()
             
