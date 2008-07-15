@@ -20,10 +20,10 @@ class OWVisWidget(OWWidget):
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up3.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_up3.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonUPAttr.setMaximumWidth(30)
-        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down3.png")))
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_down3.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonDOWNAttr.setMaximumWidth(30)
 
