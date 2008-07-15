@@ -59,7 +59,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     if margin != -1:
         b.layout().setMargin(margin)
 
-    if isinstance(addSpace, int):
+    if addSpace and isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
         separator(widget)
