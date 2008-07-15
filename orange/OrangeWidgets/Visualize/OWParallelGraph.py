@@ -34,8 +34,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.visualizedMidLabels = []
         self.selectedExamples = []
         self.unselectedExamples = []
-        self.bottomPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], r"icons\upgreenarrow.png"))
-        self.topPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], r"icons\downgreenarrow.png"))
+        self.bottomPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], "icons/upgreenarrow.png"))
+        self.topPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], "icons/downgreenarrow.png"))
 
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)

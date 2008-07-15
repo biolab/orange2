@@ -159,7 +159,7 @@ class OWMosaicDisplay(OWWidget):
             butt = OWGUI.button(box, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values", debuggingEnabled = 0)
             butt.setFixedSize(26, 24)
             butt.setCheckable(1)
-            butt.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
+            butt.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_sort.png")))
 
             setattr(self, "sort"+str(i), butt)
             setattr(self, "attr" + str(i)+ "Combo", combo)
@@ -880,10 +880,10 @@ class SortAttributeValuesDlg(OWBaseWidget):
         vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attribute values down")
-        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_up3.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonUPAttr.setFixedWidth(40)
-        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, "icons/Dlg_down3.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonDOWNAttr.setFixedWidth(40)
 
