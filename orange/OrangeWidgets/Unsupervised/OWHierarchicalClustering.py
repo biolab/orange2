@@ -3,7 +3,7 @@
 <description>Hierarchical clustering based on distance matrix, and a dendrogram viewer.</description>
 <icon>HierarchicalClustering.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
-<prority>2100</priority>
+<priority>2100</priority>
 """
 
 import orngOrangeFoldersQt4
