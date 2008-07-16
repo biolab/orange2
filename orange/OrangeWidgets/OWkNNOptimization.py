@@ -1278,7 +1278,7 @@ class OWGraphAttributeHistogram(OWWidget):
             if self.colorAttributes and self.dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
                 if attr in evalAttrs:
                     classIndex = evalAttrs.index(attr) % len(classVariableValues)
-                    color = classColors[classVariableValues.index(self.data.classVar.values[classIndex])]
+                    color = classColors[classVariableValues.index(self.data.domain.classVar.values[classIndex])]
                 else:
                     color = black
             else:
