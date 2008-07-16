@@ -212,7 +212,8 @@ class OWDataTable(OWWidget):
                 bgColor = white
 
             for i in range(numEx):
-                OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
+                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
+##                OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
 
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
@@ -331,9 +332,9 @@ class TableItemDelegate(QItemDelegate):
                     dist = self.table.dist[col]
                     smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
                     painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
-            text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
-        else:
-            text = index.data(Qt.DisplayRole).toString()
+##            text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
+##        else:
+        text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)
         painter.restore()
