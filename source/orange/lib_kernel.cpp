@@ -2397,7 +2397,8 @@ PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference)
     sort(indices.begin(), indices.end());
 
     CAST_TO(TExampleGenerator, eg);
-    TExampleTable *newTable = mlnew TExampleTable(eg->domain, !reference);
+    TExampleTable *newTable = reference ? mlnew TExampleTable(eg, (int)0)
+                                        : mlnew TExampleTable(eg->domain);
     PExampleGenerator newGen(newTable);
 
     TExampleGenerator::iterator ei(eg->begin());
@@ -2427,7 +2428,10 @@ PyObject *ExampleGenerator_getitems(TPyOrange *self, PyObject *pylist)  PYARGS(M
 
 
 PyObject *ExampleGenerator_checksum(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "() -> crc")
-{ return PyInt_FromLong(SELF_AS(TExampleGenerator).checkSum()); }
+{ PyTRY
+    return PyInt_FromLong(SELF_AS(TExampleGenerator).checkSum()); 
+  PyCATCH
+}
 
 
 const char *getExtension(const char *name);
