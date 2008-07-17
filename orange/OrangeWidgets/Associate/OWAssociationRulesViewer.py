@@ -22,7 +22,6 @@ class AssociationRulesViewerScene(QGraphicsScene):
     def unselect(self):
         if self.rect:
             self.rect.hide()
-##            self.rect = None
 
 
     def draw(self):
@@ -59,15 +58,10 @@ class AssociationRulesViewerScene(QGraphicsScene):
                         cell.setBrush(QBrush(QColor(color-20, color-20, color)))
                 cell.show()
 
-##        if self.rect:
-##            self.rect.hide()
-##        if scmin > -1:
         self.rect = QGraphicsRectItem(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, None, self)
         self.rect.setPen(QPen(QColor(128, 128, 255), 2))
         self.rect.setZValue(1)
         self.rect.hide()
-##        else:
-##            self.rect = None
 
         self.update()
         self.master.shownSupport.setText('%3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100)))
@@ -79,7 +73,7 @@ class AssociationRulesViewerScene(QGraphicsScene):
         self.rect.setRect(master.sel_colmin*master.cellwidth,
                           master.sel_rowmin*master.cellheight,
                           (master.sel_colmax-master.sel_colmin+1)*master.cellwidth,
-                          (master.sel_rowmax-master.sel_rowmin)*master.cellheight)
+                          (master.sel_rowmax-master.sel_rowmin+1)*master.cellheight)
         self.update()
 
     def mousePressEvent(self, ev):
@@ -88,10 +82,8 @@ class AssociationRulesViewerScene(QGraphicsScene):
         master = self.master
         master.sel_colmin = master.sel_colmax = self.sel_startX / master.cellwidth
         master.sel_rowmin = master.sel_rowmax = self.sel_startY / master.cellheight
-##        self.draw()
         self.rect.show()
         self.updateSelectionRect()
-        master.updateRuleList()
         self.mousePressed = True
 
     def mouseMoveEvent(self, ev):
@@ -108,11 +100,10 @@ class AssociationRulesViewerScene(QGraphicsScene):
             self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
             self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
 
-##            self.draw()
             self.updateSelectionRect()
-            self.master.updateRuleList()
 
     def mouseReleaseEvent(self, ev):
+        self.master.updateRuleList()
         self.master.sendIfAuto()
         self.mousePressed = False
 
@@ -173,6 +164,8 @@ class OWAssociationRulesViewer(OWWidget):
 
         self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
         self.numcols = self.numrows = 20
+        self.showBars = True
+
         self.cellwidth = self.cellheight = 18
 
         for m in self.measures:
@@ -192,6 +185,7 @@ class OWAssociationRulesViewer(OWWidget):
         OWGUI.separator(self.mainArea, 16, 0)
         mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
         mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        mainLeft.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
 
         infoGrid = QGridLayout()
         info = OWGUI.widgetBox(mainLeft, orientation = infoGrid)
@@ -232,28 +226,20 @@ class OWAssociationRulesViewer(OWWidget):
         for i, m in enumerate(self.measures):
             cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns, addToLayout = 0)
             self.grid.addWidget(cb, i % 2, i / 2)
-##            self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
-
-#        rightUpRight = OWGUI.widgetBox(mainRight, orientation=0)
-#        for i, m in enumerate(self.measures):
-#            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns)
 
         OWGUI.separator(mainRight, 0, 4)
         
         trules = self.trules = QTableWidget(0, 0, mainRight)
         mainRight.layout().addWidget(trules)
-##        trules.setLeftMargin(0)
         trules.verticalHeader().hide()
         trules.setSelectionMode(QTableWidget.NoSelection)
         trules.setColumnCount(len(self.measures)+1)
 
         header = trules.horizontalHeader()
-##        for i, m in enumerate(self.measures):
-##            trules.setColumnStretchable(i, 0)
         trules.setHorizontalHeaderLabels([m[1] for m in self.measures]+["Rule"])
-##        trules.setColumnStretchable(len(self.measures), 1)
-##        header.setLabel(len(self.measures), "Rule")
-        self.connect(header, SIGNAL("clicked(int)"), self.sort)
+        trules.setItemDelegate(OWGUI.TableBarItem(self, trules))
+        trules.setSortingEnabled(True)
+        trules.normalizers = []
 
         bottomGrid = QGridLayout()
         bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
@@ -282,12 +268,7 @@ class OWAssociationRulesViewer(OWWidget):
 
     def unselect(self):
         self.sel_colmin = self.sel_colmax = self.sel_rowmin = self.sel_rowmax = -1
-
-        self.selectedRules = []
-        for row in self.ingrid:
-            for cell in row:
-                for rule in cell:
-                    self.selectedRules.append(rule)
+        self.selectedRules = sum(sum(self.ingrid, []), [])
 
         self.displayRules()
         if hasattr(self, "selConfidence"):
@@ -312,17 +293,13 @@ class OWAssociationRulesViewer(OWWidget):
         self.selSupport.setText("%3i%% - %3i%%" % (round(100*smin), round(100*smax)))
         self.selRules.setText("%3i" % len(self.selectedRules))
 
-    # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)
-    def updateRuleList(self):
-        self.selectedRules = []
-        for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
-            for cell in row[self.sel_colmin : self.sel_colmax+1]:
-                for rule in cell:
-                    self.selectedRules.append(rule)
 
+    def updateRuleList(self):
+        self.selectedRules = sum(sum((row[self.sel_colmin : self.sel_colmax+1] for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]), []), []) 
         self.displayRules()
         self.updateConfSupp()
         self.saveButton.setEnabled(len(self.selectedRules) > 0)
+
 
     def displayRules(self):
         if hasattr(self, "trules"):
@@ -330,38 +307,39 @@ class OWAssociationRulesViewer(OWWidget):
             trules.setRowCount(len(self.selectedRules))
 
             rulecol = len(self.measures)
-            for row, rule in enumerate(self.selectedRules):
+            trules.normalizers = []
+            try:
+                self.progressBarInit()
+                progressStep = 100./(rulecol+1)
                 for col, m in enumerate(self.measures):
-##                    trules.setText(row, col, "  %.3f  " % getattr(rule, m[2]))
-                    trules.setItem(row, col, QTableWidgetItem("  %.3f  " % getattr(rule, m[2])))
-##                trules.setText(row, rulecol, `rule`.replace(" ", "  "))
-                trules.setItem(row, rulecol, QTableWidgetItem(`rule`.replace(" ", "  ")))
+                    mname = m[2]
+                    values = [getattr(rule, mname) for rule in self.selectedRules]
+                    if m[1] in ["Supp", "Conf", "Cov"]:
+                        trules.normalizers.append((1, 1))
+                    else:
+                        mi, ma = min(values), max(values)
+                        div = ma - mi
+                        trules.normalizers.append((ma, div or 1))
+                    for row, meas in enumerate(values):
+                        trules.setItem(row, col, QTableWidgetItem("  %.3f  " % meas))
+                    self.progressBarAdvance(progressStep)
+    
+                for row, rule in enumerate(self.selectedRules):
+                    trules.setItem(row, rulecol, QTableWidgetItem(str(rule).replace(" ", "  ")))
+            finally:
+                self.progressBarFinished()
 
-##            for i in range(len(self.measures)+1):
-##                self.trules.adjustColumn(i)
-                
+            self.trules.resizeColumnsToContents()
+            self.trules.resizeRowsToContents()
+            
             self.showHideColumns()
-            self.sort()
 
 
     def showHideColumns(self):
         for i, m in enumerate(self.measures):
-            show = getattr(self, m[2])
-            if bool(self.trules.horizontalHeader().sectionSize(i)) != bool(show):
-                if show:
-                    self.trules.horizontalHeader().setSectionHidden(i, show)
-##                    self.trules.adjustColumn(i)
-                else:
-                    self.trules.horizontalHeader().setSectionHidden(i, show)
+            (getattr(self, m[2]) and self.trules.showColumn or self.trules.hideColumn)(i)
 
-    def sort(self, i = None):
-        if i is None:
-            i = self.sortedBy
-        else:
-            self.sortedBy = i
-        self.trules.sortItems(i, Qt.AscendingOrder if i == len(self.measures) else Qt.DescendingOrder)
-        self.trules.horizontalHeader().setSortIndicator(i, Qt.AscendingOrder if i == len(self.measures) else Qt.DescendingOrder)
-            
+
     def saveRules(self):
         fileName = QFileDialog.getSaveFileName(self, "Save Rules", "myRules.txt", "Textfiles (*.txt)" );
         if not fileName.isNull() :
@@ -384,6 +362,7 @@ class OWAssociationRulesViewer(OWWidget):
 
     def coordToSuppConf(self, col, row):
         return self.supp_min + col * self.suppInCell, self.conf_min + row * self.confInCell
+
 
     def zoomButton(self):
         if self.sel_rowmin >= 0:
@@ -433,13 +412,16 @@ class OWAssociationRulesViewer(OWWidget):
     def arules(self,rules):
         self.rules = rules
         if self.rules:
-            self.supp_min = self.conf_min = 1
-            self.supp_max = self.conf_max = 0
-            for rule in self.rules:
-                self.conf_min = min(self.conf_min, rule.confidence)
-                self.conf_max = max(self.conf_max, rule.confidence)
-                self.supp_min = min(self.supp_min, rule.support)
-                self.supp_max = max(self.supp_max, rule.support)
+            supps = [rule.support for rule in self.rules]
+            self.supp_min = min(supps)
+            self.supp_max = max(supps)
+            del supps
+
+            confs = [rule.confidence for rule in self.rules]
+            self.conf_min = min(confs)
+            self.conf_max = max(confs)
+            del confs
+
             self.checkScale()
         else:
             self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
