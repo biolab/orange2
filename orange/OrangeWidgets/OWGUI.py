@@ -1539,6 +1539,28 @@ class tableItem(QTableWidgetItem):
 
 
 
+class TableBarItem(QItemDelegate):
+    def __init__(self, widget, table = None, color = QColor(255, 170, 127)):
+        QItemDelegate.__init__(self, widget)
+        self.color = color
+        self.widget = widget
+        self.table = table
+
+    def paint(self, painter, option, index):
+        painter.save()
+        self.drawBackground(painter, option, index)
+        value, ok = index.data(Qt.DisplayRole).toDouble()
+        if ok and self.widget.showBars:
+            col = index.column()
+            if col < len(self.table.normalizers):
+                max, span = self.table.normalizers[col]
+                painter.fillRect(option.rect.adjusted(0, 1, -option.rect.width()*(max - value) / span, -1), self.color)
+#                painter.fillRect(option.rect.adjusted(0, option.rect.height()-4, -option.rect.width()*(max - value) / span, 0), self.color)
+        text = index.data(Qt.DisplayRole).toString()
+
+        self.drawDisplay(painter, option, option.rect, text)
+        painter.restore()
+
 ##############################################################################
 # progress bar management
 
