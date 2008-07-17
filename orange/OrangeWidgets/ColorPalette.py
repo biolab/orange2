@@ -37,7 +37,7 @@ except:
     wantsPositiveColor = True
 
 def signedColor(long):
-    if type(long) == int:
+    if isinstance(long, int):
         return long
     
     long &= 0xFFFFFFFF
