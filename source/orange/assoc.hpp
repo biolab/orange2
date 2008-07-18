@@ -35,6 +35,8 @@
 #include "learn.hpp"
 
 WRAPPER(Example)
+VWRAPPER(IntList)
+WRAPPER(ExampleTable)
 
 class ORANGE_API TAssociationRule : public TOrange {
 public:
@@ -54,6 +56,10 @@ public:
   float nExamples; //P number of learning examples
   int nLeft; //PR number of items on the rule's left side
   int nRight; //PR number of items on the rule's right side
+  
+  PExampleTable examples; //PR examples which the rule was built from
+  PIntList matchLeft; //PR indices of examples that match the left side of the rule
+  PIntList matchBoth; //PR indices to examples that match both sides of the rule
 
   TAssociationRule(PExample, PExample);
 
@@ -89,7 +95,71 @@ VWRAPPER(AssociationRules)
 
 
 class TItemSetNode;
+
+/* These objects are collected in TExampleSets, lists of examples that correspond to a particular tree node.
+   'example' is a unique example id (basically its index in the original dataset)
+   'weight' is the example's weight. */
+class TExWei {
+public:
+  int example;
+  float weight;
+
+  TExWei(const int &ex, const float &wei)
+  : example(ex),
+    weight(wei)
+  {}
+};
+
+/* This is a set of examples, used to list the examples that support a particular tree node */
+typedef vector<TExWei> TExampleSet;
+
+
+/* A tree element that corresponds to an attribute value (ie, TItemSetNode has as many
+   TlItemSetValues as there are values that appear in itemsets.
+   For each value, we have the 'examples' that support it, the sum of their weights
+   ('support') and the branch that contains more specialized itemsets. */
+class TItemSetValue {
+public:
+  int value;
+  TItemSetNode *branch;
+
+  float support;
+  TExampleSet examples;
+
+  // This constructor is called when building the 1-tree
+  TItemSetValue(int al);
+  
+  // This constructor is called when itemsets are intersected (makePairs ets)
+  TItemSetValue(int al, const TExampleSet &ex, float asupp);
+
+  ~TItemSetValue();
+  void sumSupport();
+};
+
+
+/* TItemSetNode splits itemsets according to the value of attribute 'attrIndex';
+   each element of 'values' corresponds to an attribute value (not necessarily to all,
+   but only to those values that appear in itemsets).
+   Itemsets for which the value is not defined are stored in a subtree in 'nextAttribute'.
+   This can be seen in TItemSetTree::findSupport that finds a node that corresponds to the
+   given itemset */
+class TItemSetNode {
+public:
+  int attrIndex;
+  TItemSetNode *nextAttribute;
+  vector<TItemSetValue> values;
+
+  // This constructor is called by 1-tree builder which initializes all values (and later reduces them)
+  TItemSetNode(PVariable var, int anattri);
+
+  // This constructor is called when extending the tree
+  TItemSetNode(int anattri);
+
+  ~TItemSetNode();
+};
+
 class TRuleTreeNode;
+
 
 class ORANGE_API TAssociationRulesInducer : public TOrange {
 public:
@@ -100,6 +170,7 @@ public:
   float confidence; //P required confidence
   float support; //P required support
   bool classificationRules; //P if true, rules will have the class and only the class attribute on the right-hand side
+  bool storeExamples; //P if true, each rule is going to have tables with references to examples which match its left side or both sides
 
 public:
 
@@ -112,14 +183,14 @@ public:
   int  makePairs (TItemSetNode *, const float suppN);
 
   PAssociationRules generateClassificationRules(PDomain, TItemSetNode *tree, const int nOfExamples, const TDiscDistribution &);
-  void generateClassificationRules1(PDomain, TItemSetNode *root, TItemSetNode *node, TExample &left, const int nLeft, const float nAppliesLeft, PAssociationRules, const int nOfExamples, const TDiscDistribution &);
+  void generateClassificationRules1(PDomain, TItemSetNode *root, TItemSetNode *node, TExample &left, const int nLeft, const float nAppliesLeft, PAssociationRules, const int nOfExamples, const TDiscDistribution &, TExampleSet *leftSet);
 
   PAssociationRules generateRules(PDomain, TItemSetNode *, const int depth, const int nOfExamples);
   void generateRules1(TExample &, TItemSetNode *root, TItemSetNode *node, int k, int oldk, PAssociationRules, const int nOfExamples);
-  void find1Rules(TExample &, TItemSetNode *, const float &support, int oldk, PAssociationRules, const int nOfExamples);
+  void find1Rules(TExample &, TItemSetNode *, const float &support, int oldk, PAssociationRules, const int nOfExamples, const TExampleSet &bothSets);
   TRuleTreeNode *buildTree1FromExample(TExample &, TItemSetNode *);
-  int generateNext1(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, int k, TExample &whole, const float &support, PAssociationRules, const int nOfExamples);
-  int generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, TExample &whole, const float &support, PAssociationRules, const int nOfExamples);
+  int generateNext1(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, int k, TExample &whole, const float &support, PAssociationRules, const int nOfExamples, const TExampleSet &bothSets);
+  int generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, TExample &whole, const float &support, PAssociationRules, const int nOfExamples, const TExampleSet &bothSets);
 };
 
 WRAPPER(AssociationRulesInducer)
@@ -157,6 +228,7 @@ public:
 	long value;								//value of this node
 	TSparseItemsetNode *parent;					//pointer to parent node
 	TSparseISubNodes subNode;				//children items
+	vector<int> exampleIds;
 	
 	TSparseItemsetNode(long avalue = -1);			//constructor
 
@@ -177,10 +249,12 @@ public:
 	long countLeafNodes();
 	void considerItemset(long itemset[], int iLength, float weight, int aimLength);
 	void considerExamples(TSparseExamples *examples, int aimLength);
-	void delLeafSmall(float minSupport);
-	PAssociationRules genRules(int maxDepth, float minConf, float nOfExamples);
+  void assignExamples(TSparseItemsetNode *node, long *itemset, long *itemsetend, const int exampleId);
+  void assignExamples(TSparseExamples &examples);
+  void delLeafSmall(float minSupport);
+	PAssociationRules genRules(int maxDepth, float minConf, float nOfExamples, bool storeExamples);
 	long getItemsetRules(long itemset[], int iLength, float minConf, 
-						 float nAppliesBoth, float nOfExamples, PAssociationRules rules);
+						 float nAppliesBoth, float nOfExamples, PAssociationRules rules, bool storeExamples, TSparseItemsetNode *bothNode);
 	PDomain domain;
 
 //private:
@@ -196,6 +270,8 @@ public:
 
   float confidence; //P required confidence
   float support; //P required support
+  
+  bool storeExamples; //P stores examples corresponding to rules
 
   TAssociationRulesSparseInducer(float asupp=0.1, float aconf=0, int awei=0);
   PAssociationRules operator()(PExampleGenerator, const int &weightID);
@@ -215,6 +291,8 @@ public:
 
   int maxItemSets; //P maximal number of itemsets (increase if you want)
   float support; //P required support
+
+  bool storeExamples; //P stores examples corresponding to itemsets
 
   TItemsetsSparseInducer(float asupp=0.1, int awei=0);
   PSparseItemsetTree operator()(PExampleGenerator, const int &weightID);

@@ -94,6 +94,72 @@ PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject 
   PyCATCH
 }
 
+void gatherRules(TItemSetNode *node, vector<pair<int, int> > &itemsSoFar, PyObject *listOfItems, bool storeExamples)
+{
+  for(; node; node = node->nextAttribute) {
+    itemsSoFar.push_back(make_pair(node->attrIndex, (int)0));
+    ITERATE(vector<TItemSetValue>, isi, node->values) {
+      itemsSoFar.back().second = (*isi).value;
+
+      PyObject *itemset = PyTuple_New(itemsSoFar.size());
+      int el = 0;
+      vector<pair<int, int> >::const_iterator sfi(itemsSoFar.begin()), sfe(itemsSoFar.end());
+      for(; sfi != sfe; sfi++, el++) {
+        PyObject *vp = PyTuple_New(2);
+        PyTuple_SET_ITEM(vp, 0, PyInt_FromLong((*sfi).first));
+        PyTuple_SET_ITEM(vp, 1, PyInt_FromLong((*sfi).second));
+        PyTuple_SET_ITEM(itemset, el, vp);
+      }
+      
+      PyObject *examples;
+      if (storeExamples) {
+        examples = PyList_New((*isi).examples.size());
+        int ele = 0;
+        ITERATE(TExampleSet, ei, (*isi).examples)
+          PyList_SetItem(examples, ele++, PyInt_FromLong((*ei).example));
+      }
+      else {
+        examples = Py_None;
+        Py_INCREF(Py_None);
+      }
+
+      PyObject *rr = PyTuple_New(2);
+      PyTuple_SET_ITEM(rr, 0, itemset);
+      PyTuple_SET_ITEM(rr, 1, examples);
+      
+      PyList_Append(listOfItems, rr);
+      Py_DECREF(rr);
+      
+      gatherRules((*isi).branch, itemsSoFar, listOfItems, storeExamples);
+    }
+    itemsSoFar.pop_back();
+  }
+}
+
+PyObject *AssociationRulesInducer_getItemsets(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(examples[, weightID]) -> list-of-itemsets")
+{ 
+  PyTRY
+    int weightID;
+    PExampleGenerator egen = exampleGenFromArgs(args, weightID);
+    if (!egen)
+      return PYNULL;
+
+    if (egen->domain->hasContinuousAttributes(true))
+      PYERROR(PyExc_TypeError, "cannot induce rules with non-discrete attributes", NULL);
+
+    TItemSetNode *tree = NULL;
+    int depth, nOfExamples;
+    TDiscDistribution classDist;
+    CAST_TO(TAssociationRulesInducer, inducer);
+    inducer->buildTrees(egen, weightID, tree, depth, nOfExamples, classDist);
+    
+    PyObject *listOfItemsets = PyList_New(0);
+    vector<pair<int, int> > itemsSoFar;
+    gatherRules(tree, itemsSoFar, listOfItemsets, inducer->storeExamples);
+    delete tree;
+    return listOfItemsets;
+  PyCATCH
+}
 
 PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
 {
@@ -112,11 +178,14 @@ PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyO
 class TItemsetNodeProxy : public TOrange {
 public:
     const TSparseItemsetNode *node;
+    PSparseItemsetTree tree;
     
-    TItemsetNodeProxy(const TSparseItemsetNode *n)
-    : node(n)
+    TItemsetNodeProxy(const TSparseItemsetNode *n, PSparseItemsetTree t)
+    : node(n),
+    tree(t)
     {}
 };
+
 
 PyObject *ItemsetsSparseInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
 {
@@ -129,18 +198,52 @@ PyObject *ItemsetsSparseInducer_call(PyObject *self, PyObject *args, PyObject *k
       return PYNULL;
 
     PSparseItemsetTree tree = SELF_AS(TItemsetsSparseInducer)(egen, weightID);
-    return WrapOrange(POrange(new TItemsetNodeProxy(tree->root)));
+    return WrapOrange(POrange(new TItemsetNodeProxy(tree->root, tree)));
   PyCATCH
+}
+
+PYXTRACT_IGNORE int Orange_traverse(TPyOrange *, visitproc, void *);
+PYXTRACT_IGNORE int Orange_clear(TPyOrange *);
+
+int ItemsetNodeProxy_traverse(PyObject *self, visitproc visit, void *arg)
+{ 
+	int err = Orange_traverse((TPyOrange *)self, visit, arg);
+	if (err)
+		return err;
+
+	CAST_TO_err(TItemsetNodeProxy, node, -1);
+	PVISIT(node->tree);
+  PVISIT(node->tree->domain);
+	return 0;
+}
+
+int ItemsetNodeProxy_clear(PyObject *self)
+{ 
+  SELF_AS(TItemsetNodeProxy).tree = PSparseItemsetTree();
+	return Orange_clear((TPyOrange *)self);
 }
 
 PyObject *ItemsetNodeProxy_get_children(PyObject *self)
 {
   PyTRY
-    const TSparseItemsetNode *me = SELF_AS(TItemsetNodeProxy).node;
+    CAST_TO(TItemsetNodeProxy, nodeProxy);
+    const TSparseItemsetNode *me = nodeProxy->node;
     PyObject *children = PyDict_New();
     const_ITERATE(TSparseISubNodes, ci, me->subNode)
-      PyDict_SetItem(children, PyInt_FromLong(ci->first), WrapOrange(POrange(new TItemsetNodeProxy(ci->second))));
+      PyDict_SetItem(children, PyInt_FromLong(ci->first), WrapOrange(POrange(new TItemsetNodeProxy(ci->second, nodeProxy->tree))));
     return children;
+  PyCATCH
+}
+
+PyObject *ItemsetNodeProxy_get_examples(PyObject *self)
+{
+  PyTRY
+    const TSparseItemsetNode *me = SELF_AS(TItemsetNodeProxy).node;
+    PyObject *examples = PyList_New(me->exampleIds.size());
+    int i = 0;
+    const_ITERATE(vector<int>, ci, me->exampleIds)
+      PyList_SetItem(examples, i++, PyInt_FromLong(*ci));
+    return examples;
   PyCATCH
 }
 

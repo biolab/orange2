@@ -22,6 +22,7 @@
 
 #include "assoc.hpp"
 #include "examplegen.hpp"
+#include "table.hpp"
 
 
 
@@ -86,7 +87,7 @@ TSparseExamples::TSparseExamples(PExampleGenerator examples, int weightID){
       intDomain.push_back(*si);
   }
   else {
-    for(int i = 0, e = examples->domain->variables; i!=e; i++)
+    for(int i = 0, e = examples->domain->variables->size(); i!=e; i++)
       intDomain.push_back(i);
 	}
 }
@@ -273,6 +274,23 @@ void TSparseItemsetTree::considerExamples(TSparseExamples *examples, int aimLeng
 				considerItemset((*ei)->itemset, (*ei)->length, (*ei)->weight, aimLength);
 }
 
+void TSparseItemsetTree::assignExamples(TSparseItemsetNode *node, long *itemset, long *itemsetend, const int exampleId)
+{
+  node->exampleIds.push_back(exampleId);
+  if (!node->subNode.empty())
+    for(; itemset != itemsetend; itemset++)
+      if (node->hasNode(*itemset))
+        assignExamples((*node)[*itemset], itemset+1, itemsetend, exampleId);
+}
+    
+void TSparseItemsetTree::assignExamples(TSparseExamples &examples)
+{
+  int exampleId = 0;
+  ITERATE(vector<TSparseExample*>,ei,examples.transaction)
+    assignExamples(root, (*ei)->itemset, (*ei)->itemset+(*ei)->length, exampleId++);
+}  
+
+
 
 // deletes all leaves that have weiSupp smaler than given minSupp;
 void TSparseItemsetTree::delLeafSmall(float minSupp) {	
@@ -299,7 +317,7 @@ void TSparseItemsetTree::delLeafSmall(float minSupp) {
 
 
 // generates all posible association rules from tree using given confidence
-PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, float nOfExamples) {
+PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, float nOfExamples, bool storeExamples) {
 	typedef pair<TSparseItemsetNode *,int> NodeDepth; //<node,depth>
 
 	int count=0;
@@ -322,7 +340,7 @@ PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, floa
 		if (currDepth) itemset[currDepth - 1] = currNode->value;  // create itemset to check for confidence
 	
 		if (currDepth > 1)
-			count += getItemsetRules(itemset, currDepth, minConf, currNode->weiSupp, nOfExamples, rules);	//creates rules from itemsets and adds them to rules
+			count += getItemsetRules(itemset, currDepth, minConf, currNode->weiSupp, nOfExamples, rules, storeExamples, currNode);	//creates rules from itemsets and adds them to rules
 
 		RITERATE(TSparseISubNodes,sni,currNode->subNode)		//adds subnodes to list
 			nodeQue.push_back(NodeDepth(sni->second, currDepth + 1));
@@ -334,7 +352,8 @@ PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, floa
 // checks if itemset generates some rules with enough confidence and adds these rules to resultset
 long TSparseItemsetTree::getItemsetRules(long itemset[], int iLength, float minConf, 
 								   float nAppliesBoth, float nOfExamples, 
-								   PAssociationRules rules) {
+								   PAssociationRules rules,
+								   bool storeExamples, TSparseItemsetNode *bothNode) {
 	
 	float nAppliesLeft, nAppliesRight;
 	long count = 0;
@@ -413,6 +432,11 @@ long TSparseItemsetTree::getItemsetRules(long itemset[], int iLength, float minC
 
 				  //add rules
 				  rule = mlnew TAssociationRule(exLeftS, exRightS, nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, currDepth, iLength-currDepth);
+				  if (storeExamples) {
+				    rule->matchLeft = new TIntList(currNode->exampleIds);
+				    rule->matchBoth = new TIntList(bothNode->exampleIds);
+				  }
+
 				  rules->push_back(rule);
 				  count ++;
         }
@@ -465,7 +489,8 @@ TAssociationRulesSparseInducer::TAssociationRulesSparseInducer(float asupp, floa
 : maxItemSets(15000),
   confidence(aconf),
   support(asupp),
-  nOfExamples(0.0)
+  nOfExamples(0.0),
+  storeExamples(false)
 {}
 
 PAssociationRules TAssociationRulesSparseInducer::operator()(PExampleGenerator examples, const int &weightID)
@@ -497,7 +522,17 @@ PAssociationRules TAssociationRulesSparseInducer::operator()(PExampleGenerator e
 		}
 	}
 	
-	return tree->genRules(i, confidence, sparseExm.fullWeight);
+	if (storeExamples)
+	  tree->assignExamples(sparseExm);
+	  
+	PAssociationRules rules = tree->genRules(i, confidence, sparseExm.fullWeight, storeExamples);
+	
+  if (storeExamples) {
+    PExampleTable xmpls = mlnew TExampleTable(examples);
+    PITERATE(TAssociationRules, ri, rules)
+      (*ri)->examples = xmpls;
+  }
+  return rules;
 }
 
 
@@ -509,7 +544,8 @@ TItemsetsSparseInducer
 TItemsetsSparseInducer::TItemsetsSparseInducer(float asupp, int awei)
 : maxItemSets(15000),
   support(asupp),
-  nOfExamples(0.0)
+  nOfExamples(0.0),
+  storeExamples(false)
 {}
 
 PSparseItemsetTree TItemsetsSparseInducer::operator()(PExampleGenerator examples, const int &weightID)
@@ -541,5 +577,8 @@ PSparseItemsetTree TItemsetsSparseInducer::operator()(PExampleGenerator examples
 		}
 	}
 
+  if (storeExamples)
+	  tree->assignExamples(sparseExm);
+    
 	return tree;
 }

@@ -36,98 +36,50 @@
 DEFINE_TOrangeVector_classDescription(PAssociationRule, "TAssociationRules", true, ORANGE_API)
 
 
-class TItemSetNode;
-
-/* These objects are collected in TExampleSets, lists of examples that correspond to a particular tree node.
-   'example' is a unique example id (basically its index in the original dataset)
-   'weight' is the example's weight. */
-class TExWei {
-public:
-  int example;
-  float weight;
-
-  TExWei(const int &ex, const float &wei)
-  : example(ex),
-    weight(wei)
-  {}
-};
-
-/* This is a set of examples, used to list the examples that support a particular tree node */
-typedef vector<TExWei> TExampleSet;
+TItemSetValue::TItemSetValue(int al)
+: value(al),
+  branch(NULL),
+  support(0.0)
+{}
 
 
-/* A tree element that corresponds to an attribute value (ie, TItemSetNode has as many
-   TlItemSetValues as there are values that appear in itemsets.
-   For each value, we have the 'examples' that support it, the sum of their weights
-   ('support') and the branch that contains more specialized itemsets. */
-class TItemSetValue {
-public:
-  int value;
-  TItemSetNode *branch;
+TItemSetValue::TItemSetValue(int al, const TExampleSet &ex, float asupp)
+: value(al),
+  branch(NULL),
+  support(asupp),
+  examples(ex)
+{}
 
-  float support;
-  TExampleSet examples;
-
-
-  // This constructor is called when building the 1-tree
-  TItemSetValue(int al)
-  : value(al),
-    branch(NULL),
-    support(0.0)
-  {}
-
-  // This constructor is called when itemsets are intersected (makePairs ets)
-  TItemSetValue(int al, const TExampleSet &ex, float asupp)
-  : value(al),
-    branch(NULL),
-    support(asupp),
-    examples(ex)
-  {}
-
-  ~TItemSetValue();
-
-  void sumSupport()
-  { 
-    support = 0; 
-    ITERATE(TExampleSet, wi, examples)
-      support += (*wi).weight;
-  }
-};
+TItemSetValue::~TItemSetValue()
+{ mldelete branch;
+}
 
 
-/* TItemSetNode splits itemsets according to the value of attribute 'attrIndex';
-   each element of 'values' corresponds to an attribute value (not necessarily to all,
-   but only to those values that appear in itemsets).
-   Itemsets for which the value is not defined are stored in a subtree in 'nextAttribute'.
-   This can be seen in TItemSetTree::findSupport that finds a node that corresponds to the
-   given itemset */
-class TItemSetNode {
-public:
-  int attrIndex;
-  TItemSetNode *nextAttribute;
-  vector<TItemSetValue> values;
+void TItemSetValue::sumSupport()
+{ 
+  support = 0; 
+  ITERATE(TExampleSet, wi, examples)
+    support += (*wi).weight;
+}
 
 
-  // This constructor is called by 1-tree builder which initializes all values (and later reduces them)
-  TItemSetNode(PVariable var, int anattri)
-  : attrIndex(anattri), 
-    nextAttribute(NULL)
-  { 
-    for(int vi = 0, ve = var->noOfValues(); vi<ve; vi++)
-      values.push_back(TItemSetValue(vi));
-  }
+TItemSetNode::TItemSetNode(PVariable var, int anattri)
+: attrIndex(anattri), 
+  nextAttribute(NULL)
+{ 
+  for(int vi = 0, ve = var->noOfValues(); vi<ve; vi++)
+    values.push_back(TItemSetValue(vi));
+}
 
 
-  // This constructor is called when extending the tree
-  TItemSetNode(int anattri)
-  : attrIndex(anattri), 
-    nextAttribute(NULL) 
-  {}
+TItemSetNode::TItemSetNode(int anattri)
+: attrIndex(anattri), 
+  nextAttribute(NULL) 
+{}
 
 
-  ~TItemSetNode()
-  { mldelete nextAttribute; }
-};
+TItemSetNode::~TItemSetNode()
+{ mldelete nextAttribute; }
 
 
 class TRuleTreeNode {
@@ -156,11 +108,19 @@ public:
 
 
 
-TItemSetValue::~TItemSetValue()
-{ mldelete branch;
+
+void setMatchingExamples(PAssociationRule rule, const TExampleSet &leftSet, const TExampleSet &bothSets)
+{
+   TIntList *matchLeft = new TIntList();
+   rule->matchLeft = matchLeft;
+   const_ITERATE(TExampleSet, nli, leftSet)
+     matchLeft->push_back((*nli).example);
+
+   TIntList *matchBoth = new TIntList();
+   rule->matchBoth = matchBoth;
+   const_ITERATE(TExampleSet, nri, bothSets)
+     matchBoth->push_back((*nri).example);
 }
-
-
 
 TAssociationRule::TAssociationRule(PExample al, PExample ar)
 : left(al),
@@ -258,7 +218,7 @@ float computeIntersection(const TExampleSet &set1, const TExampleSet &set2, TExa
 
 
 /* Searches the tree to find a node that corresponds to itemset 'ex' and returns its support */
-float findSupport(const TExample &ex, TItemSetNode *node)
+float findSupport(const TExample &ex, TItemSetNode *node, TItemSetValue **actualNode = NULL)
 {
   vector<TItemSetValue>::iterator li = node->values.begin(); // This is initialized just to avoid warnings.
 
@@ -291,11 +251,19 @@ float findSupport(const TExample &ex, TItemSetNode *node)
   if (ei!=ex.end())
     while((++ei!=ex.end()) && (*ei).isSpecial());
 
-  return (ei==ex.end()) ? (*li).support : 0;
+  if (ei == ex.end()) {
+    if (actualNode)
+      *actualNode = &*li;
+    return (*li).support;
+  }
+  
+    if (actualNode)
+      *actualNode = NULL;
+  return 0;
 }
 
 
-float findSupport(const TExample &ex, TRuleTreeNode *node)
+float findSupport(const TExample &ex, TRuleTreeNode *node, TRuleTreeNode **actualNode = NULL)
 {
   TExample::const_iterator ei(ex.begin()), eei(ex.end());
   for(; (ei!=eei) && !(*ei).isSpecial(); ei++);
@@ -307,8 +275,11 @@ float findSupport(const TExample &ex, TRuleTreeNode *node)
       raiseError("internal error in RuleTree (attribute/value not found)");
 
     while((++ei!=eei) && !(*ei).isSpecial());
-    if (ei==eei)
+    if (ei==eei) {
+      if (actualNode)
+        *actualNode = node;
       return node->support;
+    }
   }
 
   raiseError("internal error in RuleTree (attribute/value not found)");
@@ -320,15 +291,13 @@ TAssociationRulesInducer::TAssociationRulesInducer(float asupp, float aconf)
 : maxItemSets(15000),
   confidence(aconf),
   support(asupp),
-  classificationRules(false)
+  classificationRules(false),
+  storeExamples(false)
 {}
 
 
 PAssociationRules TAssociationRulesInducer::operator()(PExampleGenerator examples, const int &weightID)
 {
-
-  if (classificationRules && !examples->domain->classVar)
-    raiseError("cannot induce classification rules on classless data");
 
   PITERATE(TVarList, vi, examples->domain->variables)
     if ((*vi)->varType != TValue::INTVAR)
@@ -336,13 +305,22 @@ PAssociationRules TAssociationRulesInducer::operator()(PExampleGenerator example
 
   TItemSetNode *tree = NULL;
   PAssociationRules rules;
+  if (classificationRules && !examples->domain->classVar)
+    raiseError("cannot induce classification rules on classless data");
+
   try {
     int depth, nOfExamples;
     TDiscDistribution classDist;
     buildTrees(examples, weightID, tree, depth, nOfExamples, classDist);
-
+    
     rules = classificationRules ? generateClassificationRules(examples->domain, tree, nOfExamples, classDist)
                                 : generateRules(examples->domain, tree, depth, nOfExamples);
+                                
+    if (storeExamples) {
+      PExampleTable xmpls = mlnew TExampleTable(examples);
+      PITERATE(TAssociationRules, ri, rules)
+        (*ri)->examples = xmpls;
+    }
   }
   catch (...) {
     mldelete tree; 
@@ -353,7 +331,8 @@ PAssociationRules TAssociationRulesInducer::operator()(PExampleGenerator example
   return rules;
 }
 
-
+    
+    
 void TAssociationRulesInducer::buildTrees(PExampleGenerator gen, const int &weightID, TItemSetNode *&tree, int &depth, int &nOfExamples, TDiscDistribution &classDist)
 { 
   float suppN;
@@ -518,12 +497,12 @@ int TAssociationRulesInducer::makePairs(TItemSetNode *node, const float suppN)
 PAssociationRules TAssociationRulesInducer::generateClassificationRules(PDomain dom, TItemSetNode *tree, const int nOfExamples, const TDiscDistribution &classDist)
 { TExample left(dom);
   PAssociationRules rules = mlnew TAssociationRules();
-  generateClassificationRules1(dom, tree, tree, left, 0, nOfExamples, rules, nOfExamples, classDist);
+  generateClassificationRules1(dom, tree, tree, left, 0, nOfExamples, rules, nOfExamples, classDist, NULL);
   return rules;
 }
 
 
-void TAssociationRulesInducer::generateClassificationRules1(PDomain dom, TItemSetNode *root, TItemSetNode *node, TExample &left, const int nLeft, const float nAppliesLeft, PAssociationRules rules, const int nOfExamples, const TDiscDistribution &classDist)
+void TAssociationRulesInducer::generateClassificationRules1(PDomain dom, TItemSetNode *root, TItemSetNode *node, TExample &left, const int nLeft, const float nAppliesLeft, PAssociationRules rules, const int nOfExamples, const TDiscDistribution &classDist, TExampleSet *leftSet)
 { 
   for(; node; node = node->nextAttribute)
     if (node->nextAttribute) {
@@ -531,7 +510,7 @@ void TAssociationRulesInducer::generateClassificationRules1(PDomain dom, TItemSe
       ITERATE(vector<TItemSetValue>, li, node->values)
         if ((*li).branch) {
           left[node->attrIndex] = TValue((*li).value);
-          generateClassificationRules1(dom, root, (*li).branch, left, nLeft+1, (*li).support, rules, nOfExamples, classDist);
+          generateClassificationRules1(dom, root, (*li).branch, left, nLeft+1, (*li).support, rules, nOfExamples, classDist, &(*li).examples);
         }
       left[node->attrIndex].setDC();
     }
@@ -545,6 +524,20 @@ void TAssociationRulesInducer::generateClassificationRules1(PDomain dom, TItemSe
             PExample right = mlnew TExample(dom);
             right->setClass(TValue((*li).value));
             PAssociationRule rule = mlnew TAssociationRule(mlnew TExample(left), right, nAppliesLeft, classDist[(*li).value], nAppliesBoth, nOfExamples, nLeft, 1);
+            if (storeExamples)
+              if (!leftSet) {
+                set<int> allExamplesSet;
+                ITERATE(vector<TItemSetValue>, ri, root->values)
+                  ITERATE(TExampleSet, ei, (*ri).examples)
+                    allExamplesSet.insert((*ei).example);
+                TExampleSet allExamples;
+                ITERATE(set<int>, ali, allExamplesSet)
+                  allExamples.push_back(TExWei(*ali, 1));
+                setMatchingExamples(rule, allExamples, (*li).examples);
+              }
+              else {
+                setMatchingExamples(rule, *leftSet, (*li).examples);
+              }
             rules->push_back(rule);
           }
         }
@@ -584,7 +577,7 @@ void TAssociationRulesInducer::generateRules1(TExample &ex, TItemSetNode *root, 
 
         /* Rule with one item on the right are treated separately.
            Incidentally, these are also the only that are suitable for classification rules */
-        find1Rules(ex, root, (*li).support, nBoth, rules, nOfExamples);
+        find1Rules(ex, root, (*li).support, nBoth, rules, nOfExamples, (*li).examples);
 
         if (nBoth>2) {
           TRuleTreeNode *ruleTree = buildTree1FromExample(ex, root);
@@ -592,7 +585,7 @@ void TAssociationRulesInducer::generateRules1(TExample &ex, TItemSetNode *root, 
           try {
             TExample example(ex.domain);
             for(int m = 2;
-                (m <= nBoth-1) && generateNext1(ruleTree, ruleTree, root, example, m, ex, (*li).support, rules, nOfExamples) > 2;
+                (m <= nBoth-1) && generateNext1(ruleTree, ruleTree, root, example, m, ex, (*li).support, rules, nOfExamples, (*li).examples) > 2;
                 m++);
           }
           catch (...) {
@@ -610,18 +603,21 @@ void TAssociationRulesInducer::generateRules1(TExample &ex, TItemSetNode *root, 
 
 /* For each value in the itemset, check whether the rule with this value on the right
    and all others on the left has enough confidence, and add it if so. */
-void TAssociationRulesInducer::find1Rules(TExample &example, TItemSetNode *tree, const float &nAppliesBoth, const int nBoth, PAssociationRules rules, const int nOfExamples)
+void TAssociationRulesInducer::find1Rules(TExample &example, TItemSetNode *tree, const float &nAppliesBoth, const int nBoth, PAssociationRules rules, const int nOfExamples, const TExampleSet &bothSets)
 {
   TExample left(example), right(example.domain);
   for(TExample::iterator ei(example.begin()), lefti(left.begin()), righti(right.begin()); ei!=example.end(); ei++, lefti++, righti++) 
     if (!(*ei).isSpecial()) {
       (*lefti).setDC();
       *righti = *ei;
-      const float nAppliesLeft = findSupport(left, tree);
+      TItemSetValue *nodeLeft;
+      const float nAppliesLeft = findSupport(left, tree, &nodeLeft);
       const float tconf = nAppliesBoth/nAppliesLeft;
       if (tconf >= confidence) {
         const float nAppliesRight = findSupport(right, tree);
         PAssociationRule rule = mlnew TAssociationRule(mlnew TExample(left), mlnew TExample(right), nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, nBoth-1, 1);
+        if (storeExamples)
+          setMatchingExamples(rule, nodeLeft->examples, bothSets);
         rules->push_back(rule);
       }
       (*righti).setDC();
@@ -660,16 +656,16 @@ TRuleTreeNode *TAssociationRulesInducer::buildTree1FromExample(TExample &ex, TIt
    At each recursive call, a value from the example 'wholeEx' is added to 'right'. */
 int TAssociationRulesInducer::generateNext1(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsets,
                                             TExample &right, int k, TExample &wholeEx, const float &nAppliesBoth,
-                                            PAssociationRules rules, const int nOfExamples)
+                                            PAssociationRules rules, const int nOfExamples, const TExampleSet &bothSets)
 {
   if (k==2)
-    return generatePairs(ruleTree, node, itemsets, right, wholeEx, nAppliesBoth, rules, nOfExamples);
+    return generatePairs(ruleTree, node, itemsets, right, wholeEx, nAppliesBoth, rules, nOfExamples, bothSets);
 
   int itemSets = 0;
   for(; node; node = node->nextAttribute)
     if (node->hasValue) {
       right[node->attrIndex] = TValue(node->value);
-      itemSets += generateNext1(ruleTree, node->hasValue, itemsets, right, k-1, wholeEx, nAppliesBoth, rules, nOfExamples);
+      itemSets += generateNext1(ruleTree, node->hasValue, itemsets, right, k-1, wholeEx, nAppliesBoth, rules, nOfExamples, bothSets);
       right[node->attrIndex].setDC();
     }
   
@@ -679,7 +675,7 @@ int TAssociationRulesInducer::generateNext1(TRuleTreeNode *ruleTree, TRuleTreeNo
 
 int TAssociationRulesInducer::generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsets,
                                             TExample &right, TExample &wholeEx, const float &nAppliesBoth,
-                                            PAssociationRules rules, const int nOfExamples)
+                                            PAssociationRules rules, const int nOfExamples, const TExampleSet &bothSets)
 {
    int itemSets = 0;
 
@@ -695,7 +691,8 @@ int TAssociationRulesInducer::generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNo
          if (!(*wi).isSpecial() && (*righti).isSpecial())
            *lefti = *wi;
 
-       float nAppliesLeft = findSupport(left.getReference(), itemsets);
+       TItemSetValue *nodeLeft;
+       float nAppliesLeft = findSupport(left.getReference(), itemsets, &nodeLeft);
        float aconf = nAppliesBoth/nAppliesLeft;
        if (aconf>=confidence) {
 
@@ -710,6 +707,8 @@ int TAssociationRulesInducer::generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNo
          }
 
          PAssociationRule rule = mlnew TAssociationRule(left, mlnew TExample(right), nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples);
+         if (storeExamples)
+           setMatchingExamples(rule, nodeLeft->examples, bothSets);
          rules->push_back(rule);
        }
        right[p2->attrIndex].setDC();
