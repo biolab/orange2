@@ -464,22 +464,35 @@ class WidgetTree(WidgetListBase, QDockWidget):
         self.setWidget(self.treeWidget)
         iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
         self.treeWidget.setIconSize(QSize(iconSize,iconSize))
+        self.treeWidget.setRootIsDecorated(0) 
                 
 
     def insertWidgetTab(self, name, show = 1):
         item = QTreeWidgetItem(self.treeWidget)
         item.setText(0, name)
-        #item.setBackground(0, QBrush(QColor(200,200,200)))
         item.widgets = []
         self.tabDict[name] = item
          
-        if show:
-            self.treeWidget.insertTopLevelItem(self.treeWidget.topLevelItemCount(), item)
+        push = WidgetTreeButton(item, name, self.treeWidget)
+        self.treeWidget.setItemWidget(item, 0, push)
+        
+        if not show:
+            item.setHidden(1)
+        if self.treeWidget.topLevelItemCount() == 1:
+            item.setExpanded(1)
         self.tabs.append((name, 2*int(show), item))
 
         return item
 
-
+# button that contains the name of the widget category. 
+# when clicked it shows or hides the widgets in the category
+class WidgetTreeButton(QPushButton):
+    def __init__(self, treeItem, name, parent):
+        QPushButton.__init__(self, name, parent)
+        self.treeItem = treeItem
+        
+    def mousePressEvent(self, e):
+        self.treeItem.setExpanded(not self.treeItem.isExpanded())
 
 class WidgetToolBox(WidgetListBase, QDockWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
@@ -532,10 +545,14 @@ class MyTreeWidget(QTreeWidget):
         self.canvasDlg = canvasDlg
         self.setMouseTracking(1)
         self.setHeaderHidden(1)
+        self.mousePressed = 0
+        self.mouseRightClick = 0
+        self.connect(self, SIGNAL("itemClicked (QTreeWidgetItem *,int)"), self.itemClicked)
 
         
     def mouseMoveEvent(self, e):
-        QTreeWidget.mouseMoveEvent(self, e)
+        if not self.mousePressed:   # this is needed, otherwise another widget in the tree might get selected while we drag the icon to the canvas
+            QTreeWidget.mouseMoveEvent(self, e)
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
         if hasattr(self, "busy"):
@@ -575,10 +592,15 @@ class MyTreeWidget(QTreeWidget):
 
         delattr(self, "busy")
         
+    def mousePressEvent(self, e):
+        QTreeWidget.mousePressEvent(self, e)
+        self.mousePressed = 1
+        self.mouseRightClick = e.button() == Qt.RightButton
+        
     def mouseReleaseEvent(self, e):
         QTreeWidget.mouseReleaseEvent(self, e)
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
-        self.shiftPressed = e.modifiers() & Qt.ShiftModifier
+        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
@@ -586,15 +608,17 @@ class MyTreeWidget(QTreeWidget):
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
+           
+        self.mousePressed = 0
+        
+    def itemClicked(self, item, column):
+        win = self.canvasDlg.workspace.activeSubWindow()
+        if (win and isinstance(win, orngDoc.SchemaDoc)):
+            win.addWidget(item)
+            if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
+                win.addLine(win.widgets[-2], win.widgets[-1])
+        elif (isinstance(win, orngOutput.OutputWindow)):
+            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
         else:
-            win = self.canvasDlg.workspace.activeSubWindow()
-            if (win and isinstance(win, orngDoc.SchemaDoc)):
-                if self.selectedItems() and isinstance(self.selectedItems()[0], WidgetTreeItem):
-                    win.addWidget(self.selectedItems()[0])
-#                    if (rightClick or self.shiftPressed) and len(win.widgets) > 1:
-#                        win.addLine(win.widgets[-2], win.widgets[-1])
-            elif (isinstance(win, orngOutput.OutputWindow)):
-                QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
-            else:
-                QMessageBox.information(self,'Orange Canvas','Unable to add widget instance. Please open a document window first.',QMessageBox.Ok)
-            
+            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance. Please open a document window first.',QMessageBox.Ok)
+    
