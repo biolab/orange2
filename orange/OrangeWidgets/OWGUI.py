@@ -350,7 +350,8 @@ def lineEdit(widget, master, value,
 
 def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, height = None, toggleButton = False, value = "", addToLayout = 1):
     btn = QPushButton(label, widget)
-    if addToLayout and widget.layout(): widget.layout().addWidget(btn)
+    if addToLayout and widget.layout():
+        widget.layout().addWidget(btn)
 
     if width:
         btn.setFixedWidth(width)
@@ -359,11 +360,17 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
     btn.setDisabled(disabled)
     if tooltip:
         btn.setToolTip(tooltip)
-    if toggleButton:
+        
+    if toggleButton or value:
         btn.setCheckable(True)
-
-    if callback:
+        
+    if value:
+        btn.setChecked(getdeepattr(master, value))
+        cfront, cback, cfunc = connectControl(btn, master, value, None, "toggled(bool)", CallFrontButton(btn),
+                                  cfunc = callback and FunctionCallback(master, callback, widget=btn))
+    elif callback:
         master.connect(btn, SIGNAL("clicked()"), callback)
+        
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
@@ -593,11 +600,9 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         lbl = widgetLabel(hb, label)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-        print orientation
         if orientation and orientation!="horizontal":
             separator(hb, height=2)
             hb = widgetBox(hb, 0)
-            print "hb"
     else:
         hb = widgetBox(widget, box, 0)
 
@@ -1376,6 +1381,10 @@ class CallFrontCheckBox(ControlledCallFront):
             values = [Qt.Unchecked, Qt.Checked, Qt.PartiallyChecked]
             self.control.setCheckState(values[value])
 
+class CallFrontButton(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setChecked(bool(value))
 
 class CallFrontComboBox(ControlledCallFront):
     def __init__(self, control, valType = None, control2attributeDict = {}):
