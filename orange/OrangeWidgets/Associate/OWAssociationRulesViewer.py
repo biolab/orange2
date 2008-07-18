@@ -1,5 +1,5 @@
 """
-<name>Association Rules Viewer</name>
+<name>Association Rules Filter</name>
 <description>Association rules filter and viewer.</description>
 <icon>icons/AssociationRulesViewer.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
@@ -316,10 +316,12 @@ class OWAssociationRulesViewer(OWWidget):
                     values = [getattr(rule, mname) for rule in self.selectedRules]
                     if m[1] in ["Supp", "Conf", "Cov"]:
                         trules.normalizers.append((1, 1))
-                    else:
+                    elif values:
                         mi, ma = min(values), max(values)
                         div = ma - mi
                         trules.normalizers.append((ma, div or 1))
+                    else:
+                        trules.normalizers.append((0, 1))
                     for row, meas in enumerate(values):
                         trules.setItem(row, col, QTableWidgetItem("  %.3f  " % meas))
                     self.progressBarAdvance(progressStep)

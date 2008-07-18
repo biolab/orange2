@@ -54,11 +54,11 @@ class OWAssociationRules(OWWidget):
             try:
                 num_steps = 20
                 for i in range(num_steps):
-                    build_support = 1 - float(i) / num_steps * (1 - self.minSupport/100.0)
+                    build_support = (i == num_steps-1) and self.minSupport/100. or (1 - float(i) / num_steps * (1 - self.minSupport/100.0))
                     if self.useSparseAlgorithm:
-                        rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100.)
+                        rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., storeExamples = True)
                     else:
-                        rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules)
+                        rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules, storeExamples = True)
                     if len(rules) >= self.maxRules:
                         break
                 self.send("Association Rules", rules)
