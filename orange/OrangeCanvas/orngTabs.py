@@ -469,7 +469,7 @@ class WidgetTree(WidgetListBase, QDockWidget):
     def insertWidgetTab(self, name, show = 1):
         item = QTreeWidgetItem(self.treeWidget)
         item.setText(0, name)
-        item.setBackground(0, QBrush(QColor(200,200,200)))
+        #item.setBackground(0, QBrush(QColor(200,200,200)))
         item.widgets = []
         self.tabDict[name] = item
          
