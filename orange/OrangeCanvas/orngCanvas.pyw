@@ -3,7 +3,7 @@
 #    main file, that creates the MDI environment
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import sys, os, cPickle
+import sys, os, cPickle, orngGui
 import orngTabs, orngDoc, orngDlgs, orngOutput
 import orange, user, orngMisc, orngRegistry, orngOrangeFoldersQt4
 
@@ -16,7 +16,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
         self.recentDocs = []
         self.iDocIndex = 1
-        self.iconSizeList = ["32 x 32", "40 x 40", "48 x 48", "60 x 60"]
+        self.iconSizeList = ["16 x 16", "32 x 32", "40 x 40", "48 x 48", "60 x 60"]
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
 
@@ -89,13 +89,24 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
 
-        self.widgetListTypeGroup = QActionGroup(self)
-        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a toolbox", self.widgetListTypeChanged))
-        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a tab bar", self.widgetListTypeChanged))
-        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets and their names in a tab bar ", self.widgetListTypeChanged))
-        for action in self.widgetListTypeGroup.actions():
-            action.setCheckable(1)
-        self.widgetListTypeGroup.actions()[self.settings["widgetListType"]].setChecked(1)
+        w = QWidget()
+        w.setLayout(QHBoxLayout())
+        self.widgetListTypeToolbar.addWidget(w)
+        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"])
+        
+        self.connect(self.widgetOrganizationCombo, SIGNAL('activated(int)'), self.widgetListTypeChanged)
+        try:        # maybe we will someday remove some of the options and the index will be too big
+            self.widgetOrganizationCombo.setCurrentIndex(self.settings["widgetListType"])
+        except:
+            pass
+        
+#        self.widgetListTypeGroup = QActionGroup(self)
+#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a toolbox", self.widgetListTypeChanged))
+#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a tab bar", self.widgetListTypeChanged))
+#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets and their names in a tab bar ", self.widgetListTypeChanged))
+#        for action in self.widgetListTypeGroup.actions():
+#            action.setCheckable(1)
+#        self.widgetListTypeGroup.actions()[self.settings["widgetListType"]].setChecked(1)
 
 
         self.widgetListTypeToolbar.addSeparator()
@@ -191,12 +202,18 @@ class OrangeCanvasDlg(QMainWindow):
         if hasattr(self, "widgetsToolBar"):
             if isinstance(self.widgetsToolBar, QToolBar):
                 self.removeToolBar(self.widgetsToolBar)
-            if isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
+            elif isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
+                self.removeDockWidget(self.widgetsToolBar)
+            elif isinstance(self.widgetsToolBar, orngTabs.WidgetTree):
+                self.settings["toolboxWidth"] = self.widgetsToolBar.treeWidget.width()
                 self.removeDockWidget(self.widgetsToolBar)
 
         if self.settings["widgetListType"] == 0:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetInfo)
+            self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
+        elif self.settings["widgetListType"] == 1:
+            self.tabs = self.widgetsToolBar = orngTabs.WidgetTree(self, self.widgetInfo)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         else:
             self.widgetsToolBar = self.addToolBar("Widgets")
@@ -567,8 +584,8 @@ class OrangeCanvasDlg(QMainWindow):
                     widget.repaintAllLines()
                 win.canvas.update()
 
-    def widgetListTypeChanged(self):
-        self.settings["widgetListType"] = self.widgetListTypeGroup.actions().index(self.widgetListTypeGroup.checkedAction())
+    def widgetListTypeChanged(self, ind):
+        self.settings["widgetListType"] = ind
         self.createWidgetsToolbar(0)
 
     def iconSizeChanged(self, ind):
