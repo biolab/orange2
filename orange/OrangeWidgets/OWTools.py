@@ -29,4 +29,9 @@ def getHtmlCompatibleString(strVal):
 
 
 
-
+def domainPurger(examples, purgeClasses):
+    import orange
+    newDomain = orange.RemoveUnusedValues(removeOneValued=True)(examples, 0, True, purgeClasses)
+    if newDomain != examples.domain:
+        return orange.ExampleTable(newDomain, examples)
+    return examples
