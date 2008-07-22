@@ -43,8 +43,10 @@ class OWItemsets(OWWidget):
         self.error()
         if self.dataset:
             try:
-                self.itemsets = orange.AssociationRulesInducer(support = self.minSupport/100., storeExamples = True).getItemsets(self.dataset)
-#                itemsets = orange.ItemsetsSparseInducer(self.dataset, support = self.minSupport, storeExamples = True)
+                if self.useSparseAlgorithm:
+                    self.itemsets = orange.AssociationRulesSparseInducer(support = self.minSupport/100., storeExamples = True).getItemsets(self.dataset)
+                else:
+                    self.itemsets = orange.AssociationRulesInducer(support = self.minSupport/100., storeExamples = True).getItemsets(self.dataset)
                 self.send("Itemsets", (self.dataset, self.itemsets))
             except orange.KernelException, (errValue):
                 self.error(str(errValue))
