@@ -50,13 +50,13 @@ public:
   float strength; //P rule's strength
   float lift; //P rule's lift
   float leverage; //P rule's leverage
-  float nAppliesLeft; //P number of examples covered by the rule's left side 
-  float nAppliesRight; //P number of examples covered by the rule's right side 
+  float nAppliesLeft; //P number of examples covered by the rule's left side
+  float nAppliesRight; //P number of examples covered by the rule's right side
   float nAppliesBoth; //P number of examples covered by the rule
   float nExamples; //P number of learning examples
   int nLeft; //PR number of items on the rule's left side
   int nRight; //PR number of items on the rule's right side
-  
+
   PExampleTable examples; //PR examples which the rule was built from
   PIntList matchLeft; //PR indices of examples that match the left side of the rule
   PIntList matchBoth; //PR indices to examples that match both sides of the rule
@@ -128,7 +128,7 @@ public:
 
   // This constructor is called when building the 1-tree
   TItemSetValue(int al);
-  
+
   // This constructor is called when itemsets are intersected (makePairs ets)
   TItemSetValue(int al, const TExampleSet &ex, float asupp);
 
@@ -229,7 +229,7 @@ public:
 	TSparseItemsetNode *parent;					//pointer to parent node
 	TSparseISubNodes subNode;				//children items
 	vector<int> exampleIds;
-	
+
 	TSparseItemsetNode(long avalue = -1);			//constructor
 
     TSparseItemsetNode *operator[] (long avalue);	//directly gets subnode
@@ -253,7 +253,7 @@ public:
   void assignExamples(TSparseExamples &examples);
   void delLeafSmall(float minSupport);
 	PAssociationRules genRules(int maxDepth, float minConf, float nOfExamples, bool storeExamples);
-	long getItemsetRules(long itemset[], int iLength, float minConf, 
+	long getItemsetRules(long itemset[], int iLength, float minConf,
 						 float nAppliesBoth, float nOfExamples, PAssociationRules rules, bool storeExamples, TSparseItemsetNode *bothNode);
 	PDomain domain;
 
@@ -270,10 +270,11 @@ public:
 
   float confidence; //P required confidence
   float support; //P required support
-  
+
   bool storeExamples; //P stores examples corresponding to rules
 
   TAssociationRulesSparseInducer(float asupp=0.1, float aconf=0, int awei=0);
+  TSparseItemsetTree *TAssociationRulesSparseInducer::buildTree(PExampleGenerator examples, const int &weightID, long &i, float &fullWeight);
   PAssociationRules operator()(PExampleGenerator, const int &weightID);
 
 private:
@@ -310,7 +311,7 @@ public:
   float support; //P required support
   int voteWeight; //P vote weight (s=support, c=confidence, p=product)
   int maxItemSets; //P maximal number of itemsets (increase if you want)
- 
+
   TAssociationLearner();
   virtual PClassifier operator()(PExampleGenerator gen, const int & = 0);
 };
@@ -322,7 +323,7 @@ public:
 
   PAssociationRules rules; //P association rules
   int voteWeight; //P vote weight (s=support, c=confidence, p=product)
- 
+
   TAssociationClassifier(PDomain dom=PDomain(), PAssociationRules arules=PAssociationRules(), char avote='s');
   virtual PDistribution classDistribution(const TExample &);
 };

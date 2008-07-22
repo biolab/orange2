@@ -52,7 +52,7 @@
 
 /* ************ MAJORITY AND COST ************ */
 
-#include "majority.hpp" 
+#include "majority.hpp"
 C_CALL(MajorityLearner, Learner, "([examples] [, weight=, estimate=]) -/-> Classifier")
 C_CALL(CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> Classifier")
 
@@ -110,7 +110,7 @@ void gatherRules(TItemSetNode *node, vector<pair<int, int> > &itemsSoFar, PyObje
         PyTuple_SET_ITEM(vp, 1, PyInt_FromLong((*sfi).second));
         PyTuple_SET_ITEM(itemset, el, vp);
       }
-      
+
       PyObject *examples;
       if (storeExamples) {
         examples = PyList_New((*isi).examples.size());
@@ -126,10 +126,10 @@ void gatherRules(TItemSetNode *node, vector<pair<int, int> > &itemsSoFar, PyObje
       PyObject *rr = PyTuple_New(2);
       PyTuple_SET_ITEM(rr, 0, itemset);
       PyTuple_SET_ITEM(rr, 1, examples);
-      
+
       PyList_Append(listOfItems, rr);
       Py_DECREF(rr);
-      
+
       gatherRules((*isi).branch, itemsSoFar, listOfItems, storeExamples);
     }
     itemsSoFar.pop_back();
@@ -137,7 +137,7 @@ void gatherRules(TItemSetNode *node, vector<pair<int, int> > &itemsSoFar, PyObje
 }
 
 PyObject *AssociationRulesInducer_getItemsets(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(examples[, weightID]) -> list-of-itemsets")
-{ 
+{
   PyTRY
     int weightID;
     PExampleGenerator egen = exampleGenFromArgs(args, weightID);
@@ -148,14 +148,96 @@ PyObject *AssociationRulesInducer_getItemsets(PyObject *self, PyObject *args, Py
       PYERROR(PyExc_TypeError, "cannot induce rules with non-discrete attributes", NULL);
 
     TItemSetNode *tree = NULL;
-    int depth, nOfExamples;
-    TDiscDistribution classDist;
-    CAST_TO(TAssociationRulesInducer, inducer);
-    inducer->buildTrees(egen, weightID, tree, depth, nOfExamples, classDist);
-    
-    PyObject *listOfItemsets = PyList_New(0);
-    vector<pair<int, int> > itemsSoFar;
-    gatherRules(tree, itemsSoFar, listOfItemsets, inducer->storeExamples);
+    PyObject *listOfItemsets = NULL;
+    try {
+		int depth, nOfExamples;
+		TDiscDistribution classDist;
+		CAST_TO(TAssociationRulesInducer, inducer);
+		inducer->buildTrees(egen, weightID, tree, depth, nOfExamples, classDist);
+
+		listOfItemsets = PyList_New(0);
+		vector<pair<int, int> > itemsSoFar;
+		gatherRules(tree, itemsSoFar, listOfItemsets, inducer->storeExamples);
+    }
+    catch (...) {
+    	if (tree)
+    		delete tree;
+    	throw;
+    }
+
+    delete tree;
+    return listOfItemsets;
+  PyCATCH
+}
+
+
+void gatherRules(TSparseItemsetNode *node, vector<int> &itemsSoFar, PyObject *listOfItems, bool storeExamples)
+{
+	if (itemsSoFar.size()) {
+        PyObject *itemset = PyTuple_New(itemsSoFar.size());
+        int el = 0;
+        vector<int>::const_iterator sfi(itemsSoFar.begin()), sfe(itemsSoFar.end());
+        for(; sfi != sfe; sfi++, el++)
+            PyTuple_SET_ITEM(itemset, el, PyInt_FromLong(*sfi));
+
+		PyObject *examples;
+		if (storeExamples) {
+		  examples = PyList_New(node->exampleIds.size());
+		  int ele = 0;
+		  ITERATE(vector<int>, ei, node->exampleIds)
+			PyList_SetItem(examples, ele++, PyInt_FromLong(*ei));
+		}
+		else {
+		  examples = Py_None;
+		  Py_INCREF(Py_None);
+		}
+
+      PyObject *rr = PyTuple_New(2);
+      PyTuple_SET_ITEM(rr, 0, itemset);
+      PyTuple_SET_ITEM(rr, 1, examples);
+
+      PyList_Append(listOfItems, rr);
+      Py_DECREF(rr);
+	}
+
+    itemsSoFar.push_back(0);
+    ITERATE(TSparseISubNodes, isi, node->subNode) {
+    	itemsSoFar.back() = (*isi).first;
+        gatherRules((*isi).second, itemsSoFar, listOfItems, storeExamples);
+    }
+    itemsSoFar.pop_back();
+}
+
+
+PyObject *AssociationRulesSparseInducer_getItemsets(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(examples[, weightID]) -> list-of-itemsets")
+{
+  PyTRY
+    int weightID;
+    PExampleGenerator egen = exampleGenFromArgs(args, weightID);
+    if (!egen)
+      return PYNULL;
+
+    if (egen->domain->hasContinuousAttributes(true))
+      PYERROR(PyExc_TypeError, "cannot induce rules with non-discrete attributes", NULL);
+
+    CAST_TO(TAssociationRulesSparseInducer, inducer);
+    long i;
+    float fullWeight;
+    TSparseItemsetTree *tree = NULL;
+    PyObject *listOfItemsets = NULL;
+
+    try {
+    	inducer->buildTree(egen, weightID, i, fullWeight);
+        listOfItemsets = PyList_New(0);
+        vector<int> itemsSoFar;
+        gatherRules(tree->root, itemsSoFar, listOfItemsets, inducer->storeExamples);
+    }
+    catch (...) {
+    	if (tree)
+    		delete tree;
+    	throw;
+    }
+
     delete tree;
     return listOfItemsets;
   PyCATCH
@@ -179,7 +261,7 @@ class TItemsetNodeProxy : public TOrange {
 public:
     const TSparseItemsetNode *node;
     PSparseItemsetTree tree;
-    
+
     TItemsetNodeProxy(const TSparseItemsetNode *n, PSparseItemsetTree t)
     : node(n),
     tree(t)
@@ -206,7 +288,7 @@ PYXTRACT_IGNORE int Orange_traverse(TPyOrange *, visitproc, void *);
 PYXTRACT_IGNORE int Orange_clear(TPyOrange *);
 
 int ItemsetNodeProxy_traverse(PyObject *self, visitproc visit, void *arg)
-{ 
+{
 	int err = Orange_traverse((TPyOrange *)self, visit, arg);
 	if (err)
 		return err;
@@ -218,7 +300,7 @@ int ItemsetNodeProxy_traverse(PyObject *self, visitproc visit, void *arg)
 }
 
 int ItemsetNodeProxy_clear(PyObject *self)
-{ 
+{
   SELF_AS(TItemsetNodeProxy).tree = PSparseItemsetTree();
 	return Orange_clear((TPyOrange *)self);
 }
@@ -280,7 +362,7 @@ PyObject *AssociationRule__reduce__(PyObject *self)
                                    Example_FromWrappedExample(arule->left),
                                    Example_FromWrappedExample(arule->right),
                                    packOrangeDictionary(self));
-  PyCATCH                          
+  PyCATCH
 }
 
 
@@ -288,7 +370,7 @@ PyObject *AssociationRule_appliesLeft(PyObject *self, PyObject *arg, PyObject *)
 { PyTRY
     if (!PyOrExample_Check(arg))
       PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
-    
+
     CAST_TO(TAssociationRule, rule)
     return PyInt_FromLong(rule->appliesLeft(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
@@ -299,7 +381,7 @@ PyObject *AssociationRule_appliesRight(PyObject *self, PyObject *arg, PyObject *
 { PyTRY
     if (!PyOrExample_Check(arg))
       PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
-    
+
     CAST_TO(TAssociationRule, rule)
     return PyInt_FromLong(rule->appliesRight(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
@@ -310,7 +392,7 @@ PyObject *AssociationRule_appliesBoth(PyObject *self, PyObject *arg, PyObject *)
 { PyTRY
     if (!PyOrExample_Check(arg))
       PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
-    
+
     CAST_TO(TAssociationRule, rule)
     return PyInt_FromLong(rule->appliesBoth(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
@@ -365,13 +447,13 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
         break;
     }
 
-    case 1: 
+    case 1:
       if (PyArg_ParseTuple(obj, "O&:convertFromPython(AssociationRule)", cc_AssociationRule, &rule))
         return true;
       else
         break;
   }
-    
+
   PYERROR(PyExc_TypeError, "invalid arguments", false);
 }
 
@@ -403,7 +485,7 @@ string side2string(PExample ex)
 }
 
 PyObject *AssociationRule_str(TPyOrange *self)
-{ 
+{
   PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
   if (result)
     return result;
@@ -414,7 +496,7 @@ PyObject *AssociationRule_str(TPyOrange *self)
 
 
 PyObject *AssociationRule_repr(TPyOrange *self)
-{ 
+{
   PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "repr", "str");
   if (result)
     return result;
@@ -552,7 +634,7 @@ PyObject *TreeStopCriteria__reduce__(PyObject *self)
   }
 
   /* This works for ordinary (not overloaded) TreeStopCriteria
-     and for Python classes derived from TreeStopCriteria. 
+     and for Python classes derived from TreeStopCriteria.
      The latter have different self->ob_type, so TreeStopCriteria_new will construct
      an instance of TreeStopCriteria_Python */
   return Py_BuildValue("O()N", self->ob_type, packOrangeDictionary(self));
@@ -560,7 +642,7 @@ PyObject *TreeStopCriteria__reduce__(PyObject *self)
 
 
 PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *keywords, bool allowPython)
-{ 
+{
   static TTreeStopCriteria _cbdefaultStop;
   PyTRY
     NO_KEYWORDS
@@ -638,12 +720,12 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
         candidates.push_back(PyObject_IsTrue(item) != 0);
         Py_DECREF(item);
       }
-      
+
       Py_DECREF(iterator);
       if (PyErr_Occurred())
         return PYNULL;
     }
-    
+
     PClassifier branchSelector;
     PStringList descriptions;
     PDiscDistribution subsetSizes;
@@ -704,7 +786,7 @@ PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *key
       return Py_BuildValue("NO", WrapOrange(egl), Py_None);
     }
 
-  PyCATCH 
+  PyCATCH
 }
 
 
@@ -745,7 +827,7 @@ PyObject *TreeDescender_call(PyObject *self, PyObject *args, PyObject *keywords)
 
 
 PyObject *TreePruner_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(tree) -> tree")
-{ 
+{
   PyTRY
     NO_KEYWORDS
 
@@ -814,7 +896,7 @@ PyObject *TreeNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None"
 PyObject *TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_sort(self, args); }
 PyObject *TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_reduce(self); }
 
- 
+
 /************* C45 ************/
 
 #include "c4.5.hpp"
@@ -897,7 +979,7 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
       TFloatList *basesX = mlnew TFloatList(nAnchors);
       TFloatList *basesY = mlnew TFloatList(nAnchors);
       PFloatList wbasesX = basesX, wbasesY = basesY;
-   
+
       TFloatList::iterator xi(basesX->begin());
       TFloatList::iterator yi(basesY->begin());
       PyObject *foo;
@@ -926,7 +1008,7 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
           PYERROR(PyExc_AttributeError, "two-dimensional array expected for matrix of projections", PYNULL);
         if (array->dimensions[1] != 3)
           PYERROR(PyExc_AttributeError, "the matrix of projections must have three columns", PYNULL);
-          
+
         const char arrayType = getArrayType(array);
         if ((arrayType != 'f') && (arrayType != 'd'))
           PYERROR(PyExc_AttributeError, "elements of matrix of projections must be doubles or floats", PYNULL);
@@ -1040,7 +1122,7 @@ PyObject *P2NN__reduce__(PyObject *self)
 
     buf.writeDouble(p2nn->minClass);
     buf.writeDouble(p2nn->maxClass);
-   
+
     return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderP2NN"),
                                     self->ob_type,
                                     buf.buf, buf.length(),
@@ -1055,7 +1137,7 @@ PyObject *__pickleLoaderP2NN(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(
     PyTypeObject *type;
     char *pbuf;
     int bufSize;
-    if (!PyArg_ParseTuple(args, "Os#:__pickleLoaderP2NN", &type, &pbuf, &bufSize))    
+    if (!PyArg_ParseTuple(args, "Os#:__pickleLoaderP2NN", &type, &pbuf, &bufSize))
       return NULL;
 
     TCharBuffer buf(pbuf);
@@ -1139,7 +1221,7 @@ PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VAR
 	  classifier = loglearn->fitModel(egen, weight, error, variable);
 	  if (error <= TLogRegFitter::Divergence)
 		  return Py_BuildValue("N", WrapOrange(classifier));
-	  else 
+	  else
 		  return Py_BuildValue("N", WrapOrange(variable));
   PyCATCH
 }
@@ -1163,7 +1245,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
     float likelihood;
     int error;
     PVariable attribute;
-    
+
     beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute);
 
     if (error <= TLogRegFitter::Divergence)
@@ -1367,7 +1449,7 @@ PyObject *__pickleLoaderSVMClassifierSparse(PyObject *, PyObject *args) PYARGS(M
     return WrapOrange(svm);
   PyCATCH
 }
-  
+
 
 PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "(Example) -> list of floats")
 {PyTRY
@@ -1396,7 +1478,7 @@ PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
     if (   !PyArg_ParseTuple(args, "OO&:BayesClassifier.p", &pyvalue, ptr_Example, &ex)
         || !convertFromPython(pyvalue, value, me->domain->classVar))
       return PYNULL;
-      
+
     return PyFloat_FromDouble((double)SELF_AS(TBayesClassifier).p(value, *ex));
 
   PyCATCH
@@ -1484,7 +1566,7 @@ PyObject *Rule_filterAndStore(PyObject *self, PyObject *args) PYARGS(METH_VARARG
     PExampleGenerator gen;
     int weightID = 0;
     int targetClass = -1;
-    
+
     if (!PyArg_ParseTuple(args, "O&O&i:RuleEvaluator.call",  pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
       return PYNULL;
 
@@ -1522,7 +1604,7 @@ PyObject *RuleEvaluator_call(PyObject *self, PyObject *args, PyObject *keywords)
       return PYNULL;
     CAST_TO(TRuleEvaluator, evaluator)
     float quality;
-     
+
     quality = (*evaluator)(rule, gen, weightID, targetClass, apriori);
     return PyFloat_FromDouble(quality);
   PyCATCH
@@ -1607,7 +1689,7 @@ PyObject *RuleValidator__reduce__(PyObject *self)
 
 PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
-  
+
   PyTRY
     NO_KEYWORDS
 
@@ -1752,7 +1834,7 @@ PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 
     PRule res = (*finder)(gen, weightID, targetClass, baseRules);
     return WrapOrange(res);
-  PyCATCH 
+  PyCATCH
 }
 
 PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
@@ -1901,7 +1983,7 @@ PyObject *RuleClassifierConstructor__reduce__(PyObject *self)
 
 
 PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight]) -> (RuleClassifier)")
-{ 
+{
   PyTRY
     NO_KEYWORDS
 
@@ -1924,7 +2006,7 @@ PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObjec
 }
 
 PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, min_beta, examples[, weight])")
-{ 
+{
   PyTRY
     NO_KEYWORDS
 
