@@ -123,7 +123,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.addToolBarBreak()
 
-        self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
+        self.createWidgetsToolbar()
 
         self.readShortcuts()
 
@@ -198,7 +198,7 @@ class OrangeCanvasDlg(QMainWindow):
                 webbrowser.open("http://sourceforge.net/projects/numpy/")
 
 
-    def createWidgetsToolbar(self, rebuildRegistry):
+    def createWidgetsToolbar(self):
         if hasattr(self, "widgetsToolBar"):
             if isinstance(self.widgetsToolBar, QToolBar):
                 self.removeToolBar(self.widgetsToolBar)
@@ -221,23 +221,13 @@ class OrangeCanvasDlg(QMainWindow):
             self.tabs = orngTabs.WidgetTabs(self, self.widgetInfo, self.widgetsToolBar)
             self.widgetsToolBar.addWidget(self.tabs)
 
-        ## the registry is now build already in the orngRegistry when setting up the directory names
-        if rebuildRegistry == 1:
-            parse = orngRegistry.WidgetsToXML()
-            parse.ParseWidgetRoot(self.widgetDir, self.canvasSettingsDir)
-
-        # if registry still doesn't exist then something is very wrong...
-        if not os.path.exists(self.registryFileName):
-            QMessageBox.critical( self, "Orange Canvas", "Unable to locate widget registry. Exiting...")
-            self.quit()
-
         if self.settings.has_key("WidgetTabs") and self.settings["WidgetTabs"] != []:
             widgetTabList = self.settings["WidgetTabs"]
         else:
             widgetTabList = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]]
 
-        # read widget registry file and create tab with buttons
-        self.tabs.readInstalledWidgets(self.registryFileName, widgetTabList, self.widgetDir, self.picsDir, self.defaultPic)
+        # find widgets and create tab with buttons
+        self.tabs.readInstalledWidgets(widgetTabList, self.widgetDir, self.picsDir, self.defaultPic)
         self.settings["WidgetTabs"] = [(name, show) for (name, show, w) in self.tabs.tabs]
 
         qApp.processEvents()
@@ -307,7 +297,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addSeparator()
         #self.menuOptions.addAction( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.addSeparator()
-        self.menuOptions.addAction( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.addAction( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.addAction( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()

@@ -19,7 +19,7 @@ class InputSignal:
         self.type = signalType
         self.handler = handler
 
-        if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
+        if type(parameters) == str: parameters = eval(parameters)   # parameters are stored as strings
         # if we have the old definition of parameters then transform them
         if parameters in [0,1]:
             self.single = parameters

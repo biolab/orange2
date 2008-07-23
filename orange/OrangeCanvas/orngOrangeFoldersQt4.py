@@ -62,33 +62,21 @@ def __getDirectoryNames():
         try: os.mkdir(canvasSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
-    registryFileName = os.path.join(canvasSettingsDir, "widgetregistry.xml")
 
-    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "widgetSettingsDir", "canvasSettingsDir", "registryFileName", "bufferDir"]])
+    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "widgetSettingsDir", "canvasSettingsDir", "bufferDir"]])
 
 
-def addOrangeDirectoriesToPath(registryFileName = None):
+def addOrangeDirectoriesToPath():
     sys.path = [x for x in sys.path if "orange\\orange" not in x.lower() and "orange/orange" not in x.lower()]
     orangeDir = directoryNames["orangeDir"]
     widgetDir = directoryNames["widgetDir"]
     canvasDir = directoryNames["canvasDir"]
     sys.path.insert(0, canvasDir)
-    if orangeDir not in sys.path: sys.path.insert(0, orangeDir)
-    if widgetDir not in sys.path: sys.path.insert(0, widgetDir)
-    if os.path.exists(widgetDir):
-        for name in os.listdir(widgetDir):
-            fullName = os.path.join(widgetDir, name)
-            if os.path.isdir(fullName) and fullName not in sys.path and name.lower() not in ["cvs", ".svn", "icons"]:
-                sys.path.insert(0, fullName)
-
-    if registryFileName != None and os.path.exists(registryFileName):
-        import xml.dom.minidom
-        doc = xml.dom.minidom.parse(registryFileName)
-        for category in doc.getElementsByTagName("category"):
-            directory = category.getAttribute("directory")
-            if directory and directory not in sys.path:
-                sys.path.insert(0, directory)
+    if orangeDir not in sys.path:
+        sys.path.insert(0, orangeDir)
+    if widgetDir not in sys.path:
+        sys.path.insert(0, widgetDir)
 
 directoryNames = __getDirectoryNames()
 #vars().update(directoryNames)
-addOrangeDirectoriesToPath(directoryNames["registryFileName"])
+addOrangeDirectoriesToPath()

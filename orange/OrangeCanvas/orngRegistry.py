@@ -1,194 +1,125 @@
 # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
-# Description:
-#    parse widget information to a registry file (.xml) - info is then used inside orngTabs.py
 #
-import os, sys, string, re, user
-import xml.dom.minidom
+
+import os, sys, re, glob, stat
 from orngOrangeFoldersQt4 import *
 
-class WidgetsToXML:
+class WidgetDescription:
+    def __init__(self, **attrs):
+        self.__dict__.update(attrs)
 
-    # read all installed widgets, build a registry and store widgets.pth with directory names in python dir
-    def ParseWidgetRoot(self, widgetDirName, canvasSettingsDir):
-        widgetDirName = os.path.realpath(widgetDirName)
-        canvasSettingsDir = os.path.realpath(canvasSettingsDir)
+class WidgetCategory:
+    def __init__(self, name, widgets, directory):
+        self.name = name
+        self.widgets = widgets
+        self.directory = directory
+   
+def readCategories():
+    widgetDirName = os.path.realpath(directoryNames["widgetDir"])
+    canvasSettingsDir = os.path.realpath(directoryNames["canvasSettingsDir"])
+    cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle") 
 
-        # create xml document
-        doc = xml.dom.minidom.Document()
-        canvas = doc.createElement("orangecanvas")
-        categories = doc.createElement("widget-categories")
-        doc.appendChild(canvas)
-        canvas.appendChild(categories)
+    try:
+        import cPickle
+        cats = cPickle.load(file(cacheFilename, "rb"))
+        cachedWidgetDescriptions = dict([(w.fullname, w) for cat in cats for w in cat.widgets])
+    except:
+        cachedWidgetDescriptions = {} 
 
-        for filename in os.listdir(widgetDirName):
-            full_filename = os.path.join(widgetDirName, filename)
-            if os.path.isdir(full_filename):
-                self.ParseDirectory(doc, categories, full_filename, filename)
+    directories = []
+    for dirName in os.listdir(widgetDirName):
+        directory = os.path.join(widgetDirName, dirName)
+        if os.path.isdir(directory):
+            directories.append((dirName, directory, ""))
 
-        additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
-        if os.path.exists(additionalFile):
-            for lne in open(additionalFile, "rt"):
-                try:
-                    catName, dirName = [x.strip() for x in lne.split("\t")]
-                    self.ParseDirectory(doc, categories, dirName, catName, True)
-                except:
-                    pass
+    additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
+    if os.path.exists(additionalFile):
+        for lne in open(additionalFile, "rt"):
+            try:
+                catName, dirName = [x.strip() for x in lne.split("\t")]
+                directories.append((catName, dirName, dirName))
+            except:
+                pass
+            
+    categories = []
+    for catName, dirName, plugin in directories:
+        widgets = readWidgets(dirName, cachedWidgetDescriptions)
+        if widgets:
+            categories.append(WidgetCategory(catName, widgets, plugin and dirName or ""))
+            if dirName not in sys.path:
+                sys.path.insert(0, dirName)
 
-
-        # we put widgets that are in the root dir of widget directory to category "Other"
-        self.ParseDirectory(doc, categories, widgetDirName, "Other")
-
-        xmlText = doc.toprettyxml()
-        file = open(os.path.join(canvasSettingsDir, "widgetregistry.xml"), "wt")
-        file.write(xmlText)
-        file.flush()
-        file.close()
-        doc.unlink()
-
-    # parse all widgets in directory widgetDirName\categoryName into new category named categoryName
-    def ParseDirectory(self, doc, categories, full_dirname, categoryName, plugin = False):
-        if full_dirname not in sys.path:        # add directory to orange path
-            sys.path.insert(0, full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
-
-        for filename in os.listdir(full_dirname):
-            full_filename = os.path.join(full_dirname, filename)
-            if os.path.isdir(full_filename) or os.path.islink(full_filename) or os.path.splitext(full_filename)[1] != ".py":
-                continue
-
-            file = open(full_filename)
-            data = file.read()
-            file.close()
-
-            name        = self.GetCustomText(data, '<name>.*</name>')
-            #category    = self.GetCustomText(data, '<category>.*</category>')
-            author      = self.GetCustomText(data, '<author>.*</author>')
-            contact     = self.GetCustomText(data, '<contact>.*</contact>') or ""
-            icon        = self.GetCustomText(data, '<icon>.*</icon>')
-            priorityStr = self.GetCustomText(data, '<priority>.*</priority>')
-            if priorityStr == None:    priorityStr = "5000"
-            if author      == None: author = ""
-            if icon        == None: icon = "icon/Unknown.png"
-
-            description = self.GetDescription(data)
-            inputList   = self.GetAllInputs(data)
-            outputList  = self.GetAllOutputs(data)
-
-            if (name == None):      # if the file doesn't have a name, we treat it as a non-widget file
-                continue
-
-            # create XML node for the widget
-            child = categories.firstChild
-            while (child != None and child.attributes.get("name").nodeValue != categoryName):
-                child= child.nextSibling
-
-            if (child == None):
-                child = doc.createElement("category")
-                child.setAttribute("name", categoryName)
-                if plugin:
-                    child.setAttribute("directory", full_dirname)
-                categories.appendChild(child)
-
-            widget = doc.createElement("widget")
-            widget.setAttribute("file", filename[:-3])
-            widget.setAttribute("name", name)
-            widget.setAttribute("in", str(inputList))
-            widget.setAttribute("out", str(outputList))
-            widget.setAttribute("icon", icon)
-            widget.setAttribute("priority", priorityStr)
-            widget.setAttribute("author", author)
-            widget.setAttribute("contact", contact)
-
-            # description
-            if (description != ""):
-                desc = doc.createElement("description")
-                descText = doc.createTextNode(description)
-                desc.appendChild(descText)
-                widget.appendChild(desc)
-
-            child.appendChild(widget)
+    cPickle.dump(categories, file(cacheFilename, "wb"))
+    return categories
 
 
-    def GetDescription(self, data):
-        #read the description from widget
-        search = re.search('<description>.*</description>', data, re.DOTALL)
-        if (search == None):
-            return ""
+re_inputs = re.compile(r'[ \t]+self.inputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
+re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
 
-        description = search.group(0)[13:-14]    #delete the <...> </...>
-        description = re.sub("#", "", description)  # if description is in multiple lines, delete the comment char
-        return string.strip(description)
+def readWidgets(directory, cachedWidgetDescriptions):
+    widgets = []
+    for filename in glob.iglob(os.path.join(directory, "*.py")):
+        if os.path.isdir(filename) or os.path.islink(filename):
+            continue
+        
+        datetime = str(os.stat(filename)[stat.ST_MTIME])
+        cachedDescription = cachedWidgetDescriptions.get(filename, None)
+        if cachedDescription and cachedDescription.time == datetime:
+            widgets.append(cachedDescription)
+            continue
+        
+        data = file(filename).read()
+        istart = data.find("<name>")
+        if istart < 0:
+            continue
+        iend = data.find("</name>")
+        if iend < 0:
+            continue
 
-    def GetCustomText(self, data, searchString):
-        #read the description from widget
-        search = re.search(searchString, data)
-        if (search == None):
-            return None
+        widgetDesc = WidgetDescription(
+                         name=data[istart+6:iend],
+                         time=datetime,
+                         filename=os.path.splitext(os.path.split(filename)[1])[0],
+                         fullname = filename,
+                         inputList=getSignalList(re_inputs, data),
+                         outputList=getSignalList(re_outputs, data)
+                         )
 
-        text = search.group(0)
-        text = text[text.find(">")+1:-text[::-1].find("<")-1]    #delete the <...> </...>
-        return text.strip()
-
-
-    def GetAllInputs(self, data):
-        #result = re.search('self.inputs *= *[[].*]', data)
-        result = re.search('[ \t]+self.inputs *= *[[].*]', data)
-        if not result: return []
-        text = data[result.start():result.end()]
-        text = text[text.index("[")+1:text.index("]")]
-        text= text.replace('"',"'")
-        #inputs = re.findall("\(.*?\)", text)
-        inputs = re.findall("\(.*?[\"\'].*?[\"\'].*?\)", text)
-        inputList = []
-        for input in inputs:
-            inputList.append(self.GetAllValues(input))
-        return inputList
-
-    def GetAllOutputs(self, data):
-        #result = re.search('self.outputs *= *[[].*]', data)
-        result = re.search('[ \t]+self.outputs *= *[[].*]', data)
-        if not result: return []
-        text = data[result.start():result.end()]
-        text = text[text.index("[")+1:text.index("]")]
-        text= text.replace('"',"'")
-        #outputs = re.findall("\(.*?\)", text)
-        outputs = re.findall("\(.*?[\"\'].*?[\"\'].*?\)", text)
-        outputList = []
-        for output in outputs:
-            outputList.append(self.GetAllValues(output))
-        return outputList
-
-    def GetAllValues(self, text):
-        text = text[1:-1]
-        vals = text.split(",")
-        vals[0] = vals[0][1:-1]
-        for i in range(len(vals)):
-            vals[i] = vals[i].strip()
-        return tuple(vals)
+        for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", "")):
+            istart, iend = data.find("<"+attr), data.find("</"+attr)
+            setattr(widgetDesc, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
+    
+        widgets.append(widgetDesc)
+        
+    return widgets
 
 
-def rebuildRegistry():
-    dirs = directoryNames
-    parse = WidgetsToXML()
-    parse.ParseWidgetRoot(dirs["widgetDir"], dirs["canvasSettingsDir"])
+re_tuple = re.compile(r"\(([^)]+)\)")
+
+def getSignalList(regex, data):
+    inmo = regex.search(data)
+    if inmo:
+        return str([tuple([y[0] in "'\"" and y[1:-1] or str(y) for y in (x.strip() for x in ttext.group(1).split(","))])
+               for ttext in re_tuple.finditer(inmo.group("signals"))])
+    else:
+        return "[]"
+
 
 def readAdditionalCategories():
-    dirs = directoryNames
-    addCatFile = os.path.join(dirs["canvasSettingsDir"], "additionalCategories")
+    addCatFile = os.path.join(directoryNames["canvasSettingsDir"], "additionalCategories")
     if os.path.exists(addCatFile):
-        return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(addCatFile, "r")]
+        return [tuple([x.strip() for x in lne.split("\t")]) for lne in file(addCatFile, "r")]
     else:
         return []
 
 def writeAdditionalCategories(categories):
-    dirs = directoryNames
-    open(os.path.join(dirs["canvasSettingsDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+    file(os.path.join(directoryNames["canvasSettingsDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
 
 def addWidgetCategory(category, directory, add = True):
     if os.path.isfile(directory):
         directory = os.path.dirname(directory)
     writeAdditionalCategories([x for x in readAdditionalCategories() if x[0] != category and x[1] != directory] + (add and [(category, directory)] or []))
-    rebuildRegistry()
 
 
 if __name__=="__main__":
-    rebuildRegistry()
+    readCategories()

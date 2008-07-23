@@ -410,10 +410,6 @@ class updateOrangeDlg(QMainWindow):
 
         self.addText("Update finished. New files: <b>%d</b>. Updated files: <b>%d</b>\n" %(newFiles, updatedFiles))
 
-        # remove widgetregistry.xml in orangeCanvas directory
-        if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")) and newFiles + updatedFiles > 0:
-            os.remove(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml"))
-
         self.statusBar.showMessage("Update finished.")
 
     # update binary files

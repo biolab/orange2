@@ -120,7 +120,7 @@ class SchemaDoc(QMdiSubWindow):
             QMessageBox.information( self, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok)
             return
         elif connectStatus == -1:
-            QMessageBox.critical( self, "Orange Canvas", "Error while connecting widgets. Please rebuild  widget registry (menu Options/Rebuild widget registry) and restart Orange Canvas. Some of the widgets have now different signals.", QMessageBox.Ok)
+            QMessageBox.critical( self, "Orange Canvas", "Error while connecting widgets. Some of the widgets have now different signals. Try restarting Orange Canvas.", QMessageBox.Ok)
             return
 
 
@@ -218,7 +218,7 @@ class SchemaDoc(QMdiSubWindow):
         ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outSignalName, inSignalName, enabled)
         if not ok:
             self.removeLink(outWidget, inWidget, outSignalName, inSignalName)
-            QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Please rebuild widget registry and restart Orange Canvas for changes to take effect.", QMessageBox.Ok + QMessageBox.Default )
+            QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Something is really wrong; try restarting Orange Canvas.", QMessageBox.Ok + QMessageBox.Default )
             return 0
 
         line.updateTooltip()

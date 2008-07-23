@@ -6,9 +6,8 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import os.path, sys
 from string import strip, count, replace
-import orngDoc, orngOutput
+import orngDoc, orngOutput, orngRegistry
 from orngSignalManager import InputSignal, OutputSignal
-from xml.dom.minidom import Document, parse
 
 WB_TOOLBOX = 0
 WB_TREEVIEW = 1
@@ -46,10 +45,10 @@ class WidgetButtonBase():
         name = self.getIconName()
         widgetDir = str(self.widgetTabs.widgetInfo[self.nameKey]["directory"])#os.path.split(self.getFileName())[0]
 
-        for paths in [(self.canvasDlg.picsDir, name),
-                      (self.canvasDlg.widgetDir, name),
-                      (name,),
-                      (widgetDir, name),
+        for paths in [(self.canvasDlg.picsDir, name), 
+                      (self.canvasDlg.widgetDir, name), 
+                      (name,), 
+                      (widgetDir, name), 
                       (widgetDir, "icons", name)]:
             fname = os.path.join(*paths)
             if os.path.exists(fname):
@@ -117,9 +116,9 @@ class WidgetButtonBase():
             if (rightClick or self.shiftPressed) and len(win.widgets) > 1:
                 win.addLine(win.widgets[-2], win.widgets[-1])
         elif (isinstance(win, orngOutput.OutputWindow)):
-            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
+            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance to Output window. Please select a document window first.', QMessageBox.Ok)
         else:
-            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance. Please open a document window first.',QMessageBox.Ok)
+            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
 
 
     
@@ -213,7 +212,7 @@ class WidgetButton(QFrame, WidgetButtonBase):
 
         vrect = QRectF(win.visibleRegion().boundingRect())
         inside = win.canvasView.rect().contains(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())))
-        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0,0)))
+        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0, 0)))
 
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         if dinwin and (dinwin != win or not inside):
@@ -300,27 +299,18 @@ class WidgetListBase:
         self.tabDict = {}
         self.tabs = []
 
-    # read the xml registry and show all installed widgets
-    def readInstalledWidgets(self, registryFileName, widgetTabList, widgetDir, picsDir, defaultPic):
+    def readInstalledWidgets(self, widgetTabList, widgetDir, picsDir, defaultPic):
         self.widgetDir = widgetDir
         self.picsDir = picsDir
         self.defaultPic = defaultPic
-        doc = parse(registryFileName)
-        orangeCanvas = doc.firstChild
-        categories = orangeCanvas.getElementsByTagName("widget-categories")[0]
-        if (categories == None):
-            return
-
-        categoryList = categories.getElementsByTagName("category")
-        categoryNames = [str(cat.getAttribute("name")) for cat in categoryList]
+        categories = orngRegistry.readCategories()
 
         # first insert the default tab names
         for tab in widgetTabList:
-            if tab[0] in categoryNames:        # add a category only if there are some widgets in the folder
-                self.insertWidgetTab(tab[0], tab[1])
+            self.insertWidgetTab(tab[0], tab[1])
 
         # now insert widgets into tabs + create additional tabs
-        for category in categoryList:
+        for category in categories:
             self.insertWidgetsToTab(category)
 
         for i in range(len(self.tabs)-1, -1, -1):
@@ -339,15 +329,15 @@ class WidgetListBase:
 
     # add all widgets inside the category to the tab
     def insertWidgetsToTab(self, category):
-        strCategory = str(category.getAttribute("name"))
+        strCategory = str(category.name)
 
         if self.tabDict.has_key(strCategory):
             tab = self.tabDict[strCategory]
         else:
             tab = self.insertWidgetTab(strCategory)
 
-        tab.builtIn = not category.hasAttribute("directory")
-        directory = not tab.builtIn and str(category.getAttribute("directory"))
+        directory = category.directory
+        tab.builtIn = not directory
 
         priorityList = []
         nameList = []
@@ -358,43 +348,24 @@ class WidgetListBase:
         inputList = []
         outputList = []
 
-        widgetList = category.getElementsByTagName("widget")
-        for widget in widgetList:
-            try:
-                name = str(widget.getAttribute("name"))
-                fileName = str(widget.getAttribute("file"))
-                author = str(widget.getAttribute("author"))
-                inputs = [InputSignal(*signal) for signal in eval(widget.getAttribute("in"))]
-                outputs = [OutputSignal(*signal) for signal in eval(widget.getAttribute("out"))]
-                priority = int(widget.getAttribute("priority"))
-                iconName = widget.getAttribute("icon")
-
-                # it's a complicated way to get to the widget description
-                description = ""
-                for node in widget.childNodes:
-                    if node.nodeType == node.TEXT_NODE:
-                        description = description + node.nodeValue
-                    else:
-                        for n2 in node.childNodes:
-                            if n2.nodeType == node.TEXT_NODE:
-                                description = description + n2.nodeValue
-
-                description = strip(description)
+        for widget in category.widgets:
+#            try:
                 i = 0
+                priority = int(widget.priority)
                 while i < len(priorityList) and priority > priorityList[i]:
                     i = i + 1
                 priorityList.insert(i, priority)
-                nameList.insert(i, name)
-                authorList.insert(i, author)
-                fileNameList.insert(i, fileName)
-                iconNameList.insert(i, iconName)
-                descriptionList.insert(i, description)
-                inputList.insert(i, inputs)
-                outputList.insert(i, outputs)
-            except:
-                print "Error at reading settings for %s widget." % (name)
-                tpe, val, traceback = sys.exc_info()
-                sys.excepthook(tpe, val, traceback)  # print the exception
+                nameList.insert(i, widget.name)
+                authorList.insert(i, widget.contact)
+                fileNameList.insert(i, widget.filename)
+                iconNameList.insert(i, widget.icon)
+                descriptionList.insert(i, widget.description)
+                inputList.insert(i, [InputSignal(*signal) for signal in eval(widget.inputList)])
+                outputList.insert(i, [OutputSignal(*signal) for signal in eval(widget.outputList)])
+#            except:
+#                print "Error occurred reading settings for %s widget." % (name)
+#                tpe, val, traceback = sys.exc_info()
+#                sys.excepthook(tpe, val, traceback)  # print the exception
 
         exIndex = 0
         widgetTypeList = self.canvasDlg.settings["widgetListType"]
@@ -425,7 +396,7 @@ class WidgetListBase:
 class WidgetTabs(WidgetListBase, QTabWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
-        apply(QTabWidget.__init__,(self,) + args)
+        apply(QTabWidget.__init__, (self,) + args)
 
 
     def insertWidgetTab(self, name, show = 1):
@@ -463,7 +434,7 @@ class WidgetTree(WidgetListBase, QDockWidget):
         self.treeWidget.setFocusPolicy(Qt.ClickFocus)    # this is needed otherwise the document window will sometimes strangely lose focus and the output window will be focused
         self.setWidget(self.treeWidget)
         iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
-        self.treeWidget.setIconSize(QSize(iconSize,iconSize))
+        self.treeWidget.setIconSize(QSize(iconSize, iconSize))
         self.treeWidget.setRootIsDecorated(0) 
                 
 
@@ -565,7 +536,7 @@ class MyTreeWidget(QTreeWidget):
 
         vrect = QRectF(win.visibleRegion().boundingRect())
         inside = win.canvasView.rect().contains(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())))
-        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0,0)))
+        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0, 0)))
 
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         if dinwin and (dinwin != win or not inside):
@@ -618,7 +589,7 @@ class MyTreeWidget(QTreeWidget):
             if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
                 win.addLine(win.widgets[-2], win.widgets[-1])
         elif (isinstance(win, orngOutput.OutputWindow)):
-            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
+            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance to Output window. Please select a document window first.', QMessageBox.Ok)
         else:
-            QMessageBox.information(self,'Orange Canvas','Unable to add widget instance. Please open a document window first.',QMessageBox.Ok)
+            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
     
