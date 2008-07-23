@@ -575,11 +575,11 @@ class OrangeCanvasDlg(QMainWindow):
 
     def widgetListTypeChanged(self, ind):
         self.settings["widgetListType"] = ind
-        self.createWidgetsToolbar(0)
+        self.createWidgetsToolbar()
 
     def iconSizeChanged(self, ind):
         self.settings["iconSize"] = self.iconSizeList[ind]
-        self.createWidgetsToolbar(0)
+        self.createWidgetsToolbar()
 
     def menuItemEnableAll(self):
         win = self.workspace.activeSubWindow()
@@ -647,9 +647,6 @@ class OrangeCanvasDlg(QMainWindow):
         if dlg.result() == QDialog.Accepted:
             self.rebuildSignals()
     """
-
-    def menuItemRebuildWidgetRegistry(self):
-        self.createWidgetsToolbar(True)
 
     def menuItemEditWidgetShortcuts(self):
         dlg = orngDlgs.WidgetShortcutDlg(self)
@@ -859,7 +856,7 @@ class OrangeCanvasDlg(QMainWindow):
             newTabList = [(str(dlg.tabOrderList.item(i).text()), dlg.tabOrderList.item(i).checkState()) for i in range(dlg.tabOrderList.count())]
             if newTabList != oldTabList:
                 self.settings["WidgetTabs"] = newTabList
-                self.createWidgetsToolbar(0)
+                self.createWidgetsToolbar()
 
     def updateStyle(self):
         QApplication.setStyle(QStyleFactory.create(self.settings["style"]))
