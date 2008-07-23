@@ -173,8 +173,8 @@ class OWDataTable(OWWidget):
         mo = data.domain.getmetas(True).items()
         if mo:
             mo.sort(lambda x,y: cmp(x[1].name.lower(),y[1].name.lower()))
-            metas.append(None)
-            metaKeys.append(None)
+#            metas.append(None)
+#            metaKeys.append(None)
 
         varsMetas = vars + metas
 
