@@ -521,7 +521,7 @@ TSparseItemsetTree *TAssociationRulesSparseInducer::buildTree(PExampleGenerator 
 
 		//test if tree is too large
 		if (newItemSets + currItemSets >= maxItemSets) {
-			raiseError("too many itemsets (%i); increase 'maxItemSets'", maxItemSets);
+			raiseError("too many itemsets (%i); increase 'support' or 'maxItemSets'", maxItemSets);
 			newItemSets = 0;
 		}
 	}
@@ -587,7 +587,7 @@ PSparseItemsetTree TItemsetsSparseInducer::operator()(PExampleGenerator examples
 
 		//test if tree is too large
 		if (newItemSets + currItemSets >= maxItemSets) {
-			raiseError("too many itemsets (%i); increase 'maxItemSets'", maxItemSets);
+			raiseError("too many itemsets (%i); increase 'support' or 'maxItemSets'", maxItemSets);
 			newItemSets = 0;
 		}
 	}
