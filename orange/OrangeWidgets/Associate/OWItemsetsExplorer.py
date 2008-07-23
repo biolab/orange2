@@ -186,13 +186,14 @@ class OWItemsetsExplorer(OWWidget):
             self.dataset, self.origItemsets = data
             dataset, itemsets = self.dataset, self.origItemsets
         if itemsets:
-            vars = dataset.domain.variables
             if isinstance(itemsets[0][0][0], tuple):
+                vars = dataset.domain.variables
                 self.itemsets = [(tuple(["%s=%s" % (vars[i].name, vars[i].values[j]) for i, j in itemset]),
                                   examples,
                                   i) for i, (itemset, examples) in enumerate(itemsets)]
             else:
-                self.itemsets = [(tuple([vars[i].name for i in itemset]),
+                domain = dataset.domain
+                self.itemsets = [(tuple([domain[i].name for i in itemset]),
                                   examples,
                                   i) for i, (itemset, examples) in enumerate(itemsets)]
         else:
