@@ -227,7 +227,7 @@ PyObject *AssociationRulesSparseInducer_getItemsets(PyObject *self, PyObject *ar
     PyObject *listOfItemsets = NULL;
 
     try {
-    	inducer->buildTree(egen, weightID, i, fullWeight);
+    	  tree = inducer->buildTree(egen, weightID, i, fullWeight);
         listOfItemsets = PyList_New(0);
         vector<int> itemsSoFar;
         gatherRules(tree->root, itemsSoFar, listOfItemsets, inducer->storeExamples);
