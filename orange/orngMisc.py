@@ -83,7 +83,38 @@ class LimitedCounter:
     return self.state
 
 
-
+class MofNCounter:
+    def __init__(self, m, n):
+        if m > n:
+            raise TypeError, "Number of selected items exceeds the number of items"
+        
+        self.state = None
+        self.m = m
+        self.n = n
+        
+    def __iter__(self):
+        if self.state:
+            return self
+        else:
+            return MofNCounter(self.m, self.n)
+        
+    def next(self):
+        if self.state:
+            m, n, state = self.m, self.n, self.state
+            for place in range(m-1, -1, -1):
+                if state[place] + m-1-place < n-1:
+                    state[place] += 1
+                    for place in range(place+1, m):
+                        state[place] = state[place-1] + 1
+                    break
+            else:
+                self.state = None
+                raise StopIteration, "MofNCounter: counting finished"
+        else:
+            self.state = range(self.m)
+            
+        return self.state[:]
+             
 class NondecreasingCounter:
   def __init__(self, places):
     self.state=None
