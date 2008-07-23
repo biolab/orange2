@@ -14,7 +14,12 @@ class WidgetCategory:
         self.widgets = widgets
         self.directory = directory
    
+storedCategories = None
 def readCategories():
+    global storedCategories
+    if storedCategories:
+        return storedCategories
+    
     widgetDirName = os.path.realpath(directoryNames["widgetDir"])
     canvasSettingsDir = os.path.realpath(directoryNames["canvasSettingsDir"])
     cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle") 
@@ -50,6 +55,7 @@ def readCategories():
                 sys.path.insert(0, dirName)
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
+    storedCategories = categories
     return categories
 
 
