@@ -435,18 +435,14 @@ class WidgetTree(WidgetListBase, QDockWidget):
         self.setWidget(self.treeWidget)
         iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
         self.treeWidget.setIconSize(QSize(iconSize, iconSize))
-        self.treeWidget.setRootIsDecorated(0) 
+#        self.treeWidget.setRootIsDecorated(0) 
                 
 
     def insertWidgetTab(self, name, show = 1):
-        item = QTreeWidgetItem(self.treeWidget)
-        item.setText(0, name)
+        item = WidgetTreeFolder(self.treeWidget, name)
         item.widgets = []
         self.tabDict[name] = item
-         
-        push = WidgetTreeButton(item, name, self.treeWidget)
-        self.treeWidget.setItemWidget(item, 0, push)
-        
+
         if not show:
             item.setHidden(1)
         if self.treeWidget.topLevelItemCount() == 1:
@@ -454,6 +450,15 @@ class WidgetTree(WidgetListBase, QDockWidget):
         self.tabs.append((name, 2*int(show), item))
 
         return item
+
+class WidgetTreeFolder(QTreeWidgetItem):
+    def __init__(self, parent, name):
+        QTreeWidgetItem.__init__(self, parent, [name])
+#        item.setChildIndicatorPolicy(item.ShowIndicator)
+    def mousePressEvent(self, e):
+        self.treeItem.setExpanded(not self.treeItem.isExpanded())
+         
+                
 
 # button that contains the name of the widget category. 
 # when clicked it shows or hides the widgets in the category
@@ -583,6 +588,8 @@ class MyTreeWidget(QTreeWidget):
         self.mousePressed = 0
         
     def itemClicked(self, item, column):
+        if isinstance(item, WidgetTreeFolder):
+            return
         win = self.canvasDlg.workspace.activeSubWindow()
         if (win and isinstance(win, orngDoc.SchemaDoc)):
             win.addWidget(item)
