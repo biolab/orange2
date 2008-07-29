@@ -92,6 +92,7 @@ class OWNetworkFromDistances(OWWidget):
         # draw histogram
         data.matrixType = data.Lower
         values = data.getValues()
+        #print "values:",values
         self.histogram.setValues(values)
         
         low = min(values)
@@ -162,7 +163,7 @@ class OWNetworkFromDistances(OWWidget):
                 if type(self.data.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
                     graph.setattr("items", self.data.items)
                 else:
-                    data = [[x.name] for x in self.data.items]
+                    data = [[str(x)] for x in self.data.items]
                     items = orange.ExampleTable(orange.Domain(orange.StringVariable('label'), 0), data)
                     graph.setattr("items", list(items))
                 

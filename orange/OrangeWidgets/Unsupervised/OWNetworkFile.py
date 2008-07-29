@@ -19,7 +19,6 @@ from orngNetwork import *
 
 from orange import Graph
 from orange import GraphAsList
-from orange import ExampleTable
 from orangeom import Network
 
 class OWNetworkFile(OWWidget):
@@ -30,7 +29,7 @@ class OWNetworkFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network File")
 
         self.inputs = []
-        self.outputs = [("Network", Network)]
+        self.outputs = [("Network", Network), ("Items", ExampleTable)]
     
         #set default settings
         self.recentFiles = ["(none)"]
@@ -187,6 +186,7 @@ class OWNetworkFile(OWWidget):
         self.graph.setattr("links", table)
         self.infod.setText("Edges data file added.")
         self.send("Network", self.graph)
+        self.send("Items", self.graph.items)
         
         
     def addDataFile(self, fn):
@@ -209,6 +209,7 @@ class OWNetworkFile(OWWidget):
         self.graph.setattr("items", table)
         self.infoc.setText("Vertices data file added.")
         self.send("Network", self.graph)
+        self.send("Items", self.graph.items)
         
     def browseEdgesFile(self, inDemos=0):
         if self.graph == None:
@@ -295,6 +296,7 @@ class OWNetworkFile(OWWidget):
                 
             if data == None:
                 self.send("Network", None)
+                self.send("Items", None)
                 return
 
             self.infoa.setText("%d nodes" % data.nVertices)
@@ -313,12 +315,14 @@ class OWNetworkFile(OWWidget):
                 
             #print "nVertices graph: " + str(data.nVertices)
             self.graph = data
-            self.send("Network", data)
+            self.send("Network", self.graph)
+            self.send("Items", self.graph.items)
 #            drawer = OWGraphDrawer()
 #            drawer.setGraph(data)
 #            drawer.show()
         else:
             self.send("Network", data)
+            self.send("Items", data.items)
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
