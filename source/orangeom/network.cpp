@@ -389,10 +389,13 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 		for (i = 0; i < matrix->dim; i++) {
 			bool connected = false;
 			for (j = i+1; j < matrix->dim; j++) {
+				//cout << "i " << i << " j " << j;
 				double value = matrix->getitem(j,i);
+				//cout << " value " << value << endl;
 				if (lower <=  value && value <= upper) {
 					double* w = network->getOrCreateEdge(j, i);
-					*w = value;		
+					*w = value;
+					
 					connected = true;
 				}
 			}
