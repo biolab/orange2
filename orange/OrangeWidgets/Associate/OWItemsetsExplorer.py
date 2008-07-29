@@ -17,8 +17,9 @@ class OWItemsetsExplorer(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Itemsets explorer")
 
+        from OWItemsets import Itemsets
         self.inputs = [("Itemsets", tuple, self.setItemsets)]
-        self.outputs = [("Itemsets", tuple), ("Examples", ExampleTable)]
+        self.outputs = [("Itemsets", Itemsets), ("Examples", ExampleTable)]
 
         self.showWholeItemsets = 1
         self.treeDepth = 2

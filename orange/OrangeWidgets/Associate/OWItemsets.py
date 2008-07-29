@@ -10,14 +10,20 @@ import orange
 from OWWidget import *
 import OWGUI
 
+class Itemsets:
+    def __init__(self, itemsets, data):
+        self.itemsets = itemsets
+        self.data = data
+        
 class OWItemsets(OWWidget):
     settingsList = ["minSupport", "useSparseAlgorithm", "maxRules"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Itemsets", wantMainArea = 0)
 
+        from OWItemsets import Itemsets
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Itemsets", tuple)]
+        self.outputs = [("Itemsets", Itemsets)]
 
         self.minSupport = 60
         self.maxRules = 10000
