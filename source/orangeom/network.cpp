@@ -386,7 +386,7 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	
 	if (matrix->matrixType == 0) {
 		// lower
-		for (i = 1; i < matrix->dim; i++) {
+		for (i = 0; i < matrix->dim; i++) {
 			bool connected = false;
 			for (j = i+1; j < matrix->dim; j++) {
 				double value = matrix->getitem(j,i);
@@ -403,7 +403,7 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	}
 	else {
 		// upper
-		for (i = 1; i < matrix->dim; i++) {
+		for (i = 0; i < matrix->dim; i++) {
 			bool connected = false;
 			for (j = i+1; j < matrix->dim; j++) {
 				double value = matrix->getitem(i,j);
