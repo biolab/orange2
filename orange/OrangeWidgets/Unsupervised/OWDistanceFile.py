@@ -79,12 +79,11 @@ class OWDistanceFile(OWWidget):
             if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
                 pkl_file = open(fn, 'rb')
                 self.matrix = pickle.load(pkl_file)
-                print self.matrix
+                #print self.matrix
                 if hasattr(self.matrix, 'items'):
                     self.data = self.matrix.items
-                    print 1
                 pkl_file.close()
-                print 2
+                
             else:    
                 fle = open(fn)
                 while 1:
@@ -151,7 +150,11 @@ class OWDistanceFile(OWWidget):
                     self.error("The number of examples doesn't match the matrix dimension")
         else:
             matrix.setattr("items", self.labels)
+            
 
+        if self.data == None and self.labels == None:
+            matrix.setattr("items", range(matrix.dim))
+            
         #print 'send'#, matrix
         self.send("Distance Matrix", self.matrix)
 
