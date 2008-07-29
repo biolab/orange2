@@ -1800,13 +1800,16 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					{
 						int i1 = -1;
 						int i2 = -1;
-						int i3 = -1;
 						istringstream strI1(words[0]);
 						istringstream strI2(words[1]);
-						istringstream strI3(words[2]);
 						strI1 >> i1;
 						strI2 >> i2;
-						strI3 >> i3;
+
+						int i3 = 1;
+            if (n > 2) {
+  						istringstream strI3(words[2]);
+	  					strI3 >> i3;
+	  			  }
 
 						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 						{
