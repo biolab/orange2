@@ -571,6 +571,7 @@ class MyTreeWidget(QTreeWidget):
     def mousePressEvent(self, e):
         QTreeWidget.mousePressEvent(self, e)
         self.mousePressed = 1
+        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
         self.mouseRightClick = e.button() == Qt.RightButton
         
     def mouseReleaseEvent(self, e):
