@@ -29,7 +29,8 @@ class OWDistanceFile(OWWidget):
         self.data = None
         self.matrix = None
         self.loadSettings()
-
+        self.labels = None
+        
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace=True)
         hbox = OWGUI.widgetBox(box, orientation = 0)
         self.filecombo = OWGUI.comboBox(hbox, self, "fileIndex", callback = self.loadFile)
@@ -78,9 +79,12 @@ class OWDistanceFile(OWWidget):
             if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
                 pkl_file = open(fn, 'rb')
                 self.matrix = pickle.load(pkl_file)
+                print self.matrix
                 if hasattr(self.matrix, 'items'):
                     self.data = self.matrix.items
+                    print 1
                 pkl_file.close()
+                print 2
             else:    
                 fle = open(fn)
                 while 1:
