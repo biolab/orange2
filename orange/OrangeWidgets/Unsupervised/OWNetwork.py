@@ -557,7 +557,9 @@ class OWNetwork(OWWidget):
             return
         
         self.visualize.graph.setattr("items", items)
-        self.setGraph(self.visualize.graph)
+        #self.setGraph(self.visualize.graph)
+        self.graph.updateData()
+        self.setVertexSize(); self.showIndexLabels(); self.showWeightLabels(); self.showEdgeLabelsClick();
         
     def setMarkInput(self):
         var = str(self.markInputCombo.currentText())
