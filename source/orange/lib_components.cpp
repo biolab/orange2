@@ -3011,7 +3011,7 @@ PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(
 	PyObject* components_list = PyList_New(0);
 		
 	int i,j;
-	for (i = 1; i < matrix->dim; i++) {
+	for (i = 0; i < matrix->dim; i++) {
 		for (j = i+1; j < matrix->dim; j++) {
 			double value = 0;
 			if (matrix->matrixType == 0)
