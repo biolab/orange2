@@ -400,6 +400,11 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 			if (connected)
 				nConnected++;
 		}
+		
+		vector<int> neighbours;
+		network->getNeighbours(0, neighbours);
+		if (neighbours.size() > 0)
+			nConnected++;
 	}
 	else {
 		// upper
@@ -415,6 +420,11 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 			}
 
 			if (connected)
+				nConnected++;
+			
+			vector<int> neighbours;
+			network->getNeighbours(matrix->dim - 1, neighbours);
+			if (neighbours.size() > 0)
 				nConnected++;
 		}
 	}
