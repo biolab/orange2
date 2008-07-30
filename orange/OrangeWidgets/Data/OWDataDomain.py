@@ -146,7 +146,8 @@ class OWDataDomain(OWWidget):
 
             if self.receivedAttrList:
                 self.chosenAttributes = [(a.name, a.varType) for a in self.receivedAttrList]
-                self.addToUsed(self.receivedAttrList)
+                cas = set(chosenAttributes)
+                self.inputAttributes = [(a.name, a.varType) for a in domain.attirbutes if (a.name, a.varType) not in cas]
             else:
                 self.chosenAttributes = [(a.name, a.varType) for a in domain.attributes]
                 self.inputAttributes = []
@@ -161,9 +162,10 @@ class OWDataDomain(OWWidget):
             self.metaAttributes = []
             self.allAttributes = []
 
+        print len(self.inputAttributes), len(self.chosenAttributes)
         self.openContext("", data)
 
-        self.usedAttributes = dict.fromkeys(self.chosenAttributes + self.classAttribute + self.metaAttributes, 1)
+        self.usedAttributes = set(self.chosenAttributes + self.classAttribute + self.metaAttributes)
 #        self.setInputAttributes()
 
         self.setOutput()
@@ -278,18 +280,18 @@ class OWDataDomain(OWWidget):
     def setInputAttributes(self):
         self.selectedInput = []
         if self.data:
-            self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), self.allAttributes)
+            self.inputAttributes = filter(lambda x:x not in self.usedAttributes, self.allAttributes)
         else:
             self.inputAttributes = []
         self.updateInterfaceState()
 
     def removeFromUsed(self, attributes):
         for attr in attributes:
-            del self.usedAttributes[attr]
+            self.usedAttributes.remove(attr)
         self.setInputAttributes()
 
     def addToUsed(self, attributes):
-        self.usedAttributes.update(dict.fromkeys(attributes))
+        self.usedAttributes.update(attributes)
         self.setInputAttributes()
 
 
