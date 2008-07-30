@@ -670,10 +670,9 @@ class OWNetworkCanvas(OWGraph):
           return
       
       colorIndices = {}
+      colorIndex = None
       
-      if attribute == "(one color)":
-          colorIndex = -1
-      else:
+      if attribute != "(one color)":
           i = 0
           for var in self.visualizer.graph.items.domain.variables:
               if var.name == attribute:
@@ -682,16 +681,22 @@ class OWNetworkCanvas(OWGraph):
                       colorIndices = getVariableValueIndices(var, colorIndex)
                       
               i += 1
-      
+          metas = self.visualizer.graph.items.domain.getmetas()
+          for i, var in metas.iteritems():
+              if var.name == attribute:
+                  colorIndex = i
+                  if var.varType == orange.VarTypes.Discrete: 
+                      colorIndices = getVariableValueIndices(var, colorIndex)
+
       colorIndices['?'] = len(colorIndices)
       self.discPalette.setNumberOfColors(len(colorIndices))
       
-      if colorIndex > -1 and self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+      if colorIndex != None and self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
           minValue = float(min([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
           maxValue = float(max([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
       
       for v in range(self.nVertices):
-          if colorIndex > -1:    
+          if colorIndex != None:    
               if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
                   newColor = self.discPalette[0]
                   
