@@ -341,8 +341,7 @@ class OWSelectData(OWWidget):
                 self.oldPurgeClasses = self.purgeClasses
                 self.purgeClasses = False
 
-        if self.updateOnChange:
-            self.setOutput()
+        self.setOutputIf()
 
 
     def OnNewCondition(self):
@@ -631,9 +630,11 @@ class OWSelectData(OWWidget):
             else:
                 cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
                 cw.setChecked(cond.enabled)
-                self.connect(cw, SIGNAL("toggled(bool)"), lambda val, cond=cond: self.criteriaActiveChange(cond, val))
+#                self.connect(cw, SIGNAL("toggled(bool)"), lambda val, cond=cond: self.criteriaActiveChange(cond, val))
+                print "checked:", cw.isChecked()
 
             self.criteriaTable.setCellWidget(row, 0, cw)
+            print "checked:", cw.isChecked()
 
             # column 1
             if cond.type == "OR":
