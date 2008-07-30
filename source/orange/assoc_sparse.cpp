@@ -37,14 +37,16 @@ TSparseExample::TSparseExample(TExample *example, int weightID){
   if (example->domain->variables->size()) {
 	  // walk through all attributes in example and adding to sparseExample only those having some value
 	  PITERATE(TVarList, vi, example->domain->variables)
-		  if (!(*example)[(*vi)].isSpecial())
+		  if (   !(*example)[*vi].isSpecial() 
+		      && (((*vi)->varType != TValue::FLOATVAR) || (*example)[*vi].floatV > 1e-6))
 			  length++;
 
 	  itemset = new long[length];
 	  length = 0;
 
 	  PITERATE(TVarList, vi2, example->domain->variables)
-		  if (!(*example)[(*vi2)].isSpecial())
+		  if (   !(*example)[*vi2].isSpecial() 
+		      && (((*vi2)->varType != TValue::FLOATVAR) || (*example)[*vi2].floatV > 1e-6))
 			  itemset[length++] = example->domain->getVarNum(*vi2);
   }
   else {

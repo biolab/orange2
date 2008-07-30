@@ -217,9 +217,6 @@ PyObject *AssociationRulesSparseInducer_getItemsets(PyObject *self, PyObject *ar
     if (!egen)
       return PYNULL;
 
-    if (egen->domain->hasContinuousAttributes(true))
-      PYERROR(PyExc_TypeError, "cannot induce rules with non-discrete attributes", NULL);
-
     CAST_TO(TAssociationRulesSparseInducer, inducer);
     long i;
     float fullWeight;
