@@ -442,6 +442,42 @@ class OWNetwork(OWWidget):
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
+                
+    def setCombos(self):
+        vars = self.visualize.getVars()
+        self.attributes = [(var.name, var.varType) for var in vars]
+        
+        self.colorCombo.clear()
+        self.vertexSizeCombo.clear()
+        self.colorCombo.addItem("(one color)")
+        self.vertexSizeCombo.addItem("(same size)")
+        
+        for var in vars:
+            if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+                
+            if var.varType in [orange.VarTypes.String] and hasattr(self.visualize.graph, 'items') and self.visualize.graph.items != None and len(self.visualize.graph.items) > 0:
+                
+                value = self.visualize.graph.items[random.randint(0, len(self.visualize.graph.items) - 1)][var].value
+                
+                # can value be a list?
+                try:
+                    if type(eval(value)) == type([]):
+                        self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                        continue
+                except:
+                    pass
+                
+                if len(value.split(',')) > 1:
+                    self.vertexSizeCombo.addItem(self.icons[var.varType], "num of " + unicode(var.name))
+                
+            elif var.varType in [orange.VarTypes.Continuous]:
+                self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+        
+        for i in range(self.vertexSizeCombo.count()):
+            if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
+                self.vertexSize = i
+                break
       
     def setGraph(self, graph):        
         if graph == None:
@@ -470,41 +506,9 @@ class OWNetwork(OWWidget):
             
         self.diameter = graph.getDiameter()
         self.clustering_coefficient = graph.getClusteringCoefficient() * 100
-        #print "done."
-        vars = self.visualize.getVars()
-        self.attributes = [(var.name, var.varType) for var in vars]
-        #print self.attributes
-        self.colorCombo.clear()
-        self.vertexSizeCombo.clear()
-        self.colorCombo.addItem("(one color)")
-        self.vertexSizeCombo.addItem("(same size)")
-        for var in vars:
-            if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
-                self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
-                
-            if var.varType in [orange.VarTypes.String] and hasattr(graph, 'items') and graph.items != None and len(graph.items) > 0:
-                
-                value = graph.items[random.randint(0, len(graph.items) - 1)][var].value
-                
-                # can value be a list?
-                try:
-                    if type(eval(value)) == type([]):
-                        self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
-                        continue
-                except:
-                    pass
-                
-                if len(value.split(',')) > 1:
-                    self.vertexSizeCombo.addItem(self.icons[var.varType], "num of " + unicode(var.name))
-                
-            elif var.varType in [orange.VarTypes.Continuous]:
-                self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
         
-        for i in range(self.vertexSizeCombo.count()):
-            if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
-                self.vertexSize = i
-                break
-            
+        self.setCombos()
+        
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
         #print "done."
@@ -559,7 +563,12 @@ class OWNetwork(OWWidget):
         self.visualize.graph.setattr("items", items)
         #self.setGraph(self.visualize.graph)
         self.graph.updateData()
-        self.setVertexSize(); self.showIndexLabels(); self.showWeightLabels(); self.showEdgeLabelsClick();
+        self.setVertexSize()
+        self.showIndexLabels()
+        self.showWeightLabels()
+        self.showEdgeLabelsClick()
+        
+        self.setCombos()
         
     def setMarkInput(self):
         var = str(self.markInputCombo.currentText())
