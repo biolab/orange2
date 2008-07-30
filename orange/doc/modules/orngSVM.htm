@@ -15,23 +15,23 @@ learner's accuracy try scaling the data and using the <code>parameter_selection<
 <p class=section >Arguments</p>
 <dl class=arguments>
   <dt>svm_type</dt>
-  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.NU_SVC, SVMLearner.ONE_CLASS, SVMLearner.EPSILON_SVR, SVMLearner.NU_SVR)</dd>
+  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.Nu_SVC, SVMLearner.OneClass, SVMLearner.Epsilon_SVR, SVMLearner.Nu_SVR)</dd>
   <dt>kernel_type</dt>
-  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID, SVMLearner.CUSTOM)</dd>
+  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.Linear, SVMLearner.Polynomial, SVMLearner.Sigmoid, SVMLearner.Custom)</dd>
   <dt>degree</dt>
-  <dd>Kernel parameter (POLY) (default 3)</dd>
+  <dd>Kernel parameter (Polynomial) (default 3)</dd>
   <dt>gamma</dt>
-  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1/number_of_examples)</dd>
+  <dd>Kernel parameter (Polynomial/RBF/Sigmoid) (default 1/number_of_examples)</dd>
   <dt>coef0</dt>
-  <dd>Kernel parameter (POLY/SIGMOID) (default 0)</dd>
+  <dd>Kernel parameter (Polynomial/Sigmoid) (default 0)</dd>
   <dt>kernelFunc</dt>
-  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example arguments and return a float.</dd>
+  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.Custom. It must accept two orange.Example arguments and return a float.</dd>
   <dt>C</dt>
-  <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
+  <dd>C parameter for C_SVC, Epsilon_SVR, Nu_SVR</dd>
   <dt>nu</dt>
-  <dd>Nu parameter for NU_SVC, NU_SVR and ONE_CLASS (default 0.5)</dd>
+  <dd>Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)</dd>
   <dt>p</dt>
-  <dd>Epsilon in loss-function for EPSILON_SVR</dd>
+  <dd>Epsilon in loss-function for Epsilon_SVR</dd>
   <dt>cache_size</dt>
   <dd>Cache memory size in MB (default 100)</dd>
   <dt>eps</dt>
@@ -112,21 +112,21 @@ and uses them to compute a new kernel function. The available kernel wrappers ar
 data=orange.ExampleTable("iris.tab")
 l1=orngSVM.SVMLearner()
 l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5)
-l1.kernel_type=orange.SVMLearner.CUSTOM
+l1.kernel_type=orange.SVMLearner.Custom
 l1.probability=True
 c1=l1(data)
 l1.name="SVM - RBF(Euclidean)"
 
 l2=orngSVM.SVMLearner()
 l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5)
-l2.kernel_type=orange.SVMLearner.CUSTOM
+l2.kernel_type=orange.SVMLearner.Custom
 l2.probability=True
 c2=l2(data)
 l2.name="SVM - RBF(Hamming)"
 
 l3=orngSVM.SVMLearner()
 l3.kernelFunc=orngSVM.CompositeKernelWrapper(orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5),orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5), l=0.5)
-l3.kernel_type=orange.SVMLearner.CUSTOM
+l3.kernel_type=orange.SVMLearner.Custom
 l3.probability=True
 c3=l1(data)
 l3.name="SVM - Composite"
