@@ -297,9 +297,9 @@ class BagOfWords:
 
 class RFE(object):
     def __init__(self, learner=None):
-        self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.LINEAR)
+        self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.Linear)
 
-    def getAttrScores(self, data, stopAt=10):
+    def getAttrScores(self, data, stopAt=0):
         iter = 1
         attrs = data.domain.attributes
         attrScores = {}
