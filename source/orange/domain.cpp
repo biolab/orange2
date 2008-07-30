@@ -583,7 +583,7 @@ void TDomain::addToCRC(unsigned long &crc) const
 {
   const_PITERATE(TVarList, vi, variables) {
     add_CRC((*vi)->name.c_str(), crc);
-    add_CRC((*vi)->varType, crc);
+    add_CRC((const unsigned char)(*vi)->varType, crc);
     if ((*vi)->varType == TValue::INTVAR)
       PITERATE(TStringList, vli, dynamic_cast<TEnumVariable &>(vi->getReference()).values)
         add_CRC(vli->c_str(), crc);
