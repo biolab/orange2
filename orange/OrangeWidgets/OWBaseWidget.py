@@ -92,8 +92,7 @@ class ControlledAttributesDict(dict):
 
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
-class ExampleTable(orange.ExampleTable):
-    pass
+from orange import ExampleTable
 
 class AttributeList(list):
     pass
