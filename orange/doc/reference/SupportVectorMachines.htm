@@ -16,10 +16,10 @@ currently embeds version 8.1 of the library, which supports:</p>
 
 <ul>
  <li>C support vector classification (C_SVC)</li>
- <li>NU support vector classification (NU_SVC)</li>
- <li>ONE CLASS distribution estimation (ONE_CLASS)</li>
- <li>EPSILON support vector regression (EPSILON_SVR)</li>
- <li>NU support vector regression (NU_SVR)</li>
+ <li>NU support vector classification (Nu_SVC)</li>
+ <li>ONE CLASS distribution estimation (OneClass)</li>
+ <li>EPSILON support vector regression (Epsilon_SVR)</li>
+ <li>NU support vector regression (Nu_SVR)</li>
 </ul>
 
 <p>The support for the following kernel functions is provided by
@@ -40,23 +40,23 @@ libsvm library:</p>
 <p class=section >Attributes</p>
 <dl class=attributes>
   <dt>svm_type</dt>
-  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.NU_SVC, SVMLearner.ONE_CLASS, SVMLearner.EPSILON_SVR, SVMLearner.NU_SVR)</dd>
+  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.Nu_SVC, SVMLearner.OneClass, SVMLearner.Epsilon_SVR, SVMLearner.Nu_SVR)</dd>
   <dt>kernel_type</dt>
-  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID, SVMLearner.CUSTOM)</dd>
+  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.Linear, SVMLearner.Polynomial, SVMLearner.Sigmoid, SVMLearner.Custom)</dd>
   <dt>degree</dt>
-  <dd>Kernel parameter (POLY) (default 3)</dd>
+  <dd>Kernel parameter (Polynomial) (default 3)</dd>
   <dt>gamma</dt>
-  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1.0/number_of_examples)</dd>
+  <dd>Kernel parameter (Polynomial/RBF/Sigmoid) (default 1.0/number_of_examples)</dd>
   <dt>coef0</dt>
-  <dd>Kernel parameter (POLY/SIGMOID) (default 0)</dd>
+  <dd>Kernel parameter (Polynomial/Sigmoid) (default 0)</dd>
   <dt>kernelFunc</dt>
-  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example arguments and return a float.</dd>
+  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.Custom. It must accept two orange.Example arguments and return a float.</dd>
   <dt>C</dt>
-  <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
+  <dd>C parameter for C_SVC, Epsilon_SVR, Nu_SVR</dd>
   <dt>nu</dt>
-  <dd>Nu parameter for NU_SVC, NU_SVR and ONE_CLASS (default 0.5)</dd>
+  <dd>Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)</dd>
   <dt>p</dt>
-  <dd>Epsilon in loss-function for EPSILON_SVR</dd>
+  <dd>Epsilon in loss-function for Epsilon_SVR</dd>
   <dt>cache_size</dt>
   <dd>Cache memory size in MB (default 100)</dd>
   <dt>eps</dt>
@@ -71,7 +71,7 @@ libsvm library:</p>
 Use this if you are using large sparse datasets. </p>
 
 <h2>SVMClassifier</h2>
-<p>Classifier used for classification, regression or distribution estimation (ONE_CLASS). In the later case the return value of the __call__ function can be 1.0 (positive case) or -1.0(negative case).</p>
+<p>Classifier used for classification, regression or distribution estimation (OneClass). In the later case the return value of the __call__ function can be 1.0 (positive case) or -1.0(negative case).</p>
 <p>For a multiclass classification problem with k classes there are k*(k-1)/2 1class vs. 1class internal binary classifiers being build. The multiclass classification is then performed by a majority vote.</p>
 <p class=section>Attributes</p>
 <dl class=attributes>
@@ -96,7 +96,7 @@ Use this if you are using large sparse datasets. </p>
 <xmp class=code>>>> import orange
 >>> data=orange.ExampleTable("iris.tab")
 >>> l=orange.SVMLearner()
->>> l.svm_type=orange.SVMLearner.NU_SVC
+>>> l.svm_type=orange.SVMLearner.Nu_SVC
 >>> l.nu=0.3
 >>> l.probability=True
 >>> c=l(data)
