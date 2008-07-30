@@ -54,9 +54,12 @@ class OWItemsets(OWWidget):
                 else:
                     self.itemsets = orange.AssociationRulesInducer(support = self.minSupport/100., storeExamples = True).getItemsets(self.dataset)
                 self.send("Itemsets", (self.dataset, self.itemsets))
-            except orange.KernelException, (errValue):
+            except Exception, (errValue):
+                errValue = str(errValue)
+                if "non-discrete attributes" in errValue and not self.useSparseAlgorithm:
+                    errValue += "\nTry using the algorithm for sparse data"
                 self.error(str(errValue))
-#                self.send("Itemsets", None)
+                self.send("Itemsets", None)
         else:
             self.send("Itemsets", None)
 
