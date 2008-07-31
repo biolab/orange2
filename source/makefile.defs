@@ -17,8 +17,11 @@ INSTALL_DIR = $(INSTALL) -d -m 755
 
 OS = $(shell uname)
 MAKE = make
+#COMPILER = /opt/intel/cc/10.1.015/bin/icc
+#CCOMPILER = /opt/intel/cc/10.1.015/bin/icc
 COMPILER = g++
 CCOMPILER = gcc
+#LINKER = /opt/intel/cc/10.1.015/bin/icc
 LINKER = gcc
 LIBRARY_FILE = liborange.so
 
@@ -38,7 +41,8 @@ ifeq ($(OS), FreeBSD)
   LINKOPTIONS += `gsl-config --libs`
   MAKE = gmake
 else
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3
+  # for icc, also add -D"__sync_fetch_and_add(ptr,addend)=_InterlockedExchangeAdd(const_cast<void*>(reinterpret_cast<volatile void*>(ptr)), addend)"
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS # -O3
   LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
 endif
 endif
