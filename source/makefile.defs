@@ -42,7 +42,7 @@ ifeq ($(OS), FreeBSD)
   MAKE = gmake
 else
   # for icc, also add -D"__sync_fetch_and_add(ptr,addend)=_InterlockedExchangeAdd(const_cast<void*>(reinterpret_cast<volatile void*>(ptr)), addend)"
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS # -O3
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3
   LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
 endif
 endif
