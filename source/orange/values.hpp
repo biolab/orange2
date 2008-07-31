@@ -54,7 +54,7 @@ WRAPPER(SomeValue)
    value, which suffice for most of uses (i.e. discrete and continuous attributes).
    For other types of attributes that would need more space, there's a pointer to
    an object of a type derived from TSomeValue.
-   
+
    This approach is used instead of deriving new classes from TValue. The reason
    is in efficient implementation of TExample. TExample stores a vector of TValue's,
    and not pointers to TValue. This prohibits it from storing values of classes,
@@ -96,7 +96,7 @@ public:
   PSomeValue svalV;
 
   TValue()
-  : varType(NONE), 
+  : varType(NONE),
     valueType(numeric_limits<char>::max()),
     intV(numeric_limits<int>::max()),
     floatV(numeric_limits<float>::quiet_NaN())
@@ -110,38 +110,38 @@ public:
   {}
 
   explicit TValue(const int &anintV, PSomeValue v)
-  : varType(INTVAR), 
-    valueType(valueRegular), 
+  : varType(INTVAR),
+    valueType(valueRegular),
     intV(anintV),
     floatV(numeric_limits<float>::quiet_NaN()),
     svalV(v)
   {}
 
   explicit TValue(const float &v)
-  : varType(FLOATVAR), 
+  : varType(FLOATVAR),
     valueType(valueRegular),
     intV(numeric_limits<int>::max()),
     floatV(v)
   {}
 
   explicit TValue(const double &v)
-  : varType(FLOATVAR), 
+  : varType(FLOATVAR),
     valueType(valueRegular),
     intV(numeric_limits<int>::max()),
     floatV(float(v))
   {}
 
   explicit TValue(const float &afloatV, PSomeValue v)
-  : varType(FLOATVAR), 
-    valueType(valueRegular), 
+  : varType(FLOATVAR),
+    valueType(valueRegular),
     intV(numeric_limits<int>::max()),
     floatV(afloatV),
     svalV(v)
   {}
 
   explicit TValue(PSomeValue v, const unsigned char &t, const signed char &spec = valueRegular)
-  : varType(t), 
-    valueType(spec), 
+  : varType(t),
+    valueType(spec),
     intV(numeric_limits<int>::max()),
     floatV(numeric_limits<float>::quiet_NaN()),
     svalV(v)
@@ -153,7 +153,7 @@ public:
     intV(numeric_limits<int>::max()),
     floatV(numeric_limits<float>::quiet_NaN())
   { if (!spec)
-      raiseErrorWho("Value", "illegal 'valueType' for special value"); 
+      raiseErrorWho("Value", "illegal 'valueType' for special value");
   }
 
   TValue(const TValue &other)
@@ -172,29 +172,29 @@ public:
 
   inline void setDC()
   { killValues();
-    valueType = valueDC; 
+    valueType = valueDC;
   }
 
   inline void setDK()
   { killValues();
-    valueType = valueDK; 
+    valueType = valueDK;
   }
 
-  inline void TValue::setSpecial(int spec)
+  inline void setSpecial(int spec)
   { killValues();
-    valueType = (unsigned char)spec; 
+    valueType = (unsigned char)spec;
   }
 
-  inline bool TValue::isRegular() const
+  inline bool isRegular() const
   { return valueType==valueRegular; }
 
-  inline bool TValue::isDC() const
+  inline bool isDC() const
   { return valueType==valueDC; }
 
-  inline bool TValue::isDK() const
+  inline bool isDK() const
   { return valueType==valueDK; }
 
-  inline bool TValue::isSpecial() const
+  inline bool isSpecial() const
   { return valueType>0; }
 
   inline TValue &operator =(const TValue &other)
@@ -205,7 +205,7 @@ public:
     svalV = CLONE(TSomeValue, other.svalV);
     return *this;
   }
-   
+
   #define CASES(in,fl,sv)             \
     {                                 \
       switch(varType) {               \
@@ -216,7 +216,7 @@ public:
     }
 
 
-  inline int TValue::compare(const TValue &v) const
+  inline int compare(const TValue &v) const
   {
     if (isSpecial())
       return v.isSpecial() ? 0 : 1;
@@ -228,7 +228,7 @@ public:
   }
 
 
-  inline bool TValue::compatible(const TValue &v) const
+  inline bool compatible(const TValue &v) const
   {
     if (isSpecial() || v.isSpecial())
       return true;
@@ -237,8 +237,8 @@ public:
   }
 
 
-  inline bool TValue::operator ==(const TValue &v) const
-  { 
+  inline bool operator ==(const TValue &v) const
+  {
     if (isSpecial())
       return v.isSpecial();
     else
@@ -249,7 +249,7 @@ public:
   }
 
 
-  inline bool TValue::operator !=(const TValue &v) const
+  inline bool operator !=(const TValue &v) const
   {
     if (isSpecial())
       return !v.isSpecial();
@@ -263,7 +263,7 @@ public:
 
 
 inline void intValInit(TValue &val, const int &i, const int &vt = valueRegular)
-{ 
+{
   val.varType = TValue::INTVAR;
   val.valueType = vt;
   val.intV = i;
@@ -272,7 +272,7 @@ inline void intValInit(TValue &val, const int &i, const int &vt = valueRegular)
 
 
 inline void floatValInit(TValue &val, const float &f, const int &vt = valueRegular)
-{ 
+{
   val.varType = TValue::FLOATVAR;
   val.valueType = vt;
   val.floatV = f;
