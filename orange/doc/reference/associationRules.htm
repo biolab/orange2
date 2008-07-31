@@ -23,6 +23,8 @@ further variation, the algorithm can be limited to search only for
 classification rules in which the sole attribute to appear on the
 right side of the rule is the class attribute.</P>
 
+<p>It is also possible to extract item sets instead of association rules. These are often more interesting than the rules themselves.</p>
+
 <P>Besides association rule inducer, Orange also provides a rather
 simplified method for classification by association rules.</P>
 
@@ -46,6 +48,9 @@ simplified method for classification by association rules.</P>
 
 <DT>confidence</DT>
 <DD>Minimal confidence for the rule.</DD>
+
+<DT>storeExamples</DT>
+<DD>Tells the inducer to store the examples covered by each rule and those confirming it</DD>
 
 <DT>maxItemSets</DT>
 <DD>The maximal number of itemsets.</DD>
@@ -101,6 +106,29 @@ for r in rules:
 
 <P>If examples are weighted, weight can be passed as an additional argument to call operator.</P>
 
+<p>To get only a list of supported item sets, one should call the method <code>getItemsets</code>. The result
+is a list whose elements are tuples with two elements. The first is a tuple with indices of attributes in the item set. Sparse examples are usually represented with meta attributes, so this indices will be negative. The second element is a list of indices supporting the item set, that is, containing all the items in the set. If <code>storeExamples</code> is <code>False</code>, the second element is <code>None</code>.</p>
+
+<p class="header"><a href="assoc-agrawal.py">assoc-agrawal.py</a>
+(uses <a href="inquisition.basket">inquisition.basket</a>)</p>
+<XMP class="code">inducer = orange.AssociationRulesSparseInducer(support = 0.5, storeExamples = True)
+itemsets = inducer.getItemsets(data)
+</XMP>
+
+<p>Now <code>itemsets</code> is a list of itemsets along with the examples supporting them since we set <code>storeExamples</code> to <code>True</code>.</p>
+
+<xmp class="code">>>> itemsets[5]
+((-11, -7), [1, 2, 3, 6, 9])
+>>> [data.domain[i].name for i in itemsets[5][0]]
+['surprise', 'our']
+</xmp>
+
+<p>The sixth itemset contains attributes with indices -11 and -7, that is, the words "surprise" and "our". The examples supporting it are those with indices 1,2, 3, 6 and 9.</p>
+
+<p>This way of representing the itemsets is not very programmer-friendly, but it is much more memory efficient than and faster to work with than using objects like Variable and Example.</p>
+
+
+
 <H2>Association Rules for Non-sparse Examples</H2>
 
 <P>The other algorithm for association rules provided by Orange,
@@ -122,6 +150,9 @@ the right-hand side is the class attribute.</P>
 
 <DT>classificationRules</DT>
 <DD>If 1 (default is 0), the algorithm constructs classification rules instead of general association rules.</DD>
+
+<DT>storeExamples</DT>
+<DD>Tells the inducer to store the examples covered by each rule and those confirming it</DD>
 
 <DT>maxItemSets</DT>
 <DD>The maximal number of itemsets.</DD>
@@ -174,6 +205,17 @@ for r in rules:
 
 <P><CODE>AssociationRulesInducer</CODE> can also work with weighted examples; the ID of weight attribute should be passed as an additional argument in a call.</P>
 
+<p>Itemsets are induced in a similar fashion as for sparse data, except that the first element of the tuple, the item set, is represented not by indices of attributes, as before, but with tuples (attribute-index, value-index).</p>
+
+<p class="header"><a href="assoc-agrawal.py">part of assoc.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<xmp class="code">inducer = orange.AssociationRulesInducer(support = 0.3, storeExamples = True)
+itemsets = inducer.getItemsets(data)
+print itemsets[8]</xmp>
+
+<p>This prints out
+<xmp class="code">(((2, 1), (4, 0)), [2, 6, 10, 14, 15, 18, 22, 23])</xmp>
+meaning that the ninth itemset contains the second value of the third attribute, (2, 1), and the first value of the fifth, (4, 0).</p>
 
 <H2>Association Rule</H2>
 <index name="classes/AssociationRules">
@@ -201,6 +243,9 @@ for r in rules:
 <DT>strength</DT><DD><CODE>nAppliesRight/nAppliesLeft</CODE></DD>
 <DT>lift</DT><DD><CODE>nExamples * nAppliesBoth / (nAppliesLeft * nAppliesRight)</CODE></DD>
 <DT>leverage</DT><DD><CODE>(nAppliesBoth * nExamples - nAppliesLeft * nAppliesRight)</CODE></DD>
+
+<dt>examples, matchLeft, matchBoth</dt>
+<dd>If <code>storeExamples</code> was <code>True</code> during induction, <code>examples</code> contains a copy of the example table used to induce the rules. Attributes <code>matchLeft</code> and <code>matchBoth</code> are lists of integers, representing the indices of examples which match the left-hand side of the rule and both sides, respectively.</dd>
 </DL>
 
 <P class=section>Methods</P>
@@ -246,5 +291,22 @@ for example in data:
         print example
 print
 </XMP>
+
+<p>The latter printouts get simpler and (way!) faster if we instruct the inducer to store the examples. We can then do, for instance, this.</p>
+
+
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>print "Match left: "
+print "\n".join(str(rule.examples[i]) for i in rule.matchLeft)
+print "\nMatch both: "
+print "\n".join(str(rule.examples[i]) for i in rule.matchBoth)
+</XMP>
+
+<p>The "contradicting" examples are then those whose indices are find in <code>matchLeft</code> but not in <code>matchBoth</code>. The memory friendlier and the faster ways to compute this are as follows.</p>
+
+<xmp class="code">>>> [x for x in rule.matchLeft if not x in rule.matchBoth]
+[0, 2, 8, 10, 16, 17, 18]
+>>> set(rule.matchLeft) - set(rule.matchBoth)
+set([0, 2, 8, 10, 16, 17, 18])</xmp>
 
 </BODY> 
