@@ -482,8 +482,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     for i in range(len(btnLabels)):
         appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i], callback = callback)
 
-    if callback != None:
-        connectControl(bg.group, master, value, callback, "buttonClicked (int)", CallFrontRadioButtons(bg), CallBackRadioButton(bg, master))
+    connectControl(bg.group, master, value, callback, "buttonClicked (int)", CallFrontRadioButtons(bg), CallBackRadioButton(bg, master))
 
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
