@@ -19,6 +19,8 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
+#ifndef __STUDENT_HPP
+#define __STUDENT_HPP
 
 /*,	2,	4,	6,	8,	10,	12,	14,	16,	18,	20,	22,	24,	26,	28,	30,	700*/
 double students[60][16]={
@@ -89,3 +91,5 @@ inline double student(const float T, const int freedom)
   if (T<=0) return 1.0;
   return students[int(floor(T*10+0.5))][(freedom>30) ? 15 : (freedom-1)/2];
 }
+
+#endif
