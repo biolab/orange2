@@ -38,15 +38,13 @@ class OWFile(OWWidget):
         self.inputs = []
         self.outputs = [("Examples", ExampleTable)]
 
-        #set default settings
         self.recentFiles=["(none)"]
         self.symbolDC = "?"
         self.symbolDK = "~"
-        self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
+        self.createNewOn = 1
         self.domain = None
         self.loadedFile = ""
         self.showAdvanced = 0
-        #get settings from the ini file, if they exist
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=0)
@@ -68,7 +66,6 @@ class OWFile(OWWidget):
         
         hbox = OWGUI.indentedBox(box)
         OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-        #OWGUI.separator(hbox, 16, 0)
         OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
 
         OWGUI.radioButtonsInBox(smallWidget, self, "createNewOn", box="New Attributes",
@@ -86,7 +83,6 @@ class OWFile(OWWidget):
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
-        # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
         
 
@@ -94,7 +90,6 @@ class OWFile(OWWidget):
         qApp.processEvents()
         QTimer.singleShot(0, self.adjustSize)
 
-    # set the file combo box
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
@@ -119,7 +114,6 @@ class OWFile(OWWidget):
     def settingsToWidgetCallback(self, handler, context):
         self.symbolDC, self.symbolDK = context.symbolDC, context.symbolDK
 
-    # user selected a file from the combo box
     def selectFile(self, n):
         if n < len(self.recentFiles) :
             name = self.recentFiles[n]
@@ -132,7 +126,6 @@ class OWFile(OWWidget):
             self.setFileList()
             self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
-    # user pressed the "..." button to manually select a file to load
     def browseFile(self, inDemos=0):
         "Display a FileDialog and select a file"
         if inDemos:
