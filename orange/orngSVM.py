@@ -15,21 +15,17 @@ try:
 except:
     pass
 
-def SVMLearner(examples=None, weightID=0, **kwds):
-    l=apply(SVMLearnerClass, (), kwds)
-    if examples:
-        l=l(examples)
-    return l
-
-def SVMLearnerSparse(examples=None, weightID=0, **kwds):
-    l=apply(SVMLearnerSparseClass, (), kwds)
-    if examples:
-        l=l(examples)
-    return l
-
-class SVMLearnerClass:
-    def __init__(self, **kwds):
-        self.svm_type=0
+class SVMLearner(orange.Learner):
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        self = orange.Learner.__new__(cls, **kwargs)
+        if examples:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+        
+    def __init__(self, **kwargs):
+        self.svm_type=orange.SVMLearner.Nu_SVC
         self.kernel_type=2
         self.kernelFunc=None
         self.C=1.0
@@ -42,14 +38,8 @@ class SVMLearnerClass:
         self.probability=1
         self.cache_size=100
         self.eps=0.001
-        self.__dict__.update(kwds)
-        self.learner=orange.SVMLearner(**kwds)
-
-    """def __setattr__(self, name, value):
-        if name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
-                    "coef0", "shrinking", "probability", "cache_size", "eps"]:
-            self.learner.__dict__[name]=value
-        self.__dict__[name]=value"""
+        self.__dict__.update(kwargs)
+        self.learner=orange.SVMLearner(**kwargs)
 
     def __call__(self, examples, weight=0):
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
@@ -73,9 +63,9 @@ class SVMLearnerClass:
     def learnClassifier(self, examples):
         return self.learner(examples)
 
-class SVMLearnerSparseClass(SVMLearnerClass):
+class SVMLearnerSparse(SVMLearner):
     def __init__(self, **kwds):
-        SVMLearnerClass.__init__(self, **kwds)
+        SVMLearner.__init__(self, **kwds)
         self.learner=orange.SVMLearnerSparse(**kwds)
 
 def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
@@ -129,23 +119,11 @@ def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback
     search(learner, data, folds, keys, ranges, current, best, callback)
     return best
 
-def SVMLearnerEasy(examples=None, weightID=0, **kwds):
-    l=apply(SVMLearnerClassEasy, (), kwds)
-    if examples:
-        l=l(examples)
-    return l
-
-def SVMLearnerSparseEasy(examples=None, weightID=0, **kwds):
-    l=apply(SVMLearnerSparseClassEasy, (), kwds)
-    if examples:
-        l=l(examples)
-    return l
-
     
-class SVMLearnerClassEasy(SVMLearnerClass):
-    folds=5
+class SVMLearnerEasy(SVMLearner):
     def __init__(self, **kwds):
-        SVMLearnerClass.__init__(self, **kwds)
+        self.folds=5
+        SVMLearner.__init__(self, **kwds)
         
     def learnClassifier(self, examples):
         transformer=orange.DomainContinuizer()
@@ -170,9 +148,9 @@ class SVMLearnerClassEasy(SVMLearnerClass):
             setattr(self.learner, name, val)
         return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain, examples)
 
-class SVMLearnerSparseClassEasy(SVMLearnerClassEasy, SVMLearnerSparseClass):
+class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
     def __init__(self, **kwds):
-        SVMLearnerSparseClass.__init__(self, **kwds)
+        SVMLearnerSparse.__init__(self, **kwds)
         
 class SVMClassifierClassEasyWrapper:
     def __init__(self, classifier, domain=None, oldexamples=None):
@@ -235,7 +213,7 @@ def exampleWeightedSum(example, weights):
     return sum
 
 import math
-class KernelWrapper:
+class KernelWrapper(object):
     def __init__(self, wrapped):
         self.wrapped=wrapped
     def __call__(self, example1, example2):
@@ -275,18 +253,17 @@ class CompositeKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
         return self.l*self.wrapped1(example1, example2) + (1-self.l)*self.wrapped2(example1,example2)
 
-from sets import Set
-class SparseLinKernel:
+class SparseLinKernel(object):
     """Computes a linear kernel function using the examples meta attributes (need to be floats)"""
     def __call__(self, example1, example2):
-        s=Set(example1.getmetas().keys()+example2.getmetas().keys())
+        s=set(example1.getmetas().keys()+example2.getmetas().keys())
         sum=0
         getmeta=lambda e: e.hasmeta(key) and float(e[key]) or 0.0
         for key in s:
             sum+=pow(getmeta(example2)-getmeta(example1), 2)
         return pow(sum, 0.5)
 
-class BagOfWords:
+class BagOfWords(object):
     """Computes a BOW kernel function (sum_i(example1[i]*example2[i])) using the examples meta attributes (need to be floats)"""
     def __call__(self, example1, example2):
         s=Set(example1.getmetas().keys()).intersection(Set(example2.getmetas().keys()))
