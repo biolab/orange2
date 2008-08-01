@@ -3551,7 +3551,7 @@ int getNumOfElements(PExampleGenerator &examples, bool meta=false, bool useNonMe
 
 TSVMLearner::TSVMLearner(){
 	//sparse=false;	//if this learners supports sparse datasets (set to true in TSMVLearnerSparse subclass)
-	svm_type = C_SVC;
+	svm_type = NU_SVC;
 	kernel_type = RBF;
 	degree = 3;
 	gamma = 0;
