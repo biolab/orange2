@@ -629,12 +629,13 @@ class OWSelectData(OWWidget):
                 cw = QLabel("", self)
             else:
                 cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
-                cw.setChecked(cond.enabled)
-#                self.connect(cw, SIGNAL("toggled(bool)"), lambda val, cond=cond: self.criteriaActiveChange(cond, val))
-                print "checked:", cw.isChecked()
+#                cw.setChecked(cond.enabled)
 
             self.criteriaTable.setCellWidget(row, 0, cw)
-            print "checked:", cw.isChecked()
+# This is a fix for Qt bug (4.3). When Qt is fixed, the setChecked above should suffice
+# but now it unchecks the checkbox as it is inserted 
+            if cond.type != "OR":
+                cw.setChecked(cond.enabled)
 
             # column 1
             if cond.type == "OR":
