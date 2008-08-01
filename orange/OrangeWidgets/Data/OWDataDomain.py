@@ -162,7 +162,6 @@ class OWDataDomain(OWWidget):
             self.metaAttributes = []
             self.allAttributes = []
 
-        print len(self.inputAttributes), len(self.chosenAttributes)
         self.openContext("", data)
 
         self.usedAttributes = set(self.chosenAttributes + self.classAttribute + self.metaAttributes)
