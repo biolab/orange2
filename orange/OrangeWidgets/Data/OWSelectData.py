@@ -630,6 +630,7 @@ class OWSelectData(OWWidget):
             else:
                 cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
 #                cw.setChecked(cond.enabled)
+                self.connect(cw, SIGNAL("toggled(bool)"), lambda val, cond=cond: self.criteriaActiveChange(cond, val))
 
             self.criteriaTable.setCellWidget(row, 0, cw)
 # This is a fix for Qt bug (4.3). When Qt is fixed, the setChecked above should suffice
