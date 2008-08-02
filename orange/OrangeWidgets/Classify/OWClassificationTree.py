@@ -59,7 +59,7 @@ class OWClassificationTree(OWWidget):
         self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
         OWGUI.separator(self.controlArea)
 
-        OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
+        OWGUI.radioButtonsInBox(self.controlArea, self, 'bin', ["No binarization", "Exhaustive search for optimal split", "One value against others"], "Binarization")
         OWGUI.separator(self.controlArea)
 
         self.measureChanged()
