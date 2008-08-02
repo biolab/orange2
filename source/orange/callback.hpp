@@ -52,11 +52,15 @@ class ORANGE_API TMeasureAttribute_Python : public TMeasureAttribute {
 public:
   __REGISTER_CLASS
   TMeasureAttribute_Python();
+  virtual float operator()(int attrNo, PExampleGenerator gen, PDistribution apriorClass, int weightID);
+  virtual float operator()(PVariable var, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID=0);
   virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
   virtual float operator()(int attrNo, PDomainContingency, PDistribution apriorClass=PDistribution());
   virtual float operator()(PDistribution) const;
   virtual float operator ()(const TDiscDistribution &) const;
   virtual float operator ()(const TContDistribution &) const;
+
+  virtual void thresholdFunction(TFloatFloatList &res, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0);
 
 private:
   float callMeasure(PyObject *args);

@@ -73,9 +73,9 @@ public:
   CLASSCONSTANTS(UnknownsTreatment) enum {IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon, UnknownsAsValue};
 
   int needs; //P(&MeasureAttribute_Needs) describes what kind of data is needed for computation
-  bool handlesDiscrete; //PR tells whether the measure can handle discrete attributes
-  bool handlesContinuous; //PR tells whether the measure can handle continuous attributes
-  bool computesThresholds; //PR tells whether the measure can compute threshold functions/maxima for continuous attributes
+  bool handlesDiscrete; //P tells whether the measure can handle discrete attributes
+  bool handlesContinuous; //P tells whether the measure can handle continuous attributes
+  bool computesThresholds; //P tells whether the measure can compute threshold functions/maxima for continuous attributes
 
   TMeasureAttribute(const int aneeds, const bool handlesDiscrete, const bool handlesContinuous = false, const bool computesThresholds = false);
 
@@ -105,7 +105,7 @@ public:
 
 
 class ORANGE_API TMeasureAttributeFromProbabilities : public TMeasureAttribute {
-public: 
+public:
   __REGISTER_ABSTRACT_CLASS
 
   PProbabilityEstimatorConstructor estimatorConstructor; //P probability estimator (none by default)
@@ -116,7 +116,7 @@ public:
   TMeasureAttributeFromProbabilities(const bool handlesDiscrete, const bool handlesContinuous = false, const int unkTreat = ReduceByUnknowns);
 
   virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
-  virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)=0; 
+  virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)=0;
 };
 
 WRAPPER(MeasureAttribute);
@@ -194,7 +194,7 @@ public:
     PCostMatrix cost; //P cost matrix
 
     TMeasureAttribute_cost(PCostMatrix costs=PCostMatrix());
-    
+
     virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities);
   	float majorityCost(const TDiscDistribution &dval);
   	void majorityCost(const TDiscDistribution &dval, float &cost, TValue &cclass);
