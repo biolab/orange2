@@ -65,3 +65,20 @@ treeLearner = orange.TreeLearner()
 treeLearner.split = orange.TreeSplitConstructor_Attribute(measure = measure_cardinality)
 tree = treeLearner(tab)
 orngTree.printTxt(tree)
+
+print "\n\nRandom test based on the number of examples"
+class MeasureAttribute_Generator(orange.MeasureAttribute):
+     def __init__(self):
+         self.needs = orange.MeasureAttribute.Generator
+         
+     def __call__(self, attr, generator, priorDist, weigthID):
+         import random
+         r = random.Random()
+         r.seed(len(generator))
+         return r.random()
+     
+treeLearner = orange.TreeLearner()
+treeLearner.split = orange.TreeSplitConstructor_Attribute(measure = MeasureAttribute_Generator())
+tree = treeLearner(tab)
+orngTree.printTxt(tree)
+ 
