@@ -551,6 +551,7 @@ C_CALL(TreeSplitConstructor_Combined, TreeSplitConstructor, "([examples, [weight
 ABSTRACT(TreeSplitConstructor_Measure, TreeSplitConstructor)
 C_CALL(TreeSplitConstructor_Attribute, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_ExhaustiveBinary, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
+C_CALL(TreeSplitConstructor_OneAgainstOthers, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_Threshold, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 PYXTRACT_IGNORE C_CALL(TreeSplitConstructor_LR, TreeSplitConstructor, "([minSubset=])")
 

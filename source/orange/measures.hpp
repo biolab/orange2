@@ -99,6 +99,9 @@ public:
   virtual PIntList bestBinarization(PDistribution &, float &score, PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution(), const float &minSubset = -1);
   virtual PIntList bestBinarization(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0, const float &minSubset = -1);
 
+  virtual int bestValue(PDistribution &, float &score, PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution(), const float &minSubset = -1);
+  virtual int bestValue(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0, const float &minSubset = -1);
+
   virtual bool checkClassType(const int &varType);
   virtual void checkClassTypeExc(const int &varType);
 };

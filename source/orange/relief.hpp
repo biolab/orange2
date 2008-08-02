@@ -103,6 +103,7 @@ public:
 
     PSymMatrix gainMatrix(PVariable var, PExampleGenerator gen, PDistribution, int weightID, int **attrVals, float **attrDistr);
     PIntList bestBinarization(PDistribution &subsets, float &score, PVariable var, PExampleGenerator gen, PDistribution apriorClass = PDistribution(), int weightID = 0, const float &minSubset = -1);
+    int bestValue(PDistribution &subsetSizes, float &bestScore, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset);
 
     void reset();
 

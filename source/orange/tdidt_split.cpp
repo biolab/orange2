@@ -550,6 +550,224 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
 
 
+
+
+
+
+
+
+PClassifier TTreeSplitConstructor_OneAgainstOthers::operator()(
+                             PStringList &descriptions, PDiscDistribution &subsetSizes, float &quality, int &spentAttribute,
+
+                             PExampleGenerator gen, const int &weightID ,
+                             PDomainContingency dcont, PDistribution apriorClass,
+                             const vector<bool> &candidates,
+                             PClassifier
+                            )
+{ 
+  checkProperty(measure);
+  measure->checkClassTypeExc(gen->domain->classVar->varType);
+
+  int bestValue, wins, bestAttr;
+  PVariable bvar;
+
+  if (measure->needs==TMeasureAttribute::Generator) {
+    bool cse = candidates.size()==0;
+    bool haveCandidates = false;
+    vector<bool> myCandidates;
+    myCandidates.reserve(gen->domain->attributes->size());
+    vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
+    TVarList::const_iterator vi, ve(gen->domain->attributes->end());
+    for(vi = gen->domain->attributes->begin(); vi != ve; vi++) {
+      bool co = (*vi)->varType == TValue::INTVAR && (!cse || (ci!=ce) && *ci);
+      myCandidates.push_back(co);
+      haveCandidates = haveCandidates || co;
+    }
+    if (!haveCandidates)
+      return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+    PDistribution thisSubsets;
+    float thisQuality;
+    wins = 0;
+    int thisAttr = 0;
+
+    int N = gen->numberOfExamples();
+    TSimpleRandomGenerator rgen(N);
+
+    ci = myCandidates.begin();
+    for(vi = gen->domain->attributes->begin(); vi != ve; ci++, vi++, thisAttr++) {
+      if (*ci) {
+        thisSubsets = NULL;
+        int thisValue = measure->bestValue(thisSubsets, thisQuality, *vi, gen, apriorClass, weightID, minSubset);
+        if ((thisValue >=0)
+                && (   (!wins || (thisQuality>quality)) && ((wins=1)==1)
+                    || (thisQuality==quality) && rgen.randbool(++wins))) {
+            bestAttr = thisAttr;
+            quality = thisQuality;
+            subsetSizes = thisSubsets;
+            bestValue = thisValue;
+          }
+      }
+    }
+  
+    if (!wins)
+      return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+    if (quality<worstAcceptable)
+      return returnNothing(descriptions, subsetSizes, spentAttribute);
+
+    if (subsetSizes && subsetSizes->variable)
+      bvar = subsetSizes->variable;
+    else {
+      TEnumVariable *evar = mlnew TEnumVariable("");
+      const string &value = gen->domain->attributes->at(bestAttr).AS(TEnumVariable)->values->at(bestValue);
+      evar->addValue(string("not ")+value);
+      evar->addValue(value);
+      bvar = evar;
+    }
+  }
+  
+  else {
+    bool cse = candidates.size()==0;
+    if (!cse && noCandidates(candidates))
+      return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+    if (!dcont || dcont->classIsOuter) {
+      dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID));
+    }
+
+    int N = gen ? gen->numberOfExamples() : -1;
+    if (N<0)
+      N = dcont->classes->cases;
+    TSimpleRandomGenerator rgen(N);
+
+    PDistribution classDistribution = dcont->classes;
+
+    vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
+
+    TDiscDistribution *dis0, *dis1;
+    TContDistribution *con0, *con1;
+
+    int thisAttr = 0;
+    bestAttr = -1;
+    wins = 0;
+    quality = 0.0;
+    float leftExamples, rightExamples;
+
+    TDomainContingency::iterator dci(dcont->begin()), dce(dcont->end());
+    for(; (cse || (ci!=ce)) && (dci!=dce); dci++, thisAttr++) {
+
+      // We consider the attribute only if it is a candidate, discrete and has at least two values
+      if ((cse || *(ci++)) && ((*dci)->outerVariable->varType==TValue::INTVAR) && ((*dci)->discrete->size()>=2)) {
+
+        const TDistributionVector &distr = *(*dci)->discrete;
+
+        // If the attribute is binary, we check subsetSizes and assess the quality if they are OK
+        if (distr.size() == 2) {
+          if ((distr.front()->abs < minSubset) || (distr.back()->abs < minSubset))
+            continue; // next attribute
+          else {
+            float thisMeas = measure->call(thisAttr, dcont, apriorClass);
+            if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
+                || ((thisMeas==quality) && rgen.randbool(++wins))) {
+              bestAttr = thisAttr;
+              quality = thisMeas;
+              leftExamples = distr.front()->abs;
+              rightExamples = distr.back()->abs;
+              bestValue = 1;
+            }
+            continue;
+          }
+        }
+
+        int binWins = 0, binBestValue = -1;
+        float binQuality = -1.0;
+        float binLeftExamples = -1.0, binRightExamples = -1.0;
+
+        PContingency cont = prepareBinaryCheat(classDistribution, *dci, bvar, dis0, dis1, con0, con1);
+        int thisValue = 0;
+        const float maxSubset = (*dci)->innerDistribution->abs - minSubset;
+        for(TDistributionVector::const_iterator dvi(distr.begin()), dve(distr.end()); (dvi!=dve); dvi++, thisValue++) {
+          if (((*dvi)->abs < minSubset) || ((*dvi)->abs > maxSubset))
+            continue;
+
+          float thisMeas;
+          
+          // First for discrete classes
+          if (dis0) {
+            *dis0 = CAST_TO_DISCDISTRIBUTION(*dvi);
+            *dis1 = CAST_TO_DISCDISTRIBUTION((*dci)->innerDistribution);
+            *dis1 -= *dis0;
+            thisMeas = measure->operator()(cont, classDistribution, apriorClass);
+          }
+          else {
+            *con0 = CAST_TO_CONTDISTRIBUTION(*dvi);
+            *con1 = CAST_TO_CONTDISTRIBUTION((*dci)->innerDistribution);
+            *con0 -= *con1;
+            thisMeas = measure->operator()(cont, classDistribution, apriorClass);
+          }
+          
+          if (   ((!binWins) || (thisMeas>binQuality)) && ((binWins=1) ==1)
+              || (thisMeas==binQuality) && rgen.randbool(++binWins)) {
+            binBestValue = thisValue; 
+            binQuality = thisMeas;
+            binLeftExamples = dis0->abs;
+            binRightExamples = dis1->abs;
+          }
+        }
+
+        if (       binWins
+            && (   (!wins || (binQuality>quality)) && ((wins=1)==1)
+                || (binQuality==quality) && rgen.randbool(++wins))) {
+          bestAttr = thisAttr;
+          quality = binQuality;
+          leftExamples = binLeftExamples;
+          rightExamples = binRightExamples;
+          bestValue = binBestValue;
+        }
+      }
+    }
+ 
+
+    if (!wins)
+      return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+    subsetSizes = mlnew TDiscDistribution();
+    subsetSizes->addint(0, leftExamples);
+    subsetSizes->addint(1, rightExamples);
+  }
+
+  PVariable attribute = gen->domain->attributes->at(bestAttr);
+
+  if (attribute->noOfValues() == 2) {
+    spentAttribute = bestAttr;
+    descriptions = mlnew TStringList(attribute.AS(TEnumVariable)->values.getReference());
+    return mlnew TClassifierFromVarFD(attribute, gen->domain, bestAttr, subsetSizes);
+  }
+
+  const string &bestValueS = attribute.AS(TEnumVariable)->values->at(bestValue);
+  descriptions = mlnew TStringList();
+  descriptions->push_back(string("not ") + bestValueS);
+  descriptions->push_back(bestValueS);
+  
+  bvar->name = gen->domain->attributes->at(bestAttr)->name;
+
+  TIntList *bestMapping = mlnew TIntList(attribute.AS(TEnumVariable)->values->size(), 0);
+  PIntList wb = bestMapping;
+  bestMapping->at(bestValue) = 1;
+  spentAttribute = -1;
+  return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
+}
+
+
+
+
+
+
+
+
+
+
 TTreeSplitConstructor_Threshold::TTreeSplitConstructor_Threshold(PMeasureAttribute meas, const float &worst, const float &aml)
 : TTreeSplitConstructor_Measure(meas, worst, aml)
 {}

@@ -151,6 +151,21 @@ public:
                                );
 };
 
+class ORANGE_API TTreeSplitConstructor_OneAgainstOthers: public TTreeSplitConstructor_Measure {
+public:
+  __REGISTER_CLASS
+  virtual PClassifier operator()(PStringList &descriptions,
+                                PDiscDistribution &subsetSizes,
+                                float &quality, int &spentAttribute,
+
+                                PExampleGenerator, const int &weightID = 0,
+                                PDomainContingency = PDomainContingency(),
+                                PDistribution apriorClass = PDistribution(),
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
+                               );
+};
+
 
 class ORANGE_API TTreeSplitConstructor_Threshold: public TTreeSplitConstructor_Measure {
 public:

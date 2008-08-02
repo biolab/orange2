@@ -110,13 +110,13 @@ PContingency prepareBinaryCheat(PDistribution classDistribution, PContingency or
   outerDistribution->normalized = origContingency->outerDistribution->normalized;
 
   if (classDistribution->variable->varType == TValue::INTVAR) {
-    dis0 = cont->discrete->front().AS(TDiscDistribution);
-    dis1 = cont->discrete->back().AS(TDiscDistribution);
+    dis0 = CLONE(TDiscDistribution, cont->discrete->front().AS(TDiscDistribution));
+    dis1 = CLONE(TDiscDistribution, cont->discrete->back().AS(TDiscDistribution));
     con0 = con1 = NULL;
   }
   else {
-    con0 = cont->discrete->front().AS(TContDistribution);
-    con1 = cont->discrete->back().AS(TContDistribution);
+    con0 = CLONE(TContDistribution, cont->discrete->front().AS(TContDistribution));
+    con1 = CLONE(TContDistribution, cont->discrete->back().AS(TContDistribution));
     dis0 = dis1 = NULL;
   }
 
@@ -436,6 +436,17 @@ PIntList TMeasureAttribute::bestBinarization(PDistribution &subsets, float &scor
   return bestBinarization(subsets, score, PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution, minSubset);
 }
 
+int TMeasureAttribute::bestValue(PDistribution &, float &score, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass, const float &minSubset)
+{
+  raiseError("bestValue is not supported by the selected attribute measure");
+  return 0;
+}
+
+int TMeasureAttribute::bestValue(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass, int weightID, const float &minSubset)
+{
+  raiseError("bestValue is not supported by the selected attribute measure");
+  return 0;
+}
 
 bool TMeasureAttribute::checkClassType(const int &varType)
 {
@@ -1802,6 +1813,98 @@ PIntList TMeasureAttribute_relief::bestBinarization(PDistribution &subsetSizes, 
     subsetSizes->addint(1, bestRight);
 
     return rightSide;
+  }
+  catch (...) {
+    if (gains)
+      delete gains;
+    if (attrDistr)
+      delete attrDistr;
+    throw;
+  }
+}
+
+
+
+
+int TMeasureAttribute_relief::bestValue(PDistribution &subsetSizes, float &bestScore, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset)
+{
+  TEnumVariable *evar = var.AS(TEnumVariable);
+  if (!evar)
+    raiseError("cannot discretly binarize a continuous attribute");
+
+  const int noVal = evar->noOfValues();
+
+  float *attrDistr = NULL;
+  PSymMatrix wgain = gainMatrix(var, gen, apriorClass, weightID, NULL, &attrDistr);
+  TSymMatrix &gain = wgain.getReference();
+
+  float *gains = new float[noVal * noVal], *gi = gains, *ge;
+
+  int wins = 0;
+
+  try {
+    float thisScore = 0.0;
+    int i, j;
+    for(i = 0; i < noVal; i++)
+      for(j = 0; j < noVal; j++)
+        *gi++ = gain.getitem(i, j);
+
+    float *ai, *ae;
+    float nExamples;
+    if (!attrDistr) {
+      TDiscDistribution dd(gen, var, weightID);
+      attrDistr = new float[noVal];
+      ai = attrDistr;
+      ae = attrDistr + noVal;
+      for(vector<float>::const_iterator di(dd.distribution.begin()); ai != ae; *ai++ = *di++);
+      nExamples = dd.abs;
+    }
+    else {
+      nExamples = 0;
+      for(ai = attrDistr, ae = attrDistr + noVal; ai != ae; nExamples += *ai++);
+    }   
+   
+    float maxSubset = nExamples - minSubset;
+    if (maxSubset < minSubset)
+      return -1;
+
+    int bestVal = -1;
+    wins = 0;
+    bestScore = 0;
+    TRandomGenerator rgen(gen->numberOfExamples());
+    float *gi = gains;
+    ai = attrDistr;
+    for(int thisValue = 0; thisValue < noVal; thisValue++, ai++) {
+      if ((*ai < minSubset) || (*ai > maxSubset)) {
+        gi += noVal;
+        continue;
+      }
+      
+      float thisScore = -2*gi[thisValue]; // have to subtract this, we'll add it once below
+      for(ge = gi + noVal; gi != ge; thisScore += *gi++);
+      if (    (!wins || (thisScore > bestScore)) && ((wins=1) == 1)
+          || (thisScore == bestScore) && rgen.randbool(++wins)) {
+        bestScore = thisScore;
+        bestVal = thisValue;
+      }
+    }
+
+    delete gains;
+    gains = NULL;
+
+    if (!wins) {
+      delete attrDistr;
+      return -1;
+    }
+    
+    subsetSizes = new TDiscDistribution(2);
+    subsetSizes->addint(0, nExamples - attrDistr[bestVal]);
+    subsetSizes->addint(1, attrDistr[bestVal]);
+
+    delete attrDistr;
+    attrDistr = NULL;
+
+    return bestVal;
   }
   catch (...) {
     if (gains)
