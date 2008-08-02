@@ -69,6 +69,7 @@ PyObject *callMethod(char const *method, PyObject *self, PyObject *args)
     }
 
     raiseErrorWho("Python object does not provide method '%s'", method);
+    return NULL; // to make the compiler happy
 }
 
 PyObject *setCallbackFunction(PyObject *self, PyObject *args)
