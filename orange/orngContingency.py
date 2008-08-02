@@ -17,7 +17,7 @@
 #
 
 
-import numpy, orange
+import numpy, orange, statc
 from random import *
 
 _log2 = 1.0/numpy.log(2)
@@ -219,6 +219,11 @@ class ContingencyTable2:
             div = 0.0
         return (ptrue,pkirkwood,_log2*div)
 
+    def ChiSquareP(self):
+        E = numpy.outer(self.pa, self.pb) * self.total
+        return statc.chisqprob(numpy.sum((E-self.m)**2 / E.clip(min=0.000001)), (len(self.pa)-1)*(len(self.pb)-1))
+#        return numpy.sum((E-self.m)**2 / E)
+      
     def Bootstrap(self,N,limit):
         # prepare lookup
         hits = 0
