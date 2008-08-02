@@ -320,20 +320,20 @@ EnumVariable 'tear_rate'
 <H3>MeasureAttribute</H3>
 <index name="classes/MeasureAttribute">
 
-<p><code>MeasureAttribute</code> is slightly more complex since it can be given different sets of parameters. Both must be supported. (This is so messy and inconsistent with the C++ code that it will surely be changed in the future.)</p>
+<p><code>MeasureAttribute</code> is slightly more complex since it can be given different sets of parameters. The class defines the way it will be called by setting the "needs" field (see documentation on <a href="measures.htm">attribute evaluation</a> for more details). (<b>Note: this has been changed from the mess we had in the past. Any existing code should still work or will need to be simplified if it does not.)</b>)</p>
 
-<p>The method must allow to be called in two different ways.</p>
 <DL class=attributes>
 <DT>__call__(attributeNumber, domainContingency, aprioriProbabilities)</DT>
-<DD>Here, the data from which the attribute is to be evaluated is given by contingency of all attributes in the dataset. The <CODE>attributeNumber</CODE> tells which of those attribute the function needs to evaluate. Finally, there are apriori class probabilities, if the methods can make use of them; the third argument can sometimes be <CODE>None</CODE>.</DD>
+<DD>These arguments are sent if <code>needs</code> is set to <code>orange.MeasureAttribute.DomainContingency</code>. The data from which the attribute is to be evaluated is given by contingency of all attributes in the dataset. The <CODE>attributeNumber</CODE> tells which of those attribute the function needs to evaluate. Finally, there are apriori class probabilities, if the methods can make use of them; the third argument can sometimes be <CODE>None</CODE>.</DD>
 
 <DT>__call__(contingencyMatrix, classDistribution, aprioriProbabilities)</DT>
-<DD>In this form, you are given a class distribution and the contingency matrix for the attribute that is to be evaluated. In context of decision tree induction, this is a class distribution in a node and class distribution in branches if this attribute is chosen. The third argument again gives the apriori class distribution, and can sometimes be <CODE>None</CODE> if apriori distribution is unknown.</DD>
+<DD>In this form, which is used if <code>needs</code> equals <code>orange.MeasureAttribute.Contingency_Class</code>, you are given a class distribution and the contingency matrix for the attribute that is to be evaluated. In context of decision tree induction, this is a class distribution in a node and class distribution in branches if this attribute is chosen. The third argument again gives the apriori class distribution, and can sometimes be <CODE>None</CODE> if apriori distribution is unknown.</DD>
+
+<DT>__call__(attributes, examples, aprioriProbabilities, weightID)</DT>
+<DD>This form is used if <code>needs</code> is <code>orange.MeasureAttribute.Generator</code>. The attribute can be given as an instance of <code>int</code> or of <code>Variable</code> - you might want to check the argument type before using it.</DD>
 </DL>
 
-<P>Note that it's not up to you to decide what to implement and which form of call will be used. You need to implement both and the caller will use the one which is more appropriate for him. (C++ classes derived from <CODE>MeasureAttribute</CODE> have a say in that and so will Python classes when we clear this mess.)
-
-<P>In both cases, the method must return a real number representing the quality attribute; higher numbers mean better attributes. If in your measure of quality higher values mean worse attributes, you can either negate or inverse the number.</p>
+<P>In all cases, the method must return a real number representing the quality attribute; higher numbers mean better attributes. If in your measure of quality higher values mean worse attributes, you can either negate or inverse the number.</p>
 
 <p>As an example, we will write a measure that is based on cardinality of attributes. It will also have a flag by which the user will decide whether he prefers the attributes with higher or with lower cardinalities.</p>
 
