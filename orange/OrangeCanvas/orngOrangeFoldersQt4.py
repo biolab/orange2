@@ -12,7 +12,7 @@ def __getDirectoryNames():
     try:
         orangeVer = orangeDir.split(os.path.sep)[-1]
     except:
-        orangeVer = "Orange"
+        orangeVer = "orange"
 
     widgetDir = os.path.join(orangeDir, "OrangeWidgets")
     if not os.path.exists(widgetDir):
@@ -41,7 +41,7 @@ def __getDirectoryNames():
         applicationDir = os.path.join(applicationDir, "Application Support")
         outputDir = os.path.join(applicationDir, orangeVer)
     else:
-        outputDir = os.path.join(home, orangeVer)                  # directory for saving settings and stuff
+        outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
 
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
