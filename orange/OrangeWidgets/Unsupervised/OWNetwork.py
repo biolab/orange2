@@ -154,7 +154,7 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "None", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain", callback = self.setMarkMode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
@@ -179,9 +179,11 @@ class OWNetwork(OWWidget):
         
         #self.markInputBox = OWGUI.widgetBox(self.markTab, "Mark by input signal", orientation="vertical")
         #self.markInputBox.setEnabled(False)
+        self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
+        ib = OWGUI.indentedBox(ribg)
         self.markInput = 0
-        self.markInputCombo = OWGUI.comboBox(self.markTab, self, "markInput", box = "Mark by input signal", callback=self.setMarkInput)
-        self.markInputCombo.box.setEnabled(False)
+        self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.setMarkMode(h)))
+        self.markInputRadioButton.setEnabled(False)
         
         T = OWToolbars.NavigateSelectToolbar
         self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
@@ -349,7 +351,8 @@ class OWNetwork(OWWidget):
         vgraph = self.visualize.graph
 
         if hubs == 0:
-            #print "mark on input"
+            self.graph.setMarkedVertices([])
+            self.graph.replot()
             return
         
         elif hubs == 1:
@@ -406,6 +409,8 @@ class OWNetwork(OWWidget):
                 cutP += 1
             self.graph.setMarkedVertices(sortedIdx[:cutP])
             self.graph.replot()
+        elif hubs == 9:
+            self.setMarkInput()
        
     def testRefresh(self):
         start = time()
@@ -586,7 +591,7 @@ class OWNetwork(OWWidget):
     
     def markItems(self, items):
         self.markInputCombo.clear()
-        self.markInputCombo.box.setEnabled(False)
+        self.markInputRadioButton.setEnabled(False)
         self.markInputItems = items
         
         if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None or items == None:
@@ -604,9 +609,9 @@ class OWNetwork(OWWidget):
                     
                     if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
                         self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
-                        self.markInputCombo.box.setEnabled(True)
+                        self.markInputRadioButton.setEnabled(True)
                 
-        self.setMarkInput()
+                        self.setMarkMode(9)
               
     def setExampleSubset(self, subset):
         if self.graph == None:
