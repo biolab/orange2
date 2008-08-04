@@ -70,7 +70,7 @@ class OWKMeans(OWWidget):
             self.mc = orngCluster.MClustering(examples, int(self.K), self.DistanceMeasure+1)
             # This fix is needed since orngCluster.MClustering does not report errors,
             # and only returns erroneous results instead
-            if max(self.mc.mapping) > self.K or min(self.mc.cdisp) < 0:
+            if max(self.mc.mapping) > self.K:
                 self.error("Check whether your data contains enough distinct examples\nfor the desired number of clusters")  
                 self.mc = None
             else:
