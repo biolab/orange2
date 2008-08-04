@@ -131,12 +131,19 @@ class OWFile(OWWidget):
         if inDemos:
             import os
             try:
-                import win32api, win32con
-                t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
-                t = win32api.RegQueryValueEx(t, "")[0]
-                startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
+                import orngConfiguration
+                startfile = orngConfiguration.datasetsPath
             except:
                 startfile = ""
+                
+            if not startfile or not os.path.exists(startfile):
+                try:
+                    import win32api, win32con
+                    t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
+                    t = win32api.RegQueryValueEx(t, "")[0]
+                    startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
+                except:
+                    startfile = ""
 
             if not startfile or not os.path.exists(startfile):
                 d = OWGUI.__file__
