@@ -1881,7 +1881,8 @@ PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
 
 char *obsoleteFlags[] = {"dontCheckStored", "dontStore", "use", "useMetas", "domain", 0 };
 
-PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
+
+PyObject *loadDataFromFileNoSearch(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
 {
   PyObject *res;
   
@@ -1956,6 +1957,55 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
   }
 }
 
+PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
+{
+  PyObject *ptype, *pvalue, *ptraceback;
+
+  PyObject *res = loadDataFromFileNoSearch(type, filename, argstuple, keywords, generatorOnly);
+  PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+  if (!ptype) {
+    return res;
+  }
+  
+  #if defined _WIN32
+  const char sep = ';';
+  const char pathsep = '\\';
+  #else
+  const char sep = ':';
+  const char pathsep = '/';
+  #endif
+  const int flen = strlen(filename);
+
+  char *path = getenv("ORANGE_DATA_PATH");
+  if (path) {
+    for(char *pi = path, *pe=pi; *pi; pi = pe+1) {
+      for(pe = pi; *pe && *pe != sep; pe++);
+      const int plen = pe-pi;
+      char *npath = strncpy(new char[plen+flen+2], pi, pe-pi);
+      if (!plen || (pe[plen] != pathsep)) {
+        npath[plen] = pathsep;
+        strcpy(npath+plen+1, filename);
+      }
+      else {
+        strcpy(npath+plen, filename);
+      }
+      PyErr_Clear();
+      res = loadDataFromFileNoSearch(type, npath, argstuple, keywords, generatorOnly);
+      if (res) {
+        Py_XDECREF(ptype);
+        Py_XDECREF(pvalue);
+        Py_XDECREF(ptraceback);
+        return res;
+      }
+      if (!*pe)
+        break;
+    }
+  }
+  
+  PyErr_Restore(ptype, pvalue, ptraceback);
+  return PYNULL; 
+}
+  
 
 int pt_ExampleGenerator(PyObject *args, void *egen)
 { 
