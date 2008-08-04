@@ -223,12 +223,10 @@ class OWDistributionGraph(OWGraph):
         self.tips.removeAll()
         self.tips.removeAll()
         cn=0
-        print "pvo"
         for key in keys:
             ckey = PolygonCurve(pen=QPen(Qt.black), brush=QBrush(Qt.gray))
             ckey.attach(self)
             if self.variableContinuous:
-                print "bb"
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
                 ff="%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
                 text = "N(%s in ("+ff+","+ff+"])=<b>%i</b>"
@@ -276,7 +274,6 @@ class OWDistributionGraph(OWGraph):
     def refreshVisibleOutcomes(self):
         if not self.data or (not self.visibleOutcomes and not self.pureHistogram): return
         self.tips.removeAll()
-        print "vo"
         if self.pureHistogram:
             self.refreshPureVisibleOutcomes()
             return
@@ -601,6 +598,7 @@ class OWDistributions(OWWidget):
             self.data = data
 
         if sameDomain:
+            self.openContext("", self.data)
             self.graph.setData(self.data, self.graph.attributeName)
 
         else:
