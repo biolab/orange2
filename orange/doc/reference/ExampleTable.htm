@@ -54,13 +54,10 @@ it must be an extension for one of the <A href="fileformats.htm">known
 file formats</A>. If just a stem is given (such as "monk1", without
 ".tab", ".names" or whatever), the current directory is searched for
 any file with the given stem with one of the known
-extensions. Finally, if you omit the filename, the current directory
-name is used as file stem. For instance, if current directory is
-<CODE>c:\ml\data\monk1</CODE> and you execute <CODE>data =
-orange.ExampleTable</CODE>, orange will look for any file with name
-<CODE>monk1</CODE> in one of the known formats. More about this topic
-is explained on a page about <a href="fileformats.htm">known file
-formats.</A></P>
+extensions (see the page on <a href="fileformats.htm">file
+formats</A>). If the file is not found in the current directory, Orange will
+also search the directories specified in the environment variable
+ORANGE_DATA_PATH.</P>
 </DD>
 
 <DT>ExampleTable(domain)</DT>
