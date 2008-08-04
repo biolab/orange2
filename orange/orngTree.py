@@ -47,8 +47,11 @@ class TreeLearner(orange.Learner):
         else:
             learner.split = orange.TreeSplitConstructor_Combined()
             learner.split.continuousSplitConstructor = orange.TreeSplitConstructor_Threshold()
-            if getattr(self, "binarization", 0):
+            binarization = getattr(self, "binarization", 0)
+            if binarization == 1:
                 learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_ExhaustiveBinary()
+            elif binarization == 2:
+                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_OneAgainstOthers()
             else:
                 learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_Attribute()
 
