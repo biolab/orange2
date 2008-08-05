@@ -12,11 +12,11 @@ import OWGUI
 
 class OWRank(OWWidget):
     settingsList =  ["nDecimals", "reliefK", "reliefN", "nIntervals", "sortBy", "nSelected", "selectMethod", "autoApply", "showDistributions", "distColorRgb"]
-    measures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Gain"]
-    measuresShort     = ["ReliefF", "Inf. gain", "Gain ratio", "Gini"]
-    measuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini"]
-    estimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini]
-    handlesContinuous = [True, False, False, False]
+    measures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Gain", "Log Odds Ratio"]
+    measuresShort     = ["ReliefF", "Inf. gain", "Gain ratio", "Gini", "log OR"]
+    measuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini", "computeLogOdds"]
+    estimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini, orange.MeasureAttribute_logOddsRatio]
+    handlesContinuous = [True, False, False, False, False]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Rank")
@@ -25,6 +25,7 @@ class OWRank(OWWidget):
         self.outputs = [("Reduced Example Table", ExampleTable, Default + Single), ("ExampleTable Attributes", ExampleTable, NonDefault)]
 
         self.settingsList += self.measuresAttrs
+        self.logORIdx = self.measuresShort.index("log OR")
 
         self.nDecimals = 3
         self.reliefK = 10
@@ -38,6 +39,8 @@ class OWRank(OWWidget):
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
         self.minmax = {}
+        
+        self.data = None
 
         for meas in self.measuresAttrs:
             setattr(self, meas, True)
@@ -178,6 +181,7 @@ class OWRank(OWWidget):
             self.table.setRowCount(len(self.data.domain.attributes))
             self.reprint()
 
+        self.setLogORTitle()
         self.resendAttributes()
         self.applyIf()
 
@@ -245,6 +249,21 @@ class OWRank(OWWidget):
             self.applyIf()
 
 
+    def setLogORTitle(self):
+        selectedMeasures = list(self.selectedMeasures)
+        if self.logORIdx in selectedMeasures:
+            loi = selectedMeasures.index(self.logORIdx)
+            if  self.data and self.data.domain.classVar \
+                and self.data.domain.classVar.varType == orange.VarTypes.Discrete \
+                and len(self.data.domain.classVar.values) == 2:
+                    title = "log OR (for %s)" % (self.data.domain.classVar.values[1][:10])
+            else:
+                title = "log OR"
+                
+            self.table.setHorizontalHeaderItem(2+loi, QTableWidgetItem(title))
+            self.table.resizeColumnToContents(2+loi)
+        
+
     def setMeasures(self):
         self.selectedMeasures = [i for i, ma in enumerate(self.measuresAttrs) if getattr(self, ma)]
         self.table.setColumnCount(2 + len(self.selectedMeasures))
@@ -252,6 +271,7 @@ class OWRank(OWWidget):
             #self.topheader.setLabel(col+2, self.measuresShort[meas_idx])
             self.table.setColumnWidth(col+2, 80)
         self.table.setHorizontalHeaderLabels(["Attribute", "#"] + [self.measuresShort[idx] for idx in self.selectedMeasures])
+        self.setLogORTitle()
 
 
     def measuresChanged(self):
@@ -309,6 +329,12 @@ class OWRank(OWWidget):
             try:
                 if act_attr:
                     mdict[attr] = act_attr and estimator(act_attr, act_data)
+                    if measAttr == "computeLogOdds":
+                        if mdict[attr] == -999999:
+                            act_attr = u"-\u221E"
+                        elif mdict[attr] == 999999:
+                            act_attr = u"\u221E"
+                        mdict[attr] = ("%%.%df" % self.nDecimals + " (%s)") % (mdict[attr], act_attr.values[1])
                 else:
                     mdict[attr] = None
             except:
@@ -341,7 +367,13 @@ class OWRank(OWWidget):
             else:
                 self.minmax[col] = (0,1)
             for row, attr in enumerate(self.attributeOrder):
-                OWGUI.tableItem(self.table, row, col+2, mdict[attr] != None and prec % mdict[attr] or "NA")
+                if mdict[attr] is None:
+                    mattr = "NA"
+                elif isinstance(mdict[attr], (int, float)):
+                    mattr = prec % mdict[attr]
+                else:
+                    mattr = mdict[attr]
+                OWGUI.tableItem(self.table, row, col+2, mattr)
 
         self.reselect()
 
