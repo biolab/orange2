@@ -14,6 +14,7 @@ from time import *
 import OWToolbars
 from statc import mean
 from orangeom import Network
+from operator import itemgetter
 
 dir = os.path.dirname(__file__) + "/../icons/"
 dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
@@ -233,8 +234,11 @@ class OWNetwork(OWWidget):
 
         ib = OWGUI.widgetBox(self.settingsTab, "Prototype")
         OWGUI.button(ib, self, "Collapse", callback=self.collapse)
+        OWGUI.label(ib, self, "Name components:")
+        self.nameComponentAttribute = 0
+        self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponent", callback=self.nameComponents)
+        self.nameComponentCombo.addItem("Select attribute")
         
-
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
         
@@ -310,7 +314,54 @@ class OWNetwork(OWWidget):
     
         else:
             print "One node must be selected!"
-    
+            
+    def nameComponents(self):
+        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+            return
+        
+        vars = [x.name for x in self.visualize.getVars()]
+        
+        if not self.nameComponentCombo.currentText() in vars:
+            return
+        
+        components = self.visualize.graph.getConnectedComponents()
+        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
+        
+        for component in components:
+            words = []
+            for vertex in component:
+                value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                value = value.replace(" ", "_")
+                value = value.replace(",", "_")
+                values = value.split("_")
+                values = [value.strip() for value in values if len(value) > 0]
+                words.extend(values)
+            
+            counted_words = {}
+            for word in words:
+                if word in counted_words:
+                    count = counted_words[word]
+                    counted_words[word] = count + 1
+                else:
+                    counted_words[word] = 1
+            
+            words = sorted(counted_words.items(), key=itemgetter(1), reverse=True)
+            keyword = ""
+            max = 0
+            i = 0
+            while i < len(words) and words[i][1] >= max:
+                max = words[i][1]
+                keyword += words[i][0] + " "
+                i += 1 
+            
+            for vertex in component:
+                keyword_table[vertex]['keyword'] = keyword.strip()
+        
+        items = orange.ExampleTable([self.visualize.graph.items, keyword_table])
+        self.setItems(items)
+        #for item in items:
+        #    print item
+                        
     def showIndexLabels(self):
         self.graph.showIndexes = self.showIndexes
         self.graph.updateData()
@@ -454,8 +505,11 @@ class OWNetwork(OWWidget):
         
         self.colorCombo.clear()
         self.vertexSizeCombo.clear()
+        self.nameComponentCombo.clear()
+        
         self.colorCombo.addItem("(one color)")
         self.vertexSizeCombo.addItem("(same size)")
+        self.nameComponentCombo.addItem("Select attribute")
         
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
@@ -478,6 +532,8 @@ class OWNetwork(OWWidget):
                 
             elif var.varType in [orange.VarTypes.Continuous]:
                 self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                
+            self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
         
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
