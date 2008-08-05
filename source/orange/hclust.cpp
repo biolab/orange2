@@ -33,7 +33,7 @@ public:
     int elementIndex;
     float height;
 
-    float *distances; // distances to the clusters before this one (lower left matrix)
+    float *distances; // distances to clusters before this one (lower left matrix)
     float minDistance; // minimal distance
     int rawIndexMinDistance; // index of minimal distance
     int nDistances;
@@ -311,10 +311,11 @@ TClusterW *THierarchicalClustering::merge_SingleLinkage(TClusterW **clusters, fl
   return *clusters;
 }
 
-
+// Also computes Ward's linkage
 TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, float *milestones)
 {
   float *milestone = milestones;
+  bool ward = linkage == Ward;
 
   int step = 0;
   while((*clusters)->next) {
@@ -344,14 +345,20 @@ TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, f
     const int size1 = cluster1->size;
     const int size2 = cluster2->size;
     const int sumsize = size1 + size2;
+    cluster = (*clusters)->next;
 
     if (rawIndex1) { // not root - has no distances...
-      *disti1 = (*disti1 * size1 + *disti2 * size2) / sumsize;
+      const float sizeK = cluster->size;
+      *disti1 = ward ? (*disti1 * (size1+sizeK) + *disti2 * (size2+sizeK) - minDistance * sizeK) / (sumsize+sizeK)
+                     : (*disti1 * size1 + *disti2 * size2) / sumsize;
       const float *minIndex1 = disti1;
       int ndi = cluster1->nDistances-1;
-      for(disti1++, disti2++; ndi--; disti1++, disti2++)
+      for(disti1++, disti2++, cluster = cluster->next; ndi--; disti1++, disti2++)
         if (*disti1 >= 0) {
-          *disti1 = (*disti1 * size1 + *disti2 * size2) / sumsize;
+          const float sizeK = cluster->size;
+          cluster = cluster->next;
+          *disti1 = ward ? (*disti1 * (size1+sizeK) + *disti2 * (size2+sizeK) - minDistance * sizeK) / (sumsize+sizeK)
+                         : (*disti1 * size1         + *disti2 * size2) / sumsize;
           if (*disti1 < *minIndex1)
             minIndex1 = disti1;
         }
@@ -365,7 +372,9 @@ TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, f
     for(cluster = cluster1->next; cluster != cluster2; cluster = cluster->next) {
       while(*++disti2 < 0); // should have more - the one corresponding to cluster
       float &distc = cluster->distances[rawIndex1];
-      distc = (distc * size1 + *disti2 * size2) / sumsize;
+      const float sizeK = cluster->size;
+      distc = ward ? (distc * (size1+sizeK) + *disti2 * (size2+sizeK) - minDistance * sizeK) / (sumsize+sizeK)
+                   : (distc * size1         + *disti2 * size2) / sumsize;
       if (distc < cluster->minDistance) {
         cluster->minDistance = distc;
         cluster->rawIndexMinDistance = rawIndex1;
@@ -376,7 +385,9 @@ TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, f
 
     for(cluster = cluster->next; cluster; cluster = cluster->next) {
       float &distc = cluster->distances[rawIndex1];
-      distc = (distc * size1 + cluster->distances[rawIndex2] * size2) / sumsize;
+      const float sizeK = cluster->size;
+      distc = ward ? (distc * (size1+sizeK) + cluster->distances[rawIndex2] * (size2+sizeK) - minDistance * sizeK) / (sumsize+sizeK)
+                   : (distc * size1         + cluster->distances[rawIndex2] * size2) / sumsize;
       if (distc < cluster->minDistance) {
         cluster->minDistance = distc;
         cluster->rawIndexMinDistance = rawIndex1;
@@ -484,6 +495,7 @@ TClusterW *THierarchicalClustering::merge(TClusterW **clusters, float *milestone
     case Complete: return merge_CompleteLinkage(clusters, milestones);
     case Single: return merge_SingleLinkage(clusters, milestones);
     case Average: 
+    case Ward:
     default: return merge_AverageLinkage(clusters, milestones);
   }
 }

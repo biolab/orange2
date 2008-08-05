@@ -63,7 +63,7 @@ class ORANGE_API THierarchicalClustering : public TOrange {
 public:
     __REGISTER_CLASS
 
-    CLASSCONSTANTS(Linkage) enum {Single, Average, Complete};
+    CLASSCONSTANTS(Linkage) enum {Single, Average, Complete, Ward};
     int linkage; //P(&HierarchicalClustering_Linkage) linkage
     bool overwriteMatrix; //P if true (default is false) it will use (and destroy) the distance matrix given as argument
 
@@ -81,6 +81,7 @@ private:
     TClusterW *THierarchicalClustering::merge_CompleteLinkage(TClusterW **clusters, float *callbackMilestones);
     TClusterW *THierarchicalClustering::merge_SingleLinkage(TClusterW **clusters, float *callbackMilestones);
     TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, float *callbackMilestones);
+    // Average linkage also computes Ward's linkage
 };
 
 #endif
