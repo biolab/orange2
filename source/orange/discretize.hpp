@@ -183,6 +183,7 @@ public:
   virtual PVariable operator()(const TContDistribution &, PVariable var) const;
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID=0);
 
+  void cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr) const;
   void cutoffsByCounting(PIntervalDiscretizer, const TContDistribution &) const;
   void cutoffsByDivision(PIntervalDiscretizer, const TContDistribution &) const;
   void cutoffsByDivision(const int &noInt, TFloatList &points, 

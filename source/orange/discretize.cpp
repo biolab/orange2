@@ -454,14 +454,31 @@ TEquiNDiscretization::TEquiNDiscretization(int anumber)
 
 
 PVariable TEquiNDiscretization::operator()(const TContDistribution &distr, PVariable var) const
-{ PIntervalDiscretizer discretizer=mlnew TIntervalDiscretizer;
-
-  if (recursiveDivision && false) // XXX remove when the routine is finished
+{ 
+  PIntervalDiscretizer discretizer=mlnew TIntervalDiscretizer;
+  
+  if (distr.size() <= numberOfIntervals) {
+    cutoffsByMidpoints(discretizer, distr);
+  }
+  else if (recursiveDivision && false) { // XXX remove when the routine is finished
     cutoffsByDivision(discretizer, distr);
-  else
+  }
+  else {
     cutoffsByCounting(discretizer, distr);
+  }
 
   return discretizer->constructVar(var);
+}
+
+void TEquiNDiscretization::cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
+{
+  TContDistribution::const_iterator cdi(distr.begin()), cde(distr.end());
+  if (cdi!=cde) {
+    float prev = (*cdi).first;
+    while (++cdi != cde) {
+      discretizer->points->push_back((prev+(*cdi).first)/2.0);
+    }
+  }
 }
 
 void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
