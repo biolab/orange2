@@ -387,7 +387,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
   }
 
   if (var.is_derived_from(TStringVariable)) {
-    TValueFilter_stringList *vfilter = mlnew TValueFilter_stringList(ILLEGAL_INT, var);
+    TValueFilter_stringList *vfilter = mlnew TValueFilter_stringList(ILLEGAL_INT, mlnew TStringList());
     PValueFilter wvfilter = vfilter;
     TStringList &values = vfilter->values.getReference();
 
