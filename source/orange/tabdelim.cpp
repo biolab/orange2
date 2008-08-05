@@ -746,12 +746,9 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
       case '\n':
         if (atom.length() || atoms.size())
           atoms.push_back(trim(atom));  // end of line
-        if (c == '\r') {
-          c = fgetc(fei.file);
-          if (c != '\n')
-            fseek(fei.file, SEEK_CUR, -1);
-        }
-        return trimAtomsList(atoms);
+        if (atoms.size())
+          return trimAtomsList(atoms);
+        break;
 
       case '\t':
         atoms.push_back(trim(atom));
