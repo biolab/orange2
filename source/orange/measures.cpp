@@ -787,6 +787,31 @@ float TMeasureAttribute_relevance::operator()(PContingency probabilities, const 
 }
 
 
+TMeasureAttribute_logOddsRatio::TMeasureAttribute_logOddsRatio()
+: TMeasureAttributeFromProbabilities(true, false, IgnoreUnknowns)
+{}
+
+float TMeasureAttribute_logOddsRatio::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_chiSquare");
+  if (probabilities->discrete->size() == 2) {
+    const TDiscDistribution &pdist = CAST_TO_DISCDISTRIBUTION(probabilities->discrete->back());
+    const TDiscDistribution &qdist = CAST_TO_DISCDISTRIBUTION(probabilities->discrete->front());
+    if ((pdist.size() == 2) && (qdist.size() == 2)) {
+      const float p = pdist.p(1);
+      const float q = qdist.p(1);
+      if ((p < 1e-6) || (1 - q < 1e-6))
+        return -999999;
+      if ((1 - p < 1e-6) || (q < 1e-6))
+        return 999999;
+      return log(p/(1-p) / (q/(1-q)));
+    }
+  }
+
+  raiseError("this measure is defined for binary attribute and class");
+  return 0;
+}  
+
 #include "stat.hpp"
 
 TMeasureAttribute_chiSquare::TMeasureAttribute_chiSquare(const int &unk, const bool probs)

@@ -165,6 +165,14 @@ public:
 };
 
 
+class ORANGE_API TMeasureAttribute_logOddsRatio : public TMeasureAttributeFromProbabilities {
+public:
+  __REGISTER_CLASS
+
+  TMeasureAttribute_logOddsRatio();
+  virtual float operator()(PContingency probabilities, const TDiscDistribution &);
+};
+
 class ORANGE_API TMeasureAttribute_relevance : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
