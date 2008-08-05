@@ -42,7 +42,9 @@ class OWHierarchicalClustering(OWWidget):
         self.outputs=[("Selected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
                         ("Average linkage", orange.HierarchicalClustering.Average),
-                        ("Complete linkage", orange.HierarchicalClustering.Complete)]
+                        ("Ward's linkage", orange.HierarchicalClustering.Ward),
+                        ("Complete linkage", orange.HierarchicalClustering.Complete),
+                     ]
         self.Linkage=0
         self.OverwriteMatrix=0
         self.Annotation=0
