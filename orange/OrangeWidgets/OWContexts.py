@@ -521,3 +521,49 @@ class PerfectDomainContextHandler(DomainContextHandler):
         import copy
         context = copy.deepcopy(context)
         
+
+class EvaluationResultsContextHandler(ContextHandler):
+    def __init__(self, contextName, targetAttr, selectedAttr,
+                 syncWithGlobal = True, **args):
+            self.targetAttr, self.selectedAttr = targetAttr, selectedAttr
+            ContextHandler.__init__(self, contextName, False, False, syncWithGlobal, **args)
+        
+    def match(self, context, imperfect, cnames, cvalues):
+        print cnames, cvalues, context.classifierNames, context.classValues, (cnames, cvalues) == (context.classifierNames, context.classValues)
+        return (cnames, cvalues) == (context.classifierNames, context.classValues) and 2
+
+    def fastSave(self, context, widget, name, value):
+        if context:
+            if name == self.targetAttr:
+                context.targetClass = value
+            elif name == self.selectedAttr:
+                context.selectedClassifiers = list(value)
+
+    def settingsFromWidget(self, widget, context):
+        context.targetClass = widget.getdeepattr(self.targetAttr)
+        context.selectedClassifiers = list(widget.getdeepattr(self.selectedAttr))
+
+    def settingsToWidget(self, widget, context):
+        if context.targetClass is not None:
+            setattr(widget, self.targetAttr, context.targetClass)
+        if context.selectedClassifiers is not None:
+            setattr(widget, self.selectedAttr, context.selectedClassifiers)
+            
+    def cloneContext(self, context, domain):
+        import copy
+        context = copy.deepcopy(context)
+        
+    def findOrCreateContext(self, widget, results):
+        if not results:
+            return None, False
+        cnames = [c.name for c in results.classifiers]
+        cvalues = results.classValues
+        context, isNew = ContextHandler.findOrCreateContext(self, widget, results.classifierNames, results.classValues)
+        if not context:
+            return None, False
+        if isNew:
+            context.classifierNames = results.classifierNames
+            context.classValues = results.classValues
+            context.selectedClassifiers = None
+            context.targetClass = None
+        return context, isNew

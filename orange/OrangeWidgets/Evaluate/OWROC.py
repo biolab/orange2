@@ -602,8 +602,7 @@ class OWROC(OWWidget):
     settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "AveragingMethodIndex",
                     "ShowConvexHull", "ShowConvexCurves", "EnablePerformance", "DefaultThresholdPoint"]
-
-    contextHandlers = {"": ClassValuesContextHandler("", "targetClass")}
+    contextHandlers = {"": EvaluationResultsContextHandler("", "targetClass", "selectedClassifiers")}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
@@ -637,6 +636,8 @@ class OWROC(OWWidget):
         self.graphs = []
         self.maxp = 1000
         self.defaultPerfLinePValues = []
+        self.classifiers = []
+        self.selectedClassifiers = []
 
         # performance analysis (temporary values
         self.FPcost = 500.0
@@ -669,7 +670,7 @@ class OWROC(OWWidget):
 
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
-        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
+        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, "selectedClassifiers", selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
         self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select All", callback = self.SUAclassifiersQLB)
 
         # show convex ROC curves and show ROC convex hull
@@ -923,6 +924,7 @@ class OWROC(OWWidget):
             self.classCombo.clear()
             self.removeGraphs()
             self.testSetsQLB.clear()
+            self.openContext("", dres)
             return
         self.dres = dres
 
@@ -983,10 +985,10 @@ class OWROC(OWWidget):
                 self.pvalueList.append( v)
 
             self.targetClass = 0 ## select first target
-            self.openContext("", self.dres.classValues)
             self.target()
         else:
             self.classifierColor = None
+        self.openContext("", self.dres)
         self.performanceTabCosts.setEnabled(self.AveragingMethod == 'merge')
         self.setDefaultPValues()
 

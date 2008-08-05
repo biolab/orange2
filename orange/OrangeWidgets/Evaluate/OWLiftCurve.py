@@ -172,7 +172,7 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
-    contextHandlers = {"": ClassValuesContextHandler("", "targetClass")}
+    contextHandlers = {"": EvaluationResultsContextHandler("", "targetClass", "selectedClassifiers")}
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Lift Curve Analysis", 1)
@@ -190,6 +190,8 @@ class OWLiftCurve(OWROC):
         self.ShowConvexHull = TRUE
         self.ShowConvexCurves = FALSE
         self.EnablePerformance = TRUE
+        self.classifiers = []
+        self.selectedClassifiers = []
 
         #load settings
         self.loadSettings()
@@ -241,7 +243,7 @@ class OWLiftCurve(OWROC):
 
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers", addSpace=True)
-        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
+        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, "selectedClassifiers", selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
         self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select all", callback = self.SUAclassifiersQLB)
 ##        OWGUI.checkBox(self.classifiersQVGB, self, 'ShowConvexHull', 'Show convex lift hull', tooltip='', callback=self.setShowConvexHull)
 ##        OWGUI.checkBox(self.classifiersQVGB, self, 'ShowDiagonal', 'Show diagonal', tooltip='', callback=self.setShowDiagonal)
@@ -303,25 +305,23 @@ class OWLiftCurve(OWROC):
             g.setHullColor(QColor(self.HullColor))
 
     def results(self, dres):
+        self.closeContext()
+
         self.FPcostList = []
         self.FNcostList = []
         self.pvalueList = []
 
-        self.closeContext()
+        self.classCombo.clear()
+        self.removeGraphs()
+        self.testSetsQLB.clear()
+        self.classifiersQLB.clear()
+
+        self.dres = dres
 
         if not dres:
             self.targetClass = None
-            self.classCombo.clear()
-            self.removeGraphs()
-            self.testSetsQLB.clear()
-            self.openContext("", [])
+            self.openContext("", dres)
             return
-        self.dres = dres
-
-        self.classifiersQLB.clear()
-        self.testSetsQLB.clear()
-        self.removeGraphs()
-        self.classCombo.clear()
 
         self.defaultPerfLinePValues = []
         if self.dres <> None:
@@ -375,10 +375,10 @@ class OWLiftCurve(OWROC):
                 self.pvalueList.append( v)
 
             self.targetClass = 0 ## select first target
-            self.openContext("", self.dres.classValues)
             self.target()
         else:
             self.classifierColor = None
+        self.openContext("", self.dres)
         self.performanceTabCosts.setEnabled(1)
         self.setDefaultPValues()
 

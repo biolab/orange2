@@ -179,6 +179,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
 
 class OWCalibrationPlot(OWWidget):
     settingsList = ["CalibrationCurveWidth", "ShowDiagonal", "ShowRugs"]
+    contextHandlers = {"": EvaluationResultsContextHandler("", "targetClass", "selectedClassifiers")}
+    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Calibration Plot", 1)
 
@@ -199,6 +201,8 @@ class OWCalibrationPlot(OWWidget):
         self.graphs = []
         self.classifierColor = None
         self.numberOfClassifiers = 0
+        self.classifiers = []
+        self.selectedClassifiers = []
 
         # GUI
         self.graphsGridLayoutQGL = QGridLayout(self)
@@ -218,9 +222,13 @@ class OWCalibrationPlot(OWWidget):
         self.splitQS = QSplitter()
         self.splitQS.setOrientation(Qt.Vertical)
 
+        ## target class
+        self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target class', items=[], callback=self.target)
+        OWGUI.separator(self.generalTab)
+
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = OWGUI.widgetBox(self.generalTab, "Classifiers")
-        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
+        self.classifiersQLB = OWGUI.listBox(self.classifiersQVGB, self, "selectedClassifiers", selectionMode = QListWidget.MultiSelection, callback = self.classifiersSelectionChange)
         self.unselectAllClassifiersQLB = OWGUI.button(self.classifiersQVGB, self, "(Un)select all", callback = self.SUAclassifiersQLB)
 
         ## settings tab
@@ -284,9 +292,7 @@ class OWCalibrationPlot(OWWidget):
         if self.graph:
             self.graph.saveToFile()
 
-    def target(self, targetClass):
-        self.targetClass = targetClass
-
+    def target(self):
         for g in self.graphs:
             g.hide()
 
@@ -302,9 +308,14 @@ class OWCalibrationPlot(OWWidget):
             self.graph = None
 
     def results(self, dres):
-        self.dres = dres
+        self.closeContext()
+
+        self.targeClass = None
         self.classifiersQLB.clear()
         self.removeGraphs()
+        self.classCombo.clear()
+
+        self.dres = dres
 
         self.graphs = []
         if self.dres <> None:
@@ -314,6 +325,7 @@ class OWCalibrationPlot(OWWidget):
                 graph = singleClassCalibrationPlotGraph(self.mainArea)
                 graph.hide()
                 self.graphs.append(graph)
+                self.classCombo.addItem(self.dres.classValues[i])
 
             ## classifiersQLB
             self.classifierColor = []
@@ -339,9 +351,12 @@ class OWCalibrationPlot(OWWidget):
             self.numberOfClasses = 0
             self.classifierColor = None
             self.targetClass = None ## no results, no target
+            
         if not self.targetClass:
             self.targetClass = 0
-        self.target(self.targetClass)
+            
+        self.openContext("", self.dres)
+        self.target()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
