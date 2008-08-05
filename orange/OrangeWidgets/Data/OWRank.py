@@ -256,7 +256,7 @@ class OWRank(OWWidget):
             if  self.data and self.data.domain.classVar \
                 and self.data.domain.classVar.varType == orange.VarTypes.Discrete \
                 and len(self.data.domain.classVar.values) == 2:
-                    title = "log OR (for %s)" % (self.data.domain.classVar.values[1][:10])
+                    title = "log OR (for '%s')" % (self.data.domain.classVar.values[1][:10])
             else:
                 title = "log OR"
                 
