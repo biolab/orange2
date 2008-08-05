@@ -529,7 +529,6 @@ class EvaluationResultsContextHandler(ContextHandler):
             ContextHandler.__init__(self, contextName, False, False, syncWithGlobal, **args)
         
     def match(self, context, imperfect, cnames, cvalues):
-        print cnames, cvalues, context.classifierNames, context.classValues, (cnames, cvalues) == (context.classifierNames, context.classValues)
         return (cnames, cvalues) == (context.classifierNames, context.classValues) and 2
 
     def fastSave(self, context, widget, name, value):
