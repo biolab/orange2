@@ -57,8 +57,8 @@ PyObject *callCallback(PyObject *self, PyObject *args)
 PyObject *callMethod(char const *method, PyObject *self, PyObject *args)
 {
 
-    if (PyObject_HasAttrString(self, method)) {
-        PyObject *callback = PyObject_GetAttrString(self, method);
+    if (PyObject_HasAttrString(self, const_cast<char *>(method))) {
+        PyObject *callback = PyObject_GetAttrString(self, const_cast<char *>(method));
         PyObject *result = PyObject_CallObject(callback, args);
         Py_DECREF(callback);
 
