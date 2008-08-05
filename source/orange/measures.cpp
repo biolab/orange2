@@ -1802,7 +1802,7 @@ PIntList TMeasureAttribute_relief::bestBinarization(PDistribution &subsetSizes, 
       }
       else {
         /* prevgray = gray; */   //  unneeded: they only differ in the bit representing this group
-        for(gi = gains + diffed*noVal, ge = gi + noVal; gi != ge; thisScore += prevgray & 1 ? *gi++ : +*gi++, prevgray >>= 1);
+        for(gi = gains + diffed*noVal, ge = gi + noVal; gi != ge; thisScore += prevgray & 1 ? *gi++ : -*gi++, prevgray >>= 1);
         thisLeft += attrDistr[diffed];
         thisRight -= attrDistr[diffed];
       }
