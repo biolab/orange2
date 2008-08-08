@@ -26,8 +26,7 @@ BuildDepends: <<
 	libjpeg,
 	libmng2,
 	libpng3 (>= 1.2.5-4),
-	macosx (>= 10.4.3-1),
-	pkgconfig (>= 0.22-1)
+	macosx (>= 10.4.3-1)
 <<
 BuildConflicts: <<
 	kdelibs3-dev,
@@ -43,7 +42,6 @@ Depends: <<
 	%N-designer (= %v-%r),
 	%N-linguist (= %v-%r),
 	%N-doc (= %v-%r),
-	pkgconfig (>= 0.22-1),
 	macosx (>= 10.4.3-1)
 <<
 GCC: 4.0
