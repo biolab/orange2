@@ -1,0 +1,136 @@
+Package: qt4-mac
+Version: 4.4.1
+Revision: 1
+CustomMirror: <<
+	Primary: ftp://ftp.trolltech.com/qt/source/
+	eur-GR: ftp://ftp.ntua.gr/pub/X11/Qt/qt/source/
+	eur-DE: ftp://ftp.tu-chemnitz.de/pub/Qt/qt/source/
+<<
+Source: mirror:custom:qt-mac-opensource-src-%v.tar.gz
+Source-MD5: c925ab7adb68e5486bf8987ec32fdb0e
+Maintainer: Mitar <mitar@tnode.com>
+Homepage: http://trolltech.com/products/qt
+License: GPL
+Distribution: 10.4, 10.5
+BuildDepends: <<
+	cctools (>= 446),
+	cups-dev,
+	dbus-dev (>= 1.0.0-1),
+	expat1,
+	fink (>= 0.17.3-1),
+	fontconfig2-dev (>= 2.4.1-1),
+	freetype219 (>= 2.3.5-1),
+	glib2-dev (>= 2.12.0-1),
+	libgettext3-dev,
+	libiconv-dev,
+	libjpeg,
+	libmng2,
+	libpng3 (>= 1.2.5-4),
+	macosx (>= 10.4.3-1),
+	pkgconfig (>= 0.22-1)
+<<
+BuildConflicts: <<
+	kdelibs3-dev,
+	kdelibs3-ssl-dev,
+	kdelibs3-unified-dev,
+	libevent1,
+	pcre,
+	clucene-core
+<<
+BuildDependsOnly: true
+Depends: <<
+	%N-shlibs (= %v-%r),
+	%N-designer (= %v-%r),
+	%N-linguist (= %v-%r),
+	%N-doc (= %v-%r),
+	pkgconfig (>= 0.22-1),
+	macosx (>= 10.4.3-1)
+<<
+GCC: 4.0
+Description: Cross-platform framework (Mac version)
+DescDetail: <<
+	Qt is a cross-platform application framework for desktop and embedded
+	development. It includes an intuitive API and a rich C++ class library,
+	integrated tools for GUI development and internationalization, and
+	support for Java and C++ development.
+<<
+DescUsage: <<
+	To compile against this package, you need to make sure that
+	%p/lib/%n/bin is first in your PATH.  $QTDIR is no longer necessary;
+	instead, qmake contains the information necessary to find your Qt
+	environment, and when you generate a project using qmake it knows
+	what to do.
+	
+	If you need to manually find this package for whatever reason, you
+	need -I%p/lib/%n/include in your compiler flags, and
+	-L%p/lib/%n/lib in your linker flags.  In this case, it's still a
+	good idea to set your PATH to %p/lib/%n/bin as well.
+	
+	To build the demos and examples, it's enough to just run qmake on
+	the .pro file in the %p/share/doc/%n directory in the %N-doc
+	package.
+	
+		mkdir /tmp/build-examples
+		cd /tmp/build-examples
+		%p/lib/%n/bin/qmake %p/share/doc/%n/examples/examples.pro
+		make
+<<
+
+DocFiles: GPL* LICENSE.* OPENSOURCE-NOTICE.TXT README* changes-*
+
+SplitOff: <<
+	Package: %N-shlibs
+	Suggests: %N-designer, %N-linguist, %N-doc
+	Conflicts: %N-core-shlibs, %N-gui-shlibs
+	Provides: %N-core-shlibs, %N-gui-shlibs
+	Depends: <<
+		freetype219-shlibs (>= 2.3.5-1),
+		libmng2-shlibs,
+		libpng3-shlibs (>= 1.2.5-4),
+		libjpeg-shlibs,
+		dbus-shlibs (>= 1.0.0-1),
+		fink (>= 0.17.1-1),
+		glib2-shlibs (>= 2.12.0-1)
+	<<
+	Files: <<
+		lib/%N/lib
+	<<
+<<
+SplitOff2: <<
+	Package: %N-designer
+	Depends: %N-shlibs (= %v-%r)
+	AppBundles: lib/%n/bin/Designer*.app
+	Files: <<
+		lib/%N/bin/Designer*
+		lib/%N/translations/designer_*
+	<<
+<<
+SplitOff3: <<
+	Package: %N-linguist
+	Depends: %N-shlibs (= %v-%r)
+	AppBundles: lib/%n/bin/Linguist*.app
+	Files: <<
+		lib/%N/bin/Linguist*
+		lib/%N/bin/l*
+		lib/%N/phrasebooks
+		lib/%N/translations/linguist_*
+	<<
+<<
+SplitOff4: <<
+	Package: %N-apps
+	Depends: %N-shlibs (= %v-%r)
+	AppBundles: lib/%n/bin/*.app
+<<
+SplitOff5: <<
+	Package: %N-doc
+	Files: share/doc/%N
+<<
+CompileScript: <<
+	#!/bin/bash -ev
+	./configure -confirm-license -no-framework -prefix %i/lib/%n/ -no-rpath -R %p/lib/%n/ -demosdir %i/share/doc/%n/demos/ -examplesdir %i/share/doc/%n/examples/ -docdir %i/share/doc/%n/
+	make
+<<
+InstallScript: <<
+	#!/bin/bash -ev
+	make install
+<<

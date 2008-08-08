@@ -1,0 +1,54 @@
+Package: orange
+Version: 1.0b
+Revision: 1
+Source: none
+Maintainer: Mitar <mitar@tnode.com>
+HomePage: http://www.ailab.si/orange/
+License: GPL
+Distribution: 10.4, 10.5
+BuildDepends: svn-client
+Depends: <<
+	python25,
+	orange-py25 (>= %v),
+	pyqtmac-py25,
+	pyqwt-mac-py25 (<< 5),
+	graphviz
+<<
+Conflicts: orange-svn
+Replaces: orange-svn
+Architecture: i386, powerpc
+Description: Component-based data mining software
+DescDetail: <<
+	Orange is a component-based data mining software. It includes a range
+	of data visualization, exploration, preprocessing and modelling
+	techniques. It can be used through a nice and intuitive user interface
+	or, for more advanced users, as a module for Python programming language.
+	
+	This package provides a graphical user interface.
+<<
+AppBundles: bundle-lite/Orange.app
+CompileScript: <<
+	#!/bin/bash -ev
+	svn export http://www.ailab.si/svn/orange/branches/ver1.0/install-scripts/mac/bundle-lite/
+	svn export http://www.ailab.si/svn/orange/branches/ver1.0/orange/
+<<
+InstallScript: <<
+	#!/bin/bash -ev
+	mkdir -p %i/share/doc/%n/
+	mv orange/COPYING %i/share/doc/%n/
+	mv orange/doc/widgets/ %i/share/doc/%n/
+	rm -rf orange/orng*.py orange/mathutil.py orange/doc/
+	mv orange/ bundle-lite/Orange.app/Contents/Resources/
+	cat <<-'EOF' > bundle-lite/Orange.app/Contents/MacOS/Orange
+		#!/bin/bash
+		. %p/bin/init.sh
+		CANVAS_FILE="`dirname $0`/../Resources/orange/OrangeCanvas/orngCanvas.pyw"
+		# LaunchServices passes the Carbon process identifier to the application with -psn paramter - we do not want it
+		if [[ "\$1" == -psn* ]] ; then
+			shift
+		fi
+		export QTDIR=%p/lib/qt3mac/
+		exec -a "$0" %p/bin/python2.5 "$CANVAS_FILE" "$@"
+	EOF
+	chmod +x bundle-lite/Orange.app/Contents/MacOS/Orange
+<<

@@ -1,0 +1,69 @@
+Package: orange-svn-py25
+Version: 0.0
+Revision: 1
+Source: none
+Maintainer: Mitar <mitar@tnode.com>
+HomePage: http://www.ailab.si/orange/
+License: GPL
+Type: python (2.5)
+Distribution: 10.4, 10.5
+BuildDepends: svn-client
+Depends: <<
+	python25,
+	numpy-py25
+<<
+Suggests: orange-svn
+Conflicts: orange-py25
+Replaces: orange-py25
+Architecture: i386, powerpc
+Description: Component-based data mining software
+DescDetail: <<
+	Orange is a component-based data mining software. It includes a range
+	of data visualization, exploration, preprocessing and modelling
+	techniques. It can be used through a nice and intuitive user interface
+	or, for more advanced users, as a module for Python programming language.
+	
+	This package provides a Python module.
+<<
+Shlibs: <<
+	%p/lib/python2.5/site-packages/orange/orange.so 0.0.0 orange-py25 (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/orangeom.so 0.0.0 orange-py25 (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/corn.so 0.0.0 orange-py25 (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/statc.so 0.0.0 orange-py25 (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/_orngCRS.so 0.0.0 orange-py25 (>= 1.0-1)
+<<
+CompileScript: <<
+	#!/bin/bash -ev
+	export PATH=%b:$PATH
+	ln -s %p/bin/python2.5 python
+	svn export http://www.ailab.si/svn/orange/trunk/source/
+	svn export http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/
+	svn export http://www.ailab.si/svn/orange/trunk/orange/
+	cd source
+	make
+	cd ../src/
+	make
+	mv _orngCRS.so ..
+	cd ../
+	rm -f liborange.dylib
+	rm -f orangene.so
+	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/corn.so corn.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/statc.so statc.so
+	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
+<<
+InstallScript: <<
+	#!/bin/bash -ev
+	mkdir -p %i/share/doc/%n/
+	mv orange/COPYING %i/share/doc/%n/
+	mv orange/doc/reference/ %i/share/doc/%n/
+	mv orange/doc/modules/ %i/share/doc/%n/
+	mv orange/doc/ofb/ %i/share/doc/%n/
+	mv orange/doc/datasets/ %i/share/doc/%n/
+	mkdir -p %i/lib/python2.5/site-packages/orange/
+	mv *.so %i/lib/python2.5/site-packages/orange/
+	mv orange/orng*.py orange/mathutil.py %i/lib/python2.5/site-packages/orange/
+	echo "orange" > %i/lib/python2.5/site-packages/orange.pth
+	echo "datasetsPath=\"%p/share/doc/%n/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
+<<
