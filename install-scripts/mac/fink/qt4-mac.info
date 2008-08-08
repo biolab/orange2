@@ -82,7 +82,7 @@ SplitOff: <<
 	Conflicts: %N-core-shlibs, %N-gui-shlibs
 	Provides: %N-core-shlibs, %N-gui-shlibs
 	Depends: <<
-		freetype219-shlibs (>= 2.3.5-1),
+		freetype2-shlibs (>= 2.0.0-1),
 		libmng2-shlibs,
 		libpng3-shlibs (>= 1.2.5-4),
 		libjpeg-shlibs,
