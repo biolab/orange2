@@ -1,3 +1,4 @@
+Info3: <<
 Package: qt4-mac
 Version: 4.4.1
 Revision: 1
@@ -19,7 +20,7 @@ BuildDepends: <<
 	expat1,
 	fink (>= 0.17.3-1),
 	fontconfig2-dev (>= 2.3.0-1),
-	freetype2 (>= 2.0.0-1),
+	freetype2,
 	glib2-dev (>= 2.12.0-1),
 	libgettext3-dev,
 	libiconv-dev,
@@ -54,35 +55,33 @@ DescDetail: <<
 <<
 DescUsage: <<
 	To compile against this package, you need to make sure that
-	%p/lib/%n/bin is first in your PATH.  $QTDIR is no longer necessary;
+	%p/lib/%N/bin is first in your PATH.  $QTDIR is no longer necessary;
 	instead, qmake contains the information necessary to find your Qt
 	environment, and when you generate a project using qmake it knows
 	what to do.
 	
 	If you need to manually find this package for whatever reason, you
-	need -I%p/lib/%n/include in your compiler flags, and
-	-L%p/lib/%n/lib in your linker flags.  In this case, it's still a
-	good idea to set your PATH to %p/lib/%n/bin as well.
+	need -I%p/lib/%N/include in your compiler flags, and
+	-L%p/lib/%N/lib in your linker flags.  In this case, it's still a
+	good idea to set your PATH to %p/lib/%N/bin as well.
 	
 	To build the demos and examples, it's enough to just run qmake on
-	the .pro file in the %p/share/doc/%n directory in the %N-doc
+	the .pro file in the %p/share/doc/%N directory in the %N-doc
 	package.
 	
 		mkdir /tmp/build-examples
 		cd /tmp/build-examples
-		%p/lib/%n/bin/qmake %p/share/doc/%n/examples/examples.pro
+		%p/lib/%N/bin/qmake %p/share/doc/%N/examples/examples.pro
 		make
 <<
-
 DocFiles: GPL* LICENSE.* OPENSOURCE-NOTICE.TXT README* changes-*
-
 SplitOff: <<
 	Package: %N-shlibs
 	Suggests: %N-designer, %N-linguist, %N-doc
-	Conflicts: %N-core-shlibs, %N-gui-shlibs
-	Provides: %N-core-shlibs, %N-gui-shlibs
+	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
+	Provides: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
 	Depends: <<
-		freetype2-shlibs (>= 2.0.0-1),
+		freetype2-shlibs,
 		libmng2-shlibs,
 		libpng3-shlibs (>= 1.2.5-4),
 		libjpeg-shlibs,
@@ -90,25 +89,64 @@ SplitOff: <<
 		fink (>= 0.17.1-1),
 		glib2-shlibs (>= 2.12.0-1)
 	<<
+	Shlibs: <<
+		%p/lib/qt4-mac/lib/libphonon.4.dylib 4.1.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libphonon_debug.4.dylib 4.1.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQt3Support.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQt3Support_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtAssistantClient.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtAssistantClient_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCLucene.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCLucene_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCore.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCore_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDBus.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDBus_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesigner.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesigner_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesignerComponents.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesignerComponents_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtGui.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtGui_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtHelp.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtHelp_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtNetwork.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtNetwork_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtOpenGL.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtOpenGL_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtScript.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtScript_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSql.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSql_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSvg.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSvg_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtTest.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtTest_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtWebKit.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtWebKit_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtXml.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtXml_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtXmlPatterns.4.dylib 4.4.0 %n (>= 4.4.1-1)
+       .%p/lib/qt4-mac/lib/libQtXmlPatterns_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+	<<
 	Files: <<
 		lib/%N/lib
+		lib/%N/plugins
 	<<
 <<
 SplitOff2: <<
 	Package: %N-designer
 	Depends: %N-shlibs (= %v-%r)
-	AppBundles: lib/%n/bin/Designer*.app
+	AppBundles: Designer.app
 	Files: <<
-		lib/%N/bin/Designer*
 		lib/%N/translations/designer_*
 	<<
 <<
 SplitOff3: <<
 	Package: %N-linguist
 	Depends: %N-shlibs (= %v-%r)
-	AppBundles: lib/%n/bin/Linguist*.app
+	AppBundles: Linguist.app
 	Files: <<
-		lib/%N/bin/Linguist*
 		lib/%N/bin/l*
 		lib/%N/phrasebooks
 		lib/%N/translations/linguist_*
@@ -117,7 +155,17 @@ SplitOff3: <<
 SplitOff4: <<
 	Package: %N-apps
 	Depends: %N-shlibs (= %v-%r)
-	AppBundles: lib/%n/bin/*.app
+	AppBundles: <<
+		Assistant.app
+		Assistant_adp.app
+		pixeltool.app
+		qdbusviewer.app
+		qhelpconverter.app
+		qtdemo.app
+	<<
+	Files: <<
+		lib/%N/translations/assistant_*
+	<<
 <<
 SplitOff5: <<
 	Package: %N-doc
@@ -125,10 +173,13 @@ SplitOff5: <<
 <<
 CompileScript: <<
 	#!/bin/bash -ev
-	./configure -confirm-license -no-framework -prefix %i/lib/%n/ -no-rpath -R %p/lib/%n/ -demosdir %i/share/doc/%n/demos/ -examplesdir %i/share/doc/%n/examples/ -docdir %i/share/doc/%n/
-	make
+	./configure -confirm-license -no-framework -prefix %p/lib/%N/ -demosdir %p/share/doc/%N/demos/ -examplesdir %p/share/doc/%N/examples/ -docdir %p/share/doc/%N/
+	make -j 16
+	find %b -name '*.pc' -or -name '*.la' -print0 | xargs -0 perl -pi -e 's!-framework !-Wl,-framework,!g'
 <<
 InstallScript: <<
 	#!/bin/bash -ev
-	make install
+	make INSTALL_ROOT=%d install
+	mv %i/lib/%N/bin/*.app %b
+<<
 <<

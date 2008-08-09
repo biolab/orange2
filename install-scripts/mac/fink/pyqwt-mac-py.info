@@ -1,3 +1,4 @@
+Info3: <<
 Package: pyqwt-mac-py%type_pkg[python]
 Version: 4.2.3
 Revision: 1
@@ -32,7 +33,7 @@ DescDetail: <<
 	to plot data points in two dimensions and various widgets to
 	display and control bounded or unbounded floating point values.
 <<
-DocFiles: ANNOUNCEMENT-4.2.3 CHANGES-4.2.3 COPYING COPYING.PyQwt README THANKS Doc
+DocFiles: ANNOUNCEMENT-* CHANGES-* COPYING* README THANKS Doc
 CompileScript: <<
 	#!/bin/bash -ev
 	cd configure 
@@ -43,4 +44,5 @@ InstallScript: <<
 	#!/bin/bash -ev
 	cd configure
 	make DESTDIR=%d install
+<<
 <<

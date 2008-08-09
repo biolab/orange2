@@ -1,3 +1,4 @@
+Info3: <<
 Package: orange-py25
 Version: 1.0b
 Revision: 1
@@ -66,4 +67,5 @@ InstallScript: <<
 	mv orange/orng*.py orange/mathutil.py %i/lib/python2.5/site-packages/orange/
 	echo "orange" > %i/lib/python2.5/site-packages/orange.pth
 	echo "datasetsPath=\"%p/share/doc/%n/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
+<<
 <<

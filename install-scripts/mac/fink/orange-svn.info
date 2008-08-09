@@ -1,3 +1,4 @@
+Info3: <<
 Package: orange
 Version: 0.0
 Revision: 1
@@ -50,4 +51,5 @@ InstallScript: <<
 		exec -a "$0" %p/bin/python2.5 "$CANVAS_FILE" "$@"
 	EOF
 	chmod +x bundle-lite/Orange.app/Contents/MacOS/Orange
+<<
 <<
