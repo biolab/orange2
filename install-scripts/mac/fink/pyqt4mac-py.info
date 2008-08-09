@@ -1,0 +1,68 @@
+Package: pyqt4mac-py%type_pkg[python]
+Version: 4.3.3
+Revision: 1
+Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-$v.tar.gz
+Source-MD5: 6d2a11cd1372ce98b486e9bc5de3c0fc
+Maintainer: Mitar <mitar@tnode.com>
+Homepage: http://www.riverbankcomputing.co.uk/software/pyqt/intro
+License: GPL
+Type: python (2.3 2.4 2.5)
+Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5
+BuildDepends:<<
+	fink (>= 0.24.12),
+	freetype2,
+	glib2-dev,
+	libgettext3-dev,
+	libiconv-dev,
+	libpng3,
+	qscintilla2-qt4-mac,
+	qt4-mac,
+	sip-py%type_pkg[python]-bin (>= 4.7.4-1)
+<<
+Depends: <<
+	freetype2-shlibs,
+	glib2-shlibs,
+	libgettext3-shlibs,
+	libiconv,
+ 	libpng3-shlibs,
+	python%type_pkg[python], 
+	qscintilla2-qt4-mac-shlibs,
+	qt4-mac-core-shlibs, 
+	qt4-mac-designer-shlibs,
+	qt4-mac-gui-shlibs,
+	sip-py%type_pkg[python] (>= 4.7.4-1)
+<<
+Description: Python bindings for the Qt toolkit
+DocFiles: ChangeLog LICENSE NEWS README
+SplitOff: <<
+	Package: %N-bin
+	License: GPL
+	Depends: <<
+		freetype2-shlibs,
+		glib2-shlibs, 
+		libgettext3-shlibs,
+		libiconv, 
+		pyqt4mac-py%type_pkg[python],
+		qt4-mac-core-shlibs, 
+		qt4-mac-gui-shlibs
+	<<
+	DocFiles: ChangeLog LICENSE NEWS README
+	Files: bin
+<<
+CompileScript: <<
+	#!/bin/bash -ev
+	export PATH=%p/lib/qt4-mac/bin:$PATH
+	echo "yes" | %p/bin/python%type_raw[python] configure.py \
+	    -b %i/bin \
+	    -d %i/lib/python%type_raw[python]/site-packages \
+	    -p %i/lib/qt4-mac/plugins/python%type_raw[python] \
+	    -v %i/share/sip-py%type_pkg[python]/pyqt4 \
+	    -n %i/include/python%type_raw[python] \
+	    LFLAGS+=-L%p/lib/python%type_raw[python]/config \
+	    LFLAGS_PLUGIN="-bundle -undefined dynamic_lookup"
+	make
+<<
+InstallScript: <<
+	make install
+	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4 
+<<

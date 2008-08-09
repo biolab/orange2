@@ -1,0 +1,48 @@
+Info3: <<
+Package: pyqwt-qt4mac-py%type_pkg[python]
+Version: 5.1.0
+Revision: 1
+Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
+Source-MD5: c9d662a0d4fc95cec75d3c526e4e748a
+Maintainer: Mitar <mitar@tnode.com>
+Homepage: http://pyqwt.sourceforge.net/
+License: GPL
+Type: python (2.3 2.4 2.5)
+Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5
+BuildDepends: <<
+	qt4-mac,
+	pyqtmac-py%type_pkg[python],
+	sip-py%type_pkg[python]-bin (>= 4.6)
+<<
+BuildConflicts: qt4-x11
+Depends: <<
+	qt4-mac-shlibs,
+	pyqtmac-py%type_pkg[python],
+	python%type_pkg[python],
+	sip-py%type_pkg[python] (>= 4.6)
+<<
+Conflicts: <<
+	pyqwt-py%type_pkg[python]
+<<
+GCC: 4.0
+Description: Python bindings for Qwt
+DescDetail: <<
+	PyQwt is a set of Python bindings for the Qwt C++ class library.
+	The Qwt library extends the Qt framework with widgets for
+	Scientific and Engineering applications.   It provides a widget
+	to plot data points in two dimensions and various widgets to
+	display and control bounded or unbounded floating point values.
+<<
+DocFiles: ANNOUNCEMENT-* COPYING* README Doc
+CompileScript: <<
+	#!/bin/bash -ev
+	cd configure 
+	%p/bin/python%type_raw[python] configure.py -Q ../qwt-5.1
+	make
+<<
+InstallScript: <<
+	#!/bin/bash -ev
+	cd configure
+	make DESTDIR=%d install
+<<
+<<
