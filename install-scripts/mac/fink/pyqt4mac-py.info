@@ -1,7 +1,7 @@
 Package: pyqt4mac-py%type_pkg[python]
 Version: 4.4.3
 Revision: 1
-Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-$v.tar.gz
+Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6d2a11cd1372ce98b486e9bc5de3c0fc
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://www.riverbankcomputing.co.uk/software/pyqt/intro
