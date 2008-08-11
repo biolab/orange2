@@ -25,6 +25,14 @@
 
 #include "Python.h"
 
+#ifdef _MSC_VER
+  /* easier to do some ifdefing here than needing to define a special
+     include in every project that includes this header */
+  #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
+#else
+  #include <numpy/arrayobject.h>
+#endif
+
 #include <stdio.h>
 #include "stdlib.h"
 #include <iostream>
@@ -75,16 +83,16 @@ public:
 	~TNetworkHierarchy();
 	void setTop(vector<int> &vertices);
 	void addToNewMeta(vector<int> &vertices);
-  void expandMeta(int meta);
-  void printChilds(TNetworkHierarchyNode *node);
-  int getNextMetaIndex();
-  int getMetaChildsCount(TNetworkHierarchyNode *node);
-  int getMetasCount();
+	void expandMeta(int meta);
+	void printChilds(TNetworkHierarchyNode *node);
+	int getNextMetaIndex();
+	int getMetaChildsCount(TNetworkHierarchyNode *node);
+	int getMetasCount();
 
-  int meta_index;
+  	int meta_index;
 	TNetworkHierarchyNode *top;
-  TNetworkHierarchyNode *getNodeByVertex(int vertex);
-  TNetworkHierarchyNode *getNodeByVertex(int vertex, TNetworkHierarchyNode &start);
+	TNetworkHierarchyNode *getNodeByVertex(int vertex);
+	TNetworkHierarchyNode *getNodeByVertex(int vertex, TNetworkHierarchyNode &start);
 };
 
 OMWRAPPER(Network)
@@ -93,20 +101,28 @@ class ORANGEOM_API TNetwork : public TGraphAsList
 {
 public:
   __REGISTER_CLASS
-  
+
   TNetwork(TGraphAsList *graph);
   TNetwork(const int &nVert, const int &nEdge, const bool dir);
   ~TNetwork();
-  
+
   void printHierarchy();
   void hideVertices(vector<int> vertices);
   void showVertices(vector<int> vertices);
   void showAll();
 
+  double **ptrvector(int n);
+  double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
+  bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
+  void free_Carrayptrs(double **v);
+
+  double **pos;
+  PyArrayObject *coors;
+
   PExampleTable items; //P ExampleTable of vertices data
   PExampleTable links; //P ExampleTable of edges data
   TNetworkHierarchy hierarchy;
   set<int> optimize;
-}; 
+};
 
 #endif

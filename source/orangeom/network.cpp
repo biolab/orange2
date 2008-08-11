@@ -24,6 +24,7 @@
 TNetwork::TNetwork(TGraphAsList *graph)
 : TGraphAsList(graph->nVertices, graph->nEdgeTypes, graph->directed)
 {
+	import_array();
   optimize.clear();
   vector<int> vertices;
   vector<int> neighbours;
@@ -38,13 +39,14 @@ TNetwork::TNetwork(TGraphAsList *graph)
     vertices.push_back(v1);
     optimize.insert(v1);
 	}
-	
+
   hierarchy.setTop(vertices);
 }
 
 TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 : TGraphAsList(nVert, nEdge, dir)
 {
+	import_array();
   optimize.clear();
   vector<int> vertices;
   int i;
@@ -55,16 +57,24 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
   }
 
   hierarchy.setTop(vertices);
+
+  	int dims[2];
+  	dims[0] = 2;
+  	dims[1] = nVert;
+  	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+  	pos = pymatrix_to_Carrayptrs(coors);
+
 }
 
 TNetwork::~TNetwork()
 {
-
+	free_Carrayptrs(pos);
+	Py_DECREF(coors);
 }
 
 void TNetwork::hideVertices(vector<int> vertices)
 {
-  for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it) 
+  for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it)
 	{
     optimize.erase(*it);
   }
@@ -72,7 +82,7 @@ void TNetwork::hideVertices(vector<int> vertices)
 
 void TNetwork::showVertices(vector<int> vertices)
 {
-  for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it) 
+  for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it)
 	{
     optimize.insert(*it);
   }
@@ -94,6 +104,54 @@ void TNetwork::printHierarchy()
   cout << endl;
 }
 
+
+/* ==== Free a double *vector (vec of pointers) ========================== */
+void TNetwork::free_Carrayptrs(double **v)  {
+
+	free((char*) v);
+}
+
+/* ==== Allocate a double *vector (vec of pointers) ======================
+    Memory is Allocated!  See void free_Carray(double ** )                  */
+double **TNetwork::ptrvector(int n)  {
+	double **v;
+	v=(double **)malloc((size_t) (n*sizeof(double *)));
+
+	if (!v)   {
+		printf("In **ptrvector. Allocation of memory for double array failed.");
+		exit(0);
+	}
+	return v;
+}
+
+/* ==== Create Carray from PyArray ======================
+    Assumes PyArray is contiguous in memory.
+    Memory is allocated!                                    */
+double **TNetwork::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
+	double **c, *a;
+	int i,n,m;
+
+	n = arrayin->dimensions[0];
+	m = arrayin->dimensions[1];
+	c = ptrvector(n);
+	a = (double *) arrayin->data;  /* pointer to arrayin data as double */
+
+	for (i = 0; i < n; i++) {
+		c[i] = a + i * m;
+	}
+
+	return c;
+}
+
+/* ==== Create 1D Carray from PyArray ======================
+ 129     Assumes PyArray is contiguous in memory.             */
+bool *TNetwork::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
+	int n;
+
+	n = arrayin->dimensions[0];
+	return (bool *) arrayin->data;  /* pointer to arrayin data as double */
+}
+
 TNetworkHierarchyNode::TNetworkHierarchyNode()
 {
 	parent = NULL;
@@ -107,7 +165,7 @@ TNetworkHierarchyNode::~TNetworkHierarchyNode()
   {
     if (childs[i])
     {
-      delete childs[i]; 
+      delete childs[i];
     }
   }
 }
@@ -116,7 +174,7 @@ int TNetworkHierarchyNode::getLevel()
 {
   int level = 0;
   TNetworkHierarchyNode *next_parent = parent;
-  
+
   while (next_parent != NULL)
   {
     if (next_parent->parent == NULL)
@@ -125,7 +183,7 @@ int TNetworkHierarchyNode::getLevel()
       next_parent = next_parent->parent;
     level++;
   }
-  
+
   return level;
 }
 
@@ -164,7 +222,7 @@ int TNetworkHierarchy::getMetaChildsCount(TNetworkHierarchyNode *node)
 {
   int rv = 0;
   int i;
-  
+
   for (i = 0; i < node->childs.size(); i++)
   {
     if (node->childs[i]->vertex < 0)
@@ -206,10 +264,10 @@ void TNetworkHierarchy::setTop(vector<int> &vertices)
 	top->childs.clear();
   top->parent = NULL;
 
-	for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it) 
+	for (vector<int>::iterator it = vertices.begin(); it != vertices.end(); ++it)
 	{
     TNetworkHierarchyNode *child = new TNetworkHierarchyNode();
-    
+
     child->vertex = *it;
     child->parent = top;
 
@@ -238,7 +296,7 @@ void TNetworkHierarchy::addToNewMeta(vector<int> &vertices)
       highest_parent = node->parent;
     }
   }
-  
+
   TNetworkHierarchyNode *meta = new TNetworkHierarchyNode();
   meta->parent = highest_parent;
   meta->vertex = getNextMetaIndex();
@@ -246,7 +304,7 @@ void TNetworkHierarchy::addToNewMeta(vector<int> &vertices)
 
   for (i = 0; i < nodes.size(); i++)
   {
-    for (vector<TNetworkHierarchyNode *>::iterator it = nodes[i]->parent->childs.begin(); it != nodes[i]->parent->childs.end(); ++it) 
+    for (vector<TNetworkHierarchyNode *>::iterator it = nodes[i]->parent->childs.begin(); it != nodes[i]->parent->childs.end(); ++it)
 	  {
       if ((*it)->vertex == nodes[i]->vertex)
       {
@@ -275,7 +333,7 @@ void TNetworkHierarchy::expandMeta(int meta)
   }
 
   // erase meta from parent
-  for (vector<TNetworkHierarchyNode *>::iterator it = metaNode->parent->childs.begin(); it != metaNode->parent->childs.end(); ++it) 
+  for (vector<TNetworkHierarchyNode *>::iterator it = metaNode->parent->childs.begin(); it != metaNode->parent->childs.end(); ++it)
   {
     if ((*it)->vertex == metaNode->vertex)
     {
@@ -324,7 +382,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 	PyTRY
 		int nVertices, directed, nEdgeTypes = 1;
     PyObject *pygraph;
-    
+
     if (PyArg_ParseTuple(args, "O:Network", &pygraph))
     {
       if (!PyOrGraphAsList_Check(pygraph))
@@ -350,16 +408,16 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 
       return WrapNewOrange(network, type);
     }
-    
+
     PyErr_Clear();
-    
+
     if (PyArg_ParseTuple(args, "ii|i:Network", &nVertices, &directed, &nEdgeTypes))
     {
 		  return WrapNewOrange(mlnew TNetwork(nVertices, nEdgeTypes, directed != 0), type);
     }
 
     PYERROR(PyExc_TypeError, "Network.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
-	
+
 	PyCATCH
 }
 
@@ -368,22 +426,22 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 {
 	PyTRY
 	CAST_TO(TNetwork, network);
-	
+
 	PyObject *pyMatrix;
 	double lower;
 	double upper;
-	
+
 	if (!PyArg_ParseTuple(args, "Odd:Network.fromSymMatrix", &pyMatrix, &lower, &upper))
 		return PYNULL;
-  
+
 	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
-	
+
 	if (matrix->dim != network->nVertices)
 		PYERROR(PyExc_TypeError, "SymMatrix dimension should equal number of vertices.", PYNULL);
-	
+
 	int i,j;
 	int nConnected = 0;
-	
+
 	if (matrix->matrixType == 0) {
 		// lower
 		for (i = 0; i < matrix->dim; i++) {
@@ -395,15 +453,15 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				if (lower <=  value && value <= upper) {
 					double* w = network->getOrCreateEdge(j, i);
 					*w = value;
-					
+
 					connected = true;
 				}
 			}
-			
+
 			if (connected)
 				nConnected++;
 		}
-		
+
 		vector<int> neighbours;
 		network->getNeighbours(0, neighbours);
 		if (neighbours.size() > 0)
@@ -424,14 +482,14 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 
 			if (connected)
 				nConnected++;
-			
+
 			vector<int> neighbours;
 			network->getNeighbours(matrix->dim - 1, neighbours);
 			if (neighbours.size() > 0)
 				nConnected++;
 		}
 	}
-	
+
 	return Py_BuildValue("i", nConnected);
 	PyCATCH;
 }
@@ -561,7 +619,7 @@ PyObject *Network_getVisible(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "No
 
     PyObject *pyVisible = PyList_New(0);
 
-    for (set<int>::iterator it = network->optimize.begin(); it != network->optimize.end(); ++it) 
+    for (set<int>::iterator it = network->optimize.begin(); it != network->optimize.end(); ++it)
 	  {
       PyObject *nel = Py_BuildValue("i", *it);
 			PyList_Append(pyVisible, nel);

@@ -67,7 +67,7 @@ public:
 
 	TNetworkOptimization();
 	~TNetworkOptimization();
-	
+
 	void random();
 	int fruchtermanReingold(int steps, bool weighted);
 	int radialFruchtermanReingold(int steps, int nCircles);
@@ -84,16 +84,16 @@ public:
 	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 	bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 	void free_Carrayptrs(double **v);
-	
-	double k; 
-	double k2; 
+
+	double k;
+	double k2;
 	double temperature;
 	double coolFactor;
-	double width; 
-	double height; 
+	double width;
+	double height;
 	PyArrayObject *coors;
   	PyArrayObject *metaCoors;
-	TNetwork *graphStructure;
+	TNetwork *network;
 
 	int nLinks;
 	int nVertices;
@@ -106,7 +106,7 @@ public:
 	double *levelMin;
 	double *levelMax;
   	TGraphAsTree *tree;
-  
+
 };
 
 
@@ -140,14 +140,14 @@ public:
 		return (os);
 	}
 
-	QueueVertex(int index = -1, unsigned int neighbours = 0) 
-	{ 
-		ndx = index; 
+	QueueVertex(int index = -1, unsigned int neighbours = 0)
+	{
+		ndx = index;
 		unplacedNeighbours = neighbours;
 		placedNeighbours = 0;
 	}
 
-	bool operator () (const QueueVertex * a, const QueueVertex * b) 
+	bool operator () (const QueueVertex * a, const QueueVertex * b)
 	{
 		if (a->unplacedNeighbours < b->unplacedNeighbours)
 			return false;
@@ -156,7 +156,7 @@ public:
 		else
 		{
 			return a->placedNeighbours < b->placedNeighbours;
-		}	
+		}
 	}
 };
 

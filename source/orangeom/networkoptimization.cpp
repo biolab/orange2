@@ -26,7 +26,7 @@ TNetworkOptimization::TNetworkOptimization()
 {
 	//cout << "constructor" << endl;
 	import_array();
-	
+
 	nVertices = 0;
 	nLinks = 0;
 
@@ -48,7 +48,7 @@ inline T &min(const T&x, const T&y)
 { return x<y ? x : y; }
 #endif
 #endif
- 
+
 TNetworkOptimization::~TNetworkOptimization()
 {
 	//cout << "destructor" << endl;
@@ -94,7 +94,7 @@ int TNetworkOptimization::circularCrossingReduction()
 	for (i = 0; i < nVertices; i++)
 	{
 		vector<int> neighbours;
-		graphStructure->getNeighbours(i, neighbours);
+		network->getNeighbours(i, neighbours);
 
 		QueueVertex *vertex = new QueueVertex();
 		vertex->ndx = i;
@@ -130,7 +130,7 @@ int TNetworkOptimization::circularCrossingReduction()
 			for (i = 0; i < positions.size(); i++)
 			{
 				int ndx = positions[i];
-				
+
 				if (vertex->hasNeighbour(ndx))
 				{
 					lCrossings.push_back(left);
@@ -225,7 +225,7 @@ int TNetworkOptimization::circularCrossingReduction()
 	{
 		pos[0][positions[i]] = r * cos(fi) + xCenter;
 		pos[1][positions[i]] = r * sin(fi) + yCenter;
-	
+
 		fi = fi - fiStep;
 	}
 
@@ -234,7 +234,7 @@ int TNetworkOptimization::circularCrossingReduction()
 
 	original.clear();
 	vertices.clear();
-	
+
 	return 0;
 }
 
@@ -270,7 +270,7 @@ int TNetworkOptimization::circular(int type)
 
 			pos[0][vertices[ndx]] = r * cos(fi) + xCenter;
 			pos[1][vertices[ndx]] = r * sin(fi) + yCenter;
-			
+
 			vertices.erase(vertices.begin() + ndx);
 		}
 
@@ -280,7 +280,7 @@ int TNetworkOptimization::circular(int type)
 	return 0;
 }
 int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
-{ 
+{
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
 	dumpCoordinates();
@@ -330,7 +330,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				double difX = pos[0][v] - pos[0][u];
 				double difY = pos[1][v] - pos[1][u];
 
-				double dif2 = difX * difX + difY * difY; 
+				double dif2 = difX * difX + difY * difY;
 
 				if (dif2 < kk2)
 				{
@@ -358,21 +358,21 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				//int u = links[j][1];
 				int v = links[0][j];
 				int u = links[1][j];
-	
+
 				double difX = pos[0][v] - pos[0][u];
 				double difY = pos[1][v] - pos[1][u];
-	
+
 				double dif = sqrt(difX * difX + difY * difY);
-				
-				double *w = graphStructure->getEdge(v,u);
+
+				double *w = network->getEdge(v,u);
 				*w = fabs(*w);
-				
+
 				double dX = difX * dif / k * (*w);
 				double dY = difY * dif / k * (*w);
-	
+
 				disp[v][0] = disp[v][0] - dX;
 				disp[v][1] = disp[v][1] - dY;
-	
+
 				disp[u][0] = disp[u][0] + dX;
 				disp[u][1] = disp[u][1] + dY;
 			}
@@ -385,20 +385,20 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				//int u = links[j][1];
 				int v = links[0][j];
 				int u = links[1][j];
-	
+
 				double difX = pos[0][v] - pos[0][u];
 				double difY = pos[1][v] - pos[1][u];
-	
+
 				double dif = sqrt(difX * difX + difY * difY);
-	
-				
-				
+
+
+
 				double dX = difX * dif / k;
 				double dY = difY * dif / k;
-	
+
 				disp[v][0] = disp[v][0] - dX;
 				disp[v][1] = disp[v][1] - dY;
-	
+
 				disp[u][0] = disp[u][0] + dX;
 				disp[u][1] = disp[u][1] + dY;
 			}
@@ -435,13 +435,13 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 	//cout << endl;
 	free(disp);
 	disp = NULL;
-	
+
 	return 0;
 }
 
 
 int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
-{ 
+{
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
 	dumpCoordinates();
@@ -492,7 +492,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				// only for vertices on the same level
 				//if (level[v] != level[u])
 				//	continue;
-		
+
 				if (level[u] == level[v])
 					k = kVector[level[u]];
 				else
@@ -504,7 +504,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				double difX = pos[0][v] - pos[0][u];
 				double difY = pos[1][v] - pos[1][u];
 
-				double dif2 = difX * difX + difY * difY; 
+				double dif2 = difX * difX + difY * difY;
 
 				if (dif2 < kk2)
 				{
@@ -574,7 +574,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 			pos[1][v] = pos[1][v] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 
 			double distance = (pos[0][v] - (width/2)) * (pos[0][v] - (width/2)) + (pos[1][v] - (height/2)) * (pos[1][v] - (height/2));
-			
+
 			if (distance < levelMin[level[v]])
 				levelMin[level[v]] = distance;
 
@@ -591,7 +591,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 
 			//cout  << " min: " << levelMin[v] << " max: " << levelMax[v] << "r: " << v * radius << endl;
 		}
-		
+
 		for (v = 0; v < nVertices; v++)
 		{
 			double distance = sqrt((pos[0][v] - (width/2)) * (pos[0][v] - (width/2)) + (pos[1][v] - (height/2)) * (pos[1][v] - (height/2)));
@@ -612,7 +612,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 					double fi = 0;
 					double x = pos[0][v] - (width / 2);
 					double y = pos[1][v] - (height / 2);
-					
+
 					if (x < 0)
 						fi = atan(y / x) + PI;
 					else if ((x > 0) && (y >= 0))
@@ -623,7 +623,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 						fi = PI / 2;
 					else if ((x == 0) && (y < 0))
 						fi = 3 * PI / 2;
-					
+
 					pos[0][v] = levelMax[level[v]] * distance * cos(fi) + (width / 2);
 					pos[1][v] = levelMax[level[v]] * distance * sin(fi) + (height / 2);
 
@@ -638,7 +638,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 					double fi = 0;
 					double x = pos[0][v] - (width / 2);
 					double y = pos[1][v] - (height / 2);
-					
+
 					if (x < 0)
 						fi = atan(y / x) + PI;
 					else if ((x > 0) && (y >= 0))
@@ -676,14 +676,14 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 	//cout << endl;
 	free(disp);
 	disp = NULL;
-	
+
 	return 0;
 }
 
 
 
 int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
-{ 
+{
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
 	dumpCoordinates();
@@ -736,7 +736,7 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 					else
 						k = kVector[1];
 				else
-					k = kVector[2]; 
+					k = kVector[2];
 
 				k2 = k * k;
 				kk2 = 4 * k2;
@@ -744,7 +744,7 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 				double difX = pos[0][v] - pos[0][u];
 				double difY = pos[1][v] - pos[1][u];
 
-				double dif2 = difX * difX + difY * difY; 
+				double dif2 = difX * difX + difY * difY;
 
 				if (dif2 < kk2)
 				{
@@ -775,7 +775,7 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 				else
 					k = kVector[1];
 			else
-				k = kVector[2]; 
+				k = kVector[2];
 
 			k2 = k * k;
 			kk = 2 * k;
@@ -826,12 +826,12 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 	//cout << endl;
 	free(disp);
 	disp = NULL;
-	
+
 	return 0;
 }
 
 
-/* ==== Free a double *vector (vec of pointers) ========================== */ 
+/* ==== Free a double *vector (vec of pointers) ========================== */
 void TNetworkOptimization::free_Carrayptrs(double **v)  {
 
 	free((char*) v);
@@ -845,7 +845,7 @@ double **TNetworkOptimization::ptrvector(double n)  {
 
 	if (!v)   {
 		printf("In **ptrvector. Allocation of memory for double array failed.");
-		exit(0);  
+		exit(0);
 	}
 	return v;
 }
@@ -856,12 +856,12 @@ double **TNetworkOptimization::ptrvector(double n)  {
 double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 	double **c, *a;
 	int i,n,m;
-	
+
 	n = arrayin->dimensions[0];
 	m = arrayin->dimensions[1];
 	c = ptrvector(n);
 	a = (double *) arrayin->data;  /* pointer to arrayin data as double */
-	
+
 	for (i = 0; i < n; i++) {
 		c[i] = a + i * m;
 	}
@@ -899,7 +899,7 @@ int TNetworkOptimization::setNetwork(TNetwork *network)
 	metapos = pymatrix_to_Carrayptrs(metaCoors);
 
 	random();
- 
+
 	//dumpCoordinates();
 	nLinks = 0;
 	int v;
@@ -910,7 +910,7 @@ int TNetworkOptimization::setNetwork(TNetwork *network)
 		if (edge != NULL)
 		{
 			int u = edge->vertex;
-			
+
 			links[0].push_back(v);
 			links[1].push_back(u);
 			nLinks++;
@@ -919,7 +919,7 @@ int TNetworkOptimization::setNetwork(TNetwork *network)
 			while (next != NULL)
 			{
 				int u = next->vertex;
-				
+
 				links[0].push_back(v);
 				links[1].push_back(u);
 				nLinks++;
@@ -940,7 +940,7 @@ int TNetworkOptimization::setNetwork(TNetwork *network)
 #include "externs.px"
 #include "orange_api.hpp"
 
-PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph) -> None") 
+PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph) -> None")
 {
   PyTRY
 	PyObject *pygraph;
@@ -979,7 +979,7 @@ int getWords(string const& s, vector<string> &container)
                 // append the current field to the given container
                 container.push_back(string(first, it));
                 ++n;
-                
+
                 // skip the delimiter
                 first = it + 1;
             }
@@ -998,7 +998,7 @@ int getWords(string const& s, vector<string> &container)
                 // append the current field to the given container
                 container.push_back(string(first, it));
                 ++n;
-                
+
                 // skip the delimiter
                 first = it + 1;
 			}
@@ -1037,8 +1037,8 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 
 	if (netOptimization->setNetwork(graph) > 0)
 		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
-	
-	netOptimization->graphStructure = graph;
+
+	netOptimization->network = graph;
 	RETURN_NONE;
   PyCATCH
 }
@@ -1062,7 +1062,7 @@ PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->random();
-	
+
 	RETURN_NONE;
   PyCATCH
 }
@@ -1075,7 +1075,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	double coolFactor = 0;
 	PyObject* hiddenNodes;
 	bool weighted = false;
-	
+
 	if (!PyArg_ParseTuple(args, "id|dOb:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &coolFactor, &hiddenNodes, &weighted))
 		return NULL;
 
@@ -1089,7 +1089,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	for (i = 0; i < size; i++)
 	{
 		int node = PyInt_AsLong(PyList_GetItem(hiddenNodes, i));
-		
+
 		//cout <<"size: " << graph->links1->size() << endl;
 		for (j = graph->links[0].size() - 1; j >= 0; j--)
 		{
@@ -1112,7 +1112,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 		graph->coolFactor = exp(log(10.0/10000.0) / steps);
 	else
 		graph->coolFactor = coolFactor;
-	
+
 	if (graph->fruchtermanReingold(steps, weighted) > 0)
 	{
 		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
@@ -1126,7 +1126,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	}
 
 	graph->nLinks = graph->links[0].size();
-	
+
 	return Py_BuildValue("d", graph->temperature);
   PyCATCH
 }
@@ -1156,7 +1156,7 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 	int i;
 	for (i = 0; i < graph->nVertices; i++)
 		graph->level[i] = nCircles;
-	
+
 	for (i = 0; i < nCircles; i++)
 	{
 		graph->kVector[i] = 0;
@@ -1216,7 +1216,7 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 
 					if (!hasVertex(graph->links[0][j], allVertices))
 					{
-						//cout << "adding: " << 
+						//cout << "adding: " <<
 						newVertices.push_back(graph->links[0][j]);
 						allVertices.push_back(graph->links[0][j]);
 						graph->level[graph->links[0][j]] = i + 1;
@@ -1316,7 +1316,7 @@ PyObject *NetworkOptimization_smoothFruchtermanReingold(PyObject *self, PyObject
 		graph->level[i] = 1;
 
 	vector<int> neighbours;
-	graph->graphStructure->getNeighbours(center, neighbours);
+	graph->network->getNeighbours(center, neighbours);
 	int nNeighbours = neighbours.size();
 
 	ITERATE(vector<int>, ni, neighbours)
@@ -1328,14 +1328,14 @@ PyObject *NetworkOptimization_smoothFruchtermanReingold(PyObject *self, PyObject
 
 	double area = graph->width * graph->height;
 	double k2 = area / graph->nVertices;
-	
+
 	graph->kVector[0] = sqrt(PI * 9 * k2 / nNeighbours) / 2;
 	graph->kVector[1] = sqrt(k2);
 	graph->kVector[2] = 3 * sqrt(k2);
 
-	
+
 	graph->temperature = temperature;
-	
+
 	if (graph->smoothFruchtermanReingold(steps, center) > 0)
 	{
 		delete[] graph->level;
@@ -1382,18 +1382,18 @@ PyObject *NetworkOptimization_circularCrossingReduction(PyObject *self, PyObject
 PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
 {
   PyTRY
-	CAST_TO(TNetworkOptimization, graph);	
+	CAST_TO(TNetworkOptimization, graph);
 	Py_INCREF(graph->coors);
-	return (PyObject *)graph->coors;  
+	return (PyObject *)graph->coors;
   PyCATCH
 }
 
 PyObject *NetworkOptimization_get_metaCoors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> MetaCoors")*/
 {
   PyTRY
-	CAST_TO(TNetworkOptimization, graph);	
+	CAST_TO(TNetworkOptimization, graph);
 	Py_INCREF(graph->metaCoors);
-	return (PyObject *)graph->metaCoors;  
+	return (PyObject *)graph->metaCoors;
   PyCATCH
 }
 int *getVertexPowers(TNetworkOptimization *graph)
@@ -1411,7 +1411,7 @@ int *getVertexPowers(TNetworkOptimization *graph)
 		vertexPower[graph->links[0][i]]++;
 		vertexPower[graph->links[1][i]]++;
 	}
-	
+
   return vertexPower;
 }
 
@@ -1466,13 +1466,13 @@ PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) 
 
 	if (!PyArg_ParseTuple(args, "dddd:NetworkOptimization.getVerticesInRect", &x1, &y1, &x2, &y2))
 		return NULL;
-	
+
 	if (x1 > x2) {
 		double tmp = x2;
 		x2 = x1;
 		x1 = tmp;
 	}
-	
+
 	if (y1 > y2) {
 		double tmp = y2;
 		y2 = y1;
@@ -1485,7 +1485,7 @@ PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) 
 	for (i = 0; i < graph->nVertices; i++) {
 		double vX = graph->pos[0][i];
 		double vY = graph->pos[1][i];
-		
+
 		if ((x1 <= vX) && (x2 >= vX) && (y1 <= vY) && (y2 >= vY)) {
 			PyObject *nel = Py_BuildValue("i", i);
 			PyList_Append(vertices, nel);
@@ -1500,10 +1500,10 @@ PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) 
 WRAPPER(ExampleTable)
 PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
-	
+
 
   PyTRY
-    
+
 	TNetwork *graph;
 	PNetwork wgraph;
 	TDomain *domain = new TDomain();
@@ -1523,7 +1523,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 	ifstream file(fn);
 	string graphName = "";
 	int nVertices = 0;
-	
+
 	if (file.is_open())
 	{
 		// read head
@@ -1617,7 +1617,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				}
 			}
 		}
-		
+
 		if (nVertices <= 1) {
 			file1.close();
 			PYERROR(PyExc_SystemError, "invalid file1 format; invalid number of vertices (less than 1)", NULL);
@@ -1625,7 +1625,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 
 		graph = new TNetwork(nVertices, 0, directed == 1);
 		wgraph = graph;
-		
+
 		domain->addVariable(new TIntVariable("index"));
 		domain->addVariable(new TStringVariable("label"));
 		domain->addVariable(new TFloatVariable("x"));
@@ -1662,25 +1662,25 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 
 				//cout << "index: " << index << " n: " << n << endl;
 				(*example)[0] = TValue(index);
-				
+
 				if (n > 1)
 				{
 					string label = words[1];
 					//cout << "label: " << label << endl;
 					(*example)[1] = TValue(new TStringValue(label), STRINGVAR);
-					
+
 					int i = 2;
 					char *xyz = "  xyz";
 					// read coordinates
 					while ((i <= 4) && (i < n))
 					{
-						float coor = -1;	
+						float coor = -1;
 						istringstream strCoor(words[i]);
 						strCoor >> coor;
 
 						if ((coor < 0) || (coor > 1))
 							break;
-						
+
 						//cout << xyz[i] << ": " << coor * 1000 << endl;
 						(*example)[i] = TValue(coor);
 						i++;
@@ -1690,9 +1690,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					{
 						if (stricmp(words[i].c_str(), "ic") == 0)
 						{
-							if (i + 1 < n) 
-								i++; 
-							else 
+							if (i + 1 < n)
+								i++;
+							else
 							{
 								file1.close();
 								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
@@ -1703,9 +1703,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						}
 						else if (stricmp(words[i].c_str(), "bc") == 0)
 						{
-							if (i + 1 < n) 
-								i++; 
-							else 
+							if (i + 1 < n)
+								i++;
+							else
 							{
 								file1.close();
 								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
@@ -1716,8 +1716,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						}
 						else if (stricmp(words[i].c_str(), "bw") == 0)
 						{
-							if (i + 1 < n) 
-								i++; 
+							if (i + 1 < n)
+								i++;
 							else
 							{
 								file1.close();
@@ -1729,7 +1729,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						}
 						i++;
 					}
-					
+
 				}
 				example->id = getExampleId();
 				table->push_back(example);
@@ -1765,7 +1765,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 							strI1 >> i1;
 							strI2 >> i2;
 							strI3 >> i3;
-							
+
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
 								file1.close();
@@ -1774,7 +1774,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 
 							if (i1 == i2)
 								continue;
-							
+
 							//cout << "i1: " << i1 << " i2: " << i2 << endl;
 							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
 						}
@@ -1782,7 +1782,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				}
 			}
 		}
-		
+
 		// read edges
 		n = getWords(line, words);
 		if (n > 0)
@@ -1794,7 +1794,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					getline (file1, line);
 					vector<string> words;
 					int n = getWords(line, words);
-					
+
 					//cout << line << "  -  " << n << endl;
 					if (n > 1)
 					{
@@ -1821,7 +1821,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 							continue;
 
 						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
-						
+
 						if (directed == 1) {
 							*graph->getOrCreateEdge(i2 - 1, i1 - 1) = i3;
 						}
