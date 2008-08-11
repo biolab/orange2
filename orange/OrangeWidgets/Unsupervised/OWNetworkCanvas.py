@@ -239,7 +239,8 @@ class OWNetworkCanvas(OWGraph):
       self.maxEdgeSize = 1
       
       self.maxVertexSize = 5
-      
+      self.showComponentAttribute = None
+           
       self.setAxisAutoScale(self.xBottom)
       self.setAxisAutoScale(self.yLeft)
       
@@ -582,9 +583,33 @@ class OWNetworkCanvas(OWGraph):
       self.drawToolTips()
       self.drawWeights()
       self.drawIndexes()
+      self.drawComponentKeywords()
       
       if replot:
           self.replot()
+          
+  def drawComponentKeywords(self):
+      if self.showComponentAttribute == None:
+          return
+      
+      if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
+          return
+      
+      components = self.visualizer.graph.getConnectedComponents()
+      
+      for component in components:
+          if len(component) == 0:
+              continue
+          
+          xes = [self.visualizer.coors[0][vertex] for vertex in component]  
+          yes = [self.visualizer.coors[1][vertex] for vertex in component]  
+                                
+          x1 = sum(xes) / len(xes)
+          y1 = sum(yes) / len(yes)
+          
+          lbl = str(self.visualizer.graph.items[component[0]][str(self.showComponentAttribute)])
+          
+          mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
  
   def drawToolTips(self):
     # add ToolTips

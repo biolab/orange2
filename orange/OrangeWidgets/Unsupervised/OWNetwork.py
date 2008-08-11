@@ -236,8 +236,13 @@ class OWNetwork(OWWidget):
         OWGUI.button(ib, self, "Collapse", callback=self.collapse)
         OWGUI.label(ib, self, "Name components:")
         self.nameComponentAttribute = 0
-        self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponent", callback=self.nameComponents)
+        self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponentAttribute", callback=self.nameComponents)
         self.nameComponentCombo.addItem("Select attribute")
+        
+        OWGUI.label(ib, self, "Show labels on components:")
+        self.showComponentAttribute = 0
+        self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
+        self.showComponentCombo.addItem("Select attribute")
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -314,7 +319,20 @@ class OWNetwork(OWWidget):
     
         else:
             print "One node must be selected!"
+        
+    def showComponents(self):
+        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+            return
+        
+        vars = [x.name for x in self.visualize.getVars()]
+        
+        if not self.showComponentCombo.currentText() in vars:
+            self.graph.showComponentAttribute = None
+        else:
+            self.graph.showComponentAttribute = self.showComponentCombo.currentText()
             
+        self.graph.drawPlotItems()
+        
     def nameComponents(self):
         if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
             return
@@ -506,10 +524,12 @@ class OWNetwork(OWWidget):
         self.colorCombo.clear()
         self.vertexSizeCombo.clear()
         self.nameComponentCombo.clear()
+        self.showComponentCombo.clear()
         
         self.colorCombo.addItem("(one color)")
         self.vertexSizeCombo.addItem("(same size)")
         self.nameComponentCombo.addItem("Select attribute")
+        self.showComponentCombo.addItem("Select attribute")
         
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
@@ -534,6 +554,7 @@ class OWNetwork(OWWidget):
                 self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
                 
             self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
+            self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
         
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
