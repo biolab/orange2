@@ -15,9 +15,9 @@ try:
 except:
     pass
 
-class SVMLearner(orange.Learner):
+class SVMLearner(orange.SVMLearner):
     def __new__(cls, examples=None, weightID=0, **kwargs):
-        self = orange.Learner.__new__(cls, **kwargs)
+        self = orange.SVMLearner.__new__(cls, **kwargs)
         if examples:
             self.__init__(**kwargs)
             return self.__call__(examples, weightID)
@@ -38,6 +38,7 @@ class SVMLearner(orange.Learner):
         self.probability=1
         self.cache_size=100
         self.eps=0.001
+        self.normalization = True
         self.__dict__.update(kwargs)
         self.learner=orange.SVMLearner(**kwargs)
 
@@ -54,15 +55,49 @@ class SVMLearner(orange.Learner):
         if self.kernel_type==4:     #There is a bug in svm. For some unknown reason only the probability model works with custom kernels
             self.probability=True
         ##################################################
-
+        if self.svm_type == orange.SVMLearner.Nu_SVC: #check nu feasibility
+            dist = list(orange.Distribution(examples.domain.classVar, examples))
+            def pairs(seq):
+                for i, n1 in enumerate(seq):
+                    for n2 in seq[i+1:]:
+                        yield n1, n2
+            maxNu = max(2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist))
+            if self.nu > maxNu:
+                import warnings
+                warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
+                self.nu = maxNu
+            
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
                 "coef0", "shrinking", "probability", "cache_size", "eps"]:
             self.learner.__dict__[name]=getattr(self, name)
         return self.learnClassifier(examples)
 
     def learnClassifier(self, examples):
+        if self.normalization:
+            dc = orange.DomainContinuizer()
+            dc.classTreatment = orange.DomainContinuizer.Ignore
+            dc.continuousTreatment = orange.DomainContinuizer.NormalizeBySpan
+            dc.multinomialTreatment = orange.DomainContinuizer.NValues
+            newdomain = dc(examples)
+            examples = examples.translate(newdomain)
+            return SVMClassifier(self.learner(examples), newdomain)
         return self.learner(examples)
 
+class SVMClassifier(object):
+    def __init__(self, classifier, domain):
+        self.classifier = classifier
+        self.domain = domain
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.classifier, name)
+        except AttributeError:
+            raise AttributeError(name)
+
+    def __call__(self, example, what=orange.GetValue):
+        example = orange.Example(self.domain, example)
+        return self.classifier(example, what)
+        
 class SVMLearnerSparse(SVMLearner):
     def __init__(self, **kwds):
         SVMLearner.__init__(self, **kwds)
