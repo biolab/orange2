@@ -172,12 +172,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             except:
                 graphFile.write(str('"'+ str(v) + '"') + ' \t')
             
-            x = self.coors[0][v] / 1000
-            y = self.coors[1][v] / 1000
-            if x < 0: x = 0
-            if x >= 1: x = 0.9999
-            if y < 0: y = 0
-            if y >= 1: y = 0.9999
+            x = self.network.coors[0][v]
+            y = self.network.coors[1][v]
+            #if x < 0: x = 0
+            #if x >= 1: x = 0.9999
+            #if y < 0: y = 0
+            #if y >= 1: y = 0.9999
             z = 0.5000
             graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
             graphFile.write('\n')
