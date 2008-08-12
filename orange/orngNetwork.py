@@ -12,6 +12,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
         self.setGraph(graph)
         self.graph = graph
+        
         self.maxWidth  = 1000
         self.maxHeight = 1000
         
