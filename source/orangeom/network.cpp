@@ -24,46 +24,55 @@
 TNetwork::TNetwork(TGraphAsList *graph)
 : TGraphAsList(graph->nVertices, graph->nEdgeTypes, graph->directed)
 {
+	cout << "TNetwork::constructor 1" << endl;
 	import_array();
-  optimize.clear();
-  vector<int> vertices;
-  vector<int> neighbours;
+	optimize.clear();
+	vector<int> vertices;
+	vector<int> neighbours;
 	for(int v1 = 0; v1 < graph->nVertices; v1++) {
 		graph->getNeighboursFrom_Single(v1, neighbours);
 
 		ITERATE(vector<int>, ni, neighbours) {
-      double *w = getOrCreateEdge(v1, *ni);
+			double *w = getOrCreateEdge(v1, *ni);
 			*w = *graph->getOrCreateEdge(v1, *ni);
 		}
 
-    vertices.push_back(v1);
-    optimize.insert(v1);
+		vertices.push_back(v1);
+		optimize.insert(v1);
 	}
 
-  hierarchy.setTop(vertices);
+	hierarchy.setTop(vertices);
+
+	int dims[2];
+	dims[0] = 2;
+	dims[1] = graph->nVertices;
+	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	pos = pymatrix_to_Carrayptrs(coors);
 }
 
 TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 : TGraphAsList(nVert, nEdge, dir)
 {
+	cout << "TNetwork::constructor 2" << endl;
 	import_array();
-  optimize.clear();
-  vector<int> vertices;
-  int i;
-  for (i = 0; i < nVert; i++)
-  {
-    vertices.push_back(i);
-    optimize.insert(i);
-  }
+	optimize.clear();
+	vector<int> vertices;
+	int i;
+	for (i = 0; i < nVert; i++)
+	{
+		vertices.push_back(i);
+		optimize.insert(i);
+	}
 
-  hierarchy.setTop(vertices);
+	hierarchy.setTop(vertices);
 
-  	int dims[2];
-  	dims[0] = 2;
-  	dims[1] = nVert;
-  	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
-  	pos = pymatrix_to_Carrayptrs(coors);
+	cout << "nVert: " << nVert << endl;
 
+	int dims[2];
+	dims[0] = 2;
+	dims[1] = nVert;
+	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	pos = pymatrix_to_Carrayptrs(coors);
 }
 
 TNetwork::~TNetwork()
@@ -628,6 +637,15 @@ PyObject *Network_getVisible(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "No
 
 	  return pyVisible;
   PyCATCH;
+}
+
+PyObject *Network_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
+{
+  PyTRY
+	CAST_TO(TNetwork, graph);
+	Py_INCREF(graph->coors);
+	return (PyObject *)graph->coors;
+  PyCATCH
 }
 
 #include "network.px"

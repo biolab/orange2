@@ -77,7 +77,7 @@ public:
 	//int circularRandom();
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
-	int setNetwork(TNetwork *network);
+	int setNetwork(PNetwork net);
 	void dumpCoordinates();
 
 	double **ptrvector(double n);
@@ -92,20 +92,20 @@ public:
 	double width;
 	double height;
 	PyArrayObject *coors;
-  	PyArrayObject *metaCoors;
-	TNetwork *network;
+  PyArrayObject *metaCoors;
+	PNetwork network; //P Network
 
 	int nLinks;
 	int nVertices;
 	vector<int> links[2];
 	set<int> vertices;
 	double **pos;
-  	double **metapos;
+  double **metapos;
 	int *level;
 	double *kVector;
 	double *levelMin;
 	double *levelMax;
-  	TGraphAsTree *tree;
+	TGraphAsTree *tree;
 
 };
 

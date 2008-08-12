@@ -24,7 +24,8 @@
 
 TNetworkOptimization::TNetworkOptimization()
 {
-	//cout << "constructor" << endl;
+
+	cout << "TNetworkOptimization::constructor" << endl;
 	import_array();
 
 	nVertices = 0;
@@ -35,9 +36,10 @@ TNetworkOptimization::TNetworkOptimization()
 	width = 10000;
 	height = 10000;
 	pos = NULL;
-  	tree = NULL;
+  tree = NULL;
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
+	network == NULL;
 	//cout << "constructor end" << endl;
 }
 
@@ -75,6 +77,7 @@ void TNetworkOptimization::dumpCoordinates()
 
 void TNetworkOptimization::random()
 {
+	cout << "random" << endl;
 	srand(time(NULL));
 
 	int i;
@@ -83,6 +86,28 @@ void TNetworkOptimization::random()
 		pos[0][i] = rand() % (int)width;
 		pos[1][i] = rand() % (int)height;
 	}
+	cout << "nVertices: " << nVertices << endl;
+	//*
+	if (network == NULL)
+	{
+		cout << "random::network is NULL" << endl;
+		return;
+	}
+	else
+		cout << "random::network not NULL" << endl;
+
+	srand(time(NULL));
+
+	for (i = 0; i < nVertices; i++)
+	{
+		network->pos[0][i] = rand() % (int)width;
+		network->pos[1][i] = rand() % (int)height;
+	}
+	/**/
+	cout << "random end" << endl;
+
+
+
 }
 
 int TNetworkOptimization::circularCrossingReduction()
@@ -878,8 +903,9 @@ bool *TNetworkOptimization::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
 	return (bool *) arrayin->data;  /* pointer to arrayin data as double */
 }
 
-int TNetworkOptimization::setNetwork(TNetwork *network)
+int TNetworkOptimization::setNetwork(PNetwork net)
 {
+	network = net;
 	//cout << "-1" << endl;
 	links[0].clear();
 	links[1].clear();
@@ -1026,19 +1052,15 @@ int getWords(string const& s, vector<string> &container)
 PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph) -> None")
 {
   PyTRY
-	PyObject *pygraph;
-
-	if (!PyArg_ParseTuple(args, "O:NetworkOptimization.setGraph", &pygraph))
-		return NULL;
-
-	TNetwork *graph = &dynamic_cast<TNetwork &>(PyOrange_AsOrange(pygraph).getReference());
+  PNetwork net;
+	if (!PyArg_ParseTuple(args, "O&:NetworkOptimization.setGraph", cc_Network, &net))
+			return NULL;
 
 	CAST_TO(TNetworkOptimization, netOptimization);
 
-	if (netOptimization->setNetwork(graph) > 0)
+	if (netOptimization->setNetwork(net) > 0)
 		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
 
-	netOptimization->network = graph;
 	RETURN_NONE;
   PyCATCH
 }
