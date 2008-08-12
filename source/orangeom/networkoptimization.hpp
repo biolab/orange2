@@ -80,33 +80,25 @@ public:
 	int setNetwork(PNetwork net);
 	void dumpCoordinates();
 
-	double **ptrvector(double n);
-	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
-	bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
-	void free_Carrayptrs(double **v);
-
 	double k;
 	double k2;
 	double temperature;
 	double coolFactor;
 	double width;
 	double height;
-	PyArrayObject *coors;
-  PyArrayObject *metaCoors;
+
 	PNetwork network; //P Network
 
 	int nLinks;
 	int nVertices;
 	vector<int> links[2];
 	set<int> vertices;
-	double **pos;
-  double **metapos;
 	int *level;
 	double *kVector;
 	double *levelMin;
 	double *levelMax;
-	TGraphAsTree *tree;
 
+	TGraphAsTree *tree;
 };
 
 

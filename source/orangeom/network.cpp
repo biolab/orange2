@@ -24,7 +24,7 @@
 TNetwork::TNetwork(TGraphAsList *graph)
 : TGraphAsList(graph->nVertices, graph->nEdgeTypes, graph->directed)
 {
-	cout << "TNetwork::constructor 1" << endl;
+	//cout << "TNetwork::constructor 1" << endl;
 	import_array();
 	optimize.clear();
 	vector<int> vertices;
@@ -48,12 +48,20 @@ TNetwork::TNetwork(TGraphAsList *graph)
 	dims[1] = graph->nVertices;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
+
+	srand(time(NULL));
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+	{
+		pos[0][i] = rand() % 10000;
+		pos[1][i] = rand() % 10000;
+	}
 }
 
 TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 : TGraphAsList(nVert, nEdge, dir)
 {
-	cout << "TNetwork::constructor 2" << endl;
+	//cout << "TNetwork::constructor 2" << endl;
 	import_array();
 	optimize.clear();
 	vector<int> vertices;
@@ -66,13 +74,20 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 
 	hierarchy.setTop(vertices);
 
-	cout << "nVert: " << nVert << endl;
+	//cout << "nVert: " << nVert << endl;
 
 	int dims[2];
 	dims[0] = 2;
 	dims[1] = nVert;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
+
+	srand(time(NULL));
+	for (i = 0; i < nVert; i++)
+	{
+		pos[0][i] = rand() % 10000;
+		pos[1][i] = rand() % 10000;
+	}
 }
 
 TNetwork::~TNetwork()
