@@ -345,7 +345,7 @@ class OWNetworkFile(OWWidget):
             #self.setFileList()
             #self.selectFile(0)
             return None
-        
+            
         return network.graph
 
 if __name__ == "__main__":
