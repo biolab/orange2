@@ -39,7 +39,7 @@ TNetworkOptimization::TNetworkOptimization()
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
 
-	network == PNetwork();
+	network = PNetwork();
 	//cout << "constructor end" << endl;
 }
 
