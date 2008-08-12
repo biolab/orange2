@@ -19,12 +19,12 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
-
+#include <algorithm>
 #include "graph.ppp"
 
 double _disconbuf;
 
-bool set_disconbuf() { 
+bool set_disconbuf() {
   DISCONNECT(_disconbuf);
 return true;
 }
@@ -99,7 +99,7 @@ int TGraph::findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -110,7 +110,7 @@ set<int> TGraph::getConnectedComponent(int &u)
 
 	vector<int> neighbours;
 	getNeighboursFrom(u, neighbours);
-	
+
 	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
 	visited.insert(u);
 	visited.insert(neighbours.begin(), neighbours.end());
@@ -138,7 +138,7 @@ double TGraph::getClusteringCoefficient()
 	double coefSum = 0;
 	vector<int> neighbours;
 	int i, j, k;
-	
+
 	for (i = 0; i < nVertices; i++) {
 		neighbours.clear();
 		getNeighbours(i, neighbours);
@@ -146,7 +146,7 @@ double TGraph::getClusteringCoefficient()
 		int edges = ki;
 		if (ki == 0)
 			continue;
-		
+
 		if (directed) {
 			for (j = 0; j < ki; j++) {
 				for (k = 0; k < ki; k++) {
@@ -162,16 +162,16 @@ double TGraph::getClusteringCoefficient()
 						edges++;
 					}
 				}
-			}	
+			}
 		}
-		
+
 		if (directed) {
 			coefSum += (double)(edges) / (double)(ki * (ki + 1));
 		} else {
 			coefSum += (double)(2 * edges) / (double)(ki * (ki + 1));
 		}
 	}
-	
+
 	return coefSum / nVertices;
 }
 
@@ -187,7 +187,7 @@ int TGraph::getDiameter()
 
 	vector<int> neighbours;
 	getNeighboursFrom(0, neighbours);
-	
+
 	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
 	visited.insert(0);
 	visited.insert(neighbours.begin(), neighbours.end());
@@ -230,7 +230,7 @@ int TGraph::getDiameter()
 	toVisitLevel.clear();
 	max_level = 0;
 	getNeighboursFrom(max_node, neighbours);
-	
+
 	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
 	visited.insert(max_node);
 	visited.insert(neighbours.begin(), neighbours.end());
@@ -277,10 +277,10 @@ vector<int> TGraph::getShortestPaths(int &u, int &v)
 	while (maxLevel < 10)
 	{
 		path.clear();
-		
+
 		if (findPath(u, v, 0, maxLevel, path) > 0)
 		{
-			path.push_back(u);	
+			path.push_back(u);
 			break;
 		}
 
@@ -292,10 +292,10 @@ vector<int> TGraph::getShortestPaths(int &u, int &v)
 
 vector<int> TGraph::getLargestFullGraphs(vector<int> nodes, vector<int> candidates)
 {
-  vector<int> fullgraph; 
+  vector<int> fullgraph;
 
   //for(vector<int>::iterator ni = candidates.begin(); ni != candidates.end(); ni++)
-	
+
   while (candidates.size() > 0)
   {
     int c = candidates.back();
@@ -303,15 +303,15 @@ vector<int> TGraph::getLargestFullGraphs(vector<int> nodes, vector<int> candidat
     nodes.push_back(c);
     vector<int> neighbours;
     getNeighbours(c, neighbours);
-    
+
     vector<int> diff;
 		insert_iterator<vector<int> > diff_it(diff, diff.begin());
 		set_difference(neighbours.begin(), neighbours.end(), nodes.begin(), nodes.end(), diff_it);
-    
+
     vector<int> isec;
 		insert_iterator<vector<int> > isec_it(isec, isec.begin());
 		set_intersection(diff.begin(), diff.end(), candidates.begin(), candidates.end(), isec_it);
-    
+
     if (isec.size() > 0)
     {
       vector<int> rgraph = getLargestFullGraphs(nodes, isec);
@@ -341,7 +341,7 @@ vector<int> TGraph::getLargestFullGraphs(vector<int> nodes, vector<int> candidat
 
     nodes.pop_back();
   }
-	
+
 	return fullgraph;
 }
 
@@ -371,7 +371,7 @@ void TGraph::getClusters()
       rec[0] = v1;
       rec[1] = *ni;
       rec[2] = res.size();
- 
+
       commonNeighbours.push_back(rec);
       cout << v1 << " " << *ni << " " << res.size() << endl;
     }
@@ -393,23 +393,23 @@ TGraphAsMatrix::TGraphAsMatrix(const int &nVert, const int &nTypes, const bool d
 }
 
 TGraphAsMatrix::~TGraphAsMatrix()
-{ 
+{
   delete edges;
 }
 
 
 double *TGraphAsMatrix::getEdge(const int &v1, const int &v2)
-{ 
+{
   double *edge = findEdge(v1, v2);
   for(double *e = edge, *ee = edge+nEdgeTypes; e!=ee; e++)
     if (CONNECTED(*e))
       return edge;
   return NULL;
 }
-      
+
 
 double *TGraphAsMatrix::findEdge(const int &v1, const int &v2)
-{ 
+{
   if (v1>v2)
     if ((v1>=nVertices) || (v2<0))
       raiseError("invalid vertex index (%i, %i)", v1, v2);
@@ -426,7 +426,7 @@ double *TGraphAsMatrix::findEdge(const int &v1, const int &v2)
 
 
 double *TGraphAsMatrix::getOrCreateEdge(const int &v1, const int &v2)
-{ 
+{
   double *res = findEdge(v1, v2);
   lastAddition = ++currentVersion;
   return res;
@@ -634,7 +634,7 @@ bool TGraphAsList::findEdgePtr(const int &v1, const int &v2, TEdge **&e, int &su
       subvert = v2;
     }
   }
-  
+
   while(*e)
     if ((*e)->vertex >= subvert)
       return (*e)->vertex == subvert;
@@ -716,7 +716,7 @@ void TGraphAsList::getNeighbours(const int &v, vector<int> &neighbours)
 
 	for(TEdge *e = edges[v]; e; e = e->next)
 		neighbours.push_back(e->vertex);
-  
+
 	int v2 = 0;
 	for(TEdge **se = edges, **ee = edges+nVertices; se != ee; v2++, se++) {
 	  for(TEdge *e = *se; e && (e->vertex <=v); e = e->next)
@@ -941,7 +941,7 @@ double *TGraphAsTree::getOrCreateEdge(const int &v1, const int &v2)
   double *res = &((***sptr).weights);
 
   // while the current node's parent is red
-  while((sptr!=stop) && IS_RED(*sptr[-1])) { 
+  while((sptr!=stop) && IS_RED(*sptr[-1])) {
 
     // this node has no grandparent -- just paint the father black
     if (sptr - stop == 1) {
@@ -1073,7 +1073,7 @@ void TGraphAsTree::removeEdge(const int &v1, const int &v2)
     return;
 
   vector<TEdge **>::iterator sptr(stack.end()-1), stop(stack.begin());
-  
+
   for(;;) {
     TEdge *node = **sptr;
 
@@ -1086,7 +1086,7 @@ void TGraphAsTree::removeEdge(const int &v1, const int &v2)
       return;
 
     TEdge *parent = *sptr[-1];
-    
+
     if (*sptr == &(parent->left)) {
       TEdge *brother = parent->right;
 
@@ -1148,7 +1148,7 @@ void TGraphAsTree::removeEdge(const int &v1, const int &v2)
 
       return;
     }
-     
+
     else {
       TEdge *brother = parent->left;
 
@@ -1249,7 +1249,7 @@ void TGraphAsTree::getNeighbours_fromTree_merge(TEdge *edge, vector<int> &neighb
   for(TEdge **node = edges + ++latest; latest < thisVertex; latest++, node++)
     if (*node && getEdge(*node, v))
       neighbours.push_back(latest);
-  
+
   neighbours.push_back(thisVertex);
 
   if (edge->right)
@@ -1324,7 +1324,7 @@ void TGraphAsTree::getNeighbours_Undirected(const int &v, const int &edgeType, v
   getNeighbours_fromTree(edges[v], edgeType, neighbours);
 
   int v2 = v+1;
-  for(TEdge **node = edges+v+1; v2 < nVertices; v2++, node++) 
+  for(TEdge **node = edges+v+1; v2 < nVertices; v2++, node++)
     CHECK_EDGE_TO(v2)
 }
 
@@ -1339,7 +1339,7 @@ void TGraphAsTree::getNeighbours_fromTree_merge(TEdge *edge, const int &edgeType
 
   for(TEdge **node = edges + ++latest; latest < thisVertex; latest++, node++)
     CHECK_EDGE_TO(latest)
-  
+
   CHECK_EDGE(edge, thisVertex)
 
   if (edge->right)
