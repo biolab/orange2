@@ -542,7 +542,7 @@ class OWNetworkCanvas(OWGraph):
       
       self.removeDrawingCurves(removeLegendItems = 0)
       self.tips.removeAll()
-      self.networkCurve.setData(self.visualizer.coors[0], self.visualizer.coors[1])
+      self.networkCurve.setData(self.visualizer.network.coors[0], self.visualizer.network.coors[1])
       
       selection = self.networkCurve.getSelectedVertices()
       
@@ -601,8 +601,8 @@ class OWNetworkCanvas(OWGraph):
           if len(component) == 0:
               continue
           
-          xes = [self.visualizer.coors[0][vertex] for vertex in component]  
-          yes = [self.visualizer.coors[1][vertex] for vertex in component]  
+          xes = [self.visualizer.network.coors[0][vertex] for vertex in component]  
+          yes = [self.visualizer.network.coors[1][vertex] for vertex in component]  
                                 
           x1 = sum(xes) / len(xes)
           y1 = sum(yes) / len(yes)
@@ -621,8 +621,8 @@ class OWNetworkCanvas(OWGraph):
         if not vertex.show:
           continue
         
-        x1 = self.visualizer.coors[0][vertex.index]
-        y1 = self.visualizer.coors[1][vertex.index]
+        x1 = self.visualizer.network.coors[0][vertex.index]
+        y1 = self.visualizer.network.coors[1][vertex.index]
         lbl = ""
         values = self.visualizer.graph.items[vertex.index]
         for ndx in self.tooltipText:
@@ -649,8 +649,8 @@ class OWNetworkCanvas(OWGraph):
               if self.labelsOnMarkedOnly and not (vertex.marked):
                   continue
                                 
-              x1 = self.visualizer.coors[0][vertex.index]
-              y1 = self.visualizer.coors[1][vertex.index]
+              x1 = self.visualizer.network.coors[0][vertex.index]
+              y1 = self.visualizer.network.coors[1][vertex.index]
               lbl = ""
               values = self.visualizer.graph.items[vertex.index]
               lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
@@ -667,8 +667,8 @@ class OWNetworkCanvas(OWGraph):
               if self.labelsOnMarkedOnly and not (vertex.marked):
                   continue
                                 
-              x1 = self.visualizer.coors[0][vertex.index]
-              y1 = self.visualizer.coors[1][vertex.index]
+              x1 = self.visualizer.network.coors[0][vertex.index]
+              y1 = self.visualizer.network.coors[1][vertex.index]
 
               lbl= str(vertex.index)
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignTop)
@@ -683,8 +683,8 @@ class OWNetworkCanvas(OWGraph):
               if self.labelsOnMarkedOnly and not (edge.u.marked and edge.v.marked):
                   continue
                                 
-              x1 = (self.visualizer.coors[0][edge.u.index] + self.visualizer.coors[0][edge.v.index]) / 2
-              y1 = (self.visualizer.coors[1][edge.u.index] + self.visualizer.coors[1][edge.v.index]) / 2
+              x1 = (self.visualizer.network.coors[0][edge.u.index] + self.visualizer.network.coors[0][edge.v.index]) / 2
+              y1 = (self.visualizer.network.coors[1][edge.u.index] + self.visualizer.network.coors[1][edge.v.index]) / 2
               lbl = "%.2f" % edge.weight
               
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
@@ -844,7 +844,7 @@ class OWNetworkCanvas(OWGraph):
       self.setEdgesSize()
       self.setVerticesSize()
       
-      self.networkCurve.coors = visualizer.coors
+      self.networkCurve.coors = visualizer.network.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
       self.networkCurve.changed()
@@ -921,8 +921,8 @@ class OWNetworkCanvas(OWGraph):
   def zoomSelection(self):
       selection = self.networkCurve.getSelectedVertices()
       if len(selection) > 0: 
-          x = [self.visualizer.coors[0][v] for v in selection]
-          y = [self.visualizer.coors[1][v] for v in selection]
+          x = [self.visualizer.network.coors[0][v] for v in selection]
+          y = [self.visualizer.network.coors[1][v] for v in selection]
 
           oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
           oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()

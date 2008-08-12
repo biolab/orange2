@@ -103,6 +103,7 @@ class OWNetwork(OWWidget):
         OWGUI.label(self.optimizeBox, self, "Select layout optimization method:")
         
         self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
+        self.optCombo.addItem("No optimization")
         self.optCombo.addItem("Random")
         self.optCombo.addItem("Fruchterman Reingold")
         self.optCombo.addItem("Fruchterman Reingold Weighted")
@@ -110,7 +111,7 @@ class OWNetwork(OWWidget):
         self.optCombo.addItem("Circular Crossing Reduction")
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
-        
+        self.optCombo.setCurrentIndex(self.optMethod)
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
         
@@ -251,7 +252,7 @@ class OWNetwork(OWWidget):
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
         self.settingsTab.layout().addStretch(1)
-        self.optMethod = 1
+        
         self.setOptMethod()
          
         self.resize(1000, 600)
@@ -572,9 +573,16 @@ class OWNetwork(OWWidget):
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkOptimization(graph)
         
+        #for i in range(graph.nVertices):
+        #    print "x:", graph.coors[0][i], " y:", graph.coors[1][i]
+
         self.nVertices = graph.nVertices
         self.nShown = graph.nVertices
-        self.nEdges = len(graph.getEdges())
+        
+        if graph.directed:
+            self.nEdges = len(graph.getEdges())
+        else:
+            self.nEdges = len(graph.getEdges()) / 2
         
         if self.nEdges > 0:
             self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
@@ -630,7 +638,7 @@ class OWNetwork(OWWidget):
         self.optLayout()
         self.information(0)
         self.controlArea.setEnabled(True)
-        #self.random()
+        self.updateCanvas()
         
     def setItems(self, items=None):
         self.error('')
@@ -793,25 +801,30 @@ class OWNetwork(OWWidget):
         if not self.optButton.isChecked():
             return
             
-        if self.optMethod == 0:
+        if self.optMethod == 1:
             self.random()
-        elif self.optMethod == 1:
-            self.fr(False)
         elif self.optMethod == 2:
-            self.fr(True)
+            self.fr(False)
         elif self.optMethod == 3:
-            self.frRadial()
+            self.fr(True)
         elif self.optMethod == 4:
-            self.circularCrossingReduction()
+            self.frRadial()
         elif self.optMethod == 5:
-            self.circularOriginal()
+            self.circularCrossingReduction()
         elif self.optMethod == 6:
+            self.circularOriginal()
+        elif self.optMethod == 7:
             self.circularRandom()
             
         self.optButton.setChecked(False)
     
     def setOptMethod(self):
-        if str(self.optMethod) == '1' or str(self.optMethod) == '2':
+        if str(self.optMethod) == '0':
+            self.optButton.setEnabled(False)
+        else:
+            self.optButton.setEnabled(True)
+            
+        if str(self.optMethod) == '2' or str(self.optMethod) == '3':
             self.stepsSpin.setEnabled(True)
         else:
             self.stepsSpin.setEnabled(False)
@@ -882,7 +895,7 @@ class OWNetwork(OWWidget):
         initTemp = 1000
         coolFactor = exp(log(10.0/10000.0) / steps)
         oldXY = []
-        for rec in self.visualize.coors:
+        for rec in self.visualize.network.coors:
             oldXY.append([rec[0], rec[1]])
         #print oldXY
         initTemp = self.visualize.fruchtermanReingold(steps, initTemp, coolFactor, self.graph.hiddenNodes)
