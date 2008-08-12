@@ -173,7 +173,12 @@ class OWNetworkFile(OWWidget):
             return
          
         table = ExampleTable(fn)
-        if len(table) != len(self.graph.getEdges()):
+        if self.graph.directed:
+            nEdges = len(self.graph.getEdges())
+        else:
+            nEdges = len(self.graph.getEdges()) / 2
+            
+        if len(table) != nEdges:
             self.infod.setText("Edges data length does not match number of edges.")
             
             if '(none)' in self.recentEdgesFiles: 
