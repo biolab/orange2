@@ -1552,7 +1552,9 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		graph = new TNetwork(nVertices, 0, directed == 1);
 		wgraph = graph;
 
-		domain->addVariable(new TIntVariable("index"));
+		TFloatVariable *indexVar = new TFloatVariable("index");
+		indexVar->numberOfDecimals = 0;
+		domain->addVariable(indexVar);
 		domain->addVariable(new TStringVariable("label"));
 		domain->addVariable(new TFloatVariable("x"));
 		domain->addVariable(new TFloatVariable("y"));
@@ -1564,6 +1566,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 		wtable = table;
 
 		// read vertex descriptions
+		int row = 0;
 		while (!file1.eof())
 		{
 			getline(file1, line);
@@ -1577,7 +1580,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				if ((stricmp(words[0].c_str(), "*arcs") == 0) || (stricmp(words[0].c_str(), "*edges") == 0))
 					break;
 
-				int index = -1;
+				float index = -1;
 				istringstream strIndex(words[0]);
 				strIndex >> index;
 				if ((index <= 0) || (index > nVertices))
@@ -1600,21 +1603,21 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 					// read coordinates
 					while ((i <= 4) && (i < n))
 					{
-						float coor = -1;
+						double coor = -1;
 						istringstream strCoor(words[i]);
 						strCoor >> coor;
 
-						if ((coor < 0) || (coor > 1))
-							break;
+						//if ((coor < 0) || (coor > 1))
+						//	break;
 
-						//cout << xyz[i] << ": " << coor * 1000 << endl;
-						(*example)[i] = TValue(coor);
+						//cout << xyz[i] << ": " << coor << endl;
+						(*example)[i] = TValue((float)coor);
 
 						if (i == 2)
-							graph->pos[0][i] = coor;
+							graph->pos[0][row] = coor;
 
 						if (i == 3)
-							graph->pos[1][i] = coor;
+							graph->pos[1][row] = coor;
 
 						i++;
 					}
@@ -1668,6 +1671,8 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				table->push_back(example);
 				//cout << "push back" <<endl;
 			}
+
+			row++;
 		}
 		// read arcs
 		vector<string> words;
