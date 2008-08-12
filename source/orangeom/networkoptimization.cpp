@@ -39,7 +39,7 @@ TNetworkOptimization::TNetworkOptimization()
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
 
-	network == NULL;
+	network == PNetwork();
 	//cout << "constructor end" << endl;
 }
 
@@ -75,7 +75,7 @@ void TNetworkOptimization::dumpCoordinates()
 void TNetworkOptimization::random()
 {
 	//cout << "random" << endl;
-	if (network == NULL)
+	if (!network)
 	{
 		cout << "random::network is NULL" << endl;
 		return;
@@ -1612,10 +1612,10 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 						(*example)[i] = TValue(coor);
 
 						if (i == 2)
-							graph->pos[0][i] == coor;
+							graph->pos[0][i] = coor;
 
 						if (i == 3)
-							graph->pos[1][i] == coor;
+							graph->pos[1][i] = coor;
 
 						i++;
 					}
