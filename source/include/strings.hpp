@@ -23,6 +23,7 @@
 #define __STRINGS_HPP
 
 #include <string>
+#include <string.h>
 #include <vector>
 
 using namespace std;
