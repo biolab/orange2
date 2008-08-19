@@ -346,15 +346,53 @@ class OWNetwork(OWWidget):
         components = self.visualize.graph.getConnectedComponents()
         keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
         
+        excludeWord = ["AND", "OF"]
+        excludePart = ["HSA"]
+        keywords = set()
+        sameKeywords = set()
+        
         for component in components:
             words = []
+            all_values = []
             for vertex in component:
+                values = []
                 value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
-                value = value.replace(" ", "_")
-                value = value.replace(",", "_")
-                values = value.split("_")
+                
+                value = value.replace(" ", ",")
+                value_top = value.split(",")
+                
+                for value in value_top:
+                    if len(value) > 0:
+                        tmp = value.split("_")
+                        tmp = [value.strip() for value in tmp if len(value) > 0]
+                        all_values.append(tmp)
+                        values.extend(tmp)
+                                
                 values = [value.strip() for value in values if len(value) > 0]
                 words.extend(values)
+                
+                
+                #value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                #value = value.replace(" ", "_")
+                #value = value.replace(",", "_")
+                #values = value.split("_")
+                #values = [value.strip() for value in values if len(value) > 0]
+                #print "values:", values
+                #all_values.append(values)
+                
+                #words.extend(values)
+            #print "all_values:", all_values
+            toExclude = []
+            
+            words = [word for word in words if not word.upper() in excludeWord]
+            toExclude = [word for word in words for part in excludePart if word.find(part) != -1]
+            
+            for word in toExclude:
+                try:
+                    while True:
+                        words.remove(word)
+                except:
+                    pass
             
             counted_words = {}
             for word in words:
@@ -366,15 +404,141 @@ class OWNetwork(OWWidget):
             
             words = sorted(counted_words.items(), key=itemgetter(1), reverse=True)
             keyword = ""
-            max = 0
+            keyword_words = []
+            max_count = 0
             i = 0
-            while i < len(words) and words[i][1] >= max:
-                max = words[i][1]
+            
+            while i < len(words) and words[i][1] >= max_count:
+                max_count = words[i][1]
                 keyword += words[i][0] + " "
-                i += 1 
+                keyword_words.append(words[i][0])
+                i += 1
+            
+            if len(keyword_words) > 1:
+                new_all_values = []
+                for values in all_values:
+                    new_values = [value for value in values if value in keyword_words]
+                    new_all_values.append(new_values) 
+                     
+                #print new_all_values
+                word_position = []
+                
+                for word in keyword_words:
+                    sum = 0
+                    for v in new_all_values:
+                        if word in v:
+                            sum += v.index(word)
+                            
+                    word_position.append((word, sum))
+                 
+                words = sorted(word_position, key=itemgetter(1))
+                #print "words:", words
+                #print all_values
+                #print new_all_values
+                
+                keyword = ""
+                for word in words:
+                    keyword += word[0] + " "
+                    
+            keyword = keyword.strip()
             
             for vertex in component:
-                keyword_table[vertex]['keyword'] = keyword.strip()
+                keyword_table[vertex]['keyword'] = keyword
+                
+            if keyword in keywords:
+                sameKeywords.add(keyword)
+            else:
+                keywords.add(keyword)
+        #print "sameKeywords:", sameKeywords       
+        sameComponents = [component for component in components if str(keyword_table[component[0]]['keyword']) in sameKeywords]
+        #print "same components:", sameComponents
+        
+        for component in sameComponents:
+            words = []
+            all_values = []
+            for vertex in component:
+                values = []
+                value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                
+                value = value.replace(" ", ",")
+                value_top = value.split(",")
+                
+                for value in value_top:
+                    if len(value) > 0:
+                        tmp = value.split("_")
+                        tmp = [value.strip() for value in tmp if len(value) > 0]
+                        all_values.append(tmp)
+                        values.extend(tmp)
+                                
+                values = [value.strip() for value in values if len(value) > 0]
+                words.extend(values)
+            
+            toExclude = []
+            
+            words = [word for word in words if not word.upper() in excludeWord]
+            toExclude = [word for word in words for part in excludePart if word.find(part) != -1]
+            
+            for word in toExclude:
+                try:
+                    while True:
+                        words.remove(word)
+                except:
+                    pass
+            
+            counted_words = {}
+            for word in words:
+                if word in counted_words:
+                    count = counted_words[word]
+                    counted_words[word] = count + 1
+                else:
+                    counted_words[word] = 1
+            
+            words = sorted(counted_words.items(), key=itemgetter(1), reverse=True)
+            keyword = ""
+            counts = [int(word[1]) for word in words] 
+            max_count = max(counts)
+            try:
+                while True:
+                    counts.remove(max_count)
+            except:
+                pass
+            max_count = max(counts)
+            i = 0
+            keyword_words = []
+            while i < len(words) and words[i][1] >= max_count:
+                keyword += words[i][0] + " "
+                keyword_words.append(words[i][0])
+                i += 1
+                
+            if len(keyword_words) > 1:
+                new_all_values = []
+                for values in all_values:
+                    new_values = [value for value in values if value in keyword_words]
+                    new_all_values.append(new_values) 
+                     
+                #print new_all_values
+                word_position = []
+                
+                for word in keyword_words:
+                    sum = 0
+                    for v in new_all_values:
+                        if word in v:
+                            sum += v.index(word)
+                            
+                    word_position.append((word, sum))
+                 
+                words = sorted(word_position, key=itemgetter(1))
+                #print "words:", words
+                #print all_values
+                #print new_all_values
+                
+                keyword = ""
+                for word in words:
+                    keyword += word[0] + " "
+                 
+            keyword = keyword.strip()
+            for vertex in component:
+                keyword_table[vertex]['keyword'] = keyword
         
         items = orange.ExampleTable([self.visualize.graph.items, keyword_table])
         self.setItems(items)
@@ -598,7 +762,7 @@ class OWNetwork(OWWidget):
         self.clustering_coefficient = graph.getClusteringCoefficient() * 100
         
         self.setCombos()
-        
+        self.showComponentAttribute = None
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
         #print "done."
