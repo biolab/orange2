@@ -11,7 +11,7 @@ from OWWidget import *
 from exceptions import SystemExit
 
 class OWSVM(OWWidget):
-    settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu", "nomogram"]
+    settingsList=["C","nu","p","probability","gamma","degree", "coef0", "kernel_type", "name", "useNu", "normalization"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs=[("Example Table", ExampleTable, self.setData)]
@@ -29,6 +29,7 @@ class OWSVM(OWWidget):
         self.probability=1
         self.useNu=0
         self.nomogram=0
+        self.normalization=1
         self.data = None
         self.selFlag=False
         self.name="SVM Learner/Classifier"
@@ -52,11 +53,12 @@ class OWSVM(OWWidget):
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 120, orientation="horizontal")
         OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
 
-        OWGUI.checkBox(b,self, "probability", label="Support probabilities")
-        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
+        OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
+##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
         self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
-        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
+##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
+        OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
 
         OWGUI.separator(self.controlArea)
 
@@ -99,16 +101,16 @@ class OWSVM(OWWidget):
 
     def applySettings(self):
         self.learner=orngSVM.SVMLearner()
-        for attr in ("name", "kernel_type", "degree", "shrinking", "probability"):
+        for attr in ("name", "kernel_type", "degree", "shrinking", "probability", "normalization"):
             setattr(self.learner, attr, getattr(self, attr))
 
         for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
             setattr(self.learner, attr, float(getattr(self, attr)))
 
-        self.learner.svm_type=0
+        self.learner.svm_type=orngSVM.SVMLearner.C_SVC
 
         if self.useNu:
-            self.learner.svm_type=1
+            self.learner.svm_type=orngSVM.SVMLearner.Nu_SVC
 
         self.classifier=None
         self.supportVectors=None
@@ -172,6 +174,17 @@ class OWSVM(OWWidget):
         self.searching=False
 
     def search_(self):
+        learner=orngSVM.SVMLearner()
+        for attr in ("name", "kernel_type", "degree", "shrinking", "probability", "normalization"):
+            setattr(learner, attr, getattr(self, attr))
+
+        for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
+            setattr(learner, attr, float(getattr(self, attr)))
+
+        learner.svm_type=0
+
+        if self.useNu:
+            learner.svm_type=1
         params={}
         if self.useNu:
             params["nu"]=[0.25, 0.5, 0.75]
@@ -183,7 +196,7 @@ class OWSVM(OWWidget):
             params["degree"]=[1,2,3]
         best={}
         try:
-            best=orngSVM.parameter_selection(orngSVM.SVMLearner(),self.data, 4, params, best, callback=self.progres)
+            best=orngSVM.parameter_selection(learner, self.data, 4, params, best, callback=self.progres)
         except :
             pass
         self.finishSearch()
