@@ -29,7 +29,7 @@ def orderLeafs(tree, matrix):
             other = lambda e, V1, V2: V2 if e in V1 else V1
             for u in Vl:
                 for w in Vr:
-                    if not True:
+                    if True: #Improved search
                         C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
                         orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree.left, u, m])
                         orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree.right, w, k])
