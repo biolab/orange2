@@ -261,7 +261,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.addAction(QIcon(self.file_open), "&Open and Freeze...", self.menuItemOpenFreeze)
         if os.path.exists(os.path.join(self.canvasSettingsDir, "_lastSchema.ows")):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL+Qt.Key_R)
-        self.menuFile.addAction( "&Close", self.menuItemClose )
+        self.menuFile.addAction( "&Close", self.menuItemClose, Qt.CTRL+Qt.Key_W)
         self.menuFile.addSeparator()
         self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
         self.menuSaveAsID = self.menuFile.addAction( "Save &As...", self.menuItemSaveAs)
