@@ -98,16 +98,13 @@ def _parseFileInfo(fir, separ="|||||"):
     """
     Parses file info from server.
     """
-    try:
-        l= fir.split(separ)
-        fi = {}
-        fi["size"] = l[0]
-        fi["datetime"] = l[1]
-        fi["title"] = l[2]
-        fi["tags"] = l[3].split(";")
-        return fi
-    except:
-        return None
+    l= fir.split(separ)
+    fi = {}
+    fi["size"] = l[0]
+    fi["datetime"] = l[1]
+    fi["title"] = l[2]
+    fi["tags"] = l[3].split(";")
+    return fi
 
 def openFileInfo(fname):
     f = open(fname, 'rt')
@@ -129,13 +126,17 @@ def createPathForFile(target):
     except OSError:
         pass
 
-def localName(domain, filename):
+def localName(domain, filename=None):
     import orngRegistry
-    return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain, filename)
+    if filename:
+        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain, filename)
+    else:
+        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain)
+
 
 class ServerFiles(object):
 
-    def __init__(self, server=None, username=None, password=None):
+    def __init__(self, username=None, password=None, server=None):
         if not server:
             server = defserver
         self.server = server
@@ -181,7 +182,7 @@ class ServerFiles(object):
     def protect(self, domain, filename):
         return self._secopen('protect', { 'domain': domain, 'filename': filename })
 
-    def list(self, *args, **kwargs):
+    def listfiles(self, *args, **kwargs):
         if self._authen(): return self.seclist(*args, **kwargs)
         else: return self.publist(*args, **kwargs)
 
@@ -193,14 +194,11 @@ class ServerFiles(object):
         if self._authen(): return self.secdownloadFH(*args, **kwargs)
         else: return self.pubdownloadFH(*args, **kwargs)
 
-    def download(self, domain, filename, target=None):
+    def download(self, domain, filename, target):
         """
         Downloads a file into target name. If target is not present,
         file is downloaded into [bufferDir]/bigfiles/domain/filename
         """
-        if not target:
-            target = localName(domain, filename)
-
         createPathForFile(target)
 
         fdown = self.downloadFH(domain, filename)
@@ -209,10 +207,6 @@ class ServerFiles(object):
         fdown.close()
         f.close()
         os.rename(target + '.tmp', target)
-
-        #file saved, now save info file
-        info = self.info(domain, filename)
-        saveFileInfo(target + '.info', info)
 
     def info(self, *args, **kwargs):
         if self._authen(): return self.secinfo(*args, **kwargs)
@@ -259,11 +253,63 @@ class ServerFiles(object):
     def _pubopen(self, command, data):
         return self._pubhandle(command, data).read()
 
+def download(domain, filename, serverfiles=None):
+    """
+    Downloads a file to a local orange installation.
+    """
+    if not serverfiles:
+        serverfiles = ServerFiles()
+
+    target = localName(domain, filename)
+
+    serverfiles.download(domain, filename, target)
+    
+    #file saved, now save info file
+    info = serverfiles.info(domain, filename)
+    saveFileInfo(target + '.info', info)
+
+def listfiles(domain):
+    """
+    Returns a list of filenames in a given domain on local Orange
+    installation with a valid  info file: useful ones.
+    """
+    dir = localName(domain)
+    try:
+        files = [ a for a in os.listdir(dir) if a[-5:] == '.info' ]
+    except:
+        files = []
+    okfiles = []
+
+    for file in files:
+        #if file to exists without info
+        if os.path.isfile(os.path.join(dir,file[:-5])):
+            #check info format - needs to be valid
+            try:
+                openFileInfo(os.path.join(dir,file))
+                okfiles.append(file[:-5])
+            except:
+                pass
+
+    return okfiles
+
+def info(domain, filename):
+    """
+    Returns info of a file
+    """
+    target = localName(domain, filename)
+    return openFileInfo(target + '.info')
+
 def example(myusername, mypassword):
+
+    locallist = listfiles('test')
+    for l in locallist:
+        print info('test', l)
 
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
     
+    s.protect('test', 'samurai.mkv')
+        
     #create domain
     try: 
         s.create_domain("test") 
@@ -271,16 +317,16 @@ def example(myusername, mypassword):
         pass
 
     #upload this file - save it by a different name
-    s.upload('test', 'osf-test.py', open("orngServerFiles.py", 'rb'), title="NT", tags=["fkdl","fdl"])
-
+    s.upload('test', 'osf-test.py', 'orngServerFiles.py', title="NT", tags=["fkdl","fdl"])
     #make it public
+
     s.unprotect('test', 'osf-test.py')
 
     #login anonymously
     s = ServerFiles()
 
     #list files in the domain "test"
-    files = s.list('test')
+    files = s.listfiles('test')
     print "ALL FILES:", files
 
     for f in files:
@@ -289,7 +335,7 @@ def example(myusername, mypassword):
         print "INFO", fi
         print s.downloadFH('test', f).read()[:100] #show first 100 characters
         print "--------------------------------------"
-        s.download('test', f)
+        s.download('test', f, 'a.mkv')
 
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
