@@ -88,15 +88,50 @@ socket.setdefaulttimeout(timeout)
 import urllib2_file
 import urllib2
 
+import os
+import shutil
+
 #defserver = "localhost/"
 defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
 
-def parseFileInfo(fi):
-    l= fi.split("|||||")
-    return l[0], l[1]
+def _parseFileInfo(fir, separ="|||||"):
+    """
+    Parses file info from server.
+    """
+    try:
+        l= fir.split(separ)
+        fi = {}
+        fi["size"] = l[0]
+        fi["datetime"] = l[1]
+        fi["title"] = l[2]
+        fi["tags"] = l[3].split(";")
+        return fi
+    except:
+        return None
 
-def parseList(fl):
+def openFileInfo(fname):
+    f = open(fname, 'rt')
+    info = _parseFileInfo(f.read(), separ='\n')
+    f.close()
+    return info
+
+def saveFileInfo(fname, info):
+    f = open(fname, 'wt')
+    f.write('\n'.join([info['size'], info['datetime'], info['title'], ';'.join(info['tags'])]))
+    f.close()
+
+def _parseList(fl):
     return fl.split("|||||")
+
+def createPathForFile(target):
+    try:
+        os.makedirs(os.path.dirname(target))
+    except OSError:
+        pass
+
+def localName(domain, filename):
+    import orngRegistry
+    return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain, filename)
 
 class ServerFiles(object):
 
@@ -109,20 +144,23 @@ class ServerFiles(object):
         self.username = username
         self.password = password
 
+    def installOpener(self):
+        #import time; t = time.time()
         passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
         passman.add_password("orngFileServer", self.secureroot, str(self.username), str(self.password))
         authhandler = urllib2.HTTPBasicAuthHandler(passman)
         opener = urllib2.build_opener(authhandler)
         urllib2.install_opener(opener)
-
-    def upload(self, domain, filename, file):
+        #print "TIME", time.time() - t
+ 
+    def upload(self, domain, filename, file, title="", tags=[]):
         """
         Uploads file to the server. File can be an open file or a filename.
         """
         if isinstance(file, basestring):
             file = open(file, 'rb')
 
-        data = {'filename': filename, 'domain': domain, 'data':  file}
+        data = {'filename': filename, 'domain': domain, 'title':title, 'tags': ";".join(tags), 'data':  file}
         return self._secopen('upload', data)
 
     def create_domain(self, domain):
@@ -147,35 +185,56 @@ class ServerFiles(object):
         if self._authen(): return self.seclist(*args, **kwargs)
         else: return self.publist(*args, **kwargs)
 
-    def download(self, *args, **kwargs):
+    def downloadFH(self, *args, **kwargs):
         """
         Returns open file handle of requested file.
         Parameters: domain and filename.
         """
-        if self._authen(): return self.secdownload(*args, **kwargs)
-        else: return self.pubdownload(*args, **kwargs)
+        if self._authen(): return self.secdownloadFH(*args, **kwargs)
+        else: return self.pubdownloadFH(*args, **kwargs)
+
+    def download(self, domain, filename, target=None):
+        """
+        Downloads a file into target name. If target is not present,
+        file is downloaded into [bufferDir]/bigfiles/domain/filename
+        """
+        if not target:
+            target = localName(domain, filename)
+
+        createPathForFile(target)
+
+        fdown = self.downloadFH(domain, filename)
+        f = open(target + '.tmp', 'wb')
+        shutil.copyfileobj(fdown, f, 1024*8)
+        fdown.close()
+        f.close()
+        os.rename(target + '.tmp', target)
+
+        #file saved, now save info file
+        info = self.info(domain, filename)
+        saveFileInfo(target + '.info', info)
 
     def info(self, *args, **kwargs):
         if self._authen(): return self.secinfo(*args, **kwargs)
         else: return self.pubinfo(*args, **kwargs)
 
     def pubinfo(self, domain, filename):
-        return parseFileInfo(self._pubopen('info', { 'domain': domain, 'filename': filename }))
+        return _parseFileInfo(self._pubopen('info', { 'domain': domain, 'filename': filename }))
 
-    def pubdownload(self, domain, filename):
+    def pubdownloadFH(self, domain, filename):
         return self._pubhandle('download', { 'domain': domain, 'filename': filename })
 
     def publist(self, domain):
-        return parseList(self._pubopen('list', { 'domain': domain }))
+        return _parseList(self._pubopen('list', { 'domain': domain }))
 
     def secinfo(self, domain, filename):
-        return parseFileInfo(self._secopen('info', { 'domain': domain, 'filename': filename }))
+        return _parseFileInfo(self._secopen('info', { 'domain': domain, 'filename': filename }))
 
-    def secdownload(self, domain, filename):
+    def secdownloadFH(self, domain, filename):
         return self._sechandle('download', { 'domain': domain, 'filename': filename })
 
     def seclist(self, domain):
-        return parseList(self._secopen('list', { 'domain': domain }))
+        return _parseList(self._secopen('list', { 'domain': domain }))
  
     def _authen(self):
         """
@@ -187,9 +246,11 @@ class ServerFiles(object):
             return False
 
     def _sechandle(self, command, data):
+        self.installOpener()
         return urllib2.urlopen(self.secureroot + command, data)
  
     def _pubhandle(self, command, data):
+        self.installOpener()
         return urllib2.urlopen(self.publicroot + command, data)
 
     def _secopen(self, command, data):
@@ -197,60 +258,6 @@ class ServerFiles(object):
 
     def _pubopen(self, command, data):
         return self._pubhandle(command, data).read()
-
-
-def testLO():
-    
-    username = sys.argv[1]
-    password = sys.argv[2]
-
-    s = ServerFiles(username=username, password=password)
-    try:
-        s.create_domain("test")
-    except:
-        pass
-
-    s.upload('test', 'dsfdaf.py', open("orngServerFiles.py", 'rb'))
-    print "suc"
-    s.upload('test', 'dsfda2f.py', 'orngServerFiles.py')
-    print "suc"
-
-    s.unprotect('test', 'dsfdaf.py')
-    s.protect('test', 'dsfda2f.py')
-
-    print s.secinfo('test', 'dsfdaf.py')
-    print s.secinfo('test', 'dsfda2f.py')
-
-    print s.secdownload('test', 'dsfdaf.py')
-    print s.secdownload('test', 'dsfda2f.py')
-
-    print s.publist('test')
-    print s.seclist('test')
-
-    #autho choose
-
-    print s.info('test', 'dsfdaf.py')
-    print s.info('test', 'dsfda2f.py')
-
-    print s.download('test', 'dsfdaf.py')
-    print s.download('test', 'dsfda2f.py')
-
-    print s.list('test')
-    print s.list('test')
-
-    s = ServerFiles()
-    try:
-        s.create_domain("test")
-    except:
-        pass
-
-    print s.info('test', 'dsfdaf.py')
-    #print s.info('test', 'dsfda2f.py')
-
-    print s.download('test', 'dsfdaf.py')
-    #print s.download('test', 'dsfda2f.py')
-
-    print s.list('test')
 
 def example(myusername, mypassword):
 
@@ -264,29 +271,30 @@ def example(myusername, mypassword):
         pass
 
     #upload this file - save it by a different name
-    s.upload('test', 'osf-/test/.py', open("orngServerFiles.py", 'rb'))
+    s.upload('test', 'osf-test.py', open("orngServerFiles.py", 'rb'), title="NT", tags=["fkdl","fdl"])
 
     #make it public
-    s.unprotect('test', 'osf-/test/.py')
+    s.unprotect('test', 'osf-test.py')
 
     #login anonymously
     s = ServerFiles()
 
     #list files in the domain "test"
     files = s.list('test')
-    print files
+    print "ALL FILES:", files
 
     for f in files:
-        size, datetime = s.info('test', f) 
-        print "---", f, "---", "size", size, "datetime", datetime
-        print s.download('test', f).read()[:100] #show first 100 characters
-        print "---"
+        fi = s.info('test', f) 
+        print "--------------------------------------", f
+        print "INFO", fi
+        print s.downloadFH('test', f).read()[:100] #show first 100 characters
+        print "--------------------------------------"
+        s.download('test', f)
 
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
 
-    print "removing"
-    s.remove('test', 'osf-/test/.py')
+    s.remove('test', 'osf-test.py')
 
 if __name__ == '__main__':
 
