@@ -1,0 +1,165 @@
+<html>
+
+<head>
+<title>orngServerFiles: Orange's file repository</title>
+<link rel=stylesheet href="../style.css" type="text/css">
+<link rel=stylesheet href="style-print.css" type="text/css" media=print>
+</head>
+
+<body>
+<h1>orngServerFiles: Orange's file repository</h1>
+<index name="modules/orngServerFiles">
+<index name="orngServerFiles">
+<index name="files">
+
+<p>Module <code>orngServerFiles</code> allows users to download files from a common
+repository. It was designed to simplify the download and updates of 
+external data sources for Orange Genomics add-on. Furthermore, an authenticated
+user can also manage the repository files with this module.</p>
+
+<p>Each file managed by <code>orngServerFiles</code> is described by domain and 
+file name. Domains are like folders - a place where files are put in.</p>
+
+<h2>Local file management</h2>
+
+<p>Downloaded files are saved under Orange's settings directory, subdirectory
+<code>buffer/bigfiles</code>. For each new domain a new subdirectory is created containing the downloaded files. When a file is downloaded, a corresponding 
+info file is created, with the same name plus &quot;.info&quot; extension. 
+It contains file's title, tags, size and date and time of the upload.
+</p>
+
+<p class="section">Methods used for managing local files</p>
+
+<dl class="attributes">
+<dt>download(domain, filename [,serverfiles])</dt>
+<dd>Downloads file from the repository to local orange installation. To download files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class.
+</dd>
+<dt>listfiles(domain)</dt>
+<dd>List all files in a domain on local orange installation.</dd>
+<dt>info(domain, filename)</dt>
+<dd>Returns a dictionary containing downloaded file info. Keys: title, tags, size, datetime. </dd>
+</dl>
+
+<h2>ServerFiles: the repository</h2>
+
+<p>To work with the repository, you need to create an instance of 
+<code>ServerFiles</code>. To access the repository as an authenticated user, 
+an username and password should be passed to the constructor. 
+Afterwards you can use the instance's  methods. All password
+protected operations and transfers are secured by SSL; this secures both
+password and content. </p>
+
+<p>Repository files are set as protected when first uploaded: 
+only authenticated users can see them. They need to be unprotected 
+for public use.</p>
+
+<dl class="attributes">
+<dt>Constructor([username, password])</dt>
+<dd>Creates a ServerFiles instance. Pass your username and password to use
+the repository as an authenticated user.</dd>
+</dl>
+
+<p class="section">Ordinary users</p>
+
+<dl class="attributes">
+<dt>download(domain, filename, target)</dt>
+<dd>Downloads file from the repository to a given target name.
+</dd>
+<dt>listfiles(domain)</dt>
+<dd>List all files in a repository domain.</dd>
+<dt>info(domain, filename)</dt>
+<dd>Returns a dictionary containing repository file info. Keys: title, tags, size, datetime.</dd>
+<dt>downloadFH(domain, filename)</dt>
+<dd>Returns a file handle to the file that we would like to download.
+</dd>
+</dl>
+
+<p class="section">Authenticated users</p>
+
+Authenticated users can also use the methods described in &quot;Ordinary users&quot; section, but they will work for protected files also.
+
+<dl class="attributes">
+<dt>create_domain(domain)</dt>
+<dd>Creates a repository domain.</dd>
+<dt>remove_domain(domain [,force])</dt>
+<dd>Removes a domain. If force is True, domain is removed even
+if it contains files.</dd>
+<dt>remove(domain, filename)</dt>
+<dd>Removes a file from the repository.</dd>
+<dt>protect(domain, filename)</dt>
+<dd>Hide file from non-authenticated users.</dd>
+<dt>unprotect(domain, filename)</dt>
+<dd>Put a file into public use.</dd>
+<dt>upload(domain, filename, localfile [, title, tags])</dt>
+<dd>Uploads a file &quot;localfile&quot; to the domain where it is saved with
+filename &quot;filename&quot;. If file does not exist yet, set it as
+protected. Parameter localfile can be a file handle open for reading or
+a file name.</dd>
+</dl>
+
+<h2>Examples</h2>
+
+<h3>Downloading and listing files</h3>
+
+<p>Listing local files, files from the repository and downloading all 
+available files from domain &quot;demo&quot;.</p>
+
+<xmp class=code>import orngServerFiles
+
+repository = orngServerFiles.ServerFiles()
+print "My files", orngServerFiles.listfiles('demo')
+print "Repository files", repository.listfiles('demo')
+
+print "Downloading all files in domain 'test'"
+for file in repository.listfiles('demo'):
+    print "Datetime for", file, repository.info('demo', file)["datetime"]
+    orngServerFiles.download('demo', file)
+
+print "My files after download", orngServerFiles.listfiles('demo')
+</xmp>
+
+<p>Output for first run (and current repository state):</p>
+
+<xmp class=code>My files []
+Repository files ['orngServerFiles.py', 'urllib2_file.py']
+Downloading all files in domain 'test'
+Datetime for orngServerFiles.py 2008-08-20 12:25:54.624000
+Datetime for urllib2_file.py 2008-08-20 12:25:54.827000
+My files after download ['urllib2_file.py', 'orngServerFiles.py']
+</xmp>
+
+<h3>Creating a domain, uploading files</h3>
+
+A similar domain as &quot;demo&quot; in previous example can be built as follows.
+
+<xmp class=code>import orngServerFiles
+
+ordinary = orngServerFiles.ServerFiles()
+authenticated = orngServerFiles.ServerFiles(username, password)
+
+try:
+    authenticated.remove_domain('demo2', force=True)
+except:
+    pass
+
+authenticated.create_domain('demo2')
+
+authenticated.upload('demo2', 'orngServerFiles.py', 'orngServerFiles.py')
+authenticated.upload('demo2', 'urllib2_file.py', 'urllib2_file.py')
+print "Ordinary users see:", ordinary.listfiles('demo2')
+print "Authenticated  users see:", authenticated.listfiles('demo2')
+authenticated.unprotect('demo2', 'orngServerFiles.py')
+authenticated.unprotect('demo2', 'urllib2_file.py')
+print "Ordinary users now see:", ordinary.listfiles('demo2')
+</xmp>
+
+<p>Output:</p>
+
+<xmp class=code>Ordinary users see: ['']
+Authenticated  users see: ['orngServerFiles.py', 'urllib2_file.py']
+Ordinary users now see: ['orngServerFiles.py', 'urllib2_file.py']
+</xmp>
+
+</body>
+</html>
+
