@@ -23,8 +23,9 @@ file name. Domains are like folders - a place where files are put in.</p>
 <h2>Local file management</h2>
 
 <p>Downloaded files are saved under Orange's settings directory, subdirectory
-<code>buffer/bigfiles</code>. For each new domain a new subdirectory is created containing the downloaded files. When a file is downloaded, a corresponding 
-info file is created, with the same name plus &quot;.info&quot; extension. 
+<code>buffer/bigfiles</code>. For each new domain a subdirectory containing 
+the downloaded files is created. With every download a corresponding 
+info file is created with the same name plus &quot;.info&quot; extension. 
 It contains file's title, tags, size and date and time of the upload.
 </p>
 
@@ -32,7 +33,8 @@ It contains file's title, tags, size and date and time of the upload.
 
 <dl class="attributes">
 <dt>download(domain, filename [,serverfiles])</dt>
-<dd>Downloads file from the repository to local orange installation. To download files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class.
+<dd>Downloads file from the repository to local orange installation. To download 
+files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class.
 </dd>
 <dt>listfiles(domain)</dt>
 <dd>List all files in a domain on local orange installation.</dd>
@@ -45,7 +47,7 @@ It contains file's title, tags, size and date and time of the upload.
 <p>To work with the repository, you need to create an instance of 
 <code>ServerFiles</code>. To access the repository as an authenticated user, 
 an username and password should be passed to the constructor. 
-Afterwards you can use the instance's  methods. All password
+Afterwards you can use the instance's methods. All password
 protected operations and transfers are secured by SSL; this secures both
 password and content. </p>
 
@@ -76,7 +78,8 @@ the repository as an authenticated user.</dd>
 
 <p class="section">Authenticated users</p>
 
-Authenticated users can also use the methods described in &quot;Ordinary users&quot; section, but they will work for protected files also.
+Authenticated users can use methods described in &quot;Ordinary users&quot; 
+section, but they will also work for protected files.
 
 <dl class="attributes">
 <dt>create_domain(domain)</dt>
