@@ -81,6 +81,7 @@ CompileScript: <<
 <<
 InstallScript: <<
 	make install
-	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4 
+	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4
+	install_name_tool -id %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib %i/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib
 <<
 <<
