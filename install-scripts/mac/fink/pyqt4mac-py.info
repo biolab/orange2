@@ -17,7 +17,7 @@ BuildDepends:<<
 	libpng3,
 	qscintilla2-qt4-mac,
 	qt4-mac,
-	sip-py%type_pkg[python]-bin (>= 4.7.4-1)
+	sip-py%type_pkg[python]-bin (>= 4.7.5-1)
 <<
 Depends: <<
 	freetype2-shlibs,
@@ -30,7 +30,7 @@ Depends: <<
 	qt4-mac-core-shlibs, 
 	qt4-mac-designer-shlibs,
 	qt4-mac-gui-shlibs,
-	sip-py%type_pkg[python] (>= 4.7.4-1)
+	sip-py%type_pkg[python] (>= 4.7.5-1)
 <<
 Description: Python bindings for the Qt toolkit
 DocFiles: ChangeLog LICENSE NEWS README

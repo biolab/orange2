@@ -174,7 +174,7 @@ SplitOff5: <<
 CompileScript: <<
 	#!/bin/bash -ev
 	./configure -confirm-license -no-framework -prefix %p/lib/%N/ -demosdir %p/share/doc/%N/demos/ -examplesdir %p/share/doc/%N/examples/ -docdir %p/share/doc/%N/
-	make -j 16
+	make
 	find %b -name '*.pc' -or -name '*.la' -print0 | xargs -0 perl -pi -e 's!-framework !-Wl,-framework,!g'
 <<
 InstallScript: <<
