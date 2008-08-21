@@ -14,7 +14,7 @@ Depends: <<
 	numpy-py25
 <<
 Suggests: orange
-Conflicts: orange-svn-py25
+Conflicts: orange-svn-py25, orange-svn
 Replaces: orange-svn-py25
 Architecture: i386, powerpc
 Description: Component-based data mining software

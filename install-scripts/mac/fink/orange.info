@@ -15,7 +15,7 @@ Depends: <<
 	pyqwt-mac-py25 (<< 5),
 	graphviz
 <<
-Conflicts: orange-svn
+Conflicts: orange-svn, orange-svn-py25
 Replaces: orange-svn
 Architecture: i386, powerpc
 Description: Component-based data mining software

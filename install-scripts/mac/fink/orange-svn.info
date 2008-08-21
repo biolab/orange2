@@ -15,7 +15,7 @@ Depends: <<
 	pyqwt-qt4mac-py25 (>= 5.1),
 	graphviz
 <<
-Conflicts: orange
+Conflicts: orange, orange-py25
 Replaces: orange
 Architecture: i386, powerpc
 Description: Component-based data mining software
