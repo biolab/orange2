@@ -1,3 +1,4 @@
+Info2: <<
 Package: pyqtmac-py%type_pkg[python]
 Version: 3.17.4
 Revision: 1
@@ -53,4 +54,5 @@ CompileScript: <<
 InstallScript: <<
 	make install
 	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/pyqtconfig.py
+<<
 <<
