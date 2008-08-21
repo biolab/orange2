@@ -65,7 +65,7 @@ SplitOff2: <<
 	<<
 	Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
-	Files: lib/qt4-mac/plugins/python2.5/designer/
+	Files: lib/qt4-mac/plugins/python2.5/designer
 <<
 CompileScript: <<
 	#!/bin/bash -ev
