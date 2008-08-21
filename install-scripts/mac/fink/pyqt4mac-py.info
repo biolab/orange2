@@ -51,7 +51,7 @@ SplitOff: <<
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
 	Files: bin
 <<
-SplitOff: <<
+SplitOff2: <<
 	Package: %N-shlibs
 	License: GPL
 	Depends: <<
