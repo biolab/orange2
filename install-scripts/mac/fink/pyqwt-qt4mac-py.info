@@ -11,13 +11,13 @@ Type: python (2.3 2.4 2.5)
 Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5
 BuildDepends: <<
 	qt4-mac,
-	pyqtmac-py%type_pkg[python],
+	pyqt4mac-py%type_pkg[python],
 	sip-py%type_pkg[python]-bin (>= 4.6)
 <<
 BuildConflicts: qt4-x11
 Depends: <<
 	qt4-mac-shlibs,
-	pyqtmac-py%type_pkg[python],
+	pyqt4mac-py%type_pkg[python]-shlibs,
 	python%type_pkg[python],
 	sip-py%type_pkg[python] (>= 4.6)
 <<

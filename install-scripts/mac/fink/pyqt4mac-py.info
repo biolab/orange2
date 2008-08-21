@@ -41,12 +41,15 @@ SplitOff: <<
 	License: GPL
 	Depends: <<
 		freetype2-shlibs,
-		glib2-shlibs, 
+		glib2-shlibs,
 		libgettext3-shlibs,
-		libiconv, 
-		pyqt4mac-py%type_pkg[python],
-		qt4-mac-core-shlibs, 
-		qt4-mac-gui-shlibs
+		libiconv,
+		qt4-mac-core-shlibs,
+		qt4-mac-gui-shlibs,
+		pyqt4mac-py%type_pkg[python]-shlibs
+	<<
+	BuildDepends: <<
+		pyqt4mac-py%type_pkg[python]
 	<<
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
 	Files: bin
@@ -59,9 +62,11 @@ SplitOff2: <<
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
-		pyqt4mac-py%type_pkg[python],
 		qt4-mac-core-shlibs,
 		qt4-mac-gui-shlibs
+	<<
+	BuildDepends: <<
+		pyqt4mac-py%type_pkg[python]
 	<<
 	Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS

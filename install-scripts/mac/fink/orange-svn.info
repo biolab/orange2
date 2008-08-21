@@ -11,7 +11,7 @@ BuildDepends: svn-client
 Depends: <<
 	python25,
 	orange-svn-py25 (>= %v),
-	pyqt4mac-py25 (>= 4.4),
+	pyqt4mac-py25-shlibs (>= 4.4),
 	pyqwt-qt4mac-py25 (>= 5.1),
 	graphviz
 <<
