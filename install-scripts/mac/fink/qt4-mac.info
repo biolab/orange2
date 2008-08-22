@@ -76,6 +76,65 @@ DescUsage: <<
 <<
 DocFiles: GPL* LICENSE.* OPENSOURCE-NOTICE.TXT README* changes-*
 SplitOff: <<
+	Package: %N-debugshlibs
+	Suggests: %N-designer, %N-linguist, %N-doc
+	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
+	Provides: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
+	Depends: <<
+		freetype2-shlibs,
+		libmng2-shlibs,
+		libpng3-shlibs (>= 1.2.5-4),
+		libjpeg-shlibs,
+		dbus-shlibs (>= 1.0.0-1),
+		fink (>= 0.17.1-1),
+		glib2-shlibs (>= 2.12.0-1)
+	<<
+	Shlibs: <<
+		%p/lib/qt4-mac/lib/libphonon_debug.4.4.1.dylib 4.1.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQt3Support_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtAssistantClient_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCLucene_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtCore_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDBus_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesigner_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtDesignerComponents_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtGui_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtHelp_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtNetwork_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtOpenGL_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtScript_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSql_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtSvg_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtTest_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtWebKit_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtXml_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/lib/libQtXmlPatterns_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/accessible/libqtaccessiblecompatwidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/accessible/libqtaccessiblewidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/codecs/libqcncodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/codecs/libqjpcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/codecs/libqkrcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/codecs/libqtwcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/designer/libcontainerextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/designer/libtaskmenuextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/iconengines/libqsvgicon_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqgif_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqico_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqjpeg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqmng_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqsvg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/imageformats/libqtiff_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/phonon_backend/libphonon_qt7_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/script/libqtscriptdbus_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlite_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlodbc_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+	<<
+	Files: <<
+		lib/%N/lib/*debug*
+		lib/%N/plugins/*/*debug*
+	<<
+<<
+SplitOff2: <<
 	Package: %N-shlibs
 	Suggests: %N-designer, %N-linguist, %N-doc
 	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
@@ -135,73 +194,6 @@ SplitOff: <<
 	Files: <<
 		lib/%N/lib
 		lib/%N/plugins
-	<<
-	InstallScript: <<
-		#!/bin/bash -ev
-		find %i -not -type d -name '*debug*' -delete
-	<<
-<<
-SplitOff2: <<
-	Package: %N-debugshlibs
-	Suggests: %N-designer, %N-linguist, %N-doc
-	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
-	Provides: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
-	Depends: <<
-		freetype2-shlibs,
-		libmng2-shlibs,
-		libpng3-shlibs (>= 1.2.5-4),
-		libjpeg-shlibs,
-		dbus-shlibs (>= 1.0.0-1),
-		fink (>= 0.17.1-1),
-		glib2-shlibs (>= 2.12.0-1)
-	<<
-	Shlibs: <<
-		%p/lib/qt4-mac/lib/libphonon_debug.4.4.1.dylib 4.1.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQt3Support_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtAssistantClient_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtCLucene_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtCore_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtDBus_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtDesigner_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtDesignerComponents_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtGui_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtHelp_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtNetwork_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtOpenGL_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtScript_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtSql_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtSvg_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtTest_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtWebKit_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtXml_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/lib/libQtXmlPatterns_debug.4.4.1.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/accessible/libqtaccessiblecompatwidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/accessible/libqtaccessiblewidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/codecs/libqcncodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/codecs/libqjpcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/codecs/libqkrcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/codecs/libqtwcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/designer/libcontainerextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/designer/libtaskmenuextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/iconengines/libqsvgicon_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqgif_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqico_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqjpeg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqmng_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqsvg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/imageformats/libqtiff_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/phonon_backend/libphonon_qt7_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/script/libqtscriptdbus_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlite_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlodbc_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-	<<
-	Files: <<
-		lib/%N/lib
-		lib/%N/plugins
-	<<
-	InstallScript: <<
-		#!/bin/bash -ev
-		find %i -not -type d -not -name '*debug*' -delete
 	<<
 <<
 SplitOff3: <<
