@@ -22,7 +22,7 @@ Depends: <<
 	sip-py%type_pkg[python] (>= 4.6)
 <<
 Conflicts: <<
-	pyqwt-py%type_pkg[python]
+	pyqwt-qt4mac-py%type_pkg[python]
 <<
 GCC: 4.0
 Description: Python bindings for Qwt
