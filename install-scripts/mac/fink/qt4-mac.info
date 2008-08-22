@@ -138,7 +138,7 @@ SplitOff: <<
 	<<
 	InstallScript: <<
 		#!/bin/bash -ev
-		find %i -name '*debug*' -delete
+		find %i -not -type d -name '*debug*' -delete
 	<<
 <<
 SplitOff2: <<
@@ -201,7 +201,7 @@ SplitOff2: <<
 	<<
 	InstallScript: <<
 		#!/bin/bash -ev
-		find %i -not -name '*debug*' -delete
+		find %i -not -type d -not -name '*debug*' -delete
 	<<
 <<
 SplitOff3: <<
