@@ -131,7 +131,14 @@ SplitOff: <<
 	<<
 	Files: <<
 		lib/%N/lib/*debug*
-		lib/%N/plugins/*/*debug*
+		lib/%N/plugins/accessible/*debug*
+		lib/%N/plugins/codecs/*debug*
+		lib/%N/plugins/designer/*debug*
+		lib/%N/plugins/iconengines/*debug*
+		lib/%N/plugins/imageformats/*debug*
+		lib/%N/plugins/phonon_backend/*debug*
+		lib/%N/plugins/script/*debug*
+		lib/%N/plugins/sqldrivers/*debug*
 	<<
 <<
 SplitOff2: <<
