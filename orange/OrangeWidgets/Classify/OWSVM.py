@@ -64,6 +64,7 @@ class OWSVM(OWWidget):
 
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy")
+        self.paramButton.setDisabled(True)
 
         OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
@@ -97,6 +98,7 @@ class OWSVM(OWWidget):
                 self.error(0, "The dataset does not contain a class variable")
         else:
             self.data=None
+        self.paramButton.setDisabled(not self.data)
         self.applySettings()
 
     def applySettings(self):
