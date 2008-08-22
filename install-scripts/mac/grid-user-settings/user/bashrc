@@ -1,0 +1,43 @@
+# Enable ls colors
+export CLICOLOR=1
+
+export HISTIGNORE="&"
+export HISTFILESIZE=15000
+export HISTSIZE=15000
+
+export FTP_PASSIVE=1
+export EDITOR=vim
+
+# Display in megabytes and kilobytes
+alias df='df -m'
+alias du='du -k'
+
+alias ll='ls -AlF'
+
+alias vi='vim'
+
+# Enable grep colors
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+
+# Set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+	xterm-color|rxvt)
+		PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+		;;
+	*)
+		PS1='\u@\h:\w\$ '
+		;;
+esac
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+	xterm*|rxvt*)
+		PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}: ${PWD}\007"'
+		;;
+	*)
+		;;
+esac
+
+[ -f /sw/share/mc/bin/mc.sh ] && . /sw/share/mc/bin/mc.sh

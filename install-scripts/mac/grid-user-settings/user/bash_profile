@@ -1,0 +1,15 @@
+# Include .bashrc if it exists
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# set PATH so it includes user's private bin if it exists
+if [ -d ~/bin ] ; then
+	PATH=~/bin${PATH:+:$PATH}
+fi
+
+export PATH=/usr/local/bin${PATH:+:$PATH}
+
+export MANPATH=/usr/local/man${MANPATH:+:$MANPATH}
+
+w
