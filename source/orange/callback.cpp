@@ -129,7 +129,7 @@ PFilter TFilter_Python::deepCopy() const
         raiseError("An exception has been thrown in method deepCopy!");
     if (!PyOrFilter_Check(result))
         raiseError(
-                "deepCopy is expected to return something derived from Filter");
+                "deepCopy is expected to return an instance of a class derived from Filter");
 
     PFilter fil = PyOrange_AsFilter(result);
     Py_DECREF(result);
@@ -325,6 +325,9 @@ PAttributedFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, cons
         if (PyTuple_Size(res) != 2) {
             raiseError("invalid result from __call__");
         }
+
+        if (!PyOrVariable_Check(PyTuple_GET_ITEM(res, 1)))
+          raiseError("An instance of a class derived from Variable expected");
 
         attribute = PyOrange_AsVariable(PyTuple_GET_ITEM(res, 1));
         beta_se = PAttributedFloatList();
@@ -903,6 +906,8 @@ PExamplesDistance TExamplesDistanceConstructor_Python::operator ()(PExampleGener
     PyObject *args=Py_BuildValue("(NiNN)", WrapOrange(eg), wei, WrapOrange(dd), WrapOrange(das));
     PyObject *result=callCallback((PyObject *)myWrapper, args);
     Py_DECREF(args);
+    if (!PyOrExamplesDistance_Check(result))
+      raiseError("ExamplesDistanceConstructor.__call__ must return an instance of ExamplesDistance");
     PExamplesDistance res = PyOrange_AsExamplesDistance(result);
     Py_DECREF(result);
     return res;
