@@ -34,9 +34,6 @@ class OWInfo(OWWidget):
         OWBaseWidget.__init__(self, parent, signalManager, "Info Widget")
         self.title = self.captionTitle = "Info Widget"
 
-        # if we want the widget to show the title then the title must start with "Qt"
-        if (int(qVersion()[0]) < 3) and self.captionTitle[:2].upper != "QT": self.captionTitle = "Qt " + self.captionTitle
-
         #the title
         self.setCaption(self.captionTitle)
         self.caption = QLabel("Information:", self)

@@ -11,7 +11,7 @@ class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent = None, flags = 0):
         QMainWindow.__init__(self, parent)
         self.debugMode = 1        # print extra output for debuging
-        self.setWindowTitle("Qt Orange Canvas")
+        self.setWindowTitle("Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
         self.recentDocs = []

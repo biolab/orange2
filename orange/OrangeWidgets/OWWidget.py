@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = False, wantStatusBar = False, savePosition = True, wantMainArea = 1, noReport = False, showSaveGraph = 1, resizingEnabled = 1, **args):
+    def __init__( self, parent = None, signalManager = None, title = "Orange Widget", wantGraph = False, wantStatusBar = False, savePosition = True, wantMainArea = 1, noReport = False, showSaveGraph = 1, resizingEnabled = 1, **args):
         """
         Initialization
         Parameters:
