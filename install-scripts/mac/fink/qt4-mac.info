@@ -127,7 +127,7 @@ SplitOff: <<
 		%p/lib/qt4-mac/lib/libQtXml.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/qt4-mac/lib/libQtXml_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/qt4-mac/lib/libQtXmlPatterns.4.dylib 4.4.0 %n (>= 4.4.1-1)
-       .%p/lib/qt4-mac/lib/libQtXmlPatterns_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+        %p/lib/qt4-mac/lib/libQtXmlPatterns_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 	<<
 	Files: <<
 		lib/%N/lib
