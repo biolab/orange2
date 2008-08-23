@@ -256,6 +256,10 @@ class WidgetButton(QFrame, WidgetButtonBase):
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
+        
+        # we say that we clicked the button only if we released the mouse inside the button
+        if e.pos().x() >= 0 and e.pos().x() < self.width() and e.pos().y() > 0 and e.pos().y() < self.height():
+            self.clicked(e.button() == Qt.RightButton)
 
     def wheelEvent(self, ev):
         if self.parent() and self.buttonType != WB_TOOLBOX:
@@ -455,6 +459,7 @@ class WidgetTreeFolder(QTreeWidgetItem):
     def __init__(self, parent, name):
         QTreeWidgetItem.__init__(self, parent, [name])
 #        item.setChildIndicatorPolicy(item.ShowIndicator)
+    
     def mousePressEvent(self, e):
         self.treeItem.setExpanded(not self.treeItem.isExpanded())
          
