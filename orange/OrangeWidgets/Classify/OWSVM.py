@@ -32,7 +32,7 @@ class OWSVM(OWWidget):
         self.normalization=1
         self.data = None
         self.selFlag=False
-        self.name="SVM Learner/Classifier"
+        self.name="SVM"
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
