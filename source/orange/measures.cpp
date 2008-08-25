@@ -1072,7 +1072,12 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
   if (!regression && (gen->domain->classVar->varType != TValue::INTVAR))
     raiseError("cannot compute ReliefF of a class that is neither discrete nor continuous");
   
-  storedExamples = mlnew TExampleTable(gen->domain, !gen.is_derived_from(TExampleTable));
+  if (gen.is_derived_from(TExampleTable)) {
+    storedExamples = mlnew TExampleTable(gen, 1); // must store lock!
+  }
+  else {
+    storedExamples = mlnew TExampleTable(gen->domain);
+  }
   TExampleTable &table = dynamic_cast<TExampleTable &>(storedExamples.getReference());
   PEITERATE(ei, gen)
     if (!(*ei).getClass().isSpecial())
