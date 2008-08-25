@@ -138,6 +138,21 @@ string convertToString(const pair<float, float> &i)
 }
 
 
+bool convertFromPython(PyObject *obj, pair<int, float> &i)
+{ return PyArg_ParseTuple(obj, "if", &i.first, &i.second) != 0; }
+
+
+PyObject *convertToPython(const pair<int, float> &i)
+{ return Py_BuildValue("if", i.first, i.second); }
+
+
+string convertToString(const pair<int, float> &i)
+{ char is[128];
+  sprintf(is, "(%i, %5.3f)", i.first, i.second);
+  return is; 
+}
+
+
 bool convertFromPython(PyObject *obj, string &str)
 { if (!PyString_Check(obj))
     PYERROR(PyExc_TypeError, "invalid string", false);
