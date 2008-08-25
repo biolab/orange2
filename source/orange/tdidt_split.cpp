@@ -869,11 +869,20 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
 
 
-PExampleGeneratorList TTreeExampleSplitter::prepareGeneratorList(int size, PDomain domain, vector<TExampleTable *> &unwrapped)
+PExampleGeneratorList TTreeExampleSplitter::prepareGeneratorList(int size, PExampleGenerator gen, vector<TExampleTable *> &unwrapped)
 {
+  PExampleTable lock = gen.AS(TExampleTable);
+  if (lock) {
+    if (lock->lock)
+      lock = lock->lock;
+  }
+  else {
+    lock = mlnew TExampleTable(gen);
+  }
+    
   PExampleGeneratorList examplePtrs = mlnew TExampleGeneratorList();
   while(size--) {
-    TExampleTable *ntable = mlnew TExampleTable(domain, false);
+    TExampleTable *ntable = mlnew TExampleTable(lock, 1);
     examplePtrs->push_back(PExampleGenerator(ntable));
     unwrapped.push_back(ntable);
   }
@@ -902,7 +911,7 @@ PExampleGeneratorList TTreeExampleSplitter_IgnoreUnknowns::operator ()(PTreeNode
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
   PEITERATE(ei, gen) {
     TValue index = branchSelector(*ei);
     if (!index.isSpecial() && (index.intV>=0) && (index.intV<maxIndex))
@@ -923,7 +932,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToCommon::operator ()(PTreeNo
   const int mostCommon = node->branchSizes->highestProbIntIndex();
 
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
 
   PEITERATE(ei, gen) {
     TValue index = branchSelector(*ei);
@@ -939,7 +948,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToAll::operator ()(PTreeNode 
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
 
   PEITERATE(ei, gen) {
     TValue index = branchSelector(*ei);
@@ -959,7 +968,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToRandom::operator ()(PTreeNo
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
 
   PEITERATE(ei, gen) {
     TValue index = branchSelector(*ei);
@@ -986,7 +995,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToBranch::operator ()(PTreeNo
   node->branchDescriptions->push_back("unknown");
 
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex+1, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex+1, gen, uexamplePtrs);
 
   PEITERATE(ei, gen) {
     TValue index = branchSelector(*ei);
@@ -1006,7 +1015,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
   TClassifier &branchSelector = node->branchSelector.getReference();
  
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
 
   vector<int> indices;
   
@@ -1071,7 +1080,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsSelector::operator()(PTreeN
 
  
   vector<TExampleTable *> uexamplePtrs;
-  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
+  PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen, uexamplePtrs);
 
   vector<int> indices;
   
