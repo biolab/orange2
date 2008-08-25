@@ -44,8 +44,8 @@ public:
   __REGISTER_CLASS
 
   PVariable outerVariable; //P outer attribute
-  PVariable innerVariable; //P (+variable) inner attribute
-  int varType;             //PR(&Variable_Type) outer attribute type
+  PVariable innerVariable; //P inner attribute
+  int varType;             //P(&Variable_Type) outer attribute type
 
   union {
     TDistributionVector *discrete;
