@@ -70,6 +70,8 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("TreeNode", "lib_learner.cpp"),
    normalList("C45TreeNode", "lib_learner.cpp"),
    normalList("Rule", "lib_learner.cpp"),
+   normalList("ConditionalProbabilityEstimator", "lib_components.cpp"),
+   normalList("ProbabilityEstimator", "lib_components.cpp"),
    normalList("EVCDist", "lib_learner.cpp"),
 
    normalList("Heatmap", "orangene.cpp"),
@@ -127,7 +129,10 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, wrapped) in 
    ("StringList",       "string",   "PStringList",       "TStringList",       "string", 0),
    ("LongList",         "int",      "PLongList",         "TLongList",         "long", 0),
    ("_Filter_index",     "int",     "PFilter_index",     "TFilter_index",     "FOLDINDEXTYPE", 0),
-   ("AlignmentList",    "Alignment", "PAlignmentList",  "TAlignmentList",    "TAlignment", 0)
+   ("AlignmentList",    "Alignment", "PAlignmentList",  "TAlignmentList",    "TAlignment", 0),
+
+   ("IntFloatList",     "tuple(int, float)",   "PIntFloatList",    "TIntFloatList",     "pair<int, float>", 0),
+   ("FloatFloatList",   "tuple(float, float)", "PFloatFloatList",  "TFloatFloatList",   "pair<float, float>", 0),
    ]:
   if (pyname[0]=="_"):
     pyname = pyname[1:]
