@@ -477,7 +477,7 @@ PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VAR
   PyTRY
     PyTypeObject *type;
     PyObject *dict;
-	  if (!PyArg_ParseTuple(args, "OO:__pickleLoaderCostMatrix", &type, &dict))
+	  if (!PyArg_ParseTuple(args, "OO:__pickleLoaderEnumVariable", &type, &dict))
 		  return NULL;
 
     char *name = NULL;
@@ -1957,14 +1957,10 @@ PyObject *loadDataFromFileNoSearch(PyTypeObject *type, char *filename, PyObject 
   }
 }
 
-PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
+PyObject *loadDataFromFilePath(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly, const char *path)
 {
-  PyObject *ptype, *pvalue, *ptraceback;
-
-  PyObject *res = loadDataFromFileNoSearch(type, filename, argstuple, keywords, generatorOnly);
-  PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-  if (!ptype) {
-    return res;
+  if (!path) {
+    return NULL;
   }
   
   #if defined _WIN32
@@ -1976,30 +1972,61 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
   #endif
   const int flen = strlen(filename);
 
-  char *path = getenv("ORANGE_DATA_PATH");
-  if (path) {
-    for(char *pi = path, *pe=pi; *pi; pi = pe+1) {
-      for(pe = pi; *pe && *pe != sep; pe++);
-      const int plen = pe-pi;
-      char *npath = strncpy(new char[plen+flen+2], pi, pe-pi);
-      if (!plen || (pe[plen] != pathsep)) {
-        npath[plen] = pathsep;
-        strcpy(npath+plen+1, filename);
-      }
-      else {
-        strcpy(npath+plen, filename);
-      }
-      PyErr_Clear();
-      res = loadDataFromFileNoSearch(type, npath, argstuple, keywords, generatorOnly);
-      if (res) {
-        Py_XDECREF(ptype);
-        Py_XDECREF(pvalue);
-        Py_XDECREF(ptraceback);
-        return res;
-      }
-      if (!*pe)
-        break;
+  for(const char *pi = path, *pe=pi; *pi; pi = pe+1) {
+    for(pe = pi; *pe && *pe != sep; pe++);
+    const int plen = pe-pi;
+     char *npath = strncpy(new char[plen+flen+2], pi, pe-pi);
+    if (!plen || (pe[plen] != pathsep)) {
+      npath[plen] = pathsep;
+      strcpy(npath+plen+1, filename);
     }
+    else {
+      strcpy(npath+plen, filename);
+    }
+    PyObject *res = loadDataFromFileNoSearch(type, npath, argstuple, keywords, generatorOnly);
+    PyErr_Clear();
+    if (res) {
+      return res;
+    }
+    if (!*pe)
+      break;
+  }
+  
+  return NULL;
+}
+
+PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
+{
+  PyObject *ptype, *pvalue, *ptraceback;
+  PyObject *res;
+  
+  res = loadDataFromFileNoSearch(type, filename, argstuple, keywords, generatorOnly);
+  if (res) {
+    return res;
+  }
+
+  PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+  
+  PyObject *configurationModule = PyImport_ImportModule("orngConfiguration");
+  if (configurationModule) {
+    PyObject *datasetsPath = PyDict_GetItemString(PyModule_GetDict(configurationModule), "datasetsPath");
+    if (datasetsPath)
+      res = loadDataFromFilePath(type, filename, argstuple, keywords, generatorOnly, PyString_AsString(datasetsPath));
+      Py_DECREF(configurationModule);
+  }
+  else {
+    PyErr_Clear();
+  }
+
+  if (!res) {
+    res = loadDataFromFilePath(type, filename, argstuple, keywords, generatorOnly, getenv("ORANGE_DATA_PATH"));
+  }
+  
+  if (res) {
+    Py_XDECREF(ptype);
+    Py_XDECREF(pvalue);
+    Py_XDECREF(ptraceback);
+    return res;
   }
   
   PyErr_Restore(ptype, pvalue, ptraceback);
@@ -2881,27 +2908,52 @@ PyObject *ExampleTable__reduce__(PyObject *self)
 {
   CAST_TO(TExampleTable, table)
 
-  if (!table->ownsExamples || table->lock)
-    PYERROR(PyExc_SystemError, "pickling example references is not supported (yet?)", PYNULL);
-
-  TCharBuffer buf(1024);
-  PyObject *otherValues = NULL;
-
-  buf.writeInt(table->size());
-  PEITERATE(ei, table)
-    Example_pack(*ei, buf, otherValues);
-
-  if (!otherValues) {
-    otherValues = Py_None;
-    Py_INCREF(otherValues);
+  if (!table->ownsExamples || table->lock) {
+    PExampleTable lock = table->lock;
+    TCharBuffer buf(1024);
+    const int lockSize = lock->size();
+    buf.writeInt(table->size());
+    PEITERATE(ei, table) {
+      int index = 0;
+      PEITERATE(li, lock) {
+        if (&*li == &*ei)
+          break;
+        index++;
+      }
+      if (index == lockSize) {
+        PYERROR(PyExc_SystemError, "invalid example reference discovered in the table", PYNULL);
+      }
+        
+      buf.writeInt(index);
+    }
+    
+    return Py_BuildValue("O(ONs#)O", getExportedFunction("__pickleLoaderExampleReferenceTable"),
+                                      self->ob_type,
+                                      WrapOrange(table->lock),
+                                      buf.buf, buf.length(),
+                                      packOrangeDictionary(self));
   }
   
-  return Py_BuildValue("O(ONs#N)O", getExportedFunction("__pickleLoaderExampleTable"),
-                                    self->ob_type,
-                                    WrapOrange(table->domain),
-                                    buf.buf, buf.length(),
-                                    otherValues,
-                                    packOrangeDictionary(self));
+  else {
+    TCharBuffer buf(1024);
+    PyObject *otherValues = NULL;
+
+    buf.writeInt(table->size());
+    PEITERATE(ei, table)
+      Example_pack(*ei, buf, otherValues);
+
+    if (!otherValues) {
+      otherValues = Py_None;
+      Py_INCREF(otherValues);
+    }
+    
+    return Py_BuildValue("O(ONs#N)O", getExportedFunction("__pickleLoaderExampleTable"),
+                                      self->ob_type,
+                                      WrapOrange(table->domain),
+                                      buf.buf, buf.length(),
+                                      otherValues,
+                                      packOrangeDictionary(self));
+  }
 }
 
 
@@ -2914,7 +2966,7 @@ PyObject *__pickleLoaderExampleTable(PyObject *, PyObject *args) PYARGS(METH_VAR
     int bufSize;
     PyObject *otherValues;
 
-    if (!PyArg_ParseTuple(args, "OO&s#O:__pickleLoaderExample", &type, cc_Domain, &domain, &buf, &bufSize, &otherValues))
+    if (!PyArg_ParseTuple(args, "OO&s#O:__pickleLoaderExampleTable", &type, cc_Domain, &domain, &buf, &bufSize, &otherValues))
       return NULL;
 
     TCharBuffer cbuf(buf);
@@ -2927,6 +2979,36 @@ PyObject *__pickleLoaderExampleTable(PyObject *, PyObject *args) PYARGS(METH_VAR
       for(int i = noOfEx; i--;)
         Example_unpack(newTable->new_example(), cbuf, otherValues, otherValuesIndex);
 
+      return WrapNewOrange(newTable, type);
+    }
+    catch (...) {
+      delete newTable;
+      throw;
+    }
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderExampleReferenceTable(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, lockedtable, indices)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PExampleTable table;
+    char *buf;
+    int bufSize;
+
+    if (!PyArg_ParseTuple(args, "OO&s#:__pickleLoaderExampleReferenceTable", &type, cc_ExampleTable, &table, &buf, &bufSize))
+      return NULL;
+
+    
+    TCharBuffer cbuf(buf);
+    int noOfEx = cbuf.readInt();
+   
+    TExampleTable *newTable = new TExampleTable(table, 1);
+    try {
+      newTable->reserve(noOfEx);
+      for(int i = noOfEx; i--;)
+        newTable->addExample(table->at(cbuf.readInt()));
       return WrapNewOrange(newTable, type);
     }
     catch (...) {
@@ -4914,8 +4996,11 @@ PyObject *DomainDistributions__reduce__(TPyOrange *self, PyObject *) { return Li
 /* Note that this is not like callable-constructors. They return different type when given
    parameters, while this one returns the same type, disregarding whether it was given examples or not.
 */
-PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID] | <list of Distribution>) -> DomainDistributions")
+PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID] | <list of Distribution>) -> DomainDistributions") ALLOWS_EMPTY
 { PyTRY
+    if (!args || !PyTuple_Size(args))
+      return WrapNewOrange(mlnew TDomainDistributions(), type);
+      
     int weightID;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen)
