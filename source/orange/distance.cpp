@@ -57,7 +57,9 @@ TExamplesDistance_Hamming::TExamplesDistance_Hamming(const bool &ic, const bool 
 
 
 float TExamplesDistance_Hamming::operator()(const TExample &e1, const TExample &e2) const 
-{ if (e1.domain != e2.domain)
+{ if (   (e1.domain != e2.domain)
+      && (ignoreClass ? e1.domain->attributes != e2.domain->attributes
+                     : e1.domain->variables != e2.domain->variables))
     raiseError("cannot compare examples from different domains");
 
   float dist = 0.0;
@@ -249,12 +251,15 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
 */
 void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e2, vector<float> &difs) const
 { checkProperty(normalizers);
-  if (e1.domain!=e2.domain)
+
+  if (   (e1.domain != e2.domain)
+      && (e1.domain->variables != e2.domain->variables))
     raiseError("examples are from different domains");
-  if (domainVersion>=0
+  
+/*  if (domainVersion>=0
         ? (domainVersion != e1.domain->version)
         : ((normalizers->size() > e1.domain->variables->size()) || (normalizers->size()< e1.domain->attributes->size())))
-    raiseError("examples are from a wrong domain");
+    raiseError("examples are from a wrong domain");*/
 
   difs = vector<float>(normalizers->size(), 0.0);
   vector<float>::iterator di(difs.begin());
