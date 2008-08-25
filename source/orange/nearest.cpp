@@ -72,7 +72,7 @@ TFindNearest::TFindNearest(const int anID, const bool is)
 TFindNearest_BruteForce::TFindNearest_BruteForce(PExampleGenerator gen, const int &wei, PExamplesDistance adist, const int anID, const bool is)
 : TFindNearest(anID, is),
   distance(adist),
-  examples(mlnew TExampleTable(gen)),
+  examples(gen ? mlnew TExampleTable(gen) : NULL),
   weightID(wei)
 {}
 
