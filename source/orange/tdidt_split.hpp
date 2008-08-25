@@ -208,7 +208,7 @@ public:
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights) =0;
 
 protected:
-  static PExampleGeneratorList prepareGeneratorList(int size, PDomain domain, vector<TExampleTable *> &);
+  static PExampleGeneratorList prepareGeneratorList(int size, PExampleGenerator generator, vector<TExampleTable *> &);
   static bool getBranchIndices(PTreeNode node, PExampleGenerator generator, vector<int> &indices);
 };
 
