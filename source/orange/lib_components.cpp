@@ -1320,6 +1320,35 @@ PyCATCH
 }
 
 
+C_CALL3(ComputeDomainContingency, ComputeDomainContingency, Orange, "([examples, weightID]) -/-> DomainContingency")
+
+PyObject *ComputeDomainContingency_call(PyObject *self, PyObject *args)
+{
+  int weightID;
+  PExampleGenerator gen = exampleGenFromArgs(args, weightID);
+  if (!gen)
+    PYERROR(PyExc_AttributeError, "examples and, optionally, weight ID expected", PYNULL);
+    
+  return WrapOrange(SELF_AS(TComputeDomainContingency).call(gen, weightID));
+}
+
+
+/* ************ DOMAIN TRANSFORMER ************ */
+
+#include "transdomain.hpp"
+
+ABSTRACT(DomainTransformerConstructor, Orange)
+
+PyObject *DomainTransformerConstructor_call(PyObject *self, PyObject *args)
+{
+  int weightID;
+  PExampleGenerator gen = exampleGenFromArgs(args, weightID);
+  if (!gen)
+    PYERROR(PyExc_AttributeError, "examples and, optionally, weight ID expected", PYNULL);
+    
+  return WrapOrange(SELF_AS(TDomainTransformerConstructor).call(gen, weightID));
+}
+
 
 
 /* ************ DISTANCE ************ */
@@ -1344,10 +1373,11 @@ C_CALL(ExamplesDistanceConstructor_DTW, ExamplesDistanceConstructor, "([examples
 
 
 PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
-{ if (type == (PyTypeObject *)&PyOrExamplesDistanceConstructor_Type)
-return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type), args);
-else
-return WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type);
+{ 
+  if (type == (PyTypeObject *)&PyOrExamplesDistanceConstructor_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type);
 }
 
 
@@ -2342,6 +2372,66 @@ C_NAMED(ConditionalProbabilityEstimator_FromDistribution, ConditionalProbability
 C_NAMED(ConditionalProbabilityEstimator_ByRows, ConditionalProbabilityEstimator, "()")
 C_CALL(ConditionalProbabilityEstimatorConstructor_ByRows, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ConditionalProbabilityEstimator_[FromDistribution|ByRows]")
 C_CALL(ConditionalProbabilityEstimatorConstructor_loess, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromCurves")
+
+
+extern PyTypeObject PyOrProbabilityEstimator_Type_inh;
+
+PProbabilityEstimatorList PProbabilityEstimatorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::P_FromArguments(arg); }
+PyObject *ProbabilityEstimatorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_FromArguments(type, arg); }
+PyObject *ProbabilityEstimatorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ProbabilityEstimator>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_new(type, arg, kwds); }
+PyObject *ProbabilityEstimatorList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getitem(self, index); }
+int       ProbabilityEstimatorList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setitem(self, index, item); }
+PyObject *ProbabilityEstimatorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getslice(self, start, stop); }
+int       ProbabilityEstimatorList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
+int       ProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_len(self); }
+PyObject *ProbabilityEstimatorList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_richcmp(self, object, op); }
+PyObject *ProbabilityEstimatorList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_concat(self, obj); }
+PyObject *ProbabilityEstimatorList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_repeat(self, times); }
+PyObject *ProbabilityEstimatorList_str(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_str(self); }
+PyObject *ProbabilityEstimatorList_repr(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_str(self); }
+int       ProbabilityEstimatorList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_contains(self, obj); }
+PyObject *ProbabilityEstimatorList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(ProbabilityEstimator) -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_append(self, item); }
+PyObject *ProbabilityEstimatorList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_extend(self, obj); }
+PyObject *ProbabilityEstimatorList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ProbabilityEstimator) -> int") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_count(self, obj); }
+PyObject *ProbabilityEstimatorList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ProbabilityEstimatorList") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_filter(self, args); }
+PyObject *ProbabilityEstimatorList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ProbabilityEstimator) -> int") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_index(self, obj); }
+PyObject *ProbabilityEstimatorList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_insert(self, args); }
+PyObject *ProbabilityEstimatorList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_native(self); }
+PyObject *ProbabilityEstimatorList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> ProbabilityEstimator") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_pop(self, args); }
+PyObject *ProbabilityEstimatorList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ProbabilityEstimator) -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_remove(self, obj); }
+PyObject *ProbabilityEstimatorList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_reverse(self); }
+PyObject *ProbabilityEstimatorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_sort(self, args); }
+PyObject *ProbabilityEstimatorList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_reduce(self); }
+
+
+
+PConditionalProbabilityEstimatorList PConditionalProbabilityEstimatorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::P_FromArguments(arg); }
+PyObject *ConditionalProbabilityEstimatorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_FromArguments(type, arg); }
+PyObject *ConditionalProbabilityEstimatorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ConditionalProbabilityEstimator>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_new(type, arg, kwds); }
+PyObject *ConditionalProbabilityEstimatorList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getitem(self, index); }
+int       ConditionalProbabilityEstimatorList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setitem(self, index, item); }
+PyObject *ConditionalProbabilityEstimatorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getslice(self, start, stop); }
+int       ConditionalProbabilityEstimatorList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
+int       ConditionalProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_len(self); }
+PyObject *ConditionalProbabilityEstimatorList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_richcmp(self, object, op); }
+PyObject *ConditionalProbabilityEstimatorList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_concat(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_repeat(self, times); }
+PyObject *ConditionalProbabilityEstimatorList_str(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_str(self); }
+PyObject *ConditionalProbabilityEstimatorList_repr(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_str(self); }
+int       ConditionalProbabilityEstimatorList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_contains(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(ConditionalProbabilityEstimator) -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_append(self, item); }
+PyObject *ConditionalProbabilityEstimatorList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_extend(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ConditionalProbabilityEstimator) -> int") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_count(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ConditionalProbabilityEstimatorList") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_filter(self, args); }
+PyObject *ConditionalProbabilityEstimatorList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ConditionalProbabilityEstimator) -> int") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_index(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_insert(self, args); }
+PyObject *ConditionalProbabilityEstimatorList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_native(self); }
+PyObject *ConditionalProbabilityEstimatorList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> ConditionalProbabilityEstimator") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_pop(self, args); }
+PyObject *ConditionalProbabilityEstimatorList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ConditionalProbabilityEstimator) -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_remove(self, obj); }
+PyObject *ConditionalProbabilityEstimatorList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_reverse(self); }
+PyObject *ConditionalProbabilityEstimatorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_sort(self, args); }
+PyObject *ConditionalProbabilityEstimatorList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_reduce(self); }
+
 
 PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([distribution[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
 { 
