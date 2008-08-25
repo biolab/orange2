@@ -4,72 +4,63 @@
 <body>
 <h1>orngCA: Orange Correspondence Analysis</h1>
 
-<P>Correspondence anaysis is used for visualization of contingency
-tables. In order to make visualization feasible, some preprocessing
-and calculation have to be done and that is the purpose of this
-module. Correspondence analysis module computes co-ordinates of the
-rows and columns of any contingency table, without taking origin of
-the table into account.</P>
+<P>Correspondence anaysis is an explorative technique applyed to
+analysis of contingency tables. The module provides implements
+correspondence analysis for two-way frequency crosstabulation
+tables.</P>
 
 <P>Module contains one class <CODE>CA</CODE> which wraps all the
 mathematical functions and a function <CODE>input</CODE> for loading
-contingency table from a file.</P>
+contingency table from a file. The class can be constructed by
+providing a contingency table as a parameter to the
+constructor. Contingency table is encoded as a Python's nested lists,
+"list-of-lists" or using numpy types <CODE>matrix</CODE> and
+<CODE>array</CODE>. The class also includes a method
+<CODE>input(filename)</CODE> that reads the contingency table from a
+file, where each row of contingency table is represented with a line
+of comma-separated numbers. Different means of passing the contingency
+table to a correspondence analysis method are illustrated in the
+following snippet:<p>
 
-<P>Class can be constructed providing a contingency table as a
-parameter  to the constructor. Contingency table in Python can be
-represented by nested lists, "list-of-lists" or by numpy types
-<CODE>matrix</CODE> and <CODE>array</CODE>. If using function
-<CODE>input(filename)</CODE>, a contingency table is stored in
-filename in the way that each row in the matrix is stored in a
-separate line, and column values are separated by spaces. After the
-following sequence </P>
-
-<XMP class="code">
-    >>> import orngCA
-    >>> data = [[72,    39,    26,    23,     4],
-    ...         [95,    58,    66,    84,    41],
-    ...         [80,    73,    83,     4,    96],
-    ...         [79,    93,    35,    73,    63]]
-    >>> c = orngCA.CA(data)
-    >>>
-    >>> data = orngCA.input('contigencyTable')
-    >>> c = orngCA.CA(data)
+<XMP class="code">>>> import orngCA
+>>> data = [[72,    39,    26,    23,     4],
+...         [95,    58,    66,    84,    41],
+...         [80,    73,    83,     4,    96],
+...         [79,    93,    35,    73,    63]]
+>>> c = orngCA.CA(data)
+>>>
+>>> data = orngCA.input('contigencyTable')
+>>> c = orngCA.CA(data)
 </XMP>
-<P>variable c contains the CA object.</P>
 
 <H2>Class orngCA</H2>
 
 <H3>Attributes</H3>
-<P>All attributes contains numpy matrix type and a matrices created in
-a process of computing generalized SVD.</P>
+
+<P>The attributes provide access to the contingency table and various
+matrices created in the analysis process.</P>
 
 <dl class="attributes">
 <dt>dataMatrix</dt>
-<dd>Returns contingency table given to the table as a parameter to the
-constructor.</dd>
+<dd>A contingency table as provided by the user.</dd>
 <dt>A</dt>
-<dd> Returns matrix <B>A</B>, whose columns define the principal axes of the
-column clouds.</dd> 
+<dd>Principal axes of the column clouds.</dd> 
 <dt>B</dt>
-<dd>Returns matrix <B>B</B>, whose columns define the principal axes of the
-row clouds.</dd>
+<dd>Principal axes of the row clouds.</dd>
 <dt>D</dt>
-<dd>Returns matrix <B>D</B>, whose diagonal elements are singular values of
-the decomposition.</dd> 
-<dt>F</dt><dd>Returns matrix <B>F</B>, which contains coordinates of the row
-profiles with respect to principal axes <B>B</B>.</dd>
-<dt>G</dt><dd>Returns matrix <B>G</B>, which contains coordinates of the
-column profiles with respect to principal axes <B>A</B>.</dd>
+<dd>Matrix whose diagonal elements are singular values of the
+decomposition.</dd>
+<dt>F</dt><dd>Coordinates of the row profiles with respect to
+principal axes in the matrix <B>B</B>.</dd>
+<dt>G</dt><dd>Coordinates of the
+column profiles with respect to principal axes in the matrix <B>A</B>.</dd>
 </dl>
 
 
 <H3>Methods</H3>
 <dl class="attributes">
-<dt>getA()</dt><dd>Getter for matrix <B>A</B>.</dd>
-<dt>getB()</dt><dd>Getter for matrix <B>B</B>.</dd>
-<dt>getD()</dt><dd>Getter for matrix <B>D</B>.</dd>
-<dt>getF()</dt><dd>Getter for matrix <B>F</B>.</dd>
-<dt>getG()</dt><dd>Getter for matrix <B>G</B>.</dd>
+<dt>getA(), getB(), ..., getG</dt><dd>Returns the matrices <B>A</B> to
+<B>G</B>, respectively.</dd>
 <dt>getPrincipalRowProfilesCoordinates(dim = (0,1))</dt>
 <dd>Returns co-ordinates of the row profiles with respect to principal
 axes <B>A</B>. Only co-ordinates defined in tuple <CODE>dim</CODE> are
