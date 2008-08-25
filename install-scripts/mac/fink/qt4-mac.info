@@ -75,6 +75,46 @@ DescUsage: <<
 		make
 <<
 DocFiles: GPL* LICENSE.* OPENSOURCE-NOTICE.TXT README* changes-*
+Files: <<
+	lib/%N/lib/libphonon_debug.dylib
+	lib/%N/lib/libQt3Support_debug.dylib
+	lib/%N/lib/libQtAssistantClient_debug.dylib
+	lib/%N/lib/libQtCLucene_debug.dylib
+	lib/%N/lib/libQtCore_debug.dylib
+	lib/%N/lib/libQtDBus_debug.dylib
+	lib/%N/lib/libQtDesigner_debug.dylib
+	lib/%N/lib/libQtDesignerComponents_debug.dylib
+	lib/%N/lib/libQtGui_debug.dylib
+	lib/%N/lib/libQtHelp_debug.dylib
+	lib/%N/lib/libQtNetwork_debug.dylib
+	lib/%N/lib/libQtOpenGL_debug.dylib
+	lib/%N/lib/libQtScript_debug.dylib
+	lib/%N/lib/libQtSql_debug.dylib
+	lib/%N/lib/libQtSvg_debug.dylib
+	lib/%N/lib/libQtTest_debug.dylib
+	lib/%N/lib/libQtWebKit_debug.dylib
+	lib/%N/lib/libQtXml_debug.dylib
+	lib/%N/lib/libQtXmlPatterns_debug.dylib
+	lib/%N/lib/libphonon.dylib
+	lib/%N/lib/libQt3Support.dylib
+	lib/%N/lib/libQtAssistantClient.dylib
+	lib/%N/lib/libQtCLucene.dylib
+	lib/%N/lib/libQtCore.dylib
+	lib/%N/lib/libQtDBus.dylib
+	lib/%N/lib/libQtDesigner.dylib
+	lib/%N/lib/libQtDesignerComponents.dylib
+	lib/%N/lib/libQtGui.dylib
+	lib/%N/lib/libQtHelp.dylib
+	lib/%N/lib/libQtNetwork.dylib
+	lib/%N/lib/libQtOpenGL.dylib
+	lib/%N/lib/libQtScript.dylib
+	lib/%N/lib/libQtSql.dylib
+	lib/%N/lib/libQtSvg.dylib
+	lib/%N/lib/libQtTest.dylib
+	lib/%N/lib/libQtWebKit.dylib
+	lib/%N/lib/libQtXml.dylib
+	lib/%N/lib/libQtXmlPatterns.dylib
+<<
 SplitOff: <<
 	Package: %N-debugshlibs
 	Suggests: %N-designer, %N-linguist, %N-doc
