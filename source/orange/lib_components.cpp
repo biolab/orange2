@@ -1760,7 +1760,7 @@ PyObject *Filter_selectionVector(PyObject *self, PyObject *arg) PYARGS(METH_O, "
 }
 
 
-PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds);
+PYXTRACT_IGNORE PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds);
 
 int Filter_isDefined_set_check(PyObject *self, PyObject *arg)
 {
