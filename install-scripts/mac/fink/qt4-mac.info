@@ -140,28 +140,6 @@ SplitOff: <<
 		lib/%N/plugins/script/*debug*
 		lib/%N/plugins/sqldrivers/*debug*
 	<<
-	InstallScript: <<
-		#!/bin/bash -ev
-		mv %i/lib/%N/lib/libphonon_debug.dylib %I/lib/%N/lib/libphonon_debug.dylib
-		mv %i/lib/%N/lib/libQt3Support_debug.dylib %I/lib/%N/lib/libQt3Support_debug.dylib
-		mv %i/lib/%N/lib/libQtAssistantClient_debug.dylib %I/lib/%N/lib/libQtAssistantClient_debug.dylib
-		mv %i/lib/%N/lib/libQtCLucene_debug.dylib %I/lib/%N/lib/libQtCLucene_debug.dylib
-		mv %i/lib/%N/lib/libQtCore_debug.dylib %I/lib/%N/lib/libQtCore_debug.dylib
-		mv %i/lib/%N/lib/libQtDBus_debug.dylib %I/lib/%N/lib/libQtDBus_debug.dylib
-		mv %i/lib/%N/lib/libQtDesigner_debug.dylib %I/lib/%N/lib/libQtDesigner_debug.dylib
-		mv %i/lib/%N/lib/libQtDesignerComponents_debug.dylib %I/lib/%N/lib/libQtDesignerComponents_debugonents_debug.dylib
-		mv %i/lib/%N/lib/libQtGui_debug.dylib %I/lib/%N/lib/libQtGui_debug.dylib
-		mv %i/lib/%N/lib/libQtHelp_debug.dylib %I/lib/%N/lib/libQtHelp_debug.dylib
-		mv %i/lib/%N/lib/libQtNetwork_debug.dylib %I/lib/%N/lib/libQtNetwork_debug.dylib
-		mv %i/lib/%N/lib/libQtOpenGL_debug.dylib %I/lib/%N/lib/libQtOpenGL_debug.dylib
-		mv %i/lib/%N/lib/libQtScript_debug.dylib %I/lib/%N/lib/libQtScript_debug.dylib
-		mv %i/lib/%N/lib/libQtSql_debug.dylib %I/lib/%N/lib/libQtSql_debug.dylib
-		mv %i/lib/%N/lib/libQtSvg_debug.dylib %I/lib/%N/lib/libQtSvg_debug.dylib
-		mv %i/lib/%N/lib/libQtTest_debug.dylib %I/lib/%N/lib/libQtTest_debug.dylib
-		mv %i/lib/%N/lib/libQtWebKit_debug.dylib %I/lib/%N/lib/libQtWebKit_debug.dylib
-		mv %i/lib/%N/lib/libQtXml_debug.dylib %I/lib/%N/lib/libQtXml_debug.dylib
-		mv %i/lib/%N/lib/libQtXmlPatterns_debug.dylib %I/lib/%N/lib/libQtXmlPatterns_debug.dylib
-	<<
 <<
 SplitOff2: <<
 	Package: %N-shlibs
@@ -223,28 +201,6 @@ SplitOff2: <<
 	Files: <<
 		lib/%N/lib
 		lib/%N/plugins
-	<<
-	InstallScript: <<
-		#!/bin/bash -ev
-		mv %i/lib/%N/lib/libphonon.dylib %I/lib/%N/lib/libphonon.dylib
-		mv %i/lib/%N/lib/libQt3Support.dylib %I/lib/%N/lib/libQt3Support.dylib
-		mv %i/lib/%N/lib/libQtAssistantClient.dylib %I/lib/%N/lib/libQtAssistantClient.dylib
-		mv %i/lib/%N/lib/libQtCLucene.dylib %I/lib/%N/lib/libQtCLucene.dylib
-		mv %i/lib/%N/lib/libQtCore.dylib %I/lib/%N/lib/libQtCore.dylib
-		mv %i/lib/%N/lib/libQtDBus.dylib %I/lib/%N/lib/libQtDBus.dylib
-		mv %i/lib/%N/lib/libQtDesigner.dylib %I/lib/%N/lib/libQtDesigner.dylib
-		mv %i/lib/%N/lib/libQtDesignerComponents.dylib %I/lib/%N/lib/libQtDesignerComponents.dylib
-		mv %i/lib/%N/lib/libQtGui.dylib %I/lib/%N/lib/libQtGui.dylib
-		mv %i/lib/%N/lib/libQtHelp.dylib %I/lib/%N/lib/libQtHelp.dylib
-		mv %i/lib/%N/lib/libQtNetwork.dylib %I/lib/%N/lib/libQtNetwork.dylib
-		mv %i/lib/%N/lib/libQtOpenGL.dylib %I/lib/%N/lib/libQtOpenGL.dylib
-		mv %i/lib/%N/lib/libQtScript.dylib %I/lib/%N/lib/libQtScript.dylib
-		mv %i/lib/%N/lib/libQtSql.dylib %I/lib/%N/lib/libQtSql.dylib
-		mv %i/lib/%N/lib/libQtSvg.dylib %I/lib/%N/lib/libQtSvg.dylib
-		mv %i/lib/%N/lib/libQtTest.dylib %I/lib/%N/lib/libQtTest.dylib
-		mv %i/lib/%N/lib/libQtWebKit.dylib %I/lib/%N/lib/libQtWebKit.dylib
-		mv %i/lib/%N/lib/libQtXml.dylib %I/lib/%N/lib/libQtXml.dylib
-		mv %i/lib/%N/lib/libQtXmlPatterns.dylib %I/lib/%N/lib/libQtXmlPatterns.dylib
 	<<
 <<
 SplitOff3: <<
