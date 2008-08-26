@@ -37,9 +37,9 @@ def _mycompare((a,aa),(b,bb)):
     else:
         return 1
             
-class MDS:
-    def __init__(self, *args):
-        self.mds=orangemds.MDS(*args)
+class MDS(object):
+    def __init__(self, distances=None, dim=2, **kwargs):
+        self.mds=orangemds.MDS(distances, dim, **kwargs)
         self.originalDistances=orange.SymMatrix([m for m in self.distances])
 
     def __getattr__(self, name):
@@ -47,7 +47,7 @@ class MDS:
             #print "rec:",name            
             return self.__dict__["mds"].__dict__[name]
         else:
-            raise AttributeError
+            raise AttributeError(name)
 
     def __setattr__(self, name, value):
         #print "setattr"
@@ -319,5 +319,6 @@ if __name__=="__main__":
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = dist(data[i], data[j])
-    mds=MDS(matrix)
+    mds=MDS(matrix, dim=3)
     mds.Torgerson()
+    print mds.points[:3]
