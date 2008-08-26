@@ -36,10 +36,14 @@ It contains file's title, tags, size and date and time of the upload.
 <dd>Downloads file from the repository to local orange installation. To download 
 files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class.
 </dd>
+<dt>listdomains()</dt>
+<dd>List all domains on local orange installation.</dd>
 <dt>listfiles(domain)</dt>
 <dd>List all files in a domain on local orange installation.</dd>
 <dt>info(domain, filename)</dt>
 <dd>Returns a dictionary containing downloaded file info. Keys: title, tags, size, datetime. </dd>
+<dt>localpath(domain [,filename])</dt>
+<dd>Returns local path for the domain. If filename is present, return local path to than filename.</dd>
 </dl>
 
 <h2>ServerFiles: the repository</h2>
@@ -119,6 +123,7 @@ for file in repository.listfiles('demo'):
     orngServerFiles.download('demo', file)
 
 print "My files after download", orngServerFiles.listfiles('demo')
+print "My domains", orngServerFiles.listdomains()
 </xmp>
 
 <p>Output for first run (and current repository state):</p>
@@ -129,6 +134,7 @@ Downloading all files in domain 'test'
 Datetime for orngServerFiles.py 2008-08-20 12:25:54.624000
 Datetime for urllib2_file.py 2008-08-20 12:25:54.827000
 My files after download ['urllib2_file.py', 'orngServerFiles.py']
+My domains ['demo']
 </xmp>
 
 <h3>Creating a domain, uploading files</h3>
@@ -147,13 +153,16 @@ except:
 
 authenticated.create_domain('demo2')
 
-authenticated.upload('demo2', 'orngServerFiles.py', 'orngServerFiles.py')
+authenticated.upload('demo2', 'orngServerFiles.py', 'orngServerFiles.py', \
+    title="orngServerFiles client", tags=["basic", "fileManagement"]) 
 authenticated.upload('demo2', 'urllib2_file.py', 'urllib2_file.py')
 print "Ordinary users see:", ordinary.listfiles('demo2')
 print "Authenticated  users see:", authenticated.listfiles('demo2')
 authenticated.unprotect('demo2', 'orngServerFiles.py')
 authenticated.unprotect('demo2', 'urllib2_file.py')
 print "Ordinary users now see:", ordinary.listfiles('demo2')
+print "orngServerFiles.py file info:"
+import pprint; pprint.pprint(ordinary.info('demo2', 'orngServerFiles.py'))
 </xmp>
 
 <p>Output:</p>
@@ -161,6 +170,11 @@ print "Ordinary users now see:", ordinary.listfiles('demo2')
 <xmp class=code>Ordinary users see: ['']
 Authenticated  users see: ['orngServerFiles.py', 'urllib2_file.py']
 Ordinary users now see: ['orngServerFiles.py', 'urllib2_file.py']
+orngServerFiles.py file info:
+{'datetime': '2008-08-26 10:30:05.373000',
+ 'size': '10165',
+ 'tags': ['basic', 'fileManagement'],
+ 'title': 'orngServerFiles client'}
 </xmp>
 
 </body>

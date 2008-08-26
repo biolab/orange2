@@ -28,44 +28,6 @@ protection ("protect", "unprotect"). Note, that newly uploaded files,
 which name did not exists in domain before, are protected. They can be made  
 public by unprotecting them.
 
-USAGE EXAMPLE
-
-def example(myusername, mypassword):
-
-    #login as an authenticated user
-    s = ServerFiles(username=myusername, password=mypassword)
-    
-    #create domain
-    try: 
-        s.create_domain("test") 
-    except: 
-        pass
-
-    #upload this file - save it by a different name
-    s.upload('test', 'osf-/test/.py', open("orngServerFiles.py", 'rb'))
-
-    #make it public
-    s.unprotect('test', 'osf-/test/.py')
-
-    #login anonymously
-    s = ServerFiles()
-
-    #list files in the domain "test"
-    files = s.list('test')
-    print files
-
-    for f in files:
-        size, datetime = s.info('test', f) 
-        print "---", f, "---", "size", size, "datetime", datetime
-        print s.download('test', f).read()[:100] #show first 100 characters
-        print "---"
-
-    #login as an authenticated user
-    s = ServerFiles(username=myusername, password=mypassword)
-
-    print "removing"
-    s.remove('test', 'osf-/test/.py')
-
 SERVER
 
 Files are stored in a filesystem. Each domain is a filesystem directory in
@@ -126,13 +88,14 @@ def createPathForFile(target):
     except OSError:
         pass
 
-def localName(domain, filename=None):
+def localpath(domain=None, filename=None):
     import orngRegistry
+    if not domain:
+        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles")
     if filename:
         return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain, filename)
     else:
         return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain)
-
 
 class ServerFiles(object):
 
@@ -260,7 +223,7 @@ def download(domain, filename, serverfiles=None):
     if not serverfiles:
         serverfiles = ServerFiles()
 
-    target = localName(domain, filename)
+    target = localpath(domain, filename)
 
     serverfiles.download(domain, filename, target)
     
@@ -273,7 +236,7 @@ def listfiles(domain):
     Returns a list of filenames in a given domain on local Orange
     installation with a valid  info file: useful ones.
     """
-    dir = localName(domain)
+    dir = localpath(domain)
     try:
         files = [ a for a in os.listdir(dir) if a[-5:] == '.info' ]
     except:
@@ -292,11 +255,20 @@ def listfiles(domain):
 
     return okfiles
 
+def listdomains():
+    dir = localpath()
+    files = [ a for a in os.listdir(dir) ]
+    ok = []
+    for file in files:
+        if os.path.isdir(os.path.join(dir, file)):
+            ok.append(file)
+    return ok
+
 def info(domain, filename):
     """
     Returns info of a file
     """
-    target = localName(domain, filename)
+    target = localpath(domain, filename)
     return openFileInfo(target + '.info')
 
 def example(myusername, mypassword):
