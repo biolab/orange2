@@ -245,7 +245,7 @@ SplitOff5: <<
 SplitOff6: <<
 	Package: %N-doc
 	Shlibs: <<
-		%p/share/doc/%N/examples/tools/echoplugin/plugin/libechoplugin_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/share/doc/%N/examples/tools/echoplugin/plugins/libechoplugin_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/share/doc/%N/examples/tools/plugandpaint/plugins/libpnp_extrafilters_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/share/doc/%N/examples/tools/styleplugin/styles/libsimplestyleplugin.dylib 0.0.0 %n (>= 4.4.1-1)
 	<<
