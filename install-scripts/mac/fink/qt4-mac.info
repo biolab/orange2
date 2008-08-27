@@ -205,7 +205,7 @@ SplitOff2: <<
 		lib/%N/lib/*.*.dylib
 		lib/%N/lib/*.la
 		lib/%N/lib/*.prl
-		lib/%N/lib/pkgconfig/
+		lib/%N/lib/pkgconfig
 		lib/%N/plugins
 	<<
 <<
