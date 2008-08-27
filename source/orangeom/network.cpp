@@ -29,12 +29,13 @@ TNetwork::TNetwork(TGraphAsList *graph)
 	optimize.clear();
 	vector<int> vertices;
 	vector<int> neighbours;
+
 	for(int v1 = 0; v1 < graph->nVertices; v1++) {
 		graph->getNeighboursFrom_Single(v1, neighbours);
 
 		ITERATE(vector<int>, ni, neighbours) {
 			double *w = getOrCreateEdge(v1, *ni);
-			*w = *graph->getOrCreateEdge(v1, *ni);
+			*w = *graph->getEdge(v1, *ni);
 		}
 
 		vertices.push_back(v1);
@@ -446,7 +447,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 }
 
 
-PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
+PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
 {
 	PyTRY
 	CAST_TO(TNetwork, network);
@@ -455,13 +456,13 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	double lower;
 	double upper;
 
-	if (!PyArg_ParseTuple(args, "Odd:Network.fromSymMatrix", &pyMatrix, &lower, &upper))
+	if (!PyArg_ParseTuple(args, "Odd:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper))
 		return PYNULL;
 
 	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
 
 	if (matrix->dim != network->nVertices)
-		PYERROR(PyExc_TypeError, "SymMatrix dimension should equal number of vertices.", PYNULL);
+		PYERROR(PyExc_TypeError, "DistanceMatrix dimension should equal number of vertices.", PYNULL);
 
 	int i,j;
 	int nConnected = 0;
@@ -475,8 +476,9 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				double value = matrix->getitem(j,i);
 				//cout << " value " << value << endl;
 				if (lower <=  value && value <= upper) {
+					//cout << "value: " << value << endl;
 					double* w = network->getOrCreateEdge(j, i);
-					*w = value;
+					*w = 1 - value;
 
 					connected = true;
 				}
@@ -499,7 +501,7 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 				double value = matrix->getitem(i,j);
 				if (lower <=  value && value <= upper) {
 					double* w = network->getOrCreateEdge(i, j);
-					*w = value;
+					*w = 1 - value;
 					connected = true;
 				}
 			}
