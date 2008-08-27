@@ -130,7 +130,10 @@ SplitOff: <<
 		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlodbc_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 	<<
 	Files: <<
-		lib/%N/lib/*debug*
+		lib/%N/lib/*debug.*.dylib
+		lib/%N/lib/*debug.la
+		lib/%N/lib/*debug.prl
+		lib/%N/lib/pkgconfig/*debug.pc
 		lib/%N/plugins/accessible/*debug*
 		lib/%N/plugins/codecs/*debug*
 		lib/%N/plugins/designer/*debug*
@@ -199,7 +202,10 @@ SplitOff2: <<
 		%p/lib/qt4-mac/plugins/sqldrivers/libqsqlodbc.dylib 0.0.0 %n (>= 4.4.1-1)
 	<<
 	Files: <<
-		lib/%N/lib
+		lib/%N/lib/*.*.dylib
+		lib/%N/lib/*.la
+		lib/%N/lib/*.prl
+		lib/%N/lib/pkgconfig/
 		lib/%N/plugins
 	<<
 <<
