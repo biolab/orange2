@@ -13,7 +13,7 @@ import cgi
 pj = os.path.join
 import datetime
 
-basedir = pj(os.getcwd(), "data")
+basedir = pj(os.getcwd(), "..", "orngServerData")
 
 def noBodyProcess():
     """Sets cherrypy.request.process_request_body = False, giving
