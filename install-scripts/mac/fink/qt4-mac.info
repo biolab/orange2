@@ -245,7 +245,7 @@ SplitOff5: <<
 SplitOff6: <<
 	Package: %N-doc
 	Shlibs: <<
-		%p/share/doc/%N/examples/tools/echoplugin/plugins/libechoplugin_debug.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/share/doc/%N/examples/tools/echoplugin/plugin/libechoplugin_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/share/doc/%N/examples/tools/plugandpaint/plugins/libpnp_extrafilters_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/share/doc/%N/examples/tools/styleplugin/styles/libsimplestyleplugin.dylib 0.0.0 %n (>= 4.4.1-1)
 	<<
@@ -257,7 +257,9 @@ CompileScript: <<
 	make
 	find %b \( -name '*.pc' -or -name '*.la' \) -print0 | xargs -0 perl -pi -e 's!-framework !-Wl,-framework,!g'
 	find %b/plugins -name '*.dylib' | perl -nle '$file = $_; s|%b/||; system("install_name_tool", "-id", "%p/lib/%N/$_", $file);' -
-	find %b/examples -name '*.dylib' | perl -nle '$file = $_; s|%b/||; system("install_name_tool", "-id", "%p/share/doc/%N/$_", $file);' -
+	install_name_tool -id %p/share/doc/%N/examples/tools/echoplugin/plugin/libechoplugin_debug.dylib %b/examples/tools/echoplugin/plugins/libechoplugin_debug.dylib
+	install_name_tool -id %p/share/doc/%N/examples/tools/plugandpaint/plugins/libpnp_extrafilters_debug.dylib %b/examples/tools/plugandpaint/plugins/libpnp_extrafilters_debug.dylib
+	install_name_tool -id %p/share/doc/%N/examples/tools/styleplugin/styles/libsimplestyleplugin.dylib %b/examples/tools/styleplugin/styles/libsimplestyleplugin.dylib
 <<
 InstallScript: <<
 	#!/bin/bash -ev
