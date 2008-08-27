@@ -169,7 +169,7 @@ class OWNetworkFromDistances(OWWidget):
                 
             # set the threshold
             # set edges where distance is lower than threshold
-            nedges = graph.fromSymMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
+            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
             n = len(graph.getEdges())
             #print 'self.netOption',self.netOption
             if str(self.netOption) == '2':
@@ -184,6 +184,7 @@ class OWNetworkFromDistances(OWWidget):
                     include = reduce(lambda x,y: x+y, components)
                     if len(include) > 1:
                         self.graph = Network(graph.getSubGraph(include))
+      
                     else:
                         self.graph = None
                 else:
