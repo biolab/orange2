@@ -601,8 +601,13 @@ class OWNetworkCanvas(OWGraph):
           if len(component) == 0:
               continue
           
-          xes = [self.visualizer.network.coors[0][vertex] for vertex in component]  
-          yes = [self.visualizer.network.coors[1][vertex] for vertex in component]  
+          vertices = [vertex for vertex in component if self.vertices[vertex].show]
+
+          if len(vertices) == 0:
+              continue
+          
+          xes = [self.visualizer.network.coors[0][vertex] for vertex in vertices]  
+          yes = [self.visualizer.network.coors[1][vertex] for vertex in vertices]  
                                 
           x1 = sum(xes) / len(xes)
           y1 = sum(yes) / len(yes)
@@ -685,7 +690,11 @@ class OWNetworkCanvas(OWGraph):
                                 
               x1 = (self.visualizer.network.coors[0][edge.u.index] + self.visualizer.network.coors[0][edge.v.index]) / 2
               y1 = (self.visualizer.network.coors[1][edge.u.index] + self.visualizer.network.coors[1][edge.v.index]) / 2
-              lbl = "%.2f" % edge.weight
+              
+              if edge.weight == None:
+                  lbl = "None"
+              else:
+                  lbl = "%.2f" % float(edge.weight)
               
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
               self.markerKeys[(edge.u,edge.v)] = mkey     
@@ -804,7 +813,9 @@ class OWNetworkCanvas(OWGraph):
           vertex = NetworkVertex()
           vertex.index = v
           self.vertices.append(vertex)
-
+      
+      print "addVisualizer"
+      
       #add edges
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
@@ -812,7 +823,9 @@ class OWNetworkCanvas(OWGraph):
           edge.u = self.vertices[i]
           edge.v = self.vertices[j]
 
-          edge.weight = visualizer.graph[i, j][0]
+          edge.weight = visualizer.graph[i, j][0]       
+              
+          #print "weight:", edge.weight
           
           self.edges.append(edge)
           self.nEdges += 1
