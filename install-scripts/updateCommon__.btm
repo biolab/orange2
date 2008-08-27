@@ -1,5 +1,7 @@
 pushd
 
+call updateSetConstants__.btm
+
 set WIN=orange-win-%verstr
 set WIN_PYTHON=orange-w-python-%verstr
 set ADDON_GENOMICS=orangeAddon-genomics-%verstr
@@ -9,46 +11,33 @@ set VERSION=%verstr
 set STABLE_DATE=%nicedate
 set TAG=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
 
-set PLINK_LINUX=orange-linux-%verstr.tgz
-set PLINK_MACINTOSH=orange-mac-%verstr.dmg
-set PLINK_MACINTOSH_GENOMICS=orange-mac-genomics-%verstr.dmg
-
-cdd %STABLEDIR
-
-svn update 
-rem http://www.ailab.si/svn/orange/trunk/orange orange
-rem cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f -P -d
+cdd %WEBDIR
 break_on_error
 
-cdd %SCRIPTDIR
-call winCompile.btm
+rem del /sye orange
+svn --force export http://www.ailab.si/svn/orange/%BRANCH/orange orange
+break_on_error
+
+rem call %SCRIPTDIR/winCompile.btm
+
+rem call %SCRIPTDIR/winCompileAddOns.btm
 
 cdd %SCRIPTDIR
-python buildInstFileList.py %STABLEDIR files
+python buildInstFileList.py %WEBDIR files
 
 for %pyver in (%PYTHONVERSIONS) (
   set BINDIR=%WEBDOWNLOAD\binaries\%pyver
   if not exist %BINDIR mkdir %BINDIR
 
   cdd %PYTHONBASE%%pyver\lib\site-packages\orange
-  for %pydf in (*.pyd) do (
+  for %pydf in (*.pydREMREMREMREMREMREMREMREMREMREMREMREMREM) do (
     if exist %BINDIR\%pydf del %BINDIR\%pydf
     upx %pydf -o %BINDIR\%pydf
   )
 
-  cdd %BINDIR
-  if exist stamps_pyd.txt del stamps_pyd.txt
-  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\files_binaries.inc
-  for %fle in (*.pyd) do (
-    set MD5=%@MD5[%fle]
-    echo %fle %MD5 >> stamps_pyd.txt
-    echo File %BINDIR\%fle >> %SCRIPTDIR\files_binaries.inc
-    echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
-  )
-
   cdd %SCRIPTDIR
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
-  set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%WEBDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
   nsis /Onsis_standard-py%npver.log /DOUTFILENAME="%WEBDOWNLOAD\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
   break_on_error
   nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%WEBDOWNLOAD"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
@@ -57,16 +46,3 @@ for %pyver in (%PYTHONVERSIONS) (
 
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm
-
-rem ************************************************
-rem *** TAG THE FILES ON CVS AND UPDATE versions.set
-
-rem cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS rtag -r stable -f %TAG orange source
-rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
-
-rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH_GENOMICS MACINTOSH_GENOMICS 1 0
-
-cdd %SCRIPTDIR
-python whatsup.py %WEBDOWNLOAD\update %WEBDOWNLOAD
-break_on_error
-rem updateSnapshot.btm

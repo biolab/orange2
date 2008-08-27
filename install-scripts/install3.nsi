@@ -236,10 +236,6 @@ Section ""
 
    	!include ${INCLUDEPREFIX}_doc.inc
 
-	SetOutPath $INSTDIR\doc
-	File "various\Orange White Paper.pdf"
-	File "various\Orange Widgets White Paper.pdf"
-
 	SetOutPath $INSTDIR\doc\datasets
 	File ${ORANGEDIR}\doc\datasets\*
 

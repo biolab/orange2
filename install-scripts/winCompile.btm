@@ -1,8 +1,6 @@
 pushd
-cdd %WEBDIR
-rem del /sye source
-rem rmdir /sq source
-svn checkout http://www.ailab.si/svn/orange/trunk/source source
+del /sye source
+svn export http://www.ailab.si/svn/orange/%BRANCH/source source
 
 cd source
 call _pyxtract.bat

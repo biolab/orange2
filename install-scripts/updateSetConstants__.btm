@@ -1,16 +1,8 @@
 set WEBDIR=e:\orange
-set DOWNLOADDIR=%WEBDIR\download
 set SCRIPTDIR=%WEBDIR\scripts
-rem set WEBDOCDIR=%WEBDIR\doc
-set WEBDOCDIR=%DOWNLOADDIR\snapshot\orange\doc
-
-set WEBDOWNLOAD=O:
+set WEBDOWNLOAD=O:\2
 
 set LOGFILE=%SCRIPTDIR\updateSnapshot.log
-
-set STABLEDIR=%DOWNLOADDIR\lastStable
-set SNAPSHOTDIR=%DOWNLOADDIR\snapshot
-set UPDATEDIR=%DOWNLOADDIR\update
 
 set MNT_DOWNLOAD=/wwwUsers/orange/download
 
@@ -22,15 +14,6 @@ set WIN_SNAPSHOT=orange-snapshot-%daystr
 set WIN_GENOMICS_SNAPSHOT=orangeAddOn-snapshot-genomics-%daystr
 set WIN_TEXTMINING_SNAPSHOT=orangeAddOn-snapshot-textmining-%daystr
 set WIN_GOLIB_SNAPSHOT=GOlib-snapshot-%daystr
-set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
-set PLINK_SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.tgz
-
-set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
-set PLINK_LINUX_GENOMICS_SNAPSHOT=orange-linux-genomics-snap-%daystr.tgz
-
-set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
-set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
-
 
 alias nsis="c:\program files\nsis\makensis.exe"
 alias cvs="C:\Program Files\CVSNT\cvs.exe"

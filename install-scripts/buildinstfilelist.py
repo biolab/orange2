@@ -14,7 +14,12 @@ print "Constructing file lists for Orange in '%s', prefix is '%s'" % (basedir, f
 snapshot = fileprefix[:8] == "snapshot"
 protoDir = "orange\\orangewidgets\\prototypes\\"
 
-exclude = [x.lower().replace("/", "\\")[:-1] for x in open(basedir+"orange\\exclude.lst", "rt").readlines()]
+excludefile = basedir+"orange\\exclude.lst"
+if os.path.exists(excludefile):
+    exclude = [x.lower().replace("/", "\\")[:-1] for x in open(excludefile, "rt").readlines()]
+else:
+    exclude = []
+
 file_re = re.compile(r'/(?P<fname>.*)/(?P<version>.*)/(?P<date>.*)/[^/]*/')
 
 def computeMD(filename):
@@ -42,13 +47,12 @@ down = ""
 def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
     global outfs, hass, down
     
-    SVNclient = pysvn.Client()
-
     if not os.path.exists(root_dir+here_dir):
         return
     
     whatsDownEntries = None
     directories = []
+    changedToDir = False  
     for fle in os.listdir(root_dir+here_dir):
         tfle = root_dir+here_dir+fle
         if fle == ".svn" or excluded("orange\\"+there_dir+fle):
@@ -58,29 +62,13 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
                 directories.append((here_dir, there_dir, fle))
         else:
             if not regexp or regexp.match(fle):
-                if not whatsDownEntries:
-                    if not mac:
+                if mac:
+                    outfs += tfle + "\n"
+                else:
+                    if not changedToDir:
                         outfs += '\nSetOutPath "$INSTDIR\\%s"\n' % there_dir
-                    if there_dir[:14] == "orangeWidgets\\" and there_dir.count("\\")==2 and there_dir[14:-1]!="icons":
-                        if mac:
-                            down += there_dir[14:-1] + "\n" 
-                        else:
-                            hass += 'FileWrite $WhatsDownFile "+%s$\\r$\\n"\n' % there_dir[14:-1]
-
-                    whatsDownEntries = {}
-                    for ent in SVNclient.status(root_dir+here_dir, recurse=0):
-                        if ent.entry == None or ent.entry.kind <> pysvn.node_kind.file:
-                            continue
-                        fname, version = ent.entry.name, ent.entry.commit_revision.number
-                        whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
-
-                if whatsDownEntries.has_key(fle):
-                    if mac:
-                        outfs += tfle + "\n"
-                        down += '%s=%s:%s\n' % whatsDownEntries[fle]
-                    else:
-                        outfs += 'File "%s"\n' % tfle
-                        outfs += 'FileWrite $WhatsDownFile "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle]
+                        changedToDir = True
+                    outfs += 'File "%s"\n' % tfle
 
     for here_dir, there_dir, fle in directories:
         buildListLow(root_dir, here_dir+fle+"\\", there_dir+fle+"\\", regexp, recursive)
@@ -126,6 +114,6 @@ buildLists([(basedir, "orange\\doc\\", "doc\\", "", 0),
             (basedir, "orange\\doc\\datasets\\", "doc\\datasets\\", "", 0),
             (basedir, "orange\\doc\\reference\\", "doc\\reference\\", "", 0),
             (basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", 0),
-            (basedir, "orange\\doc\\widgets\\", "doc\\widgets\\", "", 0),
+            (basedir, "orange\\doc\\widgets\\", "doc\\widgets\\", "", 1),
             (basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", 0)], "doc")
 

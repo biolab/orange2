@@ -1,6 +1,7 @@
 @echo off
 
 call updateSetConstants__.btm
+set BRANCH=trunk
 
 call winCompile.btm
 
@@ -25,16 +26,6 @@ for %pyver in (%PYTHONVERSIONS) do (
   for %pydf in (*.pyd) do (
     if exist %BINDIR\%pydf del %BINDIR\%pydf
     upx %pydf -o %BINDIR\%pydf
-  )
-
-  cdd %BINDIR
-  if exist stamps_pyd.txt del stamps_pyd.txt
-  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\snapshotfiles_binaries.inc
-  for %fle in (*.pyd) do (
-    set MD5=%@MD5[%fle]
-    echo %fle %MD5 >> stamps_pyd.txt
-    echo File %BINDIR\%fle >> %SCRIPTDIR\snapshotfiles_binaries.inc
-    echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
   )
 
   REM ### BASE
