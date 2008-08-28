@@ -1,4 +1,4 @@
-Info3: <<
+fInfo3: <<
 Package: qt4-mac
 Version: 4.4.1
 Revision: 1
@@ -76,75 +76,6 @@ DescUsage: <<
 <<
 DocFiles: GPL* LICENSE.* OPENSOURCE-NOTICE.TXT README* changes-*
 SplitOff: <<
-	Package: %N-debugshlibs
-	Suggests: %N-designer, %N-linguist, %N-doc
-	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
-	Provides: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
-	Depends: <<
-		freetype2-shlibs,
-		libmng2-shlibs,
-		libpng3-shlibs (>= 1.2.5-4),
-		libjpeg-shlibs,
-		dbus-shlibs (>= 1.0.0-1),
-		fink (>= 0.17.1-1),
-		glib2-shlibs (>= 2.12.0-1)
-	<<
-	Shlibs: <<
-		%p/lib/%N/lib/libphonon_debug.4.dylib 4.1.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQt3Support_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtAssistantClient_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtCLucene_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtCore_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtDBus_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtDesigner_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtDesignerComponents_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtGui_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtHelp_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtNetwork_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtOpenGL_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtScript_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtSql_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtSvg_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtTest_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtWebKit_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtXml_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/lib/libQtXmlPatterns_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/accessible/libqtaccessiblecompatwidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/accessible/libqtaccessiblewidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/codecs/libqcncodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/codecs/libqjpcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/codecs/libqkrcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/codecs/libqtwcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/designer/libcontainerextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/designer/libtaskmenuextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/iconengines/libqsvgicon_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqgif_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqico_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqjpeg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqmng_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqsvg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/imageformats/libqtiff_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/phonon_backend/libphonon_qt7_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/script/libqtscriptdbus_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/sqldrivers/libqsqlite_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-		%p/lib/%N/plugins/sqldrivers/libqsqlodbc_debug.dylib 0.0.0 %n (>= 4.4.1-1)
-	<<
-	Files: <<
-		lib/%N/lib/*debug.*.dylib
-		lib/%N/lib/*debug.la
-		lib/%N/lib/*debug.prl
-		lib/%N/lib/pkgconfig/*debug.pc
-		lib/%N/plugins/accessible/*debug*
-		lib/%N/plugins/codecs/*debug*
-		lib/%N/plugins/designer/*debug*
-		lib/%N/plugins/iconengines/*debug*
-		lib/%N/plugins/imageformats/*debug*
-		lib/%N/plugins/phonon_backend/*debug*
-		lib/%N/plugins/script/*debug*
-		lib/%N/plugins/sqldrivers/*debug*
-	<<
-<<
-SplitOff2: <<
 	Package: %N-shlibs
 	Suggests: %N-designer, %N-linguist, %N-doc
 	Conflicts: %N-core-shlibs, %N-gui-shlibs, %N-designer-shlibs
@@ -160,46 +91,84 @@ SplitOff2: <<
 	<<
 	Shlibs: <<
 		%p/lib/%N/lib/libphonon.4.dylib 4.1.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libphonon_debug.4.dylib 4.1.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQt3Support.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQt3Support_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtAssistantClient.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtAssistantClient_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtCLucene.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtCLucene_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtCore.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtCore_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtDBus.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtDBus_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtDesigner.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtDesignerComponents.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtDesignerComponents_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtDesigner_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtGui.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtGui_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtHelp.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtHelp_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtNetwork.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtNetwork_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtOpenGL.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtOpenGL_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtScript.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtScript_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtSql.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtSql_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtSvg.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtSvg_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtTest.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtTest_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtWebKit.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtWebKit_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtXml.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/lib/libQtXmlPatterns.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtXmlPatterns_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
+		%p/lib/%N/lib/libQtXml_debug.4.dylib 4.4.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/accessible/libqtaccessiblecompatwidgets.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/accessible/libqtaccessiblecompatwidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/accessible/libqtaccessiblewidgets.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/accessible/libqtaccessiblewidgets_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/codecs/libqcncodecs.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/codecs/libqcncodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/codecs/libqjpcodecs.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/codecs/libqjpcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/codecs/libqkrcodecs.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/codecs/libqkrcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/codecs/libqtwcodecs.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/codecs/libqtwcodecs_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/designer/libarthurplugin.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/designer/libcontainerextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/designer/libcustomwidgetplugin.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/designer/libqt3supportwidgets.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/designer/libqwebview.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/designer/libtaskmenuextension_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/designer/libworldtimeclockplugin.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/iconengines/libqsvgicon.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/iconengines/libqsvgicon_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqgif.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqgif_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqico.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqico_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqjpeg.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqjpeg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqmng.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqmng_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqsvg.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqsvg_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/imageformats/libqtiff.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/imageformats/libqtiff_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/phonon_backend/libphonon_qt7.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/phonon_backend/libphonon_qt7_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/script/libqtscriptdbus.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/script/libqtscriptdbus_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/sqldrivers/libqsqlite.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/sqldrivers/libqsqlite_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 		%p/lib/%N/plugins/sqldrivers/libqsqlodbc.dylib 0.0.0 %n (>= 4.4.1-1)
+		%p/lib/%N/plugins/sqldrivers/libqsqlodbc_debug.dylib 0.0.0 %n (>= 4.4.1-1)
 	<<
 	Files: <<
 		lib/%N/lib/*.*.dylib
@@ -209,7 +178,7 @@ SplitOff2: <<
 		lib/%N/plugins
 	<<
 <<
-SplitOff3: <<
+SplitOff2: <<
 	Package: %N-designer
 	Depends: %N-shlibs (= %v-%r)
 	AppBundles: Designer.app
@@ -217,7 +186,7 @@ SplitOff3: <<
 		lib/%N/translations/designer_*
 	<<
 <<
-SplitOff4: <<
+SplitOff3: <<
 	Package: %N-linguist
 	Depends: %N-shlibs (= %v-%r)
 	AppBundles: Linguist.app
@@ -227,7 +196,7 @@ SplitOff4: <<
 		lib/%N/translations/linguist_*
 	<<
 <<
-SplitOff5: <<
+SplitOff4: <<
 	Package: %N-apps
 	Depends: %N-shlibs (= %v-%r)
 	AppBundles: <<
@@ -242,7 +211,7 @@ SplitOff5: <<
 		lib/%N/translations/assistant_*
 	<<
 <<
-SplitOff6: <<
+SplitOff5: <<
 	Package: %N-doc
 	Shlibs: <<
 		%p/share/doc/%N/examples/tools/echoplugin/plugin/libechoplugin_debug.dylib 0.0.0 %n (>= 4.4.1-1)

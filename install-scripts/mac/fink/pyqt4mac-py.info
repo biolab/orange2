@@ -29,9 +29,7 @@ Depends: <<
  	libpng3-shlibs,
 	python%type_pkg[python], 
 	qscintilla2-qt4-mac-shlibs,
-	qt4-mac-core-shlibs, 
-	qt4-mac-designer-shlibs,
-	qt4-mac-gui-shlibs,
+	qt4-mac-shlibs,
 	sip-py%type_pkg[python] (>= 4.7.5-1)
 <<
 Description: Python bindings for the Qt toolkit
@@ -44,8 +42,7 @@ SplitOff: <<
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
-		qt4-mac-core-shlibs,
-		qt4-mac-gui-shlibs,
+		qt4-mac-shlibs,
 		pyqt4mac-py%type_pkg[python]-shlibs
 	<<
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
@@ -59,8 +56,7 @@ SplitOff2: <<
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
-		qt4-mac-core-shlibs,
-		qt4-mac-gui-shlibs
+		qt4-mac-shlibs
 	<<
 	Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
