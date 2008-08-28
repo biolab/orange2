@@ -46,7 +46,7 @@ SplitOff: <<
 	Files: <<
 		lib/python2.5/site-packages/orange/addons/genomics/prototypes
 		lib/python2.5/site-packages/orange/addons/genomics/widgets
-		share/doc/orange-genomics-svn-py25
+		share/doc/orange-genomics-svn
 	<<
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
