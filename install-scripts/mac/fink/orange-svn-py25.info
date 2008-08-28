@@ -104,7 +104,7 @@ CompileScript: <<
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/corn.so corn.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/statc.so statc.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/addons/genomics/orangeom.so orangeom.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so orangene.so
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
 <<
 InstallScript: <<
