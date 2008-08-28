@@ -20,6 +20,7 @@ BuildDepends:<<
 	qt4-mac,
 	sip-py%type_pkg[python]-bin (>= 4.7.5-1)
 <<
+BuildConflicts: qt4-x11
 BuildDependsOnly: true
 Depends: <<
 	freetype2-shlibs,
@@ -32,6 +33,7 @@ Depends: <<
 	qt4-mac-shlibs,
 	sip-py%type_pkg[python] (>= 4.7.5-1)
 <<
+Conflicts: pyqt4-py%type_pkg[python]
 Description: Python bindings for the Qt toolkit
 DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
 SplitOff: <<
