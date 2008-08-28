@@ -235,14 +235,16 @@ class OWInteractionGraph(OWWidget):
         self.interactionList.sort()
         self.interactionList.reverse()
 
-        f = open('interaction.dot','w')
+        import tempfile, os
+        fhandle, fname = tempfile.mkstemp('dot')
+        os.close(fhandle)
+        f = file(fname, "wt")
         self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
-        f.flush()
-        f.close()
+        del f
 
         # execute dot and save otuput to pipes
-        (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
-        (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
+        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
+        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
 
         textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
@@ -250,7 +252,7 @@ class OWInteractionGraph(OWWidget):
         pipePlainIn.close()
         pipePngOut.close()
         pipePlainOut.close()
-        os.remove('interaction.dot')
+        os.remove(fname)
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
