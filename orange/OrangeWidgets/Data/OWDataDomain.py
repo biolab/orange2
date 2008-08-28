@@ -11,19 +11,19 @@ from OWGraph import *
 import OWGUI
 
 class OWDataDomain(OWWidget):
-    contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes",
-                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
-                                                                  selected="selectedChosen", reservoir="inputAttributes"),
-                                                     ContextField("classAttribute",
-                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
-                                                                  selected="selectedClass", reservoir="inputAttributes"),
-                                                     ContextField("metaAttributes",
-                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
+    contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes", 
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes, 
+                                                                  selected="selectedChosen", reservoir="inputAttributes"), 
+                                                     ContextField("classAttribute", 
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes, 
+                                                                  selected="selectedClass", reservoir="inputAttributes"), 
+                                                     ContextField("metaAttributes", 
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes, 
                                                                   selected="selectedMeta", reservoir="inputAttributes")
                                                      ], syncWithGlobal = False)}
 
 
-    def __init__(self,parent = None, signalManager = None):
+    def __init__(self, parent = None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Domain", wantMainArea = 0) 
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Subset", AttributeList, self.setAttributeList)]
@@ -53,45 +53,45 @@ class OWDataDomain(OWWidget):
         grid.setMargin(0)
                 
         boxAvail = OWGUI.widgetBox(self, 'Available Attributes', addToLayout = 0)
-        grid.addWidget(boxAvail, 0,0,3,1)
+        grid.addWidget(boxAvail, 0, 0, 3, 1)
 
         self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         vbAttr = OWGUI.widgetBox(self, addToLayout = 0)
-        grid.addWidget(vbAttr, 0,1)
+        grid.addWidget(vbAttr, 0, 1)
         self.attributesButtonUp = OWGUI.button(vbAttr, self, "Up", self.onAttributesButtonUpClick)
         self.attributesButtonUp.setMaximumWidth(buttonWidth)
-        self.attributesButton = OWGUI.button(vbAttr, self, ">",self.onAttributesButtonClicked)
+        self.attributesButton = OWGUI.button(vbAttr, self, ">", self.onAttributesButtonClicked)
         self.attributesButton.setMaximumWidth(buttonWidth)
         self.attributesButtonDown = OWGUI.button(vbAttr, self, "Down", self.onAttributesButtonDownClick)
         self.attributesButtonDown.setMaximumWidth(buttonWidth)
 
         boxAttr = OWGUI.widgetBox(self, 'Attributes', addToLayout = 0)
-        grid.addWidget(boxAttr, 0,2)
+        grid.addWidget(boxAttr, 0, 2)
         self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         self.classButton = OWGUI.button(self, self, ">", self.onClassButtonClicked, addToLayout = 0)
         self.classButton.setMaximumWidth(buttonWidth)
-        grid.addWidget(self.classButton, 1,1)
+        grid.addWidget(self.classButton, 1, 1)
         boxClass = OWGUI.widgetBox(self, 'Class', addToLayout = 0)
         boxClass.setFixedHeight(55)
-        grid.addWidget(boxClass, 1,2)
+        grid.addWidget(boxClass, 1, 2)
         self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton, dataValidityCallback = self.dataValidityCallback)
 
         vbMeta = OWGUI.widgetBox(self, addToLayout = 0)
-        grid.addWidget(vbMeta, 2,1)
+        grid.addWidget(vbMeta, 2, 1)
         self.metaButtonUp = OWGUI.button(vbMeta, self, "Up", self.onMetaButtonUpClick)
         self.metaButtonUp.setMaximumWidth(buttonWidth)
-        self.metaButton = OWGUI.button(vbMeta, self, ">",self.onMetaButtonClicked)
+        self.metaButton = OWGUI.button(vbMeta, self, ">", self.onMetaButtonClicked)
         self.metaButton.setMaximumWidth(buttonWidth)
         self.metaButtonDown = OWGUI.button(vbMeta, self, "Down", self.onMetaButtonDownClick)
         self.metaButtonDown.setMaximumWidth(buttonWidth)
         boxMeta = OWGUI.widgetBox(self, 'Meta Attributes', addToLayout = 0)
-        grid.addWidget(boxMeta, 2,2)
+        grid.addWidget(boxMeta, 2, 2)
         self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
 
         boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal", addSpace = 1)
-        grid.addWidget(boxApply, 3,0,3,3)
+        grid.addWidget(boxApply, 3, 0, 3, 3)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
         self.applyButton.setEnabled(False)
         self.applyButton.setMaximumWidth(applyButtonWidth)
@@ -105,7 +105,7 @@ class OWDataDomain(OWWidget):
         self.icons = self.createAttributeIconDict()
 
         self.inChange = False
-        self.resize(400,480)
+        self.resize(400, 480)
 
 
     def setAttributeList(self, attrList):
@@ -115,9 +115,9 @@ class OWDataDomain(OWWidget):
     def onSelectionChange(self):
         if not self.inChange:
             self.inChange = True
-            for lb, co in [(self.inputAttributesList, "selectedInput"),
-                       (self.attributesList, "selectedChosen"),
-                       (self.classList, "selectedClass"),
+            for lb, co in [(self.inputAttributesList, "selectedInput"), 
+                       (self.attributesList, "selectedChosen"), 
+                       (self.classList, "selectedClass"), 
                        (self.metaList, "selectedMeta")]:
                 if not lb.hasFocus():
                     setattr(self, co, [])
@@ -244,7 +244,7 @@ class OWDataDomain(OWWidget):
 
         elif self.selectedClass:
             self.setButton(self.classButton, "<")
-            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown,
+            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown, 
                                 self.attributesButton, self.metaButton)
 
         elif self.selectedMeta:
@@ -257,7 +257,7 @@ class OWDataDomain(OWWidget):
             self.metaButtonDown.setEnabled(cons and maxi < len(self.metaAttributes)-1)
 
         else:
-            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown,
+            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown, 
                                 self.attributesButton, self.metaButton, self.classButton)
 
 
