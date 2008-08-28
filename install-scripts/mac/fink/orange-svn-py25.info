@@ -33,6 +33,57 @@ Shlibs: <<
 	%p/lib/python2.5/site-packages/orange/statc.so 0.0.0 orange-py25 (>= 1.0-1)
 	%p/lib/python2.5/site-packages/orange/_orngCRS.so 0.0.0 orange-py25 (>= 1.0-1)
 <<
+SplitOff: <<
+	Package: orange-genomics-svn
+	Conflicts: orange-genomics, orange-genomics-py25
+	Replaces: orange-genomics
+	Depends: <<
+		python25,
+		numpy-py25,
+		orange-svn-py25 (>= %v),
+		orange-genomics-svn-py25 (>= %v)
+	<<
+	Files: <<
+		lib/python2.5/site-packages/orange/addons/genomics/prototypes
+		lib/python2.5/site-packages/orange/addons/genomics/widgets
+		share/doc/orange-genomics-svn-py25
+	<<
+	DescDetail: <<
+		Orange is a component-based data mining software. It includes a range
+		of data visualization, exploration, preprocessing and modelling
+		techniques. It can be used through a nice and intuitive user interface
+		or, for more advanced users, as a module for Python programming language.
+		
+		This package provides a graphical user interface add-on for genomics.
+	<<
+<<
+SplitOff2: <<
+	Package: orange-genomics-svn-py25
+	Suggests: orange-genomics-svn
+	Conflicts: orange-genomics-py25, orange-genomics
+	Replaces: orange-genomics-py25
+	Depends: <<
+		python25,
+		numpy-py25,
+		orange-svn-py25 (>= %v)
+	<<
+	Shlibs: <<
+		%p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so 0.0.0 orange-py25 (>= 1.0-1)
+	<<
+	Files: <<
+		lib/python2.5/site-packages/orange/addons/genomics
+		lib/python2.5/site-packages/orange-genomics.pth
+		share/doc/orange-genomics-svn
+	<<
+	DescDetail: <<
+		Orange is a component-based data mining software. It includes a range
+		of data visualization, exploration, preprocessing and modelling
+		techniques. It can be used through a nice and intuitive user interface
+		or, for more advanced users, as a module for Python programming language.
+		
+		This package provides a Python add-on module for genomics.
+	<<
+<<
 CompileScript: <<
 	#!/bin/bash -ev
 	export PATH=%b:$PATH
@@ -40,32 +91,46 @@ CompileScript: <<
 	svn export http://www.ailab.si/svn/orange/trunk/source/
 	svn export http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/
 	svn export http://www.ailab.si/svn/orange/trunk/orange/
+	svn export http://www.ailab.si/svn/orange/trunk/add-ons/Genomics/
 	cd source
 	make
 	cd ../src/
 	make
 	mv _orngCRS.so ..
+	cd ../Genomics/
+	rm -f BCMinclude.lst exclude.lst registerWidgets.py setup.py # setup_whenCombinedWithGOLib.py
 	cd ../
-	rm -f liborange.dylib
-	rm -f orangene.so
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/corn.so corn.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/statc.so statc.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/addons/genomics/orangeom.so orangeom.so
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
 <<
 InstallScript: <<
 	#!/bin/bash -ev
 	mkdir -p %i/share/doc/%n/
-	mv orange/COPYING %i/share/doc/%n/
+	cp orange/COPYING %i/share/doc/%n/
 	mv orange/doc/reference/ %i/share/doc/%n/
 	mv orange/doc/modules/ %i/share/doc/%n/
 	mv orange/doc/ofb/ %i/share/doc/%n/
 	mv orange/doc/datasets/ %i/share/doc/%n/
-	mkdir -p %i/lib/python2.5/site-packages/orange/
+	mkdir -p %i/share/doc/orange-genomics-svn-py25/
+	cp orange/COPYING %i/share/doc/orange-genomics-svn-py25/
+	cp Genomics/doc/style.css %i/share/doc/orange-genomics-svn-py25/
+	mv Genomics/doc/modules/ %i/share/doc/orange-genomics-svn-py25/
+	mv Genomics/data/ %i/share/doc/orange-genomics-svn-py25/
+	mkdir -p %i/share/doc/orange-genomics-svn/
+	cp orange/COPYING %i/share/doc/orange-genomics-svn/
+	cp Genomics/doc/style.css %i/share/doc/orange-genomics-svn/
+	mv Genomics/doc/widgets/ %i/share/doc/orange-genomics-svn/
+	mkdir -p %i/lib/python2.5/site-packages/orange/addons/genomics/
+	mv orangene.so %i/lib/python2.5/site-packages/orange/addons/genomics/
 	mv *.so %i/lib/python2.5/site-packages/orange/
 	mv orange/orng*.py orange/mathutil.py %i/lib/python2.5/site-packages/orange/
+	mv Genomics/* %i/lib/python2.5/site-packages/orange/addons/genomics/
 	echo "orange" > %i/lib/python2.5/site-packages/orange.pth
+	echo "orange/addons/genomics" > %i/lib/python2.5/site-packages/orange-genomics.pth
 	echo "datasetsPath=\"%p/share/doc/%n/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
 <<
 <<
