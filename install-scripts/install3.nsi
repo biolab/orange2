@@ -13,8 +13,6 @@ OutFile ${OUTFILENAME}
 
 !include "LogicLib.nsh"
 
-
-
 licensedata license.txt
 licensetext "Acknowledgments and License Agreement"
 
@@ -22,7 +20,6 @@ AutoCloseWindow true
 ShowInstDetails nevershow
 
 Var PythonDir
-Var WhatsDownFile
 Var AdminInstall
 Var MissingModules
 
@@ -32,7 +29,6 @@ Page instfiles
 !define SHELLFOLDERS \
   "Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
  
-
 
 Section Uninstall
 	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" /SD IDYES IDNO abort
@@ -220,38 +216,9 @@ Section ""
 
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
-	File "license.txt"
-
-	FileOpen $WhatsDownFile $INSTDIR\whatsdown.txt w
-    
-	!include ${INCLUDEPREFIX}_base.inc
-	!include ${INCLUDEPREFIX}_binaries.inc
-	!include ${INCLUDEPREFIX}_widgets.inc
-	!include ${INCLUDEPREFIX}_canvas.inc
-
-	SetOutPath $INSTDIR\icons
-	File Orange.ico
-	SetOutPath $INSTDIR\OrangeCanvas\icons
-	File OrangeOWS.ico
-
-   	!include ${INCLUDEPREFIX}_doc.inc
-
-	SetOutPath $INSTDIR\doc\datasets
-	File ${ORANGEDIR}\doc\datasets\*
+	File /r ${ORANGEDIR}\*
 
 	!ifdef INCLUDEGENOMICS
-		!include ${INCLUDEPREFIX}_genomics.inc
-	    
-		SetOutPath $INSTDIR\doc
-		File "various\Orange Genomics.pdf"
-	
-		SetOutPath $INSTDIR
-		CreateDirectory "$SMPROGRAMS\Orange"
-		CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets For Functional Genomics.lnk" "$INSTDIR\doc\Orange Genomics.pdf"
-	
-		SetOutPath "$INSTDIR\OrangeCanvas"
-		File various\bi-visprog\*.tab
-		File various\bi-visprog\*.ows
 	!endif
 
 	!ifdef INCLUDETEXTMINING
@@ -262,8 +229,6 @@ Section ""
 	!endif
 
 	CreateDirectory "$SMPROGRAMS\Orange"
-	CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
-	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
@@ -272,8 +237,8 @@ Section ""
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
 
 	SetOutPath $INSTDIR\OrangeCanvas
-	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\icons\Orange.ico 0
-	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\icons\Orange.ico 0
+	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\OrangeCanvas\icons\orange.ico 0
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\OrangeCanvas\icons\orange.ico 0
 
 	WriteRegStr SHELL_CONTEXT "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 	WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
@@ -284,8 +249,6 @@ Section ""
 	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\Shell\Open\Command\" "" '$PythonDir\python.exe $INSTDIR\orangeCanvas\orngCanvas.pyw "%1"'
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
-
-	FileClose $WhatsDownFile
 
 	!ifdef INCLUDETEXTMINING
              ExecWait '"$PythonDir\python" -c $\"import orngRegistry; orngRegistry.addWidgetCategory(\$\"Text Mining\$\", \$\"$PythonDir\lib\site-packages\orngText\widgets\$\")$\"'
@@ -316,10 +279,10 @@ Function .onInit
 			Quit
 		have_python:
 
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PythonWin" "PythonWin"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\numpy\*.*" "numpy"
 
 		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
 			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"

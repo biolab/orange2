@@ -1,47 +1,44 @@
-pushd
+call updateSetConstants__.btm %1 %2
 
-call updateSetConstants__.btm
-
-set WIN=orange-win-%verstr
-set WIN_PYTHON=orange-w-python-%verstr
-set ADDON_GENOMICS=orangeAddon-genomics-%verstr
-set ADDON_TEXTMINING=orangeAddon-genomics-%verstr
-set SOURCE=orange-source-%verstr.zip
-set VERSION=%verstr
-set STABLE_DATE=%nicedate
-set TAG=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
-
-cdd %WEBDIR
+if not exist %TMPDIR mkdir %TMPDIR
 break_on_error
+del /syefkq %TMPDIR
+cdd %TMPDIR
 
-rem del /sye orange
-svn --force export http://www.ailab.si/svn/orange/%BRANCH/orange orange
-break_on_error
-
-rem call %SCRIPTDIR/winCompile.btm
+svn export --quiet http://www.ailab.si/svn/orange/%BRANCH/orange orange
+svn export --quiet http://www.ailab.si/svn/orange/%BRANCH/source source
+del /syefkqx orange/orangeWidgets/Prototypes
 
 rem call %SCRIPTDIR/winCompileAddOns.btm
 
-cdd %SCRIPTDIR
-python buildInstFileList.py %WEBDIR files
+cdd %TMPDIR\source
+call _pyxtract.bat
 
 for %pyver in (%PYTHONVERSIONS) (
-  set BINDIR=%WEBDOWNLOAD\binaries\%pyver
-  if not exist %BINDIR mkdir %BINDIR
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+  echo *** Compiling for Python %npver
 
-  cdd %PYTHONBASE%%pyver\lib\site-packages\orange
-  for %pydf in (*.pydREMREMREMREMREMREMREMREMREMREMREMREMREM) do (
-    if exist %BINDIR\%pydf del %BINDIR\%pydf
-    upx %pydf -o %BINDIR\%pydf
+  cdd %TMPDIR/source
+  set COMPILELOG=%TMPDIR\win-compile-%npver.log
+  rem if exist %COMPILELOG del %COMPILELOG
+  set PYTHON=%PYTHONBASE%%pyver
+  
+  rem start /wait 
+  rem vcexpress orange.sln /build Release /out %COMPILELOG
+  flag_on_error
+
+  cdd c:\Python%pyver\lib\site-packages\orange
+  for %pydf in (*.pyd) do (
+    if exist %TMPDIR\orange\%pydf del %TMPDIR\orange\%pydf
+    upx %pydf -o %TMPDIR/orange/%pydf
   )
 
   cdd %SCRIPTDIR
-  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
-  set COMMON_NSI_OPTIONS=/DORANGEDIR=%WEBDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-  nsis /Onsis_standard-py%npver.log /DOUTFILENAME="%WEBDOWNLOAD\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
-  break_on_error
-  nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%WEBDOWNLOAD"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
-  break_on_error
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DCWD=%SCRIPTDIR /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+  nsis /Onsis_standard-py%npver.log /DOUTFILENAME="%TMPDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+  flag_on_error
+  nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%WIN_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
+  flag_on_error
 ) 
 
 cdd %SCRIPTDIR

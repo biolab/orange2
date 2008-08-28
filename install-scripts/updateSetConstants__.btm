@@ -1,41 +1,51 @@
-set WEBDIR=e:\orange
-set SCRIPTDIR=%WEBDIR\scripts
-set WEBDOWNLOAD=O:\2
-
-set LOGFILE=%SCRIPTDIR\updateSnapshot.log
-
-set MNT_DOWNLOAD=/wwwUsers/orange/download
-
-set /r %WEBDOWNLOAD\filenames.set
+rem Popravki za doma:
+rem - set /r filenames.set
+rem - alias vcexpress
+set verstr=%1
+set BRANCH=%2
+echo Building Orange version '%verstr' from SVN's branch '%BRANCH'
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
+set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
+
+set SCRIPTDIR=%_CWD
+set BUILDDIR=%SCRIPTDIR
+set TMPDIR=%SCRIPTDIR\tmp
+set WEBDOWNLOAD=O:\2
+
+rem set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si,marko.toplak@fri.uni-lj.si"
+set LOGFILE=%SCRIPTDIR\build-%verstr.log
+set ERRORS=0
+on error (
+  set ERRORS=%errorlevel
+  cancel %errorlevel
+)
+alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
+alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
+
+set /r %SCRIPTDIR\filenames.set
+set WIN=orange-win-%verstr
+set WIN_PYTHON=orange-w-python-%verstr
+set ADDON_GENOMICS=orangeAddon-genomics-%verstr
+set ADDON_TEXTMINING=orangeAddon-genomics-%verstr
+set SOURCE=orange-source-%verstr.zip
+set VERSION=%verstr
+set STABLE_DATE=%nicedate
 
 set WIN_SNAPSHOT=orange-snapshot-%daystr
 set WIN_GENOMICS_SNAPSHOT=orangeAddOn-snapshot-genomics-%daystr
 set WIN_TEXTMINING_SNAPSHOT=orangeAddOn-snapshot-textmining-%daystr
 set WIN_GOLIB_SNAPSHOT=GOlib-snapshot-%daystr
 
+set PYTHONBASE=c:\Python
+set PYTHONVERSIONS=23 24 25
+
 alias nsis="c:\program files\nsis\makensis.exe"
 alias cvs="C:\Program Files\CVSNT\cvs.exe"
 alias winrar="c:\program files\winrar\winrar.exe"
 alias upx="c:\program files\upx.exe"
-alias python="e:\python25\python.exe"
-set .py="e:\python25\python.exe"
+alias python="%PYTHONBASE%25\python.exe"
+set .py="%PYTHONBASE%25\python.exe"
 
-on error (
-  set ERRORS=%errorlevel
-  cancel %errorlevel
-)
-
-set ERRORS=0
-
-alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
-alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
-
-set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
-
-set PYTHONVERSIONS=23 24 25
-
-set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si,marko.toplak@fri.uni-lj.si"
-
-set /r %WEBDOWNLOAD\versions.set
+call "c:\Program Files\Microsoft Visual Studio 8\Vc\bin\vcvars32.bat"
+alias vcexpress="c:\Program Files\Microsoft Visual Studio 8\Common7\IDE\devenv.exe"

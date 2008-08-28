@@ -1,5 +1,5 @@
 @echo off
-set fhandle=%@FILEOPEN[%WEBDOWNLOAD\filenames.set, write, t]
+set fhandle=%@FILEOPEN[%SCRIPTDIR\filenames.set, write, t]
 set foo=%@FILEWRITE[%fhandle,VERSION=%VERSION]
 set foo=%@FILEWRITE[%fhandle,STABLE_DATE=%STABLE_DATE]
 set foo=%@FILEWRITE[%fhandle,WIN=%WIN]
@@ -22,7 +22,7 @@ set foo=%@FILEWRITE[%fhandle,ADDON_TEXTMINING=%ADDON_TEXTMINING]
 ADDON_GENOMICS
 set foo=%@FILECLOSE[%fhandle]
 
-set fhandle=%@FILEOPEN[%WEBDOWNLOAD\versions.set, write, t]
+set fhandle=%@FILEOPEN[%SCRIPTDIR\versions.set, write, t]
 set foo=%@FILEWRITE[%fhandle,orangeMajorVersion=%orangeMajorVersion]
 set foo=%@FILEWRITE[%fhandle,orangeMinorVersion=%orangeMinorVersion]
 set foo=%@FILEWRITE[%fhandle,orangeReleaseVersion=%orangeReleaseVersion]
