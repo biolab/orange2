@@ -91,7 +91,7 @@ CompileScript: <<
 	svn export http://www.ailab.si/svn/orange/branches/ver1.0/source/
 	svn export http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/
 	svn export http://www.ailab.si/svn/orange/branches/ver1.0/orange/
-	svn export http://www.ailab.si/svn/orange/branches/ver1.0/Genomics/
+	svn export http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/Genomics/
 	cd source
 	make
 	cd ../src/
