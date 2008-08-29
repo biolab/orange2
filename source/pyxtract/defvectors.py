@@ -82,6 +82,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
                         .replace("$classname$", "ListOfWrappedMethods<%s, %s, %s, &PyOr%s_Type>" % (wrappedlistname, listname, elementname, pyelementname))
                        .replace("$pyelement$", pyelementname)
                        .replace("$wrappedlistname$", wrappedlistname)
+                       .replace(">>", "> >")
              +"\n\n"
             )
 
@@ -151,6 +152,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, wrapped) in 
                        .replace("$wrappedlistname$", wrappedlistname)
                        .replace("$listname$", listname)
                        .replace("$elementname$", elementname)
+                       .replace(">>", "> >")
              +"\n\n"
             )
 
