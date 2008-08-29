@@ -124,6 +124,7 @@ InstallScript: <<
 	cp orange/COPYING %i/share/doc/orange-genomics-svn/
 	cp Genomics/doc/style.css %i/share/doc/orange-genomics-svn/
 	mv Genomics/doc/widgets/ %i/share/doc/orange-genomics-svn/
+	rm -rf Genomics/doc/
 	mkdir -p %i/lib/python2.5/site-packages/orange/addons/genomics/
 	mv orangene.so %i/lib/python2.5/site-packages/orange/addons/genomics/
 	mv *.so %i/lib/python2.5/site-packages/orange/
