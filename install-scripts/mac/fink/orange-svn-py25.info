@@ -27,11 +27,11 @@ DescDetail: <<
 	This package provides a Python module.
 <<
 Shlibs: <<
-	%p/lib/python2.5/site-packages/orange/orange.so 0.0.0 orange-py25 (>= 1.0-1)
-	%p/lib/python2.5/site-packages/orange/orangeom.so 0.0.0 orange-py25 (>= 1.0-1)
-	%p/lib/python2.5/site-packages/orange/corn.so 0.0.0 orange-py25 (>= 1.0-1)
-	%p/lib/python2.5/site-packages/orange/statc.so 0.0.0 orange-py25 (>= 1.0-1)
-	%p/lib/python2.5/site-packages/orange/_orngCRS.so 0.0.0 orange-py25 (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/orange.so 0.0.0 %n (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/orangeom.so 0.0.0 %n (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/corn.so 0.0.0 %n (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/statc.so 0.0.0 %n (>= 1.0-1)
+	%p/lib/python2.5/site-packages/orange/_orngCRS.so 0.0.0 %n (>= 1.0-1)
 <<
 SplitOff: <<
 	Package: orange-genomics-svn
@@ -68,7 +68,7 @@ SplitOff2: <<
 		orange-svn-py25 (>= %v)
 	<<
 	Shlibs: <<
-		%p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so 0.0.0 orange-py25 (>= 1.0-1)
+		%p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so 0.0.0 %n (>= 1.0-1)
 	<<
 	Files: <<
 		lib/python2.5/site-packages/orange/addons
