@@ -325,7 +325,7 @@ cherrypy.tools.insecure = cherrypy.Tool('on_start_resource', force_insecure, pri
 cherrypy.server.max_request_body_size = 0
 
 def buildServer():
-    users = {"osf": "edit123p"}
+    users = {"osf": "edit123p", "gad": "abcphen"}
 
     conf = {'global': { 'log.screen': False,
                         'log.access_file': 'af.log',
