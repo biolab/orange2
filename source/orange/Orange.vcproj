@@ -179,10 +179,14 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;hpp"
 			>
 			<File
 				RelativePath="assoc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="assoc.hpp"
 				>
 			</File>
 			<File
@@ -194,7 +198,15 @@
 				>
 			</File>
 			<File
+				RelativePath="basket.hpp"
+				>
+			</File>
+			<File
 				RelativePath="basstat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="basstat.hpp"
 				>
 			</File>
 			<File
@@ -202,7 +214,15 @@
 				>
 			</File>
 			<File
+				RelativePath="bayes.hpp"
+				>
+			</File>
+			<File
 				RelativePath="boolcnt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="boolcnt.hpp"
 				>
 			</File>
 			<File
@@ -210,7 +230,15 @@
 				>
 			</File>
 			<File
+				RelativePath="c4.5.hpp"
+				>
+			</File>
+			<File
 				RelativePath="c45inter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="c45inter.hpp"
 				>
 			</File>
 			<File
@@ -218,7 +246,15 @@
 				>
 			</File>
 			<File
+				RelativePath="calibrate.hpp"
+				>
+			</File>
+			<File
 				RelativePath="callback.cpp"
+				>
+			</File>
+			<File
+				RelativePath="callback.hpp"
 				>
 			</File>
 			<File
@@ -226,7 +262,15 @@
 				>
 			</File>
 			<File
+				RelativePath="cartesian.hpp"
+				>
+			</File>
+			<File
 				RelativePath="clas_gen.cpp"
+				>
+			</File>
+			<File
+				RelativePath="clas_gen.hpp"
 				>
 			</File>
 			<File
@@ -234,7 +278,15 @@
 				>
 			</File>
 			<File
+				RelativePath="classfromvar.hpp"
+				>
+			</File>
+			<File
 				RelativePath="classifier.cpp"
+				>
+			</File>
+			<File
+				RelativePath="classify.hpp"
 				>
 			</File>
 			<File
@@ -242,7 +294,15 @@
 				>
 			</File>
 			<File
+				RelativePath="cls_example.hpp"
+				>
+			</File>
+			<File
 				RelativePath="cls_misc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="cls_misc.hpp"
 				>
 			</File>
 			<File
@@ -250,7 +310,15 @@
 				>
 			</File>
 			<File
+				RelativePath="cls_orange.hpp"
+				>
+			</File>
+			<File
 				RelativePath="cls_value.cpp"
+				>
+			</File>
+			<File
+				RelativePath="cls_value.hpp"
 				>
 			</File>
 			<File
@@ -258,7 +326,15 @@
 				>
 			</File>
 			<File
+				RelativePath="contingency.hpp"
+				>
+			</File>
+			<File
 				RelativePath="converts.cpp"
+				>
+			</File>
+			<File
+				RelativePath="converts.hpp"
 				>
 			</File>
 			<File
@@ -266,11 +342,23 @@
 				>
 			</File>
 			<File
+				RelativePath="cost.hpp"
+				>
+			</File>
+			<File
 				RelativePath="costwrapper.cpp"
 				>
 			</File>
 			<File
+				RelativePath="costwrapper.hpp"
+				>
+			</File>
+			<File
 				RelativePath="decomposition.cpp"
+				>
+			</File>
+			<File
+				RelativePath="decomposition.hpp"
 				>
 			</File>
 			<File
@@ -282,7 +370,15 @@
 				>
 			</File>
 			<File
+				RelativePath="discretize.hpp"
+				>
+			</File>
+			<File
 				RelativePath="dist_clustering.cpp"
+				>
+			</File>
+			<File
+				RelativePath="dist_clustering.hpp"
 				>
 			</File>
 			<File
@@ -290,7 +386,15 @@
 				>
 			</File>
 			<File
+				RelativePath="distance.hpp"
+				>
+			</File>
+			<File
 				RelativePath="distance_dtw.cpp"
+				>
+			</File>
+			<File
+				RelativePath="distance_dtw.hpp"
 				>
 			</File>
 			<File
@@ -298,7 +402,15 @@
 				>
 			</File>
 			<File
+				RelativePath="distancemap.hpp"
+				>
+			</File>
+			<File
 				RelativePath="distvars.cpp"
+				>
+			</File>
+			<File
+				RelativePath="distvars.hpp"
 				>
 			</File>
 			<File
@@ -306,7 +418,15 @@
 				>
 			</File>
 			<File
+				RelativePath="domain.hpp"
+				>
+			</File>
+			<File
 				RelativePath="domaindepot.cpp"
+				>
+			</File>
+			<File
+				RelativePath="domaindepot.hpp"
 				>
 			</File>
 			<File
@@ -314,7 +434,15 @@
 				>
 			</File>
 			<File
+				RelativePath="errors.hpp"
+				>
+			</File>
+			<File
 				RelativePath="estimateprob.cpp"
+				>
+			</File>
+			<File
+				RelativePath="estimateprob.hpp"
 				>
 			</File>
 			<File
@@ -322,11 +450,23 @@
 				>
 			</File>
 			<File
+				RelativePath="exampleclustering.hpp"
+				>
+			</File>
+			<File
 				RelativePath="examplegen.cpp"
 				>
 			</File>
 			<File
+				RelativePath="examplegen.hpp"
+				>
+			</File>
+			<File
 				RelativePath="examples.cpp"
+				>
+			</File>
+			<File
+				RelativePath="examples.hpp"
 				>
 			</File>
 			<File
@@ -338,7 +478,15 @@
 				>
 			</File>
 			<File
+				RelativePath="filegen.hpp"
+				>
+			</File>
+			<File
 				RelativePath="filter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="filter.hpp"
 				>
 			</File>
 			<File
@@ -350,7 +498,15 @@
 				>
 			</File>
 			<File
+				RelativePath="garbage.hpp"
+				>
+			</File>
+			<File
 				RelativePath="getarg.cpp"
+				>
+			</File>
+			<File
+				RelativePath="getarg.hpp"
 				>
 			</File>
 			<File
@@ -358,7 +514,15 @@
 				>
 			</File>
 			<File
+				RelativePath="graph.hpp"
+				>
+			</File>
+			<File
 				RelativePath="gslconversions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="gslconversions.hpp"
 				>
 			</File>
 			<File
@@ -366,7 +530,15 @@
 				>
 			</File>
 			<File
+				RelativePath="hclust.hpp"
+				>
+			</File>
+			<File
 				RelativePath="imputation.cpp"
+				>
+			</File>
+			<File
+				RelativePath="imputation.hpp"
 				>
 			</File>
 			<File
@@ -374,7 +546,15 @@
 				>
 			</File>
 			<File
+				RelativePath="induce.hpp"
+				>
+			</File>
+			<File
 				RelativePath="jit_linker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="jit_linker.hpp"
 				>
 			</File>
 			<File
@@ -382,7 +562,15 @@
 				>
 			</File>
 			<File
+				RelativePath="knn.hpp"
+				>
+			</File>
+			<File
 				RelativePath="learn.cpp"
+				>
+			</File>
+			<File
+				RelativePath="learn.hpp"
 				>
 			</File>
 			<File
@@ -395,6 +583,10 @@
 			</File>
 			<File
 				RelativePath="lib_kernel.cpp"
+				>
+			</File>
+			<File
+				RelativePath="lib_kernel.hpp"
 				>
 			</File>
 			<File
@@ -414,7 +606,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\linear.hpp"
+				>
+			</File>
+			<File
 				RelativePath="linreg.cpp"
+				>
+			</File>
+			<File
+				RelativePath="linreg.hpp"
 				>
 			</File>
 			<File
@@ -422,7 +622,15 @@
 				>
 			</File>
 			<File
+				RelativePath="logfit.hpp"
+				>
+			</File>
+			<File
 				RelativePath="logistic.cpp"
+				>
+			</File>
+			<File
+				RelativePath="logistic.hpp"
 				>
 			</File>
 			<File
@@ -434,6 +642,10 @@
 				>
 			</File>
 			<File
+				RelativePath="lookup.hpp"
+				>
+			</File>
+			<File
 				RelativePath="lsq.cpp"
 				>
 			</File>
@@ -442,7 +654,19 @@
 				>
 			</File>
 			<File
+				RelativePath="lwr.hpp"
+				>
+			</File>
+			<File
 				RelativePath="majority.cpp"
+				>
+			</File>
+			<File
+				RelativePath="majority.hpp"
+				>
+			</File>
+			<File
+				RelativePath="maptemplates.hpp"
 				>
 			</File>
 			<File
@@ -450,7 +674,15 @@
 				>
 			</File>
 			<File
+				RelativePath="measures.hpp"
+				>
+			</File>
+			<File
 				RelativePath="meta.cpp"
+				>
+			</File>
+			<File
+				RelativePath="meta.hpp"
 				>
 			</File>
 			<File
@@ -458,7 +690,15 @@
 				>
 			</File>
 			<File
+				RelativePath="minimal_complexity.hpp"
+				>
+			</File>
+			<File
 				RelativePath="minimal_error.cpp"
+				>
+			</File>
+			<File
+				RelativePath="minimal_error.hpp"
 				>
 			</File>
 			<File
@@ -466,7 +706,15 @@
 				>
 			</File>
 			<File
+				RelativePath="nearest.hpp"
+				>
+			</File>
+			<File
 				RelativePath="numeric_interface.cpp"
+				>
+			</File>
+			<File
+				RelativePath="numeric_interface.hpp"
 				>
 			</File>
 			<File
@@ -474,7 +722,23 @@
 				>
 			</File>
 			<File
+				RelativePath="orange.hpp"
+				>
+			</File>
+			<File
+				RelativePath="orange_api.hpp"
+				>
+			</File>
+			<File
+				RelativePath="ormap.hpp"
+				>
+			</File>
+			<File
 				RelativePath="orvector.cpp"
+				>
+			</File>
+			<File
+				RelativePath="orvector.hpp"
 				>
 			</File>
 			<File
@@ -482,7 +746,19 @@
 				>
 			</File>
 			<File
+				RelativePath="pnn.hpp"
+				>
+			</File>
+			<File
+				RelativePath="pqueue_i.hpp"
+				>
+			</File>
+			<File
 				RelativePath="preprocessors.cpp"
+				>
+			</File>
+			<File
+				RelativePath="preprocessors.hpp"
 				>
 			</File>
 			<File
@@ -490,7 +766,19 @@
 				>
 			</File>
 			<File
+				RelativePath="progress.hpp"
+				>
+			</File>
+			<File
 				RelativePath="pythonvars.cpp"
+				>
+			</File>
+			<File
+				RelativePath="pythonvars.hpp"
+				>
+			</File>
+			<File
+				RelativePath="pyxtract_macros.hpp"
 				>
 			</File>
 			<File
@@ -499,6 +787,10 @@
 			</File>
 			<File
 				RelativePath="random.cpp"
+				>
+			</File>
+			<File
+				RelativePath="random.hpp"
 				>
 			</File>
 			<File
@@ -514,7 +806,19 @@
 				>
 			</File>
 			<File
+				RelativePath="redundancy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="relief.hpp"
+				>
+			</File>
+			<File
 				RelativePath="root.cpp"
+				>
+			</File>
+			<File
+				RelativePath="root.hpp"
 				>
 			</File>
 			<File
@@ -522,7 +826,19 @@
 				>
 			</File>
 			<File
+				RelativePath="rulelearner.hpp"
+				>
+			</File>
+			<File
+				RelativePath="slist.hpp"
+				>
+			</File>
+			<File
 				RelativePath="spec_contingency.cpp"
+				>
+			</File>
+			<File
+				RelativePath="spec_contingency.hpp"
 				>
 			</File>
 			<File
@@ -530,11 +846,23 @@
 				>
 			</File>
 			<File
+				RelativePath="spec_gen.hpp"
+				>
+			</File>
+			<File
 				RelativePath="stringvars.cpp"
 				>
 			</File>
 			<File
+				RelativePath="stringvars.hpp"
+				>
+			</File>
+			<File
 				RelativePath="subsets.cpp"
+				>
+			</File>
+			<File
+				RelativePath="subsets.hpp"
 				>
 			</File>
 			<File
@@ -546,7 +874,15 @@
 				>
 			</File>
 			<File
+				RelativePath="svm.hpp"
+				>
+			</File>
+			<File
 				RelativePath="symmatrix.cpp"
+				>
+			</File>
+			<File
+				RelativePath="symmatrix.hpp"
 				>
 			</File>
 			<File
@@ -554,7 +890,15 @@
 				>
 			</File>
 			<File
+				RelativePath="tabdelim.hpp"
+				>
+			</File>
+			<File
 				RelativePath="table.cpp"
+				>
+			</File>
+			<File
+				RelativePath="table.hpp"
 				>
 			</File>
 			<File
@@ -562,7 +906,15 @@
 				>
 			</File>
 			<File
+				RelativePath="tdidt.hpp"
+				>
+			</File>
+			<File
 				RelativePath="tdidt_split.cpp"
+				>
+			</File>
+			<File
+				RelativePath="tdidt_split.hpp"
 				>
 			</File>
 			<File
@@ -570,7 +922,15 @@
 				>
 			</File>
 			<File
+				RelativePath="tdidt_stop.hpp"
+				>
+			</File>
+			<File
 				RelativePath="transdomain.cpp"
+				>
+			</File>
+			<File
+				RelativePath="transdomain.hpp"
 				>
 			</File>
 			<File
@@ -578,7 +938,15 @@
 				>
 			</File>
 			<File
+				RelativePath="transval.hpp"
+				>
+			</File>
+			<File
 				RelativePath="trindex.cpp"
+				>
+			</File>
+			<File
+				RelativePath="trindex.hpp"
 				>
 			</File>
 			<File
@@ -586,11 +954,27 @@
 				>
 			</File>
 			<File
+				RelativePath="valuelisttemplate.hpp"
+				>
+			</File>
+			<File
 				RelativePath="values.cpp"
 				>
 			</File>
 			<File
+				RelativePath="values.hpp"
+				>
+			</File>
+			<File
 				RelativePath="vars.cpp"
+				>
+			</File>
+			<File
+				RelativePath="vars.hpp"
+				>
+			</File>
+			<File
+				RelativePath="vectortemplates.hpp"
 				>
 			</File>
 			<Filter
@@ -621,395 +1005,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl"
-			>
-			<File
-				RelativePath="assoc.hpp"
-				>
-			</File>
-			<File
-				RelativePath="basket.hpp"
-				>
-			</File>
-			<File
-				RelativePath="basstat.hpp"
-				>
-			</File>
-			<File
-				RelativePath="bayes.hpp"
-				>
-			</File>
-			<File
-				RelativePath="boolcnt.hpp"
-				>
-			</File>
-			<File
-				RelativePath="c4.5.hpp"
-				>
-			</File>
-			<File
-				RelativePath="c45inter.hpp"
-				>
-			</File>
-			<File
-				RelativePath="calibrate.hpp"
-				>
-			</File>
-			<File
-				RelativePath="callback.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cartesian.hpp"
-				>
-			</File>
-			<File
-				RelativePath="clas_gen.hpp"
-				>
-			</File>
-			<File
-				RelativePath="classfromvar.hpp"
-				>
-			</File>
-			<File
-				RelativePath="classify.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cls_example.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cls_misc.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cls_orange.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cls_value.hpp"
-				>
-			</File>
-			<File
-				RelativePath="contingency.hpp"
-				>
-			</File>
-			<File
-				RelativePath="converts.hpp"
-				>
-			</File>
-			<File
-				RelativePath="cost.hpp"
-				>
-			</File>
-			<File
-				RelativePath="costwrapper.hpp"
-				>
-			</File>
-			<File
-				RelativePath="decomposition.hpp"
-				>
-			</File>
-			<File
-				RelativePath="discretize.hpp"
-				>
-			</File>
-			<File
-				RelativePath="dist_clustering.hpp"
-				>
-			</File>
-			<File
-				RelativePath="distance.hpp"
-				>
-			</File>
-			<File
-				RelativePath="distance_dtw.hpp"
-				>
-			</File>
-			<File
-				RelativePath="distancemap.hpp"
-				>
-			</File>
-			<File
-				RelativePath="distvars.hpp"
-				>
-			</File>
-			<File
-				RelativePath="domain.hpp"
-				>
-			</File>
-			<File
-				RelativePath="domaindepot.hpp"
-				>
-			</File>
-			<File
-				RelativePath="errors.hpp"
-				>
-			</File>
-			<File
-				RelativePath="estimateprob.hpp"
-				>
-			</File>
-			<File
-				RelativePath="exampleclustering.hpp"
-				>
-			</File>
-			<File
-				RelativePath="examplegen.hpp"
-				>
-			</File>
-			<File
-				RelativePath="examples.hpp"
-				>
-			</File>
-			<File
-				RelativePath="filegen.hpp"
-				>
-			</File>
-			<File
-				RelativePath="filter.hpp"
-				>
-			</File>
-			<File
-				RelativePath="garbage.hpp"
-				>
-			</File>
-			<File
-				RelativePath="getarg.hpp"
-				>
-			</File>
-			<File
-				RelativePath="graph.hpp"
-				>
-			</File>
-			<File
-				RelativePath="gslconversions.hpp"
-				>
-			</File>
-			<File
-				RelativePath="hclust.hpp"
-				>
-			</File>
-			<File
-				RelativePath="imputation.hpp"
-				>
-			</File>
-			<File
-				RelativePath="induce.hpp"
-				>
-			</File>
-			<File
-				RelativePath="jit_linker.hpp"
-				>
-			</File>
-			<File
-				RelativePath="knn.hpp"
-				>
-			</File>
-			<File
-				RelativePath="learn.hpp"
-				>
-			</File>
-			<File
-				RelativePath="lib_kernel.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\linear.hpp"
-				>
-			</File>
-			<File
-				RelativePath="linreg.hpp"
-				>
-			</File>
-			<File
-				RelativePath="logfit.hpp"
-				>
-			</File>
-			<File
-				RelativePath="logistic.hpp"
-				>
-			</File>
-			<File
-				RelativePath="lookup.hpp"
-				>
-			</File>
-			<File
-				RelativePath="lwr.hpp"
-				>
-			</File>
-			<File
-				RelativePath="majority.hpp"
-				>
-			</File>
-			<File
-				RelativePath="maptemplates.hpp"
-				>
-			</File>
-			<File
-				RelativePath="measures.hpp"
-				>
-			</File>
-			<File
-				RelativePath="meta.hpp"
-				>
-			</File>
-			<File
-				RelativePath="minimal_complexity.hpp"
-				>
-			</File>
-			<File
-				RelativePath="minimal_error.hpp"
-				>
-			</File>
-			<File
-				RelativePath="nearest.hpp"
-				>
-			</File>
-			<File
-				RelativePath="numeric_interface.hpp"
-				>
-			</File>
-			<File
-				RelativePath="orange.hpp"
-				>
-			</File>
-			<File
-				RelativePath="orange_api.hpp"
-				>
-			</File>
-			<File
-				RelativePath="ormap.hpp"
-				>
-			</File>
-			<File
-				RelativePath="orvector.hpp"
-				>
-			</File>
-			<File
-				RelativePath="pnn.hpp"
-				>
-			</File>
-			<File
-				RelativePath="pqueue_i.hpp"
-				>
-			</File>
-			<File
-				RelativePath="preprocessors.hpp"
-				>
-			</File>
-			<File
-				RelativePath="progress.hpp"
-				>
-			</File>
-			<File
-				RelativePath="pythonvars.hpp"
-				>
-			</File>
-			<File
-				RelativePath="pyxtract_macros.hpp"
-				>
-			</File>
-			<File
-				RelativePath="random.hpp"
-				>
-			</File>
-			<File
-				RelativePath="redundancy.hpp"
-				>
-			</File>
-			<File
-				RelativePath="relief.hpp"
-				>
-			</File>
-			<File
-				RelativePath="root.hpp"
-				>
-			</File>
-			<File
-				RelativePath="rulelearner.hpp"
-				>
-			</File>
-			<File
-				RelativePath="slist.hpp"
-				>
-			</File>
-			<File
-				RelativePath="spec_contingency.hpp"
-				>
-			</File>
-			<File
-				RelativePath="spec_gen.hpp"
-				>
-			</File>
-			<File
-				RelativePath="stringvars.hpp"
-				>
-			</File>
-			<File
-				RelativePath="subsets.hpp"
-				>
-			</File>
-			<File
-				RelativePath="svm.hpp"
-				>
-			</File>
-			<File
-				RelativePath="symmatrix.hpp"
-				>
-			</File>
-			<File
-				RelativePath="tabdelim.hpp"
-				>
-			</File>
-			<File
-				RelativePath="table.hpp"
-				>
-			</File>
-			<File
-				RelativePath="tdidt.hpp"
-				>
-			</File>
-			<File
-				RelativePath="tdidt_split.hpp"
-				>
-			</File>
-			<File
-				RelativePath="tdidt_stop.hpp"
-				>
-			</File>
-			<File
-				RelativePath="transdomain.hpp"
-				>
-			</File>
-			<File
-				RelativePath="transval.hpp"
-				>
-			</File>
-			<File
-				RelativePath="trindex.hpp"
-				>
-			</File>
-			<File
-				RelativePath="valuelisttemplate.hpp"
-				>
-			</File>
-			<File
-				RelativePath="values.hpp"
-				>
-			</File>
-			<File
-				RelativePath="vars.hpp"
-				>
-			</File>
-			<File
-				RelativePath="vectortemplates.hpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="ppp files"

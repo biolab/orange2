@@ -323,6 +323,66 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="px files"
+			>
+			<File
+				RelativePath=".\px\externs.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\graphDrawing.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\graphoptimization.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\initialization.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\mds.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\network.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\networkoptimization.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\optimizeAnchors.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\orangeom.net"
+				>
+			</File>
+			<File
+				RelativePath=".\px\orangeom.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\orangeom_globals.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\px\som.px"
+				>
+			</File>
+			<File
+				RelativePath=".\px\stamp"
+				>
+			</File>
+			<File
+				RelativePath=".\px\triangulate.px"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
