@@ -110,7 +110,7 @@ CompileScript: <<
 InstallScript: <<
 	#!/bin/bash -ev
 	mkdir -p %i/share/doc/%n/
-	mv orange/COPYING %i/share/doc/%n/
+	cp orange/COPYING %i/share/doc/%n/
 	mv orange/doc/reference/ %i/share/doc/%n/
 	mv orange/doc/modules/ %i/share/doc/%n/
 	mv orange/doc/ofb/ %i/share/doc/%n/
