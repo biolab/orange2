@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-py25
 Version: 1.0b
-Revision: 1
+Revision: 2
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -115,6 +115,7 @@ InstallScript: <<
 	mv orange/doc/modules/ %i/share/doc/%n/
 	mv orange/doc/ofb/ %i/share/doc/%n/
 	mv orange/doc/datasets/ %i/share/doc/%n/
+	mv orange/doc/style.css %i/share/doc/%n/
 	mkdir -p %i/share/doc/orange-genomics-py25/
 	cp orange/COPYING %i/share/doc/orange-genomics-py25/
 	cp Genomics/doc/style.css %i/share/doc/orange-genomics-py25/
