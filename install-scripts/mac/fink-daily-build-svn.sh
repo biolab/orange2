@@ -5,6 +5,8 @@
 
 ((`id -u` == 0)) || { echo "Must run as root user (use sudo)."; exit 1; }
 
+[ -e /Volumes/fink/ ] || { echo "/Volumes/fink/ not mounted."; exit 1; }
+
 # Configures environment for Fink
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 
