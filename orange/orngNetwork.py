@@ -87,6 +87,19 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         vars.append(var)
         return vars
     
+    def getEdgeVars(self):
+        vars = []
+        if (self.graph != None):
+            if hasattr(self.graph, "links"):
+                if isinstance(self.graph.links, orange.ExampleTable):
+                    vars[:0] = self.graph.links.domain.variables
+                
+                    metas = self.graph.links.domain.getmetas(0)
+                    for i, var in metas.iteritems():
+                        vars.append(var)
+                        
+        return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']
+    
     def getData(self, i, j):
         if self.graph.items is orange.ExampleTable:
             return self.data[i][j]
