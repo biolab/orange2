@@ -36,6 +36,7 @@ class OWNetwork(OWWidget):
                     "optMethod",
                     "lastVertexSizeColumn",
                     "lastColorColumn",
+                    "lastNameComponentAttribute",
                     "lastLabelColumns",
                     "lastTooltipColumns",
                     "showWeights",
@@ -77,6 +78,7 @@ class OWNetwork(OWWidget):
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
         self.lastColorColumn = ''
+        self.lastNameComponentAttribute = ''
         self.lastLabelColumns = set()
         self.lastTooltipColumns = set()
         self.showWeights = 0
@@ -85,7 +87,7 @@ class OWNetwork(OWWidget):
         self.colorSettings = None
         self.selectedSchemaIndex = 0
         self.loadSettings()
-
+        
         self.visualize = None
         self.markInputItems = None
         
@@ -334,8 +336,9 @@ class OWNetwork(OWWidget):
         
         if not self.showComponentCombo.currentText() in vars:
             self.graph.showComponentAttribute = None
+            self.lastNameComponentAttribute = ''
         else:
-            self.graph.showComponentAttribute = self.showComponentCombo.currentText()
+            self.graph.showComponentAttribute = self.showComponentCombo.currentText()     
             
         self.graph.drawPlotItems()
         
@@ -545,8 +548,11 @@ class OWNetwork(OWWidget):
             for vertex in component:
                 keyword_table[vertex]['keyword'] = keyword
         
+        self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
+        #print "self.lastNameComponentAttribute:", self.lastNameComponentAttribute
         items = orange.ExampleTable([self.visualize.graph.items, keyword_table])
         self.setItems(items)
+        
         #for item in items:
         #    print item
                         
@@ -737,7 +743,7 @@ class OWNetwork(OWWidget):
             if self.lastColorColumn == self.colorCombo.itemText(i):
                 self.color = i
                 break
-        
+
         for i in range(self.attListBox.count()):
             if str(self.attListBox.item(i).text()) in lastLabelColumns:
                 self.attListBox.item(i).setSelected(1)
@@ -785,6 +791,20 @@ class OWNetwork(OWWidget):
         self.clustering_coefficient = graph.getClusteringCoefficient() * 100
         
         self.setCombos()
+        
+        lastNameComponentAttributeFound = False
+        for i in range(self.nameComponentCombo.count()):
+            if self.lastNameComponentAttribute == self.nameComponentCombo.itemText(i):
+                lastNameComponentAttributeFound = True
+                self.nameComponentAttribute = i
+                self.nameComponents()
+                self.showComponentAttribute = self.showComponentCombo.count() - 1
+                self.showComponents()
+                break
+            
+        if not lastNameComponentAttributeFound:
+            self.lastNameComponentAttribute = ''
+        
         self.showComponentAttribute = None
         #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)

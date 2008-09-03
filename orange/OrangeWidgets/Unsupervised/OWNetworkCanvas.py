@@ -121,15 +121,7 @@ class NetworkCurve(QwtPlotCurve):
     
   def changed(self):
       self.itemChanged()
-    
-#  def boundingRect(self):    
-#      minx = min(self.coors[0])
-#      maxx = max(self.coors[0])
-#      miny = min(self.coors[1])
-#      maxy = max(self.coors[1])
-#      
-#      return QwtRect(minx, miny, maxx - minx, maxy - miny)  
-    
+
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:
@@ -595,6 +587,10 @@ class OWNetworkCanvas(OWGraph):
       if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
           return
       
+      if str(self.showComponentAttribute) not in self.visualizer.graph.items.domain:
+          self.showComponentAttribute = None
+          return
+      
       components = self.visualizer.graph.getConnectedComponents()
       
       for component in components:
@@ -886,7 +882,11 @@ class OWNetworkCanvas(OWGraph):
               edge.pen = QPen(Qt.lightGray, 1)
               
   def setVerticesSize(self, column=None, inverted=0):
+      if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
+          return
+      
       column = str(column)
+      
       if column in self.visualizer.graph.items.domain or (column.startswith("num of ") and column.replace("num of ", "") in self.visualizer.graph.items.domain):
           values = []
           
