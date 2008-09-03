@@ -756,6 +756,9 @@ class OWNetworkCanvas(OWGraph):
       
   def setLabelText(self, attributes):
       self.labelText = []
+      if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
+          return
+      
       if isinstance(self.visualizer.graph.items, orange.ExampleTable):
           data = self.visualizer.graph.items
           for att in attributes:
@@ -768,6 +771,9 @@ class OWNetworkCanvas(OWGraph):
   
   def setTooltipText(self, attributes):
       self.tooltipText = []
+      if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
+          return
+      
       if isinstance(self.visualizer.graph.items, orange.ExampleTable):
           data = self.visualizer.graph.items
           for att in attributes:
@@ -814,7 +820,7 @@ class OWNetworkCanvas(OWGraph):
           vertex.index = v
           self.vertices.append(vertex)
       
-      print "addVisualizer"
+      #print "addVisualizer"
       
       #add edges
       for (i, j) in visualizer.graph.getEdges():

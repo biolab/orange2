@@ -35,6 +35,9 @@ class OWNetwork(OWWidget):
                     "invertSize",
                     "optMethod",
                     "lastVertexSizeColumn",
+                    "lastColorColumn",
+                    "lastLabelColumns",
+                    "lastTooltipColumns",
                     "showWeights",
                     "showIndexes", 
                     "showEdgeLabels", 
@@ -74,6 +77,8 @@ class OWNetwork(OWWidget):
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
         self.lastColorColumn = ''
+        self.lastLabelColumns = set()
+        self.lastTooltipColumns = set()
         self.showWeights = 0
         self.showIndexes = 0
         self.showEdgeLabels = 0
@@ -684,6 +689,8 @@ class OWNetwork(OWWidget):
                 
     def setCombos(self):
         vars = self.visualize.getVars()
+        lastLabelColumns = self.lastLabelColumns
+        lastTooltipColumns = self.lastTooltipColumns
         self.attributes = [(var.name, var.varType) for var in vars]
         
         self.colorCombo.clear()
@@ -702,7 +709,7 @@ class OWNetwork(OWWidget):
                 
             if var.varType in [orange.VarTypes.String] and hasattr(self.visualize.graph, 'items') and self.visualize.graph.items != None and len(self.visualize.graph.items) > 0:
                 
-                value = self.visualize.graph.items[random.randint(0, len(self.visualize.graph.items) - 1)][var].value
+                value = self.visualize.graph.items[0][var].value
                 
                 # can value be a list?
                 try:
@@ -730,6 +737,17 @@ class OWNetwork(OWWidget):
             if self.lastColorColumn == self.colorCombo.itemText(i):
                 self.color = i
                 break
+        
+        for i in range(self.attListBox.count()):
+            if str(self.attListBox.item(i).text()) in lastLabelColumns:
+                self.attListBox.item(i).setSelected(1)
+                
+        for i in range(self.tooltipListBox.count()):
+            if str(self.tooltipListBox.item(i).text()) in lastTooltipColumns:
+                self.tooltipListBox.item(i).setSelected(1)
+            
+        self.lastLabelColumns = lastLabelColumns
+        self.lastTooltipColumns = lastTooltipColumns
       
     def setGraph(self, graph):        
         if graph == None:
@@ -796,7 +814,7 @@ class OWNetwork(OWWidget):
         self.graph.maxEdgeSize = self.maxLinkSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         self.lastColorColumn = self.colorCombo.currentText()
-        
+
         if self.vertexSize > 0:
             self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
         else:
@@ -806,6 +824,8 @@ class OWNetwork(OWWidget):
             self.setVertexColor()
             
         self.graph.setEdgesSize()
+        self.clickedAttLstBox()
+        self.clickedTooltipLstBox()
             
         self.optButton.setChecked(1)
         self.optLayout()
@@ -1117,16 +1137,18 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
       
     """
-    Network Visualization (design)
+    Network Visualization
     """
        
     def clickedAttLstBox(self):
-        self.graph.setLabelText([self.attributes[i][0] for i in self.markerAttributes])
+        self.lastLabelColumns = set([self.attributes[i][0] for i in self.markerAttributes])
+        self.graph.setLabelText(self.lastLabelColumns)
         self.graph.updateData()
         self.graph.replot()
   
     def clickedTooltipLstBox(self):
-        self.graph.setTooltipText([self.attributes[i][0] for i in self.tooltipAttributes])
+        self.lastTooltipColumns = set([self.attributes[i][0] for i in self.tooltipAttributes])
+        self.graph.setTooltipText(self.lastTooltipColumns)
         self.graph.updateData()
         self.graph.replot()
 
