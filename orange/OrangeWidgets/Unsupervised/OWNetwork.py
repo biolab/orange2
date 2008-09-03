@@ -73,12 +73,12 @@ class OWNetwork(OWWidget):
         self.invertSize = 0
         self.optMethod = 0
         self.lastVertexSizeColumn = ''
+        self.lastColorColumn = ''
         self.showWeights = 0
         self.showIndexes = 0
         self.showEdgeLabels = 0
         self.colorSettings = None
         self.selectedSchemaIndex = 0
-        
         self.loadSettings()
 
         self.visualize = None
@@ -725,6 +725,11 @@ class OWNetwork(OWWidget):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
                 self.vertexSize = i
                 break
+            
+        for i in range(self.colorCombo.count()):
+            if self.lastColorColumn == self.colorCombo.itemText(i):
+                self.color = i
+                break
       
     def setGraph(self, graph):        
         if graph == None:
@@ -790,11 +795,15 @@ class OWNetwork(OWWidget):
         self.graph.maxVertexSize = self.maxVertexSize
         self.graph.maxEdgeSize = self.maxLinkSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        self.lastColorColumn = self.colorCombo.currentText()
         
         if self.vertexSize > 0:
             self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
         else:
             self.graph.setVerticesSize()
+            
+        if self.color > 0:
+            self.setVertexColor()
             
         self.graph.setEdgesSize()
             
@@ -1123,6 +1132,7 @@ class OWNetwork(OWWidget):
 
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
+        self.lastColorColumn = self.colorCombo.currentText()
         self.graph.updateData()
         self.graph.replot()
                   
