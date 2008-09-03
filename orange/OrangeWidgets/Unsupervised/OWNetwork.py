@@ -54,7 +54,9 @@ class OWNetwork(OWWidget):
         
         self.markerAttributes = []
         self.tooltipAttributes = []
+        self.edgeLabelAttributes = []
         self.attributes = []
+        self.edgeAttributes = []
         self.autoSendSelection = False
         self.graphShowGrid = 1  # show gridlines in the graph
         
@@ -66,6 +68,7 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
+        self.edgeColor = 0
         self.vertexSize = 0
         self.nVertices = self.nShown = self.nHidden = self.nMarked = self.nSelected = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = self.clustering_coefficient = 0
         self.optimizeWhat = 1
@@ -124,14 +127,22 @@ class OWNetwork(OWWidget):
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
         
-        self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
-        self.colorCombo.addItem("(none)")
+        colorBox = OWGUI.widgetBox(self.displayTab, "Color attribute", addSpace = False)
+        self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
+        self.colorCombo.addItem("(vertex color attribute)")
+        
+        self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
+        self.edgeColorCombo.addItem("(edge color attribute)")
         
         self.attBox = OWGUI.widgetBox(self.displayTab, "Labels", addSpace = False)
         self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         
         self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
+        
+        self.edgeLabelBox = OWGUI.widgetBox(self.displayTab, "Labels on edges", addSpace = False)
+        self.edgeLabelListBox = OWGUI.listBox(self.edgeLabelBox, self, "edgeLabelAttributes", "edgeAttributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedEdgeLabelListBox)
+        self.edgeLabelBox.setEnabled(False)
         
         ib = OWGUI.widgetBox(self.settingsTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
@@ -695,16 +706,20 @@ class OWNetwork(OWWidget):
                 
     def setCombos(self):
         vars = self.visualize.getVars()
+        edgeVars = self.visualize.getEdgeVars()
         lastLabelColumns = self.lastLabelColumns
         lastTooltipColumns = self.lastTooltipColumns
         self.attributes = [(var.name, var.varType) for var in vars]
+        self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
         
         self.colorCombo.clear()
         self.vertexSizeCombo.clear()
         self.nameComponentCombo.clear()
         self.showComponentCombo.clear()
+        self.edgeColorCombo.clear()
         
-        self.colorCombo.addItem("(one color)")
+        self.colorCombo.addItem("(vertex color attribute)")
+        self.edgeColorCombo.addItem("(edge color attribute)")
         self.vertexSizeCombo.addItem("(same size)")
         self.nameComponentCombo.addItem("Select attribute")
         self.showComponentCombo.addItem("Select attribute")
@@ -734,6 +749,10 @@ class OWNetwork(OWWidget):
             self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
         
+        for var in edgeVars:
+            if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                self.edgeColorCombo.addItem(self.icons[var.varType], unicode(var.name))
+                
         for i in range(self.vertexSizeCombo.count()):
             if self.lastVertexSizeColumn == self.vertexSizeCombo.itemText(i):
                 self.vertexSize = i
@@ -846,7 +865,8 @@ class OWNetwork(OWWidget):
         self.graph.setEdgesSize()
         self.clickedAttLstBox()
         self.clickedTooltipLstBox()
-            
+        self.clickedEdgeLabelListBox()
+        
         self.optButton.setChecked(1)
         self.optLayout()
         self.information(0)
@@ -1171,10 +1191,22 @@ class OWNetwork(OWWidget):
         self.graph.setTooltipText(self.lastTooltipColumns)
         self.graph.updateData()
         self.graph.replot()
+        
+    def clickedEdgeLabelListBox(self):
+        self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
+        self.graph.setEdgeLabelText(self.lastEdgeLabelAttributes)
+        self.graph.updateData()
+        self.graph.replot()
 
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
+        self.graph.updateData()
+        self.graph.replot()
+        
+    def setEdgeColor(self):
+        self.graph.setEdgeColor(self.edgeColorCombo.currentText())
+        self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
         self.graph.updateData()
         self.graph.replot()
                   

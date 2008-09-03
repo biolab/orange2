@@ -33,11 +33,12 @@ class NetworkEdge():
     def __init__(self):
         self.u = None
         self.v = None
+        self.links_index = None
         self.arrowu = 0
         self.arrowv = 0
         self.weight = 0
         self.label = []
-        
+
         self.pen = QPen(Qt.lightGray, 1)
 
 class NetworkCurve(QwtPlotCurve):
@@ -63,8 +64,13 @@ class NetworkCurve(QwtPlotCurve):
     return movedVertices
   
   def setVertexColor(self, v, color):
+      pen = self.vertices[v].pen
       self.vertices[v].color = color
-      self.vertices[v].pen = QPen(color, 1)
+      self.vertices[v].pen = QPen(color, pen.width())
+      
+  def setEdgeColor(self, index, color):
+      pen = self.edges[index].pen
+      self.edges[index].pen = QPen(color, pen.width())
   
   def getSelectedVertices(self):
     return [vertex.index for vertex in self.vertices if vertex.selected]
@@ -694,24 +700,23 @@ class OWNetworkCanvas(OWGraph):
               
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
               self.markerKeys[(edge.u,edge.v)] = mkey     
-          
-  def setVertexColor(self, attribute):
-      if self.visualizer == None:
-          return
-      
+              
+  def getColorIndeces(self, table, attribute):
       colorIndices = {}
       colorIndex = None
+      minValue = None
+      maxValue = None
       
-      if attribute != "(one color)":
+      if attribute[0] != "(" or attribute[-1] != ")":
           i = 0
-          for var in self.visualizer.graph.items.domain.variables:
+          for var in table.domain.variables:
               if var.name == attribute:
                   colorIndex = i
                   if var.varType == orange.VarTypes.Discrete: 
                       colorIndices = getVariableValueIndices(var, colorIndex)
                       
               i += 1
-          metas = self.visualizer.graph.items.domain.getmetas()
+          metas = table.domain.getmetas()
           for i, var in metas.iteritems():
               if var.name == attribute:
                   colorIndex = i
@@ -721,10 +726,51 @@ class OWNetworkCanvas(OWGraph):
       colorIndices['?'] = len(colorIndices)
       self.discPalette.setNumberOfColors(len(colorIndices))
       
-      if colorIndex != None and self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
-          minValue = float(min([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
-          maxValue = float(max([x[colorIndex].value for x in self.visualizer.graph.items if x[colorIndex].value != "?"]))
+      if colorIndex != None and table.domain[colorIndex].varType == orange.VarTypes.Continuous:
+          minValue = float(min([x[colorIndex].value for x in table if x[colorIndex].value != "?"]))
+          maxValue = float(max([x[colorIndex].value for x in table if x[colorIndex].value != "?"]))
+          
+      return colorIndices, colorIndex, minValue, maxValue
+  
+  def setEdgeColor(self, attribute):
+      if self.visualizer == None:
+          return
       
+      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.links, attribute)
+
+      for index in range(self.nEdges):
+          if colorIndex != None:
+              links_index = self.networkCurve.edges[index].links_index
+              if links_index == None:
+                  continue
+              
+              if self.visualizer.graph.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
+                  newColor = self.discPalette[0]
+                  if str(self.visualizer.graph.links[links_index][colorIndex]) != "?":
+                      if maxValue == minValue:
+                          newColor = self.discPalette[0]
+                      else:
+                          value = (float(self.visualizer.graph.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
+                          newColor = self.contPalette[value]
+                      
+                  self.networkCurve.setEdgeColor(index, newColor)
+                  
+              elif self.visualizer.graph.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
+                  newColor = self.discPalette[colorIndices[self.visualizer.graph.links[links_index][colorIndex].value]]
+                  self.networkCurve.setEdgeColor(index, newColor)
+                  
+          else:
+              newColor = self.discPalette[0]
+              self.networkCurve.setEdgeColor(index, newColor)
+      
+      self.replot()
+  
+  def setVertexColor(self, attribute):
+      if self.visualizer == None:
+          return
+      
+      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.items, attribute)
+
       for v in range(self.nVertices):
           if colorIndex != None:    
               if self.visualizer.graph.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
@@ -779,6 +825,11 @@ class OWNetworkCanvas(OWGraph):
                       
               if self.visualizer.graph.items.domain.hasmeta(att):
                       self.tooltipText.append(self.visualizer.graph.items.domain.metaid(att))
+                      
+  def setEdgeLabelText(self, attributes):
+      self.tooltipText = []
+      if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
+          return
       
   def edgesContainsEdge(self, i, j):
       for e in range(self.nEdges):
@@ -849,7 +900,11 @@ class OWNetworkCanvas(OWGraph):
                   edge.label = []
                   for k in range(2, len(row[0])):
                       edge.label.append(str(row[0][k]))
-                      #print row[0][k]
+              
+              indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i) and str(int(x[1])) == str(int(j)))]
+              
+              if len(indexes) == 1:
+                  edge.links_index = indexes[0]
                         
       if self.maxEdgeWeight < 10:
           self.maxEdgeSize = self.maxEdgeWeight
@@ -873,13 +928,13 @@ class OWNetworkCanvas(OWGraph):
           for edge in self.edges:
               if edge.weight == None:
                   size = 1
-                  edge.pen = QPen(Qt.lightGray, size)
+                  edge.pen = QPen(edge.pen.color(), size)
               else:
                   size = (edge.weight - self.minEdgeWeight) * k + 1
-                  edge.pen = QPen(Qt.lightGray, size)
+                  edge.pen = QPen(edge.pen.color(), size)
       else:
           for edge in self.edges:
-              edge.pen = QPen(Qt.lightGray, 1)
+              edge.pen = QPen(edge.pen.color(), 1)
               
   def setVerticesSize(self, column=None, inverted=0):
       if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
