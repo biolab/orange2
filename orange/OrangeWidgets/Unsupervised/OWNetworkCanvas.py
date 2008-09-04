@@ -701,7 +701,7 @@ class OWNetworkCanvas(OWGraph):
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
               self.markerKeys[(edge.u,edge.v)] = mkey     
               
-  def getColorIndeces(self, table, attribute):
+  def getColorIndeces(self, table, attribute, palette):
       colorIndices = {}
       colorIndex = None
       minValue = None
@@ -724,7 +724,7 @@ class OWNetworkCanvas(OWGraph):
                       colorIndices = getVariableValueIndices(var, colorIndex)
 
       colorIndices['?'] = len(colorIndices)
-      self.discPalette.setNumberOfColors(len(colorIndices))
+      palette.setNumberOfColors(len(colorIndices))
       
       if colorIndex != None and table.domain[colorIndex].varType == orange.VarTypes.Continuous:
           minValue = float(min([x[colorIndex].value for x in table if x[colorIndex].value != "?"]))
@@ -736,7 +736,7 @@ class OWNetworkCanvas(OWGraph):
       if self.visualizer == None:
           return
       
-      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.links, attribute)
+      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.links, attribute, self.discEdgePalette)
 
       for index in range(self.nEdges):
           if colorIndex != None:
@@ -745,22 +745,22 @@ class OWNetworkCanvas(OWGraph):
                   continue
               
               if self.visualizer.graph.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                  newColor = self.discPalette[0]
+                  newColor = self.discEdgePalette[0]
                   if str(self.visualizer.graph.links[links_index][colorIndex]) != "?":
                       if maxValue == minValue:
-                          newColor = self.discPalette[0]
+                          newColor = self.discEdgePalette[0]
                       else:
                           value = (float(self.visualizer.graph.links[links_index][colorIndex].value) - minValue) / (maxValue - minValue)
-                          newColor = self.contPalette[value]
+                          newColor = self.contEdgePalette[value]
                       
                   self.networkCurve.setEdgeColor(index, newColor)
                   
               elif self.visualizer.graph.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
-                  newColor = self.discPalette[colorIndices[self.visualizer.graph.links[links_index][colorIndex].value]]
+                  newColor = self.discEdgePalette[colorIndices[self.visualizer.graph.links[links_index][colorIndex].value]]
                   self.networkCurve.setEdgeColor(index, newColor)
                   
           else:
-              newColor = self.discPalette[0]
+              newColor = self.discEdgePalette[0]
               self.networkCurve.setEdgeColor(index, newColor)
       
       self.replot()
@@ -769,7 +769,7 @@ class OWNetworkCanvas(OWGraph):
       if self.visualizer == None:
           return
       
-      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.items, attribute)
+      colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.visualizer.graph.items, attribute, self.discPalette)
 
       for v in range(self.nVertices):
           if colorIndex != None:    

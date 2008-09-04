@@ -43,7 +43,9 @@ class OWNetwork(OWWidget):
                     "showIndexes", 
                     "showEdgeLabels", 
                     "colorSettings", 
-                    "selectedSchemaIndex"] 
+                    "selectedSchemaIndex",
+                    "edgeColorSettings",
+                    "selectedEdgeSchemaIndex"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -89,6 +91,8 @@ class OWNetwork(OWWidget):
         self.showEdgeLabels = 0
         self.colorSettings = None
         self.selectedSchemaIndex = 0
+        self.edgeColorSettings = None
+        self.selectedEdgeSchemaIndex = 0
         self.loadSettings()
         
         self.visualize = None
@@ -249,7 +253,8 @@ class OWNetwork(OWWidget):
         #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
         
         self.colorButtonsBox = OWGUI.widgetBox(self.settingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
+        OWGUI.button(self.colorButtonsBox, self, "Set vertex colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
+        OWGUI.button(self.colorButtonsBox, self, "Set edge colors", self.setEdgeColorPalette, tooltip = "Set edge color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         ib = OWGUI.widgetBox(self.settingsTab, "Prototype")
         OWGUI.button(ib, self, "Collapse", callback=self.collapse)
@@ -271,17 +276,20 @@ class OWNetwork(OWWidget):
         self.infoTab.layout().addStretch(1)
         self.settingsTab.layout().addStretch(1)
         
+        dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
+        
+        dlg = self.createColorDialog(self.edgeColorSettings, self.selectedEdgeSchemaIndex)
+        self.graph.contEdgePalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discEdgePalette = dlg.getDiscretePalette("discPalette")
+        
         self.setOptMethod()
          
         self.resize(1000, 600)
         self.controlArea.setEnabled(False)
         self.information('No network loaded.')
-        
-    def activateLoadedSettings(self):
-        dlg = self.createColorDialog()
-        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
-        self.graph.discPalette = dlg.getDiscretePalette("discPalette")
-        
+
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
             self.graph.sendMarkedNodes = self.sendMarkedNodes
@@ -1012,7 +1020,7 @@ class OWNetwork(OWWidget):
         p.show()
         
     def setColors(self):
-        dlg = self.createColorDialog()
+        dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
         if dlg.exec_():
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
@@ -1020,12 +1028,22 @@ class OWNetwork(OWWidget):
             self.graph.discPalette = dlg.getDiscretePalette("discPalette")
             
             self.setVertexColor()
+            
+    def setEdgeColorPalette(self):
+        dlg = self.createColorDialog(self.edgeColorSettings, self.selectedEdgeSchemaIndex)
+        if dlg.exec_():
+            self.edgeColorSettings = dlg.getColorSchemas()
+            self.selectedEdgeSchemaIndex = dlg.selectedSchemaIndex
+            self.graph.contEdgePalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discEdgePalette = dlg.getDiscretePalette("discPalette")
+            
+            self.setEdgeColor()
     
-    def createColorDialog(self):
+    def createColorDialog(self, colorSettings, selectedSchemaIndex):
         c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
         c.createDiscretePalette("discPalette", "Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous Palette")
-        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        c.setColorSchemas(colorSettings, selectedSchemaIndex)
         return c
     """
     Layout Optimization
