@@ -1,7 +1,7 @@
 Info2: <<
 Package: pyqt4mac-py%type_pkg[python]
 Version: 4.4.3
-Revision: 1
+Revision: 2
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6d2a11cd1372ce98b486e9bc5de3c0fc
 Maintainer: Mitar <mitar@tnode.com>
@@ -20,22 +20,21 @@ BuildDepends:<<
 	qt4-mac,
 	sip-py%type_pkg[python]-bin (>= 4.7.5-1)
 <<
-BuildConflicts: qt4-x11
-BuildDependsOnly: true
 Depends: <<
 	freetype2-shlibs,
 	glib2-shlibs,
 	libgettext3-shlibs,
 	libiconv,
  	libpng3-shlibs,
-	python%type_pkg[python], 
+	python%type_pkg[python],
 	qscintilla2-qt4-mac-shlibs,
-	qt4-mac-shlibs,
+	qt4-mac-core-shlibs,
 	sip-py%type_pkg[python] (>= 4.7.5-1)
 <<
 Conflicts: pyqt4-py%type_pkg[python]
 Description: Python bindings for the Qt toolkit
 DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
+Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
 SplitOff: <<
 	Package: %N-bin
 	License: GPL
@@ -44,25 +43,10 @@ SplitOff: <<
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
-		qt4-mac-shlibs,
-		pyqt4mac-py%type_pkg[python]-shlibs
+		qt4-mac-core-shlibs
 	<<
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
 	Files: bin
-<<
-SplitOff2: <<
-	Package: %N-shlibs
-	License: GPL
-	Depends: <<
-		freetype2-shlibs,
-		glib2-shlibs,
-		libgettext3-shlibs,
-		libiconv,
-		qt4-mac-shlibs
-	<<
-	Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
-	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
-	Files: lib/qt4-mac/plugins/python2.5/designer
 <<
 CompileScript: <<
 	#!/bin/bash -ev

@@ -1,7 +1,7 @@
 Info3: <<
 Package: pyqwt-qt4mac-py%type_pkg[python]
 Version: 5.1.0
-Revision: 1
+Revision: 3
 Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
 Source-MD5: c9d662a0d4fc95cec75d3c526e4e748a
 Maintainer: Mitar <mitar@tnode.com>
@@ -14,10 +14,9 @@ BuildDepends: <<
 	pyqt4mac-py%type_pkg[python],
 	sip-py%type_pkg[python]-bin (>= 4.6)
 <<
-BuildConflicts: qt4-x11
 Depends: <<
-	qt4-mac-shlibs,
-	pyqt4mac-py%type_pkg[python]-shlibs,
+	qt4-mac-core-shlibs,
+	pyqt4mac-py%type_pkg[python],
 	python%type_pkg[python],
 	sip-py%type_pkg[python] (>= 4.6)
 <<

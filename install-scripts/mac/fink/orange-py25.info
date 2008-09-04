@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-py25
 Version: 1.0b
-Revision: 2
+Revision: 3
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -40,6 +40,7 @@ SplitOff: <<
 	Depends: <<
 		python25,
 		numpy-py25,
+		orange (>= %v),
 		orange-py25 (>= %v),
 		orange-genomics-py25 (>= %v)
 	<<
