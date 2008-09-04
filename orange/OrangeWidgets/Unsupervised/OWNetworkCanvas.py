@@ -894,14 +894,20 @@ class OWNetworkCanvas(OWGraph):
               edge.arrowv = 1
               
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
-              row = visualizer.graph.links.filter(u=(i,i), v=(j,j))
+              row = visualizer.graph.links.filter(u=(i+1,i+1), v=(j+1,j+1))
               
+              if len(row) == 0:
+                  row = visualizer.graph.links.filter(u=(j+1,j+1), v=(i+1,i+1))
+                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j+1) and str(int(x[1])) == str(int(i+1)))]
+              else:
+                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i+1) and str(int(x[1])) == str(int(j+1)))]
+                  
               if len(row) == 1:
                   edge.label = []
                   for k in range(2, len(row[0])):
                       edge.label.append(str(row[0][k]))
-              
-              indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i) and str(int(x[1])) == str(int(j)))]
+              else:
+                  print i,j,"not found"
               
               if len(indexes) == 1:
                   edge.links_index = indexes[0]
