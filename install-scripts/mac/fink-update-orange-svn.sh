@@ -14,5 +14,8 @@ svn export http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/
 mv fink/* finkinfo/
 rm -rf fink/
 
+# Get all official Fink package info files (as maybe new our Fink packages depends on them)
+fink selfupdate
+
 # Updates packages
 fink rebuild orange-svn-py25 orange-svn orange-genomics-svn-py25 orange-genomics-svn
