@@ -867,8 +867,8 @@ class OWNetwork(OWWidget):
         else:
             self.graph.setVerticesSize()
             
-        if self.color > 0:
-            self.setVertexColor()
+        self.setVertexColor()
+        self.setEdgeColor()
             
         self.graph.setEdgesSize()
         self.clickedAttLstBox()
