@@ -1,7 +1,7 @@
 Info2: <<
 Package: pyqt4mac-py%type_pkg[python]
 Version: 4.4.3
-Revision: 2
+Revision: 4
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6d2a11cd1372ce98b486e9bc5de3c0fc
 Maintainer: Mitar <mitar@tnode.com>
@@ -34,7 +34,6 @@ Depends: <<
 Conflicts: pyqt4-py%type_pkg[python]
 Description: Python bindings for the Qt toolkit
 DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
-Shlibs: %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib 0.0.0 %n (>= 4.4.3-1)
 SplitOff: <<
 	Package: %N-bin
 	License: GPL
@@ -64,6 +63,5 @@ CompileScript: <<
 InstallScript: <<
 	make install
 	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4
-	install_name_tool -id %p/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib %i/lib/qt4-mac/plugins/python2.5/designer/libpythonplugin.dylib
 <<
 <<
