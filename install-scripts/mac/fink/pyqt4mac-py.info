@@ -1,7 +1,7 @@
 Info2: <<
 Package: pyqt4mac-py%type_pkg[python]
 Version: 4.4.3
-Revision: 4
+Revision: 5
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6d2a11cd1372ce98b486e9bc5de3c0fc
 Maintainer: Mitar <mitar@tnode.com>
@@ -29,6 +29,7 @@ Depends: <<
 	python%type_pkg[python],
 	qscintilla2-qt4-mac-shlibs,
 	qt4-mac-core-shlibs,
+	qt4-mac-gui-shlibs,
 	sip-py%type_pkg[python] (>= 4.7.5-1)
 <<
 Conflicts: pyqt4-py%type_pkg[python]
@@ -42,7 +43,8 @@ SplitOff: <<
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
-		qt4-mac-core-shlibs
+		qt4-mac-core-shlibs,
+		qt4-mac-gui-shlibs
 	<<
 	DocFiles: ChangeLog GPL_EXCEPTION* LICENSE* NEWS OPENSOURCE-NOTICE.TXT README THANKS
 	Files: bin

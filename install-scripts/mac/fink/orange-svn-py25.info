@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-svn-py25
 Version: 0.0
-Revision: 5
+Revision: 6
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -43,6 +43,7 @@ SplitOff: <<
 		orange-svn-py25 (>= %v),
 		orange-genomics-svn-py25 (>= %v)
 	<<
+	RuntimeDepends: orange-svn (>= %v)
 	Files: <<
 		lib/python2.5/site-packages/orange/addons/genomics/prototypes
 		lib/python2.5/site-packages/orange/addons/genomics/widgets
