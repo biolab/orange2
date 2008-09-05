@@ -39,7 +39,7 @@ SplitOff: <<
 	Replaces: orange-genomics
 	Depends: <<
 		python25,
-		numpy-py25
+		numpy-py25,
 		orange-svn-py25 (>= %v),
 		orange-genomics-svn-py25 (>= %v)
 	<<
