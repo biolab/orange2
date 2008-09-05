@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-svn-py25
 Version: 0.0
-Revision: 4
+Revision: 5
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -39,8 +39,7 @@ SplitOff: <<
 	Replaces: orange-genomics
 	Depends: <<
 		python25,
-		numpy-py25,
-		orange-svn (>= %v),
+		numpy-py25
 		orange-svn-py25 (>= %v),
 		orange-genomics-svn-py25 (>= %v)
 	<<
