@@ -1,0 +1,46 @@
+diff -Naur old/cherrypy/__init__.py new/cherrypy/__init__.py
+--- old/cherrypy/__init__.py	2008-09-09 12:05:26.000000000 +0200
++++ new/cherrypy/__init__.py	2008-09-09 12:02:54.000000000 +0200
+@@ -171,6 +171,7 @@
+ from cherrypy import _cpwsgi as wsgi
+ 
+ from cherrypy import process
++
+ try:
+     from cherrypy.process import win32
+     engine = win32.Win32Bus()
+diff -Naur old/cherrypy/wsgiserver/__init__.py new/cherrypy/wsgiserver/__init__.py
+--- old/cherrypy/wsgiserver/__init__.py	2008-09-09 12:05:26.000000000 +0200
++++ new/cherrypy/wsgiserver/__init__.py	2008-09-09 12:02:54.000000000 +0200
+@@ -639,6 +639,8 @@
+         if status == 413:
+             # Request Entity Too Large. Close conn to avoid garbage.
+             self.close_connection = True
++        #elif status == 401:
++        #    self.close_connection = True
+         elif "content-length" not in hkeys:
+             # "All 1xx (informational), 204 (no content),
+             # and 304 (not modified) responses MUST NOT
+@@ -678,8 +680,12 @@
+             # defending itself against denial-of-service attacks, or from
+             # badly broken client implementations."
+             size = self.rfile.maxlen - self.rfile.bytes_read
+-            if size > 0:
+-                self.rfile.read(size)
++            #if size > 0:
++            #    self.rfile.read(size)  #out of memory
++            while size > 0:
++                sizen = min(8*1024, size)
++                self.rfile.read(sizen)
++                size -= sizen
+         
+         if "date" not in hkeys:
+             self.outheaders.append(("Date", rfc822.formatdate()))
+@@ -700,7 +706,6 @@
+         buf.append("\r\n")
+         self.wfile.sendall("".join(buf))
+ 
+-
+ class NoSSLError(Exception):
+     """Exception raised when a client speaks HTTP to an HTTPS socket."""
+     pass
