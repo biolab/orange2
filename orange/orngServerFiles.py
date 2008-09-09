@@ -157,7 +157,7 @@ class ServerFiles(object):
         if self._authen(): return self.secdownloadFH(*args, **kwargs)
         else: return self.pubdownloadFH(*args, **kwargs)
 
-    def download(self, domain, filename, target):
+    def download(self, domain, filename, target, callback=None):
         """
         Downloads a file into target name. If target is not present,
         file is downloaded into [bufferDir]/bigfiles/domain/filename
@@ -165,11 +165,38 @@ class ServerFiles(object):
         createPathForFile(target)
 
         fdown = self.downloadFH(domain, filename)
+        size = int(fdown.headers.getheader('content-length'))
+
         f = open(target + '.tmp', 'wb')
-        shutil.copyfileobj(fdown, f, 1024*8)
+ 
+        chunksize = 1024*8
+        lastchunkreport= 0.0001
+
+        readb = 0
+        while 1:
+            buf = fdown.read(chunksize)
+            readb += len(buf)
+
+            while float(readb)/size > lastchunkreport+0.01:
+                #print float(readb)/size, lastchunkreport + 0.01, float(readb)/size - lastchunkreport 
+                lastchunkreport += 0.01
+                if callback:
+                    callback()
+            if not buf:
+                break
+            f.write(buf)
+
+        #retired to enable tracin
+        #shutil.copyfileobj(fdown, f, 1024*8) 
+
         fdown.close()
         f.close()
+
         os.rename(target + '.tmp', target)
+
+        if callback:
+            callback()
+
 
     def info(self, *args, **kwargs):
         if self._authen(): return self.secinfo(*args, **kwargs)
@@ -216,7 +243,7 @@ class ServerFiles(object):
     def _pubopen(self, command, data):
         return self._pubhandle(command, data).read()
 
-def download(domain, filename, serverfiles=None):
+def download(domain, filename, serverfiles=None, callback=None):
     """
     Downloads a file to a local orange installation.
     """
@@ -225,7 +252,7 @@ def download(domain, filename, serverfiles=None):
 
     target = localpath(domain, filename)
 
-    serverfiles.download(domain, filename, target)
+    serverfiles.download(domain, filename, target, callback=callback)
     
     #file saved, now save info file
     info = serverfiles.info(domain, filename)
