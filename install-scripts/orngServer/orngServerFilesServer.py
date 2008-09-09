@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0,"./CherryPy-3.1.0")
+sys.path.insert(0,"../CherryPy-3.1.0")
 
 import cherrypy
 print "Loaded CherryPy version", cherrypy.__version__
@@ -14,6 +14,20 @@ pj = os.path.join
 import datetime
 
 basedir = pj(os.getcwd(), "..", "orngServerData")
+
+userfilename = '../orngServerFilesUsers.txt'
+
+def readUserFile():
+    s = open(userfilename, 'rt').read()
+    umap = {}
+    for line in s.split('\n'):
+        try:
+            uname, passw = line.split(',')
+            umap[uname] = passw
+        except:
+            pass
+    print "USERS", umap.keys()
+    return umap
 
 def noBodyProcess():
     """Sets cherrypy.request.process_request_body = False, giving
@@ -325,7 +339,7 @@ cherrypy.tools.insecure = cherrypy.Tool('on_start_resource', force_insecure, pri
 cherrypy.server.max_request_body_size = 0
 
 def buildServer():
-    users = {"osf": "edit123p", "gad": "abcphen"}
+    users = readUserFile()
 
     conf = {'global': { 'log.screen': False,
                         'log.access_file': 'af.log',
