@@ -32,9 +32,10 @@ It contains file's title, tags, size and date and time of the upload.
 <p class="section">Methods used for managing local files</p>
 
 <dl class="attributes">
-<dt>download(domain, filename [,serverfiles])</dt>
+<dt>download(domain, filename [,serverfiles], callback=None)</dt>
 <dd>Downloads file from the repository to local orange installation. To download 
-files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class.
+files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class. 
+Callback can be a function without arguments. It will be called once for each downloaded percent of file: 100 times for the whole file.
 </dd>
 <dt>listdomains()</dt>
 <dd>List all domains on local orange installation.</dd>
@@ -68,8 +69,8 @@ the repository as an authenticated user.</dd>
 <p class="section">Ordinary users</p>
 
 <dl class="attributes">
-<dt>download(domain, filename, target)</dt>
-<dd>Downloads file from the repository to a given target name.
+<dt>download(domain, filename, target, callback=None)</dt>
+<dd>Downloads file from the repository to a given target name. Callback can be a function without arguments. It will be called once for each downloaded percent of file: 100 times for the whole file.
 </dd>
 <dt>listfiles(domain)</dt>
 <dd>List all files in a repository domain.</dd>
