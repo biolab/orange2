@@ -3,8 +3,8 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="orange"
-	OutputDirectory="$(PYTHON)/lib/site-packages/orange/libs"
-	IntermediateDirectory="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
+	OutputDirectory="$(PYTHON)/lib/site-packages/orange/libs$(OBJPOSTFIX)"
+	IntermediateDirectory="$(PYTHON)/lib/site-packages/orange/obj$(OBJPOSTFIX)/$(ConfigurationName)/$(ProjectName)"
 	>
 	<Tool
 		Name="VCCLCompilerTool"
@@ -14,16 +14,16 @@
 		PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_USRDLL;NUMPY"
 		MinimalRebuild="false"
 		PrecompiledHeaderFile="$(IntDir)/$(ProjectName).pch"
-		ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName).pdb"
+		ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj$(OBJPOSTFIX)/$(ConfigurationName)/$(ProjectName).pdb"
 		WarningLevel="3"
 		DisableSpecificWarnings="4251;4996;4275"
 	/>
 	<Tool
 		Name="VCLinkerTool"
 		LinkIncremental="2"
-		AdditionalLibraryDirectories="$(PYTHON)/libs,$(PYTHON)/lib/site-packages/orange/libs"
+		AdditionalLibraryDirectories="$(PYTHON)/libs,$(PYTHON)/lib/site-packages/orange/libs$(OBJPOSTFIX)"
 		ProgramDatabaseFile="$(IntDir)/$(ProjectName)_d.pdb"
-		ImportLibrary="$(TargetDir)libs/$(TargetName).lib"
+		ImportLibrary="$(TargetDir)libs$(OBJPOSTFIX)/$(TargetName).lib"
 		TargetMachine="1"
 	/>
 </VisualStudioPropertySheet>
