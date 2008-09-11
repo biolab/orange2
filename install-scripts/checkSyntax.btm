@@ -1,0 +1,10 @@
+@echo off
+alias check=\python%1\python -c "import py_compile; py_compile.compile('%%@REPLACE[\,/,%%1]')"
+
+cd ..
+for %f in (*.py) check %f
+cd orangeCanvas
+for %f in (*.py;*.pyw) check %f
+cd ..\orangeWidgets
+for /r %f in (*.py;*.pyw) check %f
+cd ..\scripts
