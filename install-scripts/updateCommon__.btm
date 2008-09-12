@@ -1,15 +1,7 @@
-call updateSetConstants__.btm %1 %2
+call updateSetConstants__.btm %1 %2 %3
 
-if not exist %TMPDIR mkdir %TMPDIR
-break_on_error
-del /syefkq %TMPDIR
-cdd %TMPDIR
-
-svn export --quiet http://www.ailab.si/svn/orange/%BRANCH/orange orange
-svn export --quiet http://www.ailab.si/svn/orange/%BRANCH/source source
-del /syefkqx orange/orangeWidgets/Prototypes
-
-rem call %SCRIPTDIR/winCompileAddOns.btm
+svn update orange
+svn update source
 
 cdd %TMPDIR\source
 call _pyxtract.bat
@@ -22,23 +14,34 @@ for %pyver in (%PYTHONVERSIONS) (
   set COMPILELOG=%TMPDIR\win-compile-%npver.log
   rem if exist %COMPILELOG del %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
+  set OBJPOSTFIX=-%2
+  set PYORANGEDIR=c:\Python%pyver\lib\site-packages\orange
+  set PARTY=%SCRIPTDIR\%3\%pyver
+  if not direxist %PARTY goto skipversion
   
   rem start /wait 
-  rem vcexpress orange.sln /build Release /out %COMPILELOG
+  pushd
+  cd %PYORANGEDIR
+  del orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
+  popd
+  rem except (%PYORANGEDIR\*_d.pyd) del /q %PYORANGEDIR\*.pyd
+  vcexpress orange.sln /build Release /out %COMPILELOG
   flag_on_error
 
-  cdd c:\Python%pyver\lib\site-packages\orange
-  for %pydf in (*.pyd) do (
+  cdd %PYORANGEDIR
+  except (*_d.pyd) for %pydf in (*.pyd) do (
     if exist %TMPDIR\orange\%pydf del %TMPDIR\orange\%pydf
     upx %pydf -o %TMPDIR/orange/%pydf
   )
 
   cdd %SCRIPTDIR
-  set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DCWD=%SCRIPTDIR /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-  nsis /Onsis_standard-py%npver.log /DOUTFILENAME="%TMPDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%3,2,2] install3.nsi
+  nsis /O%TMPDIR/nsis-%WIN-py%npver.log /DOUTFILENAME="%TMPDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
   flag_on_error
-  nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%WIN_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
+  nsis /O%TMPDIR/nsis-%WIN-py-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%WIN_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
   flag_on_error
+  
+  :skipversion
 ) 
 
 cdd %SCRIPTDIR

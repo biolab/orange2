@@ -22,8 +22,3 @@ set foo=%@FILEWRITE[%fhandle,ADDON_TEXTMINING=%ADDON_TEXTMINING]
 ADDON_GENOMICS
 set foo=%@FILECLOSE[%fhandle]
 
-set fhandle=%@FILEOPEN[%SCRIPTDIR\versions.set, write, t]
-set foo=%@FILEWRITE[%fhandle,orangeMajorVersion=%orangeMajorVersion]
-set foo=%@FILEWRITE[%fhandle,orangeMinorVersion=%orangeMinorVersion]
-set foo=%@FILEWRITE[%fhandle,orangeReleaseVersion=%orangeReleaseVersion]
-set foo=%@FILECLOSE[%fhandle]

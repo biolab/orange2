@@ -2,12 +2,8 @@ Name "Orange"
 Icon OrangeInstall.ico
 UninstallIcon OrangeInstall.ico
 
-!ifndef ORANGEDIR
-	!define ORANGEDIR orange
-!endif
-
 !define PYFILENAME python-${NPYVER}.msi
-!define PYWINFILENAME pywin32-210.win32-py${NPYVER}.exe
+!define PYWINFILENAME pywin32-212.win32-py${NPYVER}.exe
 
 OutFile ${OUTFILENAME}
 
@@ -122,7 +118,7 @@ Section ""
 					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython23
 						Quit
 			installpython23:
-				File 3rdparty-23\Python-2.3.5.exe
+				File ${PARTY}\Python-2.3.5.exe
 				ExecWait "$DESKTOP\Python-2.3.5.exe"
 				Delete "$DESKTOP\Python-2.3.5.exe"
 
@@ -135,7 +131,7 @@ Section ""
 			installsilently:
 				StrCpy $0 "/Qb-"
 			installpython:
-				File 3rdparty-${PYVER}\${PYFILENAME}
+				File ${PARTY}\${PYFILENAME}
 				${If} $AdminInstall == 1
 					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 $0' $0
 				${Else}
@@ -158,41 +154,68 @@ Section ""
 				File various\${MFC}
 			have_mfc:
 			SetOutPath $DESKTOP
-			File 3rdparty-${PYVER}\${PYWINFILENAME}
+			File ${PARTY}\${PYWINFILENAME}
 			ExecWait "$DESKTOP\${PYWINFILENAME}"
 			Delete "$DESKTOP\${PYWINFILENAME}"
 	have_pythonwin:
 
-
-		SetOutPath $PythonDir\lib\site-packages
-		IfFileExists $PythonDir\lib\site-packages\qt.py have_pyqt
-			File /r 3rdparty-${PYVER}\pyqt\*.*
-	have_pyqt:
-
-
-		IfFileExists $PythonDir\lib\site-packages\qwt\*.* have_pyqwt
-			File /r 3rdparty-${PYVER}\qwt
-	have_pyqwt:
+		!if ${QTVER} == 23
+				SetOutPath $PythonDir\lib\site-packages
+				IfFileExists $PythonDir\lib\site-packages\qt.py have_pyqt
+					File /r ${PARTY}\pyqt\*.*
+			have_pyqt:
 
 
-		IfFileExists $PythonDir\lib\site-packages\Numeric\*.* have_numeric
-			File /r 3rdparty-${PYVER}\numeric
-			File various\Numeric.pth
-	have_numeric:
+				IfFileExists $PythonDir\lib\site-packages\qwt\*.* have_pyqwt
+					File /r ${PARTY}\qwt
+			have_pyqwt:
 
 
-		IfFileExists $PythonDir\lib\site-packages\numpy\*.* have_numpy
-			File /r 3rdparty-${PYVER}\numpy
-	have_numpy:
+				IfFileExists $PythonDir\lib\site-packages\Numeric\*.* have_numeric
+					File /r ${PARTY}\numeric
+					File various\Numeric.pth
+			have_numeric:
 
 
-		IfFileExists "$PythonDir\lib\site-packages\qt-mt230nc.dll" have_qt
-		IfFileExists "$SysDir\qt-mt230nc.dll" have_qt
-			File various\qt-mt230nc.dll
-			SetOutPath $INSTDIR
-			File various\QT-LICENSE.txt
-		have_qt:
+				IfFileExists $PythonDir\lib\site-packages\numpy\*.* have_numpy
+					File /r ${PARTY}\numpy
+			have_numpy:
 
+
+				IfFileExists "$PythonDir\lib\site-packages\qt-mt230nc.dll" have_qt
+				IfFileExists "$SysDir\qt-mt230nc.dll" have_qt
+					File various\qt-mt230nc.dll
+					SetOutPath $INSTDIR
+					File various\QT-LICENSE.txt
+			have_qt:
+		!else
+			MessageBox MB_OK "Installation will check for various needed libraries$\r$\nand launch their installers if needed."
+			SetOutPath $DESKTOP
+			
+				IfFileExists $PythonDir\lib\site-packages\numpy-1.1.0-py2.5.egg-info have_numpy
+				    File ${PARTY}\numpy-1.1.0-win32-superpack-python2.5.exe
+					ExecWait $DESKTOP\numpy-1.1.0-win32-superpack-python2.5.exe
+					Delete $DESKTOP\numpy-1.1.0-win32-superpack-python2.5.exe
+					
+			have_numpy:
+				IfFileExists $PythonDir\lib\site-packages\PyQt4\*.* have_pyqt
+				    File ${PARTY}\PyQt-Py2.5-gpl-4.4.2-1.exe
+					ExecWait $DESKTOP\PyQt-Py2.5-gpl-4.4.2-1.exe
+					Delete $DESKTOP\PyQt-Py2.5-gpl-4.4.2-1.exe
+					
+			have_pyqt:
+				IfFileExists $PythonDir\lib\site-packages\PyQt4\Qwt5\*.* have_pyqwt
+				    File ${PARTY}\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
+					ExecWait $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
+					Delete $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
+			
+			have_pyqwt:
+		!endif
+					
+					
+					
+					
+          
 SectionEnd
 !endif
 
@@ -216,7 +239,7 @@ Section ""
 
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
-	File /r ${ORANGEDIR}\*
+	File /r /x .svn ${ORANGEDIR}\*
 
 	!ifdef INCLUDEGENOMICS
 	!endif
@@ -275,7 +298,7 @@ Function .onInit
 
 	!ifndef COMPLETE
 		StrCmp $PythonDir "" 0 have_python
-			MessageBox MB_OK "Please install Python first (www.python.org)$\r$\nor download Orange which includes Python."
+			MessageBox MB_OK "Please install Python first (www.python.org)$\r$\nor download Orange distribution that includes Python."
 			Quit
 		have_python:
 
@@ -289,7 +312,7 @@ Function .onInit
         have_qt:
 
 		StrCmp $MissingModules "" continueinst
-		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nThese module(s) are not needed for running scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain an Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
+		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nWithout these modules you can still scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain the Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
 		Quit
 		continueinst:
 	!endif

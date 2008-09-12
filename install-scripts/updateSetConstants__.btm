@@ -1,17 +1,18 @@
 rem Popravki za doma:
 rem - set /r filenames.set
-rem - alias vcexpress
-set verstr=%1
-set BRANCH=%2
-echo Building Orange version '%verstr' from SVN's branch '%BRANCH'
+rem - alias vcexpress  in ostalo za vc8
+rem - pythonbase
 
-set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
-set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
+set verstr=%1
+echo Building Orange version '%verstr' from SVN's branch '%BRANCH'
 
 set SCRIPTDIR=%_CWD
 set BUILDDIR=%SCRIPTDIR
-set TMPDIR=%SCRIPTDIR\tmp
+set TMPDIR=%SCRIPTDIR\%2
 set WEBDOWNLOAD=O:\2
+
+set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
+set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
 
 rem set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si,marko.toplak@fri.uni-lj.si"
 set LOGFILE=%SCRIPTDIR\build-%verstr.log
@@ -38,7 +39,7 @@ set WIN_TEXTMINING_SNAPSHOT=orangeAddOn-snapshot-textmining-%daystr
 set WIN_GOLIB_SNAPSHOT=GOlib-snapshot-%daystr
 
 set PYTHONBASE=c:\Python
-set PYTHONVERSIONS=23 24 25
+set PYTHONVERSIONS=25 24 23
 
 alias nsis="c:\program files\nsis\makensis.exe"
 alias cvs="C:\Program Files\CVSNT\cvs.exe"
