@@ -151,7 +151,7 @@ Section ""
 			MessageBox MB_YESNO "Do you want to install PythonWin (recommended)?$\r$\n(Orange installation will continue afterwards.)" /SD IDYES IDNO have_pythonwin
 			IfFileExists "$SysDir\${MFC}" have_mfc
 				SetOutPath $SysDir
-				File various\${MFC}
+				File {PARTY}\${MFC}
 			have_mfc:
 			SetOutPath $DESKTOP
 			File ${PARTY}\${PYWINFILENAME}
@@ -173,7 +173,7 @@ Section ""
 
 				IfFileExists $PythonDir\lib\site-packages\Numeric\*.* have_numeric
 					File /r ${PARTY}\numeric
-					File various\Numeric.pth
+					File ${PARTY}\..\Numeric.pth
 			have_numeric:
 
 
@@ -184,9 +184,9 @@ Section ""
 
 				IfFileExists "$PythonDir\lib\site-packages\qt-mt230nc.dll" have_qt
 				IfFileExists "$SysDir\qt-mt230nc.dll" have_qt
-					File various\qt-mt230nc.dll
+					File ${PARTY}\..\qt-mt230nc.dll
 					SetOutPath $INSTDIR
-					File various\QT-LICENSE.txt
+					File ${PARTY}\..\QT-LICENSE.txt
 			have_qt:
 		!else
 			MessageBox MB_OK "Installation will check for various needed libraries$\r$\nand launch their installers if needed."

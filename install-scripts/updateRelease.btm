@@ -1,4 +1,0 @@
-call updateSetConstants__.btm
-set verstr=%orangeReleaseVersion.%orangeMajorVersion.%orangeMinorVersion
-set BRANCH=branches/ver1.0
-call updateCommon__.btm

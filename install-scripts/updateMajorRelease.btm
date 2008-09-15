@@ -1,3 +1,0 @@
-set verstr=%1
-call updateSetConstants__.btm
-call updateCommon__.btm

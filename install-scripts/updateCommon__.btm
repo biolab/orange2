@@ -1,5 +1,9 @@
-call updateSetConstants__.btm %1 %2 %3
+call updateSetConstants__.btm %1 %2
 
+set PURE_ORANGE=%3
+set ORANGE_W_PYTHON=%4
+
+cdd %TMPDIR
 svn update orange
 svn update source
 
@@ -14,9 +18,9 @@ for %pyver in (%PYTHONVERSIONS) (
   set COMPILELOG=%TMPDIR\win-compile-%npver.log
   rem if exist %COMPILELOG del %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
-  set OBJPOSTFIX=-%2
+  set OBJPOSTFIX=-%1
   set PYORANGEDIR=c:\Python%pyver\lib\site-packages\orange
-  set PARTY=%SCRIPTDIR\%3\%pyver
+  set PARTY=%SCRIPTDIR\%2\%pyver
   if not direxist %PARTY goto skipversion
   
   rem start /wait 
@@ -35,14 +39,12 @@ for %pyver in (%PYTHONVERSIONS) (
   )
 
   cdd %SCRIPTDIR
-  set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%3,2,2] install3.nsi
-  nsis /O%TMPDIR/nsis-%WIN-py%npver.log /DOUTFILENAME="%TMPDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%2,2,2] install3.nsi
+  nsis /O%TMPDIR/nsis-%WIN-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
   flag_on_error
-  nsis /O%TMPDIR/nsis-%WIN-py-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%WIN_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
+  nsis /O%TMPDIR/nsis-%WIN-py-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
   flag_on_error
   
   :skipversion
 ) 
 
-cdd %SCRIPTDIR
-call updateVersionsPy__.btm

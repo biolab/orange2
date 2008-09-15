@@ -1,3 +1,24 @@
+set /r %DOWNLOADDIR\filenames.set
+
+set WIN_SNAPSHOT=orange-win-snapshot-%nicedate
+set WIN_PYTHON_SNAPSHOT=orange-w-python-snapshot-%nicedate
+set ADDON_GENOMICS_SNAPSHOT=orangeAddon-genomics-snapshot-%nicedate
+set ADDON_TEXTMINING_SNAPSHOT=orangeAddon-text-snapshot-%nicedate
+
+call updateCommon__.btm snapshot %2 %WIN_SNAPSHOT %WIN_PYTHON_SNAPSHOT
+
+cdd %TMPDIR
+move /z *.exe %DOWNLOADDIR
+except (%DOWNLOADDIR\*-%nicedate-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+
+cdd %SCRIPTDIR
+call updateVersionsPy__.btm
+
+exit
+
+
+
+
 @echo off
 
 call updateSetConstants__.btm

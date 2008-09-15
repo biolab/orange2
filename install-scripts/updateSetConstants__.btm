@@ -8,8 +8,8 @@ echo Building Orange version '%verstr' from SVN's branch '%BRANCH'
 
 set SCRIPTDIR=%_CWD
 set BUILDDIR=%SCRIPTDIR
-set TMPDIR=%SCRIPTDIR\%2
-set WEBDOWNLOAD=O:\2
+set TMPDIR=%SCRIPTDIR\%1
+set DOWNLOADDIR=O:\2
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
@@ -23,20 +23,6 @@ on error (
 )
 alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
 alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
-
-set /r %SCRIPTDIR\filenames.set
-set WIN=orange-win-%verstr
-set WIN_PYTHON=orange-w-python-%verstr
-set ADDON_GENOMICS=orangeAddon-genomics-%verstr
-set ADDON_TEXTMINING=orangeAddon-genomics-%verstr
-set SOURCE=orange-source-%verstr.zip
-set VERSION=%verstr
-set STABLE_DATE=%nicedate
-
-set WIN_SNAPSHOT=orange-snapshot-%daystr
-set WIN_GENOMICS_SNAPSHOT=orangeAddOn-snapshot-genomics-%daystr
-set WIN_TEXTMINING_SNAPSHOT=orangeAddOn-snapshot-textmining-%daystr
-set WIN_GOLIB_SNAPSHOT=GOlib-snapshot-%daystr
 
 set PYTHONBASE=c:\Python
 set PYTHONVERSIONS=25 24 23
