@@ -202,6 +202,8 @@ class CanvasWidget(QGraphicsRectItem):
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
             self.instance.close()
+            self.instance.linksOut.clear()      # this helps python to more quickly delete the unused objects
+            self.instance.linksIn.clear()
             del self.instance
 
     def savePosition(self):
