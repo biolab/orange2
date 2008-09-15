@@ -302,14 +302,19 @@ Function .onInit
 			Quit
 		have_python:
 
+	!if ${QTVER} == 23
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\numpy\*.*" "numpy"
-
 		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
 			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
         have_qt:
+	!else
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PyQt4\*.*" "PyQt"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\numpy-1.1.0-py2.5.egg-info" "numpy"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PyQt4\Qwt5\*.*" "PyQwt"
+	!endif
 
 		StrCmp $MissingModules "" continueinst
 		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nWithout these modules you can still scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain the Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
