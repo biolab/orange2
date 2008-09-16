@@ -120,7 +120,26 @@ class WidgetButtonBase():
         else:
             QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
 
+    def createTooltipString(self, canvasDlg, name):
+        # build the tooltip
+        inputs = self.getInputs()
+        if len(inputs) == 0:
+            formatedInList = "<b>Inputs:</b><br> &nbsp;&nbsp; None<br>"
+        else:
+            formatedInList = "<b>Inputs:</b><br>"
+            for signal in inputs:
+                formatedInList += " &nbsp;&nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
 
+        outputs = self.getOutputs()
+        if len(outputs) == 0:
+            formatedOutList = "<b>Outputs:</b><br> &nbsp; &nbsp; None<br>"
+        else:
+            formatedOutList = "<b>Outputs:</b><br>"
+            for signal in outputs:
+                formatedOutList += " &nbsp; &nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
+
+        tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList[:-4], formatedOutList[:-4])
+        return tooltipText
     
         
 class WidgetButton(QFrame, WidgetButtonBase):
@@ -178,27 +197,10 @@ class WidgetButton(QFrame, WidgetButtonBase):
             self.layout().setAlignment(self.textWidget, Qt.AlignHCenter)
         else:
             self.textWidget.setText(name)
-
-        # build the tooltip
-        inputs = self.getInputs()
-        if len(inputs) == 0:
-            formatedInList = "<b>Inputs:</b><br> &nbsp;&nbsp; None<br>"
-        else:
-            formatedInList = "<b>Inputs:</b><br>"
-            for signal in inputs:
-                formatedInList += " &nbsp;&nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
-
-        outputs = self.getOutputs()
-        if len(outputs) == 0:
-            formatedOutList = "<b>Outputs:</b><br> &nbsp; &nbsp; None<br>"
-        else:
-            formatedOutList = "<b>Outputs:</b><br>"
-            for signal in outputs:
-                formatedOutList += " &nbsp; &nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
-
-        tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList[:-4], formatedOutList[:-4])
-        self.setToolTip(tooltipText)
-   
+        tooltip = self.createTooltipString(canvasDlg, name)
+        self.setToolTip(tooltip)
+        
+           
     def mouseMoveEvent(self, e):
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
@@ -284,6 +286,8 @@ class WidgetTreeItem(QTreeWidgetItem, WidgetButtonBase):
         self.canvasDlg = canvasDlg
         self.setIcon(0, QIcon(self.getFullIconName()))
         self.setText(0, name)
+        tooltip = self.createTooltipString(canvasDlg, name)
+        self.setToolTip(0, tooltip)
         
 
             
