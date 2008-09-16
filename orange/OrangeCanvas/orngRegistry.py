@@ -37,6 +37,7 @@ def readCategories():
         if os.path.isdir(directory):
             directories.append((dirName, directory, ""))
 
+    # there can be additional addons specified in additionalCategories file
     additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
     if os.path.exists(additionalFile):
         for lne in open(additionalFile, "rt"):
@@ -45,6 +46,15 @@ def readCategories():
                 directories.append((catName, dirName, dirName))
             except:
                 pass
+            
+    # there can also be addons in the orange/addons folder
+    addonsPath = os.path.join(directoryNames["orangeDir"], "addons")
+    if os.path.exists(addonsPath):
+        for dir in os.listdir(addonsPath):
+            addon = os.path.join(addonsPath, dir)
+            addonWidgets = os.path.join(addon, "widgets")
+            if os.path.isdir(addon) and os.path.isdir(addonWidgets):
+                directories.append((dir, addonWidgets, addonWidgets))
             
     categories = []
     for catName, dirName, plugin in directories:
