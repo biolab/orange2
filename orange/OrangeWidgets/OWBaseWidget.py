@@ -560,7 +560,7 @@ class OWBaseWidget(QDialog):
                         sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
                     qApp.restoreOverrideCursor()
 
-                self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
+                    self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
         if newSignal == 1:
             self.handleNewSignals()
