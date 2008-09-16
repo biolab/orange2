@@ -23,7 +23,7 @@ from OWGraph import OWGraph
 class OWTimeDataVisualizer(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle",
                     "graph.showLegend", "graph.useAntialiasing", 'graph.drawPoints', 'graph.drawLines',
-                    "graph.alphaValue", "autoSendSelection", "toolbarSelection",
+                    "graph.alphaValue", "autoSendSelection", "toolbarSelection", "graph.trackExamples"
                     "colorSettings", "selectedSchemaIndex"]
     contextHandlers = {"": DomainContextHandler("", ["graph.timeAttr", "graph.attributes", "graph.shownAttributeIndices"], loadImperfect = 0)}
 
@@ -86,6 +86,7 @@ class OWTimeDataVisualizer(OWWidget):
         box4 = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
         OWGUI.checkBox(box4, self, 'graph.drawLines', 'Draw lines', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.drawPoints', 'Draw points (slower)', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.trackExamples', 'Track examples', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showGrayRects', 'Show gray rectangles', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'Show x axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)

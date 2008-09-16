@@ -20,6 +20,7 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
 
         self.drawLines = 1
         self.drawPoints = 0
+        self.trackExamples = 1
 
         self.pointWidth = 2
         self.optimizedDrawing = 0
@@ -38,6 +39,7 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
 
         self.scatterWidget = scatterWidget
         self.enableWheelZoom = 1
+        self.mouseMoveEventHandler = self.graphOnMouseMoved
 
 
     def setData(self, data, subsetData = None, **args):
@@ -48,6 +50,7 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
     # update shown data. Set labels, coloring by className ....
     def updateData(self, **args):
         self.removeDrawingCurves(removeLegendItems = 0)  # my function, that doesn't delete selection curves
+        self.verticalLineCurve = None
         self.detachItems(QwtPlotItem.Rtti_PlotMarker)
 
         self.tips.removeAll()
@@ -333,6 +336,17 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
         OWGraph.onMouseReleased(self, e)
         self.updateLayout()
 
+    def graphOnMouseMoved(self, e):
+        canvasPos = self.canvas().mapFrom(self, e.pos())
+        xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+        if getattr(self, "verticalLineCurve", None) != None:
+            self.verticalLineCurve.detach()
+            self.verticalLineCurve = None
+            
+        if self.trackExamples:
+            self.verticalLineCurve = self.addCurve("", QColor(Qt.blue), QColor(Qt.blue), 1, xData = [xFloat, xFloat], yData = [-0.5, len(self.shownAttributeIndices)-0.5], style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol)
+            self.replot()
+        return 0
 
 
 if __name__== "__main__":
