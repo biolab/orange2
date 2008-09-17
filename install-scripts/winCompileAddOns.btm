@@ -60,7 +60,6 @@ cdd %WEBDIR
 
 del /sye Genomics
 rmdir /sq Genomics
-svn export --force http://www.ailab.si/svn/orange/trunk/add-ons/GOLib Genomics
 svn export --force http://www.ailab.si/svn/orange/trunk/add-ons/Genomics Genomics
 
 set PATH=%PATH;c:\MinGW\bin
@@ -78,7 +77,7 @@ for %ver in (%PYTHONVERSIONS) (
   echo %COMPILELOG
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
-  %PYTHON\python setup_whenCombinedWithGOLib.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   rem  %PYTHON\python setup_whenCombinedWithGOLib.py install --skip-build --prefix %SNAPSHOTDIR\%ver
 )
 
