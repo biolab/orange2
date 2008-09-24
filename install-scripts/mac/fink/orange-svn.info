@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-svn
 Version: 0.0
-Revision: 1
+Revision: 2
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -15,13 +15,12 @@ Depends: <<
 	pyqwt-qt4mac-py25 (>= 5.1),
 	graphviz
 <<
-Conflicts: orange, orange-py25
-Replaces: orange
+Conflicts: orange
 Architecture: i386, powerpc
 Description: Component-based data mining software
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
-	of data visualization, exploration, preprocessing and modelling
+	of data visualization, exploration, preprocessing and modeling
 	techniques. It can be used through a nice and intuitive user interface
 	or, for more advanced users, as a module for Python programming language.
 	
@@ -44,7 +43,7 @@ InstallScript: <<
 		#!/bin/bash
 		. %p/bin/init.sh
 		CANVAS_FILE="`dirname $0`/../Resources/orange/OrangeCanvas/orngCanvas.pyw"
-		# LaunchServices passes the Carbon process identifier to the application with -psn paramter - we do not want it
+		# LaunchServices passes the Carbon process identifier to the application with -psn parameter - we do not want it
 		if [[ "\$1" == -psn* ]] ; then
 			shift
 		fi

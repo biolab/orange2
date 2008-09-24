@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-py25
 Version: 1.0b
-Revision: 3
+Revision: 4
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -14,13 +14,12 @@ Depends: <<
 	numpy-py25
 <<
 Suggests: orange
-Conflicts: orange-svn-py25, orange-svn
-Replaces: orange-svn-py25
+Conflicts: orange-svn-py25
 Architecture: i386, powerpc
 Description: Component-based data mining software
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
-	of data visualization, exploration, preprocessing and modelling
+	of data visualization, exploration, preprocessing and modeling
 	techniques. It can be used through a nice and intuitive user interface
 	or, for more advanced users, as a module for Python programming language.
 	
@@ -34,35 +33,9 @@ Shlibs: <<
 	%p/lib/python2.5/site-packages/orange/_orngCRS.so 0.0.0 %n (>= 1.0-1)
 <<
 SplitOff: <<
-	Package: orange-genomics
-	Conflicts: orange-genomics-svn, orange-genomics-svn-py25
-	Replaces: orange-genomics-svn
-	Depends: <<
-		python25,
-		numpy-py25,
-		orange (>= %v),
-		orange-py25 (>= %v),
-		orange-genomics-py25 (>= %v)
-	<<
-	Files: <<
-		lib/python2.5/site-packages/orange/addons/genomics/prototypes
-		lib/python2.5/site-packages/orange/addons/genomics/widgets
-		share/doc/orange-genomics
-	<<
-	DescDetail: <<
-		Orange is a component-based data mining software. It includes a range
-		of data visualization, exploration, preprocessing and modelling
-		techniques. It can be used through a nice and intuitive user interface
-		or, for more advanced users, as a module for Python programming language.
-		
-		This package provides a graphical user interface add-on for genomics.
-	<<
-<<
-SplitOff2: <<
 	Package: orange-genomics-py25
 	Suggests: orange-genomics
-	Conflicts: orange-genomics-svn-py25, orange-genomics-svn
-	Replaces: orange-genomics-svn-py25
+	Conflicts: orange-genomics-svn-py25
 	Depends: <<
 		python25,
 		numpy-py25,
@@ -78,7 +51,7 @@ SplitOff2: <<
 	<<
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
-		of data visualization, exploration, preprocessing and modelling
+		of data visualization, exploration, preprocessing and modeling
 		techniques. It can be used through a nice and intuitive user interface
 		or, for more advanced users, as a module for Python programming language.
 		
@@ -99,7 +72,8 @@ CompileScript: <<
 	make
 	mv _orngCRS.so ..
 	cd ../Genomics/
-	rm -f BCMinclude.lst exclude.lst registerWidgets.py setup.py # setup_whenCombinedWithGOLib.py
+	rm -f BCMinclude.lst exclude.lst registerWidgets.py setup.py setup_whenCombinedWithGOLib.py
+	rm -rf prototypes widgets
 	cd ../
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
@@ -122,10 +96,6 @@ InstallScript: <<
 	cp Genomics/doc/style.css %i/share/doc/orange-genomics-py25/
 	mv Genomics/doc/modules/ %i/share/doc/orange-genomics-py25/
 	mv Genomics/data/ %i/share/doc/orange-genomics-py25/
-	mkdir -p %i/share/doc/orange-genomics/
-	cp orange/COPYING %i/share/doc/orange-genomics/
-	cp Genomics/doc/style.css %i/share/doc/orange-genomics/
-	mv Genomics/doc/widgets/ %i/share/doc/orange-genomics/
 	rm -rf Genomics/doc/
 	mkdir -p %i/lib/python2.5/site-packages/orange/addons/genomics/
 	mv orangene.so %i/lib/python2.5/site-packages/orange/addons/genomics/
