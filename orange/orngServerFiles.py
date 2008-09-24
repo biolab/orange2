@@ -88,6 +88,12 @@ def createPathForFile(target):
     except OSError:
         pass
 
+def createPath(target):
+    try:
+        os.makedirs(target)
+    except OSError:
+        pass
+
 def localpath(domain=None, filename=None):
     import orngRegistry
     if not domain:
@@ -284,6 +290,7 @@ def listfiles(domain):
 
 def listdomains():
     dir = localpath()
+    createPath(dir)
     files = [ a for a in os.listdir(dir) ]
     ok = []
     for file in files:
