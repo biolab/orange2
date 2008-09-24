@@ -1,0 +1,16 @@
+set /r %DOWNLOADDIR\filenames.set
+
+set VERSION=%1
+set WIN=orange-win-%VERSION
+set WIN_PYTHON=orange-w-python-%VERSION
+set ADDON_GENOMICS=orangeAddon-genomics-%VERSION
+set ADDON_TEXTMINING=orangeAddon-genomics-%VERSION
+set STABLE_DATE=%nicedate
+
+call updateCommon__.btm stable %2 %WIN %WIN_PYTHON
+
+cdd %TMPDIR
+move /z *.exe %DOWNLOADDIR
+
+cdd %SCRIPTDIR
+call updateVersionsPy__.btm
