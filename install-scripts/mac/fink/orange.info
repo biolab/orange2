@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange
-Version: 1.0b
-Revision: 2
+Version: 1.0b.__REVISION__
+Revision: 4
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -36,6 +36,7 @@ InstallScript: <<
 	#!/bin/bash -ev
 	mkdir -p %i/share/doc/%n/
 	mv orange/COPYING %i/share/doc/%n/
+	mv orange/doc/style.css %i/share/doc/%n/
 	mv orange/doc/widgets/ %i/share/doc/%n/
 	rm -rf orange/orng*.py orange/mathutil.py orange/doc/
 	mv orange/ bundle-lite/Orange.app/Contents/Resources/

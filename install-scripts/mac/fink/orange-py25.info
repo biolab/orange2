@@ -1,6 +1,6 @@
 Info3: <<
 Package: orange-py25
-Version: 1.0b
+Version: 1.0b.__REVISION__
 Revision: 4
 Source: none
 Maintainer: Mitar <mitar@tnode.com>

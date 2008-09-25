@@ -1,6 +1,6 @@
 Info3: <<
 Package: orange-svn-py25
-Version: 0.0
+Version: 0.0.__REVISION__
 Revision: 6
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
