@@ -5,9 +5,8 @@ REM - pythonbase
 
 REM # set paths to orange sources and format date
 set SCRIPTDIR=%_CWD
-set BUILDDIR=%SCRIPTDIR
 set TMPDIR=%SCRIPTDIR\%1
-set DOWNLOADDIR=O:
+set DOWNLOADDIR=O:\
 
 REM # read filenames of current packages
 set /r %DOWNLOADDIR\filenames.set
@@ -19,10 +18,6 @@ REM # error signalling
 REM set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si"
 set MAIL_TO="tomaz.curk@fri.uni-lj.si"
 set ERRORS=0
-on error (
-  set ERRORS=%errorlevel
-  cancel %errorlevel
-)
 alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ quit %errorlevel)`
 
 REM # python, packaging and compiling

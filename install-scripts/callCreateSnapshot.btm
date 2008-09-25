@@ -5,13 +5,14 @@ call createSnapshot.btm %QTVER >& win-snapshot-create.%QTVER.log
 
 iff %ERRORS != 0 then
   set subj="Orange for Windows: Error creating %QTVER snapshot installation(s)"
+  echo Error
 else
   set subj="Orange for Windows: Snapshot installation(s) for %QTVER built"
 endiff
 
 REM sendmail %MAIL_TO %subj @win-snapshot-create.%QTVER.log
 
-rem # copy log(s) to web
+rem # copy log(s) to web in any case (success or error)
 set BUILDLOGDIR=%DOWNLOADDIR\buildLogs
 if not direxist %BUILDLOGDIR mkdir /s %BUILDLOGDIR
 del /q %BUILDLOGDIR\win-snapshot-*.log

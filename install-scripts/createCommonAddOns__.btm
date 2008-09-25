@@ -23,19 +23,19 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   REM # compile and pack
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-Genomics-compileAndPack-py%npver.log
-  del /q %COMPILELOG
+  if exist %COMPILELOG del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   break_on_error
   move /z %TMPDIR\add-ons\Genomics\dist\Genomics-*.win32-py%npver.exe %TMPDIR\%PKG_GENOMICS-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
-  set WEBBINDIR=%DOWNLOADDIR\binaries\%pyver\addOns\Genomics
-  if not direxist %WEBBINDIR mkdir /s %WEBBINDIR
+  set TMPBINDIR=%TMPDIR\binaries\%pyver\addOns\Genomics
+  if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
   
   cdd %TMPDIR\add-ons\Genomics\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
-	  copy %pydf %WEBBINDIR
+	  copy %pydf %TMPBINDIR
   )
 )
 
@@ -51,18 +51,18 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
 
   REM # compile and pack
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-orngText-compileAndPack-py%npver.log
-  del /q %COMPILELOG
+  if exist %COMPILELOG del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   break_on_error
   move /z %TMPDIR\add-ons\orngText\dist\orngText-*.win32-py%npver.exe %TMPDIR\%PKG_TEXTMINING-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
-  set WEBBINDIR=%DOWNLOADDIR\binaries\%pyver\addOns\orngText
-  if not direxist %WEBBINDIR mkdir /s %WEBBINDIR
+  set TMPBINDIR=%TMPDIR\binaries\%pyver\addOns\orngText
+  if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
 
   cdd %TMPDIR\add-ons\orngText\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
-	  copy %pydf %WEBBINDIR
+	  copy %pydf %TMPBINDIR
   )
 )

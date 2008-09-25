@@ -9,6 +9,9 @@ set THIRD_PARTY_DIR=%2
 set PURE_ORANGE=%3
 set ORANGE_W_PYTHON=%4
 
+cdd %TMPDIR
+del /syeq binaries
+
 cdd %TMPDIR\source
 call _pyxtract.bat
 
@@ -18,9 +21,9 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo *** Compiling for Python %pyver
 
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
-  cdd %TMPDIR/source
+  cdd %TMPDIR\source
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-core-compile-%npver.log
-  del /q %COMPILELOG
+  if exist %COMPILELOG del %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   set OBJPOSTFIX=-%PKG_TYPE%
   REM # we expect Python to be on same drive
@@ -37,18 +40,18 @@ for %pyver in (%PYTHONVERSIONS) do (
     break_on_error
 
     REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
-    set WEBBINDIR=%DOWNLOADDIR\binaries\%pyver
-    if not direxist %WEBBINDIR mkdir /s %WEBBINDIR
+    set TMPBINDIR=%TMPDIR\binaries\%pyver
+    if not direxist %TMPBINDIR\%pyver mkdir /s %TMPBINDIR
  
     cdd %PYORANGEDIR
     except (*_d.pyd) for %pydf in (*.pyd) do (
       del /q %TMPDIR\orange\%pydf
-      upx %pydf -o %TMPDIR/orange/%pydf
-	  copy %TMPDIR/orange/%pydf %WEBBINDIR
+      upx %pydf -o %TMPDIR\orange\%pydf
+	  copy %TMPDIR\orange\%pydf %TMPBINDIR
     )
 
-    cdd %WEBBINDIR
-    del /q stamps_pyd.txt
+    cdd %TMPBINDIR
+    if exist stamps_pyd.txt del /q stamps_pyd.txt
     for %pydf in (*.pyd) do (
       set MD5=%@MD5[%pydf]
       echo %pydf %MD5 >> stamps_pyd.txt
@@ -57,9 +60,9 @@ for %pyver in (%PYTHONVERSIONS) do (
 	REM # pack
     cdd %SCRIPTDIR
     set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
-    nsis /O%TMPDIR/win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
+    nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
     break_on_error
-    nsis /O%TMPDIR/win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
+    nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
     break_on_error
   ) else (
     echo skipped because no 3rd-party software available
@@ -67,7 +70,7 @@ for %pyver in (%PYTHONVERSIONS) do (
 )
 
 rem # compile documentation
-REM cdd %SCRIPTDIR/doc
+REM cdd %SCRIPTDIR\doc
 REM call compileDocumentation.btm
 REM cdd %WEBDOCDIR
 REM winrar a %DOWNLOADDIR\orange-chm.zip *.chm
