@@ -1,14 +1,23 @@
-set /r %DOWNLOADDIR\filenames.set
+REM #input arguments
+REM # %1 - folder with 3rd party software
+REM # %2 - SVN tag of sources to include in the package
 
+call updateSetVariables__.btm release
 set VERSION=%1
+set RELEASE_DATE=%nicedate
 set WIN=orange-win-%VERSION
-set WIN_PYTHON=orange-w-python-%VERSION
-set ADDON_GENOMICS=orangeAddon-genomics-%VERSION
-set ADDON_TEXTMINING=orangeAddon-genomics-%VERSION
-set STABLE_DATE=%nicedate
+set WIN_PYTHON=orange-win-w-python-%VERSION
+set ADDON_GENOMICS=orangeAddOn-genomics-%VERSION
+set ADDON_TEXTMINING=orangeAddOn-genomics-%VERSION
 
-call updateCommon__.btm stable %2 %WIN %WIN_PYTHON
+REM # update source(s)
+cdd %TMPDIR
+svn update
 
+REM # build
+call createCommon__.btm release %1 %WIN %WIN_PYTHON
+
+REM # publish on web
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
 

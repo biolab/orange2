@@ -1,0 +1,68 @@
+REM #input arguments
+REM # %1 - PKG_TYPE - kind of installation (snapshot, release) - needed to name log file accordingly
+REM # %2 - PKG_GENOMICS - name of package for Orange Genomics add-on (can be release or snapshot)
+REM # %3 - PKG_TEXTMINING - name of package for Orange Text Mining (release or snapshot)
+
+set PKG_TYPE=%1
+set PKG_GENOMICS=%2
+set PKG_TEXTMINING=%3
+
+set PATH=%PATH;c:\MinGW\bin
+set SWIGLIB=C:\swigwin-1.3.31\Lib
+
+REM # compile and pack
+for %pyver in (%PYTHONVERSIONS) do (
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+
+  echo *************************************
+  echo *************************************
+  echo *** Compiling GENOMICS for Python %pyver
+  cdd %TMPDIR\add-ons\Genomics
+  del /syeq build
+  del /syeq dist
+
+  REM # compile and pack
+  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-Genomics-compileAndPack-py%npver.log
+  del /q %COMPILELOG
+  set PYTHON=%PYTHONBASE%%pyver
+  %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  break_on_error
+  move /z %TMPDIR\add-ons\Genomics\dist\Genomics-*.win32-py%npver.exe %TMPDIR\%PKG_GENOMICS-py%npver.exe
+
+  REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
+  set WEBBINDIR=%DOWNLOADDIR\binaries\%pyver\addOns\Genomics
+  if not direxist %WEBBINDIR mkdir /s %WEBBINDIR
+  
+  cdd %TMPDIR\add-ons\Genomics\build\lib.win32-%npver
+  for %pydf in (*.pyd) do (
+	  copy %pydf %WEBBINDIR
+  )
+)
+
+for %pyver in (%PYTHONVERSIONS_ADDONs) do (
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+  
+  echo *************************************
+  echo *************************************
+  echo *** Compiling TEXT MINING for Python %pyver 
+  cdd %TMPDIR\add-ons\orngText
+  del /syeq build
+  del /syeq dist
+
+  REM # compile and pack
+  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-orngText-compileAndPack-py%npver.log
+  del /q %COMPILELOG
+  set PYTHON=%PYTHONBASE%%pyver
+  %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
+  break_on_error
+  move /z %TMPDIR\add-ons\orngText\dist\orngText-*.win32-py%npver.exe %TMPDIR\%PKG_TEXTMINING-py%npver.exe
+
+  REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
+  set WEBBINDIR=%DOWNLOADDIR\binaries\%pyver\addOns\orngText
+  if not direxist %WEBBINDIR mkdir /s %WEBBINDIR
+
+  cdd %TMPDIR\add-ons\orngText\build\lib.win32-%npver
+  for %pydf in (*.pyd) do (
+	  copy %pydf %WEBBINDIR
+  )
+)

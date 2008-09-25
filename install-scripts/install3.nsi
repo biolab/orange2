@@ -151,7 +151,7 @@ Section ""
 			MessageBox MB_YESNO "Do you want to install PythonWin (recommended)?$\r$\n(Orange installation will continue afterwards.)" /SD IDYES IDNO have_pythonwin
 			IfFileExists "$SysDir\${MFC}" have_mfc
 				SetOutPath $SysDir
-				File {PARTY}\${MFC}
+				File ${PARTY}\${MFC}
 			have_mfc:
 			SetOutPath $DESKTOP
 			File ${PARTY}\${PYWINFILENAME}
