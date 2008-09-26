@@ -3,6 +3,9 @@
 # Should be run as: sudo ./fink-daily-build.sh
 #
 
+STABLE_PACKAGES="orange-py25 orange orange-genomics-py25 orange-genomics"
+TRUNK_PACKAGES="orange-svn-py25 orange-svn orange-genomics-svn-py25 orange-genomics-svn"
+
 ((`id -u` == 0)) || { echo "Must run as root user (use sudo)."; exit 1; }
 
 [ -e /Volumes/fink/ ] || { echo "/Volumes/fink/ not mounted."; exit 1; }
@@ -36,6 +39,10 @@ fink --yes scanpackages
 
 # Updates everything (probably by compiling new packages)
 fink --yes update-all
+
+# Builds our packages if they have not been rebuilt already
+fink --yes build $STABLE_PACKAGES
+fink --yes build $TRUNK_PACKAGES
 
 # Prepares our public Fink package info and binary files repository
 mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
