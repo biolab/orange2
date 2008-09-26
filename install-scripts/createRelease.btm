@@ -11,8 +11,9 @@ set ADDON_GENOMICS=orangeAddOn-genomics-%VERSION
 set ADDON_TEXTMINING=orangeAddOn-genomics-%VERSION
 
 REM # update source(s)
-cdd %TMPDIR
-svn update
+cdd %TMPDIR\..
+del /syeq release
+svn checkout http://www.ailab.si/svn/
 
 REM # build
 call createCommon__.btm release %1 %WIN %WIN_PYTHON

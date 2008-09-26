@@ -10,11 +10,12 @@ else
   set subj="Orange for Windows: Snapshot installation(s) for %QTVER built"
 endiff
 
-REM sendmail %MAIL_TO %subj @win-snapshot-create.%QTVER.log
+cdd %SCRIPTDIR
+sendmail %MAIL_TO %subj @%SCRIPTDIR\win-snapshot-create.%QTVER.log
 
 rem # copy log(s) to web in any case (success or error)
 set BUILDLOGDIR=%DOWNLOADDIR\buildLogs
 if not direxist %BUILDLOGDIR mkdir /s %BUILDLOGDIR
-del /q %BUILDLOGDIR\win-snapshot-*.log
-move /z win-snapshot-create.%QTVER.log %BUILDLOGDIR
+del /eq %BUILDLOGDIR\win-snapshot-*.log
+move /z %SCRIPTDIR\win-snapshot-create.%QTVER.log %BUILDLOGDIR
 move /z %TMPDIR\win-snapshot*.log %BUILDLOGDIR

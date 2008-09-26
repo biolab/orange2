@@ -10,7 +10,7 @@ set PURE_ORANGE=%3
 set ORANGE_W_PYTHON=%4
 
 cdd %TMPDIR
-del /syeq binaries
+del /syeqtx binaries
 
 cdd %TMPDIR\source
 call _pyxtract.bat
@@ -23,7 +23,7 @@ for %pyver in (%PYTHONVERSIONS) do (
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   cdd %TMPDIR\source
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-core-compile-%npver.log
-  del /q %COMPILELOG
+  if exist %COMPILELOG del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   set OBJPOSTFIX=-%PKG_TYPE%
   REM # we expect Python to be on same drive
@@ -34,7 +34,7 @@ for %pyver in (%PYTHONVERSIONS) do (
     REM # compile
     pushd
     cdd %PYORANGEDIR
-    del /q orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
+    del /eq orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
     popd
     vcexpress orange.sln /build Release /out %COMPILELOG
     break_on_error
@@ -45,13 +45,13 @@ for %pyver in (%PYTHONVERSIONS) do (
  
     cdd %PYORANGEDIR
     except (*_d.pyd) for %pydf in (*.pyd) do (
-      del /q %TMPDIR\orange\%pydf
+      if exist %TMPDIR\orange\%pydf del /q %TMPDIR\orange\%pydf
       upx %pydf -o %TMPDIR\orange\%pydf
 	  copy %TMPDIR\orange\%pydf %TMPBINDIR
     )
 
     cdd %TMPBINDIR
-    del /q stamps_pyd.txt
+    if exist stamps_pyd.txt del /q stamps_pyd.txt
     for %pydf in (*.pyd) do (
       set MD5=%@MD5[%pydf]
       echo %pydf %MD5 >> stamps_pyd.txt
