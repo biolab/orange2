@@ -48,7 +48,7 @@ def readCategories():
                 pass
             
     # there can also be addons in the orange/addons folder
-    addonsPath = os.path.join(directoryNames["orangeDir"], "addons")
+    addonsPath = os.path.join(directoryNames["orangeDir"], "addOns")
     if os.path.exists(addonsPath):
         for dir in os.listdir(addonsPath):
             addon = os.path.join(addonsPath, dir)
