@@ -62,6 +62,12 @@ while (($f,$n) = each(%fs)) {
 cd /Volumes/fink/
 perl -mFink::Scanpackages -e 'Fink::Scanpackages->scan("dists/10.5/main/binary-darwin-i386/");' | gzip - > dists/10.5/main/binary-darwin-i386/Packages.gz
 
+echo 'Archive: ailab
+Origin: Fink
+Component: main
+Architecture: darwin-i386
+Label: Fink' > dists/10.5/main/binary-darwin-i386/Release
+
 # Copies to repository all info files
 rm -f /Volumes/fink/dists/10.5/main/finkinfo/*
 cp /sw/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/finkinfo/
