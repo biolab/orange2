@@ -23,7 +23,7 @@ for %pyver in (%PYTHONVERSIONS) do (
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   cdd %TMPDIR\source
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-core-compile-%npver.log
-  if exist %COMPILELOG del %COMPILELOG
+  del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   set OBJPOSTFIX=-%PKG_TYPE%
   REM # we expect Python to be on same drive
@@ -51,7 +51,7 @@ for %pyver in (%PYTHONVERSIONS) do (
     )
 
     cdd %TMPBINDIR
-    if exist stamps_pyd.txt del /q stamps_pyd.txt
+    del /q stamps_pyd.txt
     for %pydf in (*.pyd) do (
       set MD5=%@MD5[%pydf]
       echo %pydf %MD5 >> stamps_pyd.txt

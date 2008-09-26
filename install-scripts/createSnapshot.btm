@@ -22,7 +22,7 @@ cdd %SCRIPTDIR
 call createCommonAddOns__.btm snapshot %ADDON_GENOMICS_SNAPSHOT %ADDON_TEXTMINING_SNAPSHOT
 break_on_error
 
-rem # publish on web
+rem # if no errors then publish on web (everything at the same time)
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
 if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries

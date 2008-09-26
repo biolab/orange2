@@ -23,7 +23,7 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   REM # compile and pack
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-Genomics-compileAndPack-py%npver.log
-  if exist %COMPILELOG del /q %COMPILELOG
+  del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   break_on_error
@@ -51,7 +51,7 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
 
   REM # compile and pack
   set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-orngText-compileAndPack-py%npver.log
-  if exist %COMPILELOG del /q %COMPILELOG
+  del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > %COMPILELOG
   break_on_error
