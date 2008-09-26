@@ -29,8 +29,8 @@ DescDetail: <<
 AppBundles: bundle-lite/Orange.app
 CompileScript: <<
 	#!/bin/bash -ev
-	svn export http://www.ailab.si/svn/orange/branches/ver1.0/install-scripts/mac/bundle-lite/
-	svn export http://www.ailab.si/svn/orange/branches/ver1.0/orange/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/branches/ver1.0/install-scripts/mac/bundle-lite/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/branches/ver1.0/orange/
 <<
 InstallScript: <<
 	#!/bin/bash -ev

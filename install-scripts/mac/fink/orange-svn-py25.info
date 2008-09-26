@@ -62,10 +62,10 @@ CompileScript: <<
 	#!/bin/bash -ev
 	export PATH=%b:$PATH
 	ln -s %p/bin/python2.5 python
-	svn export http://www.ailab.si/svn/orange/trunk/source/
-	svn export http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/
-	svn export http://www.ailab.si/svn/orange/trunk/orange/
-	svn export http://www.ailab.si/svn/orange/trunk/add-ons/Genomics/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/trunk/source/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/trunk/orange/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/trunk/add-ons/Genomics/
 	cd source
 	make
 	cd ../src/

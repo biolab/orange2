@@ -27,8 +27,8 @@ DescDetail: <<
 <<
 CompileScript: <<
 	#!/bin/bash -ev
-	svn export http://www.ailab.si/svn/orange/branches/ver1.0/orange/
-	svn export http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/Genomics/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/branches/ver1.0/orange/
+	svn export --non-interactive --revision __REVISION__ http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/Genomics/
 <<
 InstallScript: <<
 	#!/bin/bash -ev
