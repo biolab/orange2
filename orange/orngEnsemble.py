@@ -18,7 +18,7 @@ def BoostedLearner(learner, examples=None, t=10, name='AdaBoost.M1'):
     else:
         return learner
 
-class BoostedLearnerClass:
+class BoostedLearnerClass(orange.Learner):
     def __init__(self, learner, t, name):
         self.t = t
         self.name = name
@@ -62,7 +62,7 @@ class BoostedLearnerClass:
         instances.removeMetaAttribute(weight)
         return BoostedClassifier(classifiers = classifiers, name=self.name, classvar=instances.domain.classVar)
 
-class BoostedClassifier:
+class BoostedClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
@@ -92,7 +92,7 @@ def BaggedLearner(learner=None, t=10, name='Bagging', examples=None):
     else:
         return learner
 
-class BaggedLearnerClass:
+class BaggedLearnerClass(orange.Learner):
     def __init__(self, learner, t, name):
         self.t = t
         self.name = name
@@ -113,7 +113,7 @@ class BaggedLearnerClass:
             classifiers.append(self.learner(data, weight))
         return BaggedClassifier(classifiers = classifiers, name=self.name, classvar=examples.domain.classVar)
 
-class BaggedClassifier:
+class BaggedClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
