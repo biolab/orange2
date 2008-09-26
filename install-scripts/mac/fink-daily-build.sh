@@ -31,11 +31,11 @@ grep '^Trees:' /sw/etc/fink.conf | grep -q 'ailab/main' || perl -p -i -l -e '$_ 
 grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' /sw/etc/apt/sources.list || echo 'deb http://www.ailab.si/orange/fink 10.5 main' >> /sw/etc/apt/sources.list
 
 # Get all official Fink package info files
-fink selfupdate
-fink scanpackages
+fink --yes selfupdate
+fink --yes scanpackages
 
 # Updates everything (probably by compiling new packages)
-fink update-all
+fink --yes update-all
 
 # Prepares our public Fink package info and binary files repository
 mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
