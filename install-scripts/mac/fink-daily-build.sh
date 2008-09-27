@@ -41,8 +41,11 @@ fink --yes scanpackages
 fink --yes update-all
 
 # Builds our packages if they have not been rebuilt already
+fink --yes purge $TRUNK_PACKAGES
 fink --yes build $STABLE_PACKAGES
+fink --yes purge $STABLE_PACKAGES
 fink --yes build $TRUNK_PACKAGES
+fink --yes purge $TRUNK_PACKAGES
 
 # Prepares our public Fink package info and binary files repository
 mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
