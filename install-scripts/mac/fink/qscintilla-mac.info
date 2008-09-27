@@ -1,0 +1,45 @@
+Package: qscintilla-mac
+Version: 1.71
+Revision: 3
+Source: http://www.riverbankcomputing.co.uk/static/Downloads/QScintilla1/QScintilla-%v-gpl-1.7.1.tar.gz
+Source-MD5: dfa047b45d4f09ae8d4a8a431ba88a5a
+Maintainer: Mitar <mitar@tnode.com>
+Homepage: http://www.riverbankcomputing.co.uk/software/qscintilla
+License: GPL
+BuildDepends: qt3mac (>= 3.3.8)
+BuildDependsOnly: true
+Depends: <<
+	qt3mac-shlibs (>= 3.3.8),
+	%N-shlibs (>= %v-%r)
+<<
+GCC: 4.0
+Description: Qt port Scintilla C++ editor class
+DocFiles: LICENSE NEWS README README.MacOS
+SplitOff: <<
+	Package: %N-shlibs
+	Depends: qt3mac-shlibs (>= 3.3.8)
+	Shlibs: %p/lib/qt3mac/lib/libqscintilla.7.dylib 7.0.0 %n (>= 1.71-1)
+	DocFiles: LICENSE NEWS README README.MacOS
+	Files: lib/qt3mac/lib/libqscintilla.7*dylib
+<<
+CompileScript: <<
+	#!/bin/sh -ev
+	export QTDIR=%p/lib/qt3mac/
+	cd qt
+	%p/lib/qt3mac/bin/qmake qscintilla.pro
+	perl -pi -e 's|-\$\(MOVE\) \$\(TARGET\) \$\(TARGET0\) \$\(TARGET1\) \$\(TARGET2\) \$\(QTDIR\)/lib|-\$\(MOVE\) \$\(TARGET\) \$\(TARGET0\) \$\(TARGET1\) \$\(TARGET2\) \.|g' Makefile
+ make
+	make
+<<
+InstallScript: <<
+	#!/bin/sh -ev
+	mkdir -p %i/lib/qt3mac/include/
+	mkdir -p %i/lib/qt3mac/translations/
+	mkdir -p %i/lib/qt3mac/lib/
+	cp qt/qextscintilla*.h %i/lib/qt3mac/include/
+	cp qt/qscintilla*.qm %i/lib/qt3mac/translations/
+	cp qt/libqscintilla.7.0.1.dylib %i/lib/qt3mac/lib/
+	ln -s libqscintilla.7.0.1.dylib %i/lib/qt3mac/lib/libqscintilla.7.0.dylib
+	ln -s libqscintilla.7.0.1.dylib %i/lib/qt3mac/lib/libqscintilla.7.dylib
+	ln -s libqscintilla.7.0.1.dylib %i/lib/qt3mac/lib/libqscintilla.dylib
+<<

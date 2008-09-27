@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-genomics
 Version: 1.0b.__REVISION__
-Revision: 3
+Revision: 5
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -36,7 +36,7 @@ InstallScript: <<
 	cp orange/COPYING %i/share/doc/%n/
 	cp Genomics/doc/style.css %i/share/doc/%n/
 	mv Genomics/doc/widgets/ %i/share/doc/%n/
-	mkdir -p %i/lib/python2.5/site-packages/orange/addons/genomics/
-	mv Genomics/prototypes/ Genomics/widgets/ %i/lib/python2.5/site-packages/orange/addons/genomics/
+	mkdir -p %i/lib/python2.5/site-packages/orange/add-ons/genomics/
+	mv Genomics/widgets/ %i/lib/python2.5/site-packages/orange/add-ons/genomics/
 <<
 <<

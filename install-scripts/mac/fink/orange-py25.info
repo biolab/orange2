@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-py25
 Version: 1.0b.__REVISION__
-Revision: 4
+Revision: 5
 Source: none
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/
@@ -42,10 +42,10 @@ SplitOff: <<
 		orange-py25 (>= %v)
 	<<
 	Shlibs: <<
-		%p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so 0.0.0 %n (>= 1.0-1)
+		%p/lib/python2.5/site-packages/orange/add-ons/genomics/orangene.so 0.0.0 %n (>= 1.0-1)
 	<<
 	Files: <<
-		lib/python2.5/site-packages/orange/addons
+		lib/python2.5/site-packages/orange/add-ons
 		lib/python2.5/site-packages/orange-genomics.pth
 		share/doc/orange-genomics-py25
 	<<
@@ -72,14 +72,14 @@ CompileScript: <<
 	make
 	mv _orngCRS.so ..
 	cd ../Genomics/
-	rm -f BCMinclude.lst exclude.lst registerWidgets.py setup.py setup_whenCombinedWithGOLib.py
-	rm -rf prototypes widgets
+	rm -f setup.py setup-deps.py post_install_script.py
+	rm -rf widgets
 	cd ../
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/corn.so corn.so
 	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/statc.so statc.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/addons/genomics/orangene.so orangene.so
+	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/add-ons/genomics/orangene.so orangene.so
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
 <<
 InstallScript: <<
@@ -95,15 +95,14 @@ InstallScript: <<
 	cp orange/COPYING %i/share/doc/orange-genomics-py25/
 	cp Genomics/doc/style.css %i/share/doc/orange-genomics-py25/
 	mv Genomics/doc/modules/ %i/share/doc/orange-genomics-py25/
-	mv Genomics/data/ %i/share/doc/orange-genomics-py25/
 	rm -rf Genomics/doc/
-	mkdir -p %i/lib/python2.5/site-packages/orange/addons/genomics/
-	mv orangene.so %i/lib/python2.5/site-packages/orange/addons/genomics/
+	mkdir -p %i/lib/python2.5/site-packages/orange/add-ons/genomics/
+	mv orangene.so %i/lib/python2.5/site-packages/orange/add-ons/genomics/
 	mv *.so %i/lib/python2.5/site-packages/orange/
 	mv orange/orng*.py orange/mathutil.py %i/lib/python2.5/site-packages/orange/
-	mv Genomics/* %i/lib/python2.5/site-packages/orange/addons/genomics/
+	mv Genomics/* %i/lib/python2.5/site-packages/orange/add-ons/genomics/
 	echo "orange" > %i/lib/python2.5/site-packages/orange.pth
-	echo "orange/addons/genomics" > %i/lib/python2.5/site-packages/orange-genomics.pth
+	echo "orange/add-ons/genomics" > %i/lib/python2.5/site-packages/orange-genomics.pth
 	echo "datasetsPath=\"%p/share/doc/%n/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
 <<
 <<

@@ -1,7 +1,7 @@
 Info2: <<
 Package: pyqtmac-py%type_pkg[python]
 Version: 3.17.4
-Revision: 1
+Revision: 2
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt3/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: b14ab1b52e4e1a529a7fbca586b5ed8f
 Maintainer: Mitar <mitar@tnode.com>
@@ -11,7 +11,7 @@ Type: python (2.3 2.4 2.5)
 Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5
 BuildDepends: <<
 	qt3mac,
-	qscintilla,
+	qscintilla-mac,
 	sip-py%type_pkg[python]-bin (>= 4.7.4-1)
 <<
 BuildConflicts: qt3
@@ -19,7 +19,7 @@ Depends: <<
 	qt3mac-shlibs,
 	python%type_pkg[python],
 	sip-py%type_pkg[python] (>= 4.7.4-1),
-	qscintilla-shlibs
+	qscintilla-mac-shlibs
 <<
 Conflicts: pyqt-py%type_pkg[python]
 GCC: 4.0
