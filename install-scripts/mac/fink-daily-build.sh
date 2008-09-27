@@ -81,3 +81,7 @@ Label: Fink' > dists/10.5/main/binary-darwin-i386/Release
 # Copies to repository all info files
 rm -f /Volumes/fink/dists/10.5/main/finkinfo/*
 cp /sw/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/finkinfo/
+
+# Makes an archive of all info files
+cd /Volumes/fink/dists/10.5/main/finkinfo/
+tar -xzf all.tgz *.info
