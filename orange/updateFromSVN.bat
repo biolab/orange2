@@ -1,3 +1,3 @@
 @echo off
-cvs update
+svn update
 downloadPyd.py
