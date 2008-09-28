@@ -52,7 +52,7 @@ mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
 mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
 
 # Copies to repository all binary packages
-rsync -t /sw/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+rsync --times --copy-links /sw/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
 
 # Removes old binary packages
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
