@@ -84,4 +84,4 @@ cp /sw/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/finkinfo/
 
 # Makes an archive of all info files
 cd /Volumes/fink/dists/10.5/main/finkinfo/
-tar -xzf all.tgz *.info
+tar -czf all.tgz *.info
