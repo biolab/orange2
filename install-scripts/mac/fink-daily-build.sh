@@ -47,7 +47,7 @@ if ! grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' /sw/etc/apt/sources
 fi
 
 # Get all official Fink package info files
-echo "Updating official Fink packages."
+echo "Updating installed Fink packages."
 fink $FINK_ARGS selfupdate
 fink $FINK_ARGS scanpackages
 
