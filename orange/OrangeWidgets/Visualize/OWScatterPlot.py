@@ -9,7 +9,6 @@
 #
 # Show data using scatterplot
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 from OWScatterPlotGraph import *
 from OWkNNOptimization import *

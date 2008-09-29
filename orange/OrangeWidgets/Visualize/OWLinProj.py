@@ -9,7 +9,6 @@
 #
 # Show a linear projection of the data
 #
-import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWLinProjGraph import *
 from OWkNNOptimization import OWVizRank

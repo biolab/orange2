@@ -10,7 +10,6 @@
 # Show a radviz projection of the data
 #
 
-import orngOrangeFoldersQt4
 from OWLinProj import *
 
 class OWRadviz(OWLinProj):

@@ -684,39 +684,35 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         rx -= rx % self.squareGranularity
         ry -= ry % self.squareGranularity
 
-        if not getattr(self, "potentialsBmp", None) \
+        if not getattr(self, "potentialsImage", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
                 imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor, 1, self.normalizeExamples)
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, self.normalizeExamples)
-                colors = self.discPalette
-
+                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, 1., self.spaceBetweenCells) # the last argument is self.trueScaleFactor (in LinProjGraph...)
                 palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier.classVar)
+                sortedClasses = getVariableValuesSorted(self.potentialsClassifier.domain.classVar)
                 for cls in self.potentialsClassifier.classVar.values:
-                    color = colors[sortedClasses.index(cls)].light(150).rgb()
-                    color = [f(OWColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # on Mac color cannot be negative number in this case so we convert it manually
+                    color = self.discPalette.getRGB(sortedClasses.index(cls))
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades
                         palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
-#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, OWColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
-            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, OWColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
-            self.potentialsBmp = QPixmap()
-            self.potentialsBmp.convertFromImage(image)
+            self.potentialsImage = QImage(imagebmp, rx, ry, QImage.Format_Indexed8)
+            self.potentialsImage.setColorTable(OWColorPalette.signedPalette(palette))
+            self.potentialsImage.setNumColors(256)
             self.potentialContext = (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
 
 
 
-    def drawCanvasItems(self, painter, rect, map, pfilter):
+    def drawCanvas(self, painter):
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
             self.computePotentials()
-            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
-        OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
+            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
+        OWGraph.drawCanvas(self, painter)
 
 
 if __name__== "__main__":
