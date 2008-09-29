@@ -6,7 +6,6 @@
 <priority>1200</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange, math
 import OWGUI, OWToolbars
 from OWWidget import *

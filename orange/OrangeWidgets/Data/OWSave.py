@@ -11,7 +11,6 @@
 # The File Widget
 # A widget for opening orange data files
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import re, os.path

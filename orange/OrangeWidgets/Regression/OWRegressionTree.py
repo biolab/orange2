@@ -7,7 +7,6 @@
 <priority>100</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange
 import orngTree
 import OWGUI

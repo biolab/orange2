@@ -7,7 +7,6 @@
 """
 # OWSieveDiagram.py
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import orngInteract, OWGUI
 from OWQCanvasFuncts import *

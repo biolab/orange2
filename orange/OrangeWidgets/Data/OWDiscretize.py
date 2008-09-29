@@ -5,7 +5,6 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """
-import orngOrangeFoldersQt4
 import orange
 from OWWidget import *
 from OWGraph import *

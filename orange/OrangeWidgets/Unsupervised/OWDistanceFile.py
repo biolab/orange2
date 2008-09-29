@@ -6,7 +6,6 @@
 <priority>1100</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange
 import OWGUI
 import exceptions

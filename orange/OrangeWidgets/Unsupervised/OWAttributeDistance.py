@@ -5,7 +5,6 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1400</priority>
 """
-import orngOrangeFoldersQt4
 import orange, math
 import OWGUI
 from OWWidget import *

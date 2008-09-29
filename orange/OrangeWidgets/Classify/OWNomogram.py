@@ -11,7 +11,6 @@
 # for visualization of the knowledge
 # obtained with Naive Bayes or logistic regression classifier
 #
-import orngOrangeFoldersQt4
 import math
 import orange
 import OWGUI

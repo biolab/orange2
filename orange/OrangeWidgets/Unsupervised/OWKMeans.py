@@ -6,7 +6,6 @@
 <priority>2300</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange, orngCluster
 import OWGUI
 import math, statc

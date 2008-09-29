@@ -6,7 +6,6 @@
 <priority>2120</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange, orngCN2
 from OWWidget import *
 import OWGUI, OWColorPalette

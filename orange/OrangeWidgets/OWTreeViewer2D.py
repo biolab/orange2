@@ -1,4 +1,3 @@
-import orngOrangeFoldersQt4
 import orange, orngTree, OWGUI, OWColorPalette
 from OWWidget import *
 

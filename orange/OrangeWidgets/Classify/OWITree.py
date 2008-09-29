@@ -5,7 +5,6 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>50</priority>
 """
-import orngOrangeFoldersQt4
 from OWWidget import *
 from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree

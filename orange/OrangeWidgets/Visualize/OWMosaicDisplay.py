@@ -7,7 +7,6 @@
 """
 # OWMosaicDisplay.py
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 from OWMosaicOptimization import *

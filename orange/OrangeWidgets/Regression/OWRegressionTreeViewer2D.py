@@ -5,7 +5,6 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """
-import orngOrangeFoldersQt4
 from OWTreeViewer2D import *
 import re
 import sets

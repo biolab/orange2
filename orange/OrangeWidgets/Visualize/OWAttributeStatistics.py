@@ -10,7 +10,6 @@
 #
 
 #import orange
-import orngOrangeFoldersQt4
 from OWWidget import *
 from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg

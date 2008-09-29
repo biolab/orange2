@@ -8,7 +8,6 @@
 # InteractionGraph.py
 #
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import orngInteract, OWQCanvasFuncts
 import statc

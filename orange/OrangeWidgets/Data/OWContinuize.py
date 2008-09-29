@@ -10,7 +10,6 @@
 # Continuize Widget
 # Turns discrete attributes into continuous
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 

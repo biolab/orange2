@@ -5,7 +5,6 @@
 <icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """
-import orngOrangeFoldersQt4
 from OWColorPalette import ColorPixmap
 from OWWidget import *
 from OWGraph import *

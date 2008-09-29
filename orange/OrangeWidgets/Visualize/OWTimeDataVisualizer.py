@@ -9,7 +9,6 @@
 #
 # Show mulitple line visualizations
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 from OWTimeDataVisualizerGraph import *
 import OWGUI, OWToolbars, OWColorPalette

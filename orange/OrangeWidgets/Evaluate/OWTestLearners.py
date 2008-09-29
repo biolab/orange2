@@ -8,7 +8,6 @@
 #
 # OWTestLearners.py
 #
-import orngOrangeFoldersQt4
 from OWWidget import *
 import orngTest, orngStat, OWGUI
 import time

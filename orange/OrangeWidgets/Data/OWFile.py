@@ -10,7 +10,6 @@
 def call(f,*args,**keyargs):
     return f(*args, **keyargs)
 
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, string, os.path, user, sys, warnings
 import orngIO

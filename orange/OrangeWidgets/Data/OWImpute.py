@@ -5,7 +5,6 @@
 <priority>2130</priority>
 <contact>Janez Demsar</contact>
 """
-import orngOrangeFoldersQt4
 import OWGUI
 from OWWidget import *
 

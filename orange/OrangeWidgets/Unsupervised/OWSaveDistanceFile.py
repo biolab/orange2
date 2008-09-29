@@ -6,7 +6,6 @@
 <priority>1150</priority>
 """
 
-import orngOrangeFoldersQt4
 import orange
 import OWGUI
 from OWWidget import *

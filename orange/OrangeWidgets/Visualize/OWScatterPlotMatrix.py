@@ -9,7 +9,6 @@
 #
 # Show data using scatterplot matrix visualization method
 #
-import orngOrangeFoldersQt4
 from OWVisWidget import *
 import OWColorPalette
 from OWScatterPlotGraph import OWScatterPlotGraph

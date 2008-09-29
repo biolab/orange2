@@ -5,7 +5,6 @@
 <contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>15</priority>
 """
-import orngOrangeFoldersQt4
 from OWWidget import *
 from orngLR import *
 import OWGUI

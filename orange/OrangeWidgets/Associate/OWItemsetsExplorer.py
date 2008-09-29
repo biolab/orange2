@@ -5,7 +5,6 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1100</priority>
 """
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, OWTools, orngMisc
 import sys, re

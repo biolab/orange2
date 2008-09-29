@@ -6,7 +6,6 @@
 <priority>2100</priority>
 """
 
-import orngOrangeFoldersQt4
 from OWWidget import *
 from sets import Set
 from OWQCanvasFuncts import *

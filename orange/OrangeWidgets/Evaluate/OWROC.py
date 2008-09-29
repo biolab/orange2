@@ -5,7 +5,6 @@
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
-import orngOrangeFoldersQt4
 from OWColorPalette import ColorPixmap
 from OWWidget import *
 from OWGraph import *

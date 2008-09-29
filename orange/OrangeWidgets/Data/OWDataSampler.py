@@ -5,7 +5,6 @@ r"""
 <contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact>
 <priority>1125</priority>
 """
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import random

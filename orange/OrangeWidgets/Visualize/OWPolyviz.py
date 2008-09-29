@@ -9,7 +9,6 @@
 #
 # Show data using Polyviz visualization method
 #
-import orngOrangeFoldersQt4
 from OWLinProj import *
 from OWPolyvizGraph import *
 

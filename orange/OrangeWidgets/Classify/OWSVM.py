@@ -5,7 +5,6 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
-import orngOrangeFoldersQt4
 import orange, orngSVM, OWGUI, sys
 from OWWidget import *
 from exceptions import SystemExit

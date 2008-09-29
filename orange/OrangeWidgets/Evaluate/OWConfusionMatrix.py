@@ -5,7 +5,6 @@
 <icon>ConfusionMatrix.png</icon>
 <priority>1001</priority>
 """
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import orngStat, orngTest

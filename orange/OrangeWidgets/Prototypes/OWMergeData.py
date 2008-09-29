@@ -5,7 +5,6 @@
 <priority>1110</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
-import orngOrangeFoldersQt4
 import orange
 from OWWidget import *
 import OWGUI

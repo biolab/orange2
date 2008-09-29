@@ -9,7 +9,6 @@
 #
 # Show data using survey plot visualization method
 #
-import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWSurveyPlotGraph import *
 import OWColorPalette
