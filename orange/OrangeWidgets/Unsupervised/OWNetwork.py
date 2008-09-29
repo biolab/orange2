@@ -604,7 +604,7 @@ class OWNetwork(OWWidget):
         if not i is None:
             self.hubs = i
         
-        print self.hubs
+        #print self.hubs
         self.graph.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
         self.graph.markWithRed = False
 
@@ -924,15 +924,15 @@ class OWNetwork(OWWidget):
             return
         
         if len(items) > 0:
-            lstOrgDomain = [x.name for x in self.visualize.graph.items.domain]
-            lstNewDomain = [x.name for x in items.domain]
+            lstOrgDomain = [x.name for x in self.visualize.graph.items.domain] + [self.visualize.graph.items.domain[x].name for x in self.visualize.graph.items.domain.getmetas()]
+            lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
             commonVars = set(lstNewDomain) & set(lstOrgDomain)
 
             if len(commonVars) > 0:
                 for var in commonVars:
                     orgVar = self.visualize.graph.items.domain[var]
                     mrkVar = items.domain[var]
-                    
+
                     if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
                         self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
                         self.markInputRadioButton.setEnabled(True)
