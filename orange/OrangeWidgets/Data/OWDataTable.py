@@ -13,7 +13,6 @@
 # all sorts of preprocessing (including discretization) on the table,
 # output a new table and export it in variety of formats.
 
-import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import math
@@ -149,10 +148,11 @@ class OWDataTable(OWWidget):
             self.cbShowMeta.setEnabled(len(self.showMetas[id][1])>0)        # enable showMetas checkbox only if metas exist
 
         elif self.data.has_key(id):
+            table = self.id2table[id]
             self.data.pop(id)
             self.showMetas.pop(id)
-            self.id2table[id].hide()
-            self.tabs.removeTab(self.tabs.indexOf(self.id2table[id]))
+            table.hide()
+            self.tabs.removeTab(self.tabs.indexOf(table))
             self.table2id.pop(self.id2table.pop(id))
             self.setInfo(self.data.get(self.table2id.get(self.tabs.currentWidget(),None),None))
 
@@ -216,7 +216,7 @@ class OWDataTable(OWWidget):
             for i in range(numEx):
 ##                table.setItem(i, j, TableWidgetItem(data[i][key]
 ##                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-                item = OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
+                item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
                 item.setData(OrangeValueRole, QVariant(str(data[i][key])))
 
         table.resizeRowsToContents()
@@ -317,6 +317,7 @@ class OWDataTable(OWWidget):
                     self.infoClass.setText("Class is neither discrete nor continuous.")
             else:
                 self.infoClass.setText('Classless domain.')
+                
 
 class TableItemDelegate(QItemDelegate):
     def __init__(self, widget = None, table = None):
