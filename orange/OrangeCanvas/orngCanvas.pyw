@@ -5,7 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys, os, cPickle, orngGui
 import orngTabs, orngDoc, orngDlgs, orngOutput
-import orange, user, orngMisc, orngRegistry, orngOrangeFoldersQt4
+import orange, user, orngMisc, orngRegistry, orngEnviron
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent = None, flags = 0):
@@ -20,7 +20,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
 
-        self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
+        self.__dict__.update(orngEnviron.directoryNames)
 
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
         canvasPicsDir  = os.path.join(self.canvasDir, "icons")
