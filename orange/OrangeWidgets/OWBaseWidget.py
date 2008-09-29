@@ -3,7 +3,7 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
-import orngOrangeFoldersQt4
+import orngEnviron
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -130,7 +130,7 @@ class OWBaseWidget(QDialog):
         else:               QDialog.__init__(self, parent, Qt.Window | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowMinimizeButtonHint)
 
         # directories are better defined this way, otherwise .ini files get written in many places
-        self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
+        self.__dict__.update(orngEnviron.directoryNames)
 
         self.setCaption(title.replace("&","")) # used for widget caption
 
