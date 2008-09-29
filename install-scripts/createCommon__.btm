@@ -11,6 +11,7 @@ set ORANGE_W_PYTHON=%4
 
 cdd %TMPDIR
 del /syeqtx binaries
+copy /S %SCRIPTDIR\binaries.precompiled %TMPDIR\binaries
 
 cdd %TMPDIR\source
 call _pyxtract.bat

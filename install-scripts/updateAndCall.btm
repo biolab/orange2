@@ -1,5 +1,5 @@
 net use o: \\estelle.fri.uni-lj.si\download
 cdd e:\orange\scripts
 svn update
-call callUpdateSnapshot.btm
+call callCreateSnapshot.btm
 shutdown -s
