@@ -430,6 +430,9 @@ class OWBaseWidget(QDialog):
 
         return cPickle.dumps(settings)
 
+    def onDeleteWidget(self):
+        pass
+
     # this function is only intended for derived classes to send appropriate signals when all settings are loaded
     def activateLoadedSettings(self):
         pass
