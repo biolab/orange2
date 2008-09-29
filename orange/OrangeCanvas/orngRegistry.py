@@ -44,6 +44,8 @@ def readCategories():
             try:
                 catName, dirName = [x.strip() for x in lne.split("\t")]
                 directories.append((catName, dirName, dirName))
+                if os.path.exists(os.path.join(dirName, "Prototypes")):     # if there is a subfolder Prototypes add this folder also
+                    directories.append(("Prototypes", os.path.join(dirName, "Prototypes"), os.path.join(dirName, "Prototypes")))
             except:
                 pass
             
@@ -55,6 +57,8 @@ def readCategories():
             addonWidgets = os.path.join(addon, "widgets")
             if os.path.isdir(addon) and os.path.isdir(addonWidgets):
                 directories.append((dir, addonWidgets, addonWidgets))
+                if os.path.exists(os.path.join(dir, "Prototypes")):     # if there is a subfolder Prototypes add this folder also
+                    directories.append(("Prototypes", os.path.join(dir, "Prototypes"), os.path.join(dir, "Prototypes")))                    
             
     categories = []
     for catName, dirName, plugin in directories:
