@@ -2,7 +2,11 @@
 #
 
 import os, sys, re, glob, stat
-from orngOrangeFoldersQt4 import *
+
+orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
+if not orangeDir in sys.path:
+    sys.path.append(orangeDir)
+from orngEnviron import *
 
 class WidgetDescription:
     def __init__(self, **attrs):
