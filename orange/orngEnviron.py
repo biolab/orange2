@@ -2,12 +2,11 @@ import os, sys, user
 
 def __getDirectoryNames():
     try:
-        canvasDir = os.path.split(os.path.abspath(__file__))[0]
-        orangeDir = canvasDir[:-13]
+        orangeDir = os.path.split(os.path.abspath(__file__))[0]
     except:
         import orange
         orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
-        canvasDir = os.path.join(orangeDir, "OrangeCanvas")
+    canvasDir = os.path.join(orangeDir, "OrangeCanvas")
 
     try:
         orangeVer = orangeDir.split(os.path.sep)[-1]
