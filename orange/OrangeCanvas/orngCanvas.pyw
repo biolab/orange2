@@ -3,9 +3,9 @@
 #    main file, that creates the MDI environment
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import sys, os, cPickle, orngGui
+import sys, os, cPickle, orngRegistry, orngEnviron, orngGui
 import orngTabs, orngDoc, orngDlgs, orngOutput
-import orange, user, orngMisc, orngRegistry, orngEnviron
+import orange, user, orngMisc
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent = None, flags = 0):
