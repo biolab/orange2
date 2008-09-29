@@ -571,7 +571,7 @@ class SchemaDoc(QMdiSubWindow):
 
         start = """#This file is automatically created by Orange Canvas and containing an Orange schema
 
-import orngOrangeFoldersQt4
+import orngEnviron
 import orngDebugging
 import sys, os, cPickle, orange, orngSignalManager, OWGUI
 from OWBaseWidget import *
