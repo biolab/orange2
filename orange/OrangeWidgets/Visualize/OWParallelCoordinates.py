@@ -9,7 +9,6 @@
 #
 # Show data using parallel coordinates visualization method
 #
-import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWParallelGraph import *
 import OWToolbars, OWGUI, OWColorPalette, orngVisFuncts
@@ -502,22 +501,22 @@ class ParallelOptimization(OWWidget):
 
 
     def addProjection(self, val, attrList):
-        index = self.findTargetIndex(val, max)
+        index = self.findTargetIndex(val)
         self.allResults.insert(index, (val, attrList))
-        self.resultList.addItem("%.3f - %s" % (val, str(attrList)), index)
+        self.resultList.insertItem(index, "%.3f - %s" % (val, str(attrList)))
 
 
-    def findTargetIndex(self, accuracy, funct):
+    def findTargetIndex(self, accuracy):
         # use bisection to find correct index
         top = 0; bottom = len(self.allResults)
 
         while (bottom-top) > 1:
             mid  = (bottom + top)/2
-            if funct(accuracy, self.allResults[mid][0]) == accuracy: bottom = mid
+            if max(accuracy, self.allResults[mid][0]) == accuracy: bottom = mid
             else: top = mid
 
         if len(self.allResults) == 0: return 0
-        if funct(accuracy, self.allResults[top][0]) == accuracy:
+        if max(accuracy, self.allResults[top][0]) == accuracy:
             return top
         else:
             return bottom
@@ -634,8 +633,10 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWParallelCoordinates()
     ow.show()
+    ow.graph.discPalette = ColorPaletteGenerator(rgbColors = [(127, 201, 127), (190, 174, 212), (253, 192, 134)])
     data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
     #data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
     ow.setData(data)
     ow.handleNewSignals()
+    
     a.exec_()

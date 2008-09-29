@@ -1,9 +1,9 @@
 #
 # OWParallelGraph.py
 #
-import orngOrangeFoldersQt4
+import orngEnviron
 from OWGraph import *
-from OWDistributions import *
+#from OWDistributions import *
 from orngScaleData import *
 from statc import pearsonr
 
@@ -34,8 +34,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.visualizedMidLabels = []
         self.selectedExamples = []
         self.unselectedExamples = []
-        self.bottomPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], "icons/upgreenarrow.png"))
-        self.topPixmap = QPixmap(os.path.join(orngOrangeFoldersQt4.directoryNames["widgetDir"], "icons/downgreenarrow.png"))
+        self.bottomPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/upgreenarrow.png"))
+        self.topPixmap = QPixmap(os.path.join(orngEnviron.directoryNames["widgetDir"], "icons/downgreenarrow.png"))
 
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
         self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)
@@ -43,8 +43,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Ticks, 0)
 
     def setData(self, data, subsetData = None, **args):
-        OWGraph.setData(self, data)
         orngScaleData.setData(self, data, subsetData, **args)
+        OWGraph.setData(self, data)
         self.domainContingency = None
 
 
@@ -504,7 +504,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     # draw the curves and the selection conditions
     def drawCanvas(self, painter):
         OWGraph.drawCanvas(self, painter)
-        for i in range(max(0, math.floor(self.axisScaleDiv(QwtPlot.xBottom).lBound())), min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(QwtPlot.xBottom).hBound())+1)):
+        for i in range(int(max(0, math.floor(self.axisScaleDiv(QwtPlot.xBottom).lBound()))), int(min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(QwtPlot.xBottom).hBound())+1))):
             bottom, top = self.selectionConditions.get(self.visualizedAttributes[i], (0, 1))
             painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.bottomPixmap.width()/2, self.transform(QwtPlot.yLeft, bottom), self.bottomPixmap)
             painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.topPixmap.width()/2, self.transform(QwtPlot.yLeft, top)-self.topPixmap.height(), self.topPixmap)
