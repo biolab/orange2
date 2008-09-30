@@ -30,7 +30,8 @@ if ! grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' /sw/etc/apt/sources
 fi
 
 # Refreshes packages lists
-fink --all scanpackages
+fink --yes scanpackages
+fink --yes index
 
 cat <<-EOF
 	
@@ -40,3 +41,13 @@ cat <<-EOF
 	You can list available ailab packages using commands like 'fink list orange' and
 	you can install them using commands like 'fink install orange'.
 EOF
+
+if ! grep '^Trees:' /sw/etc/fink.conf | grep -q 'unstable/main'; then
+	cat <<-EOF
+		
+		WARNING: Your local Fink installation does not seem to use unstable Fink packages
+		         tree. This means that it could happen that some package on which ailab
+		         packages depend will not be found. In this case please configure Fink
+		         to use unstable tree using 'fink configure'.
+	EOF
+fi
