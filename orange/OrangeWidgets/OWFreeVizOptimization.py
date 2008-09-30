@@ -1,7 +1,7 @@
 from OWWidget import OWWidget
 from OWkNNOptimization import *
 import orange, math, random
-import OWGUI, orngVisFuncts, DESolver, numpy
+import OWGUI, orngVisFuncts, numpy
 from math import sqrt
 
 from orngScaleLinProjData import *
@@ -268,28 +268,6 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.findProjection(DR_PLS, setAnchors = 1)
 
 
-## ###############################################################
-## Optimize anchor position using differential evolution
-#class RadvizSolver(DESolver.DESolver):
-#    def __init__(self, radvizWidget, dim, pop):
-#        DESolver.DESolver.__init__(self, dim, pop) # superclass
-#        self.count = 0
-#        self.radviz = radvizWidget
-#        self.testGenerations = 20
-#        self.classes = [int(x.getclass()) for x in self.radviz.graph.rawData]
-#
-#        ai = self.radviz.graph.attributeNameIndex
-#        self.attrIndices = [ai[attr] for attr in self.radviz.getShownAttributeList()]
-#        self.data = numpy.transpose(self.radviz.graph.scaledData).tolist()
-#
-#    def EnergyFunction(self, trial, bAtSolution):
-#        import orangeom
-#        anchorData = [(trial[2*i], trial[2*i+1], self.radviz.graph.dataDomain.attributes[i].name) for i in self.attrIndices]
-#        for (x,y,a) in anchorData:
-#            if x**2 + y**2 > 1: return 999999999999, 0
-#        E = orangeom.computeEnergy(self.radviz.graph.rawData, self.classes, anchorData, self.attrIndices, self.radviz.attractG, -self.radviz.repelG)
-#        return E, 0
-#
 
 
 
