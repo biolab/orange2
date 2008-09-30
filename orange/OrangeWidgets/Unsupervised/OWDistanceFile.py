@@ -14,7 +14,7 @@ import os.path
 import pickle
 
 class OWDistanceFile(OWWidget):
-    settingsList = ["recentFiles"]
+    settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
     def __init__(self, parent=None, signalManager = None, name='Distance File'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
@@ -27,8 +27,12 @@ class OWDistanceFile(OWWidget):
         self.takeAttributeNames = False
         self.data = None
         self.matrix = None
+        self.invertDistances = 0
+        self.normalizeMethod = 0
+        self.invertMethod = 0
         self.loadSettings()
         self.labels = None
+        
         
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace=True)
         hbox = OWGUI.widgetBox(box, orientation = 0)
@@ -38,12 +42,30 @@ class OWDistanceFile(OWWidget):
         button.setMaximumWidth(25)
         self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self, "takeAttributeNames", ["Use examples as items", "Use attribute names"], "Items from input data", callback = self.relabel)
         self.rbInput.setDisabled(True)
-
+        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
+        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
+        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
+        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^x)", callback = self.setNormalizeMode)
+        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Invert method", callback = self.setInvertMode)
+        OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
+        OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
+        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
+        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
+        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
+        
         self.adjustSize()
 
         if self.recentFiles:
             self.loadFile()
 
+    def setNormalizeMode(self):
+        self.relabel()
+    
+    def setInvertMode(self):
+        self.relabel()
+                
     def browseFile(self):
         if self.recentFiles:
             lastPath = os.path.split(self.recentFiles[0])[0]
@@ -124,7 +146,7 @@ class OWDistanceFile(OWWidget):
                                 raise exceptions.Exception 
                             
             self.relabel()
-        except:
+        except msg:
             self.error(msg or "Error while reading the file")
             
     def relabel(self):
@@ -154,8 +176,34 @@ class OWDistanceFile(OWWidget):
         if self.data == None and self.labels == None:
             matrix.setattr("items", range(matrix.dim))
             
+        matrix = None
         #print 'send'#, matrix
-        self.send("Distance Matrix", self.matrix)
+        if self.invertMethod > 0 or self.normalizeMethod > 0:
+            import copy
+            matrix = copy.deepcopy(self.matrix)
+            
+            if self.normalizeMethod == 1:
+                matrix.normalize(0)
+            elif self.normalizeMethod == 2:
+                matrix.normalize(1)
+            
+            if self.invertMethod == 1:
+                matrix.invert(0)
+            elif self.invertMethod == 2:
+                matrix.invert(1)
+            elif self.invertMethod == 3:
+                matrix.invert(2)
+            elif self.invertMethod == 4:
+                try:                
+                    matrix.invert(3)
+                except:
+                    self.error("Division by zero")
+                    self.send("Distance Matrix", None)
+                        
+        if matrix:
+            self.send("Distance Matrix", matrix)
+        else:
+            self.send("Distance Matrix", self.matrix)
 
     def getExamples(self, data):
         self.data = data
