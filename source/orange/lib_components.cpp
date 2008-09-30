@@ -56,7 +56,7 @@ bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeO
 
 
 PyObject *convertToPython(const PCostMatrix &matrix)
-{ 
+{
 	int dim = matrix->dimension;
 	PyObject *pycost = PyList_New(dim);
 	float *ci = matrix->costs;
@@ -245,7 +245,7 @@ int getCostIndex(PyObject *arg, TCostMatrix *matrix, char *error)
 
 
 PyObject *CostMatrix_getcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(predicted, correct) -> float")
-{ 
+{
 	PyTRY
 		CAST_TO(TCostMatrix, matrix);
 
@@ -485,9 +485,9 @@ PyObject *PearsonCorrelation_new(PyTypeObject *type, PyObject *args, PyObject *)
       return NULL;
 
     PVariable var1 = varFromArg_byDomain(pyvar1, egen->domain, false);
-    if (!var1) 
+    if (!var1)
       return NULL;
-      
+
     PVariable var2 = varFromArg_byDomain(pyvar2, egen->domain, false);
     if (!var2)
       return NULL;
@@ -516,7 +516,7 @@ if (cont->outerVariable->varType==TValue::INTVAR) {
 		ind=(int)PyInt_AsLong(index);
 	else {
 		TValue val;
-		if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial()) 
+		if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial())
 			ind=int(val);
 	}
 
@@ -569,7 +569,7 @@ PyObject *ContingencyReduceCommon(PyObject *self, const char *loaderFunc)
 
 		return Py_BuildValue("O(ON)N", getExportedFunction(loaderFunc),
 			(PyObject *)(self->ob_type),
-			dvect, 
+			dvect,
 			packOrangeDictionary(self));
 	}
 
@@ -584,7 +584,7 @@ PyObject *ContingencyReduceCommon(PyObject *self, const char *loaderFunc)
 
 		return Py_BuildValue("O(ONs#)N", getExportedFunction(loaderFunc),
 			(PyObject *)(self->ob_type),
-			dvect, 
+			dvect,
 			buf.buf, buf.length(),
 			packOrangeDictionary(self));
 	}
@@ -658,7 +658,7 @@ PyObject *Contingency__reduce__(PyObject *self, const char *loaderFunc)
 }
 
 PyObject *__pickleLoaderContingency(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(list of PDistribution, [packed_floats])")
-{ 
+{
 	return __pickleLoaderContingencyCommon(new TContingency(), args);
 }
 
@@ -783,7 +783,7 @@ if (PyArg_ParseTuple(args, "OO&|O&", &object1, pt_ExampleGenerator, &gen, pt_wei
 		return WrapNewOrange(mlnew TContingencyAttrClass(gen, attrNo, weightID), type);
 }
 
-PYERROR(PyExc_TypeError, "invalid type for ContingencyAttrClass constructor", PYNULL);   
+PYERROR(PyExc_TypeError, "invalid type for ContingencyAttrClass constructor", PYNULL);
 
 PyCATCH
 }
@@ -841,7 +841,7 @@ if (   PyArg_ParseTuple(args, "OO&|O&", &object1, pt_ExampleGenerator, &gen, pt_
 
 PyCATCH
 
-PYERROR(PyExc_TypeError, "invalid type for ContingencyClassAttr constructor", PYNULL);   
+PYERROR(PyExc_TypeError, "invalid type for ContingencyClassAttr constructor", PYNULL);
 }
 
 
@@ -1118,7 +1118,7 @@ if (cont->outerVariable->varType==TValue::FLOATVAR) {
 	PyObject *nl=PyList_New(cont->continuous->size());
 	int i=0;
 	PITERATE(TDistributionMap, ci, cont->continuous)
-		PyList_SetItem(nl, i++, 
+		PyList_SetItem(nl, i++,
 		Py_BuildValue("fN", (double)(*ci).first, WrapOrange((*ci).second)));
 	return nl;
 }
@@ -1127,7 +1127,7 @@ else if (cont->outerVariable->varType==TValue::INTVAR) {
 	int i=0;
 	TStringList::const_iterator ii(cont->outerVariable.AS(TEnumVariable)->values->begin());
 	PITERATE(TDistributionVector, ci, cont->discrete)
-		PyList_SetItem(nl, i++, 
+		PyList_SetItem(nl, i++,
 		Py_BuildValue("sN", (*(ii++)).c_str(), WrapOrange(*ci)));
 	return nl;
 }
@@ -1213,7 +1213,7 @@ else {
 
 
 int ptn_DomainContingency(PyObject *args, void *egen)
-{ 
+{
 	if (args == Py_None) {
 		*(PDomainContingency *)(egen) = PDomainContingency();
 		return 1;
@@ -1328,7 +1328,7 @@ PyObject *ComputeDomainContingency_call(PyObject *self, PyObject *args)
   PExampleGenerator gen = exampleGenFromArgs(args, weightID);
   if (!gen)
     PYERROR(PyExc_AttributeError, "examples and, optionally, weight ID expected", PYNULL);
-    
+
   return WrapOrange(SELF_AS(TComputeDomainContingency).call(gen, weightID));
 }
 
@@ -1345,7 +1345,7 @@ PyObject *DomainTransformerConstructor_call(PyObject *self, PyObject *args)
   PExampleGenerator gen = exampleGenFromArgs(args, weightID);
   if (!gen)
     PYERROR(PyExc_AttributeError, "examples and, optionally, weight ID expected", PYNULL);
-    
+
   return WrapOrange(SELF_AS(TDomainTransformerConstructor).call(gen, weightID));
 }
 
@@ -1373,7 +1373,7 @@ C_CALL(ExamplesDistanceConstructor_DTW, ExamplesDistanceConstructor, "([examples
 
 
 PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
-{ 
+{
   if (type == (PyTypeObject *)&PyOrExamplesDistanceConstructor_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type), args);
   else
@@ -1704,7 +1704,7 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 PyObject *Filter_deepCopy(PyObject *self) PYARGS(METH_NOARGS, "() -> filter")
 {
 	PyTRY
-		CAST_TO(TFilter, filter); 
+		CAST_TO(TFilter, filter);
 
     PFilter res = filter->deepCopy();
 	  return WrapOrange(res);
@@ -1712,7 +1712,7 @@ PyObject *Filter_deepCopy(PyObject *self) PYARGS(METH_NOARGS, "() -> filter")
 }
 
 PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)")
-{ 
+{
 	PyTRY
 		PExampleGenerator egen = exampleGenFromParsedArgs(arg);
 	if (!egen)
@@ -1748,7 +1748,7 @@ PyObject *filterSelectionVectorLow(TFilter &filter, PExampleGenerator egen)
 
 
 PyObject *Filter_selectionVector(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)")
-{ 
+{
 	PyTRY
 		PExampleGenerator egen = exampleGenFromParsedArgs(arg);
 	if (!egen)
@@ -2104,7 +2104,7 @@ PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keyw
 
 		int n;
 		float f;
-		PExampleGenerator egen;    
+		PExampleGenerator egen;
 		PRandomIndices res;
 
 		if (PyArg_ParseTuple(args, "i", &n)) {
@@ -2134,7 +2134,7 @@ PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keyw
 		PyErr_Clear();
 		PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
 
-out: 
+out:
 		mri2->p0 = savedP0;
 		if (!res)
 			PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
@@ -2434,7 +2434,7 @@ PyObject *ConditionalProbabilityEstimatorList__reduce__(TPyOrange *self, PyObjec
 
 
 PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([distribution[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
-{ 
+{
 	PyTRY
 		NO_KEYWORDS
 
@@ -2482,7 +2482,7 @@ NO_KEYWORDS
 CAST_TO(TProbabilityEstimator, cest);
 
 PyObject *pyobj = PYNULL;
-if (!PyArg_ParseTuple(args, "|O:ProbabilityEstimator.call", &pyobj)) 
+if (!PyArg_ParseTuple(args, "|O:ProbabilityEstimator.call", &pyobj))
 return PYNULL;
 
 if (pyobj) {
@@ -2500,7 +2500,7 @@ PyCATCH
 
 
 PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([contingency[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
-{ 
+{
 	PyTRY
 		NO_KEYWORDS
 
@@ -2542,14 +2542,14 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 
 
 PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Value, Condition) -> float  |  (Condition) -> Distribution | () -> Contingency")
-{ 
+{
 	PyTRY
 		NO_KEYWORDS
 
 		CAST_TO(TConditionalProbabilityEstimator, cest);
 
 	PyObject *pyobj1 = PYNULL, *pyobj2 = PYNULL;
-	if (!PyArg_ParseTuple(args, "|OO:ProbabilityEstimator.call", &pyobj1, &pyobj2)) 
+	if (!PyArg_ParseTuple(args, "|OO:ProbabilityEstimator.call", &pyobj1, &pyobj2))
 		return PYNULL;
 
 	if (pyobj1 && pyobj2) {
@@ -2616,7 +2616,7 @@ PyObject *MeasureAttribute__reduce__(PyObject *self)
 
 
 PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attr, xmpls[, apr, wght]) | (attr, domcont[, apr]) | (cont, clss-dist [,apr]) -> (float, meas-type)")
-{ 
+{
 	PyTRY
 		NO_KEYWORDS
 
@@ -2682,7 +2682,7 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
 				else {
 					PyErr_Format(PyExc_IndexError, "cannot guess the attribute from the object of type '%s'", arg1->ob_type->tp_name);
 					return PYNULL;
-				}  
+				}
 			}
 
 			return PyFloat_FromDouble((double)(meat->operator()(attrNo, dcont, aprClDistr)));
@@ -2876,15 +2876,15 @@ C_NAMED(ExampleClusters, GeneralExampleClustering, "([root=, quality=]")
 
 
 PyObject *GeneralExampleClustering_exampleClusters(PyObject *self) PYARGS(METH_NOARGS, "() -> ExampleClusters")
-{ 
+{
 	PyTRY
-		return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleClusters()); 
+		return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleClusters());
 	PyCATCH
 }
 
 
 PyObject *GeneralExampleClustering_exampleSets(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> ExampleSets")
-{ 
+{
 	PyTRY
 		float cut = 0.0;
 	if (!PyArg_ParseTuple(args, "|f", &cut))
@@ -2896,7 +2896,7 @@ PyObject *GeneralExampleClustering_exampleSets(PyObject *self, PyObject *args) P
 
 
 PyObject *GeneralExampleClustering_classifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> Classifier")
-{ 
+{
 	PyTRY
 		float cut = 0.0;
 	if (!PyArg_ParseTuple(args, "|f", &cut))
@@ -2908,7 +2908,7 @@ PyObject *GeneralExampleClustering_classifier(PyObject *self, PyObject *args) PY
 
 
 PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> Variable")
-{ 
+{
 	PyTRY
 		float cut = 0.0;
 	if (!PyArg_ParseTuple(args, "|f", &cut))
@@ -3100,7 +3100,7 @@ PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(
 	CAST_TO(TSymMatrix, matrix)
 
 	PyObject* components_list = PyList_New(0);
-		
+
 	int i,j;
 	for (i = 0; i < matrix->dim; i++) {
 		for (j = i+1; j < matrix->dim; j++) {
@@ -3109,14 +3109,122 @@ PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(
 				value = matrix->getitem(j,i);
 			else
 				value = matrix->getitem(i,j);
-			
+
 			PyObject *nel = Py_BuildValue("d", value);
 			PyList_Append(components_list, nel);
 			Py_DECREF(nel);
 		}
 	}
-	
+
 	return components_list;
+	PyCATCH
+}
+
+PyObject *SymMatrix_invert(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Invert type -> None)")
+{
+	/* ******************
+	 * Types:
+	 * 0 - [-X]
+	 * 1 - [1 - X]
+	 * 2 - [max - X]
+	 * 3 - [1 / X]
+	 ********************/
+	PyTRY
+	int type;
+
+	if (!PyArg_ParseTuple(args, "i:SymMatrix.invert", &type))
+		return NULL;
+
+	if (type < 0 || type > 3)
+		PYERROR(PyExc_AttributeError, "only types 0 to 3  are supported", PYNULL);
+
+	CAST_TO(TSymMatrix, matrix);
+	int i;
+	float *e = matrix->elements;
+	switch(type)
+	{
+		case 0:
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				*e = 0 - *e;
+			break;
+
+		case 1:
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				*e = 1 - *e;
+			break;
+
+		case 2:
+			float maxval;
+			maxval = 0;
+
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				if (*e > maxval)
+					maxval = *e;
+
+			e = matrix->elements;
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				*e = maxval - *e;
+
+			break;
+
+		case 3:
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				if (*e == 0)
+					raiseError("division by zero");
+				*e = 1 / *e;
+			break;
+	}
+
+	RETURN_NONE;
+	PyCATCH
+}
+
+PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Normalize type -> None)")
+{
+	/* ******************
+	 * Types:
+	 * 0 - [0, 1]
+	 * 1 - Sigmoid
+	 ********************/
+	PyTRY
+	int type;
+
+	if (!PyArg_ParseTuple(args, "i:SymMatrix.normalize", &type))
+		return NULL;
+
+	if (type < 0 || type > 1)
+		PYERROR(PyExc_AttributeError, "only types 0 and 1 are supported", PYNULL);
+
+	CAST_TO(TSymMatrix, matrix);
+	int i;
+	float maxval = 0;
+	float minval = INT_MAX;
+	float *e = matrix->elements;
+	switch(type)
+	{
+		case 0:
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				if (*e > maxval)
+					maxval = *e;
+
+				if (*e < minval)
+					minval = *e;
+
+			cout << "minval: " << minval << endl;
+			cout << "maxval: " << maxval << endl;
+
+			e = matrix->elements;
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				*e = (*e - minval) / (maxval - minval);
+			break;
+
+		case 1:
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+				*e = 1 / (1 + exp(-(*e)));
+			break;
+	}
+
+	RETURN_NONE;
 	PyCATCH
 }
 
@@ -3133,7 +3241,7 @@ PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
 	}
 
 	int j;
-	PyObject *row;    
+	PyObject *row;
 	switch (matrix->matrixType) {
 			case TSymMatrix::Lower:
 				row = PyTuple_New(i+1);
@@ -3223,7 +3331,7 @@ PyObject *SymMatrix_getslice(PyObject *self, int start, int stop)
 		CAST_TO(TSymMatrix, matrix)
 		const int dim = matrix->dim;
 
-	if (start>dim) 
+	if (start>dim)
 		start = dim;
 	else if (start<0)
 		start = 0;
@@ -3334,14 +3442,14 @@ PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *
 
 
 int HierarchicalCluster_len_sq(PyObject *self)
-{ 
+{
 	CAST_TO_err(THierarchicalCluster, cluster, -1);
 	return cluster->last - cluster->first;
 }
 
 
 PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
-{ 
+{
 	PyTRY
 		CAST_TO(THierarchicalCluster, cluster);
 
@@ -3371,7 +3479,7 @@ PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
 
 
 PyObject *HierarchicalCluster_get_left(PyObject *self)
-{ 
+{
 	PyTRY
 		CAST_TO(THierarchicalCluster, cluster);
 
@@ -3387,7 +3495,7 @@ PyObject *HierarchicalCluster_get_left(PyObject *self)
 
 
 PyObject *HierarchicalCluster_get_right(PyObject *self)
-{ 
+{
 	PyTRY
 		CAST_TO(THierarchicalCluster, cluster);
 
@@ -3416,7 +3524,7 @@ int HierarchicalClusterLowSet(PyObject *self, PyObject *arg, const int side)
 
 	if (!cluster->branches)
 		cluster->branches = mlnew THierarchicalClusterList(2);
-	else 
+	else
 		if (cluster->branches->size() != 2)
 			PYERROR(PyExc_AttributeError, "'left' not defined (cluster does not have (exactly) two subclusters)", -1);
 
@@ -3511,7 +3619,7 @@ PyObject *DistanceMapConstructor_call(PyObject *self, PyObject *args, PyObject *
 
 
 PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height, gamma) -> bitmap")
-{ 
+{
 	PyTRY
 		int width, height;
 	float gamma;
@@ -3752,7 +3860,7 @@ int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
 
 /*
 // I've programmed this by mistake; but it's nice, so let it stay
-// for the case we need it :) 
+// for the case we need it :)
 PyObject *PyEdge_Str(TPyEdge *self)
 {
 PyTRY
@@ -3944,7 +4052,7 @@ PyObject *PyEdge_Float(TPyEdge *self)
 PyNumberMethods PyEdge_as_number = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	(inquiry)PyEdge_Nonzero,                           /* nb_nonzero */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
 	(unaryfunc)PyEdge_Float,  /* nb_float */
 	0, 0,
 };
@@ -4471,7 +4579,7 @@ PyObject *Graph_getConnectedComponents(PyObject *self, PyObject *args, PyObject 
 
 	ITERATE(vector<set<int> >, si, components) {
 		PyObject* component_list = PyList_New(0);
-		
+
 		ITERATE(set<int>, ni, *si) {
 			PyObject *nel = Py_BuildValue("i", *ni);
 			PyList_Append(component_list, nel);
@@ -4500,10 +4608,10 @@ PyObject *Graph_getDegreeDistribution(PyObject *self, PyObject *args, PyObject *
 			vector<int> neighbours;
 			graph->getNeighbours(v, neighbours);
 			nsize = PyInt_FromLong(neighbours.size());
-			
+
 			pydegree = PyDict_GetItem(degrees, nsize); // returns borrowed reference!
 			int newdegree = pydegree ? PyInt_AsLong(pydegree) + 1 : 1;
-			
+
 			pydegree = PyInt_FromLong(newdegree);
       PyDict_SetItem(degrees, nsize, pydegree);
       Py_DECREF(pydegree);
@@ -4519,13 +4627,13 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 		CAST_TO(TGraph, graph);
 
 		PyObject* degrees = PyList_New(graph->nVertices);
-		for(int v1 = 0; v1 < graph->nVertices; v1++) 
+		for(int v1 = 0; v1 < graph->nVertices; v1++)
 		{
 			PyList_SetItem(degrees, v1,  PyInt_FromLong(0));
 		}
 
 		vector<int> neighbours;
-		for(int v1 = 0; v1 < graph->nVertices; v1++) 
+		for(int v1 = 0; v1 < graph->nVertices; v1++)
 		{
 			graph->getNeighboursFrom_Single(v1, neighbours);
 
@@ -4555,7 +4663,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 	CAST_TO(TGraph, graph);
 	//cout << "Graph_getSubGraph" << endl;
 	PyObject *vertices;
-	
+
 	if (!PyArg_ParseTuple(args, "O:Graph.getSubGraph", &vertices))
 		return PYNULL;
 
@@ -4577,7 +4685,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 			if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 			{
 				int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-				
+
 				if (index != -1)
 				{
 					double* w = subgraph->getOrCreateEdge(i, index);
@@ -4587,7 +4695,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 			}
 		}
 	}
- 
+
 	PyObject *pysubgraph = WrapOrange(wsubgraph);
 
 	// set graphs attribut items of type ExampleTable to subgraph
@@ -4649,7 +4757,7 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 				{
 					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-					
+
 					if (index != -1)
 					{
 						double* w = subgraph->getOrCreateEdge(i, index);
@@ -4670,7 +4778,7 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 				{
 					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-					
+
 					if (index != -1)
 					{
 						double* w = subgraph->getOrCreateEdge(size, index);
@@ -4761,7 +4869,7 @@ PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObjec
 				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 				{
 					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-					
+
 					if (index != -1)
 					{
 						double* w = subgraph->getOrCreateEdge(i, index);
@@ -4788,7 +4896,7 @@ PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObjec
 					{
 						// vertex to connect with is in new graph
 						int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-						
+
 						if (index != -1)
 						{
 							double* w = subgraph->getOrCreateEdge(size + i, index);
@@ -4883,7 +4991,7 @@ PyObject *Graph_getSubGraphWithout(PyObject *self, PyObject *args, PyObject *) P
 				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 				{
 					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
-					
+
 					if (index != -1)
 					{
 						double* w = subgraph->getOrCreateEdge(i, index);
@@ -4908,7 +5016,7 @@ PyObject *Graph_getSubGraphWithout(PyObject *self, PyObject *args, PyObject *) P
 
 				table = new TExampleTable(graph_table->domain);
 				wtable = table;
-				
+
 				for (i = 0; i < size; i++)
 				{
 					int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
@@ -4919,7 +5027,7 @@ PyObject *Graph_getSubGraphWithout(PyObject *self, PyObject *args, PyObject *) P
 				//PyObject_SetAttr((PyObject *)subgraph, PyString_FromString("items"), Py_BuildValue("N", WrapOrange(wtable)));
 			}
 		}
-	
+
 		return Py_BuildValue("NN", WrapOrange(wsubgraph), WrapOrange(wtable));
 		/**/
 		return Py_BuildValue("N", WrapOrange(wsubgraph));
@@ -4947,7 +5055,7 @@ PyObject *Graph_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n
 
 
 		vector<int> neighbours;
-		for(i = 0; i < graph->nVertices; i++) 
+		for(i = 0; i < graph->nVertices; i++)
 		{
 			graph->getNeighboursFrom_Single(i, neighbours);
 
@@ -4959,7 +5067,7 @@ PyObject *Graph_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n
 		}
 
 		PyObject* hubList = PyList_New(n);
-		
+
 		for (i=0; i < n; i++)
 		{
 			int j;
@@ -5150,10 +5258,10 @@ PyObject *Graph_getClusteringCoefficient(PyObject *self, PyObject *args) PYARGS(
 {
   PyTRY
   CAST_TO(TGraph, graph);
-  
+
   double coef = graph->getClusteringCoefficient();
   return Py_BuildValue("d", coef);
-  
+
   PyCATCH
 }
 
@@ -5193,7 +5301,7 @@ PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH
 		PyObject *pyFullgraphs = PyList_New(0);
     ITERATE(vector<vector<int> >, fg, fullgraphs) {
 			PyObject *pyFullgraph = PyList_New(0);
-			
+
 			ITERATE(vector<int>, node, *fg) {
 				PyObject *nel = Py_BuildValue("i", *node);
 				PyList_Append(pyFullgraph, nel);
@@ -5259,7 +5367,7 @@ PyObject *__pickleLoaderGraphAsMatrix(PyObject *, PyObject *args) PYARGS(METH_VA
 
 
 int GraphAsMatrix_traverse(PyObject *self, visitproc visit, void *arg)
-{ 
+{
 	int err = Orange_traverse((TPyOrange *)self, visit, arg);
 	if (err || !hasObjectsOnEdges(self))
 		return err;
@@ -5286,7 +5394,7 @@ void decrefGraph(TGraphAsMatrix &graph)
 }
 
 int GraphAsMatrix_clear(PyObject *self)
-{ 
+{
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsMatrix));
 
@@ -5299,7 +5407,7 @@ void GraphAsMatrix_dealloc(PyObject *self)
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsMatrix));
 
-	Orange_dealloc((TPyOrange *)self);  
+	Orange_dealloc((TPyOrange *)self);
 }
 
 
@@ -5377,7 +5485,7 @@ PyObject *__pickleLoaderGraphAsList(PyObject *, PyObject *args) PYARGS(METH_VARA
 
 
 int GraphAsList_traverse(PyObject *self, visitproc visit, void *arg)
-{ 
+{
 	int err = Orange_traverse((TPyOrange *)self, visit, arg);
 	if (err || !hasObjectsOnEdges(self))
 		return err;
@@ -5408,7 +5516,7 @@ void decrefGraph(TGraphAsList &graph)
 }
 
 int GraphAsList_clear(PyObject *self)
-{ 
+{
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsList));
 
@@ -5421,7 +5529,7 @@ void GraphAsList_dealloc(PyObject *self)
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsList));
 
-	Orange_dealloc((TPyOrange *)self);  
+	Orange_dealloc((TPyOrange *)self);
 }
 
 
@@ -5535,7 +5643,7 @@ int traverse(TGraphAsTree::TEdge *edge, visitproc visit, void *arg, const int nE
 }
 
 int GraphAsTree_traverse(PyObject *self, visitproc visit, void *arg)
-{ 
+{
 	int err = Orange_traverse((TPyOrange *)self, visit, arg);
 	if (err || !hasObjectsOnEdges(self))
 		return err;
@@ -5575,7 +5683,7 @@ void decrefGraph(TGraphAsTree &graph)
 }
 
 int GraphAsTree_clear(PyObject *self)
-{ 
+{
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsTree));
 
@@ -5588,7 +5696,7 @@ void GraphAsTree_dealloc(PyObject *self)
 	if (hasObjectsOnEdges(self))
 		decrefGraph(SELF_AS(TGraphAsTree));
 
-	Orange_dealloc((TPyOrange *)  self);  
+	Orange_dealloc((TPyOrange *)  self);
 }
 
 #include "lib_components.px"
