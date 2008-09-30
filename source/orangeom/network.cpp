@@ -447,6 +447,79 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 }
 
 
+PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
+{
+	PyTRY
+	CAST_TO(TNetwork, network);
+
+	PyObject *pyMatrix;
+	double lower;
+	double upper;
+
+	if (!PyArg_ParseTuple(args, "Odd:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper))
+		return PYNULL;
+
+	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
+
+	if (matrix->dim != network->nVertices)
+		PYERROR(PyExc_TypeError, "DistanceMatrix dimension should equal number of vertices.", PYNULL);
+
+	int i,j;
+	int nConnected = 0;
+
+	if (matrix->matrixType == 0) {
+		// lower
+		for (i = 0; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				//cout << "i " << i << " j " << j;
+				double value = matrix->getitem(j,i);
+				//cout << " value " << value << endl;
+				if (lower <=  value && value <= upper) {
+					//cout << "value: " << value << endl;
+					double* w = network->getOrCreateEdge(j, i);
+					*w = value;
+
+					connected = true;
+				}
+			}
+
+			if (connected)
+				nConnected++;
+		}
+
+		vector<int> neighbours;
+		network->getNeighbours(0, neighbours);
+		if (neighbours.size() > 0)
+			nConnected++;
+	}
+	else {
+		// upper
+		for (i = 0; i < matrix->dim; i++) {
+			bool connected = false;
+			for (j = i+1; j < matrix->dim; j++) {
+				double value = matrix->getitem(i,j);
+				if (lower <=  value && value <= upper) {
+					double* w = network->getOrCreateEdge(i, j);
+					*w = value;
+					connected = true;
+				}
+			}
+
+			if (connected)
+				nConnected++;
+
+			vector<int> neighbours;
+			network->getNeighbours(matrix->dim - 1, neighbours);
+			if (neighbours.size() > 0)
+				nConnected++;
+		}
+	}
+
+	return Py_BuildValue("i", nConnected);
+	PyCATCH;
+}
+
 PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
 {
 	PyTRY
