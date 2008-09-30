@@ -187,6 +187,8 @@ class OrangeCanvasDlg(QMainWindow):
                 win.loadDocument(sys.argv[-1])
 
         self.workspace.cascadeSubWindows()
+        qApp.processEvents()
+        self.workspace.cascadeSubWindows()
 
         # show message box if no numpy
         qApp.processEvents()
