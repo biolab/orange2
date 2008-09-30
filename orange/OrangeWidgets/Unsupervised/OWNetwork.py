@@ -179,7 +179,7 @@ class OWNetwork(OWWidget):
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "None", callback = self.setMarkMode)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices", callback = self.setMarkMode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
         self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setMarkMode)
@@ -598,9 +598,10 @@ class OWNetwork(OWWidget):
     def setSearchStringTimer(self):
         self.hubs = 1
         self.searchStringTimer.stop()
-        self.searchStringTimer.start(750)
+        self.searchStringTimer.start(1000)
          
     def setMarkMode(self, i = None):
+        self.searchStringTimer.stop()
         if not i is None:
             self.hubs = i
         
@@ -624,7 +625,10 @@ class OWNetwork(OWWidget):
             txt = self.markSearchString
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
-            toMark = [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            
+            
+            
+            toMark = [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in range(len(vgraph.items.domain)) + vgraph.items.domain.getmetas().keys()])]
             self.graph.setMarkedVertices(toMark)
             self.graph.replot()
             return
