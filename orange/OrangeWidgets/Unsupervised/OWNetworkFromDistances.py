@@ -11,19 +11,21 @@
 #
 
 import OWGUI
+import orange
 from OWWidget import *
 from OWGraph import *
 from orngNetwork import * 
 from orangeom import Network
 from OWHist import *
+
             
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["threshold", "spinLowerThreshold", "spinUpperThreshold", "netOption"]
+    settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
+        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
         self.outputs = [("Network", Network), ("Examples", ExampleTable)]
 
         # set default settings
@@ -84,7 +86,8 @@ class OWNetworkFromDistances(OWWidget):
         self.searchStringTimer.stop()
         self.searchStringTimer.start(750)
 
-    def cdata(self, data):
+    def setMatrix(self, data):
+        print "reveived"
         if data == None: return
         
         self.data = data
