@@ -95,13 +95,13 @@ def createPath(target):
         pass
 
 def localpath(domain=None, filename=None):
-    import orngRegistry
+    import orngEnviron
     if not domain:
-        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles")
+        return os.path.join(orngEnviron.directoryNames["bufferDir"], "bigfiles")
     if filename:
-        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain, filename)
+        return os.path.join(orngEnviron.directoryNames["bufferDir"], "bigfiles", domain, filename)
     else:
-        return os.path.join(orngRegistry.directoryNames["bufferDir"], "bigfiles", domain)
+        return os.path.join(orngEnviron.directoryNames["bufferDir"], "bigfiles", domain)
 
 class ServerFiles(object):
 
