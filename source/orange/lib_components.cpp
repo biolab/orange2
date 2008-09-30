@@ -3210,8 +3210,8 @@ PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 				if (*e < minval)
 					minval = *e;
 
-			cout << "minval: " << minval << endl;
-			cout << "maxval: " << maxval << endl;
+			//cout << "minval: " << minval << endl;
+			//cout << "maxval: " << maxval << endl;
 
 			e = matrix->elements;
 			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
