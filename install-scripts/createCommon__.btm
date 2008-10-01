@@ -31,33 +31,33 @@ for %pyver in (%PYTHONVERSIONS) do (
   set PYORANGEDIR=%PYTHON\lib\site-packages\orange
   set PARTY=%SCRIPTDIR\%THIRD_PARTY_DIR\%pyver
 
+  REM # compile
+  pushd
+  cdd %PYORANGEDIR
+  del /eq orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
+  popd
+  vcexpress orange.sln /build Release /out %COMPILELOG
+  break_on_error
+
+  REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
+  set TMPBINDIR=%TMPDIR\binaries\%pyver
+  if not direxist %TMPBINDIR\%pyver mkdir /s %TMPBINDIR
+
+  cdd %PYORANGEDIR
+  except (*_d.pyd) for %pydf in (*.pyd) do (
+    if exist %TMPDIR\orange\%pydf del /q %TMPDIR\orange\%pydf
+    upx %pydf -o %TMPDIR\orange\%pydf
+    copy %TMPDIR\orange\%pydf %TMPBINDIR
+  )
+
+  cdd %TMPBINDIR
+  if exist stamps_pyd.txt del /q stamps_pyd.txt
+  for %pydf in (*.pyd) do (
+    set MD5=%@MD5[%pydf]
+    echo %pydf %MD5 >> stamps_pyd.txt
+  )
+
   if direxist %PARTY (
-    REM # compile
-    pushd
-    cdd %PYORANGEDIR
-    del /eq orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
-    popd
-    vcexpress orange.sln /build Release /out %COMPILELOG
-    break_on_error
-
-    REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
-    set TMPBINDIR=%TMPDIR\binaries\%pyver
-    if not direxist %TMPBINDIR\%pyver mkdir /s %TMPBINDIR
- 
-    cdd %PYORANGEDIR
-    except (*_d.pyd) for %pydf in (*.pyd) do (
-      if exist %TMPDIR\orange\%pydf del /q %TMPDIR\orange\%pydf
-      upx %pydf -o %TMPDIR\orange\%pydf
-	  copy %TMPDIR\orange\%pydf %TMPBINDIR
-    )
-
-    cdd %TMPBINDIR
-    if exist stamps_pyd.txt del /q stamps_pyd.txt
-    for %pydf in (*.pyd) do (
-      set MD5=%@MD5[%pydf]
-      echo %pydf %MD5 >> stamps_pyd.txt
-    )
-	
 	REM # pack
     cdd %SCRIPTDIR
     set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
@@ -66,7 +66,7 @@ for %pyver in (%PYTHONVERSIONS) do (
     nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
     break_on_error
   ) else (
-    echo skipped because no 3rd-party software available
+    echo installation file was not built because no 3rd-party software available
   )
 )
 
