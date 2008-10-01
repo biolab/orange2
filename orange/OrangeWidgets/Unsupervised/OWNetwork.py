@@ -869,6 +869,10 @@ class OWNetwork(OWWidget):
         else:
             self.graph.setVerticesSize()
             
+        self.optButton.setChecked(1)
+        self.optLayout()
+        self.updateCanvas()
+        
         self.setVertexColor()
         self.setEdgeColor()
             
@@ -877,8 +881,6 @@ class OWNetwork(OWWidget):
         self.clickedTooltipLstBox()
         self.clickedEdgeLabelListBox()
         
-        self.optButton.setChecked(1)
-        self.optLayout()
         self.information(0)
         self.controlArea.setEnabled(True)
         self.updateCanvas()

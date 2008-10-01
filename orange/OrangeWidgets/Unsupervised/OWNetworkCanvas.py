@@ -827,7 +827,7 @@ class OWNetworkCanvas(OWGraph):
                       self.tooltipText.append(self.visualizer.graph.items.domain.metaid(att))
                       
   def setEdgeLabelText(self, attributes):
-      self.tooltipText = []
+      self.edgeLabelText = []
       if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:
           return
       
