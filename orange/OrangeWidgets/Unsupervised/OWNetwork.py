@@ -52,7 +52,7 @@ class OWNetwork(OWWidget):
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
-        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
+        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -707,12 +707,18 @@ class OWNetwork(OWWidget):
                 self.send("Selected Examples", graph.items)
             else:
                 self.send("Selected Examples", self.graph.getSelectedExamples())
-                
+            
+            #print "sendData:", self.visualize.graph.items.domain
+            self.send("Unselected Examples", self.graph.getUnselectedExamples())    
             self.send("Selected Network", graph)
         else:
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
+                
+            items = self.graph.getUnselectedExamples()
+            if items != None:
+                self.send("Unselected Examples", items)
                 
     def setCombos(self):
         vars = self.visualize.getVars()
@@ -794,7 +800,8 @@ class OWNetwork(OWWidget):
         
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkOptimization(graph)
-        
+        self.graph.addVisualizer(self.visualize)
+
         #for i in range(graph.nVertices):
         #    print "x:", graph.coors[0][i], " y:", graph.coors[1][i]
 
@@ -835,10 +842,7 @@ class OWNetwork(OWWidget):
             self.lastNameComponentAttribute = ''
         
         self.showComponentAttribute = None
-        #print "OWNetwork/setGraph: add visualizer..."
-        self.graph.addVisualizer(self.visualize)
-        #print "done."
-        #print "OWNetwork/setGraph: display random..."
+
         k = 1.13850193174e-008
         nodes = self.visualize.nVertices()
         t = k * nodes * nodes
@@ -869,10 +873,6 @@ class OWNetwork(OWWidget):
         else:
             self.graph.setVerticesSize()
             
-        self.optButton.setChecked(1)
-        self.optLayout()
-        self.updateCanvas()
-        
         self.setVertexColor()
         self.setEdgeColor()
             
@@ -881,6 +881,8 @@ class OWNetwork(OWWidget):
         self.clickedTooltipLstBox()
         self.clickedEdgeLabelListBox()
         
+        self.optButton.setChecked(1)
+        self.optLayout()        
         self.information(0)
         self.controlArea.setEnabled(True)
         self.updateCanvas()

@@ -75,6 +75,9 @@ class NetworkCurve(QwtPlotCurve):
   def getSelectedVertices(self):
     return [vertex.index for vertex in self.vertices if vertex.selected]
 
+  def getUnselectedVertices(self):
+    return [vertex.index for vertex in self.vertices if not vertex.selected]
+
   def getMarkedVertices(self):
     return [vertex.index for vertex in self.vertices if vertex.marked]
   
@@ -328,10 +331,19 @@ class OWNetworkCanvas(OWGraph):
       if len(selection) == 0:
           return None
       
-      indices = [v + 1 for v in selection]
+      if self.visualizer.graph.items != None:
+          return self.visualizer.graph.items.getitems(selection)
+      else:
+          return None
+      
+  def getUnselectedExamples(self):
+      unselection = self.networkCurve.getUnselectedVertices()
+      
+      if len(unselection) == 0:
+          return None
       
       if self.visualizer.graph.items != None:
-          return self.visualizer.graph.items.select(indeces)
+          return self.visualizer.graph.items.getitems(unselection)
       else:
           return None
 
@@ -340,8 +352,11 @@ class OWNetworkCanvas(OWGraph):
     
     if len(selection) == 0:
         return None
-
-    return Network(self.visualizer.graph.getSubGraph(selection))
+    
+    #print self.visualizer.graph.items.domain
+    subgraph = Network(self.visualizer.graph.getSubGraph(selection))
+    #print subgraph.items.domain
+    return subgraph
  
   def getSelectedVertices(self):
     return self.networkCurve.getSelectedVertices()
