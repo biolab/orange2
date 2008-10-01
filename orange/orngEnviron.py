@@ -77,5 +77,5 @@ def addOrangeDirectoriesToPath():
         sys.path.insert(0, widgetDir)
 
 directoryNames = __getDirectoryNames()
-#vars().update(directoryNames)
+globals().update(directoryNames)
 addOrangeDirectoriesToPath()
