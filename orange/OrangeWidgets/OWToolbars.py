@@ -155,7 +155,6 @@ class NavigateSelectToolbar(QWidget):
                 if f[6] == "navigate":
                     self.navigate.layout().addSpacing(10)
                 elif f[6] == "select":
-                    print "add layout"
                     self.select.layout().addSpacing(10)
             else:
                 if f[6] == "navigate":
