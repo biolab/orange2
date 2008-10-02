@@ -166,7 +166,7 @@ class OWNetExplorer(OWWidget):
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
-        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback = self.labelsOnMarked)
         
         ib = OWGUI.widgetBox(self.displayTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
@@ -185,7 +185,7 @@ class OWNetExplorer(OWWidget):
         self.searchStringTimer = QTimer(self)
         self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setMarkMode)
         
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertices", callback = self.setMarkMode)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
         self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
@@ -208,7 +208,7 @@ class OWNetExplorer(OWWidget):
         
         ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
         self.checkSendMarkedNodes = 0
-        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
+        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked vertices', callback = self.setSendMarkedNodes, disabled=0)
         
         
         T = OWToolbars.NavigateSelectToolbar
