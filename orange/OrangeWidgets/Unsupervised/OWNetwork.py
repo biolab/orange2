@@ -107,10 +107,12 @@ class OWNetwork(OWWidget):
         self.hcontroArea = OWGUI.widgetBox(self.controlArea, orientation='horizontal')
         
         self.tabs = OWGUI.tabWidget(self.hcontroArea)
-        self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
+        self.verticesTab = OWGUI.createTabPage(self.tabs, "Vertices")
+        self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
+        self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
-        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         
@@ -131,48 +133,48 @@ class OWNetwork(OWWidget):
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
         
-        colorBox = OWGUI.widgetBox(self.displayTab, "Color attribute", addSpace = False)
+        colorBox = OWGUI.widgetBox(self.verticesTab, "Vertex color attribute", addSpace = False)
         self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
-        self.colorCombo.addItem("(vertex color attribute)")
+        self.colorCombo.addItem("(same color)")
+        OWGUI.button(colorBox, self, "Set vertex color palette", self.setColors, tooltip = "Set vertex color palette", debuggingEnabled = 0)
         
+        self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
+        self.vertexSizeCombo.addItem("(none)")
+        
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
+        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
+        
+        colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", addSpace = False)
         self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
-        self.edgeColorCombo.addItem("(edge color attribute)")
+        self.edgeColorCombo.addItem("(same color)")
+        OWGUI.button(colorBox, self, "Set edge color palette", self.setEdgeColorPalette, tooltip = "Set edge color palette", debuggingEnabled = 0)
+
         
-        self.attBox = OWGUI.widgetBox(self.displayTab, "Labels", addSpace = False)
+        self.attBox = OWGUI.widgetBox(self.verticesTab, "Vertex labels", addSpace = False)
         self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         
-        self.tooltipBox = OWGUI.widgetBox(self.displayTab, "Tooltips", addSpace = False)  
+        self.tooltipBox = OWGUI.widgetBox(self.verticesTab, "Vertex tooltips", addSpace = False)  
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
-        self.edgeLabelBox = OWGUI.widgetBox(self.displayTab, "Labels on edges", addSpace = False)
+        self.edgeLabelBox = OWGUI.widgetBox(self.edgesTab, "Edge labels", addSpace = False)
         self.edgeLabelListBox = OWGUI.listBox(self.edgeLabelBox, self, "edgeLabelAttributes", "edgeAttributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedEdgeLabelListBox)
         self.edgeLabelBox.setEnabled(False)
         
-        ib = OWGUI.widgetBox(self.settingsTab, "General", orientation="vertical")
-        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
+        ib = OWGUI.widgetBox(self.edgesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
         OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
+        OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.setMaxLinkSize)
+        
+        ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
+        OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
-        OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max link size:", callback = self.setMaxLinkSize)
+        
+        ib = OWGUI.widgetBox(self.displayTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
         self.insideView = 0
         self.insideViewNeighbours = 2
         OWGUI.spin(ib, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
-        
-        self.vertexSizeCombo = OWGUI.comboBox(self.settingsTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
-        self.vertexSizeCombo.addItem("(none)")
-        
-        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
-        
-        OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
-         
-        self.checkSendMarkedNodes = 0
-        OWGUI.checkBox(self.displayTab, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
-        
-        OWGUI.separator(self.displayTab)
 
-        OWGUI.button(self.displayTab, self, "Save network", callback=self.saveNetwork)
-        
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
@@ -199,33 +201,32 @@ class OWNetwork(OWWidget):
         ib = OWGUI.indentedBox(ribg)
         self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setMarkMode(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
-#        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
-        
-        #self.markInputBox = OWGUI.widgetBox(self.markTab, "Mark by input signal", orientation="vertical")
-        #self.markInputBox.setEnabled(False)
         self.markInputRadioButton = OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg)
         self.markInput = 0
         self.markInputCombo = OWGUI.comboBox(ib, self, "markInput", callback=(lambda h=9: self.setMarkMode(h)))
         self.markInputRadioButton.setEnabled(False)
         
+        ib = OWGUI.widgetBox(self.markTab, "General", orientation="vertical")
+        self.checkSendMarkedNodes = 0
+        OWGUI.checkBox(ib, self, 'checkSendMarkedNodes', 'Send marked nodes', callback = self.setSendMarkedNodes)
+        
+        
         T = OWToolbars.NavigateSelectToolbar
         self.zoomSelectToolbar = T(self, self.hcontroArea, self.graph, self.autoSendSelection,
-                                  buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
+                                  buttons = (T.IconZoom, 
+                                             T.IconZoomExtent, 
+                                             T.IconZoomSelection, 
+                                             T.IconPan, 
                                              ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
-                                             T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
-        
-        ib = OWGUI.widgetBox(self.zoomSelectToolbar, "Inv", orientation="vertical")
-        btnM2S = OWGUI.button(ib, self, "", callback = self.markedToSelection)
-        btnM2S.setIcon(QIcon(dlg_mark2sel))
-        btnM2S.setToolTip("Add Marked to Selection")
-        btnS2M = OWGUI.button(ib, self, "",callback = self.markedFromSelection)
-        btnS2M.setIcon(QIcon(dlg_sel2mark))
-        btnS2M.setToolTip("Remove Marked from Selection")
-        btnSIM = OWGUI.button(ib, self, "", callback = self.setSelectionToMarked)
-        btnSIM.setIcon(QIcon(dlg_selIsmark))
-        btnSIM.setToolTip("Set Selection to Marked")
-        
+                                             T.IconRectangle, 
+                                             T.IconPolygon,  
+                                             T.IconSendSelection,
+                                             ("", "", "", None, None, 0, "select"),
+                                             ("Add marked to selection", "buttonM2S", "markedToSelection", QIcon(dlg_mark2sel), Qt.ArrowCursor, 0, "select"),
+                                             ("Add selection to marked", "buttonS2M", "selectionToMarked", QIcon(dlg_sel2mark), Qt.ArrowCursor, 0, "select"),
+                                             ("Remove selection", "buttonRMS", "removeSelection", QIcon(dlg_selIsmark), Qt.ArrowCursor, 0, "select")))
+                        
         self.hideBox = OWGUI.widgetBox(self.zoomSelectToolbar, "Hide", orientation="vertical")
         btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
         btnSEL.setIcon(QIcon(dlg_selected))
@@ -248,15 +249,11 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
         OWGUI.button(self.infoTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
+        OWGUI.button(self.infoTab, self, "Save network", callback=self.saveNetwork)
         
+        #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
-        #OWGUI.button(self.settingsTab, self, "Clustering", callback=self.clustering)
-        
-        self.colorButtonsBox = OWGUI.widgetBox(self.settingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(self.colorButtonsBox, self, "Set vertex colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
-        OWGUI.button(self.colorButtonsBox, self, "Set edge colors", self.setEdgeColorPalette, tooltip = "Set edge color and color palette for coloring continuous variables", debuggingEnabled = 0)
-
-        ib = OWGUI.widgetBox(self.settingsTab, "Prototype")
+        ib = OWGUI.widgetBox(self.infoTab, "Prototype")
         OWGUI.button(ib, self, "Collapse", callback=self.collapse)
         OWGUI.label(ib, self, "Name components:")
         self.nameComponentAttribute = 0
@@ -271,10 +268,11 @@ class OWNetwork(OWWidget):
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
         
-        self.displayTab.layout().addStretch(1)
+        self.verticesTab.layout().addStretch(1)
+        self.edgesTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
+        self.displayTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
-        self.settingsTab.layout().addStretch(1)
         
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
@@ -327,7 +325,7 @@ class OWNetwork(OWWidget):
         if self.graph.insideview == 1:
             self.graph.insideviewNeighbours = self.insideViewNeighbours
             self.optButton.setChecked(True)
-            self.fr()
+            self.fr(False)
         
     def insideview(self):
         print self.graph.getSelectedVertices()
@@ -342,7 +340,7 @@ class OWNetwork(OWWidget):
                 self.graph.insideview = 1
                 self.graph.insideviewNeighbors = self.insideViewNeighbours
                 self.optButton.setChecked(True)
-                self.fr()
+                self.fr(False)
     
         else:
             print "One node must be selected!"
@@ -734,8 +732,8 @@ class OWNetwork(OWWidget):
         self.showComponentCombo.clear()
         self.edgeColorCombo.clear()
         
-        self.colorCombo.addItem("(vertex color attribute)")
-        self.edgeColorCombo.addItem("(edge color attribute)")
+        self.colorCombo.addItem("(same color)")
+        self.edgeColorCombo.addItem("(same color)")
         self.vertexSizeCombo.addItem("(same size)")
         self.nameComponentCombo.addItem("Select attribute")
         self.showComponentCombo.addItem("Select attribute")
@@ -898,14 +896,14 @@ class OWNetwork(OWWidget):
             return
         
         self.visualize.graph.setattr("items", items)
-        #self.setGraph(self.visualize.graph)
-        self.graph.updateData()
+        
         self.setVertexSize()
         self.showIndexLabels()
         self.showWeightLabels()
         self.showEdgeLabelsClick()
         
         self.setCombos()
+        self.graph.updateData()
         
     def setMarkInput(self):
         var = str(self.markInputCombo.currentText())
@@ -1237,16 +1235,6 @@ class OWNetwork(OWWidget):
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
         self.graph.enableGridX(self.graphShowGrid)
-    
-    def markedToSelection(self):
-        self.graph.markedToSelection()
-      
-    def markedFromSelection(self):
-        self.graph.selectionToMarked()
-    
-    def setSelectionToMarked(self):
-        self.graph.removeSelection(False)
-        self.graph.markedToSelection()
     
     def selectAllConnectedNodes(self):
         self.graph.selectConnectedNodes(1000000)

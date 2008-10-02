@@ -240,6 +240,7 @@ class OWNetworkCanvas(OWGraph):
       self.maxEdgeSize = 1
       
       self.maxVertexSize = 5
+      self.minVertexSize = 5
       self.showComponentAttribute = None
            
       self.setAxisAutoScale(self.xBottom)
@@ -977,7 +978,7 @@ class OWNetworkCanvas(OWGraph):
           if maxVertexWeight - minVertexWeight == 0:
               k = 1 #doesn't matter
           else:
-              k = (self.maxVertexSize - 5) / (maxVertexWeight - minVertexWeight)
+              k = (self.maxVertexSize - self.minVertexSize) / (maxVertexWeight - minVertexWeight)
           
           if inverted:
               for vertex in self.vertices:
@@ -991,16 +992,16 @@ class OWNetworkCanvas(OWGraph):
           else:
               for vertex in self.vertices:
                   if column in self.visualizer.graph.items.domain:
-                      vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + 5
+                      vertex.size = (self.visualizer.graph.items[vertex.index][column].value - minVertexWeight) * k + self.minVertexSize
                   else:
-                      vertex.size = (float(len(self.visualizer.graph.items[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + 5
+                      vertex.size = (float(len(self.visualizer.graph.items[vertex.index][column.replace("num of ", "")].value.split(','))) - minVertexWeight) * k + self.minVertexSize
                       
                   #print vertex.size
                   vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       else:
           for vertex in self.vertices:
-              vertex.size = self.maxVertexSize
-              vertex.pen.setWidthF(1 + float(self.maxVertexSize) / 20)
+              vertex.size = self.minVertexSize
+              vertex.pen.setWidthF(1 + float(vertex.size) / 20)
     
   def updateCanvas(self):
       self.setAxisAutoScale(self.xBottom)
