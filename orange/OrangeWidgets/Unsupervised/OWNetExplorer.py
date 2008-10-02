@@ -1,6 +1,6 @@
 """
-<name>Network</name>
-<description>Network Widget visualizes graphs.</description>
+<name>NetExplorer</name>
+<description>Orange widget for network exploration.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3200</priority>
@@ -24,7 +24,7 @@ dlg_selected = dir + "Dlg_SelectedNodes.png"
 dlg_unselected = dir + "Dlg_UnselectedNodes.png"
 dlg_showall = dir + "Dlg_clear.png"
 
-class OWNetwork(OWWidget):
+class OWNetExplorer(OWWidget):
     settingsList = ["autoSendSelection", 
                     "spinExplicit", 
                     "spinPercentage",
@@ -48,7 +48,7 @@ class OWNetwork(OWWidget):
                     "selectedEdgeSchemaIndex"] 
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'Network')
+        OWWidget.__init__(self, parent, signalManager, 'NetExplorer')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
@@ -98,7 +98,7 @@ class OWNetwork(OWWidget):
         self.visualize = None
         self.markInputItems = None
         
-        self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
+        self.graph = OWNetworkCanvas(self, self.mainArea, "NetExplorer")
         self.mainArea.layout().addWidget(self.graph)
         
         self.graph.maxLinkSize = self.maxLinkSize
@@ -1262,7 +1262,7 @@ class OWNetwork(OWWidget):
         
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
-    ow = OWNetwork()
+    ow = OWNetExplorer()
     ow.show()
     appl.exec_()
     
