@@ -143,7 +143,7 @@ class NavigateSelectToolbar(QWidget):
         if parent.layout():
             parent.layout().addWidget(self)
 
-        self.navigate = OWGUI.widgetBox(self, 1, orientation = "vertical", margin=2)
+        self.navigate = OWGUI.widgetBox(self, 0, orientation = "vertical", margin=2)
         self.select = OWGUI.widgetBox(self, "", orientation = "vertical")
 
         self.graph = graph # save graph. used to send signals
