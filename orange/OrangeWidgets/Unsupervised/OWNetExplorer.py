@@ -48,7 +48,7 @@ class OWNetExplorer(OWWidget):
                     "selectedEdgeSchemaIndex"] 
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'NetExplorer')
+        OWWidget.__init__(self, parent, signalManager, 'Network Explorer')
         
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
@@ -98,7 +98,7 @@ class OWNetExplorer(OWWidget):
         self.visualize = None
         self.markInputItems = None
         
-        self.graph = OWNetworkCanvas(self, self.mainArea, "NetExplorer")
+        self.graph = OWNetworkCanvas(self, self.mainArea, "Network Explorer")
         self.mainArea.layout().addWidget(self.graph)
         
         self.graph.maxLinkSize = self.maxLinkSize
