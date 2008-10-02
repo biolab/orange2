@@ -153,11 +153,10 @@ class NavigateSelectToolbar(QWidget):
                 pass
             elif f[0] == "" or f[1] == "" or f[2] == "":
                 if f[6] == "navigate":
-                    #OWGUI.separator(self.navigate, 10, 10)
-                    pass
+                    self.navigate.layout().addSpacing(10)
                 elif f[6] == "select":
-                    #OWGUI.separator(self.select, 10, 10)
-                    pass
+                    print "add layout"
+                    self.select.layout().addSpacing(10)
             else:
                 if f[6] == "navigate":
                     button = createButton(self.navigate, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
