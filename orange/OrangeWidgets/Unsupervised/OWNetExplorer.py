@@ -97,6 +97,9 @@ class OWNetExplorer(OWWidget):
         self.visualize = None
         self.markInputItems = None
         
+        self.mainArea.layout().setContentsMargins(0,4,4,4)
+        self.controlArea.layout().setContentsMargins(4,4,0,4)
+        
         self.graph = OWNetworkCanvas(self, self.mainArea, "NetExplorer")
         self.mainArea.layout().addWidget(self.graph)
         
@@ -217,26 +220,20 @@ class OWNetExplorer(OWWidget):
                                              T.IconZoomExtent, 
                                              T.IconZoomSelection, 
                                              T.IconPan, 
-                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
+                                             ("", "", "", None, None, 0),
+                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1),
                                              T.IconRectangle, 
                                              T.IconPolygon,  
                                              T.IconSendSelection,
                                              ("", "", "", None, None, 0, "select"),
-                                             ("Add marked to selection", "buttonM2S", "markedToSelection", QIcon(dlg_mark2sel), Qt.ArrowCursor, 0, "select"),
-                                             ("Add selection to marked", "buttonS2M", "selectionToMarked", QIcon(dlg_sel2mark), Qt.ArrowCursor, 0, "select"),
-                                             ("Remove selection", "buttonRMS", "removeSelection", QIcon(dlg_selIsmark), Qt.ArrowCursor, 0, "select")))
+                                             ("Add marked to selection", "buttonM2S", "markedToSelection", QIcon(dlg_mark2sel), Qt.ArrowCursor, 0),
+                                             ("Add selection to marked", "buttonS2M", "selectionToMarked", QIcon(dlg_sel2mark), Qt.ArrowCursor, 0),
+                                             ("Remove selection", "buttonRMS", "removeSelection", QIcon(dlg_selIsmark), Qt.ArrowCursor, 0),
+                                             ("", "", "", None, None, 0, "select"),
+                                             ("Hide selected", "buttonSEL", "hideSelectedVertices", QIcon(dlg_selected), Qt.ArrowCursor, 0),
+                                             ("Hide unselected", "buttonUN", "hideUnSelectedVertices", QIcon(dlg_unselected), Qt.ArrowCursor, 0),
+                                             ("Show all nodes", "buttonSW", "showAllVertices", QIcon(dlg_showall), Qt.ArrowCursor, 0)))
                         
-        self.hideBox = OWGUI.widgetBox(self.zoomSelectToolbar, "Hide", orientation="vertical")
-        btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
-        btnSEL.setIcon(QIcon(dlg_selected))
-        btnSEL.setToolTip("Hide selected")
-        btnUN = OWGUI.button(self.hideBox, self, "", callback=self.hideAllButSelected)
-        btnUN.setIcon(QIcon(dlg_unselected))
-        btnUN.setToolTip("Hide unselected")
-        btnSW = OWGUI.button(self.hideBox, self, "", callback=self.showAllNodes)
-        btnSW.setIcon(QIcon(dlg_showall))
-        btnSW.setToolTip("Show all nodes")
-        
         OWGUI.rubber(self.zoomSelectToolbar)
         
         ib = OWGUI.widgetBox(self.infoTab, "General")
@@ -964,16 +961,7 @@ class OWNetExplorer(OWWidget):
                 self.graph.setHiddenNodes(hiddenNodes)
             except:
                 print "Error. Index column does not exists."
-        
-    def hideSelected(self):
-        self.graph.hideSelectedVertices()
-                
-    def hideAllButSelected(self):
-        self.graph.hideUnSelectedVertices()
-      
-    def showAllNodes(self):
-        self.graph.showAllVertices()
-                               
+                            
     def updateCanvas(self):
         # if network exists
         if self.visualize != None:
