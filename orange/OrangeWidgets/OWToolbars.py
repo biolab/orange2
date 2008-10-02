@@ -137,11 +137,14 @@ class NavigateSelectToolbar(QWidget):
 
         QWidget.__init__(self, parent)
         self.setLayout(QVBoxLayout())
+        self.layout().setSpacing(0)
+        self.layout().setMargin(0)
+        
         if parent.layout():
             parent.layout().addWidget(self)
 
-        self.navigate = OWGUI.widgetBox(self, "Nav", orientation = "vertical")
-        self.select = OWGUI.widgetBox(self, "Sel", orientation = "vertical")
+        self.navigate = OWGUI.widgetBox(self, 1, orientation = "vertical", margin=2)
+        self.select = OWGUI.widgetBox(self, "", orientation = "vertical")
 
         self.graph = graph # save graph. used to send signals
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
@@ -152,21 +155,12 @@ class NavigateSelectToolbar(QWidget):
                 #self.layout().addSpacing(10)
                 pass
             elif f[0] == "" or f[1] == "" or f[2] == "":
-                if f[6] == "navigate":
-                    self.navigate.layout().addSpacing(10)
-                elif f[6] == "select":
-                    self.select.layout().addSpacing(10)
+                self.navigate.layout().addSpacing(10)
             else:
-                if f[6] == "navigate":
-                    button = createButton(self.navigate, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
-                    setattr(self.navigate, f[1], button)
-                    if f[1] == "buttonSendSelections":
-                        button.setEnabled(not autoSend)
-                elif f[6] == "select":
-                    button = createButton(self.select, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
-                    setattr(self.select, f[1], button)
-                    if f[1] == "buttonSendSelections":
-                        button.setEnabled(not autoSend)
+                button = createButton(self.navigate, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
+                setattr(self.navigate, f[1], button)
+                if f[1] == "buttonSendSelections":
+                    button.setEnabled(not autoSend)                    
 
         self.action(0)
 
@@ -180,10 +174,10 @@ class NavigateSelectToolbar(QWidget):
                 self.widget.toolbarSelection = b
             for fi, ff in enumerate(self.functions):
                 if ff and ff[5]:
-                    if ff[6] == "navigate":
-                        getattr(self.navigate, ff[1]).setChecked(fi == b)
-                    if ff[6] == "select":
-                        getattr(self.select, ff[1]).setChecked(fi == b)
+                    #if ff[6] == "navigate":
+                    getattr(self.navigate, ff[1]).setChecked(fi == b)
+                    #if ff[6] == "select":
+                    #    getattr(self.select, ff[1]).setChecked(fi == b)
                 
         try:
             getattr(self.graph, f[2])()
