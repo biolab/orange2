@@ -138,7 +138,7 @@ class NavigateSelectToolbar(QWidget):
         QWidget.__init__(self, parent)
         self.setLayout(QVBoxLayout())
         self.layout().setSpacing(0)
-        self.layout().setMargin(0)
+        self.layout().setContentsMargins(0,25,0,0)
         
         if parent.layout():
             parent.layout().addWidget(self)
