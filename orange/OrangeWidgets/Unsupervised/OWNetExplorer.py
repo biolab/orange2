@@ -112,15 +112,12 @@ class OWNetExplorer(OWWidget):
         self.verticesTab = OWGUI.createTabPage(self.tabs, "Vertices")
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
-        self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
         
 
-        self.optimizeBox = OWGUI.radioButtonsInBox(self.displayTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
+        self.optimizeBox = OWGUI.radioButtonsInBox(self.verticesTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         
-        OWGUI.label(self.optimizeBox, self, "Select layout optimization method:")
-        
-        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", callback=self.setOptMethod)
+        self.optCombo = OWGUI.comboBox(self.optimizeBox, self, "optMethod", label='Method:     ', orientation='horizontal', callback=self.setOptMethod)
         self.optCombo.addItem("No optimization")
         self.optCombo.addItem("Random")
         self.optCombo.addItem("Fruchterman Reingold")
@@ -135,7 +132,7 @@ class OWNetExplorer(OWWidget):
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
         
-        colorBox = OWGUI.widgetBox(self.verticesTab, "Vertex color attribute", addSpace = False)
+        colorBox = OWGUI.widgetBox(self.verticesTab, "Vertex color attribute", orientation="horizontal", addSpace = False)
         self.colorCombo = OWGUI.comboBox(colorBox, self, "color", callback=self.setVertexColor)
         self.colorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set vertex color palette", self.setColors, tooltip = "Set vertex color palette", debuggingEnabled = 0)
@@ -146,17 +143,14 @@ class OWNetExplorer(OWWidget):
         OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
         OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
         
-        colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", addSpace = False)
+        colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
         self.edgeColorCombo = OWGUI.comboBox(colorBox, self, "edgeColor", callback=self.setEdgeColor)
         self.edgeColorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set edge color palette", self.setEdgeColorPalette, tooltip = "Set edge color palette", debuggingEnabled = 0)
-
         
-        self.attBox = OWGUI.widgetBox(self.verticesTab, "Vertex labels", addSpace = False)
+        self.attBox = OWGUI.widgetBox(self.verticesTab, "Vertex labels | tooltips", orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
-        
-        self.tooltipBox = OWGUI.widgetBox(self.verticesTab, "Vertex tooltips", addSpace = False)  
-        self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
+        self.tooltipListBox = OWGUI.listBox(self.attBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
         self.edgeLabelBox = OWGUI.widgetBox(self.edgesTab, "Edge labels", addSpace = False)
         self.edgeLabelListBox = OWGUI.listBox(self.edgeLabelBox, self, "edgeLabelAttributes", "edgeAttributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedEdgeLabelListBox)
@@ -170,8 +164,6 @@ class OWNetExplorer(OWWidget):
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
         OWGUI.checkBox(ib, self, 'labelsOnMarkedOnly', 'Show labels on marked vertices only', callback = self.labelsOnMarked)
-        
-        ib = OWGUI.widgetBox(self.displayTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'renderAntialiased', 'Render antialiased', callback = self.setRenderAntialiased)
         self.insideView = 0
         self.insideViewNeighbours = 2
@@ -267,7 +259,6 @@ class OWNetExplorer(OWWidget):
         self.verticesTab.layout().addStretch(1)
         self.edgesTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
-        self.displayTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
         
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
