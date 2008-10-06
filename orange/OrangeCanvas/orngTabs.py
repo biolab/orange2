@@ -453,7 +453,9 @@ class WidgetTree(WidgetListBase, QDockWidget):
 
         if not show:
             item.setHidden(1)
-        if self.treeWidget.topLevelItemCount() == 1:
+        if self.canvasDlg.settings.has_key("treeItemsOpenness") and self.canvasDlg.settings["treeItemsOpenness"].has_key(name):
+             item.setExpanded(self.canvasDlg.settings["treeItemsOpenness"][name])
+        elif not self.canvasDlg.settings.has_key("treeItemsOpenness") and self.treeWidget.topLevelItemCount() == 1:
             item.setExpanded(1)
         self.tabs.append((name, 2*int(show), item))
 

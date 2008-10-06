@@ -956,6 +956,8 @@ class OrangeCanvasDlg(QMainWindow):
     def saveSettings(self):
         filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
         file=open(filename, "wb")
+        if self.settings["widgetListType"] == 1:        # tree view
+            self.settings["treeItemsOpenness"] = dict([(key, self.tabs.tabDict[key].isExpanded()) for key in self.tabs.tabDict.keys()]) 
         cPickle.dump(self.settings, file)
         file.close()
 
