@@ -25,7 +25,7 @@ class OWWidget(OWBaseWidget):
         if wantMainArea:
             self.leftWidgetPart.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
             self.leftWidgetPart.updateGeometry()
-            self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding), margin = 0)
+            self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding), margin = 0)
             self.mainArea.layout().setMargin(4)
             self.mainArea.updateGeometry()
         self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = wantMainArea and 0 or 4)
