@@ -375,7 +375,7 @@ class OWDistanceMap(OWWidget):
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth),
                             int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
-        self.scene.setSceneRect(0, 0, 2000, 2000) # this needs adjustment
+##        self.scene.setSceneRect(0, 0, 2000, 2000) # this needs adjustment
 
         for tmpText in self.annotationText:
 ##            tmpText.setScene(None)
@@ -458,6 +458,7 @@ class OWDistanceMap(OWWidget):
         self.selector.setRect(QRectF(0, 0, self.CellWidth, self.CellHeight))
 
         self.updateSelectionRect()
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.scene.update()
 
     def addSelectionLine(self, x, y, direction):
