@@ -91,7 +91,7 @@ def _parseAllFileInfo(afi):
         name, info = entry.split(separn)
         out.append((name, _parseFileInfo(info)))
 
-    print dict(out)
+    return dict(out)
 
 def createPathForFile(target):
     try:
