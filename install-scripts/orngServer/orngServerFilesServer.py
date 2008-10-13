@@ -175,7 +175,7 @@ def downloadFile(domain, filename, protected=False):
     else:
         raise cherrypy.HTTPError(500, "File not available!")
 
-def listFiles(domain, protected=False):
+def listFilesL(domain, protected=False):
     dir = baseDomain(domain)
     files = [ a for a in os.listdir(dir) if a[-1].isdigit() ]
     okfiles = []
@@ -188,7 +188,22 @@ def listFiles(domain, protected=False):
 
         except:
             pass
-    return "|||||".join(okfiles)
+    return okfiles
+
+def listFiles(domain, protected=False):
+    return "|||||".join(listFilesL(domain, protected=protected))
+
+def allFileInfosL(domain, protected=False):
+    files = listFilesL(domain, protected=protected)
+    out = []
+    for filename in files:
+        info = userFileInfo(domain, filename, protected=protected)
+        out.append((filename, info))
+    return out
+
+def allFileInfos(domain, protected=False):
+    ai = allFileInfosL(domain, protected=protected)
+    return [ "[[[[[".join( [ a + "=====" + b for a,b in ai ] ) ]        
 
 class RootServer:
     @cherrypy.expose
@@ -203,6 +218,10 @@ class PublicServer:
     @cherrypy.expose
     def info(self, domain, filename):
         return userFileInfo(domain, filename)
+
+    @cherrypy.expose
+    def allinfo(self, domain):
+        return allFileInfos(domain)
 
     @cherrypy.expose
     def download(self, domain, filename):
@@ -221,6 +240,10 @@ class SecureServer:
     @cherrypy.expose
     def info(self, domain, filename):
         return userFileInfo(domain, filename, protected=True)
+
+    @cherrypy.expose
+    def allinfo(self, domain):
+        return allFileInfos(domain, protected=True)
 
     @cherrypy.expose
     def download(self, domain, filename):
