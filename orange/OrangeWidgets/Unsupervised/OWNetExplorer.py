@@ -15,6 +15,7 @@ import OWToolbars
 from statc import mean
 from orangeom import Network
 from operator import itemgetter
+import orngMDS
 
 dir = os.path.dirname(__file__) + "/../icons/"
 dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
@@ -50,8 +51,16 @@ class OWNetExplorer(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph, Default), ("Example Subset", orange.ExampleTable, self.setExampleSubset), ("Mark Items", orange.ExampleTable, self.markItems), ("Add Items", orange.ExampleTable, self.setItems)]
-        self.outputs = [("Selected Network", Network), ("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Marked Examples", ExampleTable)]
+        self.inputs = [("Network", Network, self.setGraph, Default), 
+                       ("Example Subset", orange.ExampleTable, self.setExampleSubset), 
+                       ("Mark Items", orange.ExampleTable, self.markItems), 
+                       ("Add Items", orange.ExampleTable, self.setItems), 
+                       ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
+        
+        self.outputs = [("Selected Network", Network), 
+                        ("Selected Examples", ExampleTable), 
+                        ("Unselected Examples", ExampleTable), 
+                        ("Marked Examples", ExampleTable)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -92,6 +101,7 @@ class OWNetExplorer(OWWidget):
         self.selectedSchemaIndex = 0
         self.edgeColorSettings = None
         self.selectedEdgeSchemaIndex = 0
+        self.vertexDistance = None
         self.loadSettings()
         
         self.visualize = None
@@ -253,6 +263,8 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
         self.showComponentCombo.addItem("Select attribute")
         
+        OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents)
+        
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
         
@@ -274,6 +286,15 @@ class OWNetExplorer(OWWidget):
         self.resize(1000, 600)
         self.controlArea.setEnabled(False)
         self.information('No network loaded.')
+        
+    def mdsComponents(self):
+        if self.vertexDistance == None:
+            return
+        
+        mds = orngMDS.MDS(matrix)
+        
+    def setVertexDistance(self, matrix):
+        self.vertexDistance = matrix
 
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
@@ -358,7 +379,7 @@ class OWNetExplorer(OWWidget):
         components = self.visualize.graph.getConnectedComponents()
         keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
         
-        excludeWord = ["AND", "OF"]
+        excludeWord = ["AND", "OF", "KEGG", "ST", "IN", "SIG"]
         excludePart = ["HSA"]
         keywords = set()
         sameKeywords = set()
