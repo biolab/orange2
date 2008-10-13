@@ -23,7 +23,6 @@ class UpdateOptionsWidget(QWidget):
         layout.addWidget(self.removeButton)
         self.setLayout(layout)
         self.SetState(state)
-        self.show()
 
     def SetState(self, state):
         self.state = state
@@ -44,6 +43,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state]])
         self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
+        self.updateWidget.show()
         self.state = state
         self.title = title
         self.tags = tags
@@ -66,10 +66,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         return any(item.lower() in tag.lower() for tag in self.tags.split())
         
 class OWDatabasesUpdate(OWWidget):
-    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False):
+    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False):
         OWWidget.__init__(self, parent, signalManager, name)
-        self.searchString = ""
-        self.showAll = False
+        self.searchString = searchString
+        self.showAll = showAll
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
@@ -112,17 +112,18 @@ class OWDatabasesUpdate(OWWidget):
         for i, domain in enumerate(domains):
             local = orngServerFiles.listfiles(domain) or []
             files = self.serverFiles.listfiles(domain)
+            allInfo = self.serverFiles.allinfo(domain)
             for j, file in enumerate(files):
                 infoServer = None
                 if file in local:
-                    infoServer = self.serverFiles.info(domain, file)
+                    infoServer = allInfo[file] #self.serverFiles.info(domain, file)
                     infoLocal = orngServerFiles.info(domain, file)
                     dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                     dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                     self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
 ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
                 elif self.showAll:
-                    infoServer = self.serverFiles.info(domain, file)
+                    infoServer = allInfo[file] #self.serverFiles.info(domain, file)
                     self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
                 if infoServer and not all(tag in tags for tag in infoServer["tags"]):
                     tags.update(infoServer["tags"])
@@ -132,6 +133,8 @@ class OWDatabasesUpdate(OWWidget):
 ##                QTreeWidgetItem(self.filesWidget, ["", info["title"], info["tags"], info["datetime"]])
 ##                self.treeWidget.
                 self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+                self.filesView.resizeColumnToContents(1)
+                self.filesView.resizeColumnToContents(2)
 
         self.progressBarFinished()
 
