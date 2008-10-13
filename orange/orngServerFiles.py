@@ -173,7 +173,7 @@ class ServerFiles(object):
         fdown = self.downloadFH(domain, filename)
         size = int(fdown.headers.getheader('content-length'))
 
-        f = open(target + '.tmp', 'wb')
+        f = os.tmpfile() #open(target + '.tmp', 'wb')
  
         chunksize = 1024*8
         lastchunkreport= 0.0001
@@ -196,9 +196,11 @@ class ServerFiles(object):
         #shutil.copyfileobj(fdown, f, 1024*8) 
 
         fdown.close()
-        f.close()
+##        f.close()
+        f.seek(0)
 
-        os.rename(target + '.tmp', target)
+##        os.rename(target + '.tmp', target)
+        shutil.copyfileobj(f, open(target, "w"))
 
         if callback:
             callback()
