@@ -82,6 +82,17 @@ def saveFileInfo(fname, info):
 def _parseList(fl):
     return fl.split("|||||")
 
+def _parseAllFileInfo(afi):
+    separf = "[[[[["
+    separn = "====="
+    fis = afi.split(separf)
+    out = []
+    for entry in fis:
+        name, info = entry.split(separn)
+        out.append((name, _parseFileInfo(info)))
+
+    print dict(out)
+
 def createPathForFile(target):
     try:
         os.makedirs(os.path.dirname(target))
@@ -227,7 +238,17 @@ class ServerFiles(object):
 
     def seclist(self, domain):
         return _parseList(self._secopen('list', { 'domain': domain }))
- 
+
+    def allinfo(self, *args, **kwargs):
+        if self._authen(): return self.secallinfo(*args, **kwargs)
+        else: return self.puballinfo(*args, **kwargs)
+
+    def puballinfo(self, domain):
+        return _parseAllFileInfo(self._pubopen('allinfo', { 'domain': domain }))
+
+    def secallinfo(self, domain):
+        return _parseAllFileInfo(self._secopen('allinfo', { 'domain': domain }))
+
     def _authen(self):
         """
         Did the user choose authentication?
@@ -349,6 +370,9 @@ def example(myusername, mypassword):
     s = ServerFiles(username=myusername, password=mypassword)
 
     s.remove('test', 'osf-test.py')
+
+s = ServerFiles()
+print s.allinfo("demo2")
 
 if __name__ == '__main__':
 
