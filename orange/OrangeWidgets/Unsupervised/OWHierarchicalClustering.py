@@ -38,7 +38,7 @@ class OWHierarchicalClustering(OWWidget):
         self.parent=parent
         self.callbackDeposit=[]
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
-        self.outputs=[("Selected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
+        self.outputs=[("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
                         ("Average linkage", orange.HierarchicalClustering.Average),
                         ("Ward's linkage", orange.HierarchicalClustering.Ward),
@@ -163,6 +163,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.headerView.horizontalScrollBar().setValue)
         self.dendrogram.setSceneRect(0, 0, self.HDSize,self.VDSize)
         self.dendrogram.update()
+        self.resize(600, 500)
 
 
     def dataset(self, data):
@@ -175,6 +176,7 @@ class OWHierarchicalClustering(OWWidget):
             self.footerView.clear()
             self.labelCombo.clear()
             self.send("Selected Examples", None)
+            self.send("Unselected Examples", None)
             self.classificationBox.setDisabled(True)
             return
 
@@ -307,16 +309,18 @@ class OWHierarchicalClustering(OWWidget):
         selection=self.selectionList
         maps=[self.rootCluster.mapping[c.first:c.last] for c in [e.rootCluster for e in selection]]
         self.selection=[self.matrix.items[k] for k in [j for i in range(len(maps)) for j in maps[i]]]
-
+        
         if not self.selection:
             self.send("Selected Examples",None)
+            self.send("Unelected Examples",None)
             self.send("Structured Data Files", None)
             return
         items = getattr(self.matrix, "items")
         if self.matrixSource == "Example Distance":
+            unselected = [item for item in items if item not in self.selection]
             if self.ClassifySelected:
                 clustVar=orange.EnumVariable(str(self.ClassifyName) ,
-                            values=[str(i) for i in range(len(maps))])
+                            values=["Cluster " + str(i) for i in range(len(maps))] + ["Other"])
                 c=[i for i in range(len(maps)) for j in maps[i]]
                 origDomain = items.domain
                 if self.addIdAs == 0:
@@ -336,13 +340,21 @@ class OWHierarchicalClustering(OWWidget):
                 table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
                 table1.extend(orange.ExampleTable(self.selection))
                 for i in range(len(self.selection)):
-                    table1[i][aid] = clustVar(str(c[i]))
+                    table1[i][aid] = clustVar("Cluster " + str(c[i]))
+
+                table2 = orange.ExampleTable(domain)
+                table2.extend(orange.ExampleTable(unselected))
+                for ex in table2:
+                    ex[aid] = clustVar("Other")
 
                 self.selectedExamples=table1
+                self.unselectedExamples=table2
             else:
                 table1=orange.ExampleTable(self.selection)
                 self.selectedExamples=table1
+                self.unselectedExamples = orange.ExampleTable(unselected)
             self.send("Selected Examples",self.selectedExamples)
+            self.send("Unselected Examples", self.unselectedExamples)
 
         elif self.matrixSource=="Data Distance":
             names=list(Set([d.strain for d in self.selection]))
