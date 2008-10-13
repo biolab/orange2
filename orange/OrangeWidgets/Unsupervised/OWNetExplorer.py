@@ -509,8 +509,9 @@ class OWNetExplorer(OWWidget):
             keyword = ""
             counts = [int(word[1]) for word in words] 
             max_count = max(counts)
+            
             try:
-                while True:
+                while True and len(counts) > 1:
                     counts.remove(max_count)
             except:
                 pass
