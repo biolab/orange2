@@ -28,19 +28,22 @@ class UpdateOptionsWidget(QWidget):
         self.state = state
         if state == 0:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
         elif state == 1:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(True)
         else:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(False)
 
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
-    stateDict = {0:"Up to date", 1:"New version available", 2:"Not downloaded"}
-    def __init__(self, treeWidget, state, title, tags, downloadCallback, removeCallback, *args):
-        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state]])
+    stateDict = {0:"up-to-date", 1:"new-version-available", 2:"not-downloaded"}
+    def __init__(self, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
+        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], "%.2f MB" % (float(size)/1024**2)])
         self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
@@ -74,7 +77,7 @@ class OWDatabasesUpdate(OWWidget):
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
-        OWGUI.checkBox(box, self, "showAll", "Show all on server", callback=self.UpdateFilesList)
+        OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
         box = OWGUI.widgetBox(self.mainArea, "Tags")
         self.tagsWidget = QTextEdit(self.mainArea)
         box.setMaximumHeight(150)
@@ -83,7 +86,7 @@ class OWDatabasesUpdate(OWWidget):
 ##        self.model = QStandardItemModel()
         self.filesView = QTreeWidget(self)
 ##        self.filesView.setModel(self.model)
-        self.filesView.setHeaderLabels(["Options", "Name", "Tags", "Status"])
+        self.filesView.setHeaderLabels(["Options", "Name", "Tags", "Status", "Size"])
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
 ##        self.filesWidget.setSortingEnabled(True)
@@ -127,11 +130,11 @@ class OWDatabasesUpdate(OWWidget):
                     infoLocal = orngServerFiles.info(domain, file)
                     dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                     dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
-                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
 ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
                 elif self.showAll:
                     infoServer = allInfo[file] #self.serverFiles.info(domain, file)
-                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
                 if infoServer and not all(tag in tags for tag in infoServer["tags"]):
                     tags.update(infoServer["tags"])
                     self.tagsWidget.setText(", ".join(sorted(tags)))
