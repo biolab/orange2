@@ -1,10 +1,10 @@
 REM #input arguments
 REM # %1 - PKG_TYPE - kind of installation (snapshot, release) - needed to name log file accordingly
-REM # %2 - PKG_GENOMICS - name of package for Orange Genomics add on (can be release or snapshot)
+REM # %2 - PKG_OBI - name of package for Orange Bioinformatics add on (can be release or snapshot)
 REM # %3 - PKG_TEXTMINING - name of package for Orange Text Mining (release or snapshot)
 
 set PKG_TYPE=%1
-set PKG_GENOMICS=%2
+set PKG_OBI=%2
 set PKG_TEXTMINING=%3
 
 set PATH=%PATH;c:\MinGW\bin
@@ -16,18 +16,18 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   echo *************************************
   echo *************************************
-  echo *** Compiling GENOMICS for Python %pyver
+  echo *** Compiling Orange Bioinformatics for Python %pyver
   cdd %TMPDIR\add-ons\Genomics
   del /syeq build
   del /syeq dist
 
   REM # compile and pack
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-Genomics-compileAndPack-py%npver.log
+  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-obi-compileAndPack-py%npver.log
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > %COMPILELOG
   break_on_error
-  move /z %TMPDIR\add-ons\Genomics\dist\Genomics-*.win32-py%npver.exe %TMPDIR\%PKG_GENOMICS-py%npver.exe
+  move /z %TMPDIR\add-ons\Genomics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_OBI-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
   set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Genomics
@@ -35,9 +35,9 @@ for %pyver in (%PYTHONVERSIONS) do (
   
   cdd %TMPDIR\add-ons\Genomics\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
-	  copy %pydf %TMPBINDIR
-	  set MD5=%@MD5[%pydf]
-	  echo add-ons\Genomics\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt
+    copy %pydf %TMPBINDIR
+    set MD5=%@MD5[%pydf]
+    echo add-ons\Genomics\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt
   )
 )
 
@@ -65,8 +65,8 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
 
   cdd %TMPDIR\add-ons\orngText\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
-	  copy %pydf %TMPBINDIR
-	  set MD5=%@MD5[%pydf]
-	  echo add-ons\orngText\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt	  
+    copy %pydf %TMPBINDIR
+    set MD5=%@MD5[%pydf]
+    echo add-ons\orngText\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt	  
   )
 )
