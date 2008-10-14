@@ -26,7 +26,7 @@ class OWNetworkFromDistances(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Network", Network), ("Examples", ExampleTable)]
+        self.outputs = [("Network", Network), ("Examples", ExampleTable), ("Distance Matrix", orange.SymMatrix)]
 
         # set default settings
         self.spinLowerThreshold = 0
@@ -87,7 +87,6 @@ class OWNetworkFromDistances(OWWidget):
         self.searchStringTimer.start(750)
 
     def setMatrix(self, data):
-        print "reveived"
         if data == None: return
         
         self.data = data
@@ -161,6 +160,7 @@ class OWNetworkFromDistances(OWWidget):
             self.error('Estimated number of edges is too high (%d).' % nEdgesEstimate)
         else:
             graph = Network(self.data.dim, 0)
+            matrix = self.data
             
             if hasattr(self.data, "items"):               
                 if type(self.data.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
@@ -175,27 +175,34 @@ class OWNetworkFromDistances(OWWidget):
             nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
             n = len(graph.getEdges())
             #print 'self.netOption',self.netOption
-            if str(self.netOption) == '2':
-                component = graph.getConnectedComponents()[0]
-                if len(component) > 1:
-                    self.graph = Network(graph.getSubGraph(component))
-                else:
-                    self.graph = None
-            elif str(self.netOption) == '1':
+            
+            if str(self.netOption) == '1':
                 components = [x for x in graph.getConnectedComponents() if len(x) > 1]
                 if len(components) > 0:
                     include = reduce(lambda x,y: x+y, components)
                     if len(include) > 1:
                         self.graph = Network(graph.getSubGraph(include))
-      
+                        matrix = self.data.getitems(include)
                     else:
                         self.graph = None
+                        matrix = None
                 else:
                     self.graph = None
+                    matrix = None
+                    
+            elif str(self.netOption) == '2':
+                component = graph.getConnectedComponents()[0]
+                if len(component) > 1:
+                    self.graph = Network(graph.getSubGraph(component))
+                    matrix = self.data.getitems(component)
+                else:
+                    self.graph = None
+                    matrix = None
+
             elif str(self.netOption) == '3':
                 self.attributeCombo.box.setEnabled(True)
                 self.graph = None
-                
+                matrix = None
                 #print self.attributeCombo.currentText()
                 if self.attributeCombo.currentText() != '' and self.label != '':
                     components = graph.getConnectedComponents()
@@ -215,16 +222,17 @@ class OWNetworkFromDistances(OWWidget):
                         if len(vertices) > 0:
                             #print vertices
                             self.graph = Network(graph.getSubGraph(vertices))
-                    
+                            matrix = self.data.getitems(vertices)
             else:
                 self.graph = graph
-    
+                
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         
         #print 'self.graph:',self.graph
         self.send("Network", self.graph)
+        self.send("Distance Matrix", matrix)
         if self.graph == None:
              self.send("Examples", None)
         else:
