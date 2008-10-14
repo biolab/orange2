@@ -3249,13 +3249,24 @@ PyObject *SymMatrix_getitems(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
 	int i,j;
 	for (i = 0; i < size; i++)
 	{
-		for (j = 0; j < size; j++)
+		for (j = i; j < size; j++)
 		{
-			int item_i = PyInt_AsLong(PyList_GetItem(items, i));
-			int item_j = PyInt_AsLong(PyList_GetItem(items, j));
+			if (symmatrix->matrixType == TSymMatrix::Lower || symmatrix->matrixType == TSymMatrix::LowerFilled)
+			{
+				int item_i = PyInt_AsLong(PyList_GetItem(items, j));
+				int item_j = PyInt_AsLong(PyList_GetItem(items, i));
 
-			float value = matrix->getitem(item_i, item_j);
-			symmatrix->getref(i, j) = value;
+				float value = matrix->getitem(item_i, item_j);
+				symmatrix->getref(j, i) = value;
+			}
+			else
+			{
+				int item_i = PyInt_AsLong(PyList_GetItem(items, i));
+				int item_j = PyInt_AsLong(PyList_GetItem(items, j));
+
+				float value = matrix->getitem(item_i, item_j);
+				symmatrix->getref(i, j) = value;
+			}
 		}
 	}
 
