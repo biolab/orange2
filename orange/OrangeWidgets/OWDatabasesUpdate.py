@@ -66,10 +66,11 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         return any(item.lower() in tag.lower() for tag in self.tags.split())
         
 class OWDatabasesUpdate(OWWidget):
-    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False):
+    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None):
         OWWidget.__init__(self, parent, signalManager, name)
         self.searchString = searchString
         self.showAll = showAll
+        self.domains = domains
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
@@ -102,13 +103,19 @@ class OWDatabasesUpdate(OWWidget):
         self.UpdateFilesList()
         self.resize(500, 400)
 
+      if self.searchString <> "":
+           self.SearchUpdate()
+
     def UpdateFilesList(self):
         self.progressBarInit()
         self.filesView.clear()
         self.tagsWidget.clear()
         tags = set()
         self.updateItems = []
-        domains = ["go", "kegg", "MeSH"]
+        if self.domains == None:
+            domains = orngServerFiles.listdomains()
+        else:
+            domains = self.domains
         for i, domain in enumerate(domains):
             local = orngServerFiles.listfiles(domain) or []
             files = self.serverFiles.listfiles(domain)
