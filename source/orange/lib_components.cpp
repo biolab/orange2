@@ -3228,6 +3228,41 @@ PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 	PyCATCH
 }
 
+PyObject *SymMatrix_getitems(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(List of items -> SymMatrix)")
+{
+	PyTRY
+	CAST_TO(TSymMatrix, matrix);
+
+	PyObject *items;
+
+	if (!PyArg_ParseTuple(args, "O:SymMatrix.getitems", &items))
+		return PYNULL;
+
+	int size = PyList_Size(items);
+	PyList_Sort(items);
+
+	TSymMatrix *symmatrix = new TSymMatrix(size);
+	PSymMatrix wsymmatrix = symmatrix;
+
+	symmatrix->matrixType = matrix->matrixType;
+
+	int i,j;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			int item_i = PyInt_AsLong(PyList_GetItem(items, i));
+			int item_j = PyInt_AsLong(PyList_GetItem(items, j));
+
+			float value = matrix->getitem(item_i, item_j);
+			symmatrix->getref(i, j) = value;
+		}
+	}
+
+	PyObject *pysymmatrix = WrapOrange(wsymmatrix);
+	return pysymmatrix;
+	PyCATCH
+}
 
 PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
 {
