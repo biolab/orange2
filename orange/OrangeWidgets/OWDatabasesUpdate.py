@@ -103,8 +103,8 @@ class OWDatabasesUpdate(OWWidget):
         self.UpdateFilesList()
         self.resize(500, 400)
 
-      if self.searchString <> "":
-           self.SearchUpdate()
+        if self.searchString <> "":
+            self.SearchUpdate()
 
     def UpdateFilesList(self):
         self.progressBarInit()
