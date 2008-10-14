@@ -303,17 +303,16 @@ class OWNetExplorer(OWWidget):
         mds = orngMDS.MDS(self.vertexDistance)
         #mds.Torgerson() 
         mds.getStress(orngMDS.KruskalStress) 
+        components = self.visualize.graph.getConnectedComponents()
         
         k=0 
-        while 3 > k: 
+        while k < 1: 
             k+=1 
             oldStress=mds.avgStress 
-            for l in range(10): 
+            for l in range(100): 
                 mds.SMACOFstep() 
             
             mds.getStress(orngMDS.KruskalStress)
-            
-            components = self.visualize.graph.getConnectedComponents()
             component_props = []
             
             for component in components:
