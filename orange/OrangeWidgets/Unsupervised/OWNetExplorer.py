@@ -16,6 +16,7 @@ from statc import mean
 from orangeom import Network
 from operator import itemgetter
 import orngMDS
+import math 
 
 dir = os.path.dirname(__file__) + "/../icons/"
 dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
@@ -52,9 +53,9 @@ class OWNetExplorer(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
         self.inputs = [("Network", Network, self.setGraph, Default), 
-                       ("Example Subset", orange.ExampleTable, self.setExampleSubset), 
-                       ("Mark Items", orange.ExampleTable, self.markItems), 
-                       ("Add Items", orange.ExampleTable, self.setItems), 
+                       ("Items", orange.ExampleTable, self.setItems),
+                       ("Items to Mark", orange.ExampleTable, self.markItems), 
+                       ("Items Subset", orange.ExampleTable, self.setExampleSubset), 
                        ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
         
         self.outputs = [("Selected Network", Network), 
@@ -300,56 +301,69 @@ class OWNetExplorer(OWWidget):
             return
         
         mds = orngMDS.MDS(self.vertexDistance)
-        mds.run(100)
+        #mds.Torgerson() 
+        mds.getStress(orngMDS.KruskalStress) 
         
-        components = self.visualize.graph.getConnectedComponents()
-        component_props = []
-        
-        for component in components:
-            x = [mds.points[u][0] for u in component]
-            y = [mds.points[u][1] for u in component]
-        
-            x_avg_mds = sum(x) / len(x)
-            y_avg_mds = sum(y) / len(y)
+        k=0 
+        while 3 > k: 
+            k+=1 
+            oldStress=mds.avgStress 
+            for l in range(10): 
+                mds.SMACOFstep() 
             
-            x = [self.visualize.graph.coors[0][u] for u in component]
-            y = [self.visualize.graph.coors[1][u] for u in component]
+            mds.getStress(orngMDS.KruskalStress)
             
-            x_avg_graph = sum(x) / len(x)
-            y_avg_graph = sum(y) / len(y)
+            components = self.visualize.graph.getConnectedComponents()
+            component_props = []
             
-            x_range = max([abs(i - x_avg_graph) for i in x])
-            y_range = max([abs(i - y_avg_graph) for i in y])
+            for component in components:
+                x = [mds.points[u][0] for u in component]
+                y = [mds.points[u][1] for u in component]
             
-            component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds))
-        
-        maxrange = 0
-        # find min distance between components
-        for i in range(1, len(components)):
-            for j in range(i - 1):
-                component_i = components[i]
-                component_j = components[j]
+                x_avg_mds = sum(x) / len(x) 
+                y_avg_mds = sum(y) / len(y)
                 
-                x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i = component_props[i]
-                x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j = component_props[j]
+                x = [self.visualize.graph.coors[0][u] for u in component]
+                y = [self.visualize.graph.coors[1][u] for u in component]
                 
-                graphsdist = sqrt(x_avg_graph_i*x_avg_graph_i + y_avg_graph_i*y_avg_graph_i) + sqrt(x_avg_graph_j*x_avg_graph_j + y_avg_graph_j*y_avg_graph_j)
-                graphsdist = 1.1 * graphsdist
-                mdsdist = sqrt(x_avg_mds_i*x_avg_mds_i + y_avg_mds_i*y_avg_mds_i) + sqrt(x_avg_mds_j*x_avg_mds_j + y_avg_mds_j*y_avg_mds_j)
-                component_range = graphsdist / mdsdist                
+                x_avg_graph = sum(x) / len(x)
+                y_avg_graph = sum(y) / len(y)
                 
-                if maxrange < component_range:
-                    maxrange = component_range
+                x_range = max([abs(i - x_avg_graph) for i in x])
+                y_range = max([abs(i - y_avg_graph) for i in y])
                 
-        for i in range(len(components)):
-            component = components[i]
-            x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
+                component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds))
             
-            for u in component:
-                self.visualize.graph.coors[0][u] = self.visualize.graph.coors[0][u] - x_avg_graph + (x_avg_mds * maxrange)
-                self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange)
-        
-        self.updateCanvas()
+            maxrange = 0
+            # find min distance between components
+            for i in range(1, len(components)):
+                for j in range(i - 1):
+                    component_i = components[i]
+                    component_j = components[j]
+                    
+                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i = component_props[i]
+                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j = component_props[j]
+                    
+                    graphsdist = sqrt(x_avg_graph_i*x_avg_graph_i + y_avg_graph_i*y_avg_graph_i) + sqrt(x_avg_graph_j*x_avg_graph_j + y_avg_graph_j*y_avg_graph_j)
+                    graphsdist = 1.1 * graphsdist
+                    mdsdist = sqrt(x_avg_mds_i*x_avg_mds_i + y_avg_mds_i*y_avg_mds_i) + sqrt(x_avg_mds_j*x_avg_mds_j + y_avg_mds_j*y_avg_mds_j)
+                    component_range = graphsdist / mdsdist                
+                    
+                    if maxrange < component_range:
+                        maxrange = component_range
+                    
+            for i in range(len(components)):
+                component = components[i]
+                x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
+                
+                for u in component:
+                    self.visualize.graph.coors[0][u] = self.visualize.graph.coors[0][u] - x_avg_graph + (x_avg_mds * maxrange)
+                    self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange)
+            
+            self.updateCanvas()
+             
+            if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
+                break; 
         
     def setVertexDistance(self, matrix):
         self.error('')
