@@ -263,7 +263,7 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
         self.showComponentCombo.addItem("Select attribute")
         
-        OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents)
+        self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, disabled=1)
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -289,12 +289,86 @@ class OWNetExplorer(OWWidget):
         
     def mdsComponents(self):
         if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
             return
         
-        mds = orngMDS.MDS(matrix)
+        if self.visualize == None or self.visualize.graph == None:
+            return
+        
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            return
+        
+        mds = orngMDS.MDS(self.vertexDistance)
+        mds.run(100)
+        
+        components = self.visualize.graph.getConnectedComponents()
+        component_props = []
+        
+        for component in components:
+            x = [mds.points[u][0] for u in component]
+            y = [mds.points[u][1] for u in component]
+        
+            x_avg_mds = sum(x) / len(x)
+            y_avg_mds = sum(y) / len(y)
+            
+            x = [self.visualize.graph.coors[0][u] for u in component]
+            y = [self.visualize.graph.coors[1][u] for u in component]
+            
+            x_avg_graph = sum(x) / len(x)
+            y_avg_graph = sum(y) / len(y)
+            
+            x_range = max([abs(i - x_avg_graph) for i in x])
+            y_range = max([abs(i - y_avg_graph) for i in y])
+            
+            component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds))
+        
+        maxrange = 0
+        # find min distance between components
+        for i in range(1, len(components)):
+            for j in range(i - 1):
+                component_i = components[i]
+                component_j = components[j]
+                
+                x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i = component_props[i]
+                x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j = component_props[j]
+                
+                graphsdist = sqrt(x_avg_graph_i*x_avg_graph_i + y_avg_graph_i*y_avg_graph_i) + sqrt(x_avg_graph_j*x_avg_graph_j + y_avg_graph_j*y_avg_graph_j)
+                graphsdist = 1.1 * graphsdist
+                mdsdist = sqrt(x_avg_mds_i*x_avg_mds_i + y_avg_mds_i*y_avg_mds_i) + sqrt(x_avg_mds_j*x_avg_mds_j + y_avg_mds_j*y_avg_mds_j)
+                component_range = graphsdist / mdsdist                
+                
+                if maxrange < component_range:
+                    maxrange = component_range
+                
+        for i in range(len(components)):
+            component = components[i]
+            x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
+            
+            for u in component:
+                self.visualize.graph.coors[0][u] = self.visualize.graph.coors[0][u] - x_avg_graph + (x_avg_mds * maxrange)
+                self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange)
+        
+        self.updateCanvas()
         
     def setVertexDistance(self, matrix):
+        self.error('')
+        
+        if matrix == None or self.visualize == None or self.visualize.graph == None:
+            self.vertexDistance = None
+            return
+        
+        if matrix.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices.')
+            self.vertexDistance = None
+            return
+        
         self.vertexDistance = matrix
+        
+        if self.vertexDistance == None:
+            self.btnMDS.setEnabled(False)
+        else:
+            self.btnMDS.setEnabled(True)
 
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
