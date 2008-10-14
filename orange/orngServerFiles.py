@@ -211,7 +211,7 @@ class ServerFiles(object):
         f.seek(0)
 
 ##        os.rename(target + '.tmp', target)
-        shutil.copyfileobj(f, open(target, "w"))
+        shutil.copyfileobj(f, open(target, "wb"))
 
         if callback:
             callback()
