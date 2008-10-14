@@ -371,9 +371,8 @@ def example(myusername, mypassword):
 
     s.remove('test', 'osf-test.py')
 
-s = ServerFiles()
-print s.allinfo("demo2")
+    s = ServerFiles()
+    print s.allinfo("demo2")
 
 if __name__ == '__main__':
-
     example(sys.argv[1], sys.argv[2])
