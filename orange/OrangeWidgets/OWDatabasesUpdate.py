@@ -5,6 +5,12 @@ from OWWidget import *
 from functools import partial
 from datetime import datetime
 
+def sizeof_fmt(num):
+    for x in ['bytes','KB','MB','GB','TB']:
+        if num < 1024.0:
+            return "%3.1f %s" % (num, x)
+        num /= 1024.0
+
 class UpdateOptionsWidget(QWidget):
     def __init__(self, updateCallback, removeCallback, state, *args):
         QWidget.__init__(self, *args)
@@ -43,13 +49,13 @@ class UpdateOptionsWidget(QWidget):
 class UpdateTreeWidgetItem(QTreeWidgetItem):
     stateDict = {0:"up-to-date", 1:"new-version-available", 2:"not-downloaded"}
     def __init__(self, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
-        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], "%.2f MB" % (float(size)/1024**2)])
+        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], sizeof_fmt(float(size))])
         self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
         self.state = state
         self.title = title
-        self.tags = tags
+        self.tags = tags.split(", ")
         self.downloadCallback = downloadCallback
         self.removeCallback = removeCallback
         
@@ -66,7 +72,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
 
     def __contains__(self, item):
-        return any(item.lower() in tag.lower() for tag in self.tags.split())
+        return any(item.lower() in tag.lower() for tag in self.tags)
         
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None):
@@ -101,6 +107,7 @@ class OWDatabasesUpdate(OWWidget):
             OWGUI.button(box, self, "Close", callback=self.accept, tooltip="Close")
 
         self.updateItems = []
+        self.allTags = []
         self.pb = None
         
         self.UpdateFilesList()
@@ -113,7 +120,7 @@ class OWDatabasesUpdate(OWWidget):
         self.progressBarInit()
         self.filesView.clear()
         self.tagsWidget.clear()
-        tags = set()
+        self.allTags = set()
         self.updateItems = []
         if self.domains == None:
             domains = orngServerFiles.listdomains()
@@ -123,6 +130,7 @@ class OWDatabasesUpdate(OWWidget):
             local = orngServerFiles.listfiles(domain) or []
             files = self.serverFiles.listfiles(domain)
             allInfo = self.serverFiles.allinfo(domain)
+            items = []
             for j, file in enumerate(files):
                 infoServer = None
                 if file in local:
@@ -130,21 +138,28 @@ class OWDatabasesUpdate(OWWidget):
                     infoLocal = orngServerFiles.info(domain, file)
                     dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                     dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
-                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                    items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
 ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
                 elif self.showAll:
                     infoServer = allInfo[file] #self.serverFiles.info(domain, file)
-                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                if infoServer and not all(tag in tags for tag in infoServer["tags"]):
-                    tags.update(infoServer["tags"])
-                    self.tagsWidget.setText(", ".join(sorted(tags)))
+##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                    items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                if infoServer:
+                    self.allTags.update(infoServer["tags"])
+##                    self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
 ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), None, self))
                     
 ##                QTreeWidgetItem(self.filesWidget, ["", info["title"], info["tags"], info["datetime"]])
 ##                self.treeWidget.
                 self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
-                self.filesView.resizeColumnToContents(1)
-                self.filesView.resizeColumnToContents(2)
+            
+            for item in items:
+                self.updateItems.append(UpdateTreeWidgetItem(*item))
+            self.filesView.resizeColumnToContents(1)
+            self.filesView.resizeColumnToContents(2)
+            self.tagsWidget.setText(", ".join(sorted(self.allTags, key=str.lower)))
+            self.SearchUpdate()
 
         self.progressBarFinished()
 
@@ -173,8 +188,13 @@ class OWDatabasesUpdate(OWWidget):
 
     def SearchUpdate(self):
         strings = self.searchString.split()
+        tags = set()
         for item in self.updateItems:
-            item.setHidden(not all(str(string) in item for string in strings))
+            hide = not all(str(string) in item for string in strings)
+            item.setHidden(hide)
+            if not hide:
+                tags.update(item.tags)
+        self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
             
         
 
