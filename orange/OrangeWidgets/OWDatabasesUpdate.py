@@ -128,11 +128,11 @@ class OWDatabasesUpdate(OWWidget):
             domains = orngServerFiles.listdomains()
         else:
             domains = self.domains
+        items = []
         for i, domain in enumerate(domains):
             local = orngServerFiles.listfiles(domain) or []
             files = self.serverFiles.listfiles(domain)
             allInfo = self.serverFiles.allinfo(domain)
-            items = []
             for j, file in enumerate(files):
                 infoServer = None
                 if file in local:
@@ -156,12 +156,12 @@ class OWDatabasesUpdate(OWWidget):
 ##                self.treeWidget.
                 self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
             
-            for item in items:
-                self.updateItems.append(UpdateTreeWidgetItem(*item))
-            self.filesView.resizeColumnToContents(1)
-            self.filesView.resizeColumnToContents(2)
-##            self.tagsWidget.setText(", ".join(sorted(self.allTags, key=str.lower)))
-            self.SearchUpdate()
+        for i, item in enumerate(items):
+            self.updateItems.append(UpdateTreeWidgetItem(*item))
+##            self.progressBarSet(100.0*i/len(items))
+        self.filesView.resizeColumnToContents(1)
+        self.filesView.resizeColumnToContents(2)
+        self.SearchUpdate()
         local = [item for item in self.updateItems if item.state != 2]
         onServer = [item for item in self.updateItems if item.state == 2]
         if self.showAll:
