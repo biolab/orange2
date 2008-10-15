@@ -312,7 +312,7 @@ class OWHierarchicalClustering(OWWidget):
         
         if not self.selection:
             self.send("Selected Examples",None)
-            self.send("Unelected Examples",None)
+            self.send("Unselected Examples",None)
             self.send("Structured Data Files", None)
             return
         items = getattr(self.matrix, "items")
