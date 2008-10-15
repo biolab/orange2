@@ -168,7 +168,11 @@ class OWRank(OWWidget):
             self.send("ExampleTable Attributes", None)
             return
 
-        self.send("ExampleTable Attributes", orange.ExampleTable(orange.Domain(attrs, self.data.domain.classVar), self.data))
+        nDomain = orange.Domain(attrs, self.data.domain.classVar)
+        for meta in [a.name for a in self.data.domain.getmetas().values()]:
+            nDomain.addmeta(orange.newmetaid(), self.data.domain[meta])
+
+        self.send("ExampleTable Attributes", orange.ExampleTable(nDomain, self.data))
 
 
     def setData(self,data):
@@ -460,7 +464,11 @@ class OWRank(OWWidget):
             self.lastSentAttrs = []
         else:
             if self.lastSentAttrs != self.selected:
-                self.send("Reduced Example Table", orange.ExampleTable(orange.Domain(self.selected, self.data.domain.classVar), self.data))
+                nDomain = orange.Domain(self.selected, self.data.domain.classVar)
+                for meta in [a.name for a in self.data.domain.getmetas().values()]:
+                    nDomain.addmeta(orange.newmetaid(), self.data.domain[meta])
+
+                self.send("Reduced Example Table", orange.ExampleTable(nDomain, self.data))
                 self.lastSentAttrs = self.selected[:]
 
         self.dataChanged = False
