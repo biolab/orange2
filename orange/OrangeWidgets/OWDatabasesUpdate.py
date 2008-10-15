@@ -56,6 +56,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.state = state
         self.title = title
         self.tags = tags.split(", ")
+        self.size = size
         self.downloadCallback = downloadCallback
         self.removeCallback = removeCallback
         
@@ -99,6 +100,7 @@ class OWDatabasesUpdate(OWWidget):
 ##        self.delegate = UpdateOptionsDelegate()
 ##        self.filesView.setItemDelegateForColumn(0)
         box.layout().addWidget(self.filesView)
+        self.infoLabel = OWGUI.label(box, self, "")
         
         OWGUI.button(self.mainArea, self, "Update all", callback=self.UpdateAll, tooltip="Update all updatable files")
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
@@ -158,8 +160,15 @@ class OWDatabasesUpdate(OWWidget):
                 self.updateItems.append(UpdateTreeWidgetItem(*item))
             self.filesView.resizeColumnToContents(1)
             self.filesView.resizeColumnToContents(2)
-            self.tagsWidget.setText(", ".join(sorted(self.allTags, key=str.lower)))
+##            self.tagsWidget.setText(", ".join(sorted(self.allTags, key=str.lower)))
             self.SearchUpdate()
+        local = [item for item in self.updateItems if item.state != 2]
+        onServer = [item for item in self.updateItems if item.state == 2]
+        if self.showAll:
+            self.infoLabel.setText("%i items, %s (%i items on server %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
+                                                                            len(onServer), sizeof_fmt(sum(float(item.size) for item in onServer))))
+        else:
+            self.infoLabel.setText("%i items, %s " % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
 
         self.progressBarFinished()
 
