@@ -47,7 +47,7 @@ class UpdateOptionsWidget(QWidget):
 
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
-    stateDict = {0:"up-to-date", 1:"new-version-available", 2:"not-downloaded"}
+    stateDict = {0:"up-to-date", 1:"new version available", 2:"not downloaded"}
     def __init__(self, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], sizeof_fmt(float(size))])
         self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
