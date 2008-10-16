@@ -48,11 +48,12 @@ class UpdateOptionsWidget(QWidget):
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
     stateDict = {0:"up-to-date", 1:"new version available", 2:"not downloaded"}
-    def __init__(self, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
+    def __init__(self, master, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], sizeof_fmt(float(size))])
         self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
+        self.master = master
         self.state = state
         self.title = title
         self.tags = tags.split(", ")
@@ -65,12 +66,14 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.state = 0
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[0]))
+        self.master.UpdateInfoLabel()
 
     def Remove(self):
         self.removeCallback()
         self.state = 2
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
+        self.master.UpdateInfoLabel()
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower() for tag in self.tags)
@@ -112,11 +115,8 @@ class OWDatabasesUpdate(OWWidget):
         self.allTags = []
         self.pb = None
         
-        self.UpdateFilesList()
         self.resize(500, 400)
-
-        if self.searchString <> "":
-            self.SearchUpdate()
+        QTimer.singleShot(50, self.UpdateFilesList)
 
     def UpdateFilesList(self):
         self.progressBarInit()
@@ -157,11 +157,23 @@ class OWDatabasesUpdate(OWWidget):
                 self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
             
         for i, item in enumerate(items):
-            self.updateItems.append(UpdateTreeWidgetItem(*item))
+            self.updateItems.append(UpdateTreeWidgetItem(self, *item))
 ##            self.progressBarSet(100.0*i/len(items))
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
         self.SearchUpdate()
+        self.UpdateInfoLabel()
+##        local = [item for item in self.updateItems if item.state != 2]
+##        onServer = [item for item in self.updateItems if item.state == 2]
+##        if self.showAll:
+##            self.infoLabel.setText("%i items, %s (%i items on server %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
+##                                                                            len(onServer), sizeof_fmt(sum(float(item.size) for item in onServer))))
+##        else:
+##            self.infoLabel.setText("%i items, %s " % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
+
+        self.progressBarFinished()
+
+    def UpdateInfoLabel(self):
         local = [item for item in self.updateItems if item.state != 2]
         onServer = [item for item in self.updateItems if item.state == 2]
         if self.showAll:
@@ -169,8 +181,7 @@ class OWDatabasesUpdate(OWWidget):
                                                                             len(onServer), sizeof_fmt(sum(float(item.size) for item in onServer))))
         else:
             self.infoLabel.setText("%i items, %s" % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
-
-        self.progressBarFinished()
+        
 
     def DownloadFile(self, domain, filename):
 ##        self.progressBarInit()
