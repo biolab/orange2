@@ -21,7 +21,7 @@ is the main class for performing network layout optimization. Network structure 
 <DL class =attributes>
 <DT>graph</DT>
 <DD>Holds the Network object.</DD>
-<DT>coors</DT>
+<DT>graph.coors</DT>
 <DD>Holds coordinates. Usage: <code>coors[0][i]</code>, <code>coors[1][i]</code>; 0 for x-axis, 1 for y-axis.</DD>
 </DL>
 <P class=section>Methods</P>
@@ -36,7 +36,7 @@ is the main class for performing network layout optimization. Network structure 
 <DD>Saves network structure of NetworkOptimization object to Pajek (.net) file.</DD>
 <DT>random()</DT>
 <DD>Random layout optimization.</DD>
-<DT>fruchtermanReingold(steps, temperature, hidden_nodes=[])</DT>
+<DT>fruchtermanReingold(steps, temperature, coolFactor=default, hiddenNodes=[], weighted=False)</DT>
 <DD>Fruchterman-Reingold spring layout optimization. Set number of iterations with argument <code>steps</code>, start temperature with <code>temperature</code> (for example: 1000) and set list of hidden nodes with argument <code>hidden_nodes</code>.</DD>
 <DT>radialFruchtermanReingold(center, steps, temperature)</DT>
 <DD>Radial Fruchterman-Reingold spring layout optimization. Set center node with attribute <code>center</code>, number of iterations with argument <code>steps</code> and start temperature with <code>temperature</code> (for example: 1000).</DD>
@@ -50,35 +50,33 @@ is the main class for performing network layout optimization. Network structure 
 
 <h2>Examples</h2>
 
-<h3>NetworkOptimization constructor and random layout</h3>
+<h3>Network constructor and random layout</h3>
 
-<p>In our first example we create a NetworkOptimization object with a simple full graph (K5). Vertices are initially played randomly. Graph is visualized using pylabs matplotlib.</p>
+<p>In our first example we create a Network object with a simple full graph (K5). Vertices are initially placed randomly. Graph is visualized using pylabs matplotlib. NetworkOptimization class is not needed since we do not apply any layout optimization method in this example.</p>
 
 <p class="header"><a href="network_constructor.py">network_constructor.py</a></p>
 <xmp class=code>import orangeom
 from orngNetwork import NetworkOptimization
 from pylab import *
 
-# create graph object of type Network
-graph = orangeom.Network(5, 0)
+# create graph object of type GraphAsList
+# vertices are placed randomly in Network constructor
+net = orangeom.Network(5, 0)
 
 # set edges
 for i in range(4):
     for j in range(i + 1, 5):
-        graph[i,j] = 1
-
-# vertices are placed randomly in NetworkOptimization constructor
-network = NetworkOptimization(graph)
+        net[i,j] = 1
 
 # read all edges and plot a line
-for u, v in graph.getEdges():
-    x1, y1 = network.coors[0][u], network.coors[1][u]
-    x2, y2 = network.coors[0][v], network.coors[1][v]
-    plot([x1, x2], [y1, y2], 'b-') 
-               
+for u, v in net.getEdges():
+    x1, y1 = net.coors[0][u], net.coors[1][u]
+    x2, y2 = net.coors[0][v], net.coors[1][v]
+    plot([x1, x2], [y1, y2], 'b-')
+
 # read x and y coordinates to Python list
-x = [coordinate[0] for coordinate in network.coors]
-y = [coordinate[1] for coordinate in network.coors]
+x = net.coors[0]
+y = net.coors[1]
 
 # plot vertices
 plot(x, y, 'ro')
@@ -93,16 +91,16 @@ following graph drawing:</p>
 
 <p class="header">part of <a href="network_optimization.py">network_optimization.py</a></p>
 <xmp class=code># vertices are placed randomly in NetworkOptimization constructor
-network = NetworkOptimization(graph)
+networkOptimization = NetworkOptimization(net)
 
 # optimize verices layout with one of included algorithms
-network.fruchtermanReingold(100, 1000)
+networkOptimization.fruchtermanReingold(100, 1000)
 </xmp>
 <p>You can use one of the following optimization algorithms:</p>
 <p>
 <ul>
 <li>.random()</li>
-<li>.fruchtermanReingold(steps, temperature, hidden_nodes=[])</li>
+<li>.fruchtermanReingold(steps, temperature, coolingFactor=Default, hiddenNodes=[], weighted=False)</li>
 <li>.radialFruchtermanReingold(center, steps, temperature)</li>
 <li>.circularOriginal()</li>
 <li>.circularRandom()</li>
@@ -118,10 +116,10 @@ network.fruchtermanReingold(100, 1000)
 <p class="header"><a href="network_read.py">network_read.py</a> (uses <a href="K5.net">K5.net</a>)</p>
 
 <xmp class=code># vertices are placed randomly in NetworkOptimization constructor
-network = NetworkOptimization()
+networkOptimization = NetworkOptimization()
 
 # read network from file
-network.readNetwork("K5.net")
+net = networkOptimization.readNetwork("K5.net")
 </xmp>
 
 <p>You can save network in the same way with method <code>saveNetwork(fn)</code>.</p>
