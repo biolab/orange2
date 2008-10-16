@@ -8,7 +8,7 @@ from datetime import datetime
 def sizeof_fmt(num):
     for x in ['bytes','KB','MB','GB','TB']:
         if num < 1024.0:
-            return "%3.1f %s" % (num, x)
+            return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
         num /= 1024.0
 
 class UpdateOptionsWidget(QWidget):
