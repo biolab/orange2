@@ -1016,7 +1016,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	int steps;
 	double temperature = 0;
 	double coolFactor = 0;
-	PyObject* hiddenNodes;
+	PyObject* hiddenNodes = PyList_New(0);
 	bool weighted = false;
 
 	if (!PyArg_ParseTuple(args, "id|dOb:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &coolFactor, &hiddenNodes, &weighted))
