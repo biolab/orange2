@@ -165,10 +165,10 @@ class OWDatabasesUpdate(OWWidget):
         local = [item for item in self.updateItems if item.state != 2]
         onServer = [item for item in self.updateItems if item.state == 2]
         if self.showAll:
-            self.infoLabel.setText("%i items, %s (%i items on server %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
+            self.infoLabel.setText("%i items, %s (data on server: %i items, %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
                                                                             len(onServer), sizeof_fmt(sum(float(item.size) for item in onServer))))
         else:
-            self.infoLabel.setText("%i items, %s " % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
+            self.infoLabel.setText("%i items, %s" % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
 
         self.progressBarFinished()
 
