@@ -64,7 +64,7 @@ class FileInfo(object):
         #print "CONT", cont
         name, protection, datetime, title, tags = cont.split("\n")
         tags = tags.split(";")
-        self.set(name, int(protection), datetime, title, tags)
+        self.set(name, protection, datetime, title, tags)
 
     def userInfo(self):
         return self.separ.join([\
@@ -78,7 +78,7 @@ class FileInfo(object):
         if not fname:
             fname = self.fname
         f = open(fname, 'wb')
-        cont = '\n'.join([self.name, str(self.protection), str(self.datetime), \
+        cont = '\n'.join([self.name, self.protection, str(self.datetime), \
             self.title, ";".join(self.tags)])
         #print "WRITING", cont
         f.write(cont)
@@ -163,14 +163,26 @@ def fileInfo(domain, filename):
 
 def userFileInfo(domain, filename, protected=False):
     fi = fileInfo(domain, filename)
-    if fi.protection == 0 or protected:
+    if accessAllowed(fi, protected):
         return fi.userInfo()
     else:
         return "None"
 
+def accessAllowed(fi, protected):
+    """
+    protected == access_code or True (allow everything) or False (public access)
+
+    Allow access if:
+    - there is no protection or
+    - protected == True -> administrative account
+    - fi.protection == protected and it is not "1"
+    """
+    #return fi.protection == "0" or protected == True or (fi.protection == protected)
+    return fi.protection == "0" or protected == True or (fi.protection != "1" and fi.protection == protected)
+
 def downloadFile(domain, filename, protected=False):
     fi = fileInfo(domain, filename)
-    if fi.protection == 0 or protected:
+    if accessAllowed(fi, protected):
         return cherrypy.lib.static.serve_file(fi.fname + ".file", "application/x-download", "attachment", filename)
     else:
         raise cherrypy.HTTPError(500, "File not available!")
@@ -183,11 +195,11 @@ def listFilesL(domain, protected=False):
         fi = FileInfo(pj(dir, file))
         try:
             fi.load() 
-            if fi.exists() and (fi.protection == 0 or protected):
+            if fi.exists() and accessAllowed(fi, protected):
                 okfiles.append(fi.name)
-
         except:
             pass
+
     return okfiles
 
 def listFiles(domain, protected=False):
@@ -211,25 +223,26 @@ class RootServer:
         return """"""
 
 class PublicServer:
+
     @cherrypy.expose
     def index(self):
         return """"""
 
     @cherrypy.expose
-    def info(self, domain, filename):
-        return userFileInfo(domain, filename)
+    def info(self, domain, filename, access_code=None):
+        return userFileInfo(domain, filename, protected=access_code)
 
     @cherrypy.expose
-    def allinfo(self, domain):
-        return allFileInfos(domain)
+    def allinfo(self, domain, access_code=None):
+        return allFileInfos(domain, protected=access_code)
 
     @cherrypy.expose
-    def download(self, domain, filename):
-        return downloadFile(domain, filename)
+    def download(self, domain, filename, access_code=None):
+        return downloadFile(domain, filename, protected=access_code)
 
     @cherrypy.expose
-    def list(self, domain):
-        return listFiles(domain)
+    def list(self, domain, access_code=None):
+        return listFiles(domain, protected=access_code)
 
 class SecureServer:
 
@@ -316,7 +329,7 @@ class SecureServer:
         fi.datetime = datetime_now
         fi.name = filename
         if fi.protection == None:
-            fi.protection = 1
+            fi.protection = "1"  #only administrative access by default
         fi.title = title
         fi.tags = tags.split(";")
 
@@ -325,20 +338,23 @@ class SecureServer:
     @cherrypy.expose
     @cherrypy.tools.lock()
     @cherrypy.tools.unlock()
-    def protect(self, domain, filename):
+    def protect(self, domain, filename, access_code="1"):
         fi = fileInfo(domain, filename)
         if fi.exists():
-            fi.protection = 1
+            fi.protection = access_code
             fi.save()
+        else:
+            raise cherrypy.HTTPError(500, "File does not exists.")
 
     @cherrypy.expose
     @cherrypy.tools.lock()
     @cherrypy.tools.unlock()
-    def unprotect(self, domain, filename):
+    def protection(self, domain, filename):
         fi = fileInfo(domain, filename)
         if fi.exists():
-            fi.protection = 0
-            fi.save()
+            return fi.protection
+        else:
+            raise cherrypy.HTTPError(500, "File does not exists.")
 
 """
 Tools for enforcing security measures.
