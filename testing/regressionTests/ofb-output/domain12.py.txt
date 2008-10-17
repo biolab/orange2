@@ -1,0 +1,7 @@
+
+    buying      maint      doors    persons    lugboot     safety      price          y
+    v-high     v-high          2          2      small        med     v-high      unacc
+    v-high       high     5-more          4      small       high     v-high      unacc
+    v-high        med     5-more          2        med        low       high      unacc
+       med        low          2          4        med        low        low      unacc
+       low        low          4       more        big       high        low     v-good

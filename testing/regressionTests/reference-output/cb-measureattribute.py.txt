@@ -1,0 +1,78 @@
+LESS IS BETTER
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    prescription=hypermetrope
+|    |    astigmatic=no: soft (100.00%)
+|    |    astigmatic=yes
+|    |    |    age=pre-presbyopic: none (100.00%)
+|    |    |    age=presbyopic: none (100.00%)
+|    |    |    age=young: hard (100.00%)
+|    prescription=myope
+|    |    astigmatic=yes: hard (100.00%)
+|    |    astigmatic=no
+|    |    |    age=pre-presbyopic: soft (100.00%)
+|    |    |    age=presbyopic: none (100.00%)
+|    |    |    age=young: soft (100.00%)
+
+
+
+MORE IS BETTER
+age=pre-presbyopic
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: none (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+age=presbyopic
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: none (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: none (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+age=young
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+
+
+
+FUNCTION (more is better)
+age=pre-presbyopic
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: none (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+age=presbyopic
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: none (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: none (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+age=young
+|    tear_rate=reduced: none (100.00%)
+|    tear_rate=normal
+|    |    prescription=hypermetrope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+|    |    prescription=myope
+|    |    |    astigmatic=no: soft (100.00%)
+|    |    |    astigmatic=yes: hard (100.00%)
+

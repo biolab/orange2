@@ -1,0 +1,37 @@
+
+proportionsTest that will always give the same results
+bayes: 0.912+-0.015    tree: 0.953+-0.008    default: 0.611+-0.000   
+bayes: 0.912+-0.015    tree: 0.953+-0.008    default: 0.611+-0.000   
+bayes: 0.912+-0.015    tree: 0.953+-0.008    default: 0.611+-0.000   
+
+proportionsTest that will give different results, but the same each time the script is run
+bayes: 0.912+-0.015    tree: 0.953+-0.008    default: 0.611+-0.000   
+bayes: 0.914+-0.013    tree: 0.948+-0.010    default: 0.611+-0.000   
+bayes: 0.905+-0.015    tree: 0.952+-0.015    default: 0.611+-0.000   
+
+proportionsTest + storing classifiers
+#iter 100, #classifiers 3
+
+
+Good old 10-fold cross validation
+bayes: 0.901+-0.031    tree: 0.956+-0.024    default: 0.614+-0.005   
+
+Learning curve
+0.200: bayes: 0.917+-0.018    tree: 0.956+-0.031    default: 0.614+-0.006   
+0.400: bayes: 0.903+-0.034    tree: 0.945+-0.024    default: 0.614+-0.006   
+0.600: bayes: 0.908+-0.036    tree: 0.943+-0.019    default: 0.614+-0.006   
+0.800: bayes: 0.920+-0.014    tree: 0.956+-0.022    default: 0.614+-0.006   
+1.000: bayes: 0.903+-0.028    tree: 0.949+-0.021    default: 0.614+-0.006   
+
+Learning curve with pre-separated data
+0.200: bayes: 0.905+-0.032    tree: 0.954+-0.012    default: 0.611+-0.000   
+0.400: bayes: 0.899+-0.021    tree: 0.965+-0.006    default: 0.611+-0.000   
+0.600: bayes: 0.885+-0.016    tree: 0.948+-0.009    default: 0.611+-0.000   
+0.800: bayes: 0.882+-0.006    tree: 0.968+-0.006    default: 0.611+-0.000   
+1.000: bayes: 0.884+-0.003    tree: 0.954+-0.000    default: 0.611+-0.000   
+
+Learning and testing on pre-separated data
+bayes: 0.885+-0.017    tree: 0.954+-0.007    default: 0.611+-0.041   
+
+Learning and testing on the same data
+bayes: 0.903+-0.008    tree: 0.977+-0.002    default: 0.614+-0.022   

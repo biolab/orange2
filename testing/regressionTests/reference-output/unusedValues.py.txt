@@ -1,0 +1,24 @@
+
+EnumVariable 'a' retained as is
+EnumVariable 'b' reduced, new values are <0, 2>
+EnumVariable 'c' removed
+EnumVariable 'd' retained as is
+EnumVariable 'y' retained as is
+
+Original example table
+['0', '0', '?', '0', '0']
+['1', '2', '?', '0', '0']
+['0', '0', '?', '0', '1']
+
+Reduced example table
+['0', '0', '0', '0']
+['1', '2', '0', '0']
+['0', '0', '0', '1']
+
+Removal with 'removedOneValued=true'
+
+EnumVariable 'a' retained as is
+EnumVariable 'b' reduced, new values are <0, 2>
+EnumVariable 'c' removed
+EnumVariable 'd' removed
+EnumVariable 'y' retained as is

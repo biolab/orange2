@@ -1,0 +1,117 @@
+SOME RANDOMNESS IN STOPING:
+petal width<0.800: Iris-setosa (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length>=5.350: Iris-virginica (100.00%)
+|    |    petal length<5.350
+|    |    |    petal length<4.950
+|    |    |    |    petal width<1.650: Iris-versicolor (100.00%)
+|    |    |    |    petal width>=1.650: Iris-virginica (100.00%)
+|    |    |    petal length>=4.950
+|    |    |    |    petal width<1.550: Iris-virginica (100.00%)
+|    |    |    |    petal width>=1.550: Iris-versicolor (100.00%)
+|    petal width>=1.750
+|    |    petal length>=4.850: Iris-virginica (100.00%)
+|    |    petal length<4.850
+|    |    |    sepal width<3.100: Iris-virginica (100.00%)
+|    |    |    sepal width>=3.100: Iris-versicolor (100.00%)
+
+
+RANDOM STOPING:
+petal width<0.800
+|    sepal length<5.050
+|    |    sepal width<3.050
+|    |    |    petal length<1.350
+|    |    |    |    sepal width<2.650: Iris-setosa (100.00%)
+|    |    |    |    sepal width>=2.650
+|    |    |    |    |    sepal length<4.350: Iris-setosa (100.00%)
+|    |    |    |    |    sepal length>=4.350: Iris-setosa (100.00%)
+|    |    |    petal length>=1.350
+|    |    |    |    sepal width<2.950: Iris-setosa (100.00%)
+|    |    |    |    sepal width>=2.950
+|    |    |    |    |    sepal length<4.850
+|    |    |    |    |    |    petal width<0.200: Iris-setosa (100.00%)
+|    |    |    |    |    |    petal width>=0.200: Iris-setosa (100.00%)
+|    |    |    |    |    sepal length>=4.850
+|    |    |    |    |    |    sepal length<4.950: Iris-setosa (100.00%)
+|    |    |    |    |    |    sepal length>=4.950: Iris-setosa (100.00%)
+|    |    sepal width>=3.050
+|    |    |    petal length>=1.550: Iris-setosa (100.00%)
+|    |    |    petal length<1.550
+|    |    |    |    petal width<0.250
+|    |    |    |    |    petal width<0.150: Iris-setosa (100.00%)
+|    |    |    |    |    petal width>=0.150
+|    |    |    |    |    |    sepal width<3.250
+|    |    |    |    |    |    |    sepal width<3.150: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    sepal width>=3.150
+|    |    |    |    |    |    |    |    sepal length<4.500: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    sepal length>=4.500: Iris-setosa (100.00%)
+|    |    |    |    |    |    sepal width>=3.250
+|    |    |    |    |    |    |    sepal length<4.800: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    sepal length>=4.800
+|    |    |    |    |    |    |    |    petal length>=1.450: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    petal length<1.450
+|    |    |    |    |    |    |    |    |    sepal width<3.450: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    |    sepal width>=3.450: Iris-setosa (100.00%)
+|    |    |    |    petal width>=0.250
+|    |    |    |    |    sepal length<4.800: Iris-setosa (100.00%)
+|    |    |    |    |    sepal length>=4.800: Iris-setosa (100.00%)
+|    sepal length>=5.050
+|    |    petal length<1.350
+|    |    |    sepal width>=3.950: Iris-setosa (100.00%)
+|    |    |    sepal width<3.950
+|    |    |    |    sepal length<5.450: Iris-setosa (100.00%)
+|    |    |    |    sepal length>=5.450: Iris-setosa (100.00%)
+|    |    petal length>=1.350
+|    |    |    sepal width<3.350: Iris-setosa (100.00%)
+|    |    |    sepal width>=3.350
+|    |    |    |    sepal length<5.150: Iris-setosa (100.00%)
+|    |    |    |    sepal length>=5.150
+|    |    |    |    |    petal width>=0.250: Iris-setosa (100.00%)
+|    |    |    |    |    petal width<0.250
+|    |    |    |    |    |    sepal length<5.350
+|    |    |    |    |    |    |    sepal length>=5.250: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    sepal length<5.250
+|    |    |    |    |    |    |    |    petal length<1.450: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    petal length>=1.450
+|    |    |    |    |    |    |    |    |    sepal width<3.800: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    |    sepal width>=3.800: Iris-setosa (100.00%)
+|    |    |    |    |    |    sepal length>=5.350
+|    |    |    |    |    |    |    sepal width>=3.950: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    sepal width<3.950
+|    |    |    |    |    |    |    |    sepal width<3.550: Iris-setosa (100.00%)
+|    |    |    |    |    |    |    |    sepal width>=3.550: Iris-setosa (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350
+|    |    |    petal length<4.950: Iris-versicolor (97.92%)
+|    |    |    petal length>=4.950
+|    |    |    |    petal width<1.550
+|    |    |    |    |    sepal length<6.150: Iris-virginica (100.00%)
+|    |    |    |    |    sepal length>=6.150: Iris-virginica (100.00%)
+|    |    |    |    petal width>=1.550
+|    |    |    |    |    sepal length<6.350: Iris-versicolor (100.00%)
+|    |    |    |    |    sepal length>=6.350: Iris-versicolor (100.00%)
+|    |    petal length>=5.350
+|    |    |    sepal length<6.650: Iris-virginica (100.00%)
+|    |    |    sepal length>=6.650: Iris-virginica (100.00%)
+|    petal width>=1.750
+|    |    petal length<4.850
+|    |    |    sepal width>=3.100: Iris-versicolor (100.00%)
+|    |    |    sepal width<3.100
+|    |    |    |    sepal length<6.100: Iris-virginica (100.00%)
+|    |    |    |    sepal length>=6.100: Iris-virginica (100.00%)
+|    |    petal length>=4.850
+|    |    |    sepal length<5.650: Iris-virginica (100.00%)
+|    |    |    sepal length>=5.650
+|    |    |    |    sepal length<5.750: Iris-virginica (100.00%)
+|    |    |    |    sepal length>=5.750
+|    |    |    |    |    sepal width<2.850: Iris-virginica (100.00%)
+|    |    |    |    |    sepal width>=2.850
+|    |    |    |    |    |    sepal length>=6.250: Iris-virginica (100.00%)
+|    |    |    |    |    |    sepal length<6.250
+|    |    |    |    |    |    |    sepal width>=3.200: Iris-virginica (100.00%)
+|    |    |    |    |    |    |    sepal width<3.200
+|    |    |    |    |    |    |    |    sepal length<6.000: Iris-virginica (100.00%)
+|    |    |    |    |    |    |    |    sepal length>=6.000: Iris-virginica (100.00%)
+

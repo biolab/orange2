@@ -1,0 +1,12 @@
+[0.06, 1], {"Ca":8.75, "a":2.000, "b":1.000, "c":1.000}
+[0.48, 1], {"Ca":?, "b":2.000, "d":1.000}
+[0.39, 1], {"Ca":7.78}
+[0.57, 1], {"Ca":8.22, "c":13.000}
+
+[0.06, 1], {"Ca":8.75, "a":2.000, "b":1.000, "c":1.000}
+[0.48, 1], {"Ca":?, "b":2.000, "d":1.000}
+[0.39, 1], {"Ca":7.78}
+[0.57, 1], {"Ca":8.22, "c":13.000}
+All metas:  [FloatVariable 'Ca', FloatVariable 'a', FloatVariable 'b', FloatVariable 'c', FloatVariable 'd']
+Required metas:  [FloatVariable 'Ca']
+Optional metas:  [FloatVariable 'a', FloatVariable 'b', FloatVariable 'c', FloatVariable 'd']
