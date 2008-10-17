@@ -231,6 +231,8 @@ class OWNetworkFromDistances(OWWidget):
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         
         #print 'self.graph:',self.graph
+        setattr(matrix, "items", self.graph.items)
+        
         self.send("Network", self.graph)
         self.send("Distance Matrix", matrix)
         if self.graph == None:
