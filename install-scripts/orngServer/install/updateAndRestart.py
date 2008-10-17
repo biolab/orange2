@@ -7,17 +7,7 @@ servicename = "orngServerFilesServerService2"
 
 os.system("net stop " + servicename)
 
-try:
-	shutil.rmtree(path)
-except:
-	pass
-	
-try:
-	os.mkdir(os.path.join(path, "..", "orngServerData"))
-except:
-	pass
-	
-command = "svn export " + svnpath + " " + '"' + path + '"'
+command = "svn checkout " + svnpath + " " + '"' + path + '"'
 print command
 os.system(command)
 
