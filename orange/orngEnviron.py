@@ -31,17 +31,18 @@ def __getDirectoryNames():
         home += "\\"
     if os.name == "nt":
         applicationDir = os.path.join(home, "Application Data")
+        if not os.path.exists(applicationDir):
+            try: os.makedirs(applicationDir)
+            except: pass
         outputDir = os.path.join(applicationDir, orangeVer)                  # directory for saving settings and stuff
     elif sys.platform == "darwin":
-        applicationDir = os.path.join(home, "Library")
-        applicationDir = os.path.join(applicationDir, "Application Support")
+        applicationDir = os.path.join(home, "Library", "Application Support")
+        if not os.path.exists(applicationDir):
+            try: os.makedirs(applicationDir)
+            except: pass
         outputDir = os.path.join(applicationDir, orangeVer)
     else:
         outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
-
-    if not os.path.exists(applicationDir):
-        try: os.makedirs(applicationDir)
-        except: pass
 
     if not os.path.exists(outputDir):
         try: os.makedirs(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
