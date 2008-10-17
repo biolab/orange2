@@ -96,16 +96,20 @@ class OWDatabasesUpdate(OWWidget):
 ##        self.model = QStandardItemModel()
         self.filesView = QTreeWidget(self)
 ##        self.filesView.setModel(self.model)
-        self.filesView.setHeaderLabels(["Options", "Name", "Tags", "Status", "Size"])
+        self.filesView.setHeaderLabels(["Options", "Title", "Tags", "Status", "Size"])
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
-##        self.filesWidget.setSortingEnabled(True)
+        self.filesView.setSortingEnabled(True)
 ##        self.delegate = UpdateOptionsDelegate()
 ##        self.filesView.setItemDelegateForColumn(0)
         box.layout().addWidget(self.filesView)
         self.infoLabel = OWGUI.label(box, self, "")
-        
-        OWGUI.button(self.mainArea, self, "Update all", callback=self.UpdateAll, tooltip="Update all updatable files")
+
+        box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
+        OWGUI.button(box, self, "Update all", callback=self.UpdateAll, tooltip="Update all updatable files")
+        OWGUI.rubber(box)
+        self.retryButton = OWGUI.button(box, self, "Retry", callback=self.UpdateFilesList)
+        self.retryButton.hide()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.rubber(box)
         if wantCloseButton:
@@ -119,6 +123,7 @@ class OWDatabasesUpdate(OWWidget):
         QTimer.singleShot(50, self.UpdateFilesList)
 
     def UpdateFilesList(self):
+        self.retryButton.hide()
         self.progressBarInit()
         self.filesView.clear()
         self.tagsWidget.clear()
@@ -129,32 +134,38 @@ class OWDatabasesUpdate(OWWidget):
         else:
             domains = self.domains
         items = []
-        for i, domain in enumerate(domains):
-            local = orngServerFiles.listfiles(domain) or []
-            files = self.serverFiles.listfiles(domain)
-            allInfo = self.serverFiles.allinfo(domain)
-            for j, file in enumerate(files):
-                infoServer = None
-                if file in local:
-                    infoServer = allInfo[file] #self.serverFiles.info(domain, file)
-                    infoLocal = orngServerFiles.info(domain, file)
-                    dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
-                    dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
-##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                    items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
-                elif self.showAll:
-                    infoServer = allInfo[file] #self.serverFiles.info(domain, file)
-##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                    items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                if infoServer:
-                    self.allTags.update(infoServer["tags"])
-##                    self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
-##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), None, self))
-                    
-##                QTreeWidgetItem(self.filesWidget, ["", info["title"], info["tags"], info["datetime"]])
-##                self.treeWidget.
-                self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+        try:
+            self.error(0)
+            for i, domain in enumerate(domains):
+                local = orngServerFiles.listfiles(domain) or []
+                files = self.serverFiles.listfiles(domain)
+                allInfo = self.serverFiles.allinfo(domain)
+                for j, file in enumerate(files):
+                    infoServer = None
+                    if file in local:
+                        infoServer = allInfo[file] #self.serverFiles.info(domain, file)
+                        infoLocal = orngServerFiles.info(domain, file)
+                        dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+                        dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+    ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+    ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
+                    elif self.showAll:
+                        infoServer = allInfo[file] #self.serverFiles.info(domain, file)
+    ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                    if infoServer:
+                        self.allTags.update(infoServer["tags"])
+    ##                    self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
+    ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), None, self))
+                        
+    ##                QTreeWidgetItem(self.filesWidget, ["", info["title"], info["tags"], info["datetime"]])
+    ##                self.treeWidget.
+                    self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+        except IOError, ex:
+##            print ex
+            self.error(0, "Could not connect to server! Press the Retry button to try again.")
+            self.retryButton.show()
             
         for i, item in enumerate(items):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
@@ -178,7 +189,7 @@ class OWDatabasesUpdate(OWWidget):
         onServer = [item for item in self.updateItems if item.state == 2]
         if self.showAll:
             self.infoLabel.setText("%i items, %s (data on server: %i items, %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
-                                                                            len(onServer), sizeof_fmt(sum(float(item.size) for item in onServer))))
+                                                                            len(onServer), sizeof_fmt(sum(float(item.size) for item in self.updateItems))))
         else:
             self.infoLabel.setText("%i items, %s" % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
         
