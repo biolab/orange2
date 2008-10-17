@@ -349,6 +349,18 @@ class SecureServer:
     @cherrypy.expose
     @cherrypy.tools.lock()
     @cherrypy.tools.unlock()
+    def unprotect(self, domain, filename):
+        #DEPRECATED
+        fi = fileInfo(domain, filename)
+        if fi.exists():
+            fi.protection = "0"
+            fi.save()
+        else:
+            raise cherrypy.HTTPError(500, "File does not exists.")
+
+    @cherrypy.expose
+    @cherrypy.tools.lock()
+    @cherrypy.tools.unlock()
     def protection(self, domain, filename):
         fi = fileInfo(domain, filename)
         if fi.exists():
