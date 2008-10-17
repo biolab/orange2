@@ -264,7 +264,9 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
         self.showComponentCombo.addItem("Select attribute")
         
+        self.mdsFactor = 10
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, disabled=1)
+        self.stepsSpin = OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -307,7 +309,7 @@ class OWNetExplorer(OWWidget):
         
         k=0 
         while k < 1: 
-            k+=1 
+            k += 1 
             oldStress=mds.avgStress 
             for l in range(100): 
                 mds.SMACOFstep() 
@@ -328,36 +330,41 @@ class OWNetExplorer(OWWidget):
                 x_avg_graph = sum(x) / len(x)
                 y_avg_graph = sum(y) / len(y)
                 
-                x_range = max([abs(i - x_avg_graph) for i in x])
-                y_range = max([abs(i - y_avg_graph) for i in y])
+                graph_range = max([sqrt((x[i]-x_avg_graph)*(x[i]-x_avg_graph) + (y[i]-y_avg_graph)*(y[i]-y_avg_graph)) for i in range(len(x))])
                 
-                component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds))
+                component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, graph_range))
             
             maxrange = 0
+            count = 0
             # find min distance between components
             for i in range(1, len(components)):
                 for j in range(i - 1):
                     component_i = components[i]
                     component_j = components[j]
                     
-                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i = component_props[i]
-                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j = component_props[j]
+                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, graph_range_i = component_props[i]
+                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, graph_range_j = component_props[j]
                     
-                    graphsdist = sqrt(x_avg_graph_i*x_avg_graph_i + y_avg_graph_i*y_avg_graph_i) + sqrt(x_avg_graph_j*x_avg_graph_j + y_avg_graph_j*y_avg_graph_j)
-                    graphsdist = 1.1 * graphsdist
-                    mdsdist = sqrt(x_avg_mds_i*x_avg_mds_i + y_avg_mds_i*y_avg_mds_i) + sqrt(x_avg_mds_j*x_avg_mds_j + y_avg_mds_j*y_avg_mds_j)
+                    graphsdist = graph_range_i + graph_range_j
+                    #graphsdist = 1.1 * graphsdist
+                    mdsdist = sqrt((x_avg_mds_i-x_avg_mds_j)*(x_avg_mds_i-x_avg_mds_j) + (y_avg_mds_i-y_avg_mds_j)*(y_avg_mds_i-y_avg_mds_j))
                     component_range = graphsdist / mdsdist                
                     
-                    if maxrange < component_range:
-                        maxrange = component_range
+                    #if maxrange > component_range:
+                    #    maxrange = component_range
+                    
+                    maxrange += component_range
+                    count += 1
+                    
+            maxrange = maxrange / count
                     
             for i in range(len(components)):
                 component = components[i]
-                x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
+                x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, graph_range = component_props[i]
                 
                 for u in component:
-                    self.visualize.graph.coors[0][u] = self.visualize.graph.coors[0][u] - x_avg_graph + (x_avg_mds * maxrange)
-                    self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange)
+                    self.visualize.graph.coors[0][u] = self.visualize.graph.coors[0][u] - x_avg_graph + (x_avg_mds * maxrange * self.mdsFactor)
+                    self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange * self.mdsFactor)
             
             self.updateCanvas()
              
