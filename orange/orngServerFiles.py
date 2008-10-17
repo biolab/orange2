@@ -88,8 +88,9 @@ def _parseAllFileInfo(afi):
     fis = afi.split(separf)
     out = []
     for entry in fis:
-        name, info = entry.split(separn)
-        out.append((name, _parseFileInfo(info)))
+        if entry != "":
+            name, info = entry.split(separn)
+            out.append((name, _parseFileInfo(info)))
 
     return dict(out)
 
@@ -116,7 +117,7 @@ def localpath(domain=None, filename=None):
 
 class ServerFiles(object):
 
-    def __init__(self, username=None, password=None, server=None):
+    def __init__(self, username=None, password=None, server=None, access_code=None):
         if not server:
             server = defserver
         self.server = server
@@ -124,6 +125,7 @@ class ServerFiles(object):
         self.publicroot = 'http://' + self.server + 'public/'
         self.username = username
         self.password = password
+        self.access_code = access_code
 
     def installOpener(self):
         #import time; t = time.time()
@@ -157,10 +159,13 @@ class ServerFiles(object):
         return self._secopen('remove', { 'domain': domain, 'filename': filename })
 
     def unprotect(self, domain, filename):
-        return self._secopen('unprotect', { 'domain': domain, 'filename': filename })
+        return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': '0' })
 
-    def protect(self, domain, filename):
-        return self._secopen('protect', { 'domain': domain, 'filename': filename })
+    def protect(self, domain, filename, access_code="1"):
+        return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': access_code })
+
+    def protection(self, domain, filename):
+        return self._secopen('protection', { 'domain': domain, 'filename': filename })
 
     def listfiles(self, *args, **kwargs):
         if self._authen(): return self.seclist(*args, **kwargs)
@@ -264,10 +269,17 @@ class ServerFiles(object):
  
     def _pubhandle(self, command, data):
         self.installOpener()
+        data = self.addAccessCode(data)
         return urllib2.urlopen(self.publicroot + command, data)
 
     def _secopen(self, command, data):
         return self._sechandle(command, data).read()
+
+    def addAccessCode(self, data):
+        if self.access_code != None:
+            data = data.copy()
+            data["access_code"] = self.access_code
+        return data
 
     def _pubopen(self, command, data):
         return self._pubhandle(command, data).read()
@@ -337,8 +349,6 @@ def example(myusername, mypassword):
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
     
-    s.protect('test', 'samurai.mkv')
-        
     #create domain
     try: 
         s.create_domain("test") 

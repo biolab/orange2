@@ -61,9 +61,10 @@ only authenticated users can see them. They need to be unprotected
 for public use.</p>
 
 <dl class="attributes">
-<dt>Constructor([username, password])</dt>
+<dt>Constructor(username=None, password=None, access_code=None)</dt>
 <dd>Creates a ServerFiles instance. Pass your username and password to use
-the repository as an authenticated user.</dd>
+the repository as an authenticated user. If you want to use your access code
+(as an ordinary user), pass it also.</dd>
 </dl>
 
 <p class="section">Ordinary users</p>
@@ -94,8 +95,13 @@ section, but they will also work for protected files.
 if it contains files.</dd>
 <dt>remove(domain, filename)</dt>
 <dd>Removes a file from the repository.</dd>
-<dt>protect(domain, filename)</dt>
-<dd>Hide file from non-authenticated users.</dd>
+<dt>protection(domain, filename)</dt>
+<dd>Returns file protection. Legend: &quot;0&quot; - public use, &quot;1&quot; - for authenticated
+users only, anything else represents a specific access code.</dd>
+<dt>protect(domain, filename [, access_code])</dt>
+<dd>Hide file from non-authenticated users. If an access code (string) is passed, the file
+will be available to authenticated users and non-authenticated users with that access 
+code.</dd>
 <dt>unprotect(domain, filename)</dt>
 <dd>Put a file into public use.</dd>
 <dt>upload(domain, filename, localfile [, title, tags])</dt>
