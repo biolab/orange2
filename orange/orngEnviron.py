@@ -14,8 +14,8 @@ def __getDirectoryNames():
         orangeVer = "orange"
 
     widgetDir = os.path.join(orangeDir, "OrangeWidgets")
-    if not os.path.exists(widgetDir):
-        print "Error. Directory %s not found. Unable to locate widgets." % widgetDir
+#    if not os.path.exists(widgetDir):
+#        print "Error. Directory %s not found. Unable to locate widgets." % widgetDir
 
     reportsDir = os.path.join(orangeDir, "report")
     if not os.path.exists(reportsDir):
@@ -23,8 +23,8 @@ def __getDirectoryNames():
         except: pass
 
     picsDir = os.path.join(widgetDir, "icons")
-    if not os.path.exists(picsDir):
-        print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
+#    if not os.path.exists(picsDir):
+#        print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
 
     home = user.home
     if home[-1] == ":":
@@ -68,15 +68,11 @@ def __getDirectoryNames():
 
 
 def addOrangeDirectoriesToPath():
-    sys.path = [x for x in sys.path if "orange\\orange" not in x.lower() and "orange/orange" not in x.lower()]
-    orangeDir = directoryNames["orangeDir"]
-    widgetDir = directoryNames["widgetDir"]
-    canvasDir = directoryNames["canvasDir"]
-    sys.path.insert(0, canvasDir)
-    if orangeDir not in sys.path:
-        sys.path.insert(0, orangeDir)
-    if widgetDir not in sys.path:
-        sys.path.insert(0, widgetDir)
+#    sys.path = [x for x in sys.path if "orange\\orange" not in x.lower() and "orange/orange" not in x.lower()]
+    for path in [directoryNames["canvasDir"], directoryNames["orangeDir"], directoryNames["widgetDir"]]:
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    
 
 directoryNames = __getDirectoryNames()
 globals().update(directoryNames)
