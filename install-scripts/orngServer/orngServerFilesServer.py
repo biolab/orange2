@@ -205,6 +205,18 @@ def listFilesL(domain, protected=False):
 def listFiles(domain, protected=False):
     return "|||||".join(listFilesL(domain, protected=protected))
 
+def listdomainsL():
+    dir = basedir
+    files = [ a for a in os.listdir(dir) ]
+    ok = []
+    for file in files:
+        if os.path.isdir(os.path.join(dir, file)):
+            ok.append(file)
+    return ok
+
+def listdomains():
+    return "|||||".join(listdomainsL())
+
 def allFileInfosL(domain, protected=False):
     files = listFilesL(domain, protected=protected)
     out = []
@@ -243,6 +255,10 @@ class PublicServer:
     @cherrypy.expose
     def list(self, domain, access_code=None):
         return listFiles(domain, protected=access_code)
+
+    @cherrypy.expose
+    def listdomains(self):
+        return listdomains()
 
 class SecureServer:
 
@@ -367,6 +383,11 @@ class SecureServer:
             return fi.protection
         else:
             raise cherrypy.HTTPError(500, "File does not exists.")
+
+    @cherrypy.expose
+    def listdomains(self):
+        return listdomains()
+
 
 """
 Tools for enforcing security measures.

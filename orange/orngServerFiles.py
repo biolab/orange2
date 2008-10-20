@@ -53,8 +53,8 @@ import urllib2
 import os
 import shutil
 
-#defserver = "localhost/"
-defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
+defserver = "localhost/"
+#defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
 
 def _parseFileInfo(fir, separ="|||||"):
     """
@@ -171,6 +171,10 @@ class ServerFiles(object):
         if self._authen(): return self.seclist(*args, **kwargs)
         else: return self.publist(*args, **kwargs)
 
+    def listdomains(self, *args, **kwargs):
+        if self._authen(): return self.seclistdomains(*args, **kwargs)
+        else: return self.publistdomains(*args, **kwargs)
+
     def downloadFH(self, *args, **kwargs):
         """
         Returns open file handle of requested file.
@@ -244,6 +248,12 @@ class ServerFiles(object):
     def seclist(self, domain):
         return _parseList(self._secopen('list', { 'domain': domain }))
 
+    def seclistdomains(self):
+        return _parseList(self._secopen('listdomains', {}))
+
+    def publistdomains(self):
+        return _parseList(self._pubopen('listdomains', {}))
+
     def allinfo(self, *args, **kwargs):
         if self._authen(): return self.secallinfo(*args, **kwargs)
         else: return self.puballinfo(*args, **kwargs)
@@ -265,12 +275,19 @@ class ServerFiles(object):
 
     def _sechandle(self, command, data):
         self.installOpener()
-        return urllib2.urlopen(self.secureroot + command, data)
+        if data:
+            return urllib2.urlopen(self.secureroot + command, data)
+        else:
+            print "HERE"
+            return urllib2.urlopen(self.secureroot + command)
  
     def _pubhandle(self, command, data):
         self.installOpener()
         data = self.addAccessCode(data)
-        return urllib2.urlopen(self.publicroot + command, data)
+        if data:
+            return urllib2.urlopen(self.publicroot + command, data)
+        else:
+            return urllib2.urlopen(self.publicroot + command)
 
     def _secopen(self, command, data):
         return self._sechandle(command, data).read()
@@ -283,6 +300,7 @@ class ServerFiles(object):
 
     def _pubopen(self, command, data):
         return self._pubhandle(command, data).read()
+
 
 def download(domain, filename, serverfiles=None, callback=None):
     """
@@ -379,10 +397,14 @@ def example(myusername, mypassword):
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
 
+    print s.listdomains()
+
     s.remove('test', 'osf-test.py')
 
     s = ServerFiles()
     print s.allinfo("demo2")
+
+    print s.listdomains()
 
 if __name__ == '__main__':
     example(sys.argv[1], sys.argv[2])
