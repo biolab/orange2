@@ -3203,13 +3203,13 @@ PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 	switch(type)
 	{
 		case 0:
-			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++)
+			for(i = ((matrix->dim+1)*(matrix->dim+2)) >> 1; i--; e++) {
 				if (*e > maxval)
 					maxval = *e;
 
 				if (*e < minval)
 					minval = *e;
-
+			}
 			//cout << "minval: " << minval << endl;
 			//cout << "maxval: " << maxval << endl;
 
