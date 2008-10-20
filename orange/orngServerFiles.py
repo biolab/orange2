@@ -53,8 +53,8 @@ import urllib2
 import os
 import shutil
 
-defserver = "localhost/"
-#defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
+#defserver = "localhost/"
+defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
 
 def _parseFileInfo(fir, separ="|||||"):
     """
