@@ -313,19 +313,17 @@ class OWNetExplorer(OWWidget):
         mds = orngMDS.MDS(self.vertexDistance)
         mds.Torgerson() 
         mds.getStress(orngMDS.KruskalStress)
-        self.stress = mds.avgStress 
         components = self.visualize.graph.getConnectedComponents()
         
         stepCount = 0 
         while stepCount < self.mdsSteps: 
-            oldStress=mds.avgStress
+            oldStress = mds.avgStress
+            mds.getStress(orngMDS.KruskalStress)
+            self.mdsInfoA.setText("Avg. Stress: %f" % mds.avgStress)
             
             for l in range(self.mdsRefresh):
                 stepCount += 1
                 mds.SMACOFstep()
-                mds.getStress(orngMDS.KruskalStress) 
-                self.stress = mds.avgStress
-                self.mdsInfoA.setText("Avg. Stress: %f" % self.stress)
                 self.mdsInfoB.setText("Num. steps: %i" % stepCount)
                 self.progressBarSet(int(self.mdsSteps / stepCount * 100))
                 qApp.processEvents()
