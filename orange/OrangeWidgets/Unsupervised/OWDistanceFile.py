@@ -6,19 +6,20 @@
 <priority>1100</priority>
 """
 
-import orange
-import OWGUI
-import exceptions
 from OWWidget import *
+import OWGUI
+import orange
+import exceptions
 import os.path
 import pickle
 
 class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
-    def __init__(self, parent=None, signalManager = None, name='Distance File'):
+    def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
+        OWWidget.__init__(self, parent, signalManager, "Distance File", wantMainArea = 0, resizingEnabled = 0)
+        
         self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
@@ -42,18 +43,20 @@ class OWDistanceFile(OWWidget):
         button.setMaximumWidth(25)
         self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self, "takeAttributeNames", ["Use examples as items", "Use attribute names"], "Items from input data", callback = self.relabel)
         self.rbInput.setDisabled(True)
-        
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^x)", callback = self.setNormalizeMode)
-        
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Invert method", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
+#
+#        Moved to SymMatrixTransform widget
+#
+#        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^x)", callback = self.setNormalizeMode)
+#        
+#        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Invert method", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
         
         self.adjustSize()
 
@@ -100,6 +103,7 @@ class OWDistanceFile(OWWidget):
             if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
                 pkl_file = open(fn, 'rb')
                 self.matrix = pickle.load(pkl_file)
+                self.data = None
                 #print self.matrix
                 if hasattr(self.matrix, 'items'):
                     self.data = self.matrix.items
@@ -120,6 +124,8 @@ class OWDistanceFile(OWWidget):
             
                 labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
                 self.matrix = matrix = orange.SymMatrix(dim)
+                self.data = None
+                
                 if labeled:
                     self.labels = []
                 else:
@@ -176,34 +182,38 @@ class OWDistanceFile(OWWidget):
         if self.data == None and self.labels == None:
             matrix.setattr("items", range(matrix.dim))
             
-        matrix = None
-        #print 'send'#, matrix
-        if self.invertMethod > 0 or self.normalizeMethod > 0:
-            import copy
-            matrix = copy.deepcopy(self.matrix)
-            
-            if self.normalizeMethod == 1:
-                matrix.normalize(0)
-            elif self.normalizeMethod == 2:
-                matrix.normalize(1)
-            
-            if self.invertMethod == 1:
-                matrix.invert(0)
-            elif self.invertMethod == 2:
-                matrix.invert(1)
-            elif self.invertMethod == 3:
-                matrix.invert(2)
-            elif self.invertMethod == 4:
-                try:                
-                    matrix.invert(3)
-                except:
-                    self.error("Division by zero")
-                    self.send("Distance Matrix", None)
-                        
-        if matrix:
-            self.send("Distance Matrix", matrix)
-        else:
-            self.send("Distance Matrix", self.matrix)
+        self.send("Distance Matrix", self.matrix)
+#
+#        Moved to SymMatrixTransform widget
+#          
+#        matrix = None
+#        #print 'send'#, matrix
+#        if self.invertMethod > 0 or self.normalizeMethod > 0:
+#            import copy
+#            matrix = copy.deepcopy(self.matrix)
+#            
+#            if self.normalizeMethod == 1:
+#                matrix.normalize(0)
+#            elif self.normalizeMethod == 2:
+#                matrix.normalize(1)
+#            
+#            if self.invertMethod == 1:
+#                matrix.invert(0)
+#            elif self.invertMethod == 2:
+#                matrix.invert(1)
+#            elif self.invertMethod == 3:
+#                matrix.invert(2)
+#            elif self.invertMethod == 4:
+#                try:                
+#                    matrix.invert(3)
+#                except:
+#                    self.error("Division by zero")
+#                    self.send("Distance Matrix", None)
+#                        
+#        if matrix:
+#            self.send("Distance Matrix", matrix)
+#        else:
+#            self.send("Distance Matrix", self.matrix)
 
     def getExamples(self, data):
         self.data = data
@@ -211,7 +221,6 @@ class OWDistanceFile(OWWidget):
         self.relabel()
 
 if __name__=="__main__":
-    import orange
     a = QApplication(sys.argv)
     ow = OWDistanceFile()
     ow.show()
