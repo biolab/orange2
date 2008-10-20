@@ -325,7 +325,7 @@ class OWNetExplorer(OWWidget):
                 stepCount += 1
                 mds.SMACOFstep()
                 self.mdsInfoB.setText("Num. steps: %i" % stepCount)
-                self.progressBarSet(int(self.mdsSteps / stepCount * 100))
+                self.progressBarSet(int(stepCount * 100 / self.mdsSteps))
                 qApp.processEvents()
                 
                 if stepCount >= self.mdsSteps:
