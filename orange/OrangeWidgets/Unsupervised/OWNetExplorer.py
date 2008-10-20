@@ -308,8 +308,8 @@ class OWNetExplorer(OWWidget):
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             return
         
-        self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         self.progressBarInit()
+        self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         mds = orngMDS.MDS(self.vertexDistance)
         mds.Torgerson() 
         mds.getStress(orngMDS.KruskalStress)
@@ -351,6 +351,7 @@ class OWNetExplorer(OWWidget):
                 
                 component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, graph_range))
             
+            
             maxrange = 0
             count = 0
             # find min distance between components
@@ -365,16 +366,12 @@ class OWNetExplorer(OWWidget):
                     graphsdist = graph_range_i + graph_range_j
                     #graphsdist = 1.1 * graphsdist
                     mdsdist = sqrt((x_avg_mds_i-x_avg_mds_j)*(x_avg_mds_i-x_avg_mds_j) + (y_avg_mds_i-y_avg_mds_j)*(y_avg_mds_i-y_avg_mds_j))
-                    component_range = graphsdist / mdsdist                
-                    
-                    #if maxrange > component_range:
-                    #    maxrange = component_range
-                    
-                    maxrange += component_range
-                    count += 1
+                    if mdsdist != 0:
+                        component_range = graphsdist / mdsdist                
+                        maxrange += component_range
+                        count += 1
                     
             maxrange = maxrange / count
-                    
             for i in range(len(components)):
                 component = components[i]
                 x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, graph_range = component_props[i]

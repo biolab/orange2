@@ -188,6 +188,7 @@ class NetworkCurve(QwtPlotCurve):
         else:
           painter.setPen(vertex.pen)
           painter.setBrush(vertex.nocolor)
+          #print pX - vertex.size / 2, pY - vertex.size / 2, vertex.size
           painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
         
 class OWNetworkCanvas(OWGraph):
