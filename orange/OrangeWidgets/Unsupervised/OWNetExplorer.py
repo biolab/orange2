@@ -6,7 +6,7 @@
 <priority>3200</priority>
 """
 from OWWidget import *
-
+import orange
 import OWGUI, OWColorPalette
 from OWNetworkCanvas import *
 from orngNetwork import * 
@@ -271,6 +271,8 @@ class OWNetExplorer(OWWidget):
         self.stepsSpin = OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
         self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
+        self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
+        self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -306,21 +308,30 @@ class OWNetExplorer(OWWidget):
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             return
         
-        print "MDS"
-        print self.vertexDistance.matrixType
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
-        print self.vertexDistance.matrixType
+        self.progressBarInit()
         mds = orngMDS.MDS(self.vertexDistance)
         mds.Torgerson() 
-        mds.getStress(orngMDS.KruskalStress) 
+        mds.getStress(orngMDS.KruskalStress)
+        self.stress = mds.avgStress 
         components = self.visualize.graph.getConnectedComponents()
         
         stepCount = 0 
-        while stepCount < (self.mdsSteps / self.mdsRefresh): 
-            stepCount += 1 
-            oldStress=mds.avgStress 
-            for l in range(self.mdsRefresh): 
-                mds.SMACOFstep() 
+        while stepCount < self.mdsSteps: 
+            oldStress=mds.avgStress
+            
+            for l in range(self.mdsRefresh):
+                stepCount += 1
+                mds.SMACOFstep()
+                mds.getStress(orngMDS.KruskalStress) 
+                self.stress = mds.avgStress
+                self.mdsInfoA.setText("Avg. Stress: %f" % self.stress)
+                self.mdsInfoB.setText("Num. steps: %i" % stepCount)
+                self.progressBarSet(int(self.mdsSteps / stepCount * 100))
+                qApp.processEvents()
+                
+                if stepCount >= self.mdsSteps:
+                    break;
             
             mds.getStress(orngMDS.KruskalStress)
             component_props = []
@@ -375,9 +386,11 @@ class OWNetExplorer(OWWidget):
                     self.visualize.graph.coors[1][u] = self.visualize.graph.coors[1][u] - y_avg_graph + (y_avg_mds * maxrange * self.mdsFactor)
             
             self.updateCanvas()
-             
+        
             if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
                 break; 
+        
+        self.progressBarFinished()
         
     def setVertexDistance(self, matrix):
         self.error('')
