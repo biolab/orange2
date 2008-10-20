@@ -265,8 +265,12 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo.addItem("Select attribute")
         
         self.mdsFactor = 10
+        self.mdsSteps = 120
+        self.mdsRefresh = 30
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, disabled=1)
         self.stepsSpin = OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
+        self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
+        self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -302,16 +306,20 @@ class OWNetExplorer(OWWidget):
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             return
         
+        print "MDS"
+        print self.vertexDistance.matrixType
+        self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
+        print self.vertexDistance.matrixType
         mds = orngMDS.MDS(self.vertexDistance)
-        #mds.Torgerson() 
+        mds.Torgerson() 
         mds.getStress(orngMDS.KruskalStress) 
         components = self.visualize.graph.getConnectedComponents()
         
-        k=0 
-        while k < 1: 
-            k += 1 
+        stepCount = 0 
+        while stepCount < (self.mdsSteps / self.mdsRefresh): 
+            stepCount += 1 
             oldStress=mds.avgStress 
-            for l in range(100): 
+            for l in range(self.mdsRefresh): 
                 mds.SMACOFstep() 
             
             mds.getStress(orngMDS.KruskalStress)

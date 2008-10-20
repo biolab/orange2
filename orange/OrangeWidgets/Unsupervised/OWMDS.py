@@ -126,6 +126,8 @@ class OWMDS(OWWidget):
         self.data=data=None
         if matrix:
             self.data=data=getattr(matrix, "items")
+            matrix.matrixType = orange.SymMatrix.Symmetric 
+            
         if data and type(data)==orange.ExampleTable:
             self.setExampleTable(data)
         elif type(data)==list:
@@ -137,8 +139,7 @@ class OWMDS(OWWidget):
         self.graph.ShapeAttr=0
         self.graph.NameAttr=0
         self.graph.closestPairs = None
-            
-                
+          
         if matrix:
             self.mds=orngMDS.MDS(matrix)
             self.mds.points=numpy.random.random(size=[self.mds.n, self.mds.dim])

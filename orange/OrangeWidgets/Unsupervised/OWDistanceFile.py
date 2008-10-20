@@ -124,6 +124,8 @@ class OWDistanceFile(OWWidget):
             
                 labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
                 self.matrix = matrix = orange.SymMatrix(dim)
+                self.matrix.matrixType = orange.SymMatrix.Symmetric
+                self.matrix.SymMatrix_Shape = orange.SymMatrix.Symmetric
                 self.data = None
                 
                 if labeled:
@@ -181,39 +183,10 @@ class OWDistanceFile(OWWidget):
 
         if self.data == None and self.labels == None:
             matrix.setattr("items", range(matrix.dim))
-            
+        
+        self.matrix.matrixType = orange.SymMatrix.Symmetric
+        #print self.matrix.matrixType
         self.send("Distance Matrix", self.matrix)
-#
-#        Moved to SymMatrixTransform widget
-#          
-#        matrix = None
-#        #print 'send'#, matrix
-#        if self.invertMethod > 0 or self.normalizeMethod > 0:
-#            import copy
-#            matrix = copy.deepcopy(self.matrix)
-#            
-#            if self.normalizeMethod == 1:
-#                matrix.normalize(0)
-#            elif self.normalizeMethod == 2:
-#                matrix.normalize(1)
-#            
-#            if self.invertMethod == 1:
-#                matrix.invert(0)
-#            elif self.invertMethod == 2:
-#                matrix.invert(1)
-#            elif self.invertMethod == 3:
-#                matrix.invert(2)
-#            elif self.invertMethod == 4:
-#                try:                
-#                    matrix.invert(3)
-#                except:
-#                    self.error("Division by zero")
-#                    self.send("Distance Matrix", None)
-#                        
-#        if matrix:
-#            self.send("Distance Matrix", matrix)
-#        else:
-#            self.send("Distance Matrix", self.matrix)
 
     def getExamples(self, data):
         self.data = data

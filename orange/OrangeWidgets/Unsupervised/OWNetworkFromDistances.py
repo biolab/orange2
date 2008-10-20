@@ -90,9 +90,8 @@ class OWNetworkFromDistances(OWWidget):
         if data == None: return
         
         self.data = data
-        
         # draw histogram
-        data.matrixType = data.Lower
+        data.matrixType = orange.SymMatrix.Symmetric
         values = data.getValues()
         #print "values:",values
         self.histogram.setValues(values)
@@ -230,11 +229,13 @@ class OWNetworkFromDistances(OWWidget):
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         
-        #print 'self.graph:',self.graph
-        setattr(matrix, "items", self.graph.items)
+        #print 'self.graph:',self.graph+
+        if self.graph != None:
+            setattr(matrix, "items", self.graph.items)
         
         self.send("Network", self.graph)
         self.send("Distance Matrix", matrix)
+        
         if self.graph == None:
              self.send("Examples", None)
         else:
