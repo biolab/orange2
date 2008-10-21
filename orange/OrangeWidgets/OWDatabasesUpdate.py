@@ -40,21 +40,36 @@ class UpdateOptionsWidget(QWidget):
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(True)
-        else:
+        elif state == 2:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(False)
+        elif state == 3:
+            self.updateButton.setEnabled(False)
+            self.removeButton.setEnabled(True)
 
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
-    stateDict = {0:"up-to-date", 1:"new version available", 2:"not downloaded"}
-    def __init__(self, master, treeWidget, state, title, tags, size, downloadCallback, removeCallback, *args):
-        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[state], sizeof_fmt(float(size))])
-        self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, state, treeWidget)
+    stateDict = {0:"up-to-date", 1:"new version available", 2:"not downloaded", 3:"obsolete"}
+    def __init__(self, master, treeWidget, infoLocal, infoServer, downloadCallback, removeCallback, *args):
+        if not infoLocal:
+            self.state = 2
+        elif not infoServer:
+            self.state = 3
+        else:
+            print infoServer["datetime"]
+            dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+            dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+            self.state = 0 if dateLocal >= dateServer else 1
+        title = infoServer["title"] if infoServer else (infoLocal["title"] + " (Obsolete)")
+        tags = infoServer["tags"] if infoServer else infoLocal["tags"]
+        tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
+        size = infoServer["size"] if infoServer else infoLocal["size"]
+        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], sizeof_fmt(float(size))])
+        self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, self.state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
         self.master = master
-        self.state = state
         self.title = title
         self.tags = tags.split(", ")
         self.size = size
@@ -143,17 +158,22 @@ class OWDatabasesUpdate(OWWidget):
                 for j, file in enumerate(files):
                     infoServer = None
                     if file in local:
-                        infoServer = allInfo[file] #self.serverFiles.info(domain, file)
                         infoLocal = orngServerFiles.info(domain, file)
-                        dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
-                        dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+                        infoServer = allInfo.get(file, None) #self.serverFiles.info(domain, file)
+##                        if not infoServer:
+##                            infoServer = dict(infoLocal)
+##                            infoServer["title"] = infoLocal["title"]+" (Obsolete)"
+##                        dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+##                        dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
     ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                        items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+##                        items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, infoLocal, infoServer, partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
     ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
                     elif self.showAll:
                         infoServer = allInfo[file] #self.serverFiles.info(domain, file)
     ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                        items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+##                        items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, None, infoServer, partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
                     if infoServer:
                         self.allTags.update(infoServer["tags"])
     ##                    self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
