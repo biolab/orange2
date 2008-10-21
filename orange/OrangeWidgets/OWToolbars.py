@@ -126,7 +126,7 @@ class NavigateSelectToolbar(QWidget):
                  ("Zooming", "buttonZoom", "activateZooming", QIcon(dlg_zoom), Qt.CrossCursor, 1, "navigate"),
                  ("Panning", "buttonPan", "activatePanning", QIcon(dlg_pan), Qt.OpenHandCursor, 1, "navigate"),
                  ("Selection", "buttonSelect", "activateSelection", QIcon(dlg_select), Qt.ArrowCursor, 1, "select"),
-                 ("Rectangle selection", "buttonSelectRect", "activateRectangleSelection", QIcon(dlg_rect), Qt.ArrowCursor, 1, "select"),
+                 ("Selection", "buttonSelectRect", "activateRectangleSelection", QIcon(dlg_select), Qt.ArrowCursor, 1, "select"),
                  ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QIcon(dlg_poly), Qt.ArrowCursor, 1, "select"),
                  ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QIcon(dlg_undo), None, 0, "select"),
                  ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QIcon(dlg_clear), None, 0, "select"),
