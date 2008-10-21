@@ -47,7 +47,12 @@ def __getDirectoryNames():
         outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
 
     orangeSettingsDir = outputDir
-    bufferDir = os.path.join(outputDir, "buffer")
+    if sys.platform == "darwin":
+        bufferDir = os.path.join(home, "Library")
+        bufferDir = os.path.join(bufferDir, "Caches")
+        bufferDir = os.path.join(bufferDir, orangeVer)
+    else:
+        bufferDir = os.path.join(outputDir, "buffer")
     canvasSettingsDir = os.path.join(outputDir, "OrangeCanvasQt4") if canvasDir <> None else None
     widgetSettingsDir = os.path.join(outputDir, "widgetSettingsQt4") if widgetDir <> None else None
 
