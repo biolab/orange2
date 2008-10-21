@@ -371,7 +371,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
     if (!dcont || dcont->classIsOuter) {
       dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID));
-      raiseWarningWho("TreeSplitConstructor_ExhaustiveBinary", "this class is not optimized for 'candidates' list and can be very slow");
+//      raiseWarningWho("TreeSplitConstructor_ExhaustiveBinary", "this class is not optimized for 'candidates' list and can be very slow");
     }
 
     int N = gen ? gen->numberOfExamples() : -1;
@@ -400,8 +400,8 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
         const TDistributionVector &distr = *(*dci)->discrete;
 
-        if (distr.size()>10)
-          raiseError("'%s' has more than 10 values, cannot exhaustively binarize", gen->domain->attributes->at(thisAttr)->name.c_str());
+        if (distr.size()>16)
+          raiseError("'%s' has more than 16 values, cannot exhaustively binarize", gen->domain->attributes->at(thisAttr)->name.c_str());
 
         // If the attribute is binary, we check subsetSizes and assess the quality if they are OK
         if (distr.size()==2) {
