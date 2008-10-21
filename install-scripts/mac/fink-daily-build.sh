@@ -36,7 +36,7 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main'; then
 fi
 
 echo "Installing/updating pkgconfig package."
-fink install pkgconfig
+fink $FINK_ARGS install pkgconfig
 
 if [ "`/usr/bin/xcodebuild -version | grep -o '^Xcode 3\.1'`" == "Xcode 3.1" ] && [ "`$FINK_ROOT/bin/pkg-config --modversion xdamage | grep -o '^[0-9]\.[0-9]'`" != "1.1" ]; then
 	echo "It seems X11 version 2.3.0 or later is not installed on a system."
