@@ -405,14 +405,15 @@ class OWNetworkCanvas(OWGraph):
       
   def activateMoveSelection(self):
       self.state = MOVE_SELECTION
+      print "move selection"
 
   def mouseMoveEvent(self, event):
-      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseStartEvent != None:
+      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseMoveEvent != None:
           newX = self.invTransform(2, event.pos().x())
           newY = self.invTransform(0, event.pos().y())
           
-          dx = newX - self.invTransform(2, self.GMmouseStartEvent.x())
-          dy = newY - self.invTransform(0, self.GMmouseStartEvent.y())
+          dx = newX - self.invTransform(2, self.GMmouseMoveEvent.x())
+          dy = newY - self.invTransform(0, self.GMmouseMoveEvent.y())
           movedVertices = self.networkCurve.moveSelectedVertices(dx, dy)
           
           for vertex in movedVertices:
@@ -428,8 +429,8 @@ class OWNetworkCanvas(OWGraph):
                   tkey = self.tooltipKeys[vertex]
                   self.tips.positions[tkey] = (newX, newY, 0, 0)
 
-          self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
-          self.GMmouseStartEvent.setY(event.pos().y())
+          self.GMmouseMoveEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
+          self.GMmouseMoveEvent.setY(event.pos().y())
           self.replot()
       else:
           OWGraph.mouseMoveEvent(self, event)
@@ -476,6 +477,9 @@ class OWNetworkCanvas(OWGraph):
               self.stopOptimizing = 1
 
   def mousePressEvent(self, event):
+    self.mouseSelectedVertex = 0
+    self.GMmouseMoveEvent = None
+    
     if self.state == MOVE_SELECTION:
       self.mouseCurrentlyPressed = 1
       #if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
@@ -487,32 +491,52 @@ class OWNetworkCanvas(OWGraph):
       self.replot()
     elif self.state == SELECT_RECTANGLE:
         self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-        OWGraph.mousePressEvent(self, event)
+        
+        if self.clickedSelectedOnVertex(event.pos()):
+            self.mouseSelectedVertex = 1
+            self.mouseCurrentlyPressed = 1
+            self.state = MOVE_SELECTION
+            self.GMmouseMoveEvent = QPoint(event.pos().x(), event.pos().y())
+        elif self.clickedOnVertex(event.pos()):
+            self.mouseSelectedVertex = 1
+            self.mouseCurrentlyPressed = 1
+        else:
+            OWGraph.mousePressEvent(self, event)  
     else:
         OWGraph.mousePressEvent(self, event)     
 
   def mouseReleaseEvent(self, event):  
       if self.state == MOVE_SELECTION:
+          self.state = SELECT_RECTANGLE
           self.mouseCurrentlyPressed = 0
           
           self.moveGroup=False
-          self.GMmouseStartEvent=None
+          #self.GMmouseStartEvent=None
           
-      elif self.state == SELECT_RECTANGLE:
+      if self.state == SELECT_RECTANGLE:
           x1 = self.invTransform(2, self.GMmouseStartEvent.x())
           y1 = self.invTransform(0, self.GMmouseStartEvent.y())
           
           x2 = self.invTransform(2, event.pos().x())
           y2 = self.invTransform(0, event.pos().y())
           
-          selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
-
-          for ndx in selection:
-              self.vertices[ndx].selected = True
           
-          self.markSelectionNeighbours()
-          OWGraph.mouseReleaseEvent(self, event)
-          self.removeAllSelections()
+          if self.mouseSelectedVertex == 1 and x1 == x2 and y1 == y2 and self.selectVertex(self.GMmouseStartEvent):
+              pass
+          elif self.mouseSelectedVertex == 0:
+          
+              selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
+
+              for ndx in selection:
+                  self.vertices[ndx].selected = True
+              
+              if len(selection) == 0 and x1 == x2 and y1 == y2:
+                  self.removeSelection()
+                  self.unMark()
+          
+              self.markSelectionNeighbours()
+              OWGraph.mouseReleaseEvent(self, event)
+              self.removeAllSelections()
 
       elif self.state == SELECT_POLYGON:
               OWGraph.mouseReleaseEvent(self, event)
@@ -520,6 +544,48 @@ class OWNetworkCanvas(OWGraph):
                   self.selectVertices()
       else:
           OWGraph.mouseReleaseEvent(self, event)
+
+  def clickedSelectedOnVertex(self, pos):
+      min = 1000000
+      ndx = -1
+
+      px = self.invTransform(2, pos.x())
+      py = self.invTransform(0, pos.y())   
+
+      ndx, min = self.visualizer.closestVertex(px, py)
+      
+      minx1 = self.invTransform(2, 0)
+      miny1 = self.invTransform(0, 0)
+      minx2 = self.invTransform(2, 10)
+      miny2 = self.invTransform(0, 10)
+      
+      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      
+      if min < d and ndx != -1:
+          return self.vertices[ndx].selected
+      else:
+          return False
+      
+  def clickedOnVertex(self, pos):
+      min = 1000000
+      ndx = -1
+
+      px = self.invTransform(2, pos.x())
+      py = self.invTransform(0, pos.y())   
+
+      ndx, min = self.visualizer.closestVertex(px, py)
+      
+      minx1 = self.invTransform(2, 0)
+      miny1 = self.invTransform(0, 0)
+      minx2 = self.invTransform(2, 10)
+      miny2 = self.invTransform(0, 10)
+      
+      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      
+      if min < d and ndx != -1:
+          return True
+      else:
+          return False
               
   def selectVertex(self, pos):
       min = 1000000
@@ -540,14 +606,17 @@ class OWNetworkCanvas(OWGraph):
       if min < d and ndx != -1:
           if self.insideview:
               self.networkCurve.unSelect()
-              self.vertices[ndx].selected = True
+              self.vertices[ndx].selected = not self.vertices[ndx].selected
               self.optimize(100)
               
               self.markSelectionNeighbours()
           else:
-              self.vertices[ndx].selected = True
+              self.vertices[ndx].selected = not self.vertices[ndx].selected
               self.markSelectionNeighbours()
+          
+          return True  
       else:
+          return False
           self.removeSelection()
           self.unMark()
   
