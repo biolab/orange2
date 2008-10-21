@@ -7,8 +7,8 @@ set VERSION=%1
 set RELEASE_DATE=%nicedate
 set WIN=orange-win-%VERSION
 set WIN_PYTHON=orange-win-w-python-%VERSION
-set ADDON_OBI=orangeAddOn-bioinformatics-%VERSION
-set ADDON_TEXTMINING=orangeAddOn-text-%VERSION
+set ADDON_BIOINFORMATICS=orangeAddOn-bioinformatics-%VERSION
+set ADDON_TEXT=orangeAddOn-text-%VERSION
 
 REM # update source(s)
 cdd %TMPDIR\..

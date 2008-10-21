@@ -5,8 +5,8 @@ rem # - SVN is updated to head
 call updateSetVariables__.btm snapshot
 set WIN_SNAPSHOT=orange-win-snapshot-%daystr
 set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-%daystr
-set ADDON_OBI_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-%daystr
-set ADDON_TEXTMINING_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
+set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-%daystr
+set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
@@ -19,7 +19,7 @@ break_on_error
 
 rem # build add ons
 cdd %SCRIPTDIR
-call createCommonAddOns__.btm snapshot %ADDON_OBI_SNAPSHOT %ADDON_TEXTMINING_SNAPSHOT
+call createCommonAddOns__.btm snapshot %ADDON_BIOINFORMATICS_SNAPSHOT %ADDON_TEXT_SNAPSHOT
 break_on_error
 
 rem # if no errors then publish on web (everything at the same time)

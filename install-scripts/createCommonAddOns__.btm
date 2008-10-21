@@ -1,11 +1,11 @@
 REM #input arguments
 REM # %1 - PKG_TYPE - kind of installation (snapshot, release) - needed to name log file accordingly
-REM # %2 - PKG_OBI - name of package for Orange Bioinformatics add on (can be release or snapshot)
-REM # %3 - PKG_TEXTMINING - name of package for Orange Text Mining (release or snapshot)
+REM # %2 - PKG_BIOINFORMATICS - name of package for Orange Bioinformatics add on (can be release or snapshot)
+REM # %3 - PKG_TEXT - name of package for Orange Text Mining (release or snapshot)
 
 set PKG_TYPE=%1
-set PKG_OBI=%2
-set PKG_TEXTMINING=%3
+set PKG_BIOINFORMATICS=%2
+set PKG_TEXT=%3
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
@@ -17,27 +17,27 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo *************************************
   echo *************************************
   echo *** Compiling Orange Bioinformatics for Python %pyver
-  cdd %TMPDIR\add-ons\Genomics
+  cdd %TMPDIR\add-ons\Bioinformatics
   del /syeq build
   del /syeq dist
 
   REM # compile and pack
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-obi-compileAndPack-py%npver.log
+  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-bioinformatics-compileAndPack-py%npver.log
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > %COMPILELOG
   break_on_error
-  move /z %TMPDIR\add-ons\Genomics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_OBI-py%npver.exe
+  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
-  set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Genomics
+  set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Bioinformatics
   if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
   
-  cdd %TMPDIR\add-ons\Genomics\build\lib.win32-%npver
+  cdd %TMPDIR\add-ons\Bioinformatics\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
     copy %pydf %TMPBINDIR
     set MD5=%@MD5[%pydf]
-    echo add-ons\Genomics\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt
+    echo add-ons\Bioinformatics\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt
   )
 )
 
@@ -47,26 +47,26 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
   echo *************************************
   echo *************************************
   echo *** Compiling TEXT MINING for Python %pyver 
-  cdd %TMPDIR\add-ons\orngText
+  cdd %TMPDIR\add-ons\Text
   del /syeq build
   del /syeq dist
 
   REM # compile and pack
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-orngText-compileAndPack-py%npver.log
+  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-text-compileAndPack-py%npver.log
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > %COMPILELOG
   break_on_error
-  move /z %TMPDIR\add-ons\orngText\dist\orngText-*.win32-py%npver.exe %TMPDIR\%PKG_TEXTMINING-py%npver.exe
+  move /z %TMPDIR\add-ons\Text\dist\*.win32-py%npver.exe %TMPDIR\%PKG_TEXT-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
-  set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\orngText
+  set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Text
   if not direxist %TMPBINDIR mkdir /s %TMPBINDIR
 
-  cdd %TMPDIR\add-ons\orngText\build\lib.win32-%npver
+  cdd %TMPDIR\add-ons\Text\build\lib.win32-%npver
   for %pydf in (*.pyd) do (
     copy %pydf %TMPBINDIR
     set MD5=%@MD5[%pydf]
-    echo add-ons\orngText\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt	  
+    echo add-ons\Text\%pydf %MD5 >> %TMPDIR\binaries\%pyver\stamps_pyd.txt	  
   )
 )

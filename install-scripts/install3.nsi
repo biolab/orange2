@@ -241,16 +241,6 @@ Section ""
 	SetOutPath $INSTDIR
 	File /r /x .svn ${ORANGEDIR}\*
 
-	!ifdef INCLUDEGENOMICS
-	!endif
-
-	!ifdef INCLUDETEXTMINING
-		SetOutPath $PythonDir\lib\site-packages
-		File E:\orange\download\snapshot\${PYVER}\lib\site-packages\orngText.pth
-		File /r E:\orange\download\snapshot\${PYVER}\lib\site-packages\orngText
-
-	!endif
-
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
@@ -273,10 +263,6 @@ Section ""
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
-	!ifdef INCLUDETEXTMINING
-             ExecWait '"$PythonDir\python" -c $\"import orngRegistry; orngRegistry.addWidgetCategory(\$\"Text Mining\$\", \$\"$PythonDir\lib\site-packages\orngText\widgets\$\")$\"'
-	!endif
-
 SectionEnd	
 
 Function .onInit
@@ -294,7 +280,6 @@ Function .onInit
 	${EndIf}
 
 	!insertMacro GetPythonDir
-
 
 	!ifndef COMPLETE
 		StrCmp $PythonDir "" 0 have_python
