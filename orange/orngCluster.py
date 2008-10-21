@@ -20,7 +20,7 @@
 #       - added conversion functions: diss ragged list <-> Numeric.array
 #       - fixed bug: DMClustering for k = len(diss) + 1
 
-import math, numpy.oldnumeric as Numeric, MA, statc
+import math, numpy.oldnumeric as Numeric, statc
 import orngCRS
 
 class HClustering:
