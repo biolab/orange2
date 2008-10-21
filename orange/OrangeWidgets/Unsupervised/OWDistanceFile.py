@@ -110,6 +110,7 @@ class OWDistanceFile(OWWidget):
                 pkl_file.close()
                 
             else:    
+                print fn
                 fle = open(fn)
                 while 1:
                     lne = fle.readline().strip()
@@ -124,8 +125,6 @@ class OWDistanceFile(OWWidget):
             
                 labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
                 self.matrix = matrix = orange.SymMatrix(dim)
-                self.matrix.matrixType = orange.SymMatrix.Symmetric
-                self.matrix.SymMatrix_Shape = orange.SymMatrix.Symmetric
                 self.data = None
                 
                 if labeled:
@@ -154,7 +153,7 @@ class OWDistanceFile(OWWidget):
                                 raise exceptions.Exception 
                             
             self.relabel()
-        except msg:
+        except:
             self.error(msg or "Error while reading the file")
             
     def relabel(self):
