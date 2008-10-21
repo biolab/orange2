@@ -6,6 +6,7 @@ import os, sys, re, glob, stat
 orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 if not orangeDir in sys.path:
     sys.path.append(orangeDir)
+
 from orngEnviron import *
 
 class WidgetDescription:
@@ -41,36 +42,20 @@ def readCategories():
         if os.path.isdir(directory):
             directories.append((dirName, directory, ""))
 
-    # there can be additional add-ons specified in additionalCategories file
-    additionalFile = os.path.join(canvasSettingsDir, "additionalCategories")
-    if os.path.exists(additionalFile):
-        for lne in open(additionalFile, "rt"):
-            try:
-                catName, dirName = [x.strip() for x in lne.split("\t")]
-                directories.append((catName, dirName, dirName))
-                if os.path.exists(os.path.join(dirName, "Prototypes")):     # if there is a subfolder Prototypes add this folder also
-                    directories.append(("Prototypes", os.path.join(dirName, "Prototypes"), os.path.join(dirName, "Prototypes")))
-            except:
-                pass
-            
-    # there can also be add-ons in the orange/add-ons folder
-    addonsPath = os.path.join(directoryNames["orangeDir"], "add-ons")
-    if os.path.exists(addonsPath):
-        for dir in os.listdir(addonsPath):
-            addon = os.path.join(addonsPath, dir)
-            addonWidgets = os.path.join(addon, "widgets")
-            if os.path.isdir(addon) and os.path.isdir(addonWidgets):
-                directories.append((dir, addonWidgets, addonWidgets))
-                if os.path.exists(os.path.join(dir, "Prototypes")):     # if there is a subfolder Prototypes add this folder also
-                    directories.append(("Prototypes", os.path.join(dir, "Prototypes"), os.path.join(dir, "Prototypes")))                    
-            
+    # read list of add-ons (in orange/add-ons as well as those additionally registered by the user)
+    for (name, dirName) in addOns:
+        addOnWidgetsDir = os.path.join(dirName, "widgets")
+        if os.path.isdir(addOnWidgetsDir):
+            directories.append((name, addOnWidgetsDir, addOnWidgetsDir))
+        addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
+        if os.path.isdir(addOnWidgetsDir):
+            directories.append(("Prototypes", addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir))
+
     categories = []
     for catName, dirName, plugin in directories:
         widgets = readWidgets(dirName, cachedWidgetDescriptions)
         if widgets:
             categories.append(WidgetCategory(catName, widgets, plugin and dirName or ""))
-            if dirName not in sys.path:
-                sys.path.insert(0, dirName)
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
     storedCategories = categories
@@ -127,23 +112,3 @@ def getSignalList(regex, data):
                for ttext in re_tuple.finditer(inmo.group("signals"))])
     else:
         return "[]"
-
-
-def readAdditionalCategories():
-    addCatFile = os.path.join(directoryNames["canvasSettingsDir"], "additionalCategories")
-    if os.path.exists(addCatFile):
-        return [tuple([x.strip() for x in lne.split("\t")]) for lne in file(addCatFile, "r")]
-    else:
-        return []
-
-def writeAdditionalCategories(categories):
-    file(os.path.join(directoryNames["canvasSettingsDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
-
-def addWidgetCategory(category, directory, add = True):
-    if os.path.isfile(directory):
-        directory = os.path.dirname(directory)
-    writeAdditionalCategories([x for x in readAdditionalCategories() if x[0] != category and x[1] != directory] + (add and [(category, directory)] or []))
-
-
-if __name__=="__main__":
-    readCategories()
