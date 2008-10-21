@@ -1,0 +1,93 @@
+Info3: <<
+Package: orange-bioinformatics-svn
+Version: 0.0.__STABLE_REVISION__
+Revision: 8
+Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bioinformatics-%v.tgz
+Source-MD5: __STABLE_MD5SUM_BIOINFORMATICS__
+Maintainer: Mitar <mitar@tnode.com>
+HomePage: http://www.ailab.si/orange/
+License: GPL
+Type: python (2.5)
+Distribution: 10.4, 10.5
+Depends: <<
+	python25,
+	orange (>= %v),
+	orange-bioinformatics-py25 (>= %v)
+<<
+Conflicts: orange-bioinformatics-svn
+Architecture: i386, powerpc
+Description: Component-based data mining software
+DescDetail: <<
+	Orange is a component-based data mining software. It includes a range
+	of data visualization, exploration, preprocessing and modeling
+	techniques. It can be used through a nice and intuitive user interface
+	or, for more advanced users, as a module for Python programming language.
+	
+	This package provides a graphical user interface add-on for bioinformatics.
+<<
+SplitOff: <<
+	Package: orange-bioinformatics-py25
+	Depends: <<
+		python25
+	<<
+	Suggests: orange-bioinformatics
+	Conflicts: orange-bioinformatics-svn-py25
+	DescDetail: <<
+		Orange is a component-based data mining software. It includes a range
+		of data visualization, exploration, preprocessing and modeling
+		techniques. It can be used through a nice and intuitive user interface
+		or, for more advanced users, as a module for Python programming language.
+		
+		This package provides a Python module add-on for bioinformatics.
+	<<
+	Shlibs: <<
+		%p/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/_GOLib.so 0.0.0 %n (>= 0.0.0-1)
+	<<
+	Files: <<
+		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
+		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.py
+		lib/python2.5/site-packages/orange-bioinformatics.pth
+		share/doc/orange-bioinformatics-py25/
+	<<
+<<
+CompileScript: <<
+	#!/bin/bash -ev
+	
+	# Compile scripts later on assume Python executable is named "python" - so we give them that
+	export PATH=%b:$PATH
+	ln -s %p/bin/python2.5 python
+	
+	# Compiles
+	cd source
+	make
+	cd ../
+	
+	# Corrects install name for modules
+	install_name_tool -id %p/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/_GOLib.so _GOLib.so
+<<
+InstallScript: <<
+	#!/bin/bash -ev
+	
+	# Documentation for orange-bioinformatics
+	mkdir -p %i/share/doc/orange-bioinformatics/
+	cp COPYING LICENSES %i/share/doc/orange-bioinformatics/
+	cp doc/style.css %i/share/doc/orange-bioinformatics/
+	mv doc/widgets/ %i/share/doc/orange-bioinformatics/
+	
+	# Documentation for orange-bioinformatics-py25
+	mkdir -p %i/share/doc/orange-bioinformatics-py25/
+	cp COPYING LICENSES %i/share/doc/orange-bioinformatics-py25/
+	mv doc/* %i/share/doc/orange-bioinformatics-py25/
+	
+	# Cleans up
+	rm -rf COPYING LICENSES doc/ source/ setup.py
+	
+	# Files for both orange-bioinformatics and orange-bioinformatics-py25
+	mkdir -p %i/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/
+	mv * %i/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/
+	
+	# Installation registration
+	echo "orange/add-ons/Bioinformatics" > %i/lib/python2.5/site-packages/orange-bioinformatics.pth
+	echo "datasetsPath=\"%p/share/doc/orange-bioinformatics-py25/data/\"" > %i/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/bioinformaticsConfiguration.py
+<<
+<<
