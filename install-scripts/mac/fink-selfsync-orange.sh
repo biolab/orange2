@@ -38,6 +38,9 @@ fi
 fink --yes scanpackages
 fink --yes index
 
+echo "Installing/updating pkgconfig package."
+fink install pkgconfig
+
 cat <<-EOMSG
 	
 	Information about ailab packages have been updated. You can now update installed
