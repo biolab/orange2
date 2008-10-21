@@ -147,20 +147,23 @@ class NetworkCurve(QwtPlotCurve):
         #painter.setPen(QPen(Qt.lightGray, 1))
         painter.setBrush(Qt.lightGray)
         if edge.arrowu:
-            x = self.coors[0][edge.u.index] - self.coors[0][edge.v.index]
-            y = self.coors[1][edge.u.index] - self.coors[1][edge.v.index]
+            x = px1 - px2
+            y = py1 - py2
             
-            fi = math.atan2(y,x) * 180 / math.pi * 16
+            fi = math.atan2(y,x) * 180 * 16 / math.pi 
+
             if not fi is None:
-                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, fi - 160, 320)
+                # (180*16) - fi - (20*16), (40*16)
+                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, 2560 - fi, 640)
                 
         if edge.arrowv:
-            x = self.coors[0][edge.v.index] - self.coors[0][edge.u.index]
-            y = self.coors[1][edge.v.index] - self.coors[1][edge.u.index]
+            x = px1 - px2
+            y = py1 - py2
             
-            fi = math.atan2(y,x) * 180 / math.pi * 16
+            fi = math.atan2(y,x) * 180 * 16 / math.pi 
             if not fi is None:
-                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, fi - 160, 320)
+                # (180*16) - fi - (20*16), (40*16)
+                painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, 2560 - fi, 640)
                 
         if self.showEdgeLabels and len(edge.label) > 0:
             lbl = ', '.join(edge.label)
