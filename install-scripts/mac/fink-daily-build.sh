@@ -8,7 +8,8 @@ STABLE_PACKAGES="orange-py25 orange"
 DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange-bioinformatics-svn orange-text-svn-py25 orange-text-svn"
 
 # Additional source directories which get packed
-SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-ons/Text/"
+STABLE_SOURCE_DIRS="install-scripts/mac/bundle-lite/"
+DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-ons/Text/"
 
 # A list of packages (dependencies) from which user can choose upon installing our packages
 # We would like to build all those so that it does not need to compile anything whichever packages he or she chooses
@@ -125,11 +126,10 @@ fi
 
 perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 
-for dir in $SOURCE_DIRS ; do
+for dir in $STABLE_SOURCE_DIRS ; do
 	# Gets only the last part of the directory name, converts to lower case and removes dashes
 	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
 	STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
-	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/branches/ver1.0/$dir 2>&1 > /dev/null; then
 		echo "Making source archive $STABLE_SOURCE_NAME."
@@ -155,6 +155,12 @@ for dir in $SOURCE_DIRS ; do
 	fi
 	
 	perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+done
+
+for dir in $DAILY_SOURCE_DIRS ; do
+	# Gets only the last part of the directory name, converts to lower case and removes dashes
+	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
+	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/trunk/$dir 2>&1 > /dev/null; then
 		echo "Making source archive $DAILY_SOURCE_NAME."
