@@ -212,8 +212,9 @@ for package in $OTHER_PACKAGES ; do
 	apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
+	# We install it and not just build it because installation does not build package if it already exists as a binary package
 	echo "Specially building package $package."
-	fink $FINK_ARGS build $package
+	fink $FINK_ARGS install $package
 done
 
 # We build our packages in "maintainer" mode - Fink makes tests and validates packages
@@ -226,8 +227,9 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 		dpkg --set-selections < /tmp/dpkg-selections.list
 		apt-get $APT_ARGS dselect-upgrade
 		
+		# We install it and not just build it because installation does not build package if it already exists as a binary package
 		echo "Specially building package $package dependency $deps."
-		fink $FINK_ARGS build $deps
+		fink $FINK_ARGS install $deps
 	done
 	
 	# Restores intitial packages status
@@ -235,6 +237,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	apt-get $APT_ARGS dselect-upgrade
 	
 	# Then builds a package
+	# We can just build it as our packages have been probably cached if they have been already built
 	echo "Specially building, testing and validating package $package."
 	fink $FINK_ARGS --maintainer build $package
 done
