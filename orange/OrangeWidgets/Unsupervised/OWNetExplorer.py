@@ -136,7 +136,7 @@ class OWNetExplorer(OWWidget):
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
         self.optCombo.setCurrentIndex(self.optMethod)
-        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
+        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 20000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
@@ -1202,7 +1202,7 @@ class OWNetExplorer(OWWidget):
         nodes = self.visualize.nVertices()
         t = k * nodes * nodes
         refreshRate = int(5.0 / t)
-        if refreshRate <   1: refreshRate = 1;
+        if refreshRate <    1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
         #print "refreshRate: " + str(refreshRate)
         
