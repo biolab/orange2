@@ -28,7 +28,7 @@ DescDetail: <<
 	
 	This package provides a graphical user interface.
 <<
-AppBundles: Orange.app
+AppBundles: ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app
 SplitOff: <<
 	Package: orange-svn-py25
 	Depends: <<
@@ -86,7 +86,7 @@ CompileScript: <<
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
 	
 	# Prepares bundle
-	cat <<-'EOF' > Orange.app/Contents/MacOS/Orange
+	cat <<-'EOF' > ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app/Contents/MacOS/Orange
 		#!/bin/bash
 		. %p/bin/init.sh
 		CANVAS_FILE="%p/lib/python2.5/site-packages/orange/OrangeCanvas/orngCanvas.pyw"
@@ -96,7 +96,7 @@ CompileScript: <<
 		fi
 		exec -a "$0" %p/bin/python2.5 "$CANVAS_FILE" "$@"
 	EOF
-	chmod +x Orange.app/Contents/MacOS/Orange
+	chmod +x ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app/Contents/MacOS/Orange
 <<
 InstallScript: <<
 	#!/bin/bash -ev
@@ -119,7 +119,6 @@ InstallScript: <<
 	# Files for both orange-svn and orange-svn-py25
 	mkdir -p %i/lib/python2.5/site-packages/orange/
 	mv * %i/lib/python2.5/site-packages/orange/
-	mv %i/lib/python2.5/site-packages/orange/Orange.app/ . # This goes back ;-)
 	
 	# Installation registration
 	echo "orange" > %i/lib/python2.5/site-packages/orange.pth

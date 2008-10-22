@@ -221,7 +221,12 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	dpkg --set-selections < /tmp/dpkg-selections.list
 	apt-get $APT_ARGS dselect-upgrade
 	
-	# Builds a package if it has not been rebuilt already (for example, as a dependency)
+	DEPS=`perl -MFink -MFink::PkgVersion -l -e "Fink::Package->require_packages(); map { map { /(\\S+)/; print \\$1 } @\\$_ } @{Fink::PkgVersion->match_package('$package')->get_depends(1, 0)};"`
+	
+	# First builds all dependencies normally (so that we are not checking for others' errors)
+	fink $FINK_ARGS build $DEPS
+	
+	# Then builds a package
 	fink $FINK_ARGS --maintainer build $package
 done
 
@@ -257,7 +262,7 @@ while (($f,$n) = each(%fs)) {
 
 echo "Making packages list."
 cd /Volumes/fink/
-perl -mFink::Scanpackages -e 'Fink::Scanpackages->scan("dists/10.5/main/binary-darwin-i386/");' | gzip - > dists/10.5/main/binary-darwin-i386/Packages.gz
+perl -MFink::Scanpackages -e 'Fink::Scanpackages->scan("dists/10.5/main/binary-darwin-i386/");' | gzip - > dists/10.5/main/binary-darwin-i386/Packages.gz
 
 echo 'Archive: ailab
 Origin: Fink
