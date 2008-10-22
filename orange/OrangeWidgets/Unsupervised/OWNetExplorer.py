@@ -266,9 +266,9 @@ class OWNetExplorer(OWWidget):
         self.mdsSteps = 120
         self.mdsRefresh = 30
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, disabled=1)
-        self.stepsSpin = OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
-        self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
-        self.mdsStepsSpin = OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
+        OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
+        OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
+        OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         
@@ -291,7 +291,7 @@ class OWNetExplorer(OWWidget):
         self.setOptMethod()
          
         self.resize(1000, 600)
-        self.controlArea.setEnabled(False)
+        #self.controlArea.setEnabled(False)
         self.information('No network loaded.')
         
     def mdsProgress(self, avgStress, stepCount):
@@ -762,20 +762,11 @@ class OWNetExplorer(OWWidget):
         edgeVars = self.visualize.getEdgeVars()
         lastLabelColumns = self.lastLabelColumns
         lastTooltipColumns = self.lastTooltipColumns
+        
+        self.clearCombos()
+        
         self.attributes = [(var.name, var.varType) for var in vars]
         self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
-        
-        self.colorCombo.clear()
-        self.vertexSizeCombo.clear()
-        self.nameComponentCombo.clear()
-        self.showComponentCombo.clear()
-        self.edgeColorCombo.clear()
-        
-        self.colorCombo.addItem("(same color)")
-        self.edgeColorCombo.addItem("(same color)")
-        self.vertexSizeCombo.addItem("(same size)")
-        self.nameComponentCombo.addItem("Select attribute")
-        self.showComponentCombo.addItem("Select attribute")
         
         for var in vars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
@@ -826,13 +817,30 @@ class OWNetExplorer(OWWidget):
             
         self.lastLabelColumns = lastLabelColumns
         self.lastTooltipColumns = lastTooltipColumns
+        
+    def clearCombos(self):
+        self.attributes = []
+        self.edgeAttributes = []
+        
+        self.colorCombo.clear()
+        self.vertexSizeCombo.clear()
+        self.nameComponentCombo.clear()
+        self.showComponentCombo.clear()
+        self.edgeColorCombo.clear()
+        
+        self.colorCombo.addItem("(same color)")
+        self.edgeColorCombo.addItem("(same color)")
+        self.vertexSizeCombo.addItem("(same size)")
+        self.nameComponentCombo.addItem("Select attribute")
+        self.showComponentCombo.addItem("Select attribute")
       
     def setGraph(self, graph):        
         if graph == None:
             self.visualize = None
             self.graph.addVisualizer(self.visualize)
             self.information('No network loaded.')
-            self.controlArea.setEnabled(False)
+            #self.controlArea.setEnabled(False)
+            self.clearCombos()
             return
         
         #print "OWNetwork/setGraph: new visualizer..."
@@ -921,7 +929,7 @@ class OWNetExplorer(OWWidget):
         self.optButton.setChecked(1)
         self.optLayout()        
         self.information(0)
-        self.controlArea.setEnabled(True)
+        #self.controlArea.setEnabled(True)
         self.updateCanvas()
         
     def setItems(self, items=None):
@@ -1233,30 +1241,45 @@ class OWNetExplorer(OWWidget):
     """
        
     def clickedAttLstBox(self):
+        if self.visualize == None:
+            return
+        
         self.lastLabelColumns = set([self.attributes[i][0] for i in self.markerAttributes])
         self.graph.setLabelText(self.lastLabelColumns)
         self.graph.updateData()
         self.graph.replot()
   
     def clickedTooltipLstBox(self):
+        if self.visualize == None:
+            return
+        
         self.lastTooltipColumns = set([self.attributes[i][0] for i in self.tooltipAttributes])
         self.graph.setTooltipText(self.lastTooltipColumns)
         self.graph.updateData()
         self.graph.replot()
         
     def clickedEdgeLabelListBox(self):
+        if self.visualize == None:
+            return
+        
         self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
         self.graph.setEdgeLabelText(self.lastEdgeLabelAttributes)
         self.graph.updateData()
         self.graph.replot()
 
     def setVertexColor(self):
+        if self.visualize == None:
+            return
+        
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.lastColorColumn = self.colorCombo.currentText()
         self.graph.updateData()
         self.graph.replot()
         
     def setEdgeColor(self):
+        if self.visualize == None:
+            return
+        
         self.graph.setEdgeColor(self.edgeColorCombo.currentText())
         self.lastEdgeColorColumn = self.edgeColorCombo.currentText()
         self.graph.updateData()
@@ -1270,11 +1293,17 @@ class OWNetExplorer(OWWidget):
         self.graph.selectConnectedNodes(1000000)
         
     def setMaxLinkSize(self):
+        if self.visualize == None:
+            return
+        
         self.graph.maxEdgeSize = self.maxLinkSize
         self.graph.setEdgesSize()
         self.graph.replot()
     
     def setVertexSize(self):
+        if self.visualize == None:
+            return
+        
         self.graph.maxVertexSize = self.maxVertexSize
         self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
         
