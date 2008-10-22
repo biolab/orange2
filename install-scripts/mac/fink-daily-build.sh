@@ -131,7 +131,7 @@ for dir in $STABLE_SOURCE_DIRS ; do
 	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
 	STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/branches/ver1.0/$dir 2>&1 > /dev/null; then
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
 		echo "Making source archive $STABLE_SOURCE_NAME."
 		
 		rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
@@ -162,7 +162,7 @@ for dir in $DAILY_SOURCE_DIRS ; do
 	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
 	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/trunk/$dir 2>&1 > /dev/null; then
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
 		echo "Making source archive $DAILY_SOURCE_NAME."
 		
 		rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
