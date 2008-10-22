@@ -216,15 +216,21 @@ done
 
 # We build our packages in "maintainer" mode - Fink makes tests and validates packages
 for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
-	# Restores intitial packages status
-	dpkg --set-selections < /tmp/dpkg-selections.list
-	apt-get $APT_ARGS dselect-upgrade
-	
 	DEPS=`perl -MFink -MFink::PkgVersion -l -e "Fink::Package->require_packages(); map { map { /(\\S+)/; print \\$1 } @\\$_ } @{Fink::PkgVersion->match_package('$package')->get_depends(1, 0)};"`
 	
 	# First builds all dependencies normally (so that we are not checking for others' errors)
-	echo "Specially buidling dependencies $DEPS for package $package."
-	fink $FINK_ARGS build $DEPS
+	for deps in $DEPS ; do
+		# Restores intitial packages status
+		dpkg --set-selections < /tmp/dpkg-selections.list
+		apt-get $APT_ARGS dselect-upgrade
+		
+		echo -n "Specially building package $package dependency $deps."
+		fink $FINK_ARGS build $deps
+	done
+	
+	# Restores intitial packages status
+	dpkg --set-selections < /tmp/dpkg-selections.list
+	apt-get $APT_ARGS dselect-upgrade
 	
 	# Then builds a package
 	echo "Specially building, testing and validating package $package."

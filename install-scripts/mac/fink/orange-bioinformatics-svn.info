@@ -95,7 +95,7 @@ PostInstScript: <<
 		NOTE: To download and install (or update) datasets for bioinformatics you should
 		      now run:
 		      
-		          %i/bin/python2.5 TODO/PATH/TO/SCRIPT.py
+		          python2.5 TODO/PATH/TO/SCRIPT.py
 	EOMSG
 <<
 <<
