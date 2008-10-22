@@ -88,6 +88,6 @@ InstallScript: <<
 	
 	# Installation registration
 	echo "orange/add-ons/Text" > %i/lib/python2.5/site-packages/orange-text.pth
-	echo "datasetsPath=\"%p/share/doc/orange-text-svn-py25/data/\"" > %i/lib/python2.5/site-packages/orange/add-ons/Text/textConfiguration.py
+	echo "datasetsPath=\"%p/share/doc/orange-text-svn-py25/datasets/\"" > %i/lib/python2.5/site-packages/orange/add-ons/Text/textConfiguration.py
 <<
 <<
