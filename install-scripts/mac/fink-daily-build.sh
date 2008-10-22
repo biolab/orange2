@@ -172,7 +172,7 @@ done
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
-fink $FINK_ARGS selfupdate --method=rsync --finish
+fink $FINK_ARGS selfupdate --method=rsync
 fink $FINK_ARGS scanpackages
 
 # Removes possiblly installed packages which we want builded

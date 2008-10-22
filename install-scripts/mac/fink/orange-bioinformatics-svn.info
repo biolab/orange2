@@ -47,7 +47,7 @@ SplitOff: <<
 		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
 		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.py
 		lib/python2.5/site-packages/orange-bioinformatics.pth
-		share/doc/orange-bioinformatics-svn-py25/
+		share/doc/orange-bioinformatics-svn-py25
 	<<
 <<
 CompileScript: <<

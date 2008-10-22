@@ -58,7 +58,7 @@ SplitOff: <<
 		lib/python2.5/site-packages/orange/orng*.py
 		lib/python2.5/site-packages/orange/mathutil.py
 		lib/python2.5/site-packages/orange.pth
-		share/doc/orange-py25/
+		share/doc/orange-py25
 	<<
 <<
 CompileScript: <<

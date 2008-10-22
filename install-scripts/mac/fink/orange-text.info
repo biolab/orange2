@@ -47,7 +47,7 @@ SplitOff: <<
 		lib/python2.5/site-packages/orange/add-ons/Text/*.so
 		lib/python2.5/site-packages/orange/add-ons/Text/*.py
 		lib/python2.5/site-packages/orange-text.pth
-		share/doc/orange-text-py25/
+		share/doc/orange-text-py25
 	<<
 <<
 CompileScript: <<
