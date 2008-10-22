@@ -11,6 +11,20 @@ def sizeof_fmt(num):
             return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
         num /= 1024.0
 
+class UpdateThread(QThread):
+    def __init__(self, item, *args):
+        QThread.__init__(self)
+        self.item = item
+        self.args = args
+        
+    def run(self):
+        orngServerFiles.download(*(self.args + (self.advance,)))
+        self.quit()
+
+    def advance(self):
+        self.emit(SIGNAL("advance()"))
+
+        
 class UpdateOptionsWidget(QWidget):
     def __init__(self, updateCallback, removeCallback, state, *args):
         QWidget.__init__(self, *args)
@@ -51,40 +65,77 @@ class UpdateOptionsWidget(QWidget):
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
     stateDict = {0:"up-to-date", 1:"new version available", 2:"not downloaded", 3:"obsolete"}
-    def __init__(self, master, treeWidget, infoLocal, infoServer, downloadCallback, removeCallback, *args):
+    def __init__(self, master, treeWidget, domain, filename, infoLocal, infoServer, *args):
         if not infoLocal:
             self.state = 2
         elif not infoServer:
             self.state = 3
         else:
-            print infoServer["datetime"]
             dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
             dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
             self.state = 0 if dateLocal >= dateServer else 1
         title = infoServer["title"] if infoServer else (infoLocal["title"] + " (Obsolete)")
         tags = infoServer["tags"] if infoServer else infoLocal["tags"]
+        specialTags = dict([tuple(tag.split(":")) for tag in tags if tag.startswith("#") and ":" in tag])
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
-        size = infoServer["size"] if infoServer else infoLocal["size"]
-        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], sizeof_fmt(float(size))])
-        self.updateWidget = UpdateOptionsWidget(self.Download, self.Remove, self.state, treeWidget)
+        self.size = infoServer["size"] if infoServer else infoLocal["size"]
+        size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
+        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], size])
+        self.updateWidget = UpdateOptionsWidget(self.StartDownload, self.Remove, self.state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
         self.master = master
         self.title = title
         self.tags = tags.split(", ")
-        self.size = size
-        self.downloadCallback = downloadCallback
-        self.removeCallback = removeCallback
+        self.domain = domain
+        self.filename = filename
+        self.setData(1, Qt.UserRole, QVariant(0))
+        self.downloadProgress = -1
+##        self.downloadCallback = downloadCallback
+##        self.removeCallback = removeCallback
+
+    def _ProgressCallback(self):
+        self.downloadProgress+=1
+##        self.setData(1, Qt.UserRole, QVariant(self.downloadProgress))
+##        self.treeWidget().update(self.treeWidget().indexFromItem(self, 1))
+##        self.treeWidget().dataChanged(self.treeWidget().indexFromItem(self, 1), self.treeWidget().indexFromItem(self, 1))
+##        self.master.update()
         
-    def Download(self):
-        self.downloadCallback()
+    def StartDownload(self):
+##        self.downloadCallback()
+##        self.downloadProgress = 0
+##        self.progressBar = QProgressBar(self.treeWidget())
+##        self.treeWidget().setItemWidget(self, 1, QProgressBar(self.treeWidget())
+        self.updateWidget.removeButton.setEnabled(False)
+        self.updateWidget.updateButton.setEnabled(False)
+        self.thread = tt = UpdateThread(self, self.domain, self.filename, self.master.serverFiles)
+##        orngServerFiles.download(self.domain, self.filename, self.master.serverFiles, callback=self._ProgressCallback)
+##        self.treeWidget().closePersistentEditor(self, 1)
+##        self.setData(1, Qt.UserRole, QVariant(0))
+##        self.downloadProgress = -1
+        pb = QProgressBar(self.treeWidget())
+        pb.setRange(0, 100)
+        QObject.connect(self.thread, SIGNAL("advance()"), lambda :pb.setValue(pb.value()+1))
+        QObject.connect(self.thread, SIGNAL("finished()"), self.EndDownload)
+        self.treeWidget().setItemWidget(self, 1, pb)
+        pb.show()
+        self.thread.start()
+        self.state = 0
+        self.updateWidget.SetState(self.state)
+        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[0]))
+        self.master.UpdateInfoLabel()
+
+    def EndDownload(self):
+        pb = self.treeWidget().itemWidget(self, 1)
+        pb.hide()
+        pb.destroy()
+        self.treeWidget().update(self.treeWidget().indexFromItem(self, 1))
         self.state = 0
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[0]))
         self.master.UpdateInfoLabel()
 
     def Remove(self):
-        self.removeCallback()
         self.state = 2
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
@@ -92,6 +143,22 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower() for tag in self.tags)
+
+class UpdateItemDelagate(QItemDelegate):
+    def createEditor(self, parent, option, index):
+        return QProgressBar(parent)
+##    def paint(self, painter, option, index):
+##        self.drawBackground(painter, option, index)
+##        QItemDelegate.paint(self, painter, option, index)
+##
+##    def drawBackground(self, painter, option, index):
+##        progress, ok = index.data(Qt.UserRole).toInt()
+##        print progress, ok
+##        if ok and progress:
+##            painter.setBrush(QBrush(Qt.blue, Qt.SolidPattern))
+##            painter.drawRect(option.rect.x(),option.rect.y(), option.rect.width(), option.rect.height())#*progress/100)
+##        else:
+##            QItemDelegate.drawBackground(self, painter, option, index)
         
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None):
@@ -115,8 +182,8 @@ class OWDatabasesUpdate(OWWidget):
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
-##        self.delegate = UpdateOptionsDelegate()
-##        self.filesView.setItemDelegateForColumn(0)
+        self.delegate = UpdateItemDelagate()
+        self.filesView.setItemDelegateForColumn(1, self.delegate)
         box.layout().addWidget(self.filesView)
         self.infoLabel = OWGUI.label(box, self, "")
 
@@ -167,13 +234,13 @@ class OWDatabasesUpdate(OWWidget):
 ##                        dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
     ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
 ##                        items.append((self.filesView, 0 if dateLocal>=dateServer else 1, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                        items.append((self.filesView, infoLocal, infoServer, partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, domain, file, infoLocal, infoServer))
     ##                    self.filesView.setItemWidget(item, 0, UpdateOptionsWidget(partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file), self))
                     elif self.showAll:
                         infoServer = allInfo[file] #self.serverFiles.info(domain, file)
     ##                    self.updateItems.append(UpdateTreeWidgetItem(self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
 ##                        items.append((self.filesView, 2, infoServer["title"], ", ".join(infoServer["tags"]), infoServer["size"], partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
-                        items.append((self.filesView, None, infoServer, partial(self.DownloadFile, domain, file), partial(self.RemoveFile, domain, file)))
+                        items.append((self.filesView, domain, file, None, infoServer))
                     if infoServer:
                         self.allTags.update(infoServer["tags"])
     ##                    self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
@@ -245,10 +312,8 @@ class OWDatabasesUpdate(OWWidget):
             item.setHidden(hide)
             if not hide:
                 tags.update(item.tags)
-        self.tagsWidget.setText(", ".join(sorted(tags, key=str.lower)))
-            
+        self.tagsWidget.setText(", ".join(sorted(tags, key=lambda tag: chr(1) + tag.lower() if strings and tag.lower().startswith(strings[-1].lower()) else tag.lower())))
         
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWDatabasesUpdate(wantCloseButton=True)
