@@ -551,7 +551,7 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 				if (lower <=  value && value <= upper) {
 					//cout << "value: " << value << endl;
 					double* w = network->getOrCreateEdge(j, i);
-					*w = 1 - value;
+					*w = value;
 
 					connected = true;
 				}
@@ -574,7 +574,7 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 				double value = matrix->getitem(i,j);
 				if (lower <=  value && value <= upper) {
 					double* w = network->getOrCreateEdge(i, j);
-					*w = 1 - value;
+					*w = value;
 					connected = true;
 				}
 			}
