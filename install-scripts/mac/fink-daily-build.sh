@@ -4,7 +4,7 @@
 #
 
 # Those packages should not be installed as we are just building them (and dependencies)
-STABLE_PACKAGES="orange-py25 orange orange-bioinformatics-py25 orange-bioinformatics orange-text-py25 orange-text"
+STABLE_PACKAGES="orange-py25 orange"
 DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange-bioinformatics-svn orange-text-svn-py25 orange-text-svn"
 
 # Additional source directories which get packed
@@ -88,12 +88,15 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz 
 	tar -czf /tmp/orange-1.0b.$STABLE_REVISION.tgz -C /tmp/ orange-1.0b.$STABLE_REVISION
 	
 	MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
-	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
 	mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
+else
+	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 fi
+
+perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 
 if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
 	echo "Making source archive orange-svn-0.0.$DAILY_REVISION."
@@ -112,12 +115,15 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tg
 	tar -czf /tmp/orange-svn-0.0.$DAILY_REVISION.tgz -C /tmp/ orange-svn-0.0.$DAILY_REVISION
 	
 	MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
-	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
 	mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
+else
+	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 fi
+
+perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 
 for dir in $SOURCE_DIRS ; do
 	# Gets only the last part of the directory name, converts to lower case and removes dashes
@@ -125,7 +131,7 @@ for dir in $SOURCE_DIRS ; do
 	STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
 	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/branches/ver1.0/$dir 2>&1 > /dev/null; then
 		echo "Making source archive $STABLE_SOURCE_NAME."
 		
 		rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
@@ -140,14 +146,17 @@ for dir in $SOURCE_DIRS ; do
 		tar -czf /tmp/$STABLE_SOURCE_NAME.tgz -C /tmp/ $STABLE_SOURCE_NAME
 		
 		MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
-		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 		
 		mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$STABLE_SOURCE_NAME/
+	else
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz`
 	fi
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
+	perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ] && svn list --non-interactive --revision $STABLE_REVISION --depth empty http://www.ailab.si/svn/orange/trunk/$dir 2>&1 > /dev/null; then
 		echo "Making source archive $DAILY_SOURCE_NAME."
 		
 		rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
@@ -162,12 +171,15 @@ for dir in $SOURCE_DIRS ; do
 		tar -czf /tmp/$DAILY_SOURCE_NAME.tgz -C /tmp/ $DAILY_SOURCE_NAME
 		
 		MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
-		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 		
 		mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$DAILY_SOURCE_NAME/
+	else
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz`
 	fi
+	
+	perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 done
 
 # Gets all official Fink package info files
