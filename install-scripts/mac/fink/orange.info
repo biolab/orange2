@@ -1,10 +1,10 @@
 Info3: <<
 Package: orange
 Version: 1.0b.__STABLE_REVISION__
-Revision: 5
+Revision: 6
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-%v.tgz
 Source-MD5: __STABLE_MD5SUM_ORANGE__
-SourceN: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-%v.tgz
+Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-%v.tgz
 Source2-MD5: __STABLE_MD5SUM_BUNDLELITE__
 Maintainer: Mitar <mitar@tnode.com>
 HomePage: http://www.ailab.si/orange/

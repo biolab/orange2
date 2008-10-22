@@ -17,6 +17,7 @@ SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-ons/Te
 OTHER_PACKAGES="db44 db44-aes giflib libungif ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox ptex-base ptex-nox-base jadetex docbook-utils tetex-base tetex-nox-base"
 
 FINK_ARGS="--yes --build-as-nobody"
+APT_ARGS="--assume-yes"
 
 # Path to Fink root
 FINK_ROOT=/sw
@@ -89,8 +90,6 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz 
 	MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
 	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
-	# TODO: This could be improved by just sym-linking an existing archive with the same content if there is one
-	# (It is not enough to just compare archives as they will probably have different meta data and thus content.)
 	mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
@@ -115,8 +114,6 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tg
 	MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
 	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
-	# TODO: This could be improved by just sym-linking an existing archive with the same content if there is one
-	# (It is not enough to just compare archives as they will probably have different meta data and thus content.)
 	mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
@@ -145,8 +142,6 @@ for dir in $SOURCE_DIRS ; do
 		MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
 		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 		
-		# TODO: This could be improved by just sym-linking an existing archive with the same content if there is one
-		# (It is not enough to just compare archives as they will probably have different meta data and thus content.)
 		mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$STABLE_SOURCE_NAME/
@@ -169,8 +164,6 @@ for dir in $SOURCE_DIRS ; do
 		MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
 		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 		
-		# TODO: This could be improved by just sym-linking an existing archive with the same content if there is one
-		# (It is not enough to just compare archives as they will probably have different meta data and thus content.)
 		mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$DAILY_SOURCE_NAME/
@@ -179,7 +172,7 @@ done
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
-fink $FINK_ARGS selfupdate
+fink $FINK_ARGS selfupdate --method=rsync --finish
 fink $FINK_ARGS scanpackages
 
 # Removes possiblly installed packages which we want builded
@@ -196,6 +189,7 @@ for package in $OTHER_PACKAGES ; do
 	
 	# Restores intitial packages status
 	dpkg --set-selections < /tmp/dpkg-selections.list
+	apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
 	fink $FINK_ARGS build $package
@@ -207,6 +201,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	
 	# Restores intitial packages status
 	dpkg --set-selections < /tmp/dpkg-selections.list
+	apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
 	fink $FINK_ARGS --maintainer build $package
@@ -214,6 +209,7 @@ done
 
 echo "Restoring initial packages status."
 dpkg --set-selections < /tmp/dpkg-selections.list
+apt-get $APT_ARGS dselect-upgrade
 rm -f /tmp/dpkg-selections.list
 
 # Cleans unncessary files (we cache them anyway in public repository)
