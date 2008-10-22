@@ -84,7 +84,7 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz 
 	[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING /tmp/orange-1.0b.$STABLE_REVISION/
 	[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/
 	
-	tar -xzf /tmp/orange-1.0b.$STABLE_REVISION.tgz -C /tmp/ orange-1.0b.$STABLE_REVISION
+	tar -czf /tmp/orange-1.0b.$STABLE_REVISION.tgz -C /tmp/ orange-1.0b.$STABLE_REVISION
 	
 	MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
 	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -110,7 +110,7 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tg
 	[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/
 	[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/
 	
-	tar -xzf /tmp/orange-svn-0.0.$DAILY_REVISION.tgz -C /tmp/ orange-svn-0.0.$DAILY_REVISION
+	tar -czf /tmp/orange-svn-0.0.$DAILY_REVISION.tgz -C /tmp/ orange-svn-0.0.$DAILY_REVISION
 	
 	MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
 	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -140,7 +140,7 @@ for dir in $SOURCE_DIRS ; do
 		[ -e /tmp/$STABLE_SOURCE_NAME/doc/COPYING ] && mv /tmp/$STABLE_SOURCE_NAME/doc/COPYING /tmp/$STABLE_SOURCE_NAME/
 		[ -e /tmp/$STABLE_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$STABLE_SOURCE_NAME/doc/LICENSES /tmp/$STABLE_SOURCE_NAME/
 		
-		tar -xzf /tmp/$STABLE_SOURCE_NAME.tgz -C /tmp/ $STABLE_SOURCE_NAME
+		tar -czf /tmp/$STABLE_SOURCE_NAME.tgz -C /tmp/ $STABLE_SOURCE_NAME
 		
 		MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
 		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -164,7 +164,7 @@ for dir in $SOURCE_DIRS ; do
 		[ -e /tmp/$DAILY_SOURCE_NAME/doc/COPYING ] && mv /tmp/$DAILY_SOURCE_NAME/doc/COPYING /tmp/$DAILY_SOURCE_NAME/
 		[ -e /tmp/$DAILY_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$DAILY_SOURCE_NAME/doc/LICENSES /tmp/$DAILY_SOURCE_NAME/
 		
-		tar -xzf /tmp/$DAILY_SOURCE_NAME.tgz -C /tmp/ $DAILY_SOURCE_NAME
+		tar -czf /tmp/$DAILY_SOURCE_NAME.tgz -C /tmp/ $DAILY_SOURCE_NAME
 		
 		MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
 		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
