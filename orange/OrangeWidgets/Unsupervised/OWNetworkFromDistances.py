@@ -17,10 +17,11 @@ from OWGraph import *
 from orngNetwork import * 
 from orangeom import Network
 from OWHist import *
+import copy
+import random
 
-            
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption"]
+    settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption", "dstWeight"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
@@ -34,6 +35,7 @@ class OWNetworkFromDistances(OWWidget):
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
         self.netOption = 0
+        self.dstWeight = 0
         self.data = None
         
         # get settings from the ini file, if they exist
@@ -62,6 +64,10 @@ class OWNetworkFromDistances(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
         self.attribute = None
         self.attributeCombo = OWGUI.comboBox(ribg, self, "attribute", box = "Filter attribute")#, callback=self.setVertexColor)
+        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "dstWeight", [], "Distance -> Weight", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := distance", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := 1 - distance", callback = self.generateGraph)
         
         self.label = ''
         self.searchString = OWGUI.lineEdit(self.attributeCombo.box, self, "label", callback=self.setSearchStringTimer, callbackOnType=True)
@@ -171,8 +177,28 @@ class OWNetworkFromDistances(OWWidget):
                 
             # set the threshold
             # set edges where distance is lower than threshold
+                  
             nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
-            n = len(graph.getEdges())
+            edges = graph.getEdges()
+            
+            if self.dstWeight == 1:
+                if graph.directed:
+                    for u,v in edges:
+                        foo = 1
+                        if str(graph[u,v]) != "0":
+                            foo = 1.0 - float(graph[u,v])
+                        
+                        graph[u,v] = foo
+                else:
+                    for u,v in edges:
+                        if u <= v:
+                            foo = 1
+                            if str(graph[u,v]) != "0":
+                                foo = 1.0 - float(graph[u,v])
+                            
+                            graph[u,v] = foo
+                    
+            n = len(edges)
             #print 'self.netOption',self.netOption
             
             if str(self.netOption) == '1':
@@ -225,6 +251,7 @@ class OWNetworkFromDistances(OWWidget):
             else:
                 self.graph = graph
                 
+                
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
@@ -242,7 +269,7 @@ class OWNetworkFromDistances(OWWidget):
             self.send("Examples", self.graph.items)
         
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
-    
+
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWNetworkFromDistances()
