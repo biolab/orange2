@@ -964,8 +964,8 @@ class OWNetworkCanvas(OWGraph):
           edge = NetworkEdge()
           edge.u = self.vertices[i]
           edge.v = self.vertices[j]
-
-          edge.weight = visualizer.graph[i, j][0]       
+          
+          edge.weight = float(str(visualizer.graph[i, j]))  
               
           #print "weight:", edge.weight
           
