@@ -4,6 +4,8 @@
 #
 
 # Those packages should not be installed as we are just building them (and dependencies)
+# The order is important as for validation to work we should first build packages which do not depend on other
+# packages we want to validate (as they would be build without validation as dependencies)
 STABLE_PACKAGES="orange-py25 orange"
 DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange-bioinformatics-svn orange-text-svn-py25 orange-text-svn"
 
@@ -203,20 +205,17 @@ fink $FINK_ARGS update-all
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
 
 for package in $OTHER_PACKAGES ; do
-	echo "Specially building package $package."
-	
 	# Restores intitial packages status
 	dpkg --set-selections < /tmp/dpkg-selections.list
 	apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
+	echo "Specially building package $package."
 	fink $FINK_ARGS build $package
 done
 
 # We build our packages in "maintainer" mode - Fink makes tests and validates packages
 for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
-	echo "Specially building, testing and validating package $package."
-	
 	# Restores intitial packages status
 	dpkg --set-selections < /tmp/dpkg-selections.list
 	apt-get $APT_ARGS dselect-upgrade
@@ -224,9 +223,11 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	DEPS=`perl -MFink -MFink::PkgVersion -l -e "Fink::Package->require_packages(); map { map { /(\\S+)/; print \\$1 } @\\$_ } @{Fink::PkgVersion->match_package('$package')->get_depends(1, 0)};"`
 	
 	# First builds all dependencies normally (so that we are not checking for others' errors)
+	echo "Specially buidling dependencies $DEPS for package $package."
 	fink $FINK_ARGS build $DEPS
 	
 	# Then builds a package
+	echo "Specially building, testing and validating package $package."
 	fink $FINK_ARGS --maintainer build $package
 done
 
