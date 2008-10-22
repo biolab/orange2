@@ -39,7 +39,7 @@ fink --yes scanpackages
 fink --yes index
 
 echo "Installing/updating pkgconfig package."
-fink install pkgconfig
+fink --yes install pkgconfig
 
 cat <<-EOMSG
 	
@@ -69,7 +69,10 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main'; then
 		         
 		         and after that upgrade Fink using:
 		         
+		             fink selfupdate
 		             fink selfupdate-rsync
+		             fink scanpackages
+		             fink update-all
 	EOMSG
 fi
 

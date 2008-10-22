@@ -197,6 +197,8 @@ fink $FINK_ARGS scanpackages
 
 # Removes possiblly installed packages which we want builded
 fink $FINK_ARGS purge $STABLE_PACKAGES $DAILY_PACKAGES
+# Sometimes Fink and APT are not in sync so we remove packages also directly
+apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES
 
 # Updates everything (probably by compiling new packages)
 fink $FINK_ARGS update-all
@@ -224,7 +226,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 		dpkg --set-selections < /tmp/dpkg-selections.list
 		apt-get $APT_ARGS dselect-upgrade
 		
-		echo -n "Specially building package $package dependency $deps."
+		echo "Specially building package $package dependency $deps."
 		fink $FINK_ARGS build $deps
 	done
 	
@@ -252,6 +254,7 @@ mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
 
 echo "Copying to repository all binary packages."
 rsync --times --copy-links $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+rsync --times --copy-links $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
 
 echo "Removing old binary packages."
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
