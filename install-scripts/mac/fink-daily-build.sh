@@ -195,13 +195,13 @@ echo "Updating installed Fink packages."
 fink $FINK_ARGS selfupdate --method=rsync
 fink $FINK_ARGS scanpackages
 
+# Updates everything (probably by compiling new packages)
+fink $FINK_ARGS update-all
+
 # Removes possiblly installed packages which we want builded
 fink $FINK_ARGS purge $STABLE_PACKAGES $DAILY_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
 apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES
-
-# Updates everything (probably by compiling new packages)
-fink $FINK_ARGS update-all
 
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
