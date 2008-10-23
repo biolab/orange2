@@ -434,7 +434,7 @@ class OWNetworkCanvas(OWGraph):
 
           self.GMmouseMoveEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
           self.GMmouseMoveEvent.setY(event.pos().y())
-          self.replot()
+          self.drawPlotItems(replot=1)
       else:
           OWGraph.mouseMoveEvent(self, event)
               
@@ -480,6 +480,7 @@ class OWNetworkCanvas(OWGraph):
               self.stopOptimizing = 1
 
   def mousePressEvent(self, event):
+    self.grabKeyboard()
     self.mouseSelectedVertex = 0
     self.GMmouseMoveEvent = None
     
@@ -509,6 +510,7 @@ class OWNetworkCanvas(OWGraph):
         OWGraph.mousePressEvent(self, event)     
 
   def mouseReleaseEvent(self, event):  
+      self.releaseKeyboard()
       if self.state == MOVE_SELECTION:
           self.state = SELECT_RECTANGLE
           self.mouseCurrentlyPressed = 0
@@ -547,6 +549,22 @@ class OWNetworkCanvas(OWGraph):
                   self.selectVertices()
       else:
           OWGraph.mouseReleaseEvent(self, event)
+
+  def keyPressEvent(self, keyEvent):
+      if keyEvent.key() == 87:
+          #print "W"
+          selection = [v.index for v in self.vertices if v.selected]
+          #print selection
+          self.visualizer.rotateVertices([selection], [1])
+          self.drawPlotItems(replot=1)
+          
+      elif keyEvent.key() == 81:
+          #print "Q"
+          selection = [v.index for v in self.vertices if v.selected]
+          #print selection
+          self.visualizer.rotateVertices([selection], [-1])
+          self.drawPlotItems(replot=1)
+      
 
   def clickedSelectedOnVertex(self, pos):
       min = 1000000

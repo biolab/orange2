@@ -271,6 +271,8 @@ class OWNetExplorer(OWWidget):
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
+        self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, disabled=0)
+        
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -294,6 +296,24 @@ class OWNetExplorer(OWWidget):
         #self.controlArea.setEnabled(False)
         self.information('No network loaded.')
         
+    def rotateComponents(self):
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            return
+        
+        if self.visualize == None:
+            self.information('No network found')
+            return
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            return
+        
+        self.visualize.vertexDistance = self.vertexDistance
+        self.progressBarInit()
+        self.visualize.rotateComponents(self.updateCanvas)
+        self.progressBarFinished()
+        
     def mdsProgress(self, avgStress, stepCount):
         self.mdsInfoA.setText("Avg. Stress: %f" % avgStress)
         self.mdsInfoB.setText("Num. steps: %i" % stepCount)
@@ -301,11 +321,22 @@ class OWNetExplorer(OWWidget):
         qApp.processEvents()
         
     def mdsComponents(self):
-        if self.visualize != None:
-            self.visualize.vertexDistance = self.vertexDistance
-            self.progressBarInit()
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas)
-            self.progressBarFinished()
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            return
+        
+        if self.visualize == None:
+            self.information('No network found')
+            return
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            return
+        
+        self.visualize.vertexDistance = self.vertexDistance
+        self.progressBarInit()
+        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas)
+        self.progressBarFinished()
         
     def setVertexDistance(self, matrix):
         self.error('')
@@ -315,7 +346,7 @@ class OWNetExplorer(OWWidget):
             return
         
         if matrix.dim != self.visualize.graph.nVertices:
-            self.error('Distance matrix dimensionality must equal number of vertices.')
+            self.error('Distance matrix dimensionality must equal number of vertices')
             self.vertexDistance = None
             return
         
