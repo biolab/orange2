@@ -89,7 +89,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.tags = tags.split(", ")
         self.domain = domain
         self.filename = filename
-        self.UpdateTooltip()
+##        self.UpdateTooltip()
         
     def StartDownload(self):
         self.updateWidget.removeButton.setEnabled(False)
