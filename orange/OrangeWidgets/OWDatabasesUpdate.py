@@ -80,7 +80,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
         self.size = infoServer["size"] if infoServer else infoLocal["size"]
         size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
-        QTreeWidgetItem.__init__(self, treeWidget, ["", title, self.stateDict[self.state], tags, size])
+        QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], size])
         self.updateWidget = UpdateOptionsWidget(self.StartDownload, self.Remove, self.state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
         self.updateWidget.show()
@@ -89,6 +89,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.tags = tags.split(", ")
         self.domain = domain
         self.filename = filename
+        self.UpdateTooltip()
         
     def StartDownload(self):
         self.updateWidget.removeButton.setEnabled(False)
@@ -98,18 +99,19 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         
         pb = QProgressBar(self.treeWidget())
         pb.setRange(0, 100)
+        pb.setTextVisible(False)
         QObject.connect(self.thread, SIGNAL("advance()"), lambda :pb.setValue(pb.value()+1))
         QObject.connect(self.thread, SIGNAL("finished()"), self.EndDownload)
-        self.treeWidget().setItemWidget(self, 2, pb)
+        self.treeWidget().setItemWidget(self, 3, pb)
         pb.show()
         self.thread.start()
 
     def EndDownload(self):
-        pb = self.treeWidget().removeItemWidget(self, 2)
-        self.treeWidget().update(self.treeWidget().indexFromItem(self, 1))
+        pb = self.treeWidget().removeItemWidget(self, 3)
+##        self.treeWidget().update(self.treeWidget().indexFromItem(self, 3))
         self.state = 0
         self.updateWidget.SetState(self.state)
-        self.setData(2, Qt.DisplayRole, QVariant(self.stateDict[0]))
+        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[self.state]))
         self.master.UpdateInfoLabel()
 
     def Remove(self):
@@ -137,7 +139,7 @@ class OWDatabasesUpdate(OWWidget):
         box.layout().addWidget(self.tagsWidget)
         box = OWGUI.widgetBox(self.mainArea, "Files")
         self.filesView = QTreeWidget(self)
-        self.filesView.setHeaderLabels(["Options", "Title", "Status", "Tags", "Size"])
+        self.filesView.setHeaderLabels(["Options", "Title", "Tags", "Status", "Size"])
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
@@ -157,7 +159,7 @@ class OWDatabasesUpdate(OWWidget):
         self.updateItems = []
         self.allTags = []
         
-        self.resize(500, 400)
+        self.resize(800, 600)
         QTimer.singleShot(50, self.UpdateFilesList)
 
     def UpdateFilesList(self):
