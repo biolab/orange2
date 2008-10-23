@@ -52,16 +52,13 @@ class NetworkCurve(QwtPlotCurve):
       self.showEdgeLabels = 0
 
   def moveSelectedVertices(self, dx, dy):
-    movedVertices = []
-    for vertex in self.vertices:
-      if vertex.selected:
-        self.coors[0][vertex.index] = self.coors[0][vertex.index] + dx
-        self.coors[1][vertex.index] = self.coors[1][vertex.index] + dy  
-        movedVertices.append(vertex.index)
-        
-    self.setData(self.coors[0], self.coors[1])
+    selected = self.getSelectedVertices()
     
-    return movedVertices
+    self.coors[0][selected] = self.coors[0][selected] + dx
+    self.coors[1][selected] = self.coors[1][selected] + dy
+      
+    self.setData(self.coors[0], self.coors[1])
+    return selected
   
   def setVertexColor(self, v, color):
       pen = self.vertices[v].pen
@@ -408,7 +405,6 @@ class OWNetworkCanvas(OWGraph):
       
   def activateMoveSelection(self):
       self.state = MOVE_SELECTION
-      print "move selection"
 
   def mouseMoveEvent(self, event):
       if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseMoveEvent != None:
@@ -419,22 +415,10 @@ class OWNetworkCanvas(OWGraph):
           dy = newY - self.invTransform(0, self.GMmouseMoveEvent.y())
           movedVertices = self.networkCurve.moveSelectedVertices(dx, dy)
           
-          for vertex in movedVertices:
-              if vertex in self.markerKeys:
-                  mkey = self.markerKeys[vertex]
-                  mkey.setValue(float(newX), float(newY))
-            
-              if 'index ' + str(vertex) in self.markerKeys:
-                  mkey = self.markerKeys['index ' + str(vertex)]
-                  mkey.setValue(float(newX), float(newY))
-              
-              if vertex in self.tooltipKeys:
-                  tkey = self.tooltipKeys[vertex]
-                  self.tips.positions[tkey] = (newX, newY, 0, 0)
-
           self.GMmouseMoveEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
           self.GMmouseMoveEvent.setY(event.pos().y())
-          self.drawPlotItems(replot=1)
+          
+          self.drawPlotItems(replot=1, vertices=movedVertices)
       else:
           OWGraph.mouseMoveEvent(self, event)
               
@@ -681,14 +665,31 @@ class OWNetworkCanvas(OWGraph):
       self.drawPlotItems(replot=0)
       #self.zoomExtent()
       
-  def drawPlotItems(self, replot=1):
-      self.markerKeys = {}
-      self.removeMarkers()
-      self.drawLabels()
-      self.drawToolTips()
-      self.drawWeights()
-      self.drawIndexes()
-      self.drawComponentKeywords()
+  def drawPlotItems(self, replot=1, vertices=[]):
+      if len(vertices) > 0:
+          for vertex in vertices:
+              x1 = float(self.visualizer.network.coors[0][vertex])
+              y1 = float(self.visualizer.network.coors[1][vertex])
+              
+              if vertex in self.markerKeys:
+                  mkey = self.markerKeys[vertex]
+                  mkey.setValue(x1, y1)
+            
+              if 'index ' + str(vertex) in self.markerKeys:
+                  mkey = self.markerKeys['index ' + str(vertex)]
+                  mkey.setValue(x1, y1)
+              
+              if vertex in self.tooltipKeys:
+                  tkey = self.tooltipKeys[vertex]
+                  self.tips.positions[tkey] = (x1, y1, 0, 0)
+      else:
+          self.markerKeys = {}
+          self.removeMarkers()
+          self.drawLabels()
+          self.drawToolTips()
+          self.drawWeights()
+          self.drawIndexes()
+          self.drawComponentKeywords()
       
       if replot:
           self.replot()
