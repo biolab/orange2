@@ -112,7 +112,42 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.graph:
             return self.graph.nVertices
         
-    def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None):
+    def rotateVertices(self, components, M):    
+        #print len(components)
+        #print M
+        
+        for i in range(len(components)):
+            if M[i] == 0:
+                continue
+            
+            component = components[i]
+            
+            x = self.graph.coors[0][component]
+            y = self.graph.coors[1][component]
+            
+            x_center = x.mean()
+            y_center = y.mean()
+            
+            x = x - x_center
+            y = y - y_center
+            
+            r = numpy.sqrt(x**2 + y**2)
+            fi = numpy.arctan2(y, x)
+            
+#            if M[i] > 0:    
+#                fi += numpy.pi / 180
+#            elif M[i] < 0:
+#                fi -= numpy.pi / 180
+                
+            fi += 10 * M[i] * numpy.pi / 180
+                
+            x = r * numpy.cos(fi)
+            y = r * numpy.sin(fi)
+            
+            self.graph.coors[0][component] = x + x_center
+            self.graph.coors[1][component] = y + y_center 
+            
+    def rotateComponents(self, callbackUpdateCanvas=None):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return
@@ -120,9 +155,66 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.graph == None:
             return
         
-        
         if self.vertexDistance.dim != self.graph.nVertices:
             return
+        
+        components = self.graph.getConnectedComponents()
+        vertices = set(range(self.graph.nVertices))
+        step = 0
+        M = [1]
+        while step < 100 and max(M) > 0.01:
+            M = [0]*len(components) 
+            for i in range(len(components)):
+                component = components[i]
+                outer_vertices = vertices - set(component)
+                
+                x = self.graph.coors[0][component]
+                y = self.graph.coors[1][component]
+                
+                x_center = x.mean()
+                y_center = y.mean()
+                
+                r = numpy.sqrt((x - x_center)**2 + (y - y_center)**2)
+                Mi = 0
+                for j in range(len(component)):
+                    u = component[j]
+                    Mu = 0
+                    for v in outer_vertices:
+                         d = self.vertexDistance[u,v]
+                         u_x = self.graph.coors[0][u]
+                         u_y = self.graph.coors[1][u]
+                         v_x = self.graph.coors[0][v]
+                         v_y = self.graph.coors[1][v]
+                         l = math.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
+                         e = math.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
+                         #print "l:",l,"r[i]:",r[i],"e:",e
+                         fiVR = math.atan2(v_y - u_y, v_x - u_x)
+                         fiV = math.atan2(u_y - y_center, u_x - x_center)
+                         fi = math.pi - (fiVR - fiV)
+                         #fi = math.acos((l**2 + r[i]**2 - e**2) / (2*l*r[i]))
+                         
+                         Mu += d / (e**2) * l * math.sin(fi)
+                         
+                    Mi += Mu * r[j]
+                    #print "i:",i,"M:",Mu * r[i]
+                
+                M[i] = Mi
+                
+            self.rotateVertices(components, M)
+            if callbackUpdateCanvas: callbackUpdateCanvas()
+            step += 1
+        
+           
+    def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None):
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            return 1
+        
+        if self.graph == None:
+            return 1
+        
+        if self.vertexDistance.dim != self.graph.nVertices:
+            return 1
         
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         mds = orngMDS.MDS(self.vertexDistance)
@@ -198,7 +290,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 callbackUpdateCanvas()
                     
             if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
-                break; 
+                break;
+             
+        return 0
             
     #procedura za razporejanje nepovezanih vozlisc na kroznico okoli grafa
     def postProcess(self):
