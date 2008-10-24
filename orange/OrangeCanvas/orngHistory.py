@@ -5,7 +5,12 @@ import os, sys, re, glob, stat, time
 import orngEnviron
 
 logHistory = 1
-logFile = orngEnviron.directoryNames["canvasSettingsDir"] + "/history.log"
+logFile = os.path.join(orngEnviron.directoryNames["canvasSettingsDir"], "history.log")
+
+if not os.path.exists(logFile):
+    file = open(logFile, "w")
+    file.close()
+
 lastSchemaID = None
 openSchemas = {}
 
