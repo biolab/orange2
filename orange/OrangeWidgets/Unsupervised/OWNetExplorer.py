@@ -329,6 +329,7 @@ class OWNetExplorer(OWWidget):
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
         self.visualize.rotateComponents(self.rotateProgress, self.updateCanvas)
+        self.btnRotate.setChecked(False)
         self.progressBarFinished()
         
     def mdsProgress(self, avgStress, stepCount):
@@ -362,6 +363,7 @@ class OWNetExplorer(OWWidget):
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
         self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas)
+        self.btnMDS.setChecked(False)
         self.progressBarFinished()
         
     def setVertexDistance(self, matrix):

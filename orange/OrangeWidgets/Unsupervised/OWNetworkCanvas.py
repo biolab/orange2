@@ -443,17 +443,19 @@ class OWNetworkCanvas(OWGraph):
       
       if self.showDistances:
           selection = self.networkCurve.getSelectedVertices()
-          if len(selection) == 1:
+          if len(selection) > 0:
               px = self.invTransform(2, event.x())
               py = self.invTransform(0, event.y())   
               v, mind = self.visualizer.closestVertex(px, py)
-              u = selection[0]
-              
-              if v != -1 and mind < 50:
+                            
+              if v != -1 and mind < 100:
                   if self.visualizer.vertexDistance == None:
                       dst = 'vertex distance signal not set'
                   else:
-                      dst = self.visualizer.vertexDistance[u,v]
+                      dst = 0
+                      for u in selection:
+                          dst += self.visualizer.vertexDistance[u,v]
+                      dst = dst / len(selection)
                       
                   self.showTip(event.pos().x(), event.pos().y(), str(dst))
                   self.replot()
