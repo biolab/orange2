@@ -678,6 +678,8 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
         
     def showDistancesClick(self):
+        if self.visualize.vertexDistance == None:
+            self.warning("Vertex distance signal is not set. Distances are not known.")
         self.graph.showDistances = self.showDistances
         
     def showEdgeLabelsClick(self):

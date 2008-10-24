@@ -450,7 +450,11 @@ class OWNetworkCanvas(OWGraph):
               u = selection[0]
               
               if v != -1 and mind < 50:
-                  dst = self.visualizer.vertexDistance[u,v]
+                  if self.visualizer.vertexDistance == None:
+                      dst = 'vertex distance signal not set'
+                  else:
+                      dst = self.visualizer.vertexDistance[u,v]
+                      
                   self.showTip(event.pos().x(), event.pos().y(), str(dst))
                   self.replot()
                  
