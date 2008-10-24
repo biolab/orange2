@@ -307,14 +307,17 @@ class OWNetExplorer(OWWidget):
     def rotateComponents(self):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
+            self.btnRotate.setChecked(False)
             return
         
         if self.visualize == None:
             self.information('No network found')
+            self.btnRotate.setChecked(False)
             return
         
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
+            self.btnRotate.setChecked(False)
             return
         
         if not self.btnRotate.isChecked():
@@ -341,14 +344,17 @@ class OWNetExplorer(OWWidget):
     def mdsComponents(self):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
+            self.btnMDS.setChecked(False)
             return
         
         if self.visualize == None:
             self.information('No network found')
+            self.btnMDS.setChecked(False)
             return
         
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
+            self.btnMDS.setChecked(False)
             return
         
         if not self.btnMDS.isChecked():
