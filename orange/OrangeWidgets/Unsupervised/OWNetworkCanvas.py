@@ -560,14 +560,14 @@ class OWNetworkCanvas(OWGraph):
           #print "W"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
-          self.visualizer.rotateVertices([selection], [1])
+          self.visualizer.rotateVertices([selection], [-1])
           self.drawPlotItems(replot=1)
           
       elif keyEvent.key() == 81:
           #print "Q"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
-          self.visualizer.rotateVertices([selection], [-1])
+          self.visualizer.rotateVertices([selection], [1])
           self.drawPlotItems(replot=1)
       
 
