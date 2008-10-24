@@ -234,6 +234,7 @@ class OWNetworkCanvas(OWGraph):
       self.sendMarkedNodes = None
       self.showEdgeLabels = 0
       self.showDistances = 0
+      self.showMissingValues = 0
       
       self.showWeights = 0
       self.showIndexes = 0
@@ -788,7 +789,13 @@ class OWNetworkCanvas(OWGraph):
               y1 = self.visualizer.network.coors[1][vertex.index]
               lbl = ""
               values = self.visualizer.graph.items[vertex.index]
-              lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
+              if self.showMissingValues:
+                  lbl = ", ".join([str(values[ndx]) for ndx in self.labelText])
+              else:
+                  lbl = ", ".join([str(values[ndx]) for ndx in self.labelText if str(values[ndx]) != '?'])
+              #if not self.showMissingValues and lbl == '':
+              #    continue 
+              
               if lbl:
                   mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom)
                   self.markerKeys[vertex.index] = mkey    

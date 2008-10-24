@@ -45,7 +45,8 @@ class OWNetExplorer(OWWidget):
                     "colorSettings", 
                     "selectedSchemaIndex",
                     "edgeColorSettings",
-                    "selectedEdgeSchemaIndex"] 
+                    "selectedEdgeSchemaIndex",
+                    "showMissingValues"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -102,6 +103,8 @@ class OWNetExplorer(OWWidget):
         self.selectedEdgeSchemaIndex = 0
         self.vertexDistance = None
         self.showDistances = 0
+        self.showMissingValues = 0
+        
         self.loadSettings()
         
         self.visualize = None
@@ -111,6 +114,7 @@ class OWNetExplorer(OWWidget):
         self.controlArea.layout().setContentsMargins(4,4,0,4)
         
         self.graph = OWNetworkCanvas(self, self.mainArea, "Net Explorer")
+        self.graph.showMissingValues = self.showMissingValues
         self.mainArea.layout().addWidget(self.graph)
         
         self.graph.maxLinkSize = self.maxLinkSize
@@ -179,7 +183,8 @@ class OWNetExplorer(OWWidget):
         self.insideView = 0
         self.insideViewNeighbours = 2
         OWGUI.spin(ib, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
-
+        OWGUI.checkBox(ib, self, 'showMissingValues', 'Show missing values', callback = self.setShowMissingValues)
+        
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical")
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
@@ -1359,6 +1364,11 @@ class OWNetExplorer(OWWidget):
     
     def selectAllConnectedNodes(self):
         self.graph.selectConnectedNodes(1000000)
+        
+    def setShowMissingValues(self):
+        self.graph.showMissingValues = self.showMissingValues
+        self.graph.updateData()
+        self.graph.replot()
         
     def setMaxLinkSize(self):
         if self.visualize == None:
