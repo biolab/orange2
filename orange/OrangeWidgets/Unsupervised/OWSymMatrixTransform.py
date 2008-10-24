@@ -58,6 +58,8 @@ class OWSymMatrixTransform(OWWidget):
         #print "self.invertMethod:", self.invertMethod
         #print "self.normalizeMethod:", self.normalizeMethod
         self.error()
+        if self.matrix == None:
+            return
         
         matrix = None 
         if self.invertMethod > 0 or self.normalizeMethod > 0:
