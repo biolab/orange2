@@ -110,7 +110,7 @@ class OWDistanceFile(OWWidget):
                 pkl_file.close()
                 
             else:    
-                print fn
+                #print fn
                 fle = open(fn)
                 while 1:
                     lne = fle.readline().strip()
