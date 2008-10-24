@@ -47,11 +47,11 @@ class UpdateOptionsWidget(QWidget):
     def SetState(self, state):
         self.state = state
         if state == 0:
-            self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update1.png")))
             self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
         elif state == 1:
-            self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update1.png")))
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(True)
         elif state == 2:
@@ -59,6 +59,7 @@ class UpdateOptionsWidget(QWidget):
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(False)
         elif state == 3:
+            self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
             self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
 
@@ -80,6 +81,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
         self.size = infoServer["size"] if infoServer else infoLocal["size"]
         size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
+        state = self.stateDict[self.state] + (dateServer.strftime(" (%Y, %b, %d)") if self.state == 1 else "")
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], size])
         self.updateWidget = UpdateOptionsWidget(self.StartDownload, self.Remove, self.state, treeWidget)
         self.treeWidget().setItemWidget(self, 0, self.updateWidget)
@@ -94,7 +96,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
     def StartDownload(self):
         self.updateWidget.removeButton.setEnabled(False)
         self.updateWidget.updateButton.setEnabled(False)
-        self.setData(2, Qt.DisplayRole, QVariant(""))
+        self.setData(3, Qt.DisplayRole, QVariant(""))
         self.thread = tt = UpdateThread(self, self.domain, self.filename, self.master.serverFiles)
         
         pb = QProgressBar(self.treeWidget())
@@ -117,7 +119,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
     def Remove(self):
         self.state = 2
         self.updateWidget.SetState(self.state)
-        self.setData(2, Qt.DisplayRole, QVariant(self.stateDict[2]))
+        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
         self.master.UpdateInfoLabel()
 
     def __contains__(self, item):
