@@ -1,7 +1,7 @@
 # Author: Miha Stajdohar (miha.stajdohar@fri.uni-lj.si)
 #
 
-import os, sys, re, glob, stat, time
+import os, sys, time, smtplib
 import orngEnviron
 
 logHistory = 1
@@ -73,4 +73,32 @@ def logRemoveWidget(schemaID, nameKey):
 
 def logChangeWidgetPosition(schemaID, nameKey, x, y):
     logAppend(schemaID, "MOVEWIDGET", nameKey + ";" + str(x) + ";" + str(y))
+
+def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email.Utils import formatdate
+    from email import Encoders
+
+    fro = "Orange user"
     
+    msg = MIMEMultipart()
+    msg['From'] = fro
+    msg['To'] = to
+    msg['Date'] = formatdate(localtime=True)
+    msg['Subject'] = "history.log"
+       
+    msg.attach(MIMEText("history.log from Orange user"))
+    
+    part = MIMEBase('application', "octet-stream")
+    part.set_payload(open(logFile,"r").read())
+    Encoders.encode_base64(part)
+    part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(logFile))
+    msg.attach(part)
+   
+    smtp = smtplib.SMTP(host)
+    smtp.login(username, password)
+    smtp.sendmail(fro, to, msg.as_string())
+    smtp.close()
+
