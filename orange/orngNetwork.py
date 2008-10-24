@@ -147,7 +147,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
             
-    def rotateComponents(self, callbackUpdateCanvas=None):
+    def rotateComponents(self, callbackProgress=None, callbackUpdateCanvas=None):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return
@@ -158,11 +158,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.vertexDistance.dim != self.graph.nVertices:
             return
         
+        self.stopRotate = 0
         components = self.graph.getConnectedComponents()
         vertices = set(range(self.graph.nVertices))
         step = 0
         M = [1]
-        while step < 100 and max(M) > 0.01:
+        while step < 100 and max(M) > 0.01 and not self.stopRotate:
             M = [0]*len(components) 
             for i in range(len(components)):
                 component = components[i]
@@ -202,8 +203,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 
             self.rotateVertices(components, M)
             if callbackUpdateCanvas: callbackUpdateCanvas()
+            if callbackProgress : callbackProgress()
             step += 1
-        
            
     def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None):
         if self.vertexDistance == None:
@@ -216,6 +217,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.vertexDistance.dim != self.graph.nVertices:
             return 1
         
+        self.stopMDS = 0
+        
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         mds = orngMDS.MDS(self.vertexDistance)
         mds.Torgerson() 
@@ -223,7 +226,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         components = self.graph.getConnectedComponents()
         
         stepCount = 0 
-        while stepCount < mdsSteps: 
+        while stepCount < mdsSteps and not self.stopMDS: 
             oldStress = mds.avgStress
             mds.getStress(orngMDS.KruskalStress)
             
