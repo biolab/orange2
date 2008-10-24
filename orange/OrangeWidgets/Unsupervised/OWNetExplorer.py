@@ -101,6 +101,7 @@ class OWNetExplorer(OWWidget):
         self.edgeColorSettings = [('net_edges', [[], [('contPalette', (4294967295L, 4278190080L, 0))], [('discPalette', [(204, 204, 204), (179, 226, 205), (253, 205, 172), (203, 213, 232), (244, 202, 228), (230, 245, 201), (255, 242, 174), (241, 226, 204)])]]), ('Default', [[], [('contPalette', (4294967295L, 4278190080L, 0))], [('discPalette', [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)])]])]
         self.selectedEdgeSchemaIndex = 0
         self.vertexDistance = None
+        self.showDistances = 0
         self.loadSettings()
         
         self.visualize = None
@@ -169,6 +170,7 @@ class OWNetExplorer(OWWidget):
         OWGUI.checkBox(ib, self, 'showWeights', 'Show weights', callback = self.showWeightLabels)
         OWGUI.checkBox(ib, self, 'showEdgeLabels', 'Show labels on edges', callback = self.showEdgeLabelsClick)
         OWGUI.spin(ib, self, "maxLinkSize", 1, 50, 1, label="Max edge width:", callback = self.setMaxLinkSize)
+        OWGUI.checkBox(ib, self, 'showDistances', 'Explore vertex distances', callback = self.showDistancesClick)
         
         ib = OWGUI.widgetBox(self.verticesTab, "General", orientation="vertical")
         OWGUI.checkBox(ib, self, 'showIndexes', 'Show indexes', callback = self.showIndexLabels)
@@ -245,13 +247,15 @@ class OWNetExplorer(OWWidget):
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
-        OWGUI.button(self.infoTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
+        OWGUI.button(self.infoTab, self, "Degree distribution", callback=self.showDegreeDistribution)
         OWGUI.button(self.infoTab, self, "Save network", callback=self.saveNetwork)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
         ib = OWGUI.widgetBox(self.infoTab, "Prototype")
         OWGUI.button(ib, self, "Collapse", callback=self.collapse)
+        
+        #ib = OWGUI.widgetBox(ibProto, "Name components")
         OWGUI.label(ib, self, "Name components:")
         self.nameComponentAttribute = 0
         self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponentAttribute", callback=self.nameComponents)
@@ -262,16 +266,17 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
         self.showComponentCombo.addItem("Select attribute")
         
+        #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
         self.mdsFactor = 10
         self.mdsSteps = 120
         self.mdsRefresh = 30
-        self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, disabled=1)
+        self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
         OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
-        self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, disabled=0)
+        self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, toggleButton=1)
         
         
         self.icons = self.createAttributeIconDict()
@@ -295,7 +300,10 @@ class OWNetExplorer(OWWidget):
         self.resize(1000, 600)
         #self.controlArea.setEnabled(False)
         self.information('No network loaded.')
-        
+    
+    def rotateProgress(self):
+        qApp.processEvents()
+    
     def rotateComponents(self):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
@@ -309,9 +317,18 @@ class OWNetExplorer(OWWidget):
             self.error('Distance matrix dimensionality must equal number of vertices')
             return
         
+        if not self.btnRotate.isChecked():
+          self.visualize.stopRotate = 1
+          self.btnRotate.setChecked(False)
+          self.btnRotate.setText("Rotate graph components")
+          return
+      
+        self.btnRotate.setText("Stop")
+        qApp.processEvents()
+        
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
-        self.visualize.rotateComponents(self.updateCanvas)
+        self.visualize.rotateComponents(self.rotateProgress, self.updateCanvas)
         self.progressBarFinished()
         
     def mdsProgress(self, avgStress, stepCount):
@@ -333,6 +350,15 @@ class OWNetExplorer(OWWidget):
             self.error('Distance matrix dimensionality must equal number of vertices')
             return
         
+        if not self.btnMDS.isChecked():
+          self.visualize.stopMDS = 1
+          self.btnMDS.setChecked(False)
+          self.btnMDS.setText("MDS on graph components")
+          return
+        
+        self.btnMDS.setText("Stop")
+        qApp.processEvents()
+        
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
         self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas)
@@ -343,20 +369,18 @@ class OWNetExplorer(OWWidget):
         
         if matrix == None or self.visualize == None or self.visualize.graph == None:
             self.vertexDistance = None
+            if self.visualize: self.visualize.vertexDistance = None
             return
         
         if matrix.dim != self.visualize.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.vertexDistance = None
+            if self.visualize: self.visualize.vertexDistance = None
             return
         
         self.vertexDistance = matrix
-        
-        if self.vertexDistance == None:
-            self.btnMDS.setEnabled(False)
-        else:
-            self.btnMDS.setEnabled(True)
-
+        if self.visualize: self.visualize.vertexDistance = matrix
+            
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
             self.graph.sendMarkedNodes = self.sendMarkedNodes
@@ -652,6 +676,9 @@ class OWNetExplorer(OWWidget):
         self.graph.showWeights = self.showWeights
         self.graph.updateData()
         self.graph.replot()
+        
+    def showDistancesClick(self):
+        self.graph.showDistances = self.showDistances
         
     def showEdgeLabelsClick(self):
         self.graph.showEdgeLabels = self.showEdgeLabels

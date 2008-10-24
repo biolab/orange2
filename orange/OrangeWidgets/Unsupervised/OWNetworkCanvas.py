@@ -233,6 +233,7 @@ class OWNetworkCanvas(OWGraph):
       self.renderAntialiased = 1
       self.sendMarkedNodes = None
       self.showEdgeLabels = 0
+      self.showDistances = 0
       
       self.showWeights = 0
       self.showIndexes = 0
@@ -439,7 +440,20 @@ class OWNetworkCanvas(OWGraph):
               
               if self.sendMarkedNodes != None:
                   self.sendMarkedNodes([])
+      
+      if self.showDistances:
+          selection = self.networkCurve.getSelectedVertices()
+          if len(selection) == 1:
+              px = self.invTransform(2, event.x())
+              py = self.invTransform(0, event.y())   
+              v, mind = self.visualizer.closestVertex(px, py)
+              u = selection[0]
               
+              if v != -1 and mind < 50:
+                  dst = self.visualizer.vertexDistance[u,v]
+                  self.showTip(event.pos().x(), event.pos().y(), str(dst))
+                  self.replot()
+                 
       if self.smoothOptimization:
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
@@ -807,8 +821,8 @@ class OWNetworkCanvas(OWGraph):
                   lbl = "%.2f" % float(edge.weight)
               
               mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
-              self.markerKeys[(edge.u,edge.v)] = mkey     
-              
+              self.markerKeys[(edge.u,edge.v)] = mkey
+                          
   def getColorIndeces(self, table, attribute, palette):
       colorIndices = {}
       colorIndex = None
