@@ -5,6 +5,7 @@
 import orngCanvasItems
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import orngHistory
 
 class SchemaView(QGraphicsView):
     def __init__(self, doc, *args):
@@ -289,6 +290,7 @@ class SchemaView(QGraphicsView):
                 item.updateTooltip()
                 item.updateLineCoords()
                 item.setAllLinesFinished(True)
+                orngHistory.logChangeWidgetPosition(self.doc.schemaID, item.widget.nameKey, item.x(), item.y())
 
             self.doc.enableSave(True)
 

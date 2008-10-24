@@ -10,6 +10,7 @@ import orngView, orngCanvasItems, orngTabs
 from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle
+import orngHistory
 
 class SchemaDoc(QMdiSubWindow):
     def __init__(self, canvasDlg, *args):
@@ -36,6 +37,8 @@ class SchemaDoc(QMdiSubWindow):
         self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.setWidget(self.canvasView)
+        
+        self.schemaID = orngHistory.logNewSchema()
         self.resize(700,500)
 
 
@@ -67,15 +70,16 @@ class SchemaDoc(QMdiSubWindow):
             else:
                 ce.ignore()     # we pressed cancel - we don't want to close the document
                 return
-
+        
         QMdiSubWindow.closeEvent(self, ce)
         self.canvasDlg.workspace.removeSubWindow(self)
-
+        
         # remove the temporary file if it exists
         if os.path.exists(self.autoSaveName):
             os.remove(self.autoSaveName)
 
-
+        orngHistory.logCloseSchema(self.schemaID)
+        
     # save a temp document whenever anything changes. this doc is deleted on closeEvent
     # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
     def saveTempDoc(self):
@@ -310,6 +314,7 @@ class SchemaDoc(QMdiSubWindow):
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
 
+        orngHistory.logAddWidget(self.schemaID, newwidget.widget.nameKey, newwidget.x(), newwidget.y())
         qApp.restoreOverrideCursor()
         return newwidget
 
@@ -325,6 +330,8 @@ class SchemaDoc(QMdiSubWindow):
         widget.remove()
         self.enableSave(True)
         self.saveTempDoc()
+        
+        orngHistory.logRemoveWidget(self.schemaID, widget.widget.nameKey)
 
     def clear(self):
         for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
@@ -536,11 +543,9 @@ class SchemaDoc(QMdiSubWindow):
             if self.canvasDlg.settings["saveWidgetsPosition"]:
                 for widget in self.widgets:
                     widget.instance.restoreWidgetStatus()
-
+            
         finally:
             qApp.restoreOverrideCursor()
-
-
 
     # save document as application
     def saveDocumentAsApp(self, asTabs = 1):
@@ -718,9 +723,7 @@ if __name__ == "__main__":
 
         file = open(os.path.join(self.applicationpath, fileName) + ".sav", "wt")
         cPickle.dump(list, file)
-        file.close()
-
-
+        file.close
     def dumpWidgetVariables(self):
         for widget in self.widgets:
             self.canvasDlg.output.write("<hr><b>%s</b><br>" % (widget.caption))
