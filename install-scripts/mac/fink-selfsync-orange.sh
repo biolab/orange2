@@ -62,7 +62,8 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '
 		WARNING: Your local Fink installation does not seem to use unstable Fink
 		         packages tree with rsync or CVS updating. This means that it could
 		         happen that some package on which ailab packages depend will not be
-		         found. In this case please configure Fink to use unstable tree using:
+		         found or possible to install. In this case please configure Fink to
+		         use unstable tree using:
 		         
 		             fink configure
 		         
@@ -88,7 +89,7 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '
 	fi
 fi
 
-if [ $MAC_VERSION != "5" ] && [ ! -x /usr/X11/bin/X ]; then
+if [ $MAC_VERSION -lt "5" ] && [ ! -x /usr/X11/bin/X ]; then
 	cat <<-EOMSG
 		
 		WARNING: It seems you do not have X11 installed on a system. This means that it
@@ -96,7 +97,7 @@ if [ $MAC_VERSION != "5" ] && [ ! -x /usr/X11/bin/X ]; then
 		         to run or compile. In this case please install it from your Mac OS X
 		         installation disk.
 	EOMSG
-elif [ $MAC_VERSION == "5" ] && [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
+elif [ $MAC_VERSION -ge "5" ] && [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
 	cat <<-EOMSG
 		
 		WARNING: It seems you do not have X11 version 2.3.0 or later installed on a
