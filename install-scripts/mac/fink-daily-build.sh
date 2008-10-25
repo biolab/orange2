@@ -49,7 +49,7 @@ if [ "`sw_vers -productVersion | cut -d '.' -f 2`" != "5" ]; then
 	exit 6
 fi
 
-if [ "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
+if [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
 	echo "It seems X11 version 2.3.0 or later is not installed on a system."
 	exit 7
 fi
