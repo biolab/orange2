@@ -69,12 +69,10 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '
 		         
 		         and after that upgrade Fink to rsync updating using:
 		         
+		             fink scanpackages
 		             fink selfupdate
 		             fink selfupdate-rsync
-		             fink scanpackages
 		             fink update-all
-		         
-		         and rerun this script.
 	EOMSG
 	
 	if [ ! -x /usr/bin/xcodebuild ]; then
