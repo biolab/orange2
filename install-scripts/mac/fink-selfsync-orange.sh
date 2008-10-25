@@ -84,7 +84,7 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '
 			         can install it from your Mac OS X installation disk or from:
 			         
 			             http://developer.apple.com/technology/xcode.html
-		EOMSG	
+		EOMSG
 	fi
 fi
 
@@ -96,7 +96,7 @@ if [ $MAC_VERSION != "5" ] && [ ! -x /usr/X11/bin/X ]; then
 		         to run or compile. In this case please install it from your Mac OS X
 		         installation disk.
 	EOMSG
-elif [ $MAC_VERSION == "5" ] && [ "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
+elif [ $MAC_VERSION == "5" ] && [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
 	cat <<-EOMSG
 		
 		WARNING: It seems you do not have X11 version 2.3.0 or later installed on a
