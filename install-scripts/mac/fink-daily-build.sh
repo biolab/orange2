@@ -199,16 +199,16 @@ done
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
-fink $FINK_ARGS selfupdate --method=rsync
-fink $FINK_ARGS scanpackages
+yes | fink $FINK_ARGS selfupdate --method=rsync
+yes | fink $FINK_ARGS scanpackages
 
 # Updates everything (probably by compiling new packages)
-fink $FINK_ARGS update-all
+yes | fink $FINK_ARGS update-all
 
 # Removes possiblly installed packages which we want builded
-fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+yes | fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
-apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+yes | apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
@@ -217,12 +217,12 @@ for package in $OTHER_PACKAGES ; do
 	# Restores intitial packages status
 	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
-	apt-get $APT_ARGS dselect-upgrade
+	yes | apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
 	# We install it and not just build it because installation does not build package if it already exists as a binary package
 	echo "Specially building package $package."
-	fink $FINK_ARGS install $package
+	yes | fink $FINK_ARGS install $package
 done
 
 # We build our packages in "maintainer" mode - Fink makes tests and validates packages
@@ -234,33 +234,33 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 		# Restores intitial packages status
 		dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 		dpkg --set-selections < /tmp/dpkg-selections.list
-		apt-get $APT_ARGS dselect-upgrade
+		yes | apt-get $APT_ARGS dselect-upgrade
 		
 		# We install it and not just build it because installation does not build package if it already exists as a binary package
 		echo "Specially building package $package dependency $deps."
-		fink $FINK_ARGS install $deps
+		yes | fink $FINK_ARGS install $deps
 	done
 	
 	# Restores intitial packages status
 	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
-	apt-get $APT_ARGS dselect-upgrade
+	yes | apt-get $APT_ARGS dselect-upgrade
 	
 	# Then builds a package
 	# We can just build it as our packages have been probably cached if they have been already built
 	echo "Specially building, testing and validating package $package."
-	fink $FINK_ARGS --maintainer build $package
+	yes | fink $FINK_ARGS --maintainer build $package
 done
 
 echo "Restoring initial packages status."
 dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 dpkg --set-selections < /tmp/dpkg-selections.list
-apt-get $APT_ARGS dselect-upgrade
+yes | apt-get $APT_ARGS dselect-upgrade
 rm -f /tmp/dpkg-selections.list
 
 # Cleans unncessary files (we cache them anyway in public repository)
 echo "Cleaning."
-fink $FINK_ARGS cleanup --all
+yes | fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
 mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
