@@ -34,17 +34,24 @@ test -r $FINK_ROOT/bin/init.sh || { echo "Fink cannot be found." exit 2; }
 # Configures environment for Fink
 . $FINK_ROOT/bin/init.sh
 
-if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main'; then
-	echo "Fink does not seem to use unstable Fink packages tree."
+if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '^SelfUpdateMethod:' $FINK_ROOT/etc/fink.conf | grep -q 'point'; then
+	echo "Fink does not seem to use unstable Fink packages tree with rsync or CVS updating."
 	exit 4
 fi
 
-echo "Installing/updating pkgconfig package."
-fink $FINK_ARGS install pkgconfig
-
-if [ "`/usr/bin/xcodebuild -version | grep -o '^Xcode 3\.1'`" == "Xcode 3.1" ] && [ "`$FINK_ROOT/bin/pkg-config --modversion xdamage | grep -o '^[0-9]\.[0-9]'`" != "1.1" ]; then
-	echo "It seems X11 version 2.3.0 or later is not installed on a system."
+if [ ! -x /usr/bin/xcodebuild ]; then
+	echo "It seems Xcode is not installed on a system."
 	exit 5
+fi
+
+if [ "`sw_vers -productVersion | cut -d '.' -f 2`" != "5" ]; then
+	echo "It seems system is not Mac OS X version 10.5."
+	exit 6
+fi
+
+if [ "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
+	echo "It seems X11 version 2.3.0 or later is not installed on a system."
+	exit 7
 fi
 
 echo "Preparing local ailab Fink info files repository."
@@ -199,9 +206,9 @@ fink $FINK_ARGS scanpackages
 fink $FINK_ARGS update-all
 
 # Removes possiblly installed packages which we want builded
-fink $FINK_ARGS purge $STABLE_PACKAGES $DAILY_PACKAGES
+fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
-apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES
+apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
