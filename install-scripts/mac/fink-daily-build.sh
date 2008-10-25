@@ -215,6 +215,7 @@ dpkg --get-selections '*' > /tmp/dpkg-selections.list
 
 for package in $OTHER_PACKAGES ; do
 	# Restores intitial packages status
+	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
 	apt-get $APT_ARGS dselect-upgrade
 	
@@ -231,6 +232,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	# First builds all dependencies normally (so that we are not checking for others' errors)
 	for deps in $DEPS ; do
 		# Restores intitial packages status
+		dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 		dpkg --set-selections < /tmp/dpkg-selections.list
 		apt-get $APT_ARGS dselect-upgrade
 		
@@ -240,6 +242,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 	done
 	
 	# Restores intitial packages status
+	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
 	apt-get $APT_ARGS dselect-upgrade
 	
@@ -250,6 +253,7 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 done
 
 echo "Restoring initial packages status."
+dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 dpkg --set-selections < /tmp/dpkg-selections.list
 apt-get $APT_ARGS dselect-upgrade
 rm -f /tmp/dpkg-selections.list
