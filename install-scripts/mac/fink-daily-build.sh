@@ -9,6 +9,10 @@
 STABLE_PACKAGES="orange-py25 orange"
 DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange-bioinformatics-svn orange-text-svn-py25 orange-text-svn"
 
+# Packages which, when installing, want special confirmation from the user
+# We keep those packages installed all the time
+SPECIAL_PACKAGES="passwd"
+
 # Additional source directories which get packed
 STABLE_SOURCE_DIRS="install-scripts/mac/bundle-lite/"
 DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-ons/Text/"
@@ -77,6 +81,11 @@ fi
 if ! grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
 	echo 'deb http://www.ailab.si/orange/fink 10.5 main' >> $FINK_ROOT/etc/apt/sources.list
+fi
+
+if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
+	echo "Configuring apt-get to assume yes to all questions."
+	echo 'APT::Get::Assume-Yes "true";' > $FINK_ROOT/etc/apt/apt.conf.d/daily-build
 fi
 
 mkdir -p /Volumes/fink/dists/10.5/main/source/
@@ -199,16 +208,19 @@ done
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
-yes | fink $FINK_ARGS selfupdate --method=rsync
-yes | fink $FINK_ARGS scanpackages
+fink $FINK_ARGS selfupdate --method=rsync
+fink $FINK_ARGS scanpackages
 
 # Updates everything (probably by compiling new packages)
-yes | fink $FINK_ARGS update-all
+fink $FINK_ARGS update-all
+
+# Installs special packages (if they are not already installed)
+fink $FINK_ARGS install $SPECIAL_PACKAGES
 
 # Removes possiblly installed packages which we want builded
-yes | fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
-yes | apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
@@ -217,12 +229,12 @@ for package in $OTHER_PACKAGES ; do
 	# Restores intitial packages status
 	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
-	yes | apt-get $APT_ARGS dselect-upgrade
+	apt-get $APT_ARGS dselect-upgrade
 	
 	# Builds a package if it has not been rebuilt already (for example, as a dependency)
 	# We install it and not just build it because installation does not build package if it already exists as a binary package
 	echo "Specially building package $package."
-	yes | fink $FINK_ARGS install $package
+	fink $FINK_ARGS install $package
 done
 
 # We build our packages in "maintainer" mode - Fink makes tests and validates packages
@@ -234,33 +246,33 @@ for package in $STABLE_PACKAGES $DAILY_PACKAGES ; do
 		# Restores intitial packages status
 		dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 		dpkg --set-selections < /tmp/dpkg-selections.list
-		yes | apt-get $APT_ARGS dselect-upgrade
+		apt-get $APT_ARGS dselect-upgrade
 		
 		# We install it and not just build it because installation does not build package if it already exists as a binary package
 		echo "Specially building package $package dependency $deps."
-		yes | fink $FINK_ARGS install $deps
+		fink $FINK_ARGS install $deps
 	done
 	
 	# Restores intitial packages status
 	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
-	yes | apt-get $APT_ARGS dselect-upgrade
+	apt-get $APT_ARGS dselect-upgrade
 	
 	# Then builds a package
 	# We can just build it as our packages have been probably cached if they have been already built
 	echo "Specially building, testing and validating package $package."
-	yes | fink $FINK_ARGS --maintainer build $package
+	fink $FINK_ARGS --maintainer build $package
 done
 
 echo "Restoring initial packages status."
 dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 dpkg --set-selections < /tmp/dpkg-selections.list
-yes | apt-get $APT_ARGS dselect-upgrade
+apt-get $APT_ARGS dselect-upgrade
 rm -f /tmp/dpkg-selections.list
 
 # Cleans unncessary files (we cache them anyway in public repository)
 echo "Cleaning."
-yes | fink $FINK_ARGS cleanup --all
+fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
 mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
