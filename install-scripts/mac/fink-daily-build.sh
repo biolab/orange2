@@ -215,7 +215,7 @@ fink $FINK_ARGS scanpackages
 fink $FINK_ARGS update-all
 
 # Installs special packages (if they are not already installed)
-fink $FINK_ARGS install $SPECIAL_PACKAGES
+yes | fink $FINK_ARGS install $SPECIAL_PACKAGES
 
 # Removes possiblly installed packages which we want builded
 fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
