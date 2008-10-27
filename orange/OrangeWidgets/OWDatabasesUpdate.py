@@ -5,6 +5,8 @@ from OWWidget import *
 from functools import partial
 from datetime import datetime
 
+import gzip
+
 def sizeof_fmt(num):
     for x in ['bytes','KB','MB','GB','TB']:
         if num < 1024.0:
@@ -19,6 +21,14 @@ class UpdateThread(QThread):
         
     def run(self):
         orngServerFiles.download(*(self.args + (self.advance,)))
+        if "#uncompressed" in self.item.specialTags:
+            f = gzip.open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename))
+            data = f.read()
+            f.close()
+##            del f
+##            self.wait(10)
+            f = open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename), "wb")
+            f.write(data)
         self.quit()
 
     def advance(self):
@@ -80,7 +90,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         specialTags = dict([tuple(tag.split(":")) for tag in tags if tag.startswith("#") and ":" in tag])
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
         self.size = infoServer["size"] if infoServer else infoLocal["size"]
-        size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
+        if self.state == 2 or self.state == 1:
+            size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
+        else:
+            size = sizeof_fmt(float(specialTags.get("#uncompressed", self.size)))
         state = self.stateDict[self.state] + (dateServer.strftime(" (%Y, %b, %d)") if self.state == 1 else "")
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, tags, self.stateDict[self.state], size])
         self.updateWidget = UpdateOptionsWidget(self.StartDownload, self.Remove, self.state, treeWidget)
@@ -89,6 +102,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.master = master
         self.title = title
         self.tags = tags.split(", ")
+        self.specialTags = specialTags
         self.domain = domain
         self.filename = filename
 ##        self.UpdateTooltip()
@@ -117,6 +131,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.master.UpdateInfoLabel()
 
     def Remove(self):
+        os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename))
+        os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename +".info"))        
         self.state = 2
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
@@ -127,7 +143,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantStatusBar=True)
         self.searchString = searchString
         self.showAll = showAll
         self.domains = domains
@@ -146,7 +162,6 @@ class OWDatabasesUpdate(OWWidget):
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
         box.layout().addWidget(self.filesView)
-        self.infoLabel = OWGUI.label(box, self, "")
 
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.button(box, self, "Update all", callback=self.UpdateAll, tooltip="Update all updatable files")
@@ -157,6 +172,10 @@ class OWDatabasesUpdate(OWWidget):
         OWGUI.rubber(box)
         if wantCloseButton:
             OWGUI.button(box, self, "Close", callback=self.accept, tooltip="Close")
+
+        self.infoLabel = QLabel()
+        self.widgetStatusBar.addWidget(self.infoLabel)
+        self.infoLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
 
         self.updateItems = []
         self.allTags = []
@@ -209,12 +228,12 @@ class OWDatabasesUpdate(OWWidget):
 
     def UpdateInfoLabel(self):
         local = [item for item in self.updateItems if item.state != 2]
-        onServer = [item for item in self.updateItems if item.state == 2]
+        onServer = [item for item in self.updateItems]
         if self.showAll:
-            self.infoLabel.setText("%i items, %s (data on server: %i items, %s)" % (len(local), sizeof_fmt(sum(float(item.size) for item in local)),
+            self.infoLabel.setText("%i items, %s (data on server: %i items, %s)" % (len(local), sizeof_fmt(sum(float(item.specialTags.get("#uncompressed", item.size)) for item in local)),
                                                                             len(onServer), sizeof_fmt(sum(float(item.size) for item in self.updateItems))))
         else:
-            self.infoLabel.setText("%i items, %s" % (len(local), sizeof_fmt(sum(float(item.size) for item in local))))
+            self.infoLabel.setText("%i items, %s" % (len(local), sizeof_fmt(sum(float(item.specialTags.get("#uncompressed", item.size)) for item in local))))
         
 
     def UpdateAll(self):
