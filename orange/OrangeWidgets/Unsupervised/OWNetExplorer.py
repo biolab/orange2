@@ -379,6 +379,7 @@ class OWNetExplorer(OWWidget):
         
     def setVertexDistance(self, matrix):
         self.error('')
+        self.information('')
         
         if matrix == None or self.visualize == None or self.visualize.graph == None:
             self.vertexDistance = None
@@ -912,6 +913,7 @@ class OWNetExplorer(OWWidget):
             self.visualize = None
             self.graph.addVisualizer(self.visualize)
             self.information('No network loaded.')
+            
             #self.controlArea.setEnabled(False)
             self.clearCombos()
             return
