@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange
 Version: 1.0b.__STABLE_REVISION__
-Revision: 6
+Revision: 8
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-%v.tgz
 Source-MD5: __STABLE_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-%v.tgz
@@ -19,7 +19,7 @@ Depends: <<
 <<
 Conflicts: orange-svn
 Architecture: i386, powerpc
-Description: Component-based data mining software
+Description: Data mining framework (graphical interface)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
 	of data visualization, exploration, preprocessing and modeling
@@ -37,6 +37,7 @@ SplitOff: <<
 	<<
 	Suggests: orange
 	Conflicts: orange-svn-py25
+	Description: Data mining framework (Python module)
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
 		of data visualization, exploration, preprocessing and modeling
@@ -120,6 +121,6 @@ InstallScript: <<
 	
 	# Installation registration
 	echo "orange" > %i/lib/python2.5/site-packages/orange.pth
-	echo "datasetsPath=\"%p/share/doc/orange/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
+	echo "datasetsPath=\"%p/share/doc/orange-py25/datasets/\"" > %i/lib/python2.5/site-packages/orange/orngConfiguration.py
 <<
 <<

@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-text-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 1
+Revision: 2
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-text-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_TEXT__
 Maintainer: Mitar <mitar@tnode.com>
@@ -16,14 +16,14 @@ Depends: <<
 <<
 Conflicts: orange-text
 Architecture: i386, powerpc
-Description: Component-based data mining software
+Description: Text mining add-on for Orange (graphical interface)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
 	of data visualization, exploration, preprocessing and modeling
 	techniques. It can be used through a nice and intuitive user interface
 	or, for more advanced users, as a module for Python programming language.
 	
-	This package provides a graphical user interface add-on for text mining.
+	This package provides a graphical user interface for text mining add-on.
 <<
 SplitOff: <<
 	Package: orange-text-svn-py25
@@ -32,13 +32,14 @@ SplitOff: <<
 	<<
 	Suggests: orange-text-svn
 	Conflicts: orange-text-py25
+	Description: Text mining add-on for Orange (Python module)
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
 		of data visualization, exploration, preprocessing and modeling
 		techniques. It can be used through a nice and intuitive user interface
 		or, for more advanced users, as a module for Python programming language.
 		
-		This package provides a Python module add-on for text mining.
+		This package provides a Python module for text mining add-on.
 	<<
 	Shlibs: <<
 		%p/lib/python2.5/site-packages/orange/add-ons/Text/_orngTextWrapper.so 0.0.0 %n (>= 0.0.0-1)
