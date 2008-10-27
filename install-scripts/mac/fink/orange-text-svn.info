@@ -16,7 +16,7 @@ Depends: <<
 <<
 Conflicts: orange-text
 Architecture: i386, powerpc
-Description: Text mining add-on for Orange (graphical interface)
+Description: Orange text mining add-on (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
 	of data visualization, exploration, preprocessing and modeling
@@ -32,7 +32,7 @@ SplitOff: <<
 	<<
 	Suggests: orange-text-svn
 	Conflicts: orange-text-py25
-	Description: Text mining add-on for Orange (Python module)
+	Description: Orange text mining add-on (Python module)
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
 		of data visualization, exploration, preprocessing and modeling

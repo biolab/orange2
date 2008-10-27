@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-bioinformatics-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 10
+Revision: 11
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bioinformatics-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_BIOINFORMATICS__
 Maintainer: Mitar <mitar@tnode.com>
@@ -16,7 +16,7 @@ Depends: <<
 <<
 Conflicts: orange-bioinformatics
 Architecture: i386, powerpc
-Description: Bioinformatics add-on for Orange (graphical interface)
+Description: Orange bioinformatics add-on (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
 	of data visualization, exploration, preprocessing and modeling
@@ -32,7 +32,7 @@ SplitOff: <<
 	<<
 	Suggests: orange-bioinformatics-svn
 	Conflicts: orange-bioinformatics-py25
-	Description: Bioinformatics add-on for Orange (Python module)
+	Description: Orange bioinformatics add-on (Python module)
 	DescDetail: <<
 		Orange is a component-based data mining software. It includes a range
 		of data visualization, exploration, preprocessing and modeling

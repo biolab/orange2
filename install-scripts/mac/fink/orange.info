@@ -19,7 +19,7 @@ Depends: <<
 <<
 Conflicts: orange-svn
 Architecture: i386, powerpc
-Description: Data mining framework (graphical interface)
+Description: Data mining framework (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
 	of data visualization, exploration, preprocessing and modeling
