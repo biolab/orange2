@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange
 Version: 1.0b.__STABLE_REVISION__
-Revision: 8
+Revision: 9
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-%v.tgz
 Source-MD5: __STABLE_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-%v.tgz
@@ -76,6 +76,9 @@ CompileScript: <<
 	make
 	mv _orngCRS.so ../../
 	cd ../../
+	
+	# Cleans
+	rm python
 	
 	# Corrects install name for modules
 	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
