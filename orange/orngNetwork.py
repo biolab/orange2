@@ -194,7 +194,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                          fi = math.pi - (fiVR - fiV)
                          #fi = math.acos((l**2 + r[i]**2 - e**2) / (2*l*r[i]))
                          
-                         Mu += d / (e**2) * l * math.sin(fi)
+                         Mu += (1 - d) / (e**2) * l * math.sin(fi)
                          
                     Mi += Mu * r[j]
                     #print "i:",i,"M:",Mu * r[i]
