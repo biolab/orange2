@@ -142,15 +142,17 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         return any(item.lower() in tag.lower() for tag in self.tags)
         
 class OWDatabasesUpdate(OWWidget):
-    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None):
+    def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None, accessCode=""):
         OWWidget.__init__(self, parent, signalManager, name, wantStatusBar=True)
         self.searchString = searchString
+        self.accessCode = accessCode
         self.showAll = showAll
         self.domains = domains
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
         OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
+        OWGUI.lineEdit(box, self, "accessCode", "Access Code", callback=self.UpdateFilesList)
         box = OWGUI.widgetBox(self.mainArea, "Tags")
         self.tagsWidget = QTextEdit(self.mainArea)
         box.setMaximumHeight(150)
@@ -194,6 +196,8 @@ class OWDatabasesUpdate(OWWidget):
             domains = orngServerFiles.listdomains()
         else:
             domains = self.domains
+        if self.accessCode:
+            self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
         items = []
         try:
             self.error(0)
