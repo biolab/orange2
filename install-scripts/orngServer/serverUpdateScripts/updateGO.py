@@ -26,11 +26,11 @@ if u.IsUpdatable(obiGO.Update.UpdateOntology, ()):
 
 from obiGeneMatch import _dbOrgMap
 
-exclude = ["goa_uniprot", "GeneDB_tsetse", "reactome", "goa_zebrafish", "goa_rat", "goa_mouse"]
+exclude = ["goa_uniprot", "goa_pdb", "GeneDB_tsetse", "reactome", "goa_zebrafish", "goa_rat", "goa_mouse"]
 lines = [line.split("\t") for line in urllib2.urlopen("ftp://ftp.genome.jp/pub/kegg/genes/taxonomy").readlines() if not line.startswith("#")]
 keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").replace(")", "") if line[-1].endswith("(EST)\n") else line[-1].strip()) for line in lines if len(line)>1])
 
-additionalNames = {"goa_pdb":"Plasmodium falciparum", "goa_arabidopsis":"Arabidopsis thaliana", "sgn":"Solanaceae", "PAMGO_Oomycetes":"Oomycete"}
+additionalNames = {"goa_arabidopsis":"Arabidopsis thaliana", "sgn":"Solanaceae", "PAMGO_Oomycetes":"Oomycete"}
 essentialOrgs = ["goa_human", "sgd", "mgi", "dictyBase"]
 
 for org in u.GetAvailableOrganisms():
