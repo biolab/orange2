@@ -20,7 +20,12 @@ class UpdateThread(QThread):
         self.args = args
         
     def run(self):
-        orngServerFiles.download(*(self.args + (self.advance,)))
+        try:
+            orngServerFiles.download(*(self.args + (self.advance,)))
+        except Exception:
+            self.emit(SIGNAL("finish(int)"), 1)
+            self.quit()
+            return
         if "#uncompressed" in self.item.specialTags:
             f = gzip.open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename))
             data = f.read()
@@ -29,6 +34,7 @@ class UpdateThread(QThread):
 ##            self.wait(10)
             f = open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename), "wb")
             f.write(data)
+        self.emit(SIGNAL("finish(int)"), 0)
         self.quit()
 
     def advance(self):
@@ -129,20 +135,23 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         pb.setRange(0, 100)
         pb.setTextVisible(False)
         QObject.connect(self.thread, SIGNAL("advance()"), lambda :pb.setValue(pb.value()+1))
-        QObject.connect(self.thread, SIGNAL("finished()"), self.EndDownload)
+        QObject.connect(self.thread, SIGNAL("finish(int)"), self.EndDownload)
         self.treeWidget().setItemWidget(self, 3, pb)
         pb.show()
         self.thread.start()
 
-    def EndDownload(self):
-        pb = self.treeWidget().removeItemWidget(self, 3)
-##        self.treeWidget().update(self.treeWidget().indexFromItem(self, 3))
-        self.state = 0
-        self.updateWidget.SetState(self.state)
-        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[self.state]))
-        self.master.UpdateInfoLabel()
-        self.UpdateToolTip()
-
+    def EndDownload(self, exitCode=0):
+        self.treeWidget().removeItemWidget(self, 3)
+        if exitCode == 0:
+            self.state = 0
+            self.updateWidget.SetState(self.state)
+            self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[self.state]))
+            self.master.UpdateInfoLabel()
+            self.UpdateToolTip()
+        else:
+            self.updateWidget.SetState(1)
+            self.setData(3, Qt.DisplayRole, QVariant("Error occured while downloading"))
+            
     def Remove(self):
         os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename))
         os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename +".info"))        
