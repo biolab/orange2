@@ -58,18 +58,22 @@ class UpdateOptionsWidget(QWidget):
         self.state = state
         if state == 0:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update1.png")))
+            self.updateButton.setToolTip("Update")
             self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
         elif state == 1:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update1.png")))
+            self.updateButton.setToolTip("Update")
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(True)
         elif state == 2:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setToolTip("Download")
             self.updateButton.setEnabled(True)
             self.removeButton.setEnabled(False)
         elif state == 3:
             self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
+            self.updateButton.setToolTip("")
             self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
 
@@ -105,7 +109,15 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.specialTags = specialTags
         self.domain = domain
         self.filename = filename
-##        self.UpdateTooltip()
+        self.UpdateToolTip()
+
+    def UpdateToolTip(self):
+        if self.state != 2:
+            for i in range(1, 5):
+                self.setToolTip(i, os.path.join(orngServerFiles.localpath(self.domain), self.filename))
+        else:
+            for i in range(1, 5):
+                self.setToolTip(i, "")
         
     def StartDownload(self):
         self.updateWidget.removeButton.setEnabled(False)
@@ -129,6 +141,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[self.state]))
         self.master.UpdateInfoLabel()
+        self.UpdateToolTip()
 
     def Remove(self):
         os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename))
@@ -137,13 +150,14 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
         self.master.UpdateInfoLabel()
+        self.UpdateToolTip()
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower() for tag in self.tags)
         
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None, accessCode=""):
-        OWWidget.__init__(self, parent, signalManager, name, wantStatusBar=True)
+        OWWidget.__init__(self, parent, signalManager, name)
         self.searchString = searchString
         self.accessCode = accessCode
         self.showAll = showAll
@@ -152,7 +166,6 @@ class OWDatabasesUpdate(OWWidget):
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
         OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
-        OWGUI.lineEdit(box, self, "accessCode", "Access Code", callback=self.UpdateFilesList)
         box = OWGUI.widgetBox(self.mainArea, "Tags")
         self.tagsWidget = QTextEdit(self.mainArea)
         box.setMaximumHeight(150)
@@ -168,6 +181,7 @@ class OWDatabasesUpdate(OWWidget):
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.button(box, self, "Update all", callback=self.UpdateAll, tooltip="Update all updatable files")
         OWGUI.rubber(box)
+        OWGUI.lineEdit(box, self, "accessCode", "Access Code", callback=self.UpdateFilesList)
         self.retryButton = OWGUI.button(box, self, "Retry", callback=self.UpdateFilesList)
         self.retryButton.hide()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
@@ -175,9 +189,13 @@ class OWDatabasesUpdate(OWWidget):
         if wantCloseButton:
             OWGUI.button(box, self, "Close", callback=self.accept, tooltip="Close")
 
+##        statusBar = QStatusBar()
         self.infoLabel = QLabel()
-        self.widgetStatusBar.addWidget(self.infoLabel)
-        self.infoLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        self.infoLabel.setAlignment(Qt.AlignCenter)
+##        statusBar.addWidget(self.infoLabel)
+##        self.mainArea.layout().addWidget(statusBar)
+        self.mainArea.layout().addWidget(self.infoLabel)
+        self.infoLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self.updateItems = []
         self.allTags = []
