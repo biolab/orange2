@@ -43,6 +43,13 @@ Callback can be a function without arguments. It will be called once for each do
 <dd>List all files in a domain on local orange installation.</dd>
 <dt>info(domain, filename)</dt>
 <dd>Returns a dictionary containing downloaded file info. Keys: title, tags, size, datetime. </dd>
+<dt>allinfo(domain)</dt>
+<dd>Goes through all files in domain (local) and returns a dictionary, where key
+is file's name and value its info.</dd>
+<dt>search(substrings, caseSensitive=False, inTag=True, inTitle=True, inName=True)</dt>
+<dd>Function searches for local files where all substrings in a list are contained
+in at least one choosen field (tag, title, name). It returns a list of tuples: first tuple element
+is the file's domain, second its name.</dd>  
 <dt>localpath(domain [,filename])</dt>
 <dd>Returns local path for the domain. If filename is present, return local path to than filename.</dd>
 </dl>
@@ -79,6 +86,14 @@ the repository as an authenticated user. If you want to use your access code
 <dd>List all files in a repository domain.</dd>
 <dt>info(domain, filename)</dt>
 <dd>Returns a dictionary containing repository file info. Keys: title, tags, size, datetime.</dd>
+<dt>allinfo(domain)</dt>
+<dd>Goes through all accessible files in a given domain and returns a dictionary, where key
+is file's name and value its info.</dd>
+<dt>search(substrings, caseSensitive=False, inTag=True, inTitle=True, inName=True)</dt>
+<dd>Function searches for files on the repository where all substrings in a list are contained
+in at least one choosen field (tag, title, name). It returns a list of tuples: first tuple element
+is the file's domain, second its name. As for now the search is performed locally, therefore
+information on files in repository is transfered on first call of this function. </dd>  
 <dt>downloadFH(domain, filename)</dt>
 <dd>Returns a file handle to the file that we would like to download.
 </dd>

@@ -126,6 +126,7 @@ class ServerFiles(object):
         self.username = username
         self.password = password
         self.access_code = access_code
+        self.searchinfo = None
 
     def installOpener(self):
         #import time; t = time.time()
@@ -225,6 +226,19 @@ class ServerFiles(object):
         if callback:
             callback()
 
+    def _searchinfo(self):
+        domains = self.listdomains()
+        infos = {}
+        for dom in domains:
+            dominfo = self.allinfo(dom)
+            for a,b in dominfo.items():
+                infos[(dom, a)] = b
+        return infos
+
+    def search(self, sstrings, **kwargs):
+        if not self.searchinfo:
+            self.searchinfo = self._searchinfo()
+        return _search(self.searchinfo, sstrings, **kwargs)
 
     def info(self, *args, **kwargs):
         if self._authen(): return self.secinfo(*args, **kwargs)
@@ -278,7 +292,6 @@ class ServerFiles(object):
         if data:
             return urllib2.urlopen(self.secureroot + command, data)
         else:
-            print "HERE"
             return urllib2.urlopen(self.secureroot + command)
  
     def _pubhandle(self, command, data):
@@ -358,6 +371,58 @@ def info(domain, filename):
     target = localpath(domain, filename)
     return openFileInfo(target + '.info')
 
+def allinfo(domain):
+    """
+    Returns all file infos.
+    """
+    files = listfiles(domain)
+    dic = {}
+    for filename in files:
+        target = localpath(domain, filename)
+        dic[filename] = info(domain, target)
+    return dic
+
+def _searchinfo():
+    domains = listdomains()
+    infos = {}
+    for dom in domains:
+        dominfo = allinfo(dom)
+        for a,b in dominfo.items():
+            infos[(dom, a)] = b
+    return infos
+
+def _search(si, sstrings, caseSensitive=False, inTag=True, inTitle=True, inName=True):
+    """
+    sstrings contain a list of search strings
+    """
+    found = []
+
+    for (dom,fn),info in si.items():
+        target = ""
+        if inTag: target += " ".join(info['tags'])
+        if inTitle: target += info['title']
+        if inName: target += fn
+        if not caseSensitive: target = target.lower()
+
+        match = True
+        for s in sstrings:
+            if not caseSensitive:
+                s = s.lower()
+            if s not in target:
+                match= False
+                break
+                
+        if match:
+            found.append((dom,fn))    
+        
+    return found
+
+def search(sstrings, **kwargs):
+    si = _searchinfo()
+    return _search(si, sstrings, **kwargs)
+
+print search(["hsa"])
+
 def example(myusername, mypassword):
 
     locallist = listfiles('test')
@@ -367,6 +432,16 @@ def example(myusername, mypassword):
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
     
+    print "Server search 1"
+    import time
+    t = time.time()
+    print s.search(["rat"])
+    print time.time() - t
+
+    t = time.time()
+    print s.search(["human", "ke"])
+    print time.time() - t 
+
     #create domain
     try: 
         s.create_domain("test") 
