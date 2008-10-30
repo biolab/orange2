@@ -200,7 +200,7 @@ class OWNetworkFromDistances(OWWidget):
                     
             n = len(edges)
             #print 'self.netOption',self.netOption
-            
+            # exclude unconnected
             if str(self.netOption) == '1':
                 components = [x for x in graph.getConnectedComponents() if len(x) > 1]
                 if len(components) > 0:
@@ -214,7 +214,7 @@ class OWNetworkFromDistances(OWWidget):
                 else:
                     self.graph = None
                     matrix = None
-                    
+            # largest connected component only        
             elif str(self.netOption) == '2':
                 component = graph.getConnectedComponents()[0]
                 if len(component) > 1:
@@ -223,7 +223,7 @@ class OWNetworkFromDistances(OWWidget):
                 else:
                     self.graph = None
                     matrix = None
-
+            # connected component with vertex by label
             elif str(self.netOption) == '3':
                 self.attributeCombo.box.setEnabled(True)
                 self.graph = None
@@ -270,11 +270,8 @@ class OWNetworkFromDistances(OWWidget):
         
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
 
-if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    owf=OWNetworkFromDistances()
-    owf.activateLoadedSettings()
-    a.setMainWidget(owf)
-    owf.show()
-    a.exec_loop()
-    owf.saveSettings()
+if __name__ == "__main__":    
+    appl = QApplication(sys.argv)
+    ow = OWNetworkFromDistances()
+    ow.show()
+    appl.exec_()

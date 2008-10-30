@@ -1186,7 +1186,10 @@ class OWNetExplorer(OWWidget):
             
         self.optButton.setChecked(False)
     
-    def setOptMethod(self):
+    def setOptMethod(self, method=None):
+        if method != None:
+            self.optMethod = method
+            
         if str(self.optMethod) == '0':
             self.optButton.setEnabled(False)
         else:
