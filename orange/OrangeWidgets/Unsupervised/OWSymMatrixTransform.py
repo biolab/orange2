@@ -65,17 +65,23 @@ class OWSymMatrixTransform(OWWidget):
         if self.invertMethod > 0 or self.normalizeMethod > 0:
             matrix = copy.deepcopy(self.matrix)
             
+            # To interval [0,1]
             if self.normalizeMethod == 1:
                 matrix.normalize(0)
+            # Sigmoid function: 1 / (1 + e^x)
             elif self.normalizeMethod == 2:
                 matrix.normalize(1)
             
+            # -X
             if self.invertMethod == 1:
                 matrix.invert(0)
+            # 1 - X
             elif self.invertMethod == 2:
                 matrix.invert(1)
+            # Max - X
             elif self.invertMethod == 3:
                 matrix.invert(2)
+            # 1 / X
             elif self.invertMethod == 4:
                 try:                
                     matrix.invert(3)
