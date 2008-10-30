@@ -147,26 +147,28 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
             
-    def rotateComponents(self, callbackProgress=None, callbackUpdateCanvas=None):
+    def rotateComponents(self, callbackProgress=None, callbackUpdateCanvas=None, maxSteps=100, minMoment=0.01):
         if self.vertexDistance == None:
-            self.information('Set distance matrix to input signal')
-            return
+            return 1
         
         if self.graph == None:
-            return
+            return 1
         
         if self.vertexDistance.dim != self.graph.nVertices:
-            return
+            return 1
         
         self.stopRotate = 0
-        components = self.graph.getConnectedComponents()
+        
+        # rotate only components with more than one vertex
+        components = [component for component in self.graph.getConnectedComponents() if len(component) > 1]
         vertices = set(range(self.graph.nVertices))
         step = 0
         M = [1]
-        while step < 100 and max(M) > 0.01 and not self.stopRotate:
+        while step < maxSteps and max(M) > minMoment and not self.stopRotate:
             M = [0]*len(components) 
             for i in range(len(components)):
                 component = components[i]
+                
                 outer_vertices = vertices - set(component)
                 
                 x = self.graph.coors[0][component]
