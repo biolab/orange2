@@ -274,8 +274,8 @@ PRE.code { background-color: #FCD179; margin-top: 3px}
 
 
 XMP.code, PRE.code {
-/*    background-color: #fdf2b4; */
-    background-color: #FCD179;
+    /*background-color: #FDE0A5;*/
+	background-color: #fffcbf; /*#fdf2b4;*/ /* white */ /* #F8CB66; */
     margin-top: 3px;
     padding: 6px;
     padding-left: 12px;
