@@ -217,7 +217,7 @@ fink $FINK_ARGS update-all
 # Installs special packages (if they are not already installed)
 yes | fink $FINK_ARGS install $SPECIAL_PACKAGES
 
-# Removes possiblly installed packages which we want builded
+# Removes possiblly installed packages which we want built
 fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
 apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
