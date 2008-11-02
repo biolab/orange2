@@ -25,7 +25,7 @@ QHULL_OBJECTS=obj/qhull_geom.o obj/qhull_geom2.o obj/qhull_global.o obj/qhull_io
 $(OLD)/orangeom.so:	px/stamp ppp/stamp $(ORANGEOM_OBJECTS) $(QHULL_OBJECTS)
 	$(LINKER) $(ORANGEOM_OBJECTS) $(QHULL_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
 ifeq ($(OS), Darwin)
-	install_name_tool -id $(OLD)/orangeom.so $(OLD)/orangeom.so
+	install_name_tool -id $(DESTDIR)/orangeom.so $(OLD)/orangeom.so
 endif
 
 clean:	cleantemp

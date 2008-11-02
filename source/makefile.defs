@@ -28,10 +28,9 @@ LIBRARY_FILE = liborange.so
 NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
 
 ifeq ($(OS), Darwin)
-  COMPILEOPTIONS = -arch i386 -arch ppc -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -D_POSIX_C_SOURCE -O3 -I$(NUMPY_INCLUDE)
+  COMPILEOPTIONS = -arch i386 -arch ppc -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE)
   LINKOPTIONS = -arch i386 -arch ppc -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include
   LINKER = g++
-  LIBRARY_FILE = liborange.dylib
 else
 ifeq ($(OS), FreeBSD)
   COMPILEOPTIONS = -fPIC -fpermissive -w -DFREEBSD -O3

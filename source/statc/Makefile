@@ -8,6 +8,9 @@ obj/statc.o:	statc.cpp statc.hpp \
 
 $(OLD)/statc.so:	obj/statc.o
 	$(LINKER) obj/statc.o $(LINKOPTIONS) -o $(OLD)/statc.so
+ifeq ($(OS), Darwin)
+	install_name_tool -id $(DESTDIR)/statc.so $(OLD)/statc.so
+endif
 
 clean:	cleantemp
 	rm -f $(OLD)/statc.so
