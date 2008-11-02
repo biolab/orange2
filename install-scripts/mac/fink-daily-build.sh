@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Should be run as: sudo ./fink-daily-build.sh
+# Should be run as: sudo ./fink-daily-build.sh [stable revision] [daily revision]
 #
 
 # Those packages should not be installed as we are just building them (and dependencies)
@@ -28,6 +28,9 @@ APT_ARGS="--assume-yes"
 
 # Path to Fink root
 FINK_ROOT=/sw
+
+# Sets error handler
+trap "echo \"Script failed\"" ERR
 
 ((`id -u` == 0)) || { echo "Must run as root user (use sudo)."; exit 1; }
 
@@ -65,8 +68,9 @@ rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
 # Gets latest Fink package info files from SVN
 svn export --force --non-interactive http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 
-STABLE_REVISION=`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
-DAILY_REVISION=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+# Defaults are current latest revisions in stable branch and trunk
+STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 
 # Injects revision versions into templates
 perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info

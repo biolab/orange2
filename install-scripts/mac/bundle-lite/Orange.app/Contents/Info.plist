@@ -5,7 +5,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Orange</string>
 	<key>CFBundleIconFile</key>
-	<string>Orange.icns</string>
+	<string>orange.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>si.ailab.Orange</string>
 	<key>CFBundleInfoDictionaryVersion</key>

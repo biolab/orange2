@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Should be run as: sudo ./fink-selfupdate-orange.sh /path/to/fink/root
+# Should be run as: sudo ./fink-selfupdate-orange.sh [/path/to/fink/root]
 #
 
 # Default is /sw
