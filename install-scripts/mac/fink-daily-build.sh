@@ -283,8 +283,8 @@ mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
 mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
 
 echo "Copying to repository all binary packages."
-rsync --times --copy-links $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
-rsync --times --copy-links $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
 
 echo "Removing old binary packages."
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
