@@ -115,6 +115,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.specialTags = specialTags
         self.domain = domain
         self.filename = filename
+##        for i in range(1, 5):
+##            self.setSizeHint(i, QSize(self.sizeHint(i).width(), self.sizeHint(0).height()))
         self.UpdateToolTip()
 
     def UpdateToolTip(self):
@@ -163,7 +165,16 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower() for tag in self.tags)
-        
+
+class UpdateItemDelegate(QItemDelegate):
+    def sizeHint(self, option, index):
+        size = QItemDelegate.sizeHint(self, option, index)
+        parent = self.parent()
+        item = parent.itemFromIndex(index)
+        widget = parent.itemWidget(item, 0)
+        size = QSize(size.width(), widget.sizeHint().height())
+        return size
+    
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=False, domains=None, accessCode=""):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -185,6 +196,7 @@ class OWDatabasesUpdate(OWWidget):
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
+        self.filesView.setItemDelegate(UpdateItemDelegate(self.filesView))
         box.layout().addWidget(self.filesView)
 
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
