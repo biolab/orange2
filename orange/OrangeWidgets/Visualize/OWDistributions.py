@@ -109,6 +109,13 @@ class OWDistributionGraph(OWGraph):
         else:        self.setXaxisTitle("")
 
         if not self.data: return
+        
+        if variable and self.data.domain[variable].varType == orange.VarTypes.Discrete and len(self.data.domain[variable].values) > 100:
+            if QMessageBox.question(self, "Confirmation", "The attribute %s has %d values. Are you sure you want to visualize this attribute?" % (variable, len(self.data.domain[variable].values)), QMessageBox.Yes , QMessageBox.No | QMessageBox.Escape | QMessageBox.Default) == QMessageBox.No:
+                self.clear()
+                self.tips.removeAll()
+                self.hdata = {}
+                return
 
         if self.data.domain[self.attributeName].varType == orange.VarTypes.Continuous:
             self.variableContinuous = TRUE
@@ -220,7 +227,6 @@ class OWDistributionGraph(OWGraph):
         if self.variableContinuous:
             keys.sort()
         self.clear()
-        self.tips.removeAll()
         self.tips.removeAll()
         cn=0
         for key in keys:
@@ -615,12 +621,13 @@ class OWDistributions(OWWidget):
             # set variable combo box
             self.variablesQCB.clear()
             for attr in self.data.domain.attributes:
-                self.variablesQCB.addItem(self.icons[attr.varType], attr.name)
+                if attr.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                    self.variablesQCB.addItem(self.icons[attr.varType], attr.name)
 
             if self.data and len(self.data.domain.attributes) > 0:
-                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
                 self.attribute = self.data.domain[0].name
-                self.setVariable()
+                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
+                #self.setVariable()
 
             self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
             if self.dataHasClass and self.dataHasDiscreteClass:
