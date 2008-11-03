@@ -64,10 +64,17 @@ PROJOPT_NONE = 0
 PROJOPT_SPCA = 1
 PROJOPT_PLS = 2
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
+contMeasuresDiscClass = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
                 ("Signal to Noise Ratio", orngVisFuncts.S2NMeasure()), ("Signal to Noise OVA", orngVisFuncts.S2NMeasureMix())]
-discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
+
+discMeasuresDiscClass = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
                 ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
+
+contMeasuresNoClass = [("None", None)]
+discMeasuresNoClass = [("None", None)]
+
+contMeasuresContClass = [("None", None)]
+discMeasuresContClass = [("None", None)]
 
 
 # array of testing methods. used by calling python's apply method depending on the value of self.testingMethod
@@ -94,17 +101,14 @@ class VizRank:
                 import orngScaleLinProjData
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 1
-                graph.scalingByVariance = 0
             elif visualizationMethod in [LINEAR_PROJECTION, KNN_IN_ORIGINAL_SPACE]:
                 import orngScaleLinProjData
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 0
-                graph.scalingByVariance = 1
             elif visualizationMethod == POLYVIZ:
                 import orngScalePolyvizData
                 graph = orngScalePolyvizData.orngScalePolyvizData()
                 graph.normalizeExamples = 1
-                graph.scalingByVariance = 0
             else:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
@@ -120,12 +124,19 @@ class VizRank:
         self.kValue = 10
         self.percentDataUsed = 100
         self.qualityMeasure = AVERAGE_CORRECT
+        self.qualityMeasureCluster = 0      ### TO DO: fix it
+        self.qualityMeasureContClass = 0    ### TO DO: fix it
         self.testingMethod = TEN_FOLD_CROSS_VALIDATION
         self.optimizationType = MAXIMUM_NUMBER_OF_ATTRS
         self.attributeCount = 4
         self.evaluationAlgorithm = ALGORITHM_KNN
         self.attrCont = CONT_MEAS_RELIEFF
         self.attrDisc = DISC_MEAS_RELIEFF
+        self.attrContNoClass = 0
+        self.attrDiscNoClass = 0
+        self.attrDiscContClass = 0
+        self.attrContContClass = 0
+        
         self.attrSubsetSelection = GAMMA_ALL                # how do we find attribute subsets to evaluate - deterministic according to attribute ranking score or using gamma distribution - if using gamma, do we want to evaluate all possible permutations of attributes or only one
         self.projOptimizationMethod = PROJOPT_NONE          # None, supervisedPCA, partial least square
         self.useExampleWeighting = 0                        # weight examples, so that the class that has a low number of examples will have higher weights
@@ -247,19 +258,27 @@ class VizRank:
         self.clearArguments()
 
     def getEvaluatedAttributes(self):
-        return orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        if self.evaluatedAttributes: return self.evaluatedAttributes
+        
+        if self.graph.dataHasDiscreteClass:
+            return orngVisFuncts.evaluateAttributesDiscClass(self.graph.rawData, contMeasuresDiscClass[self.attrCont][1], discMeasuresDiscClass[self.attrDisc][1])
+        elif self.graph.dataHasContinuousClass:
+            return orngVisFuncts.evaluateAttributesContClass(self.graph.rawData, contMeasuresContClass[self.attrContContClass][1], discMeasuresContClass[self.attrDiscContClass][1])
+        else:
+            return orngVisFuncts.evaluateAttributesNoClass(self.graph.rawData, contMeasuresNoClass[self.attrContNoClass][1], discMeasuresNoClass[self.attrDiscNoClass][1])
+        
 
     # return a function that is appropriate to find the best projection in a list in respect to the selected quality measure
     def getMaxFunct(self):
-        if self.graph.dataHasDiscreteClass and self.qualityMeasure != BRIER_SCORE: return max
-        else: return min
+        if self.graph.dataHasDiscreteClass and self.qualityMeasure == BRIER_SCORE: return min
+        else: return max
 
     def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}):
-        funct = self.qualityMeasure != BRIER_SCORE and max or min
-        self.insertItem(self.findTargetIndex(accuracy, funct), accuracy, other_results, lenTable, attrList, tryIndex, generalDict)
+        self.insertItem(self.findTargetIndex(accuracy), accuracy, other_results, lenTable, attrList, tryIndex, generalDict)
 
     # use bisection to find correct index
-    def findTargetIndex(self, accuracy, funct):
+    def findTargetIndex(self, accuracy):
+        funct = self.getMaxFunct()
         top = 0; bottom = len(self.results)
 
         while (bottom-top) > 1:
@@ -617,7 +636,7 @@ class VizRank:
         else:
             if not self.evaluationData.has_key("attrs"):
                 # evaluate attributes
-                evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+                evaluatedAttributes = self.getEvaluatedAttributes()
                 attributes = [self.graph.attributeNameIndex[name] for name in evaluatedAttributes]
                 self.evaluationData["attrs"] = attributes
                 self.totalPossibilities = 0
@@ -743,6 +762,28 @@ class VizRank:
         self.evaluationData["index"] = index + 1
         return permutations
 
+    def computeTotalHeight(self, node):
+        if node.branches: 
+            return node.height * (node.last - node.first) + sum([self.computeTotalHeight(n) for n in node.branches])
+        else:
+            return node.height
+
+    def evaluateProjection(self, data):
+        if self.graph.dataHasDiscreteClass:
+            return self.kNNComputeAccuracy(data)
+        elif self.graph.dataHasContinuousClass:
+            return 0
+        else:
+            matrix = orange.SymMatrix(len(data))
+            matrix.setattr('items', data)
+            dist = orange.ExamplesDistanceConstructor_Euclidean(data)
+            for i in range(len(data)):
+                for j in range(i+1):
+                    matrix[i, j] = dist(data[i], data[j])
+            root = orange.HierarchicalClustering(matrix, linkage = orange.HierarchicalClustering.Ward, overwriteMatrix = 0)
+            val = self.computeTotalHeight(root)
+            return val, (val)
+            
 
     # ##########################################################################
     # MAIN FUNCTION FOR EVALUATING PROJECTIONS
@@ -750,6 +791,9 @@ class VizRank:
     def evaluateProjections(self, clearPreviousProjections = 1):
         random.seed(0)      # always use the same seed to make results repeatable
         if not self.graph.haveData: return 0
+        
+        # TO DO: remove the following line when we add support for cont class
+        if not self.graph.dataHasDiscreteClass: return 0
         self.correctSettingsIfNecessary()
         if self.timeLimit == self.projectionLimit == 0 and self.__class__.__name__ == "VizRank":
             print "Evaluation of projections was started without any time or projection restrictions. To prevent an indefinite projection evaluation a time limit of 2 hours was set."
@@ -766,22 +810,22 @@ class VizRank:
 
         self.clearArguments()
         maxFunct = self.getMaxFunct()
-
+        
         if self.__class__ != VizRank:
             from PyQt4.QtGui import qApp
 
-        if not self.graph.dataHasDiscreteClass:
-            print "Projections can be evaluated only for data with a discrete class."
-            return 0
+#        if not self.graph.dataHasDiscreteClass:
+#            print "Projections can be evaluated only for data with a discrete class."
+#            return 0
 
         if self.visualizationMethod == SCATTERPLOT:
-            evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+            evaluatedAttributes = self.getEvaluatedAttributes()
             contVars = [orange.FloatVariable(attr.name) for attr in self.graph.dataDomain.attributes]
             attrCount = len(self.graph.dataDomain.attributes)
 
             count = len(evaluatedAttributes)*(len(evaluatedAttributes)-1)/2
             strCount = orngVisFuncts.createStringFromNumber(count)
-
+            
             for i in range(len(evaluatedAttributes)):
                 attr1 = self.graph.attributeNameIndex[evaluatedAttributes[i]]
                 for j in range(i):
@@ -792,7 +836,7 @@ class VizRank:
 
                     table = self.graph.createProjectionAsExampleTable([attr1, attr2])
                     if len(table) < self.minNumOfExamples: continue
-                    accuracy, other_results = self.kNNComputeAccuracy(table)
+                    accuracy, other_results = self.evaluateProjection(table)
                     self.addResult(accuracy, other_results, len(table), [self.graph.dataDomain[attr1].name, self.graph.dataDomain[attr2].name], self.evaluatedProjectionsCount, {})
 
                     if self.__class__ != VizRank:
@@ -835,7 +879,7 @@ class VizRank:
                             table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
-                        accuracy, other_results = self.kNNComputeAccuracy(table)
+                        accuracy, other_results = self.evaluateProjection(table)
                         self.addResult(accuracy, other_results, len(table), attrNames, self.evaluatedProjectionsCount, generalDict = {"XAnchors": list(xanchors), "YAnchors": list(yanchors)})
                         if self.isEvaluationCanceled(): return self.evaluatedProjectionsCount
                         if self.__class__ != VizRank:
@@ -857,7 +901,7 @@ class VizRank:
                                     continue
 
                                 table = self.graph.createProjectionAsExampleTable(permutation, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
-                                accuracy, other_results = self.kNNComputeAccuracy(table)
+                                accuracy, other_results = self.evaluateProjection(table)
 
                                 # save the permutation
                                 if self.storeEachPermutation:
@@ -886,7 +930,7 @@ class VizRank:
     def getProjectionQuality(self, attrList, useAnchorData = 0):
         if not self.graph.haveData: return 0.0, None
         table = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], useAnchorData = useAnchorData)
-        return self.kNNComputeAccuracy(table)
+        return self.evaluateProjection(table)
 
 
     def insertTempProjection(self, projections, acc, attrList):
@@ -925,7 +969,7 @@ class VizRank:
         projections = [(accuracys[i], attrs[i]) for i in range(len(accuracys))]
 
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.graph.dataDomain.classVar.name, values = getVariableValuesSorted(self.graph.dataDomain.classVar))])
-        attributes = [self.graph.attributeNameIndex[name] for name in orngVisFuncts.evaluateAttributes(self.graph.rawData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
+        attributes = [self.graph.attributeNameIndex[name] for name in self.getEvaluatedAttributes()[:self.locOptAttrsToTry]]
         self.startTime = time.time()
         lenOfAttributes = len(attributes)
         maxFunct = self.getMaxFunct()
@@ -950,7 +994,7 @@ class VizRank:
                     for testProj in testProjections:
                         table = self.graph.createProjectionAsExampleTable(testProj, domain = domain)
                         if len(table) < self.minNumOfExamples: continue
-                        acc, other_results = self.kNNComputeAccuracy(table)
+                        acc, other_results = self.evaluateProjection(table)
                         if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
                             self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
                         if acc > accuracy:
@@ -1001,7 +1045,7 @@ class VizRank:
 
                             table = self.graph.createProjectionAsExampleTable(newProj, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                             if len(table) < self.minNumOfExamples: continue
-                            acc, other_results = self.kNNComputeAccuracy(table)
+                            acc, other_results = self.evaluateProjection(table)
                             self.optimizedProjectionsCount += 1
                             if self.__class__ != VizRank:
                                 qApp.processEvents()        # allow processing of other events
@@ -1047,7 +1091,7 @@ class VizRank:
                                 table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                                 if len(table) < self.minNumOfExamples: continue
                                 self.optimizedProjectionsCount += 1
-                                acc, other_results = self.kNNComputeAccuracy(table)
+                                acc, other_results = self.evaluateProjection(table)
 
                                 tempList.append((acc, other_results, len(table), newIndices, {"XAnchors": xanchors, "YAnchors": yanchors}))
                                 if self.storeEachPermutation:
@@ -1078,7 +1122,7 @@ class VizRank:
 
                                 table = self.graph.createProjectionAsExampleTable(testProj, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                                 if len(table) < self.minNumOfExamples: continue
-                                acc, other_results = self.kNNComputeAccuracy(table)
+                                acc, other_results = self.evaluateProjection(table)
                                 if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0: self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
                                 if acc > accuracy:
                                     tempList.append((acc, other_results, len(table), testProj, {}))
