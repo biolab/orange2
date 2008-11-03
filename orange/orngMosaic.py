@@ -142,7 +142,9 @@ class orngMosaic:
 
             s = sum(self.aprioriDistribution)
             for i in range(len(self.aprioriDistribution)):
-                if (self.aprioriDistribution[i]/s) > 0 and (self.aprioriDistribution[i]/s) < 1:
+                if s == 0:
+                    p = 1
+                elif (self.aprioriDistribution[i]/s) > 0 and (self.aprioriDistribution[i]/s) < 1:
                     p = (self.aprioriDistribution[i]/s) / (1-(self.aprioriDistribution[i]/s))
                 elif (self.aprioriDistribution[i]/s) == 0:
                     p = 0.0001
@@ -169,7 +171,7 @@ class orngMosaic:
 
         try:
             # evaluate attributes using the selected attribute measure
-            self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
+            self.evaluatedAttributes = orngVisFuncts.evaluateAttributesDiscClass(data, None, discMeasures[self.attrDisc][1])
             # remove attributes with only one value
             for attr in self.evaluatedAttributes[::-1]:
                 if data.domain[attr].varType == orange.VarTypes.Discrete and len(data.domain[attr].values) < 2:
@@ -296,7 +298,7 @@ class orngMosaic:
                 for key in self.dictResults.keys():
                     el = self.dictResults[key]
                     score = sum([e[0] for e in el]) / float(len(el))
-                    self.insertItem(score, el[0][1], self.findTargetIndex(score, max), 0, extraInfo = el)
+                    self.insertItem(score, el[0][1], self.findTargetIndex(score), 0, extraInfo = el)
 
             else:
                 if self.qualityMeasure == CHI_SQUARE:
@@ -328,7 +330,7 @@ class orngMosaic:
                             if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
 
                             val = self._Evaluate(attrs)
-                            ind = self.findTargetIndex(val, max)
+                            ind = self.findTargetIndex(val)
                             start = ind
                             if ind > 0 and self.results[ind-1][0] == val:
                                 ind -= 1
@@ -888,16 +890,16 @@ class orngMosaic:
     #
 
     # use bisection to find correct index
-    def findTargetIndex(self, score, funct):
+    def findTargetIndex(self, score):
         top = 0; bottom = len(self.results)
 
         while (bottom-top) > 1:
             mid  = (bottom + top)/2
-            if funct(score, self.results[mid][SCORE]) == score: bottom = mid
+            if max(score, self.results[mid][SCORE]) == score: bottom = mid
             else: top = mid
 
         if len(self.results) == 0: return 0
-        if funct(score, self.results[top][SCORE]) == score:
+        if max(score, self.results[top][SCORE]) == score:
             return top
         else:
             return bottom
