@@ -387,9 +387,9 @@ def evaluateAttributesByEachClassValue(data, measure, attrs):
     return cls
 
 # used by VizRank to evaluate attributes
-def evaluateAttributes(data, contMeasure, discMeasure):
+def evaluateAttributesDiscClass(data, contMeasure, discMeasure):
     attrs = []
-    corr = MeasureCorrelation()
+    #corr = MeasureCorrelation()
     for attr in data.domain.attributes:
         #if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
         if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((1, attr.name))
@@ -404,8 +404,40 @@ def evaluateAttributes(data, contMeasure, discMeasure):
         attrs.reverse()
 
     return [attr for (val, attr) in attrs]  # return only the ordered list of attributes and not also their values
+
+def evaluateAttributesContClass(data, contMeasure, discMeasure):
+    attrs = []
+    for attr in data.domain.attributes:
+        attrs.append((1, attr.name))
+#        elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.0, attr.name))
+#        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.0, attr.name))
+#        elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
+#        else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
+
+    if discMeasure or contMeasure:
+        attrs.sort()
+        attrs.reverse()
+
+    return [attr for (val, attr) in attrs]  # return only the ordered list of attributes and not also their values
         
 
+def evaluateAttributesNoClass(data, contMeasure, discMeasure):
+    attrs = []
+    for attr in data.domain.attributes:
+        attrs.append((1, attr.name))
+#        elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.0, attr.name))
+#        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.0, attr.name))
+#        elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
+#        else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
+
+    if discMeasure or contMeasure:
+        attrs.sort()
+        attrs.reverse()
+
+    return [attr for (val, attr) in attrs]  # return only the ordered list of attributes and not also their values
+
+
+  
     
 # ##############################################################################################
 # ##############################################################################################
