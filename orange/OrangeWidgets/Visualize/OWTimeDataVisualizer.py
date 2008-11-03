@@ -141,12 +141,8 @@ class OWTimeDataVisualizer(OWWidget):
 
     # receive new data and update all fields
     def setData(self, data, onlyDataSubset = 0):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 

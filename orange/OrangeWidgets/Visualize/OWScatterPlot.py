@@ -194,12 +194,8 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
@@ -299,8 +295,9 @@ class OWScatterPlot(OWWidget):
         contList = []
         discList = []
         for attr in self.data.domain:
-            self.attrXCombo.addItem(self.icons[attr.varType], attr.name)
-            self.attrYCombo.addItem(self.icons[attr.varType], attr.name)
+            if attr.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                self.attrXCombo.addItem(self.icons[attr.varType], attr.name)
+                self.attrYCombo.addItem(self.icons[attr.varType], attr.name)
             self.attrColorCombo.addItem(self.icons[attr.varType], attr.name)
             self.attrSizeCombo.addItem(self.icons[attr.varType], attr.name)
             if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.addItem(self.icons[attr.varType], attr.name)

@@ -17,7 +17,7 @@ from OWPolyvizGraph import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWLinProj):
-    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor", "graph.useAntialiasing",
+    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.scaleFactor", "graph.useAntialiasing",
                     "graph.showLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
                     "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankLearnerName",
                     "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "showAllAttributes", "graph.lineLength"]

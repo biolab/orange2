@@ -19,7 +19,7 @@ from sys import getrecursionlimit, setrecursionlimit
 ###########################################################################################
 class OWParallelCoordinates(OWVisWidget):
     settingsList = ["graph.jitterSize", "graph.showDistributions",
-                    "graph.showAttrValues", "graph.globalValueScaling", "graph.useAntialiasing",
+                    "graph.showAttrValues", "graph.useAntialiasing",
                     "graph.useSplines", "graph.alphaValue", "graph.alphaValue2", "graph.enabledLegend", "autoSendSelection",
                     "toolbarSelection", "graph.showStatistics", "colorSettings", "selectedSchemaIndex", "showAllAttributes"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -55,7 +55,6 @@ class OWParallelCoordinates(OWVisWidget):
         self.graph.showDistributions = 1
         self.graph.showStatistics = 0
         self.graph.showAttrValues = 1
-        self.graph.globalValueScaling = 0
         self.graph.useSplines = 0
         self.graph.enabledLegend = 1
 
@@ -95,7 +94,6 @@ class OWParallelCoordinates(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateGraph, tooltip  = "Show lines using splines")
         OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Axis Distance")
         resizeColsBox = OWGUI.widgetBox(box, 0, "horizontal", 0)
@@ -173,7 +171,7 @@ class OWParallelCoordinates(OWVisWidget):
                     try:
                         corr = orngVisFuncts.computeCorrelation(self.graph.rawData, attrs[i], attrs[i+1])
                     except:
-                        print "asdfasdf"
+                        corr = None
                     self.correlationDict[(attrs[i], attrs[i+1])] = corr
                 if corr and (self.graph.attributeFlipInfo.get(attrs[i], 0) != self.graph.attributeFlipInfo.get(attrs[i+1], 0)): corr = -corr
                 if corr: labels.append("%2.3f" % (corr))
@@ -189,12 +187,8 @@ class OWParallelCoordinates(OWVisWidget):
     # ------------- SIGNALS --------------------------
     # receive new data and update all fields
     def setData(self, data):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
@@ -250,10 +244,6 @@ class OWParallelCoordinates(OWVisWidget):
 
     # jittering options
     def setJitteringSize(self):
-        self.graph.rescaleData()
-        self.updateGraph()
-
-    def setGlobalValueScaling(self):
         self.graph.rescaleData()
         self.updateGraph()
 

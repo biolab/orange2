@@ -43,9 +43,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Ticks, 0)
 
     def setData(self, data, subsetData = None, **args):
-        orngScaleData.setData(self, data, subsetData, **args)
         OWGraph.setData(self, data)
+        orngScaleData.setData(self, data, subsetData, **args)
         self.domainContingency = None
+        
 
 
     # update shown data. Set attributes, coloring by className ....
@@ -92,6 +93,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
+
         xs = range(length)
         dataSize = len(self.scaledData[0])
 
@@ -346,16 +348,27 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.domainContingency == None:
             self.domainContingency = orange.DomainContingency(self.rawData)
 
-        maxVal = 0
+        maxVal = 1
         for attr in indices:
-            if self.dataDomain[attr].varType == orange.VarTypes.Discrete:
-                for attrVal in self.domainContingency[attr]:
-                    maxVal = max(maxVal, max(attrVal))
+            if self.dataDomain[attr].varType != orange.VarTypes.Discrete:
+                continue
+            if self.dataDomain[attr] == self.dataDomain.classVar:
+                maxVal = max(maxVal, max(orange.Distribution(attr, self.rawData)))
+            else:
+                maxVal = max(maxVal, max([max(val) for val in self.domainContingency[attr].values()]))
+                
 
         for graphAttrIndex, index in enumerate(indices):
             attr = self.dataDomain[index]
             if attr.varType != orange.VarTypes.Discrete: continue
-            attrContingency = self.domainContingency[index]
+            if self.dataDomain[index] == self.dataDomain.classVar:
+                contingency = orange.Contingency(self.dataDomain[index], self.dataDomain[index])
+                dist = orange.Distribution(self.dataDomain[index], self.rawData)
+                for val in self.dataDomain[index].values:
+                    contingency[val][val] = dist[val]
+            else:
+                contingency = self.domainContingency[index]
+                                
             attrLen = len(attr.values)
 
             # we create a hash table of variable values and their indices
@@ -365,7 +378,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             # create bar curve
             for j in range(attrLen):
                 attrVal = variableValueSorted[j]
-                attrValCont = attrContingency[attrVal]
+                attrValCont = contingency[attrVal]
 
                 for i in range(clsCount):
                     clsVal = classValueSorted[i]

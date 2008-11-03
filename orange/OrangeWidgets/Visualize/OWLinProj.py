@@ -25,8 +25,7 @@ class OWLinProj(OWVisWidget):
                     "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.alphaValue",
                     "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells", "graph.useAntialiasing"
-                    "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions",
-                    "graph.scalingByVariance", "graph.globalValueScaling"]
+                    "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
 
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
@@ -77,8 +76,6 @@ class OWLinProj(OWVisWidget):
         self.graph.showAxisScale = 0
         self.graph.showValueLines = 0
         self.graph.valueLineLength = 5
-        self.graph.globalValueScaling = 0
-        self.graph.scalingByVariance = 0
 
         #load settings
         self.loadSettings()
@@ -152,10 +149,6 @@ class OWLinProj(OWVisWidget):
 
         box = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
         OWGUI.qwtHSlider(box, self, "graph.scaleFactor", label = 'Inflate points by: ', minValue=1.0, maxValue= 10.0, step=0.1, callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception", maxWidth = 90)
-        valueScalingList = ["attribute range", "global range", "attribute variance"]
-        if name.lower() in ["radviz", "polyviz"]:
-            valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
-        OWGUI.comboBoxWithCaption(box, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
 
         cbox = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
         #OWGUI.checkBox(box, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
@@ -267,12 +260,8 @@ class OWLinProj(OWVisWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
@@ -331,19 +320,6 @@ class OWLinProj(OWVisWidget):
     def resetGraphData(self):
         self.graph.rescaleData()
         self.updateGraph()
-
-    def setValueScaling(self):
-        self.graph.insideColors = None
-        self.graph.potentialsBmp = None
-        self.graph.globalValueScaling = 0
-        self.graph.scalingByVariance = 0
-        if self.valueScalingType == 1:
-            self.graph.globalValueScaling = 1
-        else:
-            self.graph.scalingByVariance = 1
-        orngScaleLinProjData.setData(self.graph, self.data, self.subsetData)
-        self.updateGraph()
-
 
     def selectionChanged(self):
         self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)

@@ -19,7 +19,7 @@ import OWGUI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWVisWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend",
+    settingsList = ["attrDiscOrder", "attrContOrder", "graph.exampleTracking", "graph.enabledLegend",
                     "graph.tooltipKind", "showAllAttributes", "colorSettings", "selectedSchemaIndex"]
     attributeContOrder = ["Unordered","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["Unordered","ReliefF","GainRatio"]
@@ -39,7 +39,6 @@ class OWSurveyPlot(OWVisWidget):
         #set default settings
         self.data = None
         self.showAllAttributes = 0
-        self.graph.globalValueScaling = 0
         self.graph.exampleTracking = 0
         self.graph.enabledLegend = 1
         self.graph.tooltipKind = 1
@@ -71,7 +70,6 @@ class OWSurveyPlot(OWVisWidget):
         # ##################################
         # survey plot settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
-        OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global value scaling", callback = self.setGlobalValueScaling)
         OWGUI.checkBox(box, self, "graph.exampleTracking", "Example tracking", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateGraph)
 
@@ -132,12 +130,8 @@ class OWSurveyPlot(OWVisWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
@@ -179,10 +173,6 @@ class OWSurveyPlot(OWVisWidget):
             self.graph.selectedRectangle.detach()
             self.graph.selectedRectangle = None
             self.graph.replot()
-
-    def setGlobalValueScaling(self):
-        self.graph.setData(self.data)
-        self.updateGraph()
 
     def setColors(self):
         dlg = self.createColorDialog()

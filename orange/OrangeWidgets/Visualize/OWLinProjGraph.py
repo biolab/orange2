@@ -161,12 +161,14 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             # construct potentialsClassifier from unscaled positions
             domain = orange.Domain([self.dataDomain[i].name for i in indices]+[self.dataDomain.classVar], self.dataDomain)
 ##            domain = orange.Domain([a[2] for a in self.anchorData]+[self.dataDomain.classVar], self.dataDomain)
-            offsets = [self.offsets[i] for i in indices]
-            normalizers = [self.normalizers[i] for i in indices]
+            offsets = [self.attrValues[self.attributeNames[i]][0] for i in indices]
+            normalizers = [self.getMinMaxVal(i) for i in indices]
             selectedData = numpy.take(self.originalData, indices, axis = 0)
             averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])),
-                                                    self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
+            #self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, x_positions), numpy.compress(validData, y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+
 
         # ##############################################################
         # show model quality
@@ -474,17 +476,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
-                    if self.anchorsAsVectors and not self.scalingByVariance:
+                    if self.anchorsAsVectors:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
                         curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
                         fontsize = 9
                         #markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) | (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
-                        markerAlign = Qt.AlignCenter
-                    else:
-                        curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
-                        markerX, markerY = (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0
-                        fontsize = 12
                         markerAlign = Qt.AlignCenter
 
                     self.tooltipCurves.append(curve)

@@ -174,7 +174,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    names = ["%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
+                    names = ["%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrValues[labels[i]][0]), "%%.%df" % (self.dataDomain[labels[i]].numberOfDecimals) % (self.attrValues[labels[i]][1])]
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
 

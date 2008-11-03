@@ -148,7 +148,7 @@ class OWScatterPlotMatrix(OWVisWidget):
                                      "validDataArray", "validSubsetDataArray", "attrValues", "originalData", "originalSubsetData",
                                      "attributeNames", "domainDataStat", "attributeNameIndex", "dataDomain", "dataHasClass", "dataHasContinuousClass",
                                      "dataHasDiscreteClass", "dataClassName", "dataClassIndex", "haveData", "haveSubsetData",
-                                     "offsets", "normalizers", "jitterSize", "jitterContinuous" ]:
+                                     "jitterSize", "jitterContinuous" ]:
                 setattr(graph, attr, getattr(self.graphs[0], attr))
         self.updateGraph()
 
@@ -216,8 +216,7 @@ class OWScatterPlotMatrix(OWVisWidget):
                     for attr in ["rawData", "domainDataStat", "scaledData", "scaledSubsetData", "noJitteringScaledData", "noJitteringScaledSubsetData",
                                  "validDataArray", "validSubsetDataArray", "attrValues", "originalData", "originalSubsetData",
                                  "attributeNames", "domainDataStat", "attributeNameIndex", "dataDomain", "dataHasClass", "dataHasContinuousClass",
-                                 "dataHasDiscreteClass", "dataClassName", "dataClassIndex", "haveData", "haveSubsetData",
-                                 "offsets", "normalizers"]:
+                                 "dataHasDiscreteClass", "dataClassName", "dataClassIndex", "haveData", "haveSubsetData"]:
                         setattr(graph, attr, getattr(self.graphs[0], attr))
 
                 self.setGraphOptions(graph, "")
@@ -325,12 +324,8 @@ class OWScatterPlotMatrix(OWVisWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
-            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
-                data = None
+        if data and (len(data) == 0 or len(data.domain) == 0):
+            data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
