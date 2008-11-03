@@ -715,15 +715,13 @@ class OWGraph(QwtPlot):
                     diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
                     diffY = (self.axisScaleDiv(QwtPlot.yLeft).hBound() -  self.axisScaleDiv(QwtPlot.yLeft).lBound()) / 2.
 
-                    # use this to zoom to the center of the screen
-                    #xmin = x - diffX/2.; xmax = x + diffX/2.
-                    #ymin = y + diffY/2.; ymax = y - diffY/2.
-
                     # use this to zoom to the place where the mouse cursor is
-                    xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
-                    xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
-                    ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).hBound() - y) / diffY
-                    ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).lBound()) / diffY
+                    if diffX:
+                        xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
+                        xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
+                    if diffY:
+                        ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).hBound() - y) / diffY
+                        ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).lBound()) / diffY
                 else:
                     xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
                     ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
