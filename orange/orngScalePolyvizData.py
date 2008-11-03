@@ -7,28 +7,9 @@ class orngScalePolyvizData(orngScaleLinProjData):
         orngScaleLinProjData.__init__(self)
         self.normalizeExamples = 1
         self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
-        self.attrLocalValues = {}
-
-    # if we use globalScaling we must also save min and max values for each attribute
-    def setData(self, data, subsetData = None, **args):
-        # first call the original function to scale data
-        orngScaleLinProjData.setData(self, data, subsetData, **args)
         
-        if data == None or len(data) == 0: return
 
-        if self.globalValueScaling:
-            for index in range(len(data.domain)):
-                if data.domain[index].varType == orange.VarTypes.Discrete:
-                    self.attrLocalValues[data.domain[index].name] = [0, len(data.domain[index].values)-1]
-                elif self.domainDataStat[data.domain[index].name]:
-                    self.attrLocalValues[data.domain[index].name] = [self.domainDataStat[data.domain[index].name].min, self.domainDataStat[data.domain[index].name].max]
-                else:
-                    self.attrLocalValues[data.domain[index].name] = [0, 1]
-        else:
-            self.attrLocalValues = self.attrValues
-
-
-        # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
+    # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
     def createProjectionAsExampleTable(self, attrList, **settingsDict):
         if self.dataDomain.classVar:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), orange.EnumVariable(self.dataDomain.classVar.name, values = getVariableValuesSorted(self.dataDomain.classVar))])

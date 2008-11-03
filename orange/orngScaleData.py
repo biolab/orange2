@@ -4,6 +4,7 @@
 import sys, math
 import orange
 import numpy
+from orngDataCaching import *
 try:
     import numpy.ma as MA
 except:
@@ -57,8 +58,8 @@ def discretizeDomain(data, removeUnusedValues = 1):
     discAttrs = []
 
     className = data and len(data) > 0 and data.domain.classVar and data.domain.classVar.name or None
-    if className:
-        data = data.filterref(orange.Filter_hasClassValue())  # remove examples with missing classes
+#    if className:
+#        data = data.filterref(orange.Filter_hasClassValue())  # remove examples with missing classes
 
     if not data or len(data) == 0:
         return None
@@ -107,15 +108,11 @@ class orngScaleData:
         self.haveData = False
         self.haveSubsetData = False
 
-        self.globalValueScaling = 0         # do we want to scale data globally
-        self.scalingByVariance = 0
         self.jitterSize = 10
         self.jitterContinuous = 0
 
         self.attrValues = {}
         self.domainDataStat = []
-        self.offsets = []
-        self.normalizers = []
         self.originalData = self.originalSubsetData = None    # input (nonscaled) data in a numpy array
         self.scaledData = self.scaledSubsetData = None        # scaled data to the interval 0-1
         self.noJitteringScaledData = self.noJitteringScaledSubsetData = None
@@ -146,8 +143,6 @@ class orngScaleData:
                     return
 
         self.domainDataStat = []
-        self.offsets = []
-        self.normalizers = []
         self.attrValues = {}
         self.originalData = self.originalSubsetData = None
         self.scaledData = self.scaledSubsetData = None
@@ -174,7 +169,6 @@ class orngScaleData:
         lenData = data and len(data) or 0
         numpy.random.seed(1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
 
-        self.domainDataStat = orange.DomainBasicAttrStat(fullData)
         self.attributeNames = [attr.name for attr in fullData.domain]
         self.attributeNameIndex = dict([(fullData.domain[i].name, i) for i in range(len(fullData.domain))])
         self.attributeFlipInfo = {}         # dict([(attr.name, 0) for attr in fullData.domain]) # reset the fliping information
@@ -188,73 +182,67 @@ class orngScaleData:
             self.dataClassIndex = self.attributeNameIndex[self.dataClassName]
         self.haveData = bool(self.rawData and len(self.rawData) > 0)
         self.haveSubsetData = bool(self.rawSubsetData and len(self.rawSubsetData) > 0)
+        
+        self.domainDataStat = getCached(fullData, orange.DomainBasicAttrStat, (fullData,))
 
-                
-        if self.globalValueScaling:
-            (Min, Max) = self.getMinMaxValDomain()
+        sortValuesForDiscreteAttrs = args.get("sortValuesForDiscreteAttrs", 1)
 
         for index in range(len(fullData.domain)):
             attr = fullData.domain[index]
             if attr.varType == orange.VarTypes.Discrete:
                 self.attrValues[attr.name] = [0, len(attr.values)]
-                self.offsets.append(0.0)
-                self.normalizers.append(len(attr.values)-1)
-            else:
-                if self.scalingByVariance:
-                    self.offsets.append(self.domainDataStat[index].avg)
-                    self.normalizers.append(max(1e-5, self.domainDataStat[index].dev))
-                    self.attrValues[attr.name] = [self.domainDataStat[index].min, self.domainDataStat[index].max]
-                else:
-                    if not self.globalValueScaling:
-                        Min = self.domainDataStat[index].min
-                        Max = self.domainDataStat[index].max
-                    diff = float(Max - Min) or 1.0
-                    self.offsets.append(Min)
-                    self.normalizers.append(diff)
-                    self.attrValues[attr.name] = [Min, Max]
-
-        sortValuesForDiscreteAttrs = args.get("sortValuesForDiscreteAttrs", 1)
-        arr = fullData.toNumpyMA("ac")[0].T
-        validDataArray = numpy.array(1-arr.mask, numpy.short)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-        arr = numpy.array(MA.filled(arr, orange.Illegal_Float))
-        originalData = arr.copy()
-        scaledData = numpy.zeros(originalData.shape, numpy.float)
+            elif attr.varType == orange.VarTypes.Continuous:
+                self.attrValues[attr.name] = [self.domainDataStat[index].min, self.domainDataStat[index].max]
         
-        if data != None:
-            for index in range(len(data.domain)):
-                attr = data.domain[index]
+        if getCached(data, "allScaledData") and subsetData == None:
+            self.originalData, self.scaledData, self.noJitteringScaledData, self.validDataArray = getCached(data, "allScaledData")
+        else:
+            arr = fullData.toNumpyMA("ac")[0].T
+            validDataArray = numpy.array(1-arr.mask, numpy.short)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+            arr = numpy.array(MA.filled(arr, orange.Illegal_Float))
+            originalData = arr.copy()
+            scaledData = numpy.zeros(originalData.shape, numpy.float)
+            
+            if data != None:
+                for index in range(len(data.domain)):
+                    attr = data.domain[index]
+    
+                    if attr.varType == orange.VarTypes.Discrete:
+                        # see if the values for discrete attributes have to be resorted
+                        variableValueIndices = getVariableValueIndices(data.domain[index], sortValuesForDiscreteAttrs)
+                        if 0 in [i == variableValueIndices[attr.values[i]] for i in range(len(attr.values))]:
+                            line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
+                            indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
+                            for i in range(len(attr.values)):
+                                numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
+                            arr[index] = line   # save the changed array
+                            originalData[index] = line     # reorder also the values in the original data
+                            
+                        arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
+                        scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
+                    elif attr.varType == orange.VarTypes.Continuous:
+                        diff = self.domainDataStat[index].max - self.domainDataStat[index].min
+                        if diff == 0: diff = 1          # if all values are the same then prevent division by zero
+                        arr[index] = (arr[index] - self.domainDataStat[index].min) / diff
+    
+                        if self.jitterContinuous:
+                            line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
+                            line = numpy.absolute(line)       # fix values below zero
+    
+                            # fix values above 1
+                            ind = numpy.where(line > 1.0, 1, 0)
+                            numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
+                            scaledData[index] = line
+                        else:
+                            scaledData[index] = arr[index]
+    
+            self.originalData = originalData[:,:lenData]; self.originalSubsetData = originalData[:,lenData:]
+            self.scaledData = scaledData[:,:lenData]; self.scaledSubsetData = scaledData[:,lenData:]
+            self.noJitteringScaledData = arr[:,:lenData]; self.noJitteringScaledSubsetData = arr[:,lenData:]
+            self.validDataArray = validDataArray[:,:lenData]; self.validSubsetDataArray = validDataArray[:,lenData:]
 
-                if attr.varType == orange.VarTypes.Discrete:
-                    # see if the values for discrete attributes have to be resorted
-                    variableValueIndices = getVariableValueIndices(data.domain[index], sortValuesForDiscreteAttrs)
-                    if 0 in [i == variableValueIndices[attr.values[i]] for i in range(len(attr.values))]:
-                        line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                        indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
-                        for i in range(len(attr.values)):
-                            numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
-                        arr[index] = line   # save the changed array
-                        originalData[index] = line     # reorder also the values in the original data
-                        
-                    arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
-                    scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
-                else:
-                    arr[index] = ((arr[index] - self.offsets[index]) / self.normalizers[index])
-
-                    if self.jitterContinuous:
-                        line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
-                        line = numpy.absolute(line)       # fix values below zero
-
-                        # fix values above 1
-                        ind = numpy.where(line > 1.0, 1, 0)
-                        numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
-                        scaledData[index] = line
-                    else:
-                        scaledData[index] = arr[index]
-
-        self.originalData = originalData[:,:lenData]; self.originalSubsetData = originalData[:,lenData:]
-        self.scaledData = scaledData[:,:lenData]; self.scaledSubsetData = scaledData[:,lenData:]
-        self.noJitteringScaledData = arr[:,:lenData]; self.noJitteringScaledSubsetData = arr[:,lenData:]
-        self.validDataArray = validDataArray[:,:lenData]; self.validSubsetDataArray = validDataArray[:,lenData:]
+            if data: setCached(data, "allScaledData", (self.originalData, self.scaledData, self.noJitteringScaledData, self.validDataArray))
+            if subsetData: setCached(subsetData, "allScaledData", (self.originalSubsetData, self.scaledSubsetData, self.noJitteringScaledSubsetData, self.validSubsetDataArray))
 
     
 
@@ -266,11 +254,10 @@ class orngScaleData:
         if example.domain[index].varType == orange.VarTypes.Discrete:
             d = getVariableValueIndices(example.domain[index])
             return (d[example[index].value]*2 + 1) / float(2*len(d))
-        else:
-            if len(self.offsets) <= index or len(self.normalizers) <= index :
-                print "invalid example or attribute index", index, len(self.offsets), len(self.normalizers)
-                return 0.0
-            return (example[index] - self.offsets[index]) / self.normalizers[index]
+        elif example.domain[index].varType == orange.VarTypes.Continuous:
+            diff = self.domainDataStat[index].max - self.domainDataStat[index].min
+            if diff == 0: diff = 1          # if all values are the same then prevent division by zero
+            return (example[index] - self.domainDataStat[index].min) / diff
 
 
     def getAttributeLabel(self, attrName):
@@ -281,7 +268,6 @@ class orngScaleData:
     def flipAttribute(self, attrName):
         if attrName not in self.attributeNames: return 0
         if self.dataDomain[attrName].varType == orange.VarTypes.Discrete: return 0
-        if self.globalValueScaling: return 0
 
         index = self.attributeNameIndex[attrName]
         self.attributeFlipInfo[attrName] = 1 - self.attributeFlipInfo.get(attrName, 0)
@@ -294,46 +280,30 @@ class orngScaleData:
         self.noJitteringScaledSubsetData[index] = 1 - self.noJitteringScaledSubsetData[index]
         return 1
 
-    # compute min and max value for a list of attributes
-    def getMinMaxValDomain(self, attrList = None):
-        minVal = 1e40
-        maxVal = -1e40
-        if not self.domainDataStat:
-            return 0, 1
-        if attrList == None:
-            attrList = range(len(self.dataDomain))
-
-        for attr in attrList:
-            if self.dataDomain[attr].varType == orange.VarTypes.Discrete: continue
-            minVal = min(minVal, self.domainDataStat[attr].min)
-            maxVal = max(maxVal, self.domainDataStat[attr].max)
-        return (minVal, maxVal)
-
-
-    # get min and max value of data attribute at index index
-    def getMinMaxVal(self, data, attr):
-        if data.domain[attr].varType == orange.VarTypes.Discrete:
-            return (0, float(len(data.domain[attr].values))-1)
-        else:
-            return (self.domainDataStat[attr].min, self.domainDataStat[attr].max)
-
+    def getMinMaxVal(self, attr):
+        if type(attr) == int:
+            attr = self.attributeNames[attr]
+        diff = self.attrValues[attr][1] - self.attrValues[attr][0]
+        return diff or 1.0
 
     # get array of 0 and 1 of len = len(self.rawData). if there is a missing value at any attribute in indices return 0 for that example
-    def getValidList(self, indices):
+    def getValidList(self, indices, alsoClassIfExists = 1):
         if self.validDataArray == None or len(self.validDataArray) == 0:
             return numpy.array([], numpy.bool)
-        try:
-            selectedArray = self.validDataArray.take(indices, axis = 0)
-        except:
-            print "getValidList failure. Invalid indices:", indices
-            print self.validDataArray
+        
+        inds = indices[:]
+        if alsoClassIfExists and self.dataHasClass: 
+            inds.append(self.dataClassIndex) 
+        selectedArray = self.validDataArray.take(inds, axis = 0)
         arr = numpy.add.reduce(selectedArray)
-        return numpy.equal(arr, len(indices))
+        return numpy.equal(arr, len(inds))
 
     # get array of 0 and 1 of len = len(self.rawSubsetData). if there is a missing value at any attribute in indices return 0 for that example
-    def getValidSubsetList(self, indices):
+    def getValidSubsetList(self, indices, alsoClassIfExists = 1):
         if self.validSubsetDataArray == None or len(self.validSubsetDataArray) == 0:
             return numpy.array([], numpy.bool)
+        if alsoClassIfExists and self.dataClassIndex: 
+            indices.append(self.dataClassIndex)
         selectedArray = self.validSubsetDataArray.take(indices, axis = 0)
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))

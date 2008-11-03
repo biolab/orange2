@@ -178,10 +178,8 @@ class orngScaleLinProjData(orngScaleData):
             else:
                 x_validData = x_positions
                 y_validData = y_positions
-            try:
-                dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData)) or 1
-            except:
-                print "asdf"
+            
+            dist = math.sqrt(max(x_validData*x_validData + y_validData*y_validData)) or 1
             self.trueScaleFactor = scaleFactor / dist
 
         self.unscaled_x_positions = numpy.array(x_positions)
