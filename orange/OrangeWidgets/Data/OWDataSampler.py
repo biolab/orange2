@@ -115,9 +115,6 @@ class OWDataSampler(OWWidget):
         # final touch
         self.resize(200, 275)
 
-    def test(self):
-        print "taqeasdf"
-
     # CONNECTION TRIGGER AND GUI ROUTINES
     # enables RadioButton switching
     def sChanged(self, value, id):
