@@ -8,7 +8,7 @@
 import orange
 from OWWidget import *
 import OWGUI
-
+from orngDataCaching import *
 
 class OWSelectData(OWWidget):
     settingsList = ["updateOnChange", "purgeAttributes", "purgeClasses"]
@@ -186,7 +186,8 @@ class OWSelectData(OWWidget):
     def setData(self, data):
         self.closeContext("")
         self.data = data
-        self.bas = orange.DomainBasicAttrStat(data)
+        self.bas = getCached(data, orange.DomainBasicAttrStat, (data,))
+                
         self.name2var = {}
         self.Conditions = []
 
