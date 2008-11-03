@@ -1,5 +1,5 @@
 import orangeom, orange
-import math, random, numpy
+import math, random, numpy, MA
 from numpy.linalg import inv, eig      # matrix inverse and eigenvectors
 from orngScaleLinProjData import orngScaleLinProjData
 import orngVisFuncts
@@ -630,9 +630,10 @@ class FreeVizClassifier(orange.Classifier):
         labels = [a[2] for a in graph.anchorData]
         domain = orange.Domain(labels+[graph.dataDomain.classVar], graph.dataDomain)
         indices = [ai[label] for label in labels]
-        offsets = [graph.offsets[i] for i in indices]
-        normalizers = [graph.normalizers[i] for i in indices]
-        averages = [graph.averages[i] for i in indices]
+        offsets = [graph.domainDataStat[i].min for i in indices]
+        normalizers = [graph.getMinMaxVal(i) for i in indices]
+        #averages = [graph.averages[i] for i in indices]
+        averages = MA.filled(MA.average(graph.originalData.take(indices, axis =0), 1), 1)
 
         #self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)  # Janez: why would you call this function if you don't want its result???
         self.classifier = orange.P2NN(domain,
