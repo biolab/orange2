@@ -8,6 +8,7 @@
 from OWWidget import *
 from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree
+from orngDataCaching import *
 
 class FixedTreeLearner(orange.Learner):
     def __init__(self, classifier, name):
@@ -160,7 +161,8 @@ class OWITree(OWClassificationTreeViewer):
         self.targetCombo.clear()
         if self.data:
             self.attrsCombo.addItems([str(a) for a in data.domain.attributes])
-            self.basstat = orange.DomainBasicAttrStat(data)
+            self.basstat = getCached(data, orange.DomainBasicAttrStat, (data,))
+            
 #            self.attrsCombo.adjustSize()
             self.attridx = 0
             self.cbAttributeSelected()
