@@ -16,6 +16,7 @@
 from OWWidget import *
 import OWGUI
 import math
+from orngDataCaching import *
 
 ##############################################################################
 
@@ -191,7 +192,9 @@ class OWDataTable(OWWidget):
         table.oldSortingOrder = 1
         table.setColumnCount(numVarsMetas)
         table.setRowCount(numEx)
-        table.dist = orange.DomainBasicAttrStat(data)
+
+        table.dist = getCached(data, orange.DomainBasicAttrStat, (data,))
+        
         table.setItemDelegate(TableItemDelegate(self, table))
         table.variableNames = [var.name for var in varsMetas]
         id = self.table2id.get(table, None)
