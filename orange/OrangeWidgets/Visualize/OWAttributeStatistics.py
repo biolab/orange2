@@ -14,9 +14,11 @@ from OWWidget import *
 from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
 import OWQCanvasFuncts
+from orngDataCaching import *
 
 class OWAttributeStatistics(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"])}
+    settingsList = ["sorting"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
@@ -26,6 +28,7 @@ class OWAttributeStatistics(OWWidget):
         #set default settings
         self.cwbias = 250 # canvas_width = widget_width - 300 pixels
         self.chbias = 30
+        self.sorting = 0
 
         self.cw = self.width()-self.cwbias
         self.ch = self.height()-self.chbias
@@ -43,6 +46,8 @@ class OWAttributeStatistics(OWWidget):
 
         AttsBox = OWGUI.widgetBox(self.controlArea, 'Attributes')
         self.attributes = OWGUI.listBox(AttsBox, self, selectionMode = QListWidget.SingleSelection, callback = self.attributeHighlighted)
+        
+        OWGUI.comboBox(self.controlArea, self, "sorting", "Value sorting", items = ["No sorting", "Descending", "Ascending"], callback = self.attributeHighlighted, sendSelectedValue = 0, tooltip = "Should the list of attribute values for discrete attributes be sorted?")
         #self.attributes.setMinimumSize(150, 200)
         #connect controls to appropriate functions
 
@@ -57,7 +62,7 @@ class OWAttributeStatistics(OWWidget):
 
         self.icons = self.createAttributeIconDict()
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-        self.resize(300, 400)
+        self.resize(450, 600)
 
 
     def resizeEvent(self, event):
@@ -96,7 +101,7 @@ class OWAttributeStatistics(OWWidget):
             self.canvasview.show()
 
             self.dataset = data
-            self.dist = orange.DomainDistributions(self.dataset)
+            self.dist = getCached(self.dataset, orange.DomainDistributions, (self.dataset,))
 
             for a in self.dataset.domain:
                 self.attributes.addItem(QListWidgetItem(self.icons[a.varType], a.name))
@@ -120,6 +125,7 @@ class DisplayStatistics (QGraphicsScene):
         self.bar_height_pixels=None
         self.bar_width_pixels=None
         self.vbias, self.hbias = 60, 200
+        self.parent = parent
 
     def displayStat(self, data, ind, dist):
         if not data:
@@ -146,16 +152,26 @@ class DisplayStatistics (QGraphicsScene):
             totalvalues = OWQCanvasFuncts.OWCanvasText(self, "Total Values", self.hbias+30, 30)
             rect_len = 100
             rect_width = 20
-            if len(dist[ind]) > 0 and max(dist[ind]) > 0:
-                f = rect_len/max(dist[ind])
-                for v in range(len(attr.values)):
-                    t = OWQCanvasFuncts.OWCanvasText(self, attr.values[v], self.hbias-10, self.vbias, Qt.AlignRight)
-                    bar_len = dist[ind][v]*f
+            attrDist = dist[ind]
+            if len(attrDist) > 0 and max(attrDist) > 0:
+                if self.parent.sorting == 0:
+                    keys = attrDist.keys()
+                else:
+                    d = [(val, key) for (key, val) in attrDist.items()]
+                    d.sort()
+                    keys = [item[1] for item in d]
+                    if self.parent.sorting == 1:
+                        keys.reverse()
+                              
+                f = rect_len/max(attrDist)
+                for key in keys:
+                    t = OWQCanvasFuncts.OWCanvasText(self, key, self.hbias-10, self.vbias, Qt.AlignRight)
+                    bar_len = attrDist[key]*f
                     if int(bar_len)==0 and bar_len!=0:
                         bar_len=1
                     r = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, bar_len, rect_width-2, pen = QPen(Qt.NoPen), brushColor = QColor(0,0,254))
 
-                    t1 = OWQCanvasFuncts.OWCanvasText(self, "%i   (%2.1f %%)" % (dist[ind][v], 100*dist[ind][v]/(len(data) or 1)), self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias, Qt.AlignLeft)
+                    t1 = OWQCanvasFuncts.OWCanvasText(self, "%i   (%2.1f %%)" % (attrDist[key], 100*attrDist[key]/(len(data) or 1)), self.hbias+attrDist[key]*rect_len/max(attrDist)+10, self.vbias, Qt.AlignLeft)
                     self.vbias+=rect_width
                 if self.vbias > self.canvasH:
                     self.canvasH = self.vbias+50
