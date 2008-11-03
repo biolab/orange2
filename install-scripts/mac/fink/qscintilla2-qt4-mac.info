@@ -1,6 +1,6 @@
 Package: qscintilla2-qt4-mac
 Version: 2.2
-Revision: 3
+Revision: 4
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/QScintilla2/QScintilla-gpl-%v.tar.gz
 Source-MD5: a6056c444494f3f849020d241f86c286
 Maintainer: Mitar <mitar@tnode.com>
@@ -11,7 +11,8 @@ BuildDepends: <<
 	glib2-dev,
 	libgettext3-dev,
 	libiconv-dev,
-	libpng3
+	libpng3,
+	qt4-mac
 <<
 BuildDependsOnly: true
 Depends: %N-shlibs (>= %v-%r)
