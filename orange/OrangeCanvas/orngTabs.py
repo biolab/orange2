@@ -326,7 +326,7 @@ class WidgetListBase:
                 if isinstance(self, WidgetTabs):
                     self.removeTab(self.indexOf(self.tabs[i][2].tab))
                 elif isinstance(self, WidgetTree):
-                    self.tabs[i][2].parent().removeChild(self.tabs[i][2])
+                    self.treeWidget.takeTopLevelItem(self.treeWidget.invisibleRootItem().indexOfChild(self.tabs[i][2]))
                 else:
                     self.toolbox.widget(i).hide()
                     self.toolbox.removeItem(i)
