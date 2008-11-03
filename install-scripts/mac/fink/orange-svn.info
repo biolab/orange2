@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 10
+Revision: 11
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -81,14 +81,6 @@ CompileScript: <<
 	# Cleans
 	rm python
 	
-	# Corrects install name for modules
-	install_name_tool -id %p/lib/python2.5/site-packages/orange/orange.so orange.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangeom.so orangeom.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/corn.so corn.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/statc.so statc.so
-	install_name_tool -change ../../orange.so %p/lib/python2.5/site-packages/orange/orange.so -id %p/lib/python2.5/site-packages/orange/orangene.so orangene.so
-	install_name_tool -id %p/lib/python2.5/site-packages/orange/_orngCRS.so _orngCRS.so
-	
 	# Prepares bundle
 	cat <<-'EOF' > ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app/Contents/MacOS/Orange
 		#!/bin/bash
@@ -118,7 +110,7 @@ InstallScript: <<
 	
 	# Cleans up
 	rm -rf COPYING LICENSES doc/ source/
-	rm -rf c45.dll
+	rm -rf c45.dll liborange_include.a
 	
 	# Files for both orange-svn and orange-svn-py25
 	mkdir -p %i/lib/python2.5/site-packages/orange/

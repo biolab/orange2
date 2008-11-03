@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-text-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 3
+Revision: 4
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-text-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_TEXT__
 Maintainer: Mitar <mitar@tnode.com>
@@ -65,9 +65,6 @@ CompileScript: <<
 	
 	# Cleans
 	rm python
-	
-	# Corrects install name for modules
-	install_name_tool -id %p/lib/python2.5/site-packages/orange/add-ons/Text/_orngTextWrapper.so _orngTextWrapper.so
 <<
 InstallScript: <<
 	#!/bin/bash -ev
