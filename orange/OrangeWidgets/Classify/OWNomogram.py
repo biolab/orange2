@@ -16,7 +16,7 @@ import orange
 import OWGUI
 from OWWidget import *
 from OWNomogramGraph import *
-
+from orngDataCaching import *
 import orngLR
 
 
@@ -191,7 +191,7 @@ class OWNomogram(OWWidget):
             self.bnomogram = BasicNomogram(self, AttValue("Constant", math.log(prior), error = priorError))
 
         if self.data:
-            stat = orange.DomainBasicAttrStat(self.data)
+            stat = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
 
         for at in range(len(att)):
             a = None
@@ -331,7 +331,7 @@ class OWNomogram(OWWidget):
                     var = at
                     a = AttrLineCont(name, self.bnomogram)
                     if self.data:
-                        bas = orange.DomainBasicAttrStat(self.data)
+                        bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
                         maxAtValue = bas[var].max
                         minAtValue = bas[var].min
                     else:
@@ -415,7 +415,7 @@ class OWNomogram(OWWidget):
                 maxNew=maxMap[coeff]
                 minNew=maxMap[coeff]
                 if self.data:
-                    bas = orange.DomainBasicAttrStat(self.data)
+                    bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
                     maxNew = bas[c[0]].max
                     minNew = bas[c[0]].min
 
