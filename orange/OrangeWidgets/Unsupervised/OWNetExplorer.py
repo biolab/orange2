@@ -281,7 +281,9 @@ class OWNetExplorer(OWWidget):
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
+        self.rotateFactor = 10
         self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, toggleButton=1)
+        OWGUI.spin(ib, self, "rotateFactor", 1, 10000, 1, label="Rotate factor: ")
         
         
         self.icons = self.createAttributeIconDict()
@@ -327,8 +329,6 @@ class OWNetExplorer(OWWidget):
         
         if not self.btnRotate.isChecked():
           self.visualize.stopRotate = 1
-          #self.btnRotate.setChecked(False)
-          #self.btnRotate.setText("Rotate graph components")
           return
       
         self.btnRotate.setText("Stop")
@@ -336,7 +336,7 @@ class OWNetExplorer(OWWidget):
         
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
-        self.visualize.rotateComponents(self.rotateProgress, self.updateCanvas)
+        self.visualize.rotateComponents(self.rotateFactor, self.rotateProgress, self.updateCanvas)
         self.btnRotate.setChecked(False)
         self.btnRotate.setText("Rotate graph components")
         self.progressBarFinished()
