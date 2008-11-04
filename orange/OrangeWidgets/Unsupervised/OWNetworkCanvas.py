@@ -251,6 +251,7 @@ class OWNetworkCanvas(OWGraph):
       
       self.networkCurve = NetworkCurve(self)
       
+      
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
 

@@ -327,8 +327,8 @@ class OWNetExplorer(OWWidget):
         
         if not self.btnRotate.isChecked():
           self.visualize.stopRotate = 1
-          self.btnRotate.setChecked(False)
-          self.btnRotate.setText("Rotate graph components")
+          #self.btnRotate.setChecked(False)
+          #self.btnRotate.setText("Rotate graph components")
           return
       
         self.btnRotate.setText("Stop")
@@ -338,6 +338,7 @@ class OWNetExplorer(OWWidget):
         self.progressBarInit()
         self.visualize.rotateComponents(self.rotateProgress, self.updateCanvas)
         self.btnRotate.setChecked(False)
+        self.btnRotate.setText("Rotate graph components")
         self.progressBarFinished()
         
     def mdsProgress(self, avgStress, stepCount):
@@ -364,8 +365,8 @@ class OWNetExplorer(OWWidget):
         
         if not self.btnMDS.isChecked():
           self.visualize.stopMDS = 1
-          self.btnMDS.setChecked(False)
-          self.btnMDS.setText("MDS on graph components")
+          #self.btnMDS.setChecked(False)
+          #self.btnMDS.setText("MDS on graph components")
           return
         
         self.btnMDS.setText("Stop")
@@ -375,6 +376,7 @@ class OWNetExplorer(OWWidget):
         self.progressBarInit()
         self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas)
         self.btnMDS.setChecked(False)
+        self.btnMDS.setText("MDS on graph components")
         self.progressBarFinished()
         
     def setVertexDistance(self, matrix):
