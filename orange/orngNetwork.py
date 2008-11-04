@@ -112,7 +112,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.graph:
             return self.graph.nVertices
         
-    def rotateVertices(self, components, M):    
+    def rotateVertices(self, components, M, factor=10):    
         #print len(components)
         #print M
         
@@ -139,7 +139,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 #            elif M[i] < 0:
 #                fi -= numpy.pi / 180
                 
-            fi += 10 * M[i] * numpy.pi / 180
+            fi += factor * M[i] * numpy.pi / 180
                 
             x = r * numpy.cos(fi)
             y = r * numpy.sin(fi)
@@ -147,7 +147,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
             
-    def rotateComponents(self, callbackProgress=None, callbackUpdateCanvas=None, maxSteps=100, minMoment=0.01):
+    def rotateComponents(self, factor=10, callbackProgress=None, callbackUpdateCanvas=None, maxSteps=100, minMoment=0.01):
         if self.vertexDistance == None:
             return 1
         
@@ -203,7 +203,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 
                 M[i] = Mi
                 
-            self.rotateVertices(components, M)
+            self.rotateVertices(components, M, factor)
             if callbackUpdateCanvas: callbackUpdateCanvas()
             if callbackProgress : callbackProgress()
             step += 1
