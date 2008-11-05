@@ -172,7 +172,8 @@ class UpdateItemDelegate(QItemDelegate):
         parent = self.parent()
         item = parent.itemFromIndex(index)
         widget = parent.itemWidget(item, 0)
-        size = QSize(size.width(), widget.sizeHint().height())
+        if widget:
+            size = QSize(size.width(), widget.sizeHint().height())
         return size
     
 class OWDatabasesUpdate(OWWidget):
