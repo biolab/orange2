@@ -3,7 +3,7 @@ import orngServerFiles, orngEnviron
 import os, tarfile, urllib2
 
 
-path = os.path.join(orngEnviron.bufferDir, "tmp_kegg")
+path = os.path.join(orngEnviron.bufferDir, "tmp_kegg/")
 
 u = obiKEGG.Update(local_database_path=path)
 serverFiles=orngServerFiles.ServerFiles("username", "password")
