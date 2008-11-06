@@ -45,16 +45,18 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
         title = "KEGG Enzymes and Compounds"
         tags = ["KEGG", "enzyme", "compound"]
     elif func == obiKEGG.Update.UpdateTaxonomy:
+        func(u)
         filename = "kegg_taxonomy.tar.gz"
         title = "KEGG Taxonomy"
         files = [os.path.normpath("genes//taxonomy"),
                  os.path.normpath("genes//genome")]
         tags = ["KEGG", "taxonomy", "organism", "essential"]
     elif func == obiKEGG.Update.UpdateOrthology:
-        filename = "kegg_othology.tar.gz"
+        func(u)
+        filename = "kegg_orthology.tar.gz"
         files = [os.path.normpath("brite//ko//ko00001.keg")]
-        title = "KEGG Orhology"
-        tags = ["KEGG", "orhology", "essential"]
+        title = "KEGG Orthology"
+        tags = ["KEGG", "orthology", "essential"]
     filepath = os.path.join(path, filename)
     tFile = tarfile.open(filepath, "w:gz")
     for file in files:
