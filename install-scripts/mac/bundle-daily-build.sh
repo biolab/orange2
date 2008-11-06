@@ -124,6 +124,9 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	# Sets the custom icon volume flag so that volume has nice Orange icon after mount (.VolumeIcon.icns)
 	/Developer/Tools/SetFile -a C "$MOUNT_POINT"
 	
+	rm -rf "$MOUNT_POINT/.Trashes/"
+	rm -rf "$MOUNT_POINT/.fseventsd/"
+	
 	hdiutil detach "$DEV_NAME" -force
 	
 	echo "Converting temporary image to a compressed image."
@@ -231,6 +234,9 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	/Developer/Tools/SetFile -a V "$MOUNT_POINT/.background/"
 	# Sets the custom icon volume flag so that volume has nice Orange icon after mount (.VolumeIcon.icns)
 	/Developer/Tools/SetFile -a C "$MOUNT_POINT"
+	
+	rm -rf "$MOUNT_POINT/.Trashes/"
+	rm -rf "$MOUNT_POINT/.fseventsd/"
 	
 	hdiutil detach "$DEV_NAME" -force
 	
