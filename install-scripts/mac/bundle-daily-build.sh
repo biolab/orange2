@@ -65,7 +65,7 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	done
 	
 	echo "Cleaning up."
-	rm -rf source/ c45.dll liborange_include.a
+	rm -rf source/ c45.dll liborange_include.a updateOrange.py
 	
 	# Installation registration
 	echo "orange" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange.pth
@@ -176,7 +176,7 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	done
 	
 	echo "Cleaning up."
-	rm -rf source/ c45.dll liborange_include.a
+	rm -rf source/ c45.dll liborange_include.a updateOrange.py
 	
 	# Installation registration
 	echo "orange" > /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange.pth

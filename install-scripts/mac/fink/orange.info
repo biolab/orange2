@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange
 Version: 1.0b.__STABLE_REVISION__
-Revision: 10
+Revision: 11
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-%v.tgz
 Source-MD5: __STABLE_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-%v.tgz
@@ -109,7 +109,7 @@ InstallScript: <<
 	
 	# Cleans up
 	rm -rf COPYING LICENSES doc/ source/
-	rm -rf liborange_include.a
+	rm -rf c45.dll liborange_include.a updateOrange.py
 	
 	# Files for both orange and orange-py25
 	mkdir -p %i/lib/python2.5/site-packages/orange/
