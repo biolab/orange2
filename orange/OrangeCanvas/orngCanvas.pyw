@@ -281,7 +281,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuEdit.addAction( "Cu&t",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
         self.menuEdit.addAction( "&Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
         self.menuEdit.addAction( "&Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
-        self.menuFile.addSeparator()
+        self.menuEdit.addSeparator()
         self.menuEdit.addAction( "Select &All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
 
         self.menuOptions = QMenu("&Options", self)
@@ -302,7 +302,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.addAction( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()
-        self.menuOptions.addAction( "Canvas &Options...",  self.menuItemCanvasOptions)
+        if sys.platform == "darwin":
+            self.menuOptions.addAction( "&Preferences...",  self.menuItemCanvasOptions)
+        else:
+            self.menuOptions.addAction( "Canvas &Options...",  self.menuItemCanvasOptions)
 
         self.menuWindow = QMenu("&Window", self)
         self.menuWindow.addAction("&Cascade", self.workspace.cascadeSubWindows)

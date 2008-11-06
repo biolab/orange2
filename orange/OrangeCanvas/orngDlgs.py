@@ -405,7 +405,10 @@ class CanvasOptionsDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setWindowTitle("Canvas Options")
+        if sys.platform == "darwin":
+            self.setWindowTitle("Preferences")
+        else:
+            self.setWindowTitle("Canvas Options")
         self.topLayout = QVBoxLayout(self)
         self.topLayout.setSpacing(0)
         self.resize(500,500)
