@@ -317,3 +317,16 @@ cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/fin
 echo "Making an archive of all info files."
 cd /Volumes/fink/dists/10.5/main/finkinfo/
 tar -czf all.tgz *.info
+
+echo "Removing unnecessary source archives."
+perl -e '
+for (</Volumes/fink/dists/10.5/main/binary-darwin-i386/orange-*.deb>) {
+	m/_(.+)-\d+_darwin-i386\.deb/;
+	$versions{$1} = 1;
+}
+for (</Volumes/fink/dists/10.5/main/source/*.tgz>) {
+	m/.+-(.+)\.tgz/;
+	next if $versions{$1};
+	unlink;
+}
+'
