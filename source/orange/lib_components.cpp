@@ -4746,17 +4746,17 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 
 	// set graphs attribut items of type ExampleTable to subgraph
 	PyObject *strItems = PyString_FromString("items");
-
 	if (PyObject_HasAttr(self, strItems) == 1)
 	{
 		PyObject* items = PyObject_GetAttr(self, strItems);
-      PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 
-      Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
+		if (PyObject_IsTrue(items) && PyObject_Size(items) == size)
+		{
+			PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
+			Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
+		}
 	}
-
 	Py_DECREF(strItems);
-
 	return pysubgraph;
 	PyCATCH
 }
