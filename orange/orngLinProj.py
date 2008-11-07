@@ -1,8 +1,12 @@
 import orangeom, orange
-import math, random, numpy, MA
+import math, random, numpy
 from numpy.linalg import inv, eig      # matrix inverse and eigenvectors
 from orngScaleLinProjData import orngScaleLinProjData
 import orngVisFuncts
+try:
+    import numpy.ma as MA
+except:
+    import numpy.core.ma as MA
 
 #implementation
 FAST_IMPLEMENTATION = 0
