@@ -59,14 +59,18 @@ we are not sure about older compilers).
 Compiling instructions for Mac OS X
 -----------------------------------
 
-Mac OS X comes without gcc, but you can download it for free
-from Apple. After having it installed and orange downloaded:
+Mac OS X comes without gcc but you get it with Xcode. You can
+install Xcode from your Mac OS X installation disk or from:
 
-1. Uncompress the archive to !!!CHECK DIRECTORY!!!.
-2. Go to directory !!! and run 'make -f Makefile.mac'.
-3. Run 'make -f Makefile.mac install'
+  http://developer.apple.com/technology/xcode.html
 
-Port to Mac OS X is based on port to linux, so most of the
-things written above apply here as well.
+After having it installed and Orange source code downloaded:
 
-Installation on Mac OS X will change soon.
+1. Uncompress the archive.
+2. Go to the uncompressed directory and run 'make' after which
+   you will get compiled modules in a parent directory.
+3. You can move those modules where Python will find them
+   (for example where PYTHONPATH is pointing to).
+4. Make sure with 'otool -L' that paths to dynamic libraries
+   modules are using are correct. If not, use 'install_name_tool'
+   to correct them.
