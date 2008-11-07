@@ -147,8 +147,12 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             self.setData(3, Qt.DisplayRole, QVariant("Error occured while downloading"))
             
     def Remove(self):
-        os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename))
-        os.remove(os.path.join(orngServerFiles.localpath(self.domain), self.filename +".info"))        
+        name = os.path.join(orngServerFiles.localpath(self.domain), self.filename)
+        if os.path.isdir(name):
+            import shutil
+            shutil.rmtree(name)
+        os.remove(name)
+        os.remove(name + ".info")
         self.state = 2
         self.updateWidget.SetState(self.state)
         self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
