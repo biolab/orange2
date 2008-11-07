@@ -26,14 +26,6 @@ class UpdateThread(QThread):
             self.emit(SIGNAL("finish(int)"), 1)
             self.quit()
             return
-        if "#uncompressed" in self.item.specialTags:
-            f = gzip.open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename))
-            data = f.read()
-            f.close()
-##            del f
-##            self.wait(10)
-            f = open(os.path.join(orngServerFiles.localpath(self.item.domain), self.item.filename), "wb")
-            f.write(data)
         self.emit(SIGNAL("finish(int)"), 0)
         self.quit()
 

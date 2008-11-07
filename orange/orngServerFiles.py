@@ -315,20 +315,35 @@ class ServerFiles(object):
         return self._pubhandle(command, data).read()
 
 
-def download(domain, filename, serverfiles=None, callback=None):
+def download(domain, filename, serverfiles=None, callback=None, extract=True):
     """
     Downloads a file to a local orange installation.
     """
     if not serverfiles:
         serverfiles = ServerFiles()
 
-    target = localpath(domain, filename)
+    info = serverfiles.info(domain, filename)
 
-    serverfiles.download(domain, filename, target, callback=callback)
+    extract = extract and any(tag.startswith("#uncompressed:") for tag in info["tags"])
+    
+    target = localpath(domain, filename)
+    
+    serverfiles.download(domain, filename, target + "tmp" if extract else target, callback=callback)
     
     #file saved, now save info file
-    info = serverfiles.info(domain, filename)
-    saveFileInfo(target + '.info', info)
+
+    saveFileInfo(target + '.info', info)          
+    
+    if extract:
+        import tarfile
+        f = tarfile.open(target + "tmp")
+        try:
+            os.mkdir(target)
+        except Exception:
+            pass
+        f.extractall(target)
+        f.close()
+        os.remove(target + "tmp")
 
 def listfiles(domain):
     """
