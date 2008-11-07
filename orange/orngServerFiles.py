@@ -421,8 +421,6 @@ def search(sstrings, **kwargs):
     si = _searchinfo()
     return _search(si, sstrings, **kwargs)
 
-print search(["hsa"])
-
 def example(myusername, mypassword):
 
     locallist = listfiles('test')
