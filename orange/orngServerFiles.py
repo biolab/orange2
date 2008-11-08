@@ -359,7 +359,7 @@ def listfiles(domain):
 
     for file in files:
         #if file to exists without info
-        if os.path.isfile(os.path.join(dir,file[:-5])):
+        if os.path.exists(os.path.join(dir,file[:-5])):
             #check info format - needs to be valid
             try:
                 openFileInfo(os.path.join(dir,file))
