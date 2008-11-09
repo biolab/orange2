@@ -260,8 +260,8 @@ if [ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] || [ -e /privat
 	[ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] && mv /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg /Volumes/download/
 	
 	echo "Registering new bundles."
-	egrep -v '^(MAC_STABLE|MAC_DAILY)=' /Volumes/download/filenames.set > /Volumes/download/filenames.set.new
-	echo "MAC_STABLE=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames.set.new
-	echo "MAC_DAILY=orange-bundle-svn-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames.set.new
+	egrep -v '^(MAC|MAC_SNAPSHOT)=' /Volumes/download/filenames.set > /Volumes/download/filenames.set.new
+	echo "MAC=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames.set.new
+	echo "MAC_SNAPSHOT=orange-bundle-svn-0.0.$DAILY_REVISION.dmg" >> /Volumes/download/filenames.set.new
 	mv /Volumes/download/filenames.set.new /Volumes/download/filenames.set
 fi
