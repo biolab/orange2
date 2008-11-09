@@ -23,6 +23,9 @@ DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/t
 
 echo "Preparing temporary directory."
 rm -rf /private/tmp/bundle/
+	
+# Gives our Python executable to compile scripts later on
+export PATH=/private/tmp/bundle/Orange.app/Contents/MacOS/:$PATH
 
 if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	echo "Downloading bundle template."
@@ -38,9 +41,6 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	
 	ln -s ../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/ /private/tmp/bundle/Orange.app/Contents/Resources/orange
 	ln -s ../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/ /private/tmp/bundle/Orange.app/Contents/Resources/doc
-	
-	# Gives our Python executable to compile scripts later on
-	export PATH=/private/tmp/bundle/Orange.app/Contents/MacOS/:$PATH
 	
 	echo "Compiling."
 	cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/source/
