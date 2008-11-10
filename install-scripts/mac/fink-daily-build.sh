@@ -38,27 +38,29 @@ test -r $FINK_ROOT/bin/init.sh || { echo "Fink cannot be found." exit 2; }
 
 [ -e /Volumes/fink/ ] || { echo "/Volumes/fink/ not mounted."; exit 3; }
 
+[ -e /Volumes/download/ ] || { echo "/Volumes/download/ not mounted."; exit 4; }
+
 # Configures environment for Fink
 . $FINK_ROOT/bin/init.sh
 
 if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '^SelfUpdateMethod:' $FINK_ROOT/etc/fink.conf | grep -q 'point'; then
 	echo "Fink does not seem to use unstable Fink packages tree with rsync or CVS updating."
-	exit 4
+	exit 5
 fi
 
 if [ ! -x /usr/bin/xcodebuild ]; then
 	echo "It seems Xcode is not installed on a system."
-	exit 5
+	exit 6
 fi
 
 if [ "`sw_vers -productVersion | cut -d '.' -f 2`" != "5" ]; then
 	echo "It seems system is not Mac OS X version 10.5."
-	exit 6
+	exit 7
 fi
 
 if [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
 	echo "It seems X11 version 2.3.0 or later is not installed on a system."
-	exit 7
+	exit 8
 fi
 
 echo "Preparing local ailab Fink info files repository."
@@ -115,6 +117,11 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz 
 	mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
+	
+	echo "Registering new source archive."
+	egrep -v '^SOURCE_STABLE=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+	echo "SOURCE_STABLE=orange-1.0b.$STABLE_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
+	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 else
 	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 fi
@@ -142,6 +149,11 @@ if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tg
 	mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
 	
 	rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
+	
+	echo "Registering new source archive."
+	egrep -v '^SOURCE_DAILY=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+	echo "SOURCE_DAILY=orange-svn-0.0.$DAILY_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
+	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 else
 	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 fi
@@ -151,6 +163,7 @@ perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/ma
 for dir in $STABLE_SOURCE_DIRS ; do
 	# Gets only the last part of the directory name, converts to lower case and removes dashes
 	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
+	SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
 	STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
@@ -172,6 +185,11 @@ for dir in $STABLE_SOURCE_DIRS ; do
 		mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$STABLE_SOURCE_NAME/
+		
+		echo "Registering new source archive."
+		egrep -v "^SOURCE_${SOURCE_VAR}_STABLE=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+		echo "SOURCE_${SOURCE_VAR}_STABLE=$STABLE_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 	else
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz`
 	fi
@@ -182,6 +200,7 @@ done
 for dir in $DAILY_SOURCE_DIRS ; do
 	# Gets only the last part of the directory name, converts to lower case and removes dashes
 	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
+	SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
 	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
@@ -203,6 +222,11 @@ for dir in $DAILY_SOURCE_DIRS ; do
 		mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
 	
 		rm -rf /tmp/$DAILY_SOURCE_NAME/
+		
+		echo "Registering new source archive."
+		egrep -v "^SOURCE_${SOURCE_VAR}_DAILY=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+		echo "SOURCE_${SOURCE_VAR}_DAILY=$DAILY_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 	else
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz`
 	fi
