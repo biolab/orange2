@@ -9,7 +9,7 @@ set TMPDIR=%SCRIPTDIR\%1
 set DOWNLOADDIR=O:\
 
 REM # read filenames of current packages
-set /r %DOWNLOADDIR\filenames.set
+set /r %DOWNLOADDIR\filenames_win.set
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
