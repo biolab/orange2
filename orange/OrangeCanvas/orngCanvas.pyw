@@ -232,6 +232,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs.readInstalledWidgets(widgetTabList, self.widgetDir, self.picsDir, self.defaultPic)
         self.settings["WidgetTabs"] = [(name, show) for (name, show, w) in self.tabs.tabs]
 
+        orngTabs.constructCategoriesPopup(self)
+
         #qApp.processEvents()
         self.workspace.cascadeSubWindows()
 

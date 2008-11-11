@@ -5,8 +5,9 @@
 import orngCanvasItems
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import orngHistory
+import orngHistory, orngTabs
 
+        
 class SchemaView(QGraphicsView):
     def __init__(self, doc, *args):
         apply(QGraphicsView.__init__,(self,) + args)
@@ -167,6 +168,7 @@ class SchemaView(QGraphicsView):
             outWidget, inWidget = self.widgetChannelsAtPos(self.mouseDownPosition)
             activeItem = outWidget or inWidget
             self.tempWidget = activeItem
+            self.inWidget, self.outWidget = inWidget, outWidget
             if activeItem:
                 activeItem.setSelected(1)
                 if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
@@ -323,6 +325,26 @@ class SchemaView(QGraphicsView):
                      QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
                     line = self.doc.addLine(outWidget, inWidget)
+            else:
+                newCoords = QPoint(ev.globalPos())
+                action = orngTabs.categoriesPopup.exec_(newCoords)
+                if action:
+                    newWidget = action.widget.clicked(False, newCoords)
+                    if self.doc.signalManager.signalProcessingInProgress:
+                        QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
+                    else:
+                        line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
+
+        else:
+            activeItem = self.scene().itemAt(point)
+            if not activeItem:
+                mouseUpPosition = self.mapToScene(ev.pos())
+                if (self.mouseDownPosition.x() - mouseUpPosition.x())**2 + (self.mouseDownPosition.y() - mouseUpPosition.y())**2 < 25:
+                    newCoords = QPoint(ev.globalPos())
+                    action = orngTabs.categoriesPopup.exec_(newCoords)
+                    if action:
+                        newWidget = action.widget.clicked(False, newCoords)
+                
 
         self.scene().update()
         self.bWidgetDragging = False

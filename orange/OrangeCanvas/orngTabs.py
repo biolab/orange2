@@ -109,12 +109,21 @@ class WidgetButtonBase():
     def getCategory(self):
         return self.nameKey[:self.nameKey.index("-")].strip()
     
-    def clicked(self, rightClick = False):
+    def clicked(self, rightClick = False, pos = None):
         win = self.canvasDlg.workspace.activeSubWindow()
         if (win and isinstance(win, orngDoc.SchemaDoc)):
-            win.addWidget(self)
-            if (rightClick or self.shiftPressed) and len(win.widgets) > 1:
-                win.addLine(win.widgets[-2], win.widgets[-1])
+            if pos:
+                pos = win.mapFromGlobal(pos)
+                win.addWidget(self, pos.x(), pos.y())
+            else:
+                win.addWidget(self)
+            if (rightClick or self.shiftPressed):
+                import orngCanvasItems
+                if isinstance(rightClick, orngCanvasItems.CanvasWidget):
+                    win.addLine(rightClick, win.widgets[-1])
+                elif len(win.widgets) > 1:
+                    win.addLine(win.widgets[-2], win.widgets[-1])
+            return win.widgets[-1]
         elif (isinstance(win, orngOutput.OutputWindow)):
             QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance to Output window. Please select a document window first.', QMessageBox.Ok)
         else:
@@ -406,7 +415,6 @@ class WidgetTabs(WidgetListBase, QTabWidget):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
         apply(QTabWidget.__init__, (self,) + args)
 
-
     def insertWidgetTab(self, name, show = 1):
         tab = WidgetScrollArea(self)
         tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -612,3 +620,23 @@ class MyTreeWidget(QTreeWidget):
         else:
             QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
     
+
+def constructCategoriesPopup(canvasDlg):
+    global categoriesPopup
+    categoriesPopup = QMenu(canvasDlg)
+    categoriesPopup.setStyleSheet(" QMenu { background-color: #fffff0; selection-background-color: blue; }")
+    
+
+    for category in canvasDlg.tabs.tabs:
+        catmenu = categoriesPopup.addMenu(category[0])
+        for widget in category[2].widgets:
+            wbutton = WidgetButtonBase()
+            wbutton.name = widget.name
+            wbutton.widgetTabs = canvasDlg.tabs
+            wbutton.canvasDlg = canvasDlg
+            wbutton.nameKey = category[0] + " - " + widget.name
+            icon = QIcon(wbutton.getFullIconName())
+            tooltip = wbutton.createTooltipString(canvasDlg, widget.name)
+            act = catmenu.addAction(icon, widget.name)
+            act.widget = wbutton
+        
