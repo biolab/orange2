@@ -92,7 +92,7 @@ class OrangeCanvasDlg(QMainWindow):
         w = QWidget()
         w.setLayout(QHBoxLayout())
         self.widgetListTypeToolbar.addWidget(w)
-        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"])
+        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels", "Canvas Popups"])
         
         self.connect(self.widgetOrganizationCombo, SIGNAL('activated(int)'), self.widgetListTypeChanged)
         try:        # maybe we will someday remove some of the options and the index will be too big
@@ -909,7 +909,7 @@ class OrangeCanvasDlg(QMainWindow):
         else:
             self.settings = {}
 
-        self.settings.setdefault("widgetListType", 2)
+        self.settings.setdefault("widgetListType", 4)
         self.settings.setdefault("iconSize", "40 x 40")
         self.settings.setdefault("toolboxWidth", 200)
         self.settings.setdefault("snapToGrid", 1)

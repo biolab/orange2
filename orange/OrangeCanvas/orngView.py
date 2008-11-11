@@ -326,25 +326,27 @@ class SchemaView(QGraphicsView):
                 else:
                     line = self.doc.addLine(outWidget, inWidget)
             else:
-                newCoords = QPoint(ev.globalPos())
-                action = orngTabs.categoriesPopup.exec_(newCoords)
-                if action:
-                    newWidget = action.widget.clicked(False, newCoords)
-                    if self.doc.signalManager.signalProcessingInProgress:
-                        QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
-                    else:
-                        line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
-
-        else:
-            activeItem = self.scene().itemAt(point)
-            if not activeItem:
-                mouseUpPosition = self.mapToScene(ev.pos())
-                if (self.mouseDownPosition.x() - mouseUpPosition.x())**2 + (self.mouseDownPosition.y() - mouseUpPosition.y())**2 < 25:
+                if self.doc.canvasDlg.settings["widgetListType"] == 4:
                     newCoords = QPoint(ev.globalPos())
                     action = orngTabs.categoriesPopup.exec_(newCoords)
                     if action:
                         newWidget = action.widget.clicked(False, newCoords)
-                
+                        if self.doc.signalManager.signalProcessingInProgress:
+                            QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
+                        else:
+                            line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
+
+        else:
+            if self.doc.canvasDlg.settings["widgetListType"] == 4:
+                activeItem = self.scene().itemAt(point)
+                if not activeItem:
+                    mouseUpPosition = self.mapToScene(ev.pos())
+                    if (self.mouseDownPosition.x() - mouseUpPosition.x())**2 + (self.mouseDownPosition.y() - mouseUpPosition.y())**2 < 25:
+                        newCoords = QPoint(ev.globalPos())
+                        action = orngTabs.categoriesPopup.exec_(newCoords)
+                        if action:
+                            newWidget = action.widget.clicked(False, newCoords)
+                    
 
         self.scene().update()
         self.bWidgetDragging = False
