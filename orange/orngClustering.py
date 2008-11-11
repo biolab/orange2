@@ -102,7 +102,7 @@ class DendrogramPlot(object):
     defaultTreeColor = (0, 0, 0)
     defaultTextColor = (100, 100, 100)
     defaultMatrixOutlineColor = (240, 240, 240)
-    def __init__(self, tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, painter=None, clusterColors={}):
+    def __init__(self, tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, lineWidth=2, painter=None, clusterColors={}):
         self.tree = tree
         self.data = data
         self.labels = labels
@@ -113,6 +113,7 @@ class DendrogramPlot(object):
         self.textAreaWidth = textAreaWidth
         self.matrixAreaWidth = matrixAreaWidth
         self.fontSize = fontSize
+        self.lineWidth = lineWidth
         self.clusterColors = clusterColors
         self.lowColor = (0, 0, 0)
         self.hiColor = (255, 255, 255)
@@ -231,9 +232,9 @@ class DendrogramPlot(object):
                 subClusterPoints = []
                 for t in tree.branches:
                     point, cc = _drawTree(t, color)
-                    self.painter.line([(treeHeight, point[1]), point], fill=cc, width=2)
+                    self.painter.line([(treeHeight, point[1]), point], fill=cc, width=self.lineWidth)
                     subClusterPoints.append(point)
-                self.painter.line([(treeHeight, subClusterPoints[0][1]), (treeHeight, subClusterPoints[-1][1])], fill=color, width=2)
+                self.painter.line([(treeHeight, subClusterPoints[0][1]), (treeHeight, subClusterPoints[-1][1])], fill=color, width=self.lineWidth)
                 return (treeHeight, (subClusterPoints[0][1]+subClusterPoints[-1][1])/2), color
             else:
                 self.globalHeight+=hAdvance
@@ -296,7 +297,7 @@ if __name__=="__main__":
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
     orderLeafs(root, matrix)
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000)
+    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
     d.Plot("graphOrdered.png")
     
