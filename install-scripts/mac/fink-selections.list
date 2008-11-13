@@ -72,4 +72,5 @@ texinfo						install
 unixodbc2-nox					install
 unixodbc2-nox-shlibs				install
 unzip						install
+wget						install
 xdg-base					install
