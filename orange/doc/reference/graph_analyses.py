@@ -10,7 +10,7 @@ network = NetworkOptimization()
 graph, table = network.readNetwork("combination.net")
 
 components = graph.getConnectedComponents()
-print "Conneceted components"
+print "Connected components"
 print components
 print
 
