@@ -29,14 +29,14 @@
 <DD>A dictionary, list or other sequence of objects that correspond to graph nodes. The use of this object is described in section on <A href="#indexing">indexing</A>.</DD>
 
 <DT><CODE><B>forceMapping</B></CODE></DT>
-<DD>Determines whether to map integer indices throug 'objects'. Details are described below.</DD>
+<DD>Determines whether to map integer indices through 'objects'. Details are described below.</DD>
 </DL>
 
 <DT><CODE><B>returnIndices</B></CODE></DT>
 <DD>If set, the methods that return list of neighbours will return lists of integers even when <CODE>objects</CODE> are given.</DD>
 </P>
 
-<A name="graphtypes">
+<A name="graphtypes"></A>
 <H2>Construction</H2>
 
 <P>When constructing a graph, you will need to decide about the data structure for representation of edges, and call the corresponding constructor. All constructors take the same arguments: the number of vertices (needs to be given in advance, you cannot add additional vertices later), a flag telling whether the graph is directed or not, and the number of edge types. The default number of edge types is 1 (a normal graph), while the other two arguments are mandatory.</P>
@@ -77,10 +77,10 @@
 
 <P>All three graph types are used the same way, independent of the underlying structure.</P>
 
-<A name="indexing">
+<A name="indexing"></A>
 <H3>Indexing</H3>
 
-<P>Vertices are referred to by either integer indices or Python objects of any type. In the latter case, a mapping should be provided by assigning the 'objects' attribute. For instance, if you set <CODE>graph.objects</CODE> to <CODE>["Age", "Gender", "Height", "Weight"]</CODE> then <CODE>graph["Age", "Height"]</CODE> would be equivalent to <CODE>graph[0, 2]</CODE> and <CODE>graph.getNeighbours("Weight")</CODE> to <CODE>graph.getNeighbours(3)</CODE>. Vertix identifier doesn't need to be a string, , it can be any Python object.</P>
+<P>Vertices are referred to by either integer indices or Python objects of any type. In the latter case, a mapping should be provided by assigning the 'objects' attribute. For instance, if you set <CODE>graph.objects</CODE> to <CODE>["Age", "Gender", "Height", "Weight"]</CODE> then <CODE>graph["Age", "Height"]</CODE> would be equivalent to <CODE>graph[0, 2]</CODE> and <CODE>graph.getNeighbours("Weight")</CODE> to <CODE>graph.getNeighbours(3)</CODE>. Vertex identifier doesn't need to be a string, , it can be any Python object.</P>
 
 <P>If <CODE>objects</CODE> contains a dictionary, its keys are vertex identifiers and the values in the dictionary should be integers, eg.
 <XMP class="CODE">graph.objects = {}
@@ -129,7 +129,7 @@ graph.objects[orange] = 4
 <P class=section>Attributes</P>
 <DL class=attributes>
 <DT>getNeighbours(v1[, type])</DT>
-<DD>Returns all the nodes that are connected to <CODE>v1</CODE>. In directed graphs, this includes vertices with edges towards or from <CODE>v1</CODE>. In graphs with multiple edge types you can also specify the edge type you are interested in: <CODE>getNeighbours</CODE> will the return only the vertices that are connected to <CODE>v1</CODE> by edges of that type.</DD>
+<DD>Returns all the nodes that are connected to <CODE>v1</CODE>. In directed graphs, this includes vertices with edges toward or from <CODE>v1</CODE>. In graphs with multiple edge types you can also specify the edge type you are interested in: <CODE>getNeighbours</CODE> will the return only the vertices that are connected to <CODE>v1</CODE> by edges of that type.</DD>
 
 <DT>getEdgesFrom(v1[, type])</DT>
 <DD>Return all the vertices which are connected to <CODE>v1</CODE> by the edges leading from <CODE>v1</CODE>. In edges with multiple edge types, you can specify the edge type. In undirected graph, this function is equivalent to <CODE>getNeighbours</CODE>.</DD>
@@ -142,7 +142,7 @@ graph.objects[orange] = 4
 
 <P>Of the three operations, the expensive one is to look for the vertices with edges pointing to the given edge. There is no problem when graph is represented as a matrix (<CODE>graphAsMatrix</CODE>); these are always fast. On directed graph, <CODE>getEdgeFrom</CODE> is always fast as well.</P>
 
-<P>In undirected graphs represented as lists or trees, the edge between vertices with indices <CODE>v1</CODE> and <CODE>v2</CODE> is stored at the list/tree in the smaller of the two indices. Therefore to list all neighbours of <CODE>v1</CODE>, edges with <CODE>v2&lt;v1</CODE> are copied form <CODE>v1</CODE>'s list, while for edges with <CODE>v2&gt;v1</CODE> the function needs to look for <CODE>v1</CODE> in each <CODE>v2's</CODE> list/tree. Lookup in trees is fast, while in representation with adjacency list, the function is slower for <CODE>v1</CODE> closer to <CODE>nVertices</CODE>/2. If <CODE>v1</CODE> is small there is a great number of <CODE>v2&gt;v1</CODE> whose lists are to be checked, but since the lists are ordered, <CODE>v1</CODE> is more to the beginning of these lists (and when a vertex with index higher than <CODE>v1</CODE> is encountered, we know that <CODE>v1</CODE> is not on the list). If <CODE>v2</CODE> is great, there it is more towards the end of the list, but there is smaller number of lists to be checked. Generally, the average number of traversed list elements for <CODE>getNeighbours</CODE>/<CODE>getEdgesFrom</CODE>/<CODE>getEdgesTo</CODE> on undirected graphs with p*nVertices<SUP>2</SUP> edges is p(nVertices-v1)v1.</P>
+<P>In undirected graphs represented as lists or trees, the edge between vertices with indices <CODE>v1</CODE> and <CODE>v2</CODE> is stored at the list/tree in the smaller of the two indices. Therefore to list all neighbours of <CODE>v1</CODE>, edges with <CODE>v2&lt;v1</CODE> are copied form <CODE>v1</CODE>'s list, while for edges with <CODE>v2&gt;v1</CODE> the function needs to look for <CODE>v1</CODE> in each <CODE>v2's</CODE> list/tree. Lookup in trees is fast, while in representation with adjacency list, the function is slower for <CODE>v1</CODE> closer to <CODE>nVertices</CODE>/2. If <CODE>v1</CODE> is small there is a great number of <CODE>v2&gt;v1</CODE> whose lists are to be checked, but since the lists are ordered, <CODE>v1</CODE> is more to the beginning of these lists (and when a vertex with index higher than <CODE>v1</CODE> is encountered, we know that <CODE>v1</CODE> is not on the list). If <CODE>v2</CODE> is great, there it is more toward the end of the list, but there is smaller number of lists to be checked. Generally, the average number of traversed list elements for <CODE>getNeighbours</CODE>/<CODE>getEdgesFrom</CODE>/<CODE>getEdgesTo</CODE> on undirected graphs with p*nVertices<SUP>2</SUP> edges is p(nVertices-v1)v1.</P>
 
 <P>To sum up, if you have a large undirected graph and intend to query for neighbours (or, equivalently, edges to or from a node) a lot, don't use <CODE>GraphAsList</CODE>. If the graph is small or you won't use these functions, it doesn't matter.</P>
 
@@ -156,7 +156,7 @@ graph.objects[orange] = 4
 
 <DL class=attributes>
 <DT>getConnectedComponents()</DT>
-<DD>Returns list of all connected compnents sorted descending by component size.</DD>
+<DD>Returns list of all connected components sorted descending by component size.</DD>
 
 <DT>getDegreeDistribution()</DT>
 <DD>Returns degree distribution as dictionary of type {degree:number_of_vertices}.</DD>
@@ -206,7 +206,7 @@ subNetwork = NetworkOptimization(subgraph)
 </xmp>
 
 <p>Results:</p>
-<xmp class=code>Conneceted components
+<xmp class=code>Connected components
 [[0, 1, 2, 3, 4, 5, 6, 7, 8], [13, 14, 15, 16, 17, 18], [9, 10, 11, 12]]
 
 Degree distribution
