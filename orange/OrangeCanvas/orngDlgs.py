@@ -5,7 +5,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 #from orngCanvasItems import *
-import orngGui
+import orngGui, sys
 
 # this class is needed by signalDialog to show widgets and lines
 class SignalCanvasView(QGraphicsView):
