@@ -179,6 +179,23 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 
                 r = numpy.sqrt((x - x_center)**2 + (y - y_center)**2)
                 Mi = 0
+                
+#                u_x = self.graph.coors[0][component].reshape(-1,1)
+#                u_y = self.graph.coors[0][component].reshape(-1,1)
+#                v_x = self.graph.coors[0][list(outer_vertices)]
+#                v_y = self.graph.coors[0][list(outer_vertices)]
+#                
+#                l = numpy.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
+#                e = numpy.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
+#                fiVR = numpy.arctan2(v_y - u_y, v_x - u_x)
+#                fiV = numpy.arctan2(u_y - y_center, u_x - x_center)
+#                fi = numpy.pi - (fiVR - fiV)
+#                
+#                Mi = (1) / (e**2)
+#                Mi = Mi * l
+#                Mi = Mi * numpy.sin(fi) 
+#                Mi = Mi * r.reshape(-1,1)
+                
                 for j in range(len(component)):
                     u = component[j]
                     Mu = 0
@@ -252,8 +269,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_avg_mds = sum(x) / len(x) 
                 y_avg_mds = sum(y) / len(y)
                 
-                x = [self.graph.coors[0][u] for u in component]
-                y = [self.graph.coors[1][u] for u in component]
+                x = self.graph.coors[0][component]
+                y = self.graph.coors[1][component]
                 
                 x_avg_graph = sum(x) / len(x)
                 y_avg_graph = sum(y) / len(y)
