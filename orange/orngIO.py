@@ -203,11 +203,11 @@ def toR(filename,t):
     atyp = []
     aord = []
     labels = []
-    as = []
+    as0 = []
     for a in t.domain.attributes:
-        as.append(a)
-    as.append(t.domain.classVar)
-    for a in as:
+        as0.append(a)
+    as0.append(t.domain.classVar)
+    for a in as0:
         labels.append(str(a.name))
         atyp.append(a.varType)
         aord.append(a.ordered)
@@ -231,9 +231,9 @@ def toR(filename,t):
             else:
                 f.write('"%s" = factor('%labels[i])
             f.write('levels=c(')
-            for j in xrange(len(as[i].values)):
-                f.write('"x%s"'%(as[i].values[j]))
-                if j == len(as[i].values)-1:
+            for j in xrange(len(as0[i].values)):
+                f.write('"x%s"'%(as0[i].values[j]))
+                if j == len(as0[i].values)-1:
                     f.write('),c(')
                 else:
                     f.write(',')
