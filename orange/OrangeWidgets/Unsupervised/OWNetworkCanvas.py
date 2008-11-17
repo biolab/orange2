@@ -250,7 +250,7 @@ class OWNetworkCanvas(OWGraph):
       self.setAxisAutoScale(self.yLeft)
       
       self.networkCurve = NetworkCurve(self)
-      
+      self.callbackMoveVertex = None
       
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
@@ -422,6 +422,8 @@ class OWNetworkCanvas(OWGraph):
           self.GMmouseMoveEvent.setY(event.pos().y())
           
           self.drawPlotItems(replot=1, vertices=movedVertices)
+          if self.callbackMoveVertex:
+              self.callbackMoveVertex()
       else:
           OWGraph.mouseMoveEvent(self, event)
               
