@@ -63,16 +63,20 @@ if [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-
 	exit 8
 fi
 
+# Defaults are current latest revisions in stable branch and trunk
+STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+# svn info does not return proper exit status on an error so we check it this way
+[ $STABLE_REVISION ] && exit 9
+DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+# svn info does not return proper exit status on an error so we check it this way
+[ $DAILY_REVISION ] && exit 10
+
 echo "Preparing local ailab Fink info files repository."
 mkdir -p $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
 
-# Gets latest Fink package info files from SVN
-svn export --force --non-interactive http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
-
-# Defaults are current latest revisions in stable branch and trunk
-STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
-DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+# Gets Fink package info files from SVN
+svn export --force --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 
 # Injects revision versions into templates
 perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
