@@ -33,14 +33,20 @@ keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").re
 additionalNames = {"goa_arabidopsis":"Arabidopsis thaliana", "sgn":"Solanaceae", "PAMGO_Oomycetes":"Oomycete"}
 essentialOrgs = ["goa_human", "sgd", "mgi", "dictyBase"]
 
+updatedTaxonomy = {}
+
 for org in u.GetAvailableOrganisms():
     if org in exclude:
         continue
     if u.IsUpdatable(obiGO.Update.UpdateAnnotation, (org,)):
         u.UpdateAnnotation(org)
         filename = os.path.join(tmpDir, "gene_association." + org + ".tar.gz")
+        
         ##tload the annotations to test them
         a = obiGO.Annotations(filename)
+        taxons = set([ann.taxon for ann in a.annotations])
+        for taxId in [t.split(":")[-1] for t in taxons]:
+            updatedTaxonomy[taxId] = org
         ##upload the annotation
         if org in _dbOrgMap:
             orgName = keggOrgNames[_dbOrgMap[org]]
@@ -55,4 +61,13 @@ for org in u.GetAvailableOrganisms():
                                  "#organism:"+orgName] + (["essential"] if org in essentialOrgs else []))
         serverFiles.unprotect("GO", "gene_association." + org + ".tar.gz")
         
-        
+try:
+    tax = cPickle.load(open(os.path.join(path, "taxonomy.pickle")))
+except Exception:
+    tax = {}
+if set(updatedTaxonomy.keys) - set(tax.keys()):
+    tax.update(updatedTaxonomy)
+    cPickle.dump(tax, open(os.path.join(path, "taxonomy.pickle"), "w"))
+    serverFiles.upload("GO", "taxonomy.pickle", os.path.join(path, "taxonomy.pickle"), title="GO taxon IDs",
+                       tags = ["GO", "taxon", "organism", "essential"])
+    serverFiles.unprotect("GO", "taxonomy.pickle")
