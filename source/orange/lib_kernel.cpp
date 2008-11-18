@@ -292,7 +292,7 @@ PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_S
     PStringList unorderedValues_asList;
     int createNewOn = TVariable::Incompatible;
     
-    if (!PyArg_ParseTuple(args, "si|O&O&i:Variable.getExisting", &varName, &varType, ptn_StringList, &values, ptn_StringList, &unorderedValues_asList, &createNewOn))
+    if (!PyArg_ParseTuple(args, "si|O&O&i:Variable.make", &varName, &varType, ptn_StringList, &values, ptn_StringList, &unorderedValues_asList, &createNewOn))
       return NULL;
     
     set<string> unorderedValues;
