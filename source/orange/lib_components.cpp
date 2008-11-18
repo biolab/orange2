@@ -3197,9 +3197,9 @@ PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 
 	CAST_TO(TSymMatrix, matrix);
 	int i;
-	float maxval = 0;
-	float minval = INT_MAX;
 	float *e = matrix->elements;
+	float maxval = *e;
+	float minval = *e;
 	switch(type)
 	{
 		case 0:
