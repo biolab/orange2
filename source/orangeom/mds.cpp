@@ -292,12 +292,14 @@ PyObject *MDS_optimize(PyObject* self, PyObject* args, PyObject* kwds) PYARGS(ME
     PProgressCallback callback;
     PStressFunc stress;
     PyObject *pyStress=NULL;
-    if(!PyArg_ParseTuple(args, "i|O&f", &iter, cc_StressFunc, &stress, &eps))
+    if(!PyArg_ParseTuple(args, "i|O&f", &iter, cc_StressFunc, &stress, &eps)) {
+        PyErr_Clear();
         if(PyArg_ParseTuple(args, "i|Of", &iter, &pyStress, &eps) && pyStress){
             PyObject *arg=Py_BuildValue("(O)", pyStress);
             stress=PyOrange_AsStressFunc(StressFunc_new((PyTypeObject*)&PyOrStressFunc_Type, arg, NULL));
         } else
             return NULL;
+    }
 
     SELF_AS(TMDS).optimize(iter, stress, eps);
     RETURN_NONE;
