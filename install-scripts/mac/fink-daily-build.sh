@@ -66,10 +66,10 @@ fi
 # Defaults are current latest revisions in stable branch and trunk
 STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
-[ $STABLE_REVISION ] && exit 9
+[ $STABLE_REVISION ] || exit 9
 DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
-[ $DAILY_REVISION ] && exit 10
+[ $DAILY_REVISION ] || exit 10
 
 echo "Preparing local ailab Fink info files repository."
 mkdir -p $FINK_ROOT/fink/dists/ailab/main/finkinfo/
