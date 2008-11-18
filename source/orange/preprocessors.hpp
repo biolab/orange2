@@ -36,7 +36,8 @@
 #include "classify.hpp"
 
 WRAPPER(Filter);
-class TExampleTable;
+WRAPPER(ExampleTable);
+VWRAPPER(ExampleGeneratorList);
 
 
 class ORANGE_API TPreprocessor : public TOrange {
@@ -336,6 +337,13 @@ public:
 
   TPreprocessor_filter(PFilter = PFilter());
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
+};
+
+class ORANGE_API TTableAverager : public TOrange {
+public:
+  __REGISTER_CLASS
+  
+  PExampleTable operator()(PExampleGeneratorList) const;
 };
 
 #endif

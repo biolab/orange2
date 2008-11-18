@@ -994,3 +994,113 @@ PExampleGenerator TPreprocessor_filter::operator()(PExampleGenerator gen, const 
   newWeight = weightID;
   return filterExamples(filter, gen);
 }
+
+
+PExampleTable TTableAverager::operator()(PExampleGeneratorList tables) const
+{
+    if (tables->size() == 0)
+        return PExampleTable();
+      
+    PExampleGenerator &firstTable = tables->front();
+
+    if (tables->size() == 1)
+        return new TExampleTable(firstTable);
+      
+    const PDomain &firstDomain = firstTable->domain;
+    TExampleGeneratorList::iterator ti(tables->begin()), te(tables->end());
+    TVarList::const_iterator d1i, d2i, d1e(firstDomain->variables->end());
+    while(++ti != te) {
+        const PDomain &thisDomain = (*ti)->domain;
+        if (thisDomain == firstDomain)
+            continue;
+        if (   (thisDomain->attributes->size() != firstDomain->attributes->size())
+            || (thisDomain->classVar != firstDomain->classVar))
+            raiseError("Cannot average data from different domains");
+        for(d1i = firstDomain->variables->begin(), d2i = thisDomain->variables->begin();
+            d1i != d1e; d1i++, d2i++) {
+            if (*d1i != *d2i)
+                raiseError("Cannot average data from different domains");
+        }
+    }
+    
+    TExampleTable *table = new TExampleTable(firstDomain);
+    TExampleTable *pfirst = dynamic_cast<TExampleTable *>(firstTable.getUnwrappedPtr());
+    if (pfirst)
+        table->reserve(pfirst->size());
+    PExampleTable wtable = table;
+    
+    if (tables->size() == 2) {
+        for(TExampleIterator e1i = firstTable->begin(), e2i = tables->back()->begin(); e1i; ++e1i, ++e2i) {
+              TExample::iterator nei = table->new_example().begin();
+              d1i = firstDomain->variables->begin();
+              for(TExample::const_iterator ee1i((*e1i).begin()), ee2i((*e2i).begin());
+                  d1i != d1e; d1i++, ee1i++, ee2i++, nei++) {
+                  if ((*d1i)->varType != TValue::FLOATVAR) {
+                      *nei = *ee1i;
+                  }
+                  else {
+                      // ee1i's special value is used when both are special
+                      if (ee2i->isSpecial())
+                          *nei = *ee1i;
+                      else if (ee1i->isSpecial())
+                          *nei = *ee2i;
+                      else
+                          *nei = TValue((ee1i->floatV + ee2i->floatV)/2);
+                 }
+             }
+        }
+        return wtable;
+    }
+    
+    float *values = new float[tables->size()], *ve;
+    vector<TExampleIterator> iterators;
+    for(ti = tables->begin(); ti != te; ti++)
+        iterators.push_back((*ti)->begin());
+    TExampleIterator &firstIter = iterators.front();
+    vector<TExampleIterator>::iterator ib(iterators.begin()), ii, ie(iterators.end());
+    for(;;) {
+        for(ii = ib; (ii != ie) && *ii; ii++);
+        if (ii != ie)
+            break;
+        TExample::iterator nei = table->new_example().begin();
+        int attrNo = 0;
+        for(d1i = firstDomain->variables->begin(); d1i != d1e; d1i++, attrNo++, nei++) {
+            if ((*d1i)->varType != TValue::FLOATVAR) {
+               *nei = (*firstIter)[attrNo];
+            }
+            else {
+                ve = values;
+                for(ii = ib; ii != ie; ii++) {
+                  if (!(**ii)[attrNo].isSpecial())
+                    *ve++ = TValue((**ii)[attrNo].floatV);
+                }
+                if (ve == values)
+                    *nei = TValue((*firstIter)[attrNo]);
+                else if (ve-values == 1)
+                    *nei = TValue(*values);
+                else if (ve-values == 2)
+                    *nei = TValue((values[0] + values[1]) / 2);
+                else {
+                    float *mid = values+(ve-values)/2;
+                    nth_element(values, mid, ve);
+                    if ((ve-values) % 2) {
+                      *nei = TValue(*mid);
+                    }
+                    else {
+                      *nei = TValue((*mid + *max_element(values, mid)) / 2);
+                    }
+                }
+            }
+        }      
+
+        for(ii = ib; ii != ie; ++*ii++);
+    }
+    delete values;
+    
+    for(ii = ib; ii != ie; ii++)
+        if (*ii) {
+            raiseError("Cannot average tables of different lengths");
+        }
+        
+    return wtable;
+}

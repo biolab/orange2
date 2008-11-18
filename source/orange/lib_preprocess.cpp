@@ -537,6 +537,23 @@ PyObject *VariableFloatMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O
 PyObject *VariableFloatMap__reduce__(TPyOrange *self, PyObject *) { return TMM_VariableFloatMap::_reduce(self); }
 
 
+C_CALL3(TableAverager, TableAverager, Orange, "(list-of-example-generators) -/-> ExampleTable")
+
+PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg);
+
+PyObject *TableAverager_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(list-of-example-generators) --> ExampleTable")
+{
+  PyTRY
+    NO_KEYWORDS
+    if (!args || (PyTuple_Size(args) != 1))
+      PYERROR(PyExc_TypeError, "TableAverager expects a list of example generators", PYNULL);
+    PExampleGeneratorList tables = PExampleGeneratorList_FromArguments(PyTuple_GET_ITEM(args, 0));
+    if (!tables)
+      return PYNULL;
+    return WrapOrange(SELF_AS(TTableAverager)(tables));
+  PyCATCH
+}
+
 /* ************ INDUCE ************ */
 
 #include "induce.hpp"
