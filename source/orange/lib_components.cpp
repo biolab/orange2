@@ -4749,8 +4749,12 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 	if (PyObject_HasAttr(self, strItems) == 1)
 	{
 		PyObject* items = PyObject_GetAttr(self, strItems);
-
-		if (PyObject_IsTrue(items) && PyObject_Size(items) == size)
+		/*
+		cout << PyObject_IsTrue(items) << endl;
+		cout << PyObject_Size(items) << endl;
+		cout << graph->nVertices << endl;
+		*/
+		if (PyObject_IsTrue(items) && PyObject_Size(items) == graph->nVertices)
 		{
 			PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 			Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
