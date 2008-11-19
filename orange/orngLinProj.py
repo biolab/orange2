@@ -114,16 +114,16 @@ class FreeViz:
 
         self.graph.anchorData = anchors
 
-    def optimizeSeparation(self, steps = 10, singleStep = False):
+    def optimizeSeparation(self, steps = 10, singleStep = False, distances=None):
         # check if we have data and a discrete class
-        if not self.graph.haveData or len(self.graph.rawData) == 0 or not self.graph.dataHasDiscreteClass:
+        if not self.graph.haveData or len(self.graph.rawData) == 0 or not (self.graph.dataHasClass or distances):
             return
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
         if not attrIndices: return
 
         if self.implementation == FAST_IMPLEMENTATION:
-            return self.optimize_FAST_Separation(steps, singleStep)
+            return self.optimize_FAST_Separation(steps, singleStep, distances)
 
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
         if singleStep: steps = 1
@@ -140,7 +140,7 @@ class FreeViz:
                 self.graph.updateData()
             #self.recomputeEnergy()
 
-    def optimize_FAST_Separation(self, steps = 10, singleStep = False):
+    def optimize_FAST_Separation(self, steps = 10, singleStep = False, distances=None):
         optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial, orangeom.optimizeAnchorsR][self.restrain]
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
@@ -151,20 +151,37 @@ class FreeViz:
         neededSteps = 0
 
         validData = self.graph.getValidList(attrIndices)
-        if sum(validData) == 0:
+        nValid = sum(validData) 
+        if not nValid:
             return 0
 
         data = numpy.compress(validData, self.graph.noJitteringScaledData, axis=1)
         data = numpy.transpose(data).tolist()
-        classes = numpy.compress(validData, self.graph.originalData[self.graph.dataClassIndex]).tolist()
         if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
 
+        if distances:
+            if nValid != len(validData):
+                classes = orange.SymMatrix(nValid)
+                r = 0
+                for ro, vr in enumerate(validData):
+                    if not vr:
+                        continue
+                    c = 0
+                    for co, vr in enumerate(validData):
+                        if vr:
+                            classes[r, c] = distances[ro, co]
+                            c += 1
+                    r += 1  
+            else:
+                classes = distances
+        else:
+            classes = numpy.compress(validData, self.graph.originalData[self.graph.dataClassIndex]).tolist()
         while 1:
             self.graph.anchorData = optimizer(data, classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
                                               normalizeExamples = self.graph.normalizeExamples,
-                                              contClass = self.graph.dataHasContinuousClass,
+                                              contClass = 2 if distances else self.graph.dataHasContinuousClass,
                                               mirrorSymmetry = self.mirrorSymmetry)
             neededSteps += steps
 
