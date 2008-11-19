@@ -739,7 +739,7 @@ class OWNetExplorer(OWWidget):
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
             
-            toMark = [i for i, values in enumerate(vgraph.items) if txt.lower() in " ".join([str(values[ndx]).lower() for ndx in range(len(vgraph.items.domain)) + vgraph.items.domain.getmetas().keys()])]
+            toMark = [i for i, values in enumerate(vgraph.items) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(vgraph.items.domain)) + vgraph.items.domain.getmetas().keys()])]
             self.graph.setMarkedVertices(toMark)
             self.graph.replot()
             return
