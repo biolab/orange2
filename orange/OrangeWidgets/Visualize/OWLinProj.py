@@ -33,7 +33,12 @@ class OWLinProj(OWVisWidget):
     def __init__(self,parent=None, signalManager = None, name = "Linear Projection", graphClass = None):
         OWVisWidget.__init__(self, parent, signalManager, name, TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default),
+                       ("Example Subset", ExampleTable, self.setSubsetData),
+                       ("Attribute Selection List", AttributeList, self.setShownAttributes),
+                       ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults),
+                       ("VizRank Learner", orange.Learner, self.setVizRankLearner),
+                       ("Distances btw. Instances", orange.SymMatrix, self.setDistances)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("FreeViz Learner", orange.Learner)]
 
         # local variables
@@ -42,6 +47,7 @@ class OWLinProj(OWVisWidget):
         self.autoSendSelection = 1
         self.data = None
         self.subsetData = None
+        self.distances = None
         self.toolbarSelection = 0
         self.classificationResults = None
         self.outlierValues = None
@@ -285,6 +291,9 @@ class OWLinProj(OWVisWidget):
         self.subsetData = subsetData
         self.vizrank.clearArguments()
 
+    def setDistances(self, distances):
+        self.distances = distances
+        
     # attribute selection signal - info about which attributes to show
     def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
