@@ -225,7 +225,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.cancelOptimization = 0
         #qApp.processEvents()
 
-        ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep)
+        ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep, self.parentWidget.distances)
 
         self.graph.potentialsBmp = None
         self.graph.updateData()
