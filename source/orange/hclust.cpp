@@ -379,8 +379,10 @@ TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, f
         cluster->minDistance = distc;
         cluster->rawIndexMinDistance = rawIndex1;
       }
-      else if ((distc > cluster->minDistance) && (cluster->rawIndexMinDistance == rawIndex1))
+      else if ((distc > cluster->minDistance) && (cluster->rawIndexMinDistance == rawIndex1)) {
+        cluster->distances[rawIndex1] = -1;
         cluster->computeMinimalDistance();
+      }
     }
 
     for(cluster = cluster->next; cluster; cluster = cluster->next) {
@@ -394,7 +396,7 @@ TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, f
       }
       else if (   (distc > cluster->minDistance) && (cluster->rawIndexMinDistance == rawIndex1)
                || (cluster->rawIndexMinDistance == rawIndex2)) {
-        cluster->distances[rawIndex2] = -1;
+        cluster->distances[rawIndex1] = cluster->distances[rawIndex2] = -1;
         cluster->computeMinimalDistance();
       }
       else
