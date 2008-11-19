@@ -29,12 +29,14 @@ class OWSymMatrixTransform(OWWidget):
         self.invertMethod = 0
         self.loadSettings()
                 
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalization", callback = self.setNormalizeMode)
         OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
         OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^x)", callback = self.setNormalizeMode)
+        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^-x)", callback = self.setNormalizeMode)
         
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Invert method", callback = self.setInvertMode)
+        OWGUI.separator(self.controlArea)
+        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Inversion", callback = self.setInvertMode)
         OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
         OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
         OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
