@@ -1,6 +1,8 @@
 import obiGO, obiGenomicsUpdate, orngEnviron, orngServerFiles
 import os, sys, shutil, urllib2, tarfile
 
+from collections import defaultdict
+
 tmpDir = os.path.join(orngEnviron.bufferDir, "tmp_GO")
 try:
     os.mkdir(tmpDir)
@@ -33,7 +35,7 @@ keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").re
 additionalNames = {"goa_arabidopsis":"Arabidopsis thaliana", "sgn":"Solanaceae", "PAMGO_Oomycetes":"Oomycete"}
 essentialOrgs = ["goa_human", "sgd", "mgi", "dictyBase"]
 
-updatedTaxonomy = {}
+updatedTaxonomy = defaultdict(set)
 
 for org in u.GetAvailableOrganisms():
     if org in exclude:
@@ -42,12 +44,12 @@ for org in u.GetAvailableOrganisms():
         u.UpdateAnnotation(org)
         filename = os.path.join(tmpDir, "gene_association." + org + ".tar.gz")
         
-        ##tload the annotations to test them
+        ## Load the annotations to test them and collect all taxon ids from them
         a = obiGO.Annotations(filename)
         taxons = set([ann.taxon for ann in a.annotations])
         for taxId in [t.split(":")[-1] for t in taxons]:
-            updatedTaxonomy[taxId] = org
-        ##upload the annotation
+            updatedTaxonomy[taxId].add(org)
+        ## Upload the annotation
         if org in _dbOrgMap:
             orgName = keggOrgNames[_dbOrgMap[org]]
         elif org in additionalNames:
@@ -65,7 +67,9 @@ try:
     tax = cPickle.load(open(os.path.join(path, "taxonomy.pickle")))
 except Exception:
     tax = {}
-if set(updatedTaxonomy.keys) - set(tax.keys()):
+
+## Upload taxonomy if any differences in the updated taxonomy
+if any(tax.get(key, set()) != updatedTaxonomy.get(key, set()) for key in set(updatedTaxonomy)):
     tax.update(updatedTaxonomy)
     cPickle.dump(tax, open(os.path.join(path, "taxonomy.pickle"), "w"))
     serverFiles.upload("GO", "taxonomy.pickle", os.path.join(path, "taxonomy.pickle"), title="GO taxon IDs",
