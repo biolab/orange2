@@ -20,7 +20,7 @@ from PyQt4.QtGui import *
 try:
     from OWDataFiles import DataFiles
 except:
-    class DataFiles:
+    class DataFiles(object):
         pass
 
 

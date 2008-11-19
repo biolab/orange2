@@ -20,11 +20,13 @@ from random import random
 try:
     from OWDataFiles import DataFiles
 except:
-    class DataFiles:
+    class DataFiles(object):
         pass
 
 class OWMDS(OWWidget):
-    settingsList=["graph.PointSize", "graph.proportionGraphed", "graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
+    settingsList=["graph.PointSize", "graph.proportionGraphed", "graph.ColorAttr", "graph.SizeAttr",
+                  "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines",
+                  "graph.ShowName", "graph.differentWidths", "graph.stressByTransparency",
                   "StressFunc", "applyLSMT", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress",
                   "RefreshMode"]
     contextHandlers={"":DomainContextHandler("", [ContextField("graph.ColorAttr", DomainContextHandler.Optional),
@@ -35,6 +37,8 @@ class OWMDS(OWWidget):
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name)
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
+        self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.StressFunc=3
         self.minStressDelta=1e-5
@@ -48,22 +52,21 @@ class OWMDS(OWWidget):
         self.NumIter=1
         self.RefreshMode=0
         self.applyLSMT = 0
-        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
-        self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
                               ("Sammon stress", orngMDS.SammonStress),
                               ("Signed Sammon stress", orngMDS.SgnSammonStress),
                               ("Signed relative stress", orngMDS.SgnRelStress)]
 
-
+        self.loadSettings()
+        
         self.graph=MDSGraph(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
 
         tabs=OWGUI.tabWidget(self.controlArea)
         
-        mds=OWGUI.createTabPage(tabs, "Graph")
-        graph=OWGUI.createTabPage(tabs, "MDS")
+        mds=OWGUI.createTabPage(tabs, "MDS")
+        graph=OWGUI.createTabPage(tabs, "Graph")
 
         ##MDS Tab        
         init=OWGUI.widgetBox(mds, "Initialization")
@@ -79,8 +82,8 @@ class OWMDS(OWWidget):
         OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization", callback=lambda :1)
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
-        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Minimal average stress change", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Maximal number of steps", minValue=10, maxValue=5000, step=10, precision=0)
+        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Min. stress change", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
+        OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Max. number of steps", minValue=10, maxValue=5000, step=10, precision=0)
 
         ##Graph Tab        
         OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
@@ -88,14 +91,17 @@ class OWMDS(OWWidget):
         self.sizeCombo=OWGUI.comboBox(graph, self, "graph.SizeAttr", box="Size", callback=self.graph.updateData)
         self.shapeCombo=OWGUI.comboBox(graph, self, "graph.ShapeAttr", box="Shape", callback=self.graph.updateData)
         self.nameCombo=OWGUI.comboBox(graph, self, "graph.NameAttr", box="Label", callback=self.graph.updateData)
-        box = OWGUI.widgetBox(graph, "Similar pairs")
-        cb = OWGUI.checkBox(box, self, "graph.ShowStress", "Show similar pairs", callback = self.graph.updateLinesRepaint)
+        
+        box = OWGUI.widgetBox(graph, "Distances & Stress")
+        OWGUI.checkBox(box, self, "graph.ShowStress", "Show similar pairs", callback = self.graph.updateLinesRepaint)
         b2 = OWGUI.widgetBox(box)
         OWGUI.widgetLabel(b2, "Proportion of connected pairs")
         OWGUI.separator(b2, height=3)
         sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint)
-        cb.disables.append(b2)
-        cb.makeConsistent()
+        OWGUI.checkBox(box, self, "graph.differentWidths", "Show distance by line width", callback = self.graph.updateLinesRepaint)
+        OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateLinesRepaint)
+        OWGUI.checkBox(box, self, "graph.stressBySize", "Show stress by symbol size", callback = self.updateStressBySize)
+        self.updateStressBySize(True)
 
         self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
         self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
@@ -107,11 +113,10 @@ class OWMDS(OWWidget):
         mds.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         graph.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         self.controlArea.setMinimumWidth(250)
-        OWGUI.separator(self.controlArea)
-        infoBox=OWGUI.widgetBox(self.controlArea, "Info")
+        OWGUI.rubber(mds)
+        infoBox=OWGUI.widgetBox(mds, "Info")
         self.infoA=OWGUI.widgetLabel(infoBox, "Avg. stress:")
         self.infoB=OWGUI.widgetLabel(infoBox, "Num. steps")
-        OWGUI.rubber(self.controlArea)
         OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
         self.resize(900,630)
 
@@ -128,17 +133,17 @@ class OWMDS(OWWidget):
             self.data=data=getattr(matrix, "items")
             matrix.matrixType = orange.SymMatrix.Symmetric 
             
-        if data and type(data)==orange.ExampleTable:
-            self.setExampleTable(data)
-        elif type(data)==list:
-            self.setList(data)
-        elif type(data)==orange.VarList:
-            self.setVarList(data)
         self.graph.ColorAttr=0
         self.graph.SizeAttr=0
         self.graph.ShapeAttr=0
         self.graph.NameAttr=0
         self.graph.closestPairs = None
+        if isinstance(data, orange.ExampleTable):
+            self.setExampleTable(data)
+        elif isinstance(data, list):
+            self.setList(data)
+        elif isinstance(data, orange.VarList):
+            self.setVarList(data)
           
         if matrix:
             self.mds=orngMDS.MDS(matrix)
@@ -175,6 +180,16 @@ class OWMDS(OWWidget):
         for name in ["No name"]+attrName:
             self.nameCombo.addItem(name)
 
+        if data.domain.classVar:
+            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.graph.ColorAttr = len(data.domain.variables) # index 0 is Same color!
+            elif data.domain.classVar.varType == orange.VarTypes.Continuous:
+                self.graph.SizeAttr = len(data.domain.variables) # index 0 is Same color!
+        try:
+            self.graph.NameAttr = 1 + [name.lower() for name in attrName].index("name")
+        except:
+            pass
+        
         self.attributes=attributes
         self.discAttributes=discAttributes
         self.contAttributes=contAttributes
@@ -279,6 +294,11 @@ class OWMDS(OWWidget):
         except Exception, val:
             print val
 
+    def updateStressBySize(self, noRepaint = False):
+        self.sizeCombo.setDisabled(self.graph.stressBySize)
+        if not noRepaint:
+            self.graph.updateLinesRepaint()
+        
     def smacofStep(self):
         if not getattr(self, "mds", None):
             return
@@ -292,7 +312,7 @@ class OWMDS(OWWidget):
             self.graph.updateData()
         #print "Update:", time.clock()-st
 
-## I (Janez) disabled LSMT because it is implemented terribly wrong:
+## I (Janez) disabled LSMT because it is implemented as it never should be:
 #  orngMDS.LSMT transforms the distance matrix itself (indeed there is
 #  the original stored, too), and from that point on there is no way the
 #  user can "untransform" it, except for resending the signal
@@ -502,7 +522,6 @@ class OWMDS(OWWidget):
         if not getattr(self, "mds", None):
             return
         self.mds.getStress(self.stressFunc[self.StressFunc][1])
-#        self.graph.setLines(True)
         self.graph.replot()
 
 class MDSGraph(OWGraph):
@@ -515,7 +534,10 @@ class MDSGraph(OWGraph):
         self.SizeAttr=0
         self.ShapeAttr=0
         self.NameAttr=0
-        self.ShowStress=False
+        self.ShowStress = False
+        self.differentWidths = True
+        self.stressByTransparency = True
+        self.stressBySize = False
         self.NumStressLines=10
         self.proportionGraphed = 20
         self.ShowName=True
@@ -555,64 +577,64 @@ class MDSGraph(OWGraph):
 #        if self.mds:
         if 1:
             self.clear()
+            self.distanceLineKeys = []
             if self.ShowStress:
                 self.updateDistanceLines()
             self.setPoints()
-                #self.setLines(True)
-##        for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
-##        for axis in [QwtPlot.xBottom, QwtPlot.yLeft]:
-##            self.setAxisAutoScale(axis)
         self.updateAxes()
         self.replot()
 
     def updateDistanceLines(self):
-##        for k in self.distanceLineKeys:
-####            self.removeCurve(k)
-##            k.detach()
-
         N = len(self.mds.points)
         np = int(N*(N-1)/2. * self.proportionGraphed/100.)
         needlines = int(math.ceil((1 + math.sqrt(1+8*np)) / 2)) 
 
         if self.closestPairs is None or len(self.closestPairs) < np:
-            matrix = self.mds.originalDistances
-            hdist = [(-matrix[i,j], i, j) for i in range(needlines+1) for j in range(i)]
             import heapq
-            heapq.heapify(hdist)
-            while len(hdist) > np:
-                heapq.heappop(hdist)
-            for i in range(needlines+1, N):
-                for j in range(i):
-                    heapq.heappush(hdist, (-matrix[i, j], i, j))
-                    heapq.heappop(hdist)
-            self.closestPairs = []
-            while hdist:
-                d, i, j = heapq.heappop(hdist)
-                self.closestPairs.append((-d, i, j))
+            m = self.mds.originalDistances
+            self.closestPairs = sorted(heapq.nsmallest(np, ((m[i, j], i, j) for i in range(m.dim) for j in range(i))))
+                
+        for c in self.distanceLineKeys:
+            c.detach()
+        self.distanceLineKeys = []
                 
         hdist = self.closestPairs[:np]
+        if not hdist:
+            return
     
         black = QColor(192,192,192)
-        maxdist = hdist[0][0]
-        mindist = hdist[-1][0]
+        if self.differentWidths:
+            mindist = hdist[0][0]
+            maxdist = hdist[-1][0]
+        else:
+            mindist = maxdist = 0
         if maxdist != mindist:
-            k = 5 / (maxdist - mindist)**2
+            k = 3 / (maxdist - mindist)**2
             for dist, i, j in hdist:
                 pti, ptj = self.mds.points[i], self.mds.points[j]
-                self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = max(1, (maxdist - dist)**2 * k)))
+                c = self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = max(1, (maxdist - dist)**2 * k))
+                c.setZ(10)
+                self.distanceLineKeys.append(c)
         else:
             for dist, i, j in hdist:
                 pti, ptj = self.mds.points[i], self.mds.points[j]
-                self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = 2))
+                c = self.addCurve("A", black, black, 0, QwtPlotCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = 2)
+                c.setZ(10)
+                self.distanceLineKeys.append(c)
         
                     
     def updateLinesRepaint(self):
         if self.mds:
-            self.updateDistanceLines()
-            self.repaint()
+            if self.ShowStress:
+                self.updateDistanceLines()
+            else:
+                for c in self.distanceLineKeys:
+                    c.detach()
+                self.distanceLineKeys = []
+            self.replot()
 
     def setPoints(self):
-        if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0:
+        if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0 and not self.stressBySize and not self.stressByTransparency:
             colors=[c[self.ColorAttr] for c in self.colors]
 
             set=[]
@@ -635,64 +657,47 @@ class MDSGraph(OWGraph):
                 #print len(dict[color.getHsv()]), color.name()
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
                 Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()] if self.showFilled[i]]
-                self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
+                c = self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
+                c.setZ(100)
                 
                 X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
                 Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()] if not self.showFilled[i]]
-                self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y, showFilledSymbols=False)
+                c = self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y, showFilledSymbols=False)
+                c.setZ(100)
         else:
+            if self.stressBySize or self.stressByTransparency:
+                stresses = map(sum, self.mds.stress)
+                mins, maxs = min(stresses), max(stresses)
+                print mins, maxs
+                ks = self.PointSize / max(1, maxs-mins)
+                cs = 1 / max(1., maxs-mins)
             for i in range(len(self.colors)):
-                self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
-                              symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
+                cq = QColor(self.colors[i][self.ColorAttr])
+                if self.stressByTransparency:
+                    cq.setAlpha(255 * (1 - cs * (stresses[i] - mins)))
+                c = self.addCurve("a", cq, self.colors[i][self.ColorAttr],
+                                  max(5, ks*(1 + maxs - stresses[i])) if self.stressBySize else self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
+                                  symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
+                c.setZ(100)
                 if self.NameAttr!=0:
-                    self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+                    c.setZ(100)
+
+#            for i in range(len(self.colors)):
+#                c = self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
+#                              symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
+#                c.setZ(100)
+#                if self.NameAttr!=0:
+#                    c = self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+#                    c.setZ(100)
+
+
         if len(self.mds.points)>0:
             X = [point[0] for point in self.mds.points]
             Y = [point[1] for point in self.mds.points]
             self.setAxisScale(QwtPlot.xBottom, min(X), max(X))
             self.setAxisScale(QwtPlot.yLeft, min(Y), max(Y))
             
-                               
-    def setLines(self, reset=False):
-        if reset:
-            #for k in self.lineKeys:
-            #    removeCurve(k)
-            self.lineKeys=[]
-        if not getattr(self, "mds", None): return
-        if self.NumStressLines<len(self.lineKeys):
-            for c in self.lineKeys[self.NumStressLines:]:
-                c[0].detach()
-                if len(c) == 2: c[1].detach()
-            self.lineKeys=self.lineKeys[:self.NumStressLines]
-        else:
-            #stress=[(abs(s),s,(a,b)) for s,(a,b) in self.mds.arr]
-            stress=[(abs(self.mds.stress[a,b]), self.mds.stress[a,b], (a,b))
-                    for a in range(self.mds.n) for b in range(a)]
-            stress.sort()
-            stress.reverse()
-            for (as,s,(a,b)) in stress[len(self.lineKeys):min(self.NumStressLines, len(stress))]:
-                (xa,ya)=self.mds.points[a]
-                (xb,yb)=self.mds.points[b]
-                #color=s<0 and Qt.red or Qt.green
-                if self.mds.projectedDistances[a,b]-self.mds.distances[a,b]>0:
-                    color=Qt.green
-                    k1=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa,xb], yData=[ya,yb], lineWidth=1)
-                    r=self.mds.distances[a,b]/max(self.mds.projectedDistances[a,b], 1e-6)
-                    xa1=xa+(1-r)/2*(xb-xa)
-                    xb1=xb+(1-r)/2*(xa-xb)
-                    ya1=ya+(1-r)/2*(yb-ya)
-                    yb1=yb+(1-r)/2*(ya-yb)
-                    k2=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=4)
-                    self.lineKeys.append( (k1,k2) )
-                else:
-                    color=Qt.red
-                    r=self.mds.distances[a,b]/max(self.mds.projectedDistances[a,b], 1e-6)
-                    xa1=(xa+xb)/2+r/2*(xa-xb)
-                    xb1=(xa+xb)/2+r/2*(xb-xa)
-                    ya1=(ya+yb)/2+r/2*(ya-yb)
-                    yb1=(ya+yb)/2+r/2*(yb-ya)
-                    k1=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=2)
-                    self.lineKeys.append( (k1,) )
 
     def sendData(self, *args):
         pass

@@ -9,7 +9,7 @@ import orange
 from OWWidget import *
 import OWGUI
 
-class Itemsets:
+class Itemsets(object):
     def __init__(self, itemsets, data):
         self.itemsets = itemsets
         self.data = data

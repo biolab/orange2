@@ -8,7 +8,7 @@
 from OWWidget import *
 import OWGUI, OWTools, orngMisc
 import sys, re
-
+from OWItemsets import Itemsets
 
 class OWItemsetsExplorer(OWWidget):
     settingsList = ["treeDepth", "showWholeItemsets", "autoSend", "purgeAttributes", "purgeClasses"]
@@ -16,7 +16,6 @@ class OWItemsetsExplorer(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Itemsets explorer")
 
-        from OWItemsets import Itemsets
         self.inputs = [("Itemsets", Itemsets, self.setItemsets)]
         self.outputs = [("Itemsets", Itemsets), ("Examples", ExampleTable)]
 

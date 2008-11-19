@@ -66,6 +66,8 @@ re_inputs = re.compile(r'[ \t]+self.inputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOT
 re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
 
 def readWidgets(directory, cachedWidgetDescriptions):
+    import sys, imp
+    
     widgets = []
     for filename in glob.iglob(os.path.join(directory, "*.py")):
         if os.path.isdir(filename) or os.path.islink(filename):
@@ -73,7 +75,7 @@ def readWidgets(directory, cachedWidgetDescriptions):
         
         datetime = str(os.stat(filename)[stat.ST_MTIME])
         cachedDescription = cachedWidgetDescriptions.get(filename, None)
-        if cachedDescription and cachedDescription.time == datetime:
+        if cachedDescription and cachedDescription.time == datetime and hasattr(cachedDescription, "inputClasses"):
             widgets.append(cachedDescription)
             continue
         
@@ -85,20 +87,41 @@ def readWidgets(directory, cachedWidgetDescriptions):
         if iend < 0:
             continue
 
-        widgetDesc = WidgetDescription(
-                         name=data[istart+6:iend],
-                         time=datetime,
-                         filename=os.path.splitext(os.path.split(filename)[1])[0],
-                         fullname = filename,
-                         inputList=getSignalList(re_inputs, data),
-                         outputList=getSignalList(re_outputs, data)
-                         )
-
-        for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", "")):
-            istart, iend = data.find("<"+attr), data.find("</"+attr)
-            setattr(widgetDesc, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
+        inputList=getSignalList(re_inputs, data)
+        outputList=getSignalList(re_outputs, data)
+        
+        dirname, fname = os.path.split(filename)
+        widgname = os.path.splitext(fname)[0]
+        try:
+            # We import modules using imp.load_source to avoid storing them in sys.modules,
+            # but we need to append the path to sys.path in case the module would want to load
+            # something
+            sys.path.append(dirname)
+            wmod = imp.load_source(widgname, filename)
+            try: # I have no idea, why we need this, but it seems to disappear sometimes?!
+                sys.path.remove(dirname)
+            except:
+                pass
+            widgClass = wmod.__dict__[widgname]
+            inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(inputList))
+            outputClasses = set(y.__name__ for x in eval(outputList) for y in eval(x[1], wmod.__dict__).mro())
+            
+            widgetDesc = WidgetDescription(
+                             name=data[istart+6:iend],
+                             time=datetime,
+                             filename=widgname,
+                             fullname=filename,
+                             inputList=inputList, outputList=outputList,
+                             inputClasses=inputClasses, outputClasses=outputClasses
+                             )
     
-        widgets.append(widgetDesc)
+            for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", "")):
+                istart, iend = data.find("<"+attr), data.find("</"+attr)
+                setattr(widgetDesc, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
+        
+            widgets.append(widgetDesc)
+        except:
+            print "Cannot register widget '%s' (maybe due to some signals not derived from 'object'?)" % widgname
         
     return widgets
 

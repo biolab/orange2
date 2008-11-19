@@ -40,7 +40,7 @@ class TestedExample:
             self.classes[i] = int(aclass)
             self.probabilities[i] = list(aprob)
 
-class ExperimentResults:
+class ExperimentResults(object):
     def __init__(self, iterations, classifierNames, classValues, weights, baseClass=-1, **argkw):
         self.classValues = classValues
         self.classifierNames = classifierNames
