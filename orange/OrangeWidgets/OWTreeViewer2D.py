@@ -313,7 +313,8 @@ class GraphicsNode(GraphicsTextContainer):
     def removeSelectionBox(self):
         self.isSelected=False
         for l in self.selectionSquare:
-            l.scene().removeItem(l)
+            if l.scene():
+                l.scene().removeItem(l)
             self.sceneObj.remove(l)
         self.selectionSquare=[]
 
