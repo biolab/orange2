@@ -84,7 +84,7 @@ class OWSelectData(OWWidget):
                                 orange.VarTypes.String: self.lbOperatorsS}
 
         glac.addWidget(boxOper,0,1)
-        self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "NOT")
+        self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "Negate")
 
         self.boxIndices = {}
         self.valuesStack = QStackedWidget(self)
@@ -642,10 +642,11 @@ class OWSelectData(OWWidget):
             if cond.type == "OR":
                 txt = "OR"
             else:
-                txt = ""
-                if cond.negated:
-                    txt += "NOT "
-                txt += cond.varName + " " + str(cond.operator) + " "
+                soper = str(cond.operator)
+                if cond.negated and soper in Operator.negations:
+                    txt = "'%s' %s " % (cond.varName, Operator.negations[soper])
+                else:
+                    txt = (cond.negated and "NOT " or "") + "'%s' %s " % (cond.varName, soper)
                 if cond.operator != Operator.operatorDef:
                     if cond.operator.varType == orange.VarTypes.Discrete:
                         if cond.operator.isInterval:
@@ -795,6 +796,11 @@ class Operator:
     operatorsS = staticmethod(["=","<","<=",">",">=","contains","begins with","ends with","between","outside"])
     operatorDef = staticmethod("is defined")
     getOperators = staticmethod(lambda: Operator.operatorsD + Operator.operatorsS + [Operator.operatorDef])
+    
+    negations = {"equals": "does not equal", "in": "is not in",
+                 "between": "not between", "outside": "not outside",
+                 "contains": "does not contain", "begins with": "does not begin with", "ends with": "does not end with",
+                 "is defined": "is undefined"}
 
     _operFilter = {"=":orange.Filter_values.Equal,
                    "<":orange.Filter_values.Less,
