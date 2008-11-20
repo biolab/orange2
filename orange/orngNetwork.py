@@ -1,10 +1,6 @@
-import math
-import random
-import numpy
-import orange
-import orangeom
+import math, random, numpy
+import orange, orangeom, orngMDS
 import os.path
-import orngMDS
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     def __init__(self, graph=None, name="None"):
@@ -366,6 +362,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def saveNetwork(self, fn):
         name = ''
         try:
+            root, ext = os.path.splitext(fn)
+            if ext == '':
+                fn = root + '.net'
+            
             graphFile = file(fn,'w+')
         except IOError:
             return 1
