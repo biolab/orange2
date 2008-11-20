@@ -2,6 +2,8 @@
 #
 
 import os, sys, re, glob, stat
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 if not orangeDir in sys.path:
@@ -24,6 +26,7 @@ def readCategories():
     global storedCategories
     if storedCategories:
         return storedCategories
+    
     
     widgetDirName = os.path.realpath(directoryNames["widgetDir"])
     canvasSettingsDir = os.path.realpath(directoryNames["canvasSettingsDir"])
@@ -59,14 +62,20 @@ def readCategories():
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
     storedCategories = categories
+    if splashWindow:
+        splashWindow.hide()
     return categories
 
 
 re_inputs = re.compile(r'[ \t]+self.inputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
 re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
 
+hasErrors = False
+splashWindow = None
+
 def readWidgets(directory, cachedWidgetDescriptions):
     import sys, imp
+    global hasErrors, splashWindow
     
     widgets = []
     for filename in glob.iglob(os.path.join(directory, "*.py")):
@@ -86,13 +95,24 @@ def readWidgets(directory, cachedWidgetDescriptions):
         iend = data.find("</name>")
         if iend < 0:
             continue
-
+        name = data[istart+6:iend]
+        
         inputList=getSignalList(re_inputs, data)
         outputList=getSignalList(re_outputs, data)
         
         dirname, fname = os.path.split(filename)
         widgname = os.path.splitext(fname)[0]
         try:
+            if not splashWindow:
+                import orngEnviron
+                logo = QPixmap(os.path.join(orngEnviron.directoryNames["canvasDir"], "icons", "splash.png"))
+                splashWindow = QSplashScreen(logo, Qt.WindowStaysOnTopHint)
+                splashWindow.setMask(logo.mask())
+                splashWindow.show()
+                
+            splashWindow.showMessage("Registering widget %s" % name, Qt.AlignHCenter + Qt.AlignBottom)
+            qApp.processEvents()
+            
             # We import modules using imp.load_source to avoid storing them in sys.modules,
             # but we need to append the path to sys.path in case the module would want to load
             # something
@@ -107,7 +127,7 @@ def readWidgets(directory, cachedWidgetDescriptions):
             outputClasses = set(y.__name__ for x in eval(outputList) for y in eval(x[1], wmod.__dict__).mro())
             
             widgetDesc = WidgetDescription(
-                             name=data[istart+6:iend],
+                             name=name,
                              time=datetime,
                              filename=widgname,
                              fullname=filename,
@@ -120,8 +140,11 @@ def readWidgets(directory, cachedWidgetDescriptions):
                 setattr(widgetDesc, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
         
             widgets.append(widgetDesc)
-        except:
-            print "Cannot register widget '%s' (maybe due to some signals not derived from 'object'?)" % widgname
+        except Exception, msg:
+            if not hasErrors:
+                print "The following widgets could not be scanned and will not be available"
+                hasErrors = True 
+            print "   %s: %s" % (widgname, msg)
         
     return widgets
 
