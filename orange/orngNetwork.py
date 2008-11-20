@@ -406,13 +406,13 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             graphFile.write('*Arcs \n')
             for (i,j) in self.graph.getEdges():
                 if len(self.graph[i,j]) > 0:
-                    graphFile.write('% 8d % 8d %d' % (i+1, j+1, int(self.graph[i,j][0])))
+                    graphFile.write('%8d %8d %f' % (i+1, j+1, float(str(self.graph[i,j]))))
                     graphFile.write('\n')
         else:
             graphFile.write('*Edges \n')
             for (i,j) in self.graph.getEdges():
                 if len(self.graph[i,j]) > 0:
-                    graphFile.write('% 8d % 8d %d' % (i+1, j+1, int(self.graph[i,j][0])))
+                    graphFile.write('%8d %8d %f' % (i+1, j+1, float(str(self.graph[i,j]))))
                     graphFile.write('\n')
 
         graphFile.write('\n')
