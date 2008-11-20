@@ -63,6 +63,7 @@ class ColorPaletteDlg(OWBaseWidget):
 
         self.callback = callback
         self.contPaletteNames = []
+        self.exContPaletteNames = []
         self.discPaletteNames = []
         self.colorButtonNames = []
         self.colorSchemas = []
@@ -120,6 +121,26 @@ class ColorPaletteDlg(OWBaseWidget):
         self.__dict__["cont"+paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(buttBox, self, "cont"+paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
         self.contPaletteNames.append(paletteName)
 
+    def createExtendedContinuousPalette(self, paletteName, boxCaption, passThroughColors = 0, initialColor1 = QColor(Qt.white), initialColor2 = Qt.black, extendedPassThroughColors = ((Qt.red, 1), (Qt.black, 1), (Qt.green, 1))):
+        buttBox = OWGUI.widgetBox(self.mainArea, boxCaption) 
+        box = OWGUI.widgetBox(buttBox, orientation = "horizontal")
+        
+        self.__dict__["exCont"+paletteName+"Left"]  = ColorButton(self, box, color = QColor(initialColor1))
+        self.__dict__["exCont"+paletteName+"View"] = PaletteView(box)
+        self.__dict__["exCont"+paletteName+"Right"] = ColorButton(self, box, color = QColor(initialColor2))
+
+        self.__dict__["exCont"+paletteName+"passThroughColors"] = passThroughColors
+        self.__dict__["exCont"+paletteName+"passThroughColorsCheckbox"] = OWGUI.checkBox(buttBox, self, "exCont"+paletteName+"passThroughColors", "Use pass-through colors", callback = self.colorSchemaChange)
+
+        box = OWGUI.widgetBox(buttBox, "Pass-through colors", orientation = "horizontal")
+        for i, (color, check) in enumerate(extendedPassThroughColors):
+            self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)] = check
+            self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)+"Checkbox"] = OWGUI.checkBox(box, self, "exCont"+paletteName+"passThroughColor"+str(i), "", tooltip="Use color", callback = self.colorSchemaChange)
+            self.__dict__["exCont"+paletteName+"color"+str(i)] = ColorButton(self, box, color = QColor(color))
+        self.__dict__["exCont"+paletteName+"colorCount"] = len(extendedPassThroughColors)
+        self.exContPaletteNames.append(paletteName)            
+        
+
     # #####################################################
     # DISCRETE COLOR PALETTE
     # #####################################################
@@ -172,6 +193,16 @@ class ColorPaletteDlg(OWBaseWidget):
         b = self.__dict__["cont"+paletteName+"passThroughBlack"]
         return ContinuousPaletteGenerator(c1, c2, b)
 
+    def getExtendedContinuousPalette(self, paletteName):
+        c1 = self.__dict__["exCont"+paletteName+"Left"].getColor()
+        c2 = self.__dict__["exCont"+paletteName+"Right"].getColor()
+        colors = self.__dict__["exCont"+paletteName+"passThroughColors"]
+        if colors:
+            colors = [self.__dict__["exCont"+paletteName+"color"+str(i)].getColor()
+                      for i in range(self.__dict__["exCont"+paletteName+"colorCount"])
+                      if self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)]]
+        return ExtendedContinuousPaletteGenerator(c1, c2, colors or [])
+
     def getDiscretePalette(self, paletteName):
         return ColorPaletteGenerator(rgbColors = self.__dict__["disc"+paletteName+"View"].rgbColors)
 
@@ -182,7 +213,11 @@ class ColorPaletteDlg(OWBaseWidget):
         l1 = [(name, self.qRgbFromQColor(self.__dict__["butt"+name].getColor())) for name in self.colorButtonNames]
         l2 = [(name, (self.qRgbFromQColor(self.__dict__["cont"+name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__["cont"+name+"Right"].getColor()), self.__dict__["cont"+name+"passThroughBlack"])) for name in self.contPaletteNames]
         l3 = [(name, self.__dict__["disc"+name+"View"].rgbColors) for name in self.discPaletteNames]
-        return [l1, l2, l3]
+        l4 = [(name, (self.qRgbFromQColor(self.__dict__["exCont"+name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__["exCont"+name+"Right"].getColor()), self.__dict__["exCont"+name+"passThroughColors"],
+                      [(self.qRgbFromQColor(self.__dict__["exCont"+name+"color"+str(i)].getColor()), self.__dict__["exCont"+name+"passThroughColor"+str(i)])
+                       for i in range(self.__dict__["exCont"+name+"colorCount"])]))
+                       for name in self.exContPaletteNames]
+        return [l1, l2, l3, l4]
 
 
     def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
@@ -198,7 +233,11 @@ class ColorPaletteDlg(OWBaseWidget):
         self.paletteSelected()
 
     def setCurrentState(self, state):
-        [buttons, contPalettes, discPalettes] = state
+        if len(state) > 3:
+            [buttons, contPalettes, discPalettes, exContPalettes] = state
+        else:
+            [buttons, contPalettes, discPalettes] = state
+            exContPalettes = []
         for (name, but) in buttons:
             self.__dict__["butt"+name].setColor(self.rgbToQColor(but))
         for (name, (l,r,chk)) in contPalettes:
@@ -210,7 +249,23 @@ class ColorPaletteDlg(OWBaseWidget):
 
         for (name, rgbColors) in discPalettes:
             self.__dict__["disc"+name+"View"].setDiscPalette(rgbColors)
-                        
+
+        for name, (l, r, chk, colors) in exContPalettes:
+            self.__dict__["exCont"+name+"Left"].setColor(self.rgbToQColor(l))
+            self.__dict__["exCont"+name+"Right"].setColor(self.rgbToQColor(r))
+
+            self.__dict__["exCont"+name+"passThroughColors"] = chk
+            self.__dict__["exCont"+name+"passThroughColorsCheckbox"].setChecked(chk)
+
+            colorsList = []
+            for i, (color, check) in enumerate(colors):
+                self.__dict__["exCont"+name+"passThroughColor"+str(i)] = check
+                self.__dict__["exCont"+name+"passThroughColor"+str(i)+"Checkbox"].setChecked(check)
+                self.__dict__["exCont"+name+"color"+str(i)].setColor(self.rgbToQColor(color))
+                if check and chk:
+                    colorsList.append(self.rgbToQColor(color))
+            self.__dict__["exCont"+name+"colorCount"] = len(colors)
+            self.__dict__["exCont"+name+"View"].setExContPalette(self.rgbToQColor(l), self.rgbToQColor(r), colorsList)
 
     def paletteSelected(self):
         if not self.schemaCombo.count(): return
@@ -422,6 +477,31 @@ class ContinuousPaletteGenerator:
     def __getitem__(self, val):
         return QColor(*self.getRGB(val))
 
+class ExtendedContinuousPaletteGenerator:
+    def __init__(self, color1, color2, passThroughColors):
+        self.colors = [color1] + passThroughColors + [color2]
+
+    def getRGB(self, val):
+        index = int(val * (len(self.colors) - 1))
+        if index == len(self.colors) - 1:
+            return (self.colors[-1].red(), self.colors[-1].green(), self.colors[-1].blue())
+        else:
+            red1, green1, blue1 = self.colors[index].red(), self.colors[index].green(), self.colors[index].blue()
+            red2, green2, blue2 = self.colors[index + 1].red(), self.colors[index + 1].green(), self.colors[index + 1].blue()
+            x = val * (len(self.colors) - 1) - index
+            return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
+##        if self.passThroughBlack:
+##            if val < 0.5:
+##                return (self.c1Red - self.c1Red*val*2, self.c1Green - self.c1Green*val*2, self.c1Blue - self.c1Blue*val*2)
+##            else:
+##                return (self.c2Red*(val-0.5)*2., self.c2Green*(val-0.5)*2., self.c2Blue*(val-0.5)*2.)
+##        else:
+##            return (self.c1Red + (self.c2Red-self.c1Red)*val, self.c1Green + (self.c2Green-self.c1Green)*val, self.c1Blue + (self.c2Blue-self.c1Blue)*val)
+
+    # val must be between 0 and 1
+    def __getitem__(self, val):
+        return QColor(*self.getRGB(val))
+
 
 class ColorPaletteGenerator:
     maxHueVal = 260
@@ -552,6 +632,7 @@ class PaletteView(QGraphicsView):
         self.color1 = None
         self.color2 = None
         self.rgbColors = []
+        self.passThroughColors = None
 
         #self.setFrameStyle(QFrame.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -575,14 +656,22 @@ class PaletteView(QGraphicsView):
         self.color2 = color2
         self.passThroughBlack = passThroughBlack
         self.updateImage()
+
+    def setExContPalette(self, color1, color2, passThroughColors):
+        self.color1 = color1
+        self.color2 = color2
+        self.passThroughColors = passThroughColors
+        self.updateImage()
         
     def updateImage(self):
         for item in self.scene().items():
             item.hide()
         if self.color1 == None: 
             img = createDiscPalettePixmap(self.width(), self.height(), self.rgbColors)
-        else:
+        elif self.passThroughColors == None:
             img = createContPalettePixmap(self.width(), self.height(), self.color1, self.color2, self.passThroughBlack)
+        else:
+            img = createExContPalettePixmap(self.width(), self.height(), self.color1, self.color2, self.passThroughColors)
         self.scene().addPixmap(img)
         self.scene().update()
 
@@ -617,6 +706,22 @@ def createDiscPalettePixmap(width, height, palette):
     for i, col in enumerate(palette):
         p.setBrush(QBrush(QColor(*col)))
         p.drawRect(QRectF(i*rectWidth, 0, (i+1)*rectWidth, height))
+    return img
+
+# create a pixmap withcolor going from color1 to color2 passing through all intermidiate colors in passThroughColors
+def createExContPalettePixmap(width, height, color1, color2, passThroughColors):
+    p = QPainter()
+    img = QPixmap(width, height)
+    p.begin(img)
+    
+    #p.eraseRect(0, 0, w, h)
+    p.setPen(QPen(Qt.NoPen))
+    g = QLinearGradient(0, 0, width, height)
+    g.setColorAt(0, color1)
+    g.setColorAt(1, color2)
+    for i, color in enumerate(passThroughColors):
+        g.setColorAt(float(i + 1) / (len(passThroughColors) + 1), color)
+    p.fillRect(img.rect(), QBrush(g))
     return img
         
 
