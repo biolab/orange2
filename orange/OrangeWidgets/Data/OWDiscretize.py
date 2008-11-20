@@ -138,7 +138,7 @@ class DiscGraph(OWGraph):
 
         self.plotRug(True)
         self.plotProbCurve(True)
-        self.plotCutLines()
+        self.plotCutLines(True)
 
         self.updateLayout()
         self.replot()
@@ -236,7 +236,7 @@ class DiscGraph(OWGraph):
             self.replot()
 
 
-    def plotCutLines(self):
+    def plotCutLines(self, noUpdate = False):
         attr = self.data.domain[self.master.continuousIndices[self.master.selectedAttr]]
         for c in self.cutLineKeys:
             c.detach()
@@ -254,7 +254,8 @@ class DiscGraph(OWGraph):
             m = self.addMarker(str(attr(cut)), cut, .9, Qt.AlignCenter | Qt.AlignTop, bold=1)
             m.setYAxis(QwtPlot.yRight)
             self.cutMarkerKeys.append(m)
-
+        if not noUpdate:
+            self.replot()
 
     def getCutCurve(self, cut):
         ccc = self.transform(QwtPlot.xBottom, cut)
@@ -299,15 +300,14 @@ class DiscGraph(OWGraph):
         if curve:
             if e.button() == Qt.RightButton:
                 self.curCutPoints.pop(curve.curveInd)
-                self.plotCutLines()
+                self.plotCutLines(True)
             else:
                 cut = self.curCutPoints.pop(curve.curveInd)
-                self.plotCutLines()
+                self.plotCutLines(True)
                 self.selectedCutPoint=self.addCutPoint(cut)
         else:
             self.selectedCutPoint=self.addCutPoint(cut)
-            self.plotCutLines()
-            self.replot()
+            self.plotCutLines(True)
 
         self.baseCurveX = None
         self.plotBaseCurve()
@@ -332,7 +332,7 @@ class DiscGraph(OWGraph):
                 if pos > self.maxVal or pos < self.minVal:
                     self.curCutPoints.pop(self.selectedCutPoint.curveInd)
                     self.baseCurveX = None
-                    self.plotCutLines()
+                    self.plotCutLines(True)
                     self.mouseCurrentlyPressed = 0
                     return
 
@@ -360,7 +360,7 @@ class DiscGraph(OWGraph):
         self.selectedCutPoint = None
         self.baseCurveX = None
         self.plotBaseCurve()
-        self.plotCutLines()
+        self.plotCutLines(True)
         self.master.synchronizeIf()
         if self.lookaheadCurveKey and self.lookaheadCurveKey:
             self.lookaheadCurveKey.setVisible(0)
