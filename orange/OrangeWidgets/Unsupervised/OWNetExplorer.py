@@ -1071,6 +1071,7 @@ class OWNetExplorer(OWWidget):
         if self.graph == None:
             return
         
+        self.warning('')
         hiddenNodes = []
         
         if subset != None:
@@ -1088,7 +1089,7 @@ class OWNetExplorer(OWWidget):
                 
                 self.graph.setHiddenNodes(hiddenNodes)
             except:
-                print "Error. Index column does not exists."
+                self.warning('"index" attribute does not exist in "items" table.')
                             
     def updateCanvas(self):
         # if network exists
