@@ -305,8 +305,8 @@ class OWNetExplorer(OWWidget):
         self.setOptMethod()
          
         self.resize(1000, 600)
+        self.setGraph(None)
         #self.controlArea.setEnabled(False)
-        self.information('No network loaded.')
     
     def rotateProgress(self):
         qApp.processEvents()
@@ -914,9 +914,6 @@ class OWNetExplorer(OWWidget):
         if graph == None:
             self.visualize = None
             self.graph.addVisualizer(self.visualize)
-            self.information('No network loaded.')
-            
-            #self.controlArea.setEnabled(False)
             self.clearCombos()
             return
         

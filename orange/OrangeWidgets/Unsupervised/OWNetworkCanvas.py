@@ -994,6 +994,11 @@ class OWNetworkCanvas(OWGraph):
       self.maxEdgeWeight = 0
       
       if visualizer == None:
+          xMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
+          xMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
+          yMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
+          yMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
+          self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment = Qt.AlignCenter)
           self.replot()
           return
       
