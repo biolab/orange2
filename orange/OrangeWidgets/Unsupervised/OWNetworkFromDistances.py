@@ -150,6 +150,8 @@ class OWNetworkFromDistances(OWWidget):
         self.searchStringTimer.stop()
         self.attributeCombo.box.setEnabled(False)
         self.error()
+        matrix = None
+        self.warning('')
         
         if self.data == None:
             self.infoa.setText("No data loaded.")
@@ -180,6 +182,8 @@ class OWNetworkFromDistances(OWWidget):
                   
             nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
             edges = graph.getEdges()
+            
+            #print graph.nVertices, self.matrix.dim
             
             if self.dstWeight == 1:
                 if graph.directed:
@@ -261,8 +265,10 @@ class OWNetworkFromDistances(OWWidget):
             setattr(matrix, "items", self.graph.items)
         
         self.send("Network", self.graph)
-        self.send("Distance Matrix", matrix)
         
+        if matrix:
+            self.send("Distance Matrix", matrix)
+            
         if self.graph == None:
              self.send("Examples", None)
         else:
