@@ -5467,7 +5467,6 @@ void GraphAsMatrix_dealloc(PyObject *self)
 PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
 	PyTRY
-		cout << "TNetwork constructor" << endl;
 		int nVertices, directed, nEdgeTypes = 1;
 	if (!PyArg_ParseTuple(args, "ii|i", &nVertices, &directed, &nEdgeTypes))
 		PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
