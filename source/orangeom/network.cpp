@@ -24,7 +24,6 @@
 TNetwork::TNetwork(TGraphAsList *graph)
 : TGraphAsList(graph->nVertices, graph->nEdgeTypes, graph->directed)
 {
-	//cout << "TNetwork::constructor 1" << endl;
 	import_array();
 	optimize.clear();
 	vector<int> vertices;
@@ -62,7 +61,6 @@ TNetwork::TNetwork(TGraphAsList *graph)
 TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 : TGraphAsList(nVert, nEdge, dir)
 {
-	//cout << "TNetwork::constructor 2" << endl;
 	import_array();
 	optimize.clear();
 	vector<int> vertices;
@@ -74,8 +72,6 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 	}
 
 	hierarchy.setTop(vertices);
-
-	//cout << "nVert: " << nVert << endl;
 
 	int dims[2];
 	dims[0] = 2;
@@ -552,7 +548,6 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 					//cout << "value: " << value << endl;
 					double* w = network->getOrCreateEdge(j, i);
 					*w = value;
-
 					connected = true;
 				}
 			}
