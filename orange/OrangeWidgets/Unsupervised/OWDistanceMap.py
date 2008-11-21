@@ -11,6 +11,7 @@ import OWGUI, OWToolbars
 from OWWidget import *
 
 from ColorPalette import *
+import OWColorPalette
 import OWToolbars
 
 #####################################################################
@@ -54,7 +55,7 @@ class EventfulGraphicsScene(QGraphicsScene):
         self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
 
     def mouseMoveEvent (self, event):
-        self.master.mouseMove(event.scenePos().x(), event.scenePos().y())
+        self.master.mouseMove(event)
 
 #####################################################################
 # main class
@@ -69,7 +70,7 @@ class OWDistanceMap(OWWidget):
                     "CutHigh", "CutEnabled", "Sort", "SquareCells",
                     "ShowLegend", "ShowLabels", "ShowBalloon",
                     "Grid", "savedGrid",
-                    "ShowItemsInBalloon", "SendOnRelease", "ColorSchemas"]
+                    "ShowItemsInBalloon", "SendOnRelease", "colorSettings", "selectedSchemaIndex", "palette"]
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback function
@@ -85,7 +86,10 @@ class OWDistanceMap(OWWidget):
         self.imageHeight = 0
         self.distanceImage = None
         self.legendImage = None
-        self.ColorSchemas = None
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
+
+        self.palette = None        
 
         self.shiftPressed = False
 
@@ -167,11 +171,20 @@ class OWDistanceMap(OWWidget):
             self.sliderCutHigh.box.setDisabled(1)
 
 
-        self.colorPalette = ColorPalette(box, self, "",
-                         additionalColors =["Cell outline", "Selected cells"],
-                         callback = self.setColor)
-        box.layout().addWidget(self.colorPalette)
+##        self.colorPalette = ColorPalette(box, self, "",
+##                         additionalColors =["Cell outline", "Selected cells"],
+##                         callback = self.setColor)
+##        box.layout().addWidget(self.colorPalette)
+        box = OWGUI.widgetBox(box, "Colors", orientation="horizontal")
+        self.colorCombo = OWColorPalette.PaletteSelectorComboBox(self)
+        self.colorCombo.setPalettes("palette", self.createColorDialog())
+        self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
+        self.connect(self.colorCombo, SIGNAL("activated(int)"), self.setColor)
+        box.layout().addWidget(self.colorCombo, 2)
+        OWGUI.button(box, self, "Edit colors", callback=self.openColorDialog)
         OWGUI.rubber(tab)
+
+        self.setColor(self.selectedSchemaIndex)        
 
 ##        self.tabs.insertTab(tab, "Colors")
 
@@ -211,7 +224,8 @@ class OWDistanceMap(OWWidget):
 
         #construct selector
         self.selector = QGraphicsRectItem(0, 0, self.CellWidth, self.CellHeight, None, self.scene)
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+##        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+        color = self.cellOutlineColor
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZValue(20)
 
@@ -228,8 +242,8 @@ class OWDistanceMap(OWWidget):
         self.errorText.setPos(10,10)
 
         #restore color schemas from settings
-        if self.ColorSchemas:
-            self.colorPalette.setColorSchemas(self.ColorSchemas)
+##        if self.ColorSchemas:
+##            self.colorPalette.setColorSchemas(self.ColorSchemas)
 
     def createColorStripe(self, palette, offsetX):
         dx = v_legend_width
@@ -309,13 +323,56 @@ class OWDistanceMap(OWWidget):
                 self.send("Examples", selected)
 
 
-    def setColor(self):
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
-        self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+    def setColor(self, index=0):
+        self.selectedSchemaIndex = index
+        dialog = self.createColorDialog()
+        self.colorCombo.setPalettes("palette", dialog)
+        self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
+        
+        palette = dialog.getExtendedContinuousPalette("palette")
+        unknown = dialog.getColor("unknown").rgb()
+        underflow = dialog.getColor("underflow").rgb()
+        overflow = dialog.getColor("overflow").rgb()
 
-        self.ColorSchemas = self.colorPalette.getColorSchemas()
+        background = dialog.getColor("background").rgb()
+        self.cellOutlineColor = dialog.getColor("cellOutline").rgb()
+        self.selectionColor = dialog.getColor("selection").rgb()
+##        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+##        self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+
+##        self.ColorSchemas = self.colorPalette.getColorSchemas()
+        self.palette = [palette[float(i)/252].rgb() for i in range(250)] + [background]*3 + [underflow, overflow, unknown]
         self.drawDistanceMap()
 
+    def openColorDialog(self):
+        dialog = self.createColorDialog()
+        if dialog.exec_():
+            self.colorSettings = dialog.getColorSchemas()
+            self.selectedSchemaIndex = dialog.selectedSchemaIndex
+            self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
+            self.setColor(self.selectedSchemaIndex)
+
+    def createColorDialog(self):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createExtendedContinuousPalette("palette", "Continuous Palette", initialColor1=QColor(Qt.blue), initialColor2=QColor(255, 255, 0).rgb())
+        box = c.createBox("otherColors", "Other Colors")
+        
+        c.createColorButton(box, "unknown", "Unknown", Qt.gray)
+        box.layout().addSpacing(5)
+        c.createColorButton(box, "overflow", "Overflow", Qt.black)
+        box.layout().addSpacing(5)
+        c.createColorButton(box, "underflow", "Underflow", Qt.white)
+
+        box = c.createBox("cellColors", "Cell colors")
+        c.createColorButton(box, "background", "Background", Qt.white)
+        box.layout().addSpacing(5)
+        c.createColorButton(box, "cellOutline", "Cell outline", Qt.gray)
+        box.layout().addSpacing(5)
+        c.createColorButton(box, "selection", "Selection", Qt.black)
+        
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        return c
+        
     def setCutEnabled(self):
         self.sliderCutLow.box.setDisabled(not self.CutEnabled)
         self.sliderCutHigh.box.setDisabled(not self.CutEnabled)
@@ -371,7 +428,8 @@ class OWDistanceMap(OWWidget):
         else:
             self.offsetY = 5
 
-        palette = self.colorPalette.getCurrentColorSchema().getPalette()
+##        palette = self.colorPalette.getCurrentColorSchema().getPalette()
+        palette = self.palette
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth),
                             int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
@@ -433,7 +491,8 @@ class OWDistanceMap(OWWidget):
 
         # rendering of legend
         if self.ShowLegend==1:
-            self.legendImage = self.createColorStripe(self.colorPalette.getCurrentColorSchema().getPalette(), offsetX=self.offsetX)
+##            self.legendImage = self.createColorStripe(self.colorPalette.getCurrentColorSchema().getPalette(), offsetX=self.offsetX)
+            self.legendImage = self.createColorStripe(palette, offsetX=self.offsetX)
             self.legendText1.setText("%4.2f" % lo)
             self.legendText2.setText("%4.2f" % hi)
             self.legendText1.setPos(self.offsetX, 0)
@@ -453,7 +512,8 @@ class OWDistanceMap(OWWidget):
         self.imageWidth = width
         self.imageHeight = height
 
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+##        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+        color = self.cellOutlineColor
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setRect(QRectF(0, 0, self.CellWidth, self.CellHeight))
 
@@ -471,7 +531,8 @@ class OWDistanceMap(OWWidget):
             #vertical line
             selLine.setLine(self.offsetX + x*self.CellWidth, self.offsetY + y*self.CellHeight,
                               self.offsetX + x*self.CellWidth, self.offsetY + (y+1)*self.CellHeight)
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
+##        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
+        color = self.selectionColor
         selLine.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         selLine.setZValue(20)
         selLine.show();
@@ -519,7 +580,8 @@ class OWDistanceMap(OWWidget):
                     self.addSelectionLine(selTuple[0] + 1, selTuple[1], 1)
         self.scene.update()
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, event):
+        x, y = event.scenePos().x(), event.scenePos().y()
         row = self.rowFromMousePos(x,y)
         col = self.colFromMousePos(x,y)
 
@@ -561,7 +623,8 @@ class OWDistanceMap(OWWidget):
 
 ##                self.bubble.show()
 ##                QToolTip.showText(QPoint(x,y), "")
-                QToolTip.showText(self.sceneView.mapToGlobal(QPoint(x,y)), "%s\n%s" % (head, body))
+                QToolTip.showText(event.screenPos(), "")
+                QToolTip.showText(event.screenPos(), "%s\n%s" % (head, body))
 ##            else:
 ##                self.bubble.hide()
 
