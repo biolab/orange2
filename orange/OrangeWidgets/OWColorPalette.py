@@ -808,7 +808,6 @@ class PaletteSelectorComboBox(QComboBox):
             palettes = []
             paletteIndex = paletteDlg.exContPaletteNames.index(name)
             for schemaName, state in shemas:
-                print schemaName
                 butt, disc, cont, exCont = state
                 name, (c1, c2, chk, colors) = exCont[paletteIndex]
                 palettes.append((schemaName, ((rgbToQColor(c1), rgbToQColor(c2), [rgbToQColor(color) for color, check in colors if check and chk]))))
