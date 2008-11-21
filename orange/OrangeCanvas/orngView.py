@@ -318,11 +318,14 @@ class SchemaView(QGraphicsView):
                     else:
                         line = self.doc.addLine(self.tempWidget, item)
             else:
+                if self.outWidget:
+                    orngTabs.categoriesPopup.selectByInputs(self.outWidget.widgetInfo)
+                else:
+                    orngTabs.categoriesPopup.selectByOutputs(self.inWidget.widgetInfo)
                 newCoords = QPoint(ev.globalPos())
                 action = orngTabs.categoriesPopup.exec_(newCoords)
                 if action:
-                    if self.inWidget: xOff = -48
-                    else: xOff = 0
+                    xOff = -48 if self.inWidget else 0
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x()+xOff, point.y()-24)
                     if self.doc.signalManager.signalProcessingInProgress:
                         QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
@@ -334,6 +337,7 @@ class SchemaView(QGraphicsView):
             if not activeItem:
                 if (self.mouseDownPosition.x() - point.x())**2 + (self.mouseDownPosition.y() - point.y())**2 < 25:
                     newCoords = QPoint(ev.globalPos())
+                    orngTabs.categoriesPopup.enableAll()
                     action = orngTabs.categoriesPopup.exec_(newCoords)
                     if action:
                         newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())

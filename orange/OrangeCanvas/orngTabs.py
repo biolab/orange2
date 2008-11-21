@@ -466,20 +466,53 @@ class MyTreeWidget(QTreeWidget):
         if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
             win.addLine(win.widgets[-2], win.widgets[-1])
     
+    
+
+class CanvasPopup(QMenu):
+    def __init__(self, canvasDlg):
+        QMenu.__init__(self, canvasDlg)
+        self.allActions = []
+        self.catActions = []
+        
+    def enableAll(self):
+        for cat in self.catActions:
+            cat.setEnabled(True)
+        for act in self.allActions:
+            act.setEnabled(True)
+            
+    def selectActions(self, actClassesAttr, widgetClasses):
+        for cat in self.catActions:
+            cat.setEnabled(False)
+            
+        for act in self.allActions:
+            if getattr(act.widgetInfo, actClassesAttr) & widgetClasses:
+                act.setEnabled(True)
+                act.category.setEnabled(True)
+            else: 
+                act.setEnabled(False)
+
+    def selectByOutputs(self, widgetInfo):
+        self.selectActions("outputClasses", widgetInfo.inputClasses)
+        
+    def selectByInputs(self, widgetInfo):
+        self.selectActions("inputClasses", widgetInfo.outputClasses)
+
 
 def constructCategoriesPopup(canvasDlg):
     global categoriesPopup
-    categoriesPopup = QMenu(canvasDlg)
-    categoriesPopup.setStyleSheet(" QMenu { background-color: #fffff0; selection-background-color: blue; }")
+    categoriesPopup = CanvasPopup(canvasDlg)
+    categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } """)
 
-    for (category, show) in canvasDlg.settings["WidgetTabs"]:
-        if not show: continue
+    for category, show in canvasDlg.settings["WidgetTabs"]:
+        if not show:
+            continue
         catmenu = categoriesPopup.addMenu(category)
-        widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in canvasDlg.widgetRegistry[category].items()]
-        widgets.sort()
-        for (priority, name, widgetInfo) in widgets:
-            #wbutton = WidgetButtonBase(name, widgetInfo, None, canvasDlg)
+        categoriesPopup.catActions.append(catmenu)
+        for widgetInfo in sorted(canvasDlg.widgetRegistry[category].values(), key=lambda x:x.priority):
             icon = QIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
-            act = catmenu.addAction(icon, name)
+            act = catmenu.addAction(icon, widgetInfo.name)
             act.widgetInfo = widgetInfo
+            act.category = catmenu
+            categoriesPopup.allActions.append(act)
+          
         
