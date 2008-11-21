@@ -318,8 +318,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.addToRecentMenu(str(name))
 
     def menuItemOpenLastSchema(self):
-        self.schema.clear()
-        self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), isTempSchema = 1)
+        fullName = os.path.join(self.canvasSettingsDir, "tempSchema.tmp")
+        if os.path.exists(fullName):
+            self.schema.clear()
+            self.schema.loadDocument(fullName, isTempSchema = 1)
 
     def menuItemSave(self):
         self.schema.saveDocument()
