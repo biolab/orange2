@@ -11,27 +11,33 @@ from OWSieveMultigramGraph import *
 import orngVisFuncts
 from orngCI import FeatureByCartesianProduct
 import OWGUI
+from math import sqrt
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWSieveMultigram(OWVisWidget):
-    settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes", "showAllAttributes"]
+    settingsList = ["graph.lineWidth", "graph.maxPearson", "graph.minPearson", "showAllAttributes"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
 
 
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", wantGraph = True, wantStatusBar = True)
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = []
 
+        #add a graph widget
+        self.graph = OWSieveMultigramGraph(self.mainArea)
+        self.graph.useAntialiasing = 1
+        self.mainArea.layout().addWidget(self.graph)
+
         #set default settings
         self.graphCanvasColor = str(QColor(Qt.white).name())
         self.data = None
-        self.maxLineWidth = 3
-        self.pearsonMinRes = 2
-        self.pearsonMaxRes = 10
+        self.graph.lineWidth = 3
+        self.graph.minPearson = 2
+        self.graph.maxPearson = 10
         self.showAllAttributes = 0
 
         # add a settings dialog and initialize its values
@@ -39,40 +45,23 @@ class OWSieveMultigram(OWVisWidget):
 
         #GUI
         # add a settings dialog and initialize its values
-        self.tabs = QTabWidget(self.space, 'tabWidget')
-        self.GeneralTab = QVGroupBox(self)
-        #self.GeneralTab.setFrameShape(QFrame.NoFrame)
-        self.SettingsTab = OWSieveMultigramOptions(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
-
-        #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWSieveMultigramGraph(self.mainArea)
-        self.box.addWidget(self.graph)
-        self.statusBar = QStatusBar(self.mainArea)
-        self.box.addWidget(self.statusBar)
-        self.statusBar.message("")
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
         #add controls to self.controlArea widget
-        self.createShowHiddenLists(self.GeneralTab, callback = self.interestingSubsetSelection)
+        self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
 
-        self.interestingButton = QPushButton("Find Interesting Attr.", self.GeneralTab)
-        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection)
+        OWGUI.button(self.GeneralTab, self, "Find Interesting Attr.", callback = self.interestingSubsetSelection, debuggingEnabled = 0)
 
-        #connect controls to appropriate functions
-        self.connect(self.SettingsTab.lineCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        self.connect(self.SettingsTab.pearsonMaxResCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        self.connect(self.SettingsTab.applyButton, SIGNAL("clicked()"), self.updateGraph)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.lineWidth', label = "Max line width:", minValue=1, maxValue=10, step=1, callback = self.updateGraph)
+        residualBox = OWGUI.widgetBox(self.SettingsTab, "Attribute independence (Pearson residuals)")
+        OWGUI.hSlider(residualBox, self, 'graph.maxPearson', label = "Max residual:", minValue=4, maxValue=12, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(residualBox, self, 'graph.minPearson', label = "Min residual:", minValue=0, maxValue=4, step=1, callback = self.updateGraph, tooltip = "The minimal absolute residual value that will be shown in graph")
+        self.SettingsTab.layout().addStretch(100)
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-
-        # set loaded options settings
-        self.SettingsTab.lineCombo.setCurrentIndex(self.maxLineWidth-1)
-        index = self.SettingsTab.pearsonMaxNums.index(self.pearsonMaxRes)
-        self.SettingsTab.pearsonMaxResCombo.setCurrentIndex(index)
-        self.SettingsTab.minResidualEdit.setText(str(self.pearsonMinRes))
-        self.cbShowAllAttributes()
+        self.resize(800, 600)
 
 
     # receive new data and update all fields
@@ -92,14 +81,8 @@ class OWSieveMultigram(OWVisWidget):
         pass
 
     def updateGraph(self, *args):
-        self.maxLineWidth = int(str(self.SettingsTab.lineCombo.currentText()))
-        self.pearsonMaxRes = int(str(self.SettingsTab.pearsonMaxResCombo.currentText()))
-        self.pearsonMinRes = float(str(self.SettingsTab.minResidualEdit.text()))
-        self.graph.setSettings(self.maxLineWidth, self.pearsonMinRes, self.pearsonMaxRes)
-
-        self.graph.updateData(self.data, self.getShownAttributeList(), self.probabilities, self.statusBar)
-        self.graph.update()
-
+        self.graph.updateData(self.data, self.getShownAttributeList(), self.probabilities)
+        
     def interestingSubsetSelection(self):
         labels = self.getShownAttributeList()
         interestingList = []
@@ -123,22 +106,18 @@ class OWSieveMultigram(OWVisWidget):
                         if actual == expected == 0: continue
                         elif expected == 0: pearson = actual/sqrt(actual)
                         else:               pearson = (actual - expected) / sqrt(expected)
-                        if abs(pearson) > self.pearsonMinRes and attrXName not in interestingList: interestingList.append(attrXName)
-                        if abs(pearson) > self.pearsonMinRes and attrYName not in interestingList: interestingList.append(attrYName)
+                        if abs(pearson) > self.graph.minPearson and attrXName not in interestingList: interestingList.append(attrXName)
+                        if abs(pearson) > self.graph.minPearson and attrYName not in interestingList: interestingList.append(attrYName)
 
         # remove attributes that are not in interestingList from visible attribute list
-        for attr in labels:
-            if attr not in interestingList:
-                index = self.shownAttribsLB.index(self.shownAttribsLB.findItems(attr)[0])
-                self.shownAttribsLB.takeItem(index)
-                self.hiddenAttribsLB.addItem(attr)
+        self.setShownAttributeList(interestingList)
         self.updateGraph()
 
     def computeProbabilities(self):
         self.probabilities = {}
         if self.data == None: return
 
-        self.statusBar.message("Please wait. Computing...")
+        self.setStatusBarText("Please wait. Computing...")
         total = len(self.data)
         conts = {}
         dc = []
@@ -185,69 +164,21 @@ class OWSieveMultigram(OWVisWidget):
                         except: pass
                         self.probabilities['%s+%s:%s+%s' %(self.data.domain[attrX].name, contX.keys()[i], self.data.domain[attrY].name, contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualCount, total)
                         self.probabilities['%s+%s:%s+%s' %(self.data.domain[attrY].name, contY.keys()[j], self.data.domain[attrX].name, contX.keys()[i])] = ((contY.keys()[j], valy), (contX.keys()[i], valx), actualCount, total)
-        self.statusBar.message("")
+        self.setStatusBarText("")
 
     # receive info about which attributes to show
     def setShownAttributes(self, list):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
-        if self.data == None: return
-
-        if self.data.domain.classVar.name not in list:
-            self.hiddenAttribsLB.addItem(self.data.domain.classVar.name)
-
-        self.shownAttribsLB.addItems(list)
-
-        for attr in self.data.domain:
-            if attr.name not in list:
-                self.hiddenAttribsLB.addItem(attr.name)
-
+        self.setShownAttributeList(list)
         self.updateGraph()
-    #################################################
-
-class OWSieveMultigramOptions(QVGroupBox):
-    pearsonMaxList = ['4','6','8','10','12']
-    pearsonMaxNums = [ 4,  6,  8,  10,  12]
-
-    def __init__(self,parent=None,name=None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
-
-        self.lineGroup = QVGroupBox(self)
-        self.lineGroup.setTitle("Max line width")
-        self.lineCombo = QComboBox(self.lineGroup)
-
-        self.pearsonGroup = QVGroupBox(self)
-        self.pearsonGroup.setTitle("Attribute independence (Pearson residuals)")
-
-        self.hbox2 = QHBox(self.pearsonGroup, "residual")
-        self.residualLabel = QLabel('Max residual', self.hbox2)
-        self.pearsonMaxResCombo = QComboBox(self.hbox2)
-        QToolTip.add(self.hbox2, "The maximum expected Pearson standardized residual. Greater the maximum, brighter the colors.")
-
-        self.hbox3 = QHBox(self.pearsonGroup, "minimum")
-        self.residualLabel2 = QLabel('Min residual   ', self.hbox3)
-        self.minResidualEdit = QLineEdit(self.hbox3)
-        QToolTip.add(self.hbox3, "The minimal absolute residual value that will be shown in graph.")
-
-        self.applyButton = QPushButton("&Apply", self)
-
-        self.initSettings()
-
-    def initSettings(self):
-        # line width combo values
-        self.lineCombo.addItems([str(i) for i in range(1,10)])
-
-        # max residual combo values
-        self.pearsonMaxResCombo.addItems(self.pearsonMaxList)
-
+    
 
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWSieveMultigram()
-    a.setMainWidget(ow)
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
+    ow.setData(data)
+    ow.handleNewSignals()
     ow.show()
     a.exec_()
 

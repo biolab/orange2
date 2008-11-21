@@ -1,52 +1,30 @@
 from OWGraph import *
 from orngScaleData import *
+from math import sqrt
 
-###########################################################################################
-##### CLASS : OWSieveMultigram graph
-###########################################################################################
 class OWSieveMultigramGraph(OWGraph, orngScaleData):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScaleData.__init__(self)
-        self.maxLineWidth = 5
-        self.pearsonMinRes = 2
-        self.pearsonMaxRes = 10
-
-    def setSettings(self, maxLineWidth, pearsonMinRes, pearsonMaxRes):
-        self.maxLineWidth = maxLineWidth
-        self.pearsonMaxRes = pearsonMaxRes
-        self.pearsonMinRes = pearsonMinRes
+        self.lineWidth = 5
+        self.minPearson = 2
+        self.maxPearson = 10
+        self.enableXaxis(0)
+        self.enableYLaxis(0)
+        self.setAxisScale(QwtPlot.xBottom, -1.25, 1.25, 1)
+        self.setAxisScale(QwtPlot.yLeft, -1.25, 1.25, 1)
 
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleData.setData(self, data)
 
-    #
-    # update shown data. Set labels, coloring by className ....
-    #
-    def updateData(self, data, labels, probabilities, statusBar):
-        self.removeCurves()
-        self.removeMarkers()
+    def updateData(self, data, labels, probabilities):
+        self.clear()
         self.tips.removeAll()
-
-        self.statusBar = statusBar
-
-        self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
-        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
-
-        self.setAxisScale(QwtPlot.xBottom, -1.25, 1.25, 1)
-        self.setAxisScale(QwtPlot.yLeft, -1.25, 1.25, 1)
 
         # we must have at least 3 attributes to be able to show anything
         if len(labels) < 3: return
-
 
         length = len(labels)
         indices = []
@@ -76,23 +54,16 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
             y = math.sin(2*math.pi * float(i) / float(len(labels)))
             xData.append(x)
             yData.append(y)
-        newCurveKey = self.insertCurve("polygon")
         newColor = QColor()
         newColor.setRgb(0, 0, 0)
-        self.setCurveStyle(newCurveKey, QwtPlotCurve.Lines)
-        self.setCurveData(newCurveKey, xData, yData)
-
+        self.addCurve("", newColor, newColor, 2, QwtPlotCurve.Lines, xData = xData, yData = yData)
+        
         ###########
         # draw text at lines
         for i in range(length):
             # print attribute name
-            mkey = self.insertMarker(labels[i])
-            self.marker(mkey).setXValue(0.6*(anchors[0][i]+anchors[0][(i+1)%length]))
-            self.marker(mkey).setYValue(0.6*(anchors[1][i]+anchors[1][(i+1)%length]))
-            self.marker(mkey).setLabelAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
-
-
+            self.addMarker(labels[i], 0.6*(anchors[0][i]+anchors[0][(i+1)%length]), 0.6*(anchors[1][i]+anchors[1][(i+1)%length]), Qt.AlignHCenter | Qt.AlignVCenter, bold = 1)
+            
             if data.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
                 values = data.domain[labels[i]].values
@@ -100,10 +71,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
                 k = 1.08
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
-                    mkey = self.insertMarker(values[j])
-                    self.marker(mkey).setXValue(k*(1-pos)*anchors[0][i]+k*pos*anchors[0][(i+1)%length])
-                    self.marker(mkey).setYValue(k*(1-pos)*anchors[1][i]+k*pos*anchors[1][(i+1)%length])
-                    self.marker(mkey).setLabelAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                    self.addMarker(values[j], k*(1-pos)*anchors[0][i]+k*pos*anchors[0][(i+1)%length], k*(1-pos)*anchors[1][i]+k*pos*anchors[1][(i+1)%length], Qt.AlignHCenter | Qt.AlignVCenter)
 
         # -----------------------------------------------------------
         #  create data lines
@@ -132,6 +100,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
                         attrYDataAnchorY = anchors[1][attrYindex]*(1-val) + anchors[1][(attrYindex+1)%length]*val
 
                         self.addLinePearson([attrXDataAnchorX, attrYDataAnchorX], [attrXDataAnchorY, attrYDataAnchorY], countX, countY, actual, sum)
+        self.replot()
 
 
     def addLinePearson(self, xDataList, yDataList, countX, countY, actual, sum):
@@ -142,27 +111,23 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         else:
             pearson = (actual - expected) / sqrt(expected)
 
-        if abs(pearson) < self.pearsonMinRes: return # we don't want to draw white lines
+        if abs(pearson) < self.minPearson: return       # we don't want to draw white lines
 
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
-            intPearson = min(math.floor(pearson), self.pearsonMaxRes)
+            intPearson = min(math.floor(pearson), self.maxPearson)
             b = 255
-            r = g = 255 - intPearson*200.0/float(self.pearsonMaxRes)
+            r = g = 255 - intPearson*200.0/float(self.maxPearson)
             r = g = max(r, 55)  #
-            penWidth = int(float(intPearson*self.maxLineWidth)/float(self.pearsonMaxRes))
+            penWidth = int(float(intPearson*self.lineWidth)/float(self.maxPearson))
         elif pearson < 0:
-            intPearson = max(math.ceil(pearson), -self.pearsonMaxRes)
+            intPearson = max(math.ceil(pearson), -self.maxPearson)
             r = 255
-            b = g = 255 + intPearson*200.0/float(self.pearsonMaxRes)
+            b = g = 255 + intPearson*200.0/float(self.maxPearson)
             b = g = max(b, 55)
-            penWidth = int(float(intPearson*self.maxLineWidth)/float(-self.pearsonMaxRes))
+            penWidth = int(float(intPearson*self.lineWidth)/float(-self.maxPearson))
         color = QColor(r,g,b)
+        key = self.addCurve('', color, color, 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = xDataList, yData = yDataList, lineWidth = penWidth)
 
-        #print penWidth
-        key = self.addCurve('line', color, color, 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol)
-        pen = QPen(color, penWidth)
-        self.setCurvePen(key, pen)
-        self.setCurveData(key, xDataList, yDataList)
 
 
 if __name__== "__main__":
