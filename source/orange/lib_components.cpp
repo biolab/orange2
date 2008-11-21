@@ -4094,11 +4094,24 @@ PyObject *PyEdge_Float(TPyEdge *self)
 	return self->objectsOnEdges ? PyNumber_Float(DOUBLE_AS_PYOBJECT(*self->weights)) : PyFloat_FromDouble(*self->weights);
 }
 
+PyObject *PyEdge_Int(TPyEdge *self)
+{
+	if (self->graph->nEdgeTypes != 1)
+		PYERROR(PyExc_TypeError, "multiple-type edges cannot be cast to numbers", PYNULL);
+
+	if (!self->getWeights() || !CONNECTED(*self->weights))
+		PYERROR(PyExc_TypeError, "edge does not exist", PYNULL);
+
+	return self->objectsOnEdges ? PyNumber_Int(DOUBLE_AS_PYOBJECT(*self->weights)) : PyInt_FromLong(long(*self->weights));
+}
+
 
 PyNumberMethods PyEdge_as_number = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	(inquiry)PyEdge_Nonzero,                           /* nb_nonzero */
-	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 
+	(unaryfunc)PyEdge_Int,    /* nb_int */
+	0,
 	(unaryfunc)PyEdge_Float,  /* nb_float */
 	0, 0,
 };

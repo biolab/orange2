@@ -20,17 +20,10 @@
 */
 
 #include <algorithm>
+#include <limits>
 #include "graph.ppp"
 
-double _disconbuf;
-
-bool set_disconbuf() {
-  DISCONNECT(_disconbuf);
-return true;
-}
-
-bool _foognc = set_disconbuf();
-
+double _disconbuf = numeric_limits<double>::quiet_NaN();
 
 //template ORANGE_API GCPtr<TGraph>::GCPtr<TGraph>(TGraph *);
 
