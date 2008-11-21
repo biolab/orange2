@@ -321,6 +321,7 @@ class ColorPaletteDlg(OWBaseWidget):
     # this function is called if one of the color buttons was pressed or there was any other change of the color palette
     def colorSchemaChange(self):
         self.setCurrentState(self.getCurrentState())
+        self.emit(SIGNAL("shemaChanged"))
         if self.callback: self.callback()
 
 
@@ -767,6 +768,69 @@ class ColorButton(QWidget):
             if self.master and hasattr(self.master, "colorSchemaChange"):
                 self.master.colorSchemaChange()
 
+def rgbToQColor(rgb):
+    # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+    # why this was not used before so I am leaving it as it is
+    return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb)))
+
+class PaletteItemDelegate(QItemDelegate):
+    def __init__(self, selector, *args):
+        QItemDelegate.__init__(self, *args)
+        self.selector = selector
+        
+    def paint(self, painter, option, index):
+        img = self.selector.paletteImg[index.row()]
+        painter.drawPixmap(option.rect.x(), option.rect.y(), img)
+
+    def sizeHint(self, option, index):        
+        img = self.selector.paletteImg[index.row()]
+        return img.size()
+    
+class PaletteSelectorComboBox(QComboBox):
+    def __init__(self, *args):
+        QComboBox.__init__(self, *args)
+        self.paletteImg = []
+        self.cachedPalettes = []
+##        self.setItemDelegate(PaletteItemDelegate(self, self))
+        size = self.sizeHint()
+        size = QSize(size.width()*2/3, size.height()*2/3)
+        self.setIconSize(size)
+
+    def setPalettes(self, name, paletteDlg):
+        self.clear()
+        self.cachedPalettes = []
+        shemas = paletteDlg.getColorSchemas()
+        if name in paletteDlg.discPaletteNames:
+            pass
+        if name in paletteDlg.contPaletteNames:
+            pass
+        if name in paletteDlg.exContPaletteNames:
+            palettes = []
+            paletteIndex = paletteDlg.exContPaletteNames.index(name)
+            for schemaName, state in shemas:
+                print schemaName
+                butt, disc, cont, exCont = state
+                name, (c1, c2, chk, colors) = exCont[paletteIndex]
+                palettes.append((schemaName, ((rgbToQColor(c1), rgbToQColor(c2), [rgbToQColor(color) for color, check in colors if check and chk]))))
+            self.setContinuousPalettes(palettes)
+
+    def setDiscretePalettes(self, palettes):
+        self.clear()
+        paletteImg = []
+        self.cachedPalettes = []
+        for name, colors in palettes:
+            self.addItem(name)
+            self.paletteImg.append(createDiscPalettePixmap(200, 20, colors))
+            self.cachedPalettes.append(ColorPaletteGenerator(rgbColors = colors))
+
+    def setContinuousPalettes(self, palettes):
+        self.clear()
+        paletteImg = []
+        self.cachedPalettes = []
+        for name, (c1, c2, colors) in palettes:
+            icon = QIcon(createExContPalettePixmap(self.iconSize().width(), self.iconSize().height(), c1, c2, colors))
+            self.addItem(icon, name)
+            
 
 if __name__== "__main__":
     a = QApplication(sys.argv)
