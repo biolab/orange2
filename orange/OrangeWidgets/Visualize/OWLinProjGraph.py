@@ -114,9 +114,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-            self.anchorsAsVectors = not self.normalizeExamples # min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
 
-            if self.anchorsAsVectors:
+            if not self.normalizeExamples:
                 r=self.hideRadius**2/100
                 for i,(x,y,a) in enumerate(shownAnchorData):
                     self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, x], yData = [0, y], showFilledSymbols = 1, lineWidth=2)
@@ -132,7 +131,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     for x, y, a in shownAnchorData:
                         self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold = 1)
 
-        if self.showAnchors and not self.anchorsAsVectors:
+        if self.showAnchors and self.normalizeExamples:
             # draw "circle"
             xdata = self.createXAnchors(100)
             ydata = self.createYAnchors(100)
@@ -403,7 +402,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if self.manualPositioning:
             self.mouseCurrentlyPressed = 1
             self.selectedAnchorIndex = None
-            if self.anchorsAsVectors:
+            if not self.normalizeExamples:
                 marker, dist = self.closestMarker(e.x(), e.y())
                 if dist < 15:
                     self.selectedAnchorIndex = self.shownAttributes.index(str(marker.label().text()))
@@ -475,25 +474,22 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-                for (xAnchor,yAnchor,label) in shownAnchorData:
-                    if self.anchorsAsVectors:
+                if not self.normalizeExamples:
+                    for (xAnchor,yAnchor,label) in shownAnchorData:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
                         curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
+   
+                        marker = None
                         fontsize = 9
-                        #markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) | (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
                         markerAlign = Qt.AlignCenter
-
-                    self.tooltipCurves.append(curve)
-                    labelIndex = self.attributeNameIndex[label]
-
-                    # draw text
-                    marker = None
-                    if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.originalData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
-                    elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
-                    self.tooltipMarkers.append(marker)
+                        self.tooltipCurves.append(curve)
+                        labelIndex = self.attributeNameIndex[label]
+                        if self.tooltipValue == TOOLTIPS_SHOW_DATA:
+                            marker = self.addMarker(str(self.originalData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
+                        elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
+                            marker = self.addMarker("%.3f" % (self.scaledData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
+                        self.tooltipMarkers.append(marker)
 
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
@@ -598,7 +594,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         file.write("  \\setcoordinatesystem units <0.4\columnwidth, 0.4\columnwidth>\n")
         file.write("  \\setplotarea x from -1.1 to 1.1, y from -1 to 1.1\n")
 
-        if not self.anchorsAsVectors:
+        if not self.normalizeExamples:
             file.write("\\circulararc 360 degrees from 1 0 center at 0 0\n")
 
         if self.showAnchors:
@@ -609,7 +605,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
             if self.showAttributeNames:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-                if self.anchorsAsVectors:
+                if not self.normalizeExamples:
                     for x,y,l in shownAnchorData:
                         file.write("\\plot 0 0 %5.3f %5.3f /\n" % (x, y))
                         file.write("\\put {{\\footnotesize %s}} [b] at %5.3f %5.3f\n" % (l.replace("_", "-"), x*1.07, y*1.04))
@@ -717,11 +713,8 @@ if __name__== "__main__":
     import os
     a = QApplication(sys.argv)
     graph = OWLinProjGraph(None)
-    fname = r"..\..\datasets\microarray\brown\brown-selected.tab"
-    if os.path.exists(fname):
-        table = orange.ExampleTable(fname)
-        attrs = [attr.name for attr in table.domain.attributes]
-        graph.setData(table)
-        graph.updateData(attrs, 1)
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
+    graph.setData(data)
+    graph.updateData([attr.name for attr in data.domain.attributes])
     graph.show()
     a.exec_()
