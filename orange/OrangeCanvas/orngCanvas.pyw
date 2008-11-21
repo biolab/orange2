@@ -77,6 +77,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.setCentralWidget(self.schema)
         self.schema.setFocus()
 
+        orngTabs.constructCategoriesPopup(self)
+
         # create menu
         self.initMenu()
 
@@ -209,7 +211,6 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.get("showWidgetToolbar", True): 
             self.widgetsToolBar.hide()
 
-        orngTabs.constructCategoriesPopup(self)
 
 
     def readShortcuts(self):

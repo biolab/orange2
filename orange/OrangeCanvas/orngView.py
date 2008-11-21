@@ -308,7 +308,7 @@ class SchemaView(QGraphicsView):
                 self.tempLine.hide()
                 self.tempLine = None
 
-            # we must check if we have really conected some output to input
+            # we must check if we have really connected some output to input
             if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and item != self.tempWidget:
                 if self.doc.signalManager.signalProcessingInProgress:
                      QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
@@ -325,7 +325,7 @@ class SchemaView(QGraphicsView):
                 newCoords = QPoint(ev.globalPos())
                 action = orngTabs.categoriesPopup.exec_(newCoords)
                 if action:
-                    xOff = -48 if self.inWidget else 0
+                    xOff = -48 * bool(self.inWidget)
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x()+xOff, point.y()-24)
                     if self.doc.signalManager.signalProcessingInProgress:
                         QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
