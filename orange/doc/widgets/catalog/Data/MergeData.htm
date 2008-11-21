@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>Merge Data</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Merge Data</h1>
+
+<img class="screenshot" src="../icons/MergeData.png">
+<p>Merges two data sets based on the values of selected attributes.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples A (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+<DT>Examples B (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Merged Examples A+B (ExampleTable)</DT>
+<DD>Attribute-valued data set composed from instances from input data A which are appended attributes from input data B and their values determined by matching the values of the selected attributes.</DD>
+<DT>Merged Examples B+A (ExampleTable)</DT>
+<DD>Attribute-valued data set composed from instances from input data B which are appended attributes from input data A and their values determined by matching the values of the selected attributes.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Merge Data widget is used to horizontally merge two data sets based on the values of selected attributes. On input, two data sets are required, A and B. The widget allows for selection of an attribute from each domain which will be used to perform the merging. When selected, the widget produces two outputs, A+B and B+A. The first output (A+B) corresponds to instances from input data A which are appended attributes from B, and the second output (B+A) to instances from B which are appended attributes from A.</p>
+
+<p>The merging is done by the values of the selected (merging) attributes. For example, instances from from A+B are constructed in the following way. First, the value of the merging attribute from A is taken and instances from B are searched with matching values of the merging attributes. If more than a single instance from B is found, the first one is taken and horizontally merged with the instance from A. If no instance from B match the criterium, the unknown values are assigned to the appended attributes. Similarly, B+A is constructed.</p>
+
+<img class="screenshot"
+src="MergeData1.png" alt="Merge Data" border=0>
+
+<h2>Examples</h2>
+
+<p>Below is an example that loads spot intensity data from microarray measurements and spot annotation data. While microarray data consists of measurements of several spots representing equal DNA material (denoted by equal <span class="option">Spot ID</span>s), the annotation data consists of a single line (instance) for each spot.</p>
+
+<p>Merging the two data sets results in annotations appended to each spot intensity datum. The <span class="option">Spot intensities</span> data is connected to <span class="option">Examples A</span> input of the <span class="option">Merge Data</span> widget, and the <span class="option">Spot annotations</span> data to the <span class="option">Examples B</span> input. Both outputs of the <span class="option">Merge Data</span> widget are then connected to the <span class="option">Data Table</span> widget. In the latter, the <span class="option">Merged Examples A+B</span> are shown. The attributes between <span class="option">Spot ID</span> and <span class="option">BG {Ref}</span>, including these two, are from the <span class="option">Spot intensities</span> data set (<span class="option">Examples A</span>), while the last three are from the <span class="option">Spot annotations</span> data set (<span class="option">Examples B</span>). Only instances representing non-control DNA (these with <span class="option">Spot ID</span> equal to <span class="option">ST_Hs_???</span>) received annotations, while for the others (<span class="option">Spot ID = ST_Cr_048</span>), no annotation data exists in the <span class="option">Spot annotations</span> data and unknown values were assigned to the appended attributes.</p>
+
+<a href="MergeData2.png"><img src="MergeData2s.png" alt="Schema with Merge Data" class="screenshot" border=0></a>
+
+</body>
+</html>
