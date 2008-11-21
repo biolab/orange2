@@ -35,7 +35,7 @@ def readCategories():
     try:
         import cPickle
         cats = cPickle.load(file(cacheFilename, "rb"))
-        cachedWidgetDescriptions = dict([(w.fullname, w) for cat in cats for w in cat.widgets])
+        cachedWidgetDescriptions = dict([(w.fullName, w) for cat in cats.values() for w in cat.values()])
     except:
         cachedWidgetDescriptions = {} 
 
@@ -85,7 +85,7 @@ def readWidgets(directory, category, cachedWidgetDescriptions):
         datetime = str(os.stat(filename)[stat.ST_MTIME])
         cachedDescription = cachedWidgetDescriptions.get(filename, None)
         if cachedDescription and cachedDescription.time == datetime and hasattr(cachedDescription, "inputClasses"):
-            widgets.append(cachedDescription)
+            widgets.append((cachedDescription.name, cachedDescription))
             continue
         
         data = file(filename).read()
@@ -159,7 +159,7 @@ def readWidgets(directory, category, cachedWidgetDescriptions):
             widgets.append((name, widgetInfo))
         except Exception, msg:
             if not hasErrors:
-                print "The following widgets could not be scanned and will not be available"
+                print "The following widgets could not be imported and will not be available"
                 hasErrors = True 
             print "   %s: %s" % (widgname, msg)
         
