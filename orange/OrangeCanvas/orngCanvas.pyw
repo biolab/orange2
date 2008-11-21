@@ -20,7 +20,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.originalPalette = QApplication.palette()
 
         self.__dict__.update(orngEnviron.directoryNames)
-        
+               
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
         canvasPicsDir  = os.path.join(self.canvasDir, "icons")
         self.file_new  = os.path.join(canvasPicsDir, "doc.png")
@@ -58,6 +58,21 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuSaveSettings = 1
 
         self.loadSettings()
+        
+                # output window
+        self.output = orngOutput.OutputWindow(self)
+        #self.output.catchException(self.settings["catchException"])
+        #self.output.catchOutput(self.settings["catchOutput"])
+        self.output.catchException(1)
+        self.output.catchOutput(1)
+        self.output.setFocusOnException(self.settings["focusOnCatchException"])
+        self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+        self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
+        self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
+        self.output.setWriteLogFile(self.settings["writeLogFile"])
+        self.output.setVerbosity(self.settings["outputVerbosity"])
+        self.output.hide()
+        
         self.widgetRegistry = orngRegistry.readCategories()
 
         self.updateStyle()
@@ -125,20 +140,6 @@ class OrangeCanvasDlg(QMainWindow):
         h = max(0, deskH/2 - height/2)  # if the window is too small, resize the window to desktop size
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
-
-        # output window
-        self.output = orngOutput.OutputWindow(self)
-        #self.output.catchException(self.settings["catchException"])
-        #self.output.catchOutput(self.settings["catchOutput"])
-        self.output.catchException(1)
-        self.output.catchOutput(1)
-        self.output.setFocusOnException(self.settings["focusOnCatchException"])
-        self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
-        self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
-        self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
-        self.output.setWriteLogFile(self.settings["writeLogFile"])
-        self.output.setVerbosity(self.settings["outputVerbosity"])
-        self.output.hide()
 
         self.show()
 
