@@ -5,62 +5,28 @@
 <priority>10</priority>
 """
 
-#
-# OWInfo.py
-# The Info Widget
-# Add extra textual information into canvas schemas
-#
-
 from OWWidget import *
 
-##################################################################################
-# we have to catch keypress event and send it to its parent to save current text
-class MyMultiLineEdit(QMultiLineEdit):
-    def __init__(self, parent):
-        QMultiLineEdit.__init__(self, parent)
-        self.parent = parent
-
-    def keyPressEvent(self, ev):
-        QMultiLineEdit.keyPressEvent(self, ev)
-        self.parent.keyPressEvent(ev)
-
-
-##################################################################################
-# OWINFO - allows users to save important information in schemas
 class OWInfo(OWWidget):
     settingsList=["text"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWBaseWidget.__init__(self, parent, signalManager, "Info Widget")
-        self.title = self.captionTitle = "Info Widget"
-
-        #the title
-        self.setCaption(self.captionTitle)
-        self.caption = QLabel("Information:", self)
-        self.controlArea = QVBoxLayout(self)
-        self.textBox  = MyMultiLineEdit(self)
-        self.closeButton=QPushButton("&Close", self)
-        self.connect(self.closeButton,SIGNAL("clicked()"),self.close)
-        #self.controlArea.addWidget(self.caption)
-        self.controlArea.addWidget(self.textBox)
-        self.controlArea.addWidget(self.closeButton)
-        self.resize(200,200)
-
-        self.linkBuffer={}
-
+        OWWidget.__init__(self, parent, signalManager, "Info Widget", wantMainArea=0)
         self.text = ""
         self.loadSettings()
+
+        self.controlArea.setLayout(QVBoxLayout())
+        self.layout().setMargin(2)
+        self.textBox  = QPlainTextEdit(self)
+        self.connect(self.textBox, SIGNAL("textChanged()"), self.textChanged)
+        self.layout().addWidget(self.textBox)
+        self.resize(500,300)
+
         self.activateLoadedSettings()
 
-    def keyPressEvent (self, ev) :
-        self.text = str(self.textBox.text())
+    def textChanged(self) :
+        self.text = str(self.textBox.toPlainText())
 
     def activateLoadedSettings(self):
-        if self.text != "": self.textBox.setText(self.text)
-
-if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    owf=OWInfo()
-    owf.show()
-    a.exec_()
-    owf.saveSettings()
+        if self.text != "":
+            self.textBox.setPlainText(self.text)
