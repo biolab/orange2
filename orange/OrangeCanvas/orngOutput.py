@@ -10,17 +10,18 @@ from time import localtime
 import traceback
 import os.path, os
 
-class OutputWindow(QMdiSubWindow):
+class OutputWindow(QDialog):
     def __init__(self, canvasDlg, *args):
-        apply(QMdiSubWindow.__init__,(self,) + args)
+        apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        #self.canvasDlg.workspace.addWindow(self)
 
         self.textOutput = QTextEdit(self)
         self.textOutput.setReadOnly(1)
         self.textOutput.zoomIn(1)
 
-        self.setWidget(self.textOutput)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.textOutput)
+        self.layout().setMargin(2)
         self.setWindowTitle("Output Window")
         self.setWindowIcon(QIcon(canvasDlg.outputPix))
 
@@ -32,37 +33,51 @@ class OutputWindow(QMdiSubWindow):
         self.printException = 1
         self.writeLogFile = 1
 
-        self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.htm"), "w") # create the log file
+        self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.html"), "w") # create the log file
         self.unfinishedText = ""
         self.verbosity = 0
 
-        #sys.excepthook = self.exceptionHandler
-        #sys.stdout = self
-        #self.textOutput.setText("")
-        #self.setFocusPolicy(QWidget.NoFocus)
-
-        self.resize(700,500)
-        self.showNormal()
+        w = h = 500
+        if canvasDlg.settings.has_key("outputWindowPos"):
+            desktop = qApp.desktop()
+            deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
+            deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
+            w, h, x, y = canvasDlg.settings["outputWindowPos"]
+            if x >= 0 and y >= 0 and deskH >= y+h and deskW >= x+w: 
+                self.move(QPoint(x, y))
+            else: 
+                w = h = 500
+        self.resize(w, h)
+            
+        self.hide()
 
     def stopCatching(self):
         self.catchException(0)
         self.catchOutput(0)
 
+    def showEvent(self, ce):
+        ce.accept()
+        QDialog.showEvent(self, ce)
+        settings = self.canvasDlg.settings
+        if settings.has_key("outputWindowPos"):
+            w, h, x, y = settings["outputWindowPos"]
+            self.move(QPoint(x, y))
+            self.resize(w, h)
+        
+    def hideEvent(self, ce):
+        self.canvasDlg.settings["outputWindowPos"] = (self.width(), self.height(), self.pos().x(), self.pos().y())
+        ce.accept()
+        QDialog.hideEvent(self, ce)
+                
     def closeEvent(self,ce):
-        #QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
+        self.canvasDlg.settings["outputWindowPos"] = (self.width(), self.height(), self.pos().x(), self.pos().y())
         if getattr(self.canvasDlg, "canvasIsClosing", 0):
             self.catchException(0)
             self.catchOutput(0)
             ce.accept()
-            QMdiSubWindow.closeEvent(self, ce)
+            QDialog.closeEvent(self, ce)
         else:
-            wins = self.canvasDlg.workspace.getDocumentList()
-            if wins != []:
-                wins[0].setFocus()
-            ce.ignore()
-
-    def focusInEvent(self, ev):
-        self.canvasDlg.enableSave(1)
+            self.hide()
 
     def setVerbosity(self, verbosity):
         self.verbosity = verbosity
@@ -108,7 +123,6 @@ class OutputWindow(QMdiSubWindow):
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
-            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
             #self.logFile.write(str(text) + "<br>\n")
@@ -135,19 +149,16 @@ class OutputWindow(QMdiSubWindow):
 
     def flush(self):
         pass
+    
     def getSafeString(self, s):
         return str(s).replace("<", "&lt;").replace(">", "&gt;")
 
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
-            #self.canvasDlg.workspace.cascade()    # cascade shown windows
 
-        text = ""
-#        if str(self.textOutput.toPlainText()) not in ["", "\n"]:
-#            text += "<hr>"
         t = localtime()
-        text += "<nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
+        text = "<nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))

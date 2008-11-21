@@ -35,126 +35,34 @@ class OrangeLabel(QLabel):
 
 
 class WidgetButtonBase():
-    def __init__(self):
+    def __init__(self, name, widgetInfo, widgetTabs, canvasDlg):
         self.shiftPressed = 0
-                
-    def getFileName(self):
-        return str(self.widgetTabs.widgetInfo[self.nameKey]["fileName"])
+        self.name = name
+        self.widgetInfo = widgetInfo
+        self.widgetTabs = widgetTabs
+        self.canvasDlg = canvasDlg
 
-    def getFullIconName(self):
-        name = self.getIconName()
-        widgetDir = str(self.widgetTabs.widgetInfo[self.nameKey]["directory"])#os.path.split(self.getFileName())[0]
-
-        for paths in [(self.canvasDlg.picsDir, name), 
-                      (self.canvasDlg.widgetDir, name), 
-                      (name,), 
-                      (widgetDir, name), 
-                      (widgetDir, "icons", name)]:
-            fname = os.path.join(*paths)
-            if os.path.exists(fname):
-                return fname
-
-        return self.canvasDlg.defaultPic
-
-    def getIconName(self):
-        return str(self.widgetTabs.widgetInfo[self.nameKey]["iconName"])
-
-    def getPriority(self):
-        return self.widgetTabs.widgetInfo[self.nameKey]["priority"]
-
-    def getDescription(self):
-        return str(self.widgetTabs.widgetInfo[self.nameKey]["description"])
-
-    def getAuthor(self):
-        if self.widgetTabs.widgetInfo[self.nameKey].has_key("author"):
-            return str(self.widgetTabs.widgetInfo[self.nameKey]["author"])
-        else: return ""
-
-    # get inputs as instances of InputSignal
-    def getInputs(self):
-        return self.widgetTabs.widgetInfo[self.nameKey]["inputs"]
-
-    # get outputs as instances of OutputSignal
-    def getOutputs(self):
-        return self.widgetTabs.widgetInfo[self.nameKey]["outputs"]
-
-    def getMajorInputs(self):
-        ret = []
-        for signal in self.widgetTabs.widgetInfo[self.nameKey]["inputs"]:
-            if signal.default:
-                ret.append(signal)
-        return ret
-
-    def getMajorOutputs(self):
-        ret = []
-        for signal in self.widgetTabs.widgetInfo[self.nameKey]["outputs"]:
-            if signal.default:
-                ret.append(signal)
-        return ret
-
-    def getMinorInputs(self):
-        ret = []
-        for signal in self.widgetTabs.widgetInfo[self.nameKey]["inputs"]:
-            if not signal.default:
-                ret.append(signal)
-        return ret
-
-    def getMinorOutputs(self):
-        ret = []
-        for signal in self.widgetTabs.widgetInfo[self.nameKey]["outputs"]:
-            if not signal.default:
-                ret.append(signal)
-        return ret
-
-    def getCategory(self):
-        return self.nameKey[:self.nameKey.index("-")].strip()
-    
     def clicked(self, rightClick = False, pos = None):
-        win = self.canvasDlg.workspace.activeSubWindow()
-        if (win and isinstance(win, orngDoc.SchemaDoc)):
-            if pos:
-                pos = win.mapFromGlobal(pos)
-                win.addWidget(self, pos.x(), pos.y())
-            else:
-                win.addWidget(self)
-            if (rightClick or self.shiftPressed):
-                import orngCanvasItems
-                if isinstance(rightClick, orngCanvasItems.CanvasWidget):
-                    win.addLine(rightClick, win.widgets[-1])
-                elif len(win.widgets) > 1:
-                    win.addLine(win.widgets[-2], win.widgets[-1])
-            return win.widgets[-1]
-        elif (isinstance(win, orngOutput.OutputWindow)):
-            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance to Output window. Please select a document window first.', QMessageBox.Ok)
+        win = self.canvasDlg.schema
+        if pos:
+            pos = win.mapFromGlobal(pos)
+            win.addWidget(self.widgetInfo, pos.x(), pos.y())
         else:
-            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
+            win.addWidget(self.widgetInfo)
+        if (rightClick or self.shiftPressed):
+            import orngCanvasItems
+            if isinstance(rightClick, orngCanvasItems.CanvasWidget):
+                win.addLine(rightClick, win.widgets[-1])
+            elif len(win.widgets) > 1:
+                win.addLine(win.widgets[-2], win.widgets[-1])
+        return win.widgets[-1]
 
-    def createTooltipString(self, canvasDlg, name):
-        # build the tooltip
-        inputs = self.getInputs()
-        if len(inputs) == 0:
-            formatedInList = "<b>Inputs:</b><br> &nbsp;&nbsp; None<br>"
-        else:
-            formatedInList = "<b>Inputs:</b><br>"
-            for signal in inputs:
-                formatedInList += " &nbsp;&nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
-
-        outputs = self.getOutputs()
-        if len(outputs) == 0:
-            formatedOutList = "<b>Outputs:</b><br> &nbsp; &nbsp; None<br>"
-        else:
-            formatedOutList = "<b>Outputs:</b><br>"
-            for signal in outputs:
-                formatedOutList += " &nbsp; &nbsp; - " + canvasDlg.getChannelName(signal.name) + " (" + signal.type + ")<br>"
-
-        tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList[:-4], formatedOutList[:-4])
-        return tooltipText
-    
         
 class WidgetButton(QFrame, WidgetButtonBase):
-    def __init__(self, parent, buttonType = 2, size=30):
+    def __init__(self, tab, name, widgetInfo, widgetTabs, canvasDlg, buttonType = 2, size=30):
         QFrame.__init__(self)
-        WidgetButtonBase.__init__(self)
+        WidgetButtonBase.__init__(self, name, widgetInfo, widgetTabs, canvasDlg)
+
         self.buttonType = buttonType
         self.iconSize = size
         self.setLayout(buttonType == WB_TOOLBOX and QHBoxLayout() or QVBoxLayout())
@@ -167,18 +75,8 @@ class WidgetButton(QFrame, WidgetButtonBase):
         self.layout().setMargin(3)
         if buttonType != WB_TOOLBOX:
             self.layout().setSpacing(0)
-
-    # we need to handle context menu event, otherwise we get a popup when pressing the right button on one of the icons
-    def contextMenuEvent(self, ev):
-        ev.accept()
-
-    def setButtonData(self, name, nameKey, tabs, canvasDlg):
-        self.widgetTabs = tabs
-        self.name = name
-        self.nameKey = nameKey
-        self.canvasDlg = canvasDlg
-
-        self.pixmapWidget.setPixmap(QPixmap(self.getFullIconName()))
+            
+        self.pixmapWidget.setPixmap(QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo)))
         self.pixmapWidget.setScaledContents(1)
         self.pixmapWidget.setFixedSize(QSize(self.iconSize, self.iconSize))
 
@@ -206,19 +104,19 @@ class WidgetButton(QFrame, WidgetButtonBase):
             self.layout().setAlignment(self.textWidget, Qt.AlignHCenter)
         else:
             self.textWidget.setText(name)
-        tooltip = self.createTooltipString(canvasDlg, name)
-        self.setToolTip(tooltip)
-        
-           
+        self.setToolTip(widgetInfo.tooltipText)
+
+
+    # we need to handle context menu event, otherwise we get a popup when pressing the right button on one of the icons
+    def contextMenuEvent(self, ev):
+        ev.accept()
+
     def mouseMoveEvent(self, e):
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
+        win = self.canvasDlg.schema
         if hasattr(self, "busy"):
             return
-        win = self.canvasDlg.workspace.activeSubWindow()
-        if not isinstance(win, orngDoc.SchemaDoc):
-            return
-
         self.busy = 1
 
         vrect = QRectF(win.visibleRegion().boundingRect())
@@ -233,7 +131,7 @@ class WidgetButton(QFrame, WidgetButtonBase):
 
         if inside:
             if not widget:
-                widget = win.addWidget(self, p.x(), p.y())
+                widget = win.addWidget(self.widgetInfo, p.x(), p.y())
                 self.widgetDragging = win, widget
 
             # in case we got an exception when creating a widget instance
@@ -281,28 +179,21 @@ class WidgetButton(QFrame, WidgetButtonBase):
 
 
 class WidgetTreeItem(QTreeWidgetItem, WidgetButtonBase):
-    def __init__(self, parent):
+    def __init__(self, parent, name, widgetInfo, tabs, canvasDlg):
         QTreeWidgetItem.__init__(self, parent)
-        WidgetButtonBase.__init__(self)
+        WidgetButtonBase.__init__(self, name, widgetInfo, tabs, canvasDlg)
+        
+        self.setIcon(0, QIcon(canvasDlg.getFullWidgetIconName(widgetInfo)))
+        self.setText(0, name)
+        self.setToolTip(0, widgetInfo.tooltipText)
     
     def adjustSize(self):
         pass
     
-    def setButtonData(self, name, nameKey, tabs, canvasDlg):
-        self.widgetTabs = tabs
-        self.name = name
-        self.nameKey = nameKey
-        self.canvasDlg = canvasDlg
-        self.setIcon(0, QIcon(self.getFullIconName()))
-        self.setText(0, name)
-        tooltip = self.createTooltipString(canvasDlg, name)
-        self.setToolTip(0, tooltip)
-        
 
             
 class WidgetScrollArea(QScrollArea):
     def wheelEvent(self, ev):
-        #qApp.sendEvent(self.parent.horizontalScrollBar(), ev)
         hs = self.horizontalScrollBar()
         hs.setValue(min(max(hs.minimum(), hs.value()-ev.delta()), hs.maximum()))
 
@@ -316,97 +207,46 @@ class WidgetListBase:
         self.tabDict = {}
         self.tabs = []
 
-    def readInstalledWidgets(self, widgetTabList, widgetDir, picsDir, defaultPic):
+    def createWidgetTabs(self, widgetTabList, widgetRegistry, widgetDir, picsDir, defaultPic):
         self.widgetDir = widgetDir
         self.picsDir = picsDir
         self.defaultPic = defaultPic
-        categories = orngRegistry.readCategories()
-
-        # first insert the default tab names
-        for tab in widgetTabList:
-            self.insertWidgetTab(tab[0], tab[1])
-
-        # now insert widgets into tabs + create additional tabs
-        for category in categories:
-            self.insertWidgetsToTab(category)
-
-        for i in range(len(self.tabs)-1, -1, -1):
-            if self.tabs[i][2].widgets == []:
-                if isinstance(self, WidgetTabs):
-                    self.removeTab(self.indexOf(self.tabs[i][2].tab))
-                elif isinstance(self, WidgetTree):
-                    self.treeWidget.takeTopLevelItem(self.treeWidget.invisibleRootItem().indexOfChild(self.tabs[i][2]))
-                else:
-                    self.toolbox.widget(i).hide()
-                    self.toolbox.removeItem(i)
-                self.tabs.remove(self.tabs[i])
-            elif hasattr(self.tabs[i][2], "adjustSize"):
-                self.tabs[i][2].adjustSize()
-
-
-    # add all widgets inside the category to the tab
-    def insertWidgetsToTab(self, category):
-        strCategory = str(category.name)
-
-        if self.tabDict.has_key(strCategory):
-            tab = self.tabDict[strCategory]
-        else:
-            tab = self.insertWidgetTab(strCategory)
-
-        directory = category.directory
-        tab.builtIn = not directory
-
-        priorityList = []
-        nameList = []
-        authorList = []
-        iconNameList = []
-        descriptionList = []
-        fileNameList = []
-        inputList = []
-        outputList = []
-
-        for widget in category.widgets:
-#            try:
-                i = 0
-                priority = int(widget.priority)
-                while i < len(priorityList) and priority > priorityList[i]:
-                    i = i + 1
-                priorityList.insert(i, priority)
-                nameList.insert(i, widget.name)
-                authorList.insert(i, widget.contact)
-                fileNameList.insert(i, widget.filename)
-                iconNameList.insert(i, widget.icon)
-                descriptionList.insert(i, widget.description)
-                inputList.insert(i, [InputSignal(*signal) for signal in eval(widget.inputList)])
-                outputList.insert(i, [OutputSignal(*signal) for signal in eval(widget.outputList)])
-#            except:
-#                print "Error occurred reading settings for %s widget." % (name)
-#                tpe, val, traceback = sys.exc_info()
-#                sys.excepthook(tpe, val, traceback)  # print the exception
-
-        exIndex = 0
         widgetTypeList = self.canvasDlg.settings["widgetListType"]
         iconSize = self.canvasDlg.iconSizeDict[self.canvasDlg.settings["iconSize"]]
+        
+        # find tab names that are not in widgetTabList
+        extraTabs = [(name, 1) for name in widgetRegistry.keys() if name not in [tab for (tab, s) in widgetTabList]]
 
-        for i in range(len(priorityList)):
-            if isinstance(self, WidgetTree):
-                button = WidgetTreeItem(tab)
-                self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
-                button.setButtonData(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg)
-                #tab.insertChild(tab.childCount(), button)
-            else:
-                button = WidgetButton(tab, widgetTypeList, iconSize)
-                self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
-                button.setButtonData(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg)
-                if exIndex != priorityList[i] / 1000:
-                    for k in range(priorityList[i]/1000 - exIndex):
-                        tab.layout().addSpacing(10)
-                    exIndex = priorityList[i] / 1000
-                tab.layout().addWidget(button)
-                        
-            tab.widgets.append(button)
-            self.allWidgets.append(button)
+        # first insert the default tab names
+        for (tabName, show) in widgetTabList + extraTabs:
+            if not show or not widgetRegistry.has_key(tabName): continue
+            tab = self.insertWidgetTab(tabName, show)
             
+            directory = widgetRegistry[tabName].directory
+            tab.builtIn = not directory
+
+            widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in widgetRegistry[tabName].items()]
+            widgets.sort()
+            exIndex = 0
+            for (priority, name, widgetInfo) in widgets:
+                if isinstance(self, WidgetTree):
+                    button = WidgetTreeItem(tab, name, widgetInfo, self, self.canvasDlg)
+                else:
+                    button = WidgetButton(tab, name, widgetInfo, self, self.canvasDlg, widgetTypeList, iconSize)
+                    #self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
+                    for k in range(priority/1000 - exIndex):
+                        tab.layout().addSpacing(10)
+                    exIndex = priority / 1000
+                    tab.layout().addWidget(button)
+                tab.widgets.append(button)
+                self.allWidgets.append(button)
+
+            if hasattr(tab, "adjustSize"):
+                tab.adjustSize()
+        
+        # return the list of tabs and their status (shown/hidden)
+        return widgetTabList + extraTabs
+                   
 
 
 
@@ -416,6 +256,11 @@ class WidgetTabs(WidgetListBase, QTabWidget):
         apply(QTabWidget.__init__, (self,) + args)
 
     def insertWidgetTab(self, name, show = 1):
+        if self.tabDict.has_key(name):
+            if show: self.tabDict[name].tab.show()
+            else:    self.tabDict[name].tab.hide()
+            return self.tabDict[name]
+        
         tab = WidgetScrollArea(self)
         tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         tab.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -455,6 +300,10 @@ class WidgetTree(WidgetListBase, QDockWidget):
                 
 
     def insertWidgetTab(self, name, show = 1):
+        if self.tabDict.has_key(name):
+            self.tabDict[name].setHidden(not show)
+            return self.tabDict[name]
+        
         item = WidgetTreeFolder(self.treeWidget, name)
         item.widgets = []
         self.tabDict[name] = item
@@ -500,9 +349,15 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
 
 
     def insertWidgetTab(self, name, show = 1):
+        if self.tabDict.has_key(name):
+            if show: self.tabDict[name].scrollArea.show()
+            else:    self.tabDict[name].scrollArea.hide()
+            return self.tabDict[name]
+        
         sa = QScrollArea(self.toolbox)
         sa.setBackgroundRole(QPalette.Base)
         tab = QFrame(self)
+        tab.scrollArea = sa
         tab.widgets = []
         sa.setWidget(tab)
         sa.setWidgetResizable(0)
@@ -513,7 +368,6 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
         tab.layout().setSpacing(0)
         tab.layout().setContentsMargins(6, 6, 6, 6)
         self.tabDict[name] = tab
-
 
         if show:
             self.toolbox.addItem(sa, name)
@@ -550,12 +404,9 @@ class MyTreeWidget(QTreeWidget):
             QTreeWidget.mouseMoveEvent(self, e)
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
+        win = self.canvasDlg.schema
         if hasattr(self, "busy"):
             return
-        win = self.canvasDlg.workspace.activeSubWindow()
-        if not isinstance(win, orngDoc.SchemaDoc):
-            return
-
         self.busy = 1
 
         vrect = QRectF(win.visibleRegion().boundingRect())
@@ -570,7 +421,7 @@ class MyTreeWidget(QTreeWidget):
 
         if inside:
             if not widget and self.selectedItems() != [] and isinstance(self.selectedItems()[0], WidgetTreeItem):
-                widget = win.addWidget(self.selectedItems()[0], p.x(), p.y())
+                widget = win.addWidget(self.selectedItems()[0].widgetInfo, p.x(), p.y())
                 self.widgetDragging = win, widget
 
             # in case we got an exception when creating a widget instance
@@ -610,33 +461,25 @@ class MyTreeWidget(QTreeWidget):
     def itemClicked(self, item, column):
         if isinstance(item, WidgetTreeFolder):
             return
-        win = self.canvasDlg.workspace.activeSubWindow()
-        if (win and isinstance(win, orngDoc.SchemaDoc)):
-            win.addWidget(item)
-            if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
-                win.addLine(win.widgets[-2], win.widgets[-1])
-        elif (isinstance(win, orngOutput.OutputWindow)):
-            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance to Output window. Please select a document window first.', QMessageBox.Ok)
-        else:
-            QMessageBox.information(self, 'Orange Canvas', 'Unable to add widget instance. Please open a document window first.', QMessageBox.Ok)
+        win = self.canvasDlg.schema
+        win.addWidget(item.widgetInfo)
+        if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
+            win.addLine(win.widgets[-2], win.widgets[-1])
     
 
 def constructCategoriesPopup(canvasDlg):
     global categoriesPopup
     categoriesPopup = QMenu(canvasDlg)
     categoriesPopup.setStyleSheet(" QMenu { background-color: #fffff0; selection-background-color: blue; }")
-    
 
-    for category in canvasDlg.tabs.tabs:
-        catmenu = categoriesPopup.addMenu(category[0])
-        for widget in category[2].widgets:
-            wbutton = WidgetButtonBase()
-            wbutton.name = widget.name
-            wbutton.widgetTabs = canvasDlg.tabs
-            wbutton.canvasDlg = canvasDlg
-            wbutton.nameKey = category[0] + " - " + widget.name
-            icon = QIcon(wbutton.getFullIconName())
-            tooltip = wbutton.createTooltipString(canvasDlg, widget.name)
-            act = catmenu.addAction(icon, widget.name)
-            act.widget = wbutton
+    for (category, show) in canvasDlg.settings["WidgetTabs"]:
+        if not show: continue
+        catmenu = categoriesPopup.addMenu(category)
+        widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in canvasDlg.widgetRegistry[category].items()]
+        widgets.sort()
+        for (priority, name, widgetInfo) in widgets:
+            #wbutton = WidgetButtonBase(name, widgetInfo, None, canvasDlg)
+            icon = QIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
+            act = catmenu.addAction(icon, name)
+            act.widgetInfo = widgetInfo
         

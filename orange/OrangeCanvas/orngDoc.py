@@ -9,22 +9,17 @@ from xml.dom.minidom import Document, parse
 import orngView, orngCanvasItems, orngTabs
 from orngDlgs import *
 from orngSignalManager import SignalManager
-import cPickle
-import orngHistory
+import cPickle, math, orngHistory
 
-class SchemaDoc(QMdiSubWindow):
+class SchemaDoc(QWidget):
     def __init__(self, canvasDlg, *args):
-        QMdiSubWindow.__init__(self, *args)
+        QWidget.__init__(self, *args)
         self.canvasDlg = canvasDlg
         self.canSave = 0
-        #self.showNormal()
-        self.setWindowTitle("Schema " + str(self.canvasDlg.iDocIndex))
         self.autoSaveName = os.path.join(self.canvasDlg.canvasSettingsDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
         self.ctrlPressed = 0
 
-        self.enableSave(False)
-        self.setWindowIcon(QIcon(canvasDlg.file_new))
         self.lines = []                         # list of orngCanvasItems.CanvasLine items
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
         self.signalManager = SignalManager()    # signal manager to correctly process signals
@@ -34,12 +29,14 @@ class SchemaDoc(QMdiSubWindow):
         self.applicationpath = canvasDlg.settings["saveApplicationDir"]
         self.applicationname = str(self.windowTitle())
         self.loadedSettingsDict = {}
-        self.canvas = QGraphicsScene(0,0,2000,2000)
+        self.setLayout(QVBoxLayout())
+        #self.canvas = QGraphicsScene(0,0,2000,2000)
+        self.canvas = QGraphicsScene()
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
-        self.setWidget(self.canvasView)
+        self.layout().addWidget(self.canvasView)
+        self.layout().setMargin(0)
         
         self.schemaID = orngHistory.logNewSchema()
-        self.resize(700,500)
 
 
     # we are about to close document
@@ -51,7 +48,7 @@ class SchemaDoc(QMdiSubWindow):
         self.synchronizeContexts()
         #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
         if self.widgets != []:
-            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "_lastSchema.ows"))
+            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp"))
 
         if not self.canSave or self.canvasDlg.settings["dontAskBeforeClose"]:
             if newSettings:
@@ -71,8 +68,7 @@ class SchemaDoc(QMdiSubWindow):
                 ce.ignore()     # we pressed cancel - we don't want to close the document
                 return
         
-        QMdiSubWindow.closeEvent(self, ce)
-        self.canvasDlg.workspace.removeSubWindow(self)
+        QWidget.closeEvent(self, ce)
         
         # remove the temporary file if it exists
         if os.path.exists(self.autoSaveName):
@@ -84,13 +80,6 @@ class SchemaDoc(QMdiSubWindow):
     # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
     def saveTempDoc(self):
         self.save(self.autoSaveName)
-
-    def enableSave(self, enable):
-        self.canSave = enable
-        self.canvasDlg.enableSave(enable)
-
-    def focusInEvent(self, ev):
-        self.canvasDlg.enableSave(self.canSave)
 
     # called to properly close all widget contexts
     def synchronizeContexts(self):
@@ -113,20 +102,9 @@ class SchemaDoc(QMdiSubWindow):
         dialog = SignalDialog(self.canvasDlg, None)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
-        if connectStatus == -1:
-            self.canvasDlg.menuItemRebuildWidgetRegistry()
-            for widget in self.widgets: widget.updateTooltip()
-            for (outName, inName) in dialog._links: dialog.removeLink(outName, inName)
-            dialog.setOutInWidgets(outWidget, inWidget)
-            connectStatus = dialog.addDefaultLinks()
-
         if connectStatus == 0:
             QMessageBox.information( self, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok)
             return
-        elif connectStatus == -1:
-            QMessageBox.critical( self, "Orange Canvas", "Error while connecting widgets. Some of the widgets have now different signals. Try restarting Orange Canvas.", QMessageBox.Ok)
-            return
-
 
         # if there are multiple choices, how to connect this two widget, then show the dialog
         if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
@@ -146,7 +124,6 @@ class SchemaDoc(QMdiSubWindow):
             outWidget.updateTooltip()
             inWidget.updateTooltip()
 
-        self.enableSave(True)
         self.saveTempDoc()
         return line
 
@@ -185,8 +162,6 @@ class SchemaDoc(QMdiSubWindow):
 
         outWidget.updateTooltip()
         inWidget.updateTooltip()
-
-        self.enableSave(True)
 
 
 
@@ -242,7 +217,6 @@ class SchemaDoc(QMdiSubWindow):
         if not otherSignals:
             self.removeLine(outWidget, inWidget)
 
-        self.enableSave(True)
         self.saveTempDoc()
 
 
@@ -257,7 +231,6 @@ class SchemaDoc(QMdiSubWindow):
         line.inWidget.updateTooltip()
         line.outWidget.updateTooltip()
         line.remove()
-        self.enableSave(True)
         self.saveTempDoc()
 
     # remove line, connecting two widgets
@@ -268,10 +241,10 @@ class SchemaDoc(QMdiSubWindow):
             self.removeLine1(line)
 
     # add new widget
-    def addWidget(self, widget, x= -1, y=-1, caption = "", widgetSettings = {}):
+    def addWidget(self, widgetInfo, x= -1, y=-1, caption = "", widgetSettings = {}):
         qApp.setOverrideCursor(Qt.WaitCursor)
         try:
-            newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg, widgetSettings)
+            newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widgetInfo, self.canvasDlg.defaultPic, self.canvasDlg, widgetSettings)
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
@@ -279,12 +252,28 @@ class SchemaDoc(QMdiSubWindow):
             return None
 
         if x==-1 or y==-1:
-            x = self.canvasView.sceneRect().x() + 10
-            for w in self.widgets:
-                x = max(w.x() + 110, x)
-                x = x/10*10
-            y = 150
-        newwidget.setCoords(x,y)
+            if self.widgets != []:
+                x = self.widgets[-1].x() + 110
+                y = self.widgets[-1].y()
+            else:
+                x = 30
+                y = 150
+        newwidget.setCoords(x, y)
+        # move the widget to a valid position if necessary
+        invalidPosition = (self.canvasView.findItemTypeCount(self.canvas.collidingItems(newwidget), orngCanvasItems.CanvasWidget) > 0)
+        if invalidPosition:
+            for r in range(20, 200, 20):
+                for fi in [90, -90, 180, 0, 45, -45, 135, -135]:
+                    xOff = r * math.cos(math.radians(fi))
+                    yOff = r * math.sin(math.radians(fi))
+                    rect = QRectF(x+xOff, y+yOff, 48, 48)
+                    invalidPosition = self.canvasView.findItemTypeCount(self.canvas.items(rect), orngCanvasItems.CanvasWidget) > 0
+                    if not invalidPosition:
+                        newwidget.setCoords(x+xOff, y+yOff)
+                        break
+                if not invalidPosition:
+                    break
+            
         self.canvasView.ensureVisible(newwidget)
 
         if caption == "": caption = newwidget.caption
@@ -297,7 +286,6 @@ class SchemaDoc(QMdiSubWindow):
         newwidget.instance.setWindowTitle(caption)
 
         self.widgets.append(newwidget)
-        self.enableSave(True)
         self.saveTempDoc()
         self.canvas.update()
 
@@ -314,7 +302,7 @@ class SchemaDoc(QMdiSubWindow):
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
 
-        orngHistory.logAddWidget(self.schemaID, newwidget.widget.nameKey, newwidget.x(), newwidget.y())
+        orngHistory.logAddWidget(self.schemaID, (widgetInfo.category, widgetInfo.name), newwidget.x(), newwidget.y())
         qApp.restoreOverrideCursor()
         return newwidget
 
@@ -328,10 +316,9 @@ class SchemaDoc(QMdiSubWindow):
         self.signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
-        self.enableSave(True)
         self.saveTempDoc()
         
-        orngHistory.logRemoveWidget(self.schemaID, widget.widget.nameKey)
+        orngHistory.logRemoveWidget(self.schemaID, (widget.widgetInfo.category, widget.widgetInfo.name))
 
     def clear(self):
         for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
@@ -344,7 +331,6 @@ class SchemaDoc(QMdiSubWindow):
             line.setEnabled(1)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.enableSave(True)
 
     def disableAllLines(self):
         for line in self.lines:
@@ -352,13 +338,13 @@ class SchemaDoc(QMdiSubWindow):
             line.setEnabled(0)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.enableSave(True)
 
     # return a new widget instance of a widget with filename "widgetName"
-    def addWidgetByFileName(self, widgetName, x, y, caption, widgetSettings = {}):
-        for widget in self.canvasDlg.tabs.allWidgets:
-            if widget.getFileName() == widgetName:
-                return self.addWidget(widget, x, y, caption, widgetSettings)
+    def addWidgetByFileName(self, widgetFileName, x, y, caption, widgetSettings = {}):
+        for category in self.canvasDlg.widgetRegistry.keys():
+            for name, widget in self.canvasDlg.widgetRegistry[category].items():
+                if widget.fileName == widgetFileName:  
+                    return self.addWidget(widget, x, y, caption, widgetSettings)
         return None
 
     # return the widget instance that has caption "widgetName"
@@ -409,14 +395,10 @@ class SchemaDoc(QMdiSubWindow):
         (self.documentpath, self.documentname) = os.path.split(name)
         self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
         self.applicationname = os.path.splitext(os.path.split(name)[1])[0] + ".py"
-        self.setWindowTitle(self.documentname)
         self.save()
 
     # save the file
     def save(self, filename = None):
-        if filename == None:
-            self.enableSave(False)
-
         # create xml document
         doc = Document()
         schema = doc.createElement("schema")
@@ -435,7 +417,7 @@ class SchemaDoc(QMdiSubWindow):
             temp.setAttribute("xPos", str(int(widget.x())) )
             temp.setAttribute("yPos", str(int(widget.y())) )
             temp.setAttribute("caption", widget.caption)
-            temp.setAttribute("widgetName", widget.widget.getFileName())
+            temp.setAttribute("widgetName", widget.widgetInfo.fileName)
             settingsDict[widget.caption] = widget.instance.saveSettingsStr()
             widgets.appendChild(temp)
 
@@ -461,6 +443,7 @@ class SchemaDoc(QMdiSubWindow):
         file.write(xmlText)
         file.close()
         doc.unlink()
+        self.canvasDlg.setCaption(self.documentname)
 
 
     # load a scheme with name "filename"
@@ -487,7 +470,7 @@ class SchemaDoc(QMdiSubWindow):
                 (self.documentpath, self.documentname) = os.path.split(filename)
                 (self.applicationpath, self.applicationname) = os.path.split(filename)
                 self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-                self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
+                #self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
                 self.loadedSettingsDict = settingsDict
 
             # read widgets
@@ -528,9 +511,7 @@ class SchemaDoc(QMdiSubWindow):
             if isTempSchema:
                 self.autoSaveName = filename
             else:
-                self.enableSave(False)
-                if caption != None: self.setWindowTitle(caption)
-                else:               self.setWindowTitle(self.documentname)
+                self.canvasDlg.setCaption(caption or self.documentname)
             self.saveTempDoc()
 
             if not loadedOk:
@@ -612,7 +593,7 @@ class GUIApplication(OWBaseWidget):
                     if self.widgets[i].caption == widgetName: widget = self.widgets[i]
 
                 shown = widgetName in saveDlg.shownWidgetList
-                widgetParameters += "self.createWidget('%s', '%s', '%s', %d, self.signalManager)\n" % (widget.widget.getFileName(), widget.widget.getIconName(), widget.caption, shown) +t+t
+                widgetParameters += "self.createWidget('%s', '%s', '%s', %d, self.signalManager)\n" % (widget.widgetInfo.fileName, self.canvasDlg.getFullWidgetIconName(widget.widgetInfo), widget.caption, shown) +t+t
             else:
                 if not asTabs:
                     widgetParameters += "self.box.layout().addSpacing(10)\n" +t+t
@@ -724,6 +705,8 @@ if __name__ == "__main__":
         file = open(os.path.join(self.applicationpath, fileName) + ".sav", "wt")
         cPickle.dump(list, file)
         file.close
+        
+        
     def dumpWidgetVariables(self):
         for widget in self.widgets:
             self.canvasDlg.output.write("<hr><b>%s</b><br>" % (widget.caption))
@@ -740,16 +723,16 @@ if __name__ == "__main__":
         self.ctrlPressed = int(e.modifiers()) & Qt.ControlModifier != 0
         if e.key() > 127:
             #e.ignore()
-            QMdiSubWindow.keyPressEvent(self, e)
+            QWidget.keyPressEvent(self, e)
             return
 
         # the list could include (e.ShiftButton, "Shift") if the shift key didn't have the special meaning
         pressed = "-".join(filter(None, [int(e.modifiers()) & x and y for x, y in [(Qt.ControlModifier, "Ctrl"), (Qt.AltModifier, "Alt")]]) + [chr(e.key())])
         widgetToAdd = self.canvasDlg.widgetShortcuts.get(pressed)
         if widgetToAdd:
-            widgetToAdd.clicked()
+            self.addWidget(widgetToAdd)
             if e.modifiers() & Qt.ShiftModifier and len(self.widgets) > 1:
                 self.addLine(self.widgets[-2], self.widgets[-1])
         else:
             #e.ignore()
-            QMdiSubWindow.keyPressEvent(self, e)
+            QWidget.keyPressEvent(self, e)

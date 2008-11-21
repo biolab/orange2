@@ -116,26 +116,26 @@ class CanvasLine(QGraphicsLineItem):
 # # CANVAS WIDGET
 # #######################################
 class CanvasWidget(QGraphicsRectItem):
-    def __init__(self, signalManager, canvas, view, widget, defaultPic, canvasDlg, widgetSettings = {}):
+    def __init__(self, signalManager, canvas, view, widgetInfo, defaultPic, canvasDlg, widgetSettings = {}):
         # import widget class and create a class instance
-        m = __import__(widget.getFileName())
-        self.instance = m.__dict__[widget.getFileName()].__new__(m.__dict__[widget.getFileName()], _owInfo = canvasDlg.settings["owInfo"], _owWarning = canvasDlg.settings["owWarning"], _owError = canvasDlg.settings["owError"], _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"], _category = widget.getCategory(), _settingsFromSchema = widgetSettings)
+        m = __import__(widgetInfo.fileName)
+        self.instance = m.__dict__[widgetInfo.fileName].__new__(m.__dict__[widgetInfo.fileName], _owInfo = canvasDlg.settings["owInfo"], _owWarning = canvasDlg.settings["owWarning"], _owError = canvasDlg.settings["owError"], _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"], _category = widgetInfo.category, _settingsFromSchema = widgetSettings)
         self.instance.__init__(signalManager=signalManager)
 
         self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(view.processingHandler)
         self.instance.setWidgetStateHandler(self.updateWidgetState)
         self.instance.setEventHandler(canvasDlg.output.widgetEvents)
-        self.instance.setWidgetIcon(widget.getFullIconName())
+        self.instance.setWidgetIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
         #self.instance.updateStatusBarState()
 
         QGraphicsRectItem.__init__(self, None, canvas)
         self.signalManager = signalManager
-        self.widget = widget
+        self.widgetInfo = widgetInfo
         self.canvas = canvas
         self.view = view
         self.canvasDlg = canvasDlg
-        self.image = QPixmap(widget.getFullIconName())
+        self.image = QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo))
 
         canvasPicsDir  = os.path.join(canvasDlg.canvasDir, "icons")
         self.imageLeftEdge = QPixmap(os.path.join(canvasPicsDir,"leftEdge.png"))
@@ -154,7 +154,7 @@ class CanvasWidget(QGraphicsRectItem):
         self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
-        self.caption = widget.name
+        self.caption = widgetInfo.name
         self.progressBarShown = 0
         self.oldPos = self.pos()        
         self.isProcessing = 0   # is this widget currently processing signals
@@ -263,17 +263,14 @@ class CanvasWidget(QGraphicsRectItem):
         if self.canvasDlg.settings["snapToGrid"]:
             x = round(x/10)*10
             y = round(y/10)*10
-        pos = self.pos()
-        if x > 0 and x < self.canvas.width():  pos.setX(x)
-        if y > 0 and y < self.canvas.height() - 60: pos.setY(y)
-        self.setPos(pos)
+        self.setPos(x, y)
         self.updateLinePosition()
         self.updateWidgetState()
 
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
-        if self.widget.getInputs() == []: return False
+        if self.widgetInfo.inputs == []: return False
 
         boxRect = QRectF(self.x()-self.edgeSize.width(), self.y() + (self.widgetSize.height()-self.edgeSize.height())/2, self.edgeSize.width(), self.edgeSize.height())
         boxRect.adjust(-4,-4,4,4)       # enlarge the rectangle
@@ -283,7 +280,7 @@ class CanvasWidget(QGraphicsRectItem):
 
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, pos):
-        if self.widget.getOutputs() == []: return False
+        if self.widgetInfo.outputs == []: return False
 
         boxRect = QRectF(self.x()+self.widgetSize.width(), self.y() + (self.widgetSize.height()-self.edgeSize.height())/2, self.edgeSize.width(), self.edgeSize.height())
         boxRect.adjust(-4,-4,4,4)       # enlarge the rectangle
@@ -293,8 +290,8 @@ class CanvasWidget(QGraphicsRectItem):
 
     def canConnect(self, outWidget, inWidget):
         if outWidget == inWidget: return
-        outputs = [outWidget.instance.getOutputType(output.name) for output in outWidget.widget.getOutputs()]
-        inputs = [inWidget.instance.getInputType(input.name) for input in inWidget.widget.getInputs()]
+        outputs = [outWidget.instance.getOutputType(output.name) for output in outWidget.widgetInfo.outputs]
+        inputs = [inWidget.instance.getInputType(input.name) for input in inWidget.widgetInfo.inputs]
         canConnect = 0
         for outtype in outputs:
             if True in [issubclass(outtype, intype) for intype in inputs]:
@@ -342,8 +339,8 @@ class CanvasWidget(QGraphicsRectItem):
         painter.drawPixmap(0, 0, self.imageFrame)
         painter.drawPixmap(0, 0, self.image)
 
-        if self.widget.getInputs() != []:    painter.drawPixmap(-self.edgeSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
-        if self.widget.getOutputs() != []:   painter.drawPixmap(self.widgetSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)
+        if self.widgetInfo.inputs != []:    painter.drawPixmap(-self.edgeSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
+        if self.widgetInfo.outputs != []:   painter.drawPixmap(self.widgetSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)
 
         # draw the label
         painter.setPen(QPen(QColor(0,0,0)))
@@ -391,31 +388,31 @@ class CanvasWidget(QGraphicsRectItem):
     def updateTooltip(self):
         string = "<nobr><b>" + self.caption + "</b></nobr><hr>Inputs:<br>"
 
-        if self.widget.getInputs() == []: string += "&nbsp; &nbsp; None<br>"
+        if self.widgetInfo.inputs == []: string += "&nbsp; &nbsp; None<br>"
         else:
-            for signal in self.widget.getInputs():
+            for signal in self.widgetInfo.inputs:
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp; &nbsp; - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
+                    string += "<nobr> &nbsp; &nbsp; - <b>" + signal.name + "</b> (from "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp; &nbsp; - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp; &nbsp; - " + signal.name + "</nobr><br>"
 
         string = string[:-4]
         string += "<hr>Outputs:<br>"
-        if self.widget.getOutputs() == []: string += "&nbsp; &nbsp; None<br>"
+        if self.widgetInfo.outputs == []: string += "&nbsp; &nbsp; None<br>"
         else:
-            for signal in self.widget.getOutputs():
+            for signal in self.widgetInfo.outputs:
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp; &nbsp; - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
+                    string += "<nobr> &nbsp; &nbsp; - <b>" + signal.name + "</b> (to "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp; &nbsp; - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp; &nbsp; - " + signal.name + "</nobr><br>"
         string = string[:-4]
         self.setToolTip(string)
 

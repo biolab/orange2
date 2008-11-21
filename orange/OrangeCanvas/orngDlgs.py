@@ -9,9 +9,10 @@ import orngGui, sys
 
 # this class is needed by signalDialog to show widgets and lines
 class SignalCanvasView(QGraphicsView):
-    def __init__(self, dlg, *args):
+    def __init__(self, dlg, canvasDlg, *args):
         apply(QGraphicsView.__init__,(self,) + args)
         self.dlg = dlg
+        self.canvasDlg = canvasDlg
         self.bMouseDown = False
         self.bLineDragging = False
         self.tempLine = None
@@ -31,8 +32,8 @@ class SignalCanvasView(QGraphicsView):
 
     def addSignalList(self, outWidget, inWidget):
         self.scene().clear()
-        outputs, inputs = outWidget.widget.getOutputs(), inWidget.widget.getInputs()
-        outIconName, inIconName = outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName()
+        outputs, inputs = outWidget.widgetInfo.outputs, inWidget.widgetInfo.inputs
+        outIconName, inIconName = self.canvasDlg.getFullWidgetIconName(outWidget.widgetInfo), self.canvasDlg.getFullWidgetIconName(inWidget.widgetInfo)
         self.lines = []
         self.outBoxes = []
         self.inBoxes = []
@@ -219,7 +220,7 @@ class SignalDialog(QDialog):
 
         self.canvasGroup = orngGui.widgetBox(self, 1)
         self.canvas = QGraphicsScene(0,0,1000,1000)
-        self.canvasView = SignalCanvasView(self, self.canvas, self.canvasGroup)
+        self.canvasView = SignalCanvasView(self, self.canvasDlg, self.canvas, self.canvasGroup)
         self.canvasGroup.layout().addWidget(self.canvasView)
 
         buttons = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -288,10 +289,10 @@ class SignalDialog(QDialog):
         addedOutLinks = []
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
 
-        minorInputs = self.inWidget.widget.getMinorInputs()
-        minorOutputs = self.outWidget.widget.getMinorOutputs()
-        majorInputs = self.inWidget.widget.getMajorInputs()
-        majorOutputs = self.outWidget.widget.getMajorOutputs()
+        minorInputs = [signal for signal in self.inWidget.widgetInfo.inputs if not signal.default]
+        majorInputs = [signal for signal in self.inWidget.widgetInfo.inputs if signal.default]
+        minorOutputs = [signal for signal in self.outWidget.widgetInfo.outputs if not signal.default]
+        majorOutputs = [signal for signal in self.outWidget.widgetInfo.outputs if signal.default]
 
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
@@ -345,7 +346,7 @@ class SignalDialog(QDialog):
         if not issubclass(outType, inType): return 0
 
         inSignal = None
-        inputs = self.inWidget.widget.getInputs()
+        inputs = self.inWidget.widgetInfo.inputs
         for i in range(len(inputs)):
             if inputs[i].name == inName: inSignal = inputs[i]
 
@@ -584,18 +585,16 @@ class KeyEdit(QLineEdit):
         pressed = "-".join(filter(None, [e.modifiers() & x and y for x, y in [(Qt.ControlModifier, "Ctrl"), (Qt.AltModifier, "Alt")]]) + [chr(e.key())])
 
         assigned = self.invInvDict.get(pressed, None)
-        if assigned == self:
+        if assigned and assigned != self and QMessageBox.question(self, "Confirmation", "'%(pressed)s' is already assigned to '%(assigned)s'. Override?" % {"pressed": pressed, "assigned": assigned.widget.name}, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape) == QMessageBox.No:
             return
-
-        if assigned and QMessageBox.question(self, "Confirmation", "'%(pressed)s' is already assigned to '%(assigned)s'. Override?" % {"pressed": pressed, "assigned": assigned.widget.nameKey}, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape) == QMessageBox.No:
-            return
-
-        self.setText(pressed)
-        self.invdict[self.widget] = pressed
-        self.invInvDict[pressed] = self
+        
         if assigned:
             assigned.setText("<none>")
             del self.invdict[assigned.widget]
+        self.setText(pressed)
+        self.invdict[self.widget] = pressed
+        self.invInvDict[pressed] = self
+        
 
 # widget shortcuts dialog
 class WidgetShortcutDlg(QDialog):
@@ -614,7 +613,8 @@ class WidgetShortcutDlg(QDialog):
 
         self.tabs = QTabWidget(self)
         
-        for tabName, show in canvasDlg.settings["WidgetTabs"]:
+        extraTabs = [(name, 1) for name in canvasDlg.widgetRegistry.keys() if name not in [tab for (tab, s) in canvasDlg.settings["WidgetTabs"]]]
+        for tabName, show in canvasDlg.settings["WidgetTabs"] + extraTabs:
             scrollArea = QScrollArea()
             self.tabs.addTab(scrollArea, tabName)
             #scrollArea.setWidgetResizable(1)       # you have to use this or set size to wtab manually - otherwise nothing gets shown
@@ -622,12 +622,12 @@ class WidgetShortcutDlg(QDialog):
             wtab = QWidget(self.tabs)
             scrollArea.setWidget(wtab)
 
-            tabWidgets = canvasDlg.tabs.tabDict[tabName].widgets
-            widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tabWidgets)
+            widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in canvasDlg.widgetRegistry[tabName].items()]
+            widgets.sort()
             rows = (len(widgets)+2) / 3
             layout = QGridLayout(wtab)
 
-            for i, w in enumerate(widgets):
+            for i, (priority, name, widgetInfo) in enumerate(widgets):
                 x = i / rows
                 y = i % rows
 
@@ -637,7 +637,7 @@ class WidgetShortcutDlg(QDialog):
                 mainBox.setLayout(hlayout)
                 layout.addWidget(mainBox, y, x, Qt.AlignTop | Qt.AlignLeft)
                 label = QLabel(wtab)
-                label.setPixmap(w.pixmapWidget.pixmap())
+                label.setPixmap(QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo)))
                 hlayout.addWidget(label)
 
                 optionsw = QWidget(self)
@@ -645,9 +645,9 @@ class WidgetShortcutDlg(QDialog):
                 hlayout.addWidget(optionsw)
                 optionsw.layout().addStretch(1)
 
-                orngGui.widgetLabel(optionsw, w.name)
-                key = self.invDict.get(w, "<none>")
-                le = KeyEdit(optionsw, key, self.invDict, w, invInvDict)
+                orngGui.widgetLabel(optionsw, name)
+                key = self.invDict.get(widgetInfo, "<none>")
+                le = KeyEdit(optionsw, key, self.invDict, widgetInfo, invInvDict)
                 optionsw.layout().addWidget(le)
                 invInvDict[key] = le
                 le.setFixedWidth(60)

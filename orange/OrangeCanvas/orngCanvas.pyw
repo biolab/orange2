@@ -13,7 +13,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.debugMode = 1        # print extra output for debuging
         self.setWindowTitle("Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
-        self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
         self.recentDocs = []
         self.iDocIndex = 1
         self.iconSizeList = ["16 x 16", "32 x 32", "40 x 40", "48 x 48", "60 x 60"]
@@ -21,7 +20,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.originalPalette = QApplication.palette()
 
         self.__dict__.update(orngEnviron.directoryNames)
-
+        
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
         canvasPicsDir  = os.path.join(self.canvasDir, "icons")
         self.file_new  = os.path.join(canvasPicsDir, "doc.png")
@@ -51,21 +50,15 @@ class OrangeCanvasDlg(QMainWindow):
             self.widgetIcons = None
             print "Unable to load all necessary icons. Please reinstall Orange."
 
-        self.workspace = WidgetMdiArea(self)
-        #self.workspace.setBackgroundColor(QColor(255,255,255))
-        self.setCentralWidget(self.workspace)
-        self.statusBar = MyStatusBar(self)
-        self.setStatusBar(self.statusBar)
-        #self.connect(self.workspace, SIGNAL("subWindowActivated(QMdiSubWindow*)"), self.focusDocument)
+
+        self.setStatusBar(MyStatusBar(self))
 
         self.settings = {}
-        self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
-
-        self.rebuildSignals()    # coloring of signals - unused!
         self.menuSaveSettingsID = -1
         self.menuSaveSettings = 1
 
         self.loadSettings()
+        self.widgetRegistry = orngRegistry.readCategories()
 
         self.updateStyle()
 
@@ -74,47 +67,41 @@ class OrangeCanvasDlg(QMainWindow):
         self.lineColor           = QColor(self.settings["lineColor"][0], self.settings["lineColor"][1], self.settings["lineColor"][2])
 
         # create toolbar
-        self.toolbar = self.addToolBar("Manage Schemas")
+        self.toolbar = self.addToolBar("Toolbar")
         self.toolbar.setOrientation(Qt.Horizontal)
-        self.widgetListTypeToolbar = self.addToolBar("Widget List Type")
-        self.widgetListTypeToolbar.setOrientation(Qt.Horizontal)
-
+        if not self.settings.get("showToolbar", True): self.toolbar.hide()
+        
+        # create a schema
+        self.schema = orngDoc.SchemaDoc(self)
+        self.setCentralWidget(self.schema)
+        self.schema.setFocus()
 
         # create menu
         self.initMenu()
 
-        self.toolbar.addAction(QIcon(self.file_new), "New schema" , self.menuItemNewSchema)
         self.toolbar.addAction(QIcon(self.file_open), "Open schema", self.menuItemOpen)
         self.toolSave = self.toolbar.addAction(QIcon(self.file_save), "Save schema", self.menuItemSave)
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
 
+        self.toolbar.addSeparator()
         w = QWidget()
         w.setLayout(QHBoxLayout())
-        self.widgetListTypeToolbar.addWidget(w)
-        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels", "Canvas Popups"])
-        
+        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"])
+        self.toolbar.addWidget(w)
+
         self.connect(self.widgetOrganizationCombo, SIGNAL('activated(int)'), self.widgetListTypeChanged)
         try:        # maybe we will someday remove some of the options and the index will be too big
             self.widgetOrganizationCombo.setCurrentIndex(self.settings["widgetListType"])
         except:
             pass
-        
-#        self.widgetListTypeGroup = QActionGroup(self)
-#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a toolbox", self.widgetListTypeChanged))
-#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets in a tab bar", self.widgetListTypeChanged))
-#        self.widgetListTypeGroup.addAction(self.widgetListTypeToolbar.addAction(QIcon(self.text_icon), "Show list of widgets and their names in a tab bar ", self.widgetListTypeChanged))
-#        for action in self.widgetListTypeGroup.actions():
-#            action.setCheckable(1)
-#        self.widgetListTypeGroup.actions()[self.settings["widgetListType"]].setChecked(1)
 
+        self.toolbar.addSeparator()
 
-        self.widgetListTypeToolbar.addSeparator()
-
-        self.widgetListTypeToolbar.addWidget(QLabel("Icon size: ", self))
+        self.toolbar.addWidget(QLabel("Icon size: ", self))
         self.iconSizeCombo = QComboBox(self)
         self.iconSizeCombo.addItems(self.iconSizeList)
-        self.widgetListTypeToolbar.addWidget(self.iconSizeCombo)
+        self.toolbar.addWidget(self.iconSizeCombo)
         self.connect(self.iconSizeCombo, SIGNAL("activated(int)"), self.iconSizeChanged)
         try:
             self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index(self.settings["iconSize"]))
@@ -122,16 +109,11 @@ class OrangeCanvasDlg(QMainWindow):
             self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index("48 x 48"))
 
         self.addToolBarBreak()
-
         self.createWidgetsToolbar()
-
         self.readShortcuts()
-
-        # read recent files
         self.readRecentFiles()
 
-        width  = self.settings.get("canvasWidth", 700)
-        height = self.settings.get("canvasHeight", 600)
+        width, height = self.settings.get("canvasWidth", 700), self.settings.get("canvasHeight", 600)
         self.resize(width, height)
 
         # center window in the desktop
@@ -144,10 +126,8 @@ class OrangeCanvasDlg(QMainWindow):
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
 
-
-        # apply output settings
-        self.output = orngOutput.OutputWindow(self, self.workspace)
-        self.output.show()
+        # output window
+        self.output = orngOutput.OutputWindow(self)
         #self.output.catchException(self.settings["catchException"])
         #self.output.catchOutput(self.settings["catchOutput"])
         self.output.catchException(1)
@@ -158,38 +138,33 @@ class OrangeCanvasDlg(QMainWindow):
         self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
         self.output.setWriteLogFile(self.settings["writeLogFile"])
         self.output.setVerbosity(self.settings["outputVerbosity"])
+        self.output.hide()
 
         self.show()
 
         # did Orange crash the last time we used it? If yes, you will find a TempSchemaX.ows file
-        tempSchemaNames = []
-        loadedTempSchemas = False
         for fname in os.listdir(self.canvasSettingsDir):
-            if "TempSchema " in fname:
-                tempSchemaNames.append(os.path.join(self.canvasSettingsDir, fname))
-        mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
-        mb.setButtonText(QMessageBox.Ok, "Reload")
-        mb.setButtonText(QMessageBox.Cancel, "New schema")
-        if tempSchemaNames != [] and mb.exec_() == QMessageBox.Ok:
-            loadedTempSchemas = True
-            for fname in tempSchemaNames:
-                win = self.menuItemNewSchema()
-                win.loadDocument(fname, freeze = 1, isTempSchema = 1)
-        else:
-            # first remove old temp schemas if they exist
-            for fname in tempSchemaNames:
-                os.remove(fname)
-
-            # if not temp schemas were loaded create a new schema
-            # in case we also received a schema's name as the argument, we load it
-            win = self.menuItemNewSchema()
-            if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
-                win.loadDocument(sys.argv[-1])
-
-        self.workspace.cascadeSubWindows()
-        qApp.processEvents()
-        self.workspace.cascadeSubWindows()
-
+            if fname.startswith("TempSchema "):
+                try: 
+                    os.rename(fname, fname)
+                    mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
+                    mb.setButtonText(QMessageBox.Ok, "Reload")
+                    mb.setButtonText(QMessageBox.Cancel, "New schema")
+                    if mb.exec_() == QMessageBox.Ok:
+                        self.schema.loadDocument(fname, freeze = 1, isTempSchema = 1)
+                    break
+                except:
+                    continue
+               
+        for fname in os.listdir(self.canvasSettingsDir):
+            if fname.startswith("TempSchema "):
+                try: 
+                    os.remove(fname)
+                except:
+                    pass
+        if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
+            self.schema.loadDocument(sys.argv[-1])
+        
         # show message box if no numpy
         qApp.processEvents()
         try:
@@ -212,15 +187,15 @@ class OrangeCanvasDlg(QMainWindow):
                 self.removeDockWidget(self.widgetsToolBar)
 
         if self.settings["widgetListType"] == 0:
-            self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetInfo)
+            self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         elif self.settings["widgetListType"] == 1:
-            self.tabs = self.widgetsToolBar = orngTabs.WidgetTree(self, self.widgetInfo)
+            self.tabs = self.widgetsToolBar = orngTabs.WidgetTree(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         else:
             self.widgetsToolBar = self.addToolBar("Widgets")
             self.insertToolBarBreak(self.widgetsToolBar)
-            self.tabs = orngTabs.WidgetTabs(self, self.widgetInfo, self.widgetsToolBar)
+            self.tabs = orngTabs.WidgetTabs(self, self.widgetRegistry, self.widgetsToolBar)
             self.widgetsToolBar.addWidget(self.tabs)
 
         if self.settings.has_key("WidgetTabs") and self.settings["WidgetTabs"] != []:
@@ -229,14 +204,11 @@ class OrangeCanvasDlg(QMainWindow):
             widgetTabList = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]]
 
         # find widgets and create tab with buttons
-        self.tabs.readInstalledWidgets(widgetTabList, self.widgetDir, self.picsDir, self.defaultPic)
-        self.settings["WidgetTabs"] = [(name, show) for (name, show, w) in self.tabs.tabs]
+        self.settings["WidgetTabs"] = self.tabs.createWidgetTabs(widgetTabList, self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
+        if not self.settings.get("showWidgetToolbar", True): 
+            self.widgetsToolBar.hide()
 
         orngTabs.constructCategoriesPopup(self)
-
-        #qApp.processEvents()
-        self.workspace.cascadeSubWindows()
-
 
 
     def readShortcuts(self):
@@ -244,28 +216,25 @@ class OrangeCanvasDlg(QMainWindow):
         shfn = os.path.join(self.canvasSettingsDir, "shortcuts.txt")
         if os.path.exists(shfn):
             for t in file(shfn).readlines():
-                key, button = [x.strip() for x in t.split(":")]
-                widget = self.tabs.widgetInfo.get(button)
-                if widget:
-                    self.widgetShortcuts[key] = widget["button"]
+                key, info = [x.strip() for x in t.split(":")]
+                if len(info)== 0: continue
+                if info[0] == "(" and info[-1] == ")":
+                    cat, widgetName = eval(info)            # new style of shortcuts are of form F: ("Data", "File")
                 else:
-                    print "Warning: invalid shortcut %s (%s)" % (key, button)
+                    cat, widgetName = info.split(" - ")   # old style of shortcuts are of form F: Data - File
+                if self.widgetRegistry.has_key(cat) and self.widgetRegistry[cat].has_key(widgetName):
+                    self.widgetShortcuts[key] = self.widgetRegistry[cat][widgetName]
+
 
     def initMenu(self):
-        # ###################
-        # menu items
-        # ###################
         self.menuRecent = QMenu("Recent Schemas", self)
 
         self.menuFile = QMenu("&File", self)
-        self.menuFile.addAction(QIcon(self.file_new), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
-        #self.menuFile.addAction( "New from template",  self.menuItemNewFromTemplate)
-        #self.menuFile.addAction( "New from wizard",  self.menuItemNewWizard)
         self.menuFile.addAction(QIcon(self.file_open), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         self.menuFile.addAction(QIcon(self.file_open), "&Open and Freeze...", self.menuItemOpenFreeze)
-        if os.path.exists(os.path.join(self.canvasSettingsDir, "_lastSchema.ows")):
+        if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL+Qt.Key_R)
-        self.menuFile.addAction( "&Close", self.menuItemClose, Qt.CTRL+Qt.Key_W)
+        #self.menuFile.addAction( "&Clear", self.menuItemClear)
         self.menuFile.addSeparator()
         self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
         self.menuSaveAsID = self.menuFile.addAction( "Save &As...", self.menuItemSaveAs)
@@ -276,26 +245,19 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.addSeparator()
         self.menuFile.addMenu(self.menuRecent)
         self.menuFile.addSeparator()
-        #self.menuFile.addAction( "E&xit",  qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
         self.menuFile.addAction( "E&xit",  self.close, Qt.CTRL+Qt.Key_Q )
 
-        self.menuEdit = QMenu("&Edit", self)
-        self.menuEdit.addAction( "Cu&t",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
-        self.menuEdit.addAction( "&Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
-        self.menuEdit.addAction( "&Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
-        self.menuEdit.addSeparator()
-        self.menuEdit.addAction( "Select &All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
-
         self.menuOptions = QMenu("&Options", self)
-        #self.menuOptions.addAction( "Grid",  self.menuItemGrid )
-        #self.menuOptions.addSeparator()
-        #self.menuOptions.addAction( "Show Grid",  self.menuItemShowGrid)
-
         self.menuOptions.addAction( "Enable All Links",  self.menuItemEnableAll, Qt.CTRL+Qt.Key_E)
         self.menuOptions.addAction( "Disable All Links",  self.menuItemDisableAll, Qt.CTRL+Qt.Key_D)
         self.menuOptions.addAction( "Clear Scheme",  self.menuItemClearWidgets)
+        self.menuOptions.addSeparator()
+        self.menuOptions.addAction("Show Output Window", self.menuItemShowOutputWindow)
+        self.menuOptions.addAction("Clear Output Window", self.menuItemClearOutputWindow)
+        self.menuOptions.addAction("Save Output Text...", self.menuItemSaveOutputWindow)
 
         # uncomment this only for debugging
+        #self.menuOptions.addSeparator()
         #self.menuOptions.addAction("Dump widget variables", self.dumpVariables)
 
         self.menuOptions.addSeparator()
@@ -304,45 +266,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.addAction( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()
-        if sys.platform == "darwin":
-            self.menuOptions.addAction( "&Preferences...",  self.menuItemCanvasOptions)
-        else:
-            self.menuOptions.addAction( "Canvas &Options...",  self.menuItemCanvasOptions)
-
-        self.menuWindow = QMenu("&Window", self)
-        self.menuWindow.addAction("&Cascade", self.workspace.cascadeSubWindows)
-        self.menuWindow.addAction("&Tile", self.workspace.tileSubWindows)
-        self.menuWindow.addSeparator()
-
-        self.connect(self.menuWindow, SIGNAL("aboutToShow()"), self.showWindows)
-
-        self.menupopupShowToolbarID = self.menuWindow.addAction( "Toolbar",  self.menuItemShowToolbar )
-        self.menupopupShowToolbarID.setCheckable(True)
-        if self.settings.has_key("showToolbar"): self.showToolbar = self.settings["showToolbar"]
-        else:                                    self.showToolbar = True
-        if not self.showToolbar: self.toolbar.hide()
-        self.menupopupShowToolbarID.setChecked(self.showToolbar)
-
-        self.menupopupShowWidgetToolbarID = self.menuWindow.addAction( "Widget Toolbar",  self.menuItemShowWidgetToolbar)
-        self.menupopupShowWidgetToolbarID.setCheckable(True)
-        if self.settings.has_key("showWidgetToolbar"): self.showWidgetToolbar = self.settings["showWidgetToolbar"]
-        else:                                          self.showWidgetToolbar = True
-        if not self.showWidgetToolbar: self.widgetsToolBar.hide()
-        self.menupopupShowWidgetToolbarID.setChecked(self.showWidgetToolbar)
-
-        self.menuWindow.addSeparator()
-        self.menuOutput = QMenu("Output", self)
-        self.menuWindow.addMenu(self.menuOutput)
-        self.menuOutput.addAction("Show Output Window", self.menuItemShowOutputWindow)
-        self.menuOutput.addAction("Clear Output Window", self.menuItemClearOutputWindow)
-        self.menuOutput.addSeparator()
-        self.menuOutput.addAction("Save Output Text...", self.menuItemSaveOutputWindow)
-        self.menuWindow.addSeparator()
-
-        self.menuWindow.addAction("&Minimize All", self.menuMinimizeAll)
-        self.menuWindow.addAction("Restore All", self.menuRestoreAll)
-        self.menuWindow.addAction("Close All", self.menuCloseAll)
-        self.menuWindow.addSeparator()
+        self.menuOptions.addAction( sys.platform == "darwin" and "&Preferences..." or "Canvas &Options...",  self.menuItemCanvasOptions)
 
         localHelp = 0
         self.menuHelp = QMenu("&Help", self)
@@ -362,129 +286,61 @@ class OrangeCanvasDlg(QMainWindow):
 
         # widget popup menu
         self.widgetPopup = QMenu("Widget", self)
-        self.widgetPopup.addAction( "Open",  self.openActiveWidget)
+        self.widgetPopup.addAction( "Open",  self.schema.canvasView.openActiveWidget)
         self.widgetPopup.addSeparator()
-        rename = self.widgetPopup.addAction( "&Rename", self.renameActiveWidget, Qt.Key_F2)
-        delete = self.widgetPopup.addAction("Remove", self.removeActiveWidget, Qt.Key_Delete)
+        rename = self.widgetPopup.addAction( "&Rename", self.schema.canvasView.renameActiveWidget, Qt.Key_F2)
+        delete = self.widgetPopup.addAction("Remove", self.schema.canvasView.removeActiveWidget, Qt.Key_Delete)
+        self.widgetPopup.setEnabled(0)
 
         self.menuBar = QMenuBar(self)
         self.menuBar.addMenu(self.menuFile)
-        #self.menuBar.addMenu(self.menuEdit)
         self.menuBar.addMenu(self.menuOptions)
-        self.menuBar.addMenu(self.menuWindow)
         self.menuBar.addMenu(self.widgetPopup)
         self.menuBar.addMenu(self.menuHelp)
         self.setMenuBar(self.menuBar)
 
         self.printer = QPrinter()
 
-
-    def showWindows(self):
-        for id in self.windowsDict.keys():
-            self.menuWindow.removeAction(id)
-        self.windowsDict = {}
-        wins = [w for w in self.workspace.subWindowList() if w.isVisible()]
-        for i in range(len(wins)):
-            txt = str(i+1) + ' ' + str(wins[i].windowTitle())
-            if i<10: txt = "&" + txt
-            id = self.menuWindow.addAction(txt, wins[i].setFocus)
-            self.windowsDict[id] = wins[i]
-
-##    def actionEvent(self, event):
-##        if event.type() == QEvent.ActionChanged and event.action() in self.windowsDict.keys():
-##            self.windowsDict[event.action()].parentWidget.setFocus()
-
-
-    def removeActiveWidget(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.canvasView.removeActiveWidget()
-
-    def renameActiveWidget(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.canvasView.renameActiveWidget()
-
-    def openActiveWidget(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.canvasView.openActiveWidget()
-
-
-    def menuItemNewSchema(self, forceNew = 1):
-        if not forceNew:
-            for doc in self.workspace.getDocumentList():
-                if doc.widgets == []: return doc
-        win = orngDoc.SchemaDoc(self, self.workspace)
-        #self.workspace.addSubWindow(win)
-        win.show()
-        return win
-
-    def menuItemNewFromTemplate(self):
-        return
-
-    def menuItemNewWizard(self):
-        return
-
     def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
-        win = self.menuItemNewSchema(0)
-        win.loadDocument(str(name), freeze = 0)
+        self.schema.clear()
+        self.schema.loadDocument(str(name), freeze = 0)
         self.addToRecentMenu(str(name))
 
     def menuItemOpenFreeze(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
-        win = self.menuItemNewSchema(0)
-        win.loadDocument(str(name), freeze = 1)
+        self.schema.clear()
+        self.schema.loadDocument(str(name), freeze = 1)
         self.addToRecentMenu(str(name))
 
     def menuItemOpenLastSchema(self):
-        if os.path.exists(os.path.join(self.canvasSettingsDir, "_lastSchema.ows")):
-            win = self.menuItemNewSchema(0)
-            win.loadDocument(os.path.join(self.canvasSettingsDir, "_lastSchema.ows"), str(win.windowTitle()))
-
-    def menuItemClose(self):
-        win = self.workspace.activeSubWindow().close()
-
+        self.schema.clear()
+        self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), isTempSchema = 1)
 
     def menuItemSave(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.saveDocument()
-        elif isinstance(win, orngOutput.OutputWindow):
-            self.menuItemSaveOutputWindow()
-
+        self.schema.saveDocument()
+        
     def menuItemSaveAs(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.saveDocumentAs()
+        self.schema.saveDocumentAs()
 
     def menuItemSaveAsAppButtons(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.saveDocumentAsApp(asTabs = 0)
+        self.schema.saveDocumentAsApp(asTabs = 0)
 
     def menuItemSaveAsAppTabs(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.saveDocumentAsApp(asTabs = 1)
+        self.schema.saveDocumentAsApp(asTabs = 1)
 
     def menuItemPrinter(self):
         try:
             import OWDlgs
+            sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.schema.canvas)
+            sizeDlg.exec_()
         except:
             print "Missing file 'OWDlgs.py'. This file should be in OrangeWidgets folder. Unable to print/save image."
-            return
-        win = self.workspace.activeSubWindow()
-        if not isinstance(win, orngDoc.SchemaDoc):
-            return
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(win.canvas)
-        sizeDlg.exec_()
-
+        
 
     def readRecentFiles(self):
         self.menuRecent.clear()
@@ -505,8 +361,8 @@ class OrangeCanvasDlg(QMainWindow):
 
     def openRecentFile(self, index):
         if len(self.settings["RecentFiles"]) >= index:
-            win = self.menuItemNewSchema(0)
-            win.loadDocument(self.settings["RecentFiles"][index-1])
+            self.schema.clear()
+            self.schema.loadDocument(self.settings["RecentFiles"][index-1])
             self.addToRecentMenu(self.settings["RecentFiles"][index-1])
 
     def addToRecentMenu(self, name):
@@ -553,35 +409,19 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemRecent9(self):
         self.openRecentFile(9)
 
-    def menuItemCut(self):
-        return
-
-    def menuItemCopy(self):
-        return
-
-    def menuItemPaste(self):
-        return
-
     def menuItemSelectAll(self):
-        return
-
-    def menuItemGrid(self):
-        return
-
-    def menuItemShowGrid(self):
         return
 
     def updateSnapToGrid(self):
         if self.settings["snapToGrid"]:
-            for win in self.workspace.windowList():
-                if not isinstance(win, orngDoc.SchemaDoc): continue
-                for widget in win.widgets:
-                    widget.setCoords(widget.x(), widget.y())
-                    widget.repaintAllLines()
-                win.canvas.update()
+            for widget in self.schema.widgets:
+                widget.setCoords(widget.x(), widget.y())
+                widget.repaintAllLines()
+            self.schema.canvas.update()
 
     def widgetListTypeChanged(self, ind):
         self.settings["widgetListType"] = ind
+        self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()        # we have to save these settings before we create a new toolbar
         self.createWidgetsToolbar()
 
     def iconSizeChanged(self, ind):
@@ -589,39 +429,31 @@ class OrangeCanvasDlg(QMainWindow):
         self.createWidgetsToolbar()
 
     def menuItemEnableAll(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.enableAllLines()
+        self.schema.enableAllLines()
 
     def menuItemDisableAll(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.disableAllLines()
+        self.schema.disableAllLines()
 
     def menuItemSaveSettings(self):
         self.menuSaveSettings = not self.menuSaveSettings
         self.menuOptions.setItemChecked(self.menuSaveSettingsID, self.menuSaveSettings)
 
     def menuItemClearWidgets(self):
-        win = self.workspace.activeSubWindow()
-        if win != None:
-            win.clear()
+        self.schema.clear()
 
     def dumpVariables(self):
-        win = self.workspace.activeSubWindow()
-        if isinstance(win, orngDoc.SchemaDoc):
-            win.dumpWidgetVariables()
+        self.schema.dumpWidgetVariables()
 
     def menuItemShowOutputWindow(self):
         self.output.show()
-        self.output.setFocus()
+        #self.output.setFocus()
 
     def menuItemClearOutputWindow(self):
         self.output.textOutput.clear()
-        self.statusBar.showMessage("")
+        self.statusBar().showMessage("")
 
     def menuItemSaveOutputWindow(self):
-        qname = QFileDialog.getSaveFileName(self, "Save Output To File", self.canvasSettingsDir + "/Output.htm", "HTML Document (*.htm)")
+        qname = QFileDialog.getSaveFileName(self, "Save Output To File", self.canvasSettingsDir + "/Output.html", "HTML Document (*.html)")
         if qname.isEmpty(): return
         name = str(qname)
 
@@ -634,57 +466,30 @@ class OrangeCanvasDlg(QMainWindow):
 
 
     def menuItemShowToolbar(self):
-        self.showToolbar = not self.showToolbar
-        self.settings["showToolbar"] = self.showToolbar
-        self.menupopupShowToolbarID.setChecked(self.showToolbar)
-        if self.showToolbar: self.toolbar.show()
+        self.settings["showToolbar"] = not self.settings.get("showToolbar", True)
+        if self.settings["showToolbar"]: self.toolbar.show()
         else: self.toolbar.hide()
 
     def menuItemShowWidgetToolbar(self):
-        self.showWidgetToolbar = not self.showWidgetToolbar
-        self.settings["showWidgetToolbar"] = self.showWidgetToolbar
-        self.menupopupShowWidgetToolbarID.setChecked(self.showWidgetToolbar)
-        if self.showWidgetToolbar: self.widgetsToolBar.show()
+        self.settings["showWidgetToolbar"] = not self.settings.get("showWidgetToolbar", True)
+        if self.settings["showWidgetToolbar"]: self.widgetsToolBar.show()
         else: self.widgetsToolBar.hide()
 
-    """
-    def menuItemPreferences(self):
-        dlg = orngDlgs.PreferencesDlg(self, None, "", True)
-        dlg.exec_()
-        if dlg.result() == QDialog.Accepted:
-            self.rebuildSignals()
-    """
 
     def menuItemEditWidgetShortcuts(self):
         dlg = orngDlgs.WidgetShortcutDlg(self)
         if dlg.exec_() == QDialog.Accepted:
             self.widgetShortcuts = dict([(y, x) for x, y in dlg.invDict.items()])
             shf = file(os.path.join(self.canvasSettingsDir, "shortcuts.txt"), "wt")
-            for k, v in self.widgetShortcuts.items():
-                shf.write("%s: %s\n" % (k, v.nameKey))
+            for k, widgetInfo in self.widgetShortcuts.items():
+                shf.write("%s: %s\n" % (k, (widgetInfo.category, widgetInfo.name)))
 
     def menuItemDeleteWidgetSettings(self):
-        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schemas.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schema.\nIf there are, clear the schema first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
             if os.path.exists(self.widgetSettingsDir):
                 for f in os.listdir(self.widgetSettingsDir):
                     if os.path.splitext(f)[1].lower() == ".ini":
                         os.remove(os.path.join(self.widgetSettingsDir, f))
-
-    def menuCloseAll(self):
-        wins = self.workspace.getDocumentList()
-        for win in wins:
-            win.close()
-        wins = self.workspace.getDocumentList()
-
-    def menuMinimizeAll(self):
-        wins = self.workspace.windowList()
-        for win in wins:
-            win.showMinimized()
-
-    def menuRestoreAll(self):
-        wins = self.workspace.windowList()
-        for win in wins:
-            win.showNormal()
 
     def menuOpenLocalOrangeHelp(self):
         import webbrowser
@@ -710,32 +515,9 @@ class OrangeCanvasDlg(QMainWindow):
     def menuHelpAbout(self):
         pass
 
-    def rebuildSignals(self):
-        self.channels = {}
-        if self.settings.has_key("Channels"):
-            channels = self.settings["Channels"]
-            for (key, value) in channels.items():
-                items = value.split("::")
-                self.channels[key] = items
-
-    def getChannelName(self, symbName):
-        if self.channels.has_key(symbName):
-            return (self.channels[symbName])[0]
-        return symbName
-
-    def getChannelInfo(self, symbName):
-        if self.channels.has_key(symbName):
-            return self.channels[symbName]
-        else:
-            return [symbName, str(1), "blue"]
-
-#    def focusDocument(self, w):
-#        pass
-#        #if w: w.setFocus()
-
 
 ## to see the signals you have to call: self.output.catchException(0); self.output.catchOutput(0)
-## and run orngCanvas.pyw from command line using "python.exe orngCanvas.pyw" 
+## and run orngCanvas.pyw from command line using "python.exe orngCanvas.pyw"
 #    def event(self, e):
 #        eventDict = dict([(0, "None"), (130, "AccessibilityDescription"), (119, "AccessibilityHelp"), (86, "AccessibilityPrepare"), (114, "ActionAdded"), (113, "ActionChanged"), (115, "ActionRemoved"), (99, "ActivationChange"), (121, "ApplicationActivated"), (122, "ApplicationDeactivated"), (36, "ApplicationFontChange"), (37, "ApplicationLayoutDirectionChange"), (38, "ApplicationPaletteChange"), (35, "ApplicationWindowIconChange"), (68, "ChildAdded"), (69, "ChildPolished"), (71, "ChildRemoved"), (40, "Clipboard"), (19, "Close"), (82, "ContextMenu"), (52, "DeferredDelete"), (60, "DragEnter"), (62, "DragLeave"), (61, "DragMove"), (63, "Drop"), (98, "EnabledChange"), (10, "Enter"), (150, "EnterEditFocus"), (124, "EnterWhatsThisMode"), (116, "FileOpen"), (8, "FocusIn"), (9, "FocusOut"), (97, "FontChange"), (159, "GraphicsSceneContextMenu"), (164, "GraphicsSceneDragEnter"), (166, "GraphicsSceneDragLeave"), (165, "GraphicsSceneDragMove"), (167, "GraphicsSceneDrop"), (163, "GraphicsSceneHelp"), (160, "GraphicsSceneHoverEnter"), (162, "GraphicsSceneHoverLeave"), (161, "GraphicsSceneHoverMove"), (158, "GraphicsSceneMouseDoubleClick"), (155, "GraphicsSceneMouseMove"), (156, "GraphicsSceneMousePress"), (157, "GraphicsSceneMouseRelease"), (168, "GraphicsSceneWheel"), (18, "Hide"), (27, "HideToParent"), (127, "HoverEnter"), (128, "HoverLeave"), (129, "HoverMove"), (96, "IconDrag"), (101, "IconTextChange"), (83, "InputMethod"), (6, "KeyPress"), (7, "KeyRelease"), (89, "LanguageChange"), (90, "LayoutDirectionChange"), (76, "LayoutRequest"), (11, "Leave"), (151, "LeaveEditFocus"), (125, "LeaveWhatsThisMode"), (88, "LocaleChange"), (153, "MenubarUpdated"), (43, "MetaCall"), (102, "ModifiedChange"), (4, "MouseButtonDblClick"), (2, "MouseButtonPress"), (3, "MouseButtonRelease"), (5, "MouseMove"), (109, "MouseTrackingChange"), (13, "Move"), (12, "Paint"), (39, "PaletteChange"), (131, "ParentAboutToChange"), (21, "ParentChange"), (75, "Polish"), (74, "PolishRequest"), (123, "QueryWhatsThis"), (14, "Resize"), (117, "Shortcut"), (51, "ShortcutOverride"), (17, "Show"), (26, "ShowToParent"), (50, "SockAct"), (112, "StatusTip"), (100, "StyleChange"), (87, "TabletMove"), (92, "TabletPress"), (93, "TabletRelease"), (171, "TabletEnterProximity"), (172, "TabletLeaveProximity"), (1, "Timer"), (120, "ToolBarChange"), (110, "ToolTip"), (78, "UpdateLater"), (77, "UpdateRequest"), (111, "WhatsThis"), (118, "WhatsThisClicked"), (31, "Wheel"), (132, "WinEventAct"), (24, "WindowActivate"), (103, "WindowBlocked"), (25, "WindowDeactivate"), (34, "WindowIconChange"), (105, "WindowStateChange"), (33, "WindowTitleChange"), (104, "WindowUnblocked"), (126, "ZOrderChange"), (169, "KeyboardLayoutChange"), (170, "DynamicPropertyChange")])
 #        if eventDict.has_key(e.type()):
@@ -836,25 +618,22 @@ class OrangeCanvasDlg(QMainWindow):
             self.lineColor           = dlg.lineIcon.color
 
             # update settings in widgets in current documents
-            for win in self.workspace.getDocumentList():
-                for widget in win.widgets:
-                    widget.instance._useContexts = self.settings["useContexts"]
-                    widget.instance._owInfo      = self.settings["owInfo"]
-                    widget.instance._owWarning   = self.settings["owWarning"]
-                    widget.instance._owError     = self.settings["owError"]
-                    widget.instance._owShowStatus= self.settings["owShow"]
-                    widget.instance.updateStatusBarState()
-                    widget.updateWidgetState()
+            for widget in self.schema.widgets:
+                widget.instance._useContexts = self.settings["useContexts"]
+                widget.instance._owInfo      = self.settings["owInfo"]
+                widget.instance._owWarning   = self.settings["owWarning"]
+                widget.instance._owError     = self.settings["owError"]
+                widget.instance._owShowStatus= self.settings["owShow"]
+                widget.instance.updateStatusBarState()
+                widget.updateWidgetState()
 
-            for win in self.workspace.getDocumentList():
-                win.canvasView.repaint()
+            self.schema.canvasView.repaint()
 
             # update tooltips for lines in all documents
             show = dlg.showSignalNamesCB.isChecked()
-            for doc in self.workspace.getDocumentList():
-                for line in doc.lines:
-                    line.showSignalNames = show
-                    line.updateTooltip()
+            for line in self.schema.lines:
+                line.showSignalNames = show
+                line.updateTooltip()
 
             #self.output.catchException(self.settings["catchException"])
             #self.output.catchOutput(self.settings["catchOutput"])
@@ -885,7 +664,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def setStatusBarEvent(self, text):
         if text == "" or text == None:
-            self.statusBar.showMessage("")
+            self.statusBar().showMessage("")
             return
         elif text == "\n": return
         text = str(text)
@@ -893,11 +672,7 @@ class OrangeCanvasDlg(QMainWindow):
         text = text.replace("<b>", ""); text = text.replace("</b>", "")
         text = text.replace("<i>", ""); text = text.replace("</i>", "")
         text = text.replace("<br>", ""); text = text.replace("&nbsp", "")
-        self.statusBar.showMessage("Last event: " + str(text), 5000)
-
-    #######################
-    # SETTINGS
-    #######################
+        self.statusBar().showMessage("Last event: " + str(text), 5000)
 
     # Loads settings from the widget's .ini file
     def loadSettings(self):
@@ -941,7 +716,6 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings.setdefault("style", items[lowerItems.index(currStyle)])
         self.settings.setdefault("useDefaultPalette", 1)
 
-
         self.settings.setdefault("focusOnCatchException", 1)
         self.settings.setdefault("focusOnCatchOutput" , 0)
         self.settings.setdefault("printOutputInStatusBar", 1)
@@ -962,41 +736,47 @@ class OrangeCanvasDlg(QMainWindow):
         filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
         file=open(filename, "wb")
         if self.settings["widgetListType"] == 1:        # tree view
-            self.settings["treeItemsOpenness"] = dict([(key, self.tabs.tabDict[key].isExpanded()) for key in self.tabs.tabDict.keys()]) 
+            self.settings["treeItemsOpenness"] = dict([(key, self.tabs.tabDict[key].isExpanded()) for key in self.tabs.tabDict.keys()])
         cPickle.dump(self.settings, file)
         file.close()
 
-    #######################
-    # EVENTS
-    #######################
     def closeEvent(self, ce):
-        totalDocs = len(self.workspace.getDocumentList())
-        closedDocs = 0
-        for win in self.workspace.getDocumentList():
-            closed = win.close()
-            if closed: closedDocs += 1
-
         # save the current width of the toolbox, if we are using it
         if isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
             self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
 
-        self.saveSettings()
-        if closedDocs == totalDocs:
+        closed = self.schema.close()
+        if closed:
             self.canvasIsClosing = 1        # output window (and possibly report window also) will check this variable before it will close the window
             self.output.logFile.close()
+            self.output.hide()
+            self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
+            self.settings["showToolbar"] = self.toolbar.isVisible()
             ce.accept()
         else:
             ce.ignore()
+        
+        self.saveSettings()
 
-    def enableSave(self, enable):
-        self.toolSave.setEnabled(bool(enable))
-        self.menuSaveID.setEnabled(bool(enable))
-        self.menuSaveAsID.setEnabled(bool(enable))
 
-#    def resizeEvent(self, e):
-#        self.tabs.widget(self.tabs.currentIndex()).resizeEvent(e)       # show/hide left and right buttons
-#        #self.tabs.widget(self.tabs.currentIndex()).repaint()
+    def setCaption(self, caption):
+        caption = caption.split(".")[0]
+        self.setWindowTitle(caption + " - Orange Canvas")
+        
+    def getFullWidgetIconName(self, widgetInfo):
+        name = widgetInfo.icon
+        widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)  #os.path.split(self.getFileName())[0]
 
+        for paths in [(self.picsDir, name), 
+                      (self.widgetDir, name), 
+                      (name,), 
+                      (widgetDir, name), 
+                      (widgetDir, "icons", name)]:
+            fname = os.path.join(*paths)
+            if os.path.exists(fname):
+                return fname
+
+        return self.defaultPic
 
 
 class MyStatusBar(QStatusBar):
@@ -1006,43 +786,6 @@ class MyStatusBar(QStatusBar):
 
     def mouseDoubleClickEvent(self, ev):
         self.parentWidget.menuItemShowOutputWindow()
-
-class WidgetMdiArea(QMdiArea):
-    def __init__(self, parent):
-        self.off = 30
-        QMdiArea.__init__(self, parent)
-
-    def getDocumentList(self):
-        list = self.subWindowList()
-        for item in list:
-            if isinstance(item, orngOutput.OutputWindow):
-                list.remove(item)
-        return list
-
-    def cascadeSubWindows(self):
-        list = self.subWindowList()
-        outputWin = None
-        for item in list:
-            if isinstance(item, orngOutput.OutputWindow):
-                outputWin = item
-        if outputWin:
-            list.remove(outputWin)
-
-        # move schemas
-        pos = 0
-        for item in list:
-            item.move(pos,pos)
-            item.resize(self.width()-pos, self.height()-pos)
-            pos += self.off
-
-        # move output win
-        if outputWin:
-            outputWin.move(pos,pos)
-            outputWin.resize(self.width()-pos, self.height()-pos)
-
-        if len(list) > 0:
-            self.setActiveSubWindow(list[0])
-
 
 def main(argv = None):
     if argv == None:

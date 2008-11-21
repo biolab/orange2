@@ -2,6 +2,7 @@
 #
 
 import os, sys, re, glob, stat
+from orngSignalManager import OutputSignal, InputSignal
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -15,22 +16,21 @@ class WidgetDescription:
     def __init__(self, **attrs):
         self.__dict__.update(attrs)
 
-class WidgetCategory:
-    def __init__(self, name, widgets, directory):
-        self.name = name
-        self.widgets = widgets
+class WidgetCategory(dict):
+    def __init__(self, directory, widgets):
+        self.update(widgets)
         self.directory = directory
    
 storedCategories = None
+
 def readCategories():
     global storedCategories
     if storedCategories:
         return storedCategories
     
-    
     widgetDirName = os.path.realpath(directoryNames["widgetDir"])
     canvasSettingsDir = os.path.realpath(directoryNames["canvasSettingsDir"])
-    cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle") 
+    cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle")
 
     try:
         import cPickle
@@ -54,11 +54,11 @@ def readCategories():
         if os.path.isdir(addOnWidgetsDir):
             directories.append(("Prototypes", addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir))
 
-    categories = []
+    categories = {}     
     for catName, dirName, plugin in directories:
-        widgets = readWidgets(dirName, cachedWidgetDescriptions)
+        widgets = readWidgets(dirName, catName, cachedWidgetDescriptions)
         if widgets:
-            categories.append(WidgetCategory(catName, widgets, plugin and dirName or ""))
+            categories[catName] = WidgetCategory(plugin and dirName or "", widgets)
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
     storedCategories = categories
@@ -73,7 +73,7 @@ re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.D
 hasErrors = False
 splashWindow = None
 
-def readWidgets(directory, cachedWidgetDescriptions):
+def readWidgets(directory, category, cachedWidgetDescriptions):
     import sys, imp
     global hasErrors, splashWindow
     
@@ -90,15 +90,12 @@ def readWidgets(directory, cachedWidgetDescriptions):
         
         data = file(filename).read()
         istart = data.find("<name>")
-        if istart < 0:
-            continue
         iend = data.find("</name>")
-        if iend < 0:
+        if istart < 0 or iend < 0:
             continue
         name = data[istart+6:iend]
-        
-        inputList=getSignalList(re_inputs, data)
-        outputList=getSignalList(re_outputs, data)
+        inputList = getSignalList(re_inputs, data)
+        outputList = getSignalList(re_outputs, data)
         
         dirname, fname = os.path.split(filename)
         widgname = os.path.splitext(fname)[0]
@@ -126,20 +123,40 @@ def readWidgets(directory, cachedWidgetDescriptions):
             inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(inputList))
             outputClasses = set(y.__name__ for x in eval(outputList) for y in eval(x[1], wmod.__dict__).mro())
             
-            widgetDesc = WidgetDescription(
-                             name=name,
-                             time=datetime,
-                             filename=widgname,
-                             fullname=filename,
-                             inputList=inputList, outputList=outputList,
-                             inputClasses=inputClasses, outputClasses=outputClasses
+            widgetInfo = WidgetDescription(
+                             name = data[istart+6:iend],
+                             category = category,
+                             time = datetime,
+                             fileName = widgname,
+                             fullName = filename,
+                             inputList = inputList, outputList = outputList,
+                             inputClasses = inputClasses, outputClasses = outputClasses
                              )
     
             for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", "")):
                 istart, iend = data.find("<"+attr), data.find("</"+attr)
-                setattr(widgetDesc, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
-        
-            widgets.append(widgetDesc)
+                setattr(widgetInfo, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
+                
+    
+            # build the tooltip
+            widgetInfo.inputs = [InputSignal(*signal) for signal in eval(widgetInfo.inputList)]
+            if len(widgetInfo.inputs) == 0:
+                formatedInList = "<b>Inputs:</b><br> &nbsp;&nbsp; None<br>"
+            else:
+                formatedInList = "<b>Inputs:</b><br>"
+                for signal in widgetInfo.inputs:
+                    formatedInList += " &nbsp;&nbsp; - " + signal.name + " (" + signal.type + ")<br>"
+    
+            widgetInfo.outputs = [OutputSignal(*signal) for signal in eval(widgetInfo.outputList)]
+            if len(widgetInfo.outputs) == 0:
+                formatedOutList = "<b>Outputs:</b><br> &nbsp; &nbsp; None<br>"
+            else:
+                formatedOutList = "<b>Outputs:</b><br>"
+                for signal in widgetInfo.outputs:
+                    formatedOutList += " &nbsp; &nbsp; - " + signal.name + " (" + signal.type + ")<br>"
+    
+            widgetInfo.tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, widgetInfo.description, formatedInList[:-4], formatedOutList[:-4]) 
+            widgets.append((name, widgetInfo))
         except Exception, msg:
             if not hasErrors:
                 print "The following widgets could not be scanned and will not be available"

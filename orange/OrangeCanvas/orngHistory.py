@@ -66,13 +66,13 @@ def logCloseSchema(schemaID):
     logAppend(schemaID, "CLOSESCHEMA")
     
 def logAddWidget(schemaID, nameKey, x, y):
-    logAppend(schemaID, "ADDWIDGET", nameKey + ";" + str(x) + ";" + str(y))
+    logAppend(schemaID, "ADDWIDGET", str(nameKey) + ";" + str(x) + ";" + str(y))
     
 def logRemoveWidget(schemaID, nameKey):
-    logAppend(schemaID, "REMOVEWIDGET", nameKey)
+    logAppend(schemaID, "REMOVEWIDGET", str(nameKey))
 
 def logChangeWidgetPosition(schemaID, nameKey, x, y):
-    logAppend(schemaID, "MOVEWIDGET", nameKey + ";" + str(x) + ";" + str(y))
+    logAppend(schemaID, "MOVEWIDGET", str(nameKey) + ";" + str(x) + ";" + str(y))
 
 def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
     from email.MIMEMultipart import MIMEMultipart

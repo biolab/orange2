@@ -68,7 +68,6 @@ class SchemaView(QGraphicsView):
             widget.updateTooltip()
             widget.updateLinePosition()
             widget.instance.setCaption(newName)
-            self.doc.enableSave(True)
 
     # popMenuAction - user selected to delete active widget
     def removeActiveWidget(self):
@@ -99,7 +98,6 @@ class SchemaView(QGraphicsView):
             self.selectedLine.setEnabled(not oldEnabled)
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
-        self.doc.enableSave(True)
 
     # popMenuAction - delete selected link
     def deleteSelectedLine(self):
@@ -212,7 +210,6 @@ class SchemaView(QGraphicsView):
                         self.bMultipleSelection = False
 
                     for w in self.getSelectedWidgets():
-                        #w.setCoords(w.x(), w.y())
                         w.savePosition()
                         w.setAllLinesFinished(False)
 
@@ -235,8 +232,8 @@ class SchemaView(QGraphicsView):
             else:
                 self.unselectAllWidgets()
 
-        self.scene().update()
         self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+        self.scene().update()
 
 
     # mouse button was pressed and mouse is moving ######################
@@ -292,9 +289,8 @@ class SchemaView(QGraphicsView):
                 item.updateTooltip()
                 item.updateLineCoords()
                 item.setAllLinesFinished(True)
-                orngHistory.logChangeWidgetPosition(self.doc.schemaID, item.widget.nameKey, item.x(), item.y())
+                orngHistory.logChangeWidgetPosition(self.doc.schemaID, (item.widgetInfo.category, item.widgetInfo.name), item.x(), item.y())
 
-            self.doc.enableSave(True)
 
         # if we are drawing line
         elif self.bLineDragging:
@@ -314,38 +310,33 @@ class SchemaView(QGraphicsView):
 
             # we must check if we have really conected some output to input
             if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and item != self.tempWidget:
-                if self.tempWidget.mouseInsideLeftChannel(p1):
-                    outWidget = item
-                    inWidget  = self.tempWidget
-                else:
-                    outWidget = self.tempWidget
-                    inWidget  = item
-
                 if self.doc.signalManager.signalProcessingInProgress:
                      QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
-                    line = self.doc.addLine(outWidget, inWidget)
+                    if self.tempWidget.mouseInsideLeftChannel(p1):
+                        line = self.doc.addLine(item, self.tempWidget)
+                    else:
+                        line = self.doc.addLine(self.tempWidget, item)
             else:
-                if self.doc.canvasDlg.settings["widgetListType"] == 4:
+                newCoords = QPoint(ev.globalPos())
+                action = orngTabs.categoriesPopup.exec_(newCoords)
+                if action:
+                    if self.inWidget: xOff = -48
+                    else: xOff = 0
+                    newWidget = self.doc.addWidget(action.widgetInfo, point.x()+xOff, point.y()-24)
+                    if self.doc.signalManager.signalProcessingInProgress:
+                        QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
+                    else:
+                        line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
+
+        else:
+            activeItem = self.scene().itemAt(point)
+            if not activeItem:
+                if (self.mouseDownPosition.x() - point.x())**2 + (self.mouseDownPosition.y() - point.y())**2 < 25:
                     newCoords = QPoint(ev.globalPos())
                     action = orngTabs.categoriesPopup.exec_(newCoords)
                     if action:
-                        newWidget = action.widget.clicked(False, newCoords)
-                        if self.doc.signalManager.signalProcessingInProgress:
-                            QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
-                        else:
-                            line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
-
-        else:
-            if self.doc.canvasDlg.settings["widgetListType"] == 4:
-                activeItem = self.scene().itemAt(point)
-                if not activeItem:
-                    mouseUpPosition = self.mapToScene(ev.pos())
-                    if (self.mouseDownPosition.x() - mouseUpPosition.x())**2 + (self.mouseDownPosition.y() - mouseUpPosition.y())**2 < 25:
-                        newCoords = QPoint(ev.globalPos())
-                        action = orngTabs.categoriesPopup.exec_(newCoords)
-                        if action:
-                            newWidget = action.widget.clicked(False, newCoords)
+                        newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
                     
 
         self.scene().update()
