@@ -59,20 +59,6 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.loadSettings()
         
-                # output window
-        self.output = orngOutput.OutputWindow(self)
-        #self.output.catchException(self.settings["catchException"])
-        #self.output.catchOutput(self.settings["catchOutput"])
-        self.output.catchException(1)
-        self.output.catchOutput(1)
-        self.output.setFocusOnException(self.settings["focusOnCatchException"])
-        self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
-        self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
-        self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
-        self.output.setWriteLogFile(self.settings["writeLogFile"])
-        self.output.setVerbosity(self.settings["outputVerbosity"])
-        self.output.hide()
-        
         self.widgetRegistry = orngRegistry.readCategories()
 
         self.updateStyle()
@@ -141,6 +127,20 @@ class OrangeCanvasDlg(QMainWindow):
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
 
+        # output window
+        self.output = orngOutput.OutputWindow(self)
+        #self.output.catchException(self.settings["catchException"])
+        #self.output.catchOutput(self.settings["catchOutput"])
+        self.output.catchException(1)
+        self.output.catchOutput(1)
+        self.output.setFocusOnException(self.settings["focusOnCatchException"])
+        self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+        self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
+        self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
+        self.output.setWriteLogFile(self.settings["writeLogFile"])
+        self.output.setVerbosity(self.settings["outputVerbosity"])
+        self.output.hide()
+        
         self.show()
 
         # did Orange crash the last time we used it? If yes, you will find a TempSchemaX.ows file
