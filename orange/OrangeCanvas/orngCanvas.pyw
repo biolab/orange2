@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys, os, cPickle, orngRegistry, orngEnviron, orngGui
-import orngTabs, orngDoc, orngDlgs, orngOutput
+import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp
 import orange, user, orngMisc
 
 class OrangeCanvasDlg(QMainWindow):
@@ -129,6 +129,8 @@ class OrangeCanvasDlg(QMainWindow):
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
 
+        self.helpWindow = orngHelp.HelpWindow(self)
+        
         # output window
         self.output = orngOutput.OutputWindow(self)
         #self.output.catchException(self.settings["catchException"])
@@ -733,6 +735,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("owWarning", 1)
         self.settings.setdefault("ocError", 1)
         self.settings.setdefault("owError", 1)
+        
+        self.settings.setdefault("synchronizeHelp", 1)
 
 
     # Saves settings to this widget's .ini file
@@ -757,6 +761,8 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
             self.settings["showToolbar"] = self.toolbar.isVisible()
             ce.accept()
+            
+            self.helpWindow.close()
         else:
             ce.ignore()
         
@@ -797,6 +803,7 @@ def main(argv = None):
 
     app = QApplication(sys.argv)
     dlg = OrangeCanvasDlg(app)
+    qApp.canvasDlg = dlg
     dlg.show()
     for arg in sys.argv[1:]:
         if arg == "-reload":

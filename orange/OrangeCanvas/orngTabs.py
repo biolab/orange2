@@ -496,7 +496,7 @@ class CanvasPopup(QMenu):
         
     def selectByInputs(self, widgetInfo):
         self.selectActions("inputClasses", widgetInfo.outputClasses)
-
+    
 
 def constructCategoriesPopup(canvasDlg):
     global categoriesPopup

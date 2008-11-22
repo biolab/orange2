@@ -646,7 +646,7 @@ class OWBaseWidget(QDialog):
             self.eventHandler(self.captionTitle + ": " + text, eventVerbosity)
 
     def openWidgetHelp(self):
-        if orangedir:
+        if self.orangeDir:
 #            try:
 #                import win32help
 #                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self._category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
@@ -654,9 +654,18 @@ class OWBaseWidget(QDialog):
 #            except:
 #                pass
 
+#===============================================================================
+#            from PyQt4 import QtWebKit
+#            qApp.helpWindow = helpWindow = QtWebKit.QWebView()
+#            print "file://%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:])
+#            helpWindow.load(QUrl("file:///%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:])))
+#            helpWindow.show()
+#===============================================================================
+            qApp.canvasDlg.helpWindow.showHelpFor(self, True)
+            return
             try:
                 import webbrowser
-                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (orangedir, self._category, self.__class__.__name__[2:]), 0, 1)
+                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:]), 0, 1)
                 return
             except:
                 pass
@@ -668,9 +677,15 @@ class OWBaseWidget(QDialog):
         except:
             pass
 
-
+    def focusInEvent(self, *ev):
+        print "focus in"
+        if qApp.canvasDlg.settings["synchronizeHelp"]:
+            qApp.canvasDlg.helpWindow.showHelpFor(self, True)
+        QDialog.focusInEvent(self, *ev)
+        
+    
     def keyPressEvent(self, e):
-        if e.key() == 0x1030:
+        if e.key() in (Qt.Key_Help, Qt.Key_F1):
             self.openWidgetHelp()
 #            e.ignore()
         else:
