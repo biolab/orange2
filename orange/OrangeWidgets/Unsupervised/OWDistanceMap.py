@@ -6,7 +6,7 @@
 <priority>1200</priority>
 """
 
-import orange, math
+import orange, math, sys
 import OWGUI, OWToolbars
 from OWWidget import *
 
@@ -177,7 +177,12 @@ class OWDistanceMap(OWWidget):
 ##        box.layout().addWidget(self.colorPalette)
         box = OWGUI.widgetBox(box, "Colors", orientation="horizontal")
         self.colorCombo = OWColorPalette.PaletteSelectorComboBox(self)
-        self.colorCombo.setPalettes("palette", self.createColorDialog())
+        try:
+            self.colorCombo.setPalettes("palette", self.createColorDialog())
+        except Exception, ex:
+            print >> sys.stderr, ex, "Error loading saved color palettes!\nCreating new default palette!"
+            self.colorSettings = None
+            self.colorCombo.setPalettes("palette", self.createColorDialog())
         self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
         self.connect(self.colorCombo, SIGNAL("activated(int)"), self.setColor)
         box.layout().addWidget(self.colorCombo, 2)
