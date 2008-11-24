@@ -15,19 +15,14 @@ class SchemaDoc(QWidget):
     def __init__(self, canvasDlg, *args):
         QWidget.__init__(self, *args)
         self.canvasDlg = canvasDlg
-        self.canSave = 0
-        self.autoSaveName = os.path.join(self.canvasDlg.canvasSettingsDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
-        self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
         self.ctrlPressed = 0
 
         self.lines = []                         # list of orngCanvasItems.CanvasLine items
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
         self.signalManager = SignalManager()    # signal manager to correctly process signals
 
-        self.documentpath = canvasDlg.settings["saveSchemaDir"]
-        self.documentname = ""
-        self.applicationpath = canvasDlg.settings["saveApplicationDir"]
-        self.applicationname = str(self.windowTitle())
+        self.schemaPath = self.canvasDlg.settings["saveSchemaDir"]
+        self.schemaName = ""
         self.loadedSettingsDict = {}
         self.setLayout(QVBoxLayout())
         #self.canvas = QGraphicsScene(0,0,2000,2000)
@@ -43,43 +38,45 @@ class SchemaDoc(QWidget):
     # ask the user if he is sure
     def closeEvent(self,ce):
         newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
-        self.canSave = self.canSave or bool(newSettings)
 
         self.synchronizeContexts()
         #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
         if self.widgets != []:
-            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp"))
+            self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "lastSchema.tmp"))
 
-        if not self.canSave or self.canvasDlg.settings["dontAskBeforeClose"]:
-            if newSettings:
-                self.saveDocument()
+        if self.canvasDlg.settings["dontAskBeforeClose"]:
+            if newSettings and self.schemaName != "":
+                self.save()
             self.clear()
+            self.removeTempDoc()
             ce.accept()
         else:
-            res = QMessageBox.question(self, 'Orange Canvas','Do you want to save changes made to schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
+            res = QMessageBox.question(self, 'Orange Canvas','Do you wish to save the schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
             if res == QMessageBox.Yes:
                 self.saveDocument()
                 ce.accept()
                 self.clear()
             elif res == QMessageBox.No:
                 self.clear()
+                self.removeTempDoc()
                 ce.accept()
             else:
                 ce.ignore()     # we pressed cancel - we don't want to close the document
                 return
         
         QWidget.closeEvent(self, ce)
-        
-        # remove the temporary file if it exists
-        if os.path.exists(self.autoSaveName):
-            os.remove(self.autoSaveName)
-
         orngHistory.logCloseSchema(self.schemaID)
         
     # save a temp document whenever anything changes. this doc is deleted on closeEvent
     # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
     def saveTempDoc(self):
-        self.save(self.autoSaveName)
+        tempName = os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp")
+        self.save(tempName)
+        
+    def removeTempDoc(self):
+        tempName = os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp")
+        if os.path.exists(tempName):
+            os.remove(tempName)
 
     # called to properly close all widget contexts
     def synchronizeContexts(self):
@@ -381,24 +378,22 @@ class SchemaDoc(QWidget):
     # SAVING, LOADING, ....
     # ###########################################
     def saveDocument(self):
-        if self.documentname == "":
+        if self.schemaName == "":
             self.saveDocumentAs()
         else:
             self.save()
 
     def saveDocumentAs(self):
-        qname = QFileDialog.getSaveFileName(self, "Save File", os.path.join(self.documentpath, self.documentname), "Orange Widget Scripts (*.ows)")
-        name = str(qname)
+        name = str(QFileDialog.getSaveFileName(self, "Save File", os.path.join(self.schemaPath, self.schemaName), "Orange Widget Schema (*.ows)"))
         if os.path.splitext(name)[0] == "": return
-        if os.path.splitext(name)[1] == "": name = name + ".ows"
-
-        (self.documentpath, self.documentname) = os.path.split(name)
-        self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
-        self.applicationname = os.path.splitext(os.path.split(name)[1])[0] + ".py"
-        self.save()
+        if os.path.splitext(name)[1].lower() != ".ows": name = os.path.splitext(name)[0] + ".ows"
+        self.save(name)
 
     # save the file
     def save(self, filename = None):
+        if filename == None:
+            filename = os.path.join(self.schemaPath, self.schemaName)
+            
         # create xml document
         doc = Document()
         schema = doc.createElement("schema")
@@ -434,28 +429,34 @@ class SchemaDoc(QWidget):
 
         xmlText = doc.toprettyxml()
 
-        if filename != None:
-            file = open(filename, "wt")
-        else:
-            file = open(os.path.join(self.documentpath, self.documentname), "wt")
-            self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))
-
+        file = open(filename, "wt")
         file.write(xmlText)
         file.close()
         doc.unlink()
-        self.canvasDlg.setCaption(self.documentname)
+
+        if os.path.splitext(filename)[1].lower() == ".ows":
+            (self.schemaPath, self.schemaName) = os.path.split(filename)
+            self.canvasDlg.settings["saveSchemaDir"] = self.schemaPath
+            self.canvasDlg.addToRecentMenu(filename)
+            self.canvasDlg.setCaption(self.schemaName)
 
 
     # load a scheme with name "filename"
-    def loadDocument(self, filename, caption = None, freeze = 0, isTempSchema = 0):
+    def loadDocument(self, filename, caption = None, freeze = 0):
+        self.clear()
+        
         if not os.path.exists(filename):
-            self.close()
-            QMessageBox.critical(self, 'Orange Canvas', 'Unable to locate file "'+ filename + '"',  QMessageBox.Ok)
+            if os.path.splitext(filename)[1].lower() != ".tmp":
+                QMessageBox.critical(self, 'Orange Canvas', 'Unable to locate file "'+ filename + '"',  QMessageBox.Ok)
             return
 
         # set cursor
         qApp.setOverrideCursor(Qt.WaitCursor)
         failureText = ""
+        
+        if os.path.splitext(filename)[1].lower() == ".ows":
+            self.schemaPath, self.schemaName = os.path.split(filename)
+            self.canvasDlg.setCaption(caption or self.schemaName)
 
         try:
             #load the data ...
@@ -465,14 +466,8 @@ class SchemaDoc(QWidget):
             lines = schema.getElementsByTagName("channels")[0]
             settings = schema.getElementsByTagName("settings")
             settingsDict = eval(str(settings[0].getAttribute("settingsDictionary")))
-
-            if not isTempSchema:
-                (self.documentpath, self.documentname) = os.path.split(filename)
-                (self.applicationpath, self.applicationname) = os.path.split(filename)
-                self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-                #self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
-                self.loadedSettingsDict = settingsDict
-
+            self.loadedSettingsDict = settingsDict
+              
             # read widgets
             loadedOk = 1
             for widget in widgets.getElementsByTagName("widget"):
@@ -504,37 +499,39 @@ class SchemaDoc(QWidget):
                 for (outName, inName) in signalList:
                     self.addLink(outWidget, inWidget, outName, inName, enabled)
                 #qApp.processEvents()
-
-            for widget in self.widgets: widget.updateTooltip()
-            self.canvas.update()
-
-            if isTempSchema:
-                self.autoSaveName = filename
-            else:
-                self.canvasDlg.setCaption(caption or self.documentname)
-            self.saveTempDoc()
-
-            if not loadedOk:
-                QMessageBox.information(self, 'Schema Loading Failed', 'The following errors occured while loading the schema: <br><br>' + failureText,  QMessageBox.Ok + QMessageBox.Default)
-
-            if self.widgets:
-                self.signalManager.processNewSignals(self.widgets[0].instance)
-
-            # do we want to restore last position and size of the widget
-            if self.canvasDlg.settings["saveWidgetsPosition"]:
-                for widget in self.widgets:
-                    widget.instance.restoreWidgetStatus()
-            
         finally:
             qApp.restoreOverrideCursor()
+
+        for widget in self.widgets: widget.updateTooltip()
+        self.canvas.update()
+
+        self.saveTempDoc()
+
+        if not loadedOk:
+            QMessageBox.information(self, 'Schema Loading Failed', 'The following errors occured while loading the schema: <br><br>' + failureText,  QMessageBox.Ok + QMessageBox.Default)
+
+        if self.widgets:
+            self.signalManager.processNewSignals(self.widgets[0].instance)
+
+        # do we want to restore last position and size of the widget
+        if self.canvasDlg.settings["saveWidgetsPosition"]:
+            for widget in self.widgets:
+                widget.instance.restoreWidgetStatus()
+            
+        
 
     # save document as application
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
         extension = sys.platform == "win32" and ".pyw" or ".py"
-        appName = os.path.splitext(self.applicationname)[0] + extension
-        qname = QFileDialog.getSaveFileName(self, "Save File as Application", os.path.join(self.applicationpath, appName) , "Orange Scripts (*%s)" % extension)
+        appName = (os.path.splitext(self.schemaName)[0] or "Schema") + extension
+        appPath = os.path.exists(self.canvasDlg.settings["saveApplicationDir"]) and self.canvasDlg.settings["saveApplicationDir"] or self.schemaPath
+        qname = QFileDialog.getSaveFileName(self, "Save File as Application", os.path.join(appPath, appName) , "Orange Scripts (*%s)" % extension)
         if qname.isEmpty(): return
+        (appPath, appName) = os.path.split(str(qname))
+        appNameWithoutExt = os.path.splitext(appName)[0]
+        if os.path.splitext(appName)[1].lower() not in [".py", ".pyw"]: appName = appNameWithoutExt + extension
+        self.canvasDlg.settings["saveApplicationDir"] = appPath
 
         saveDlg = saveApplicationDlg(None)
 
@@ -546,10 +543,6 @@ class SchemaDoc(QWidget):
 
         if saveDlg.exec_() == QDialog.Rejected:
             return
-
-        (self.applicationpath, self.applicationname) = os.path.split(str(qname))
-        fileName = os.path.splitext(self.applicationname)[0]
-        if os.path.splitext(self.applicationname)[1][:3] != ".py": self.applicationname += extension
 
         #format string with file content
         t = "    "  # instead of tab
@@ -568,7 +561,7 @@ class GUIApplication(OWBaseWidget):
         OWBaseWidget.__init__(self, title = '%s', signalManager = self.signalManager)
         self.widgets = {}
         self.loadSettings()
-        """ % (fileName)
+        """ % (appNameWithoutExt)
 
         if asTabs == 1:
             start += """
@@ -593,7 +586,7 @@ class GUIApplication(OWBaseWidget):
                     if self.widgets[i].caption == widgetName: widget = self.widgets[i]
 
                 shown = widgetName in saveDlg.shownWidgetList
-                widgetParameters += "self.createWidget('%s', '%s', '%s', %d, self.signalManager)\n" % (widget.widgetInfo.fileName, self.canvasDlg.getFullWidgetIconName(widget.widgetInfo), widget.caption, shown) +t+t
+                widgetParameters += "self.createWidget('%s', r'%s', '%s', %d, self.signalManager)\n" % (widget.widgetInfo.fileName, self.canvasDlg.getFullWidgetIconName(widget.widgetInfo), widget.caption, shown) +t+t
             else:
                 if not asTabs:
                     widgetParameters += "self.box.layout().addSpacing(10)\n" +t+t
@@ -688,23 +681,22 @@ if __name__ == "__main__":
     ow.show()
     # comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
     application.exec_()
-        """ % (guiText, fileName + ".sav", fileName + ".sav")
+        """ % (guiText, appNameWithoutExt + ".sav", appNameWithoutExt + ".sav")
 
 
         #save app
-        fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
-        self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
-        fileApp.write(start + n+n+t+t+ widgetParameters + n+t+t + progress + n+n+t+t + links + n + handlerFuncts)
-        fileApp.close()
+        f = open(os.path.join(appPath, appName), "wt")
+        f.write(start + n+n+t+t+ widgetParameters + n+t+t + progress + n+n+t+t + links + n + handlerFuncts)
+        f.close()
 
         # save widget settings
         list = {}
         for widget in self.widgets:
             list[widget.caption] = widget.instance.saveSettingsStr()
 
-        file = open(os.path.join(self.applicationpath, fileName) + ".sav", "wt")
-        cPickle.dump(list, file)
-        file.close
+        f = open(os.path.join(appPath, appNameWithoutExt) + ".sav", "wt")
+        cPickle.dump(list, f)
+        f.close
         
         
     def dumpWidgetVariables(self):
