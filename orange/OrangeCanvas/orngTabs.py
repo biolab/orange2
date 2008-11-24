@@ -114,25 +114,26 @@ class WidgetButton(QFrame, WidgetButtonBase):
     def mouseMoveEvent(self, e):
         ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
         ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
-        win = self.canvasDlg.schema
+        schema = self.canvasDlg.schema
         if hasattr(self, "busy"):
             return
         self.busy = 1
 
-        vrect = QRectF(win.visibleRegion().boundingRect())
-        inside = win.canvasView.rect().contains(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())))
-        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0, 0)))
+        vrect = QRectF(schema.visibleRegion().boundingRect())
+        widgetRect = QRect(QPoint(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))), QSize(60, 60)).adjusted(-30, -30, -30, -30)
+        inside = schema.canvasView.rect().contains(widgetRect)
+        p = QPointF(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(schema.canvasView.mapToScene(QPoint(0, 0)))
 
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
-        if dinwin and (dinwin != win or not inside):
+        if dinwin and (dinwin != schema or not inside):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
              dinwin.canvasView.scene().update()
 
         if inside:
             if not widget:
-                widget = win.addWidget(self.widgetInfo, p.x(), p.y())
-                self.widgetDragging = win, widget
+                widget = schema.addWidget(self.widgetInfo, p.x(), p.y())
+                self.widgetDragging = schema, widget
 
             # in case we got an exception when creating a widget instance
             if widget == None:
@@ -140,11 +141,11 @@ class WidgetButton(QFrame, WidgetButtonBase):
                 return
 
             widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
-            win.canvasView.scene().update()
+            schema.canvasView.scene().update()
 
             import orngCanvasItems
-            items = win.canvas.collidingItems(widget)
-            widget.invalidPosition = widget.selected = (win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
+            items = schema.canvas.collidingItems(widget)
+            widget.invalidPosition = widget.selected = (schema.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
 
         delattr(self, "busy")
 
