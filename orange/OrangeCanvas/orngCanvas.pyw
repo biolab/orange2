@@ -14,7 +14,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.setWindowTitle("Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         self.recentDocs = []
-        self.iDocIndex = 1
         self.iconSizeList = ["16 x 16", "32 x 32", "40 x 40", "48 x 48", "60 x 60"]
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
@@ -58,14 +57,15 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuSaveSettings = 1
 
         self.loadSettings()
+        self.settings["lineColor"] = self.settings["lineColor"][:3] + (150,)
         
         self.widgetRegistry = orngRegistry.readCategories()
 
         self.updateStyle()
 
-        self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
-        self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
-        self.lineColor           = QColor(self.settings["lineColor"][0], self.settings["lineColor"][1], self.settings["lineColor"][2])
+        self.widgetSelectedColor = QColor(*self.settings["widgetSelectedColor"])
+        self.widgetActiveColor   = QColor(*self.settings["widgetActiveColor"])
+        self.lineColor           = QColor(*self.settings["lineColor"])
 
         # create toolbar
         self.toolbar = self.addToolBar("Toolbar")
@@ -147,27 +147,16 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.show()
 
-        # did Orange crash the last time we used it? If yes, you will find a TempSchemaX.ows file
-        for fname in os.listdir(self.canvasSettingsDir):
-            if fname.startswith("TempSchema "):
-                try: 
-                    os.rename(fname, fname)
-                    mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
-                    mb.setButtonText(QMessageBox.Ok, "Reload")
-                    mb.setButtonText(QMessageBox.Cancel, "New schema")
-                    if mb.exec_() == QMessageBox.Ok:
-                        self.schema.loadDocument(fname, freeze = 1, isTempSchema = 1)
-                    break
-                except:
-                    continue
-               
-        for fname in os.listdir(self.canvasSettingsDir):
-            if fname.startswith("TempSchema "):
-                try: 
-                    os.remove(fname)
-                except:
-                    pass
-        if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
+        # did Orange crash the last time we used it? If yes, you will find a temSchema.tmp file
+        if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
+            mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
+            mb.setButtonText(QMessageBox.Ok, "Reload")
+            mb.setButtonText(QMessageBox.Cancel, "New schema")
+            if mb.exec_() == QMessageBox.Ok:
+                self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), freeze = 1)
+        
+        
+        if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.exists(sys.argv[-1]) and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
             self.schema.loadDocument(sys.argv[-1])
         
         # show message box if no numpy
@@ -236,7 +225,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile = QMenu("&File", self)
         self.menuFile.addAction(QIcon(self.file_open), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         self.menuFile.addAction(QIcon(self.file_open), "&Open and Freeze...", self.menuItemOpenFreeze)
-        if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
+        if os.path.exists(os.path.join(self.canvasSettingsDir, "lastSchema.tmp")):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL+Qt.Key_R)
         #self.menuFile.addAction( "&Clear", self.menuItemClear)
         self.menuFile.addSeparator()
@@ -322,10 +311,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.addToRecentMenu(str(name))
 
     def menuItemOpenLastSchema(self):
-        fullName = os.path.join(self.canvasSettingsDir, "tempSchema.tmp")
+        fullName = os.path.join(self.canvasSettingsDir, "lastSchema.tmp")
         if os.path.exists(fullName):
-            self.schema.clear()
-            self.schema.loadDocument(fullName, isTempSchema = 1)
+            self.schema.loadDocument(fullName)
 
     def menuItemSave(self):
         self.schema.saveDocument()
@@ -615,9 +603,9 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["useContexts"] = dlg.useContextsCB.isChecked()
 ##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
 
-            self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
-            self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
-            self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
+            self.settings["widgetSelectedColor"] = dlg.selectedWidgetIcon.color.getRgb()
+            self.settings["widgetActiveColor"]   = dlg.activeWidgetIcon.color.getRgb()
+            self.settings["lineColor"]           = dlg.lineIcon.color.getRgb()
 
             self.widgetSelectedColor = dlg.selectedWidgetIcon.color
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
