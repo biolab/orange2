@@ -57,7 +57,7 @@ class SchemaView(QGraphicsView):
         widget = widgets[0]
 
         exName = str(widget.caption)
-        (newName ,ok) = QInputDialog.getText(self, "Rename Widget", "Enter new name for the \"" + exName + "\" widget:", QLineEdit.Normal, exName)
+        (newName, ok) = QInputDialog.getText(self, "Rename Widget", "Enter new name for the '" + exName + "' widget:", QLineEdit.Normal, exName)
         newName = str(newName)
         if ok and newName != exName:
             for w in self.doc.widgets:
