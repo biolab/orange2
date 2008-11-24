@@ -160,9 +160,9 @@ class orngScaleData:
         self.dataDomain = None
         self.dataClassIndex = None
                 
+        if data == None: return
         fullData = self.mergeDataSets(data, subsetData)
-        if fullData == None: return
-        
+                
         self.rawData = data
         self.rawSubsetData = subsetData
 
@@ -194,58 +194,59 @@ class orngScaleData:
             elif attr.varType == orange.VarTypes.Continuous:
                 self.attrValues[attr.name] = [self.domainDataStat[index].min, self.domainDataStat[index].max]
         
-        if getCached(data, "allScaledData") and subsetData == None:
-            self.originalData, self.scaledData, self.noJitteringScaledData, self.validDataArray = getCached(data, "allScaledData")
+        # the originalData, noJitteringScaledData and validArray are arrays that we can cache so that other visualization widgets
+        # don't need to compute it. The scaledData on the other hand has to be computed for each widget separately because of different
+        # jitterContinuous and jitterSize values
+        if getCached(data, "visualizationData") and subsetData == None:
+            self.originalData, self.noJitteringScaledData, self.validDataArray = getCached(data, "visualizationData")
+            self.originalSubsetData = self.noJitteringScaledSubsetData = self.validSubsetDataArray = numpy.array([]).reshape([len(self.originalData), 0])
         else:
-            arr = fullData.toNumpyMA("ac")[0].T
-            validDataArray = numpy.array(1-arr.mask, numpy.short)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-            arr = numpy.array(MA.filled(arr, orange.Illegal_Float))
-            originalData = arr.copy()
-            scaledData = numpy.zeros(originalData.shape, numpy.float)
+            noJitteringData = fullData.toNumpyMA("ac")[0].T
+            validDataArray = numpy.array(1-noJitteringData.mask, numpy.short)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+            noJitteringData = numpy.array(MA.filled(noJitteringData, orange.Illegal_Float))
+            originalData = noJitteringData.copy()
             
-            if data != None:
-                for index in range(len(data.domain)):
-                    attr = data.domain[index]
-    
-                    if attr.varType == orange.VarTypes.Discrete:
-                        # see if the values for discrete attributes have to be resorted
-                        variableValueIndices = getVariableValueIndices(data.domain[index], sortValuesForDiscreteAttrs)
-                        if 0 in [i == variableValueIndices[attr.values[i]] for i in range(len(attr.values))]:
-                            line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                            indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
-                            for i in range(len(attr.values)):
-                                numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
-                            arr[index] = line   # save the changed array
-                            originalData[index] = line     # reorder also the values in the original data
-                            
-                        arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
-                        scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
-                    elif attr.varType == orange.VarTypes.Continuous:
-                        diff = self.domainDataStat[index].max - self.domainDataStat[index].min
-                        if diff == 0: diff = 1          # if all values are the same then prevent division by zero
-                        arr[index] = (arr[index] - self.domainDataStat[index].min) / diff
-    
-                        if self.jitterContinuous:
-                            line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
-                            line = numpy.absolute(line)       # fix values below zero
-    
-                            # fix values above 1
-                            ind = numpy.where(line > 1.0, 1, 0)
-                            numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
-                            scaledData[index] = line
-                        else:
-                            scaledData[index] = arr[index]
-    
+            for index in range(len(data.domain)):
+                attr = data.domain[index]
+                if attr.varType == orange.VarTypes.Discrete:
+                    # see if the values for discrete attributes have to be resorted
+                    variableValueIndices = getVariableValueIndices(data.domain[index], sortValuesForDiscreteAttrs)
+                    if 0 in [i == variableValueIndices[attr.values[i]] for i in range(len(attr.values))]:
+                        line = noJitteringData[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
+                        indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
+                        for i in range(len(attr.values)):
+                            numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
+                        noJitteringData[index] = line   # save the changed array
+                        originalData[index] = line     # reorder also the values in the original data
+                    noJitteringData[index] = (noJitteringData[index]*2.0 + 1.0)/ float(2*len(attr.values))
+                    
+                elif attr.varType == orange.VarTypes.Continuous:
+                    diff = self.domainDataStat[index].max - self.domainDataStat[index].min or 1     # if all values are the same then prevent division by zero
+                    noJitteringData[index] = (noJitteringData[index] - self.domainDataStat[index].min) / diff
+
             self.originalData = originalData[:,:lenData]; self.originalSubsetData = originalData[:,lenData:]
-            self.scaledData = scaledData[:,:lenData]; self.scaledSubsetData = scaledData[:,lenData:]
-            self.noJitteringScaledData = arr[:,:lenData]; self.noJitteringScaledSubsetData = arr[:,lenData:]
+            self.noJitteringScaledData = noJitteringData[:,:lenData]; self.noJitteringScaledSubsetData = noJitteringData[:,lenData:]
             self.validDataArray = validDataArray[:,:lenData]; self.validSubsetDataArray = validDataArray[:,lenData:]
+        
+        if data: setCached(data, "visualizationData", (self.originalData, self.noJitteringScaledData, self.validDataArray))
+        if subsetData: setCached(subsetData, "visualizationData", (self.originalSubsetData, self.noJitteringScaledSubsetData, self.validSubsetDataArray))
+            
+        # compute the scaledData arrays
+        scaledData = numpy.concatenate([self.noJitteringScaledData, self.noJitteringScaledSubsetData], axis = 1)
+        for index in range(len(data.domain)):
+            attr = data.domain[index]
+            if attr.varType == orange.VarTypes.Discrete:
+                scaledData[index] += (self.jitterSize/(50.0*max(1,len(attr.values))))*(numpy.random.random(len(fullData)) - 0.5)
+                
+            elif attr.varType == orange.VarTypes.Continuous and self.jitterContinuous:
+                scaledData[index] += self.jitterSize/50.0 * (0.5 - numpy.random.random(len(fullData)))
+                scaledData[index] = numpy.absolute(scaledData[index])       # fix values below zero
+                ind = numpy.where(scaledData[index] > 1.0, 1, 0)     # fix values above 1
+                numpy.putmask(scaledData[index], ind, 2.0 - numpy.compress(ind, scaledData[index]))
+        self.scaledData = scaledData[:,:lenData]; self.scaledSubsetData = scaledData[:,lenData:]
 
-            if data: setCached(data, "allScaledData", (self.originalData, self.scaledData, self.noJitteringScaledData, self.validDataArray))
-            if subsetData: setCached(subsetData, "allScaledData", (self.originalSubsetData, self.scaledSubsetData, self.noJitteringScaledSubsetData, self.validSubsetDataArray))
 
-    
-
+  
     # scale example's value at index index to a range between 0 and 1 with respect to self.rawData
     def scaleExampleValue(self, example, index):
         if example[index].isSpecial():
