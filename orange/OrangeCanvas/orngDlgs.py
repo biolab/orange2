@@ -5,7 +5,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 #from orngCanvasItems import *
-import orngGui, sys
+import orngGui, sys, os
 
 # this class is needed by signalDialog to show widgets and lines
 class SignalCanvasView(QGraphicsView):
@@ -73,15 +73,21 @@ class SignalCanvasView(QGraphicsView):
         self.inWidget = QGraphicsRectItem(xWidgetOff + width + xSpaceBetweenWidgets, yWidgetOffTop, width, height, None, self.dlg.canvas)
         self.inWidget.setBrush(brush)
         self.inWidget.setZValue(-100)
+        
+        canvasPicsDir  = os.path.join(self.canvasDlg.canvasDir, "icons")
+        if os.path.exists(os.path.join(canvasPicsDir, "frame2.png")):
+            widgetBack = QPixmap(os.path.join(canvasPicsDir, "frame2.png"))
+        else:
+            widgetBack = outWidget.imageFrame
 
         # if icons -> show them
         if outIconName:
-            frame = QGraphicsPixmapItem(QPixmap(outWidget.imageFrame), None, self.dlg.canvas)
+            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
             frame.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.outWidgetIcon = QGraphicsPixmapItem(QPixmap(outIconName), None, self.dlg.canvas)
             self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
         if inIconName :
-            frame = QGraphicsPixmapItem(QPixmap(inWidget.imageFrame), None, self.dlg.canvas)
+            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
             frame.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - frame.pixmap().width(), yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.inWidgetIcon = QGraphicsPixmapItem(QPixmap(inIconName), None, self.dlg.canvas)
             self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
@@ -429,7 +435,7 @@ class CanvasOptionsDlg(QDialog):
         # GENERAL TAB
         generalBox = orngGui.widgetBox(GeneralTab, "General Options")
         self.snapToGridCB = orngGui.checkBox(generalBox, "Snap widgets to grid")
-        self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of Output window to log file")
+        self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of the Output window to a log file")
         self.showSignalNamesCB = orngGui.checkBox(generalBox, "Show signal names between widgets")
         self.dontAskBeforeCloseCB= orngGui.checkBox(generalBox, "Don't ask to save schema before closing")
         #self.autoSaveSchemasOnCloseCB = orngGui.checkBox(generalBox, "Automatically save temporary schemas on close")
@@ -475,7 +481,7 @@ class CanvasOptionsDlg(QDialog):
         # EXCEPTION TAB
         exceptions = orngGui.widgetBox(ExceptionsTab, "Exceptions")
         #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
-        self.focusOnCatchExceptionCB = orngGui.checkBox(exceptions, 'Focus output window on catch')
+        self.focusOnCatchExceptionCB = orngGui.checkBox(exceptions, 'Show output window on exception')
         self.printExceptionInStatusBarCB = orngGui.checkBox(exceptions, 'Print last exception in status bar')
 
         output = orngGui.widgetBox(ExceptionsTab, "System output")
