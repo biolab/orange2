@@ -83,11 +83,11 @@ class CanvasLine(QGraphicsLineItem):
         if self.getEnabled(): lineStyle = Qt.SolidLine
         else:                 lineStyle = Qt.DashLine
 
-        painter.setPen(QPen(self.canvasDlg.lineColor, 4 , lineStyle))
+        painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
         painter.drawLine(x1, y1, x2, y2)
 
         if self.canvasDlg.settings["showSignalNames"]:
-            painter.setPen(QColor(100, 100, 100))
+            painter.setPen(QColor(80, 80, 80))
             x = (x1 + x2 - 200)/2.0
             y = (y1 + y2 - 30)/2.0
             painter.drawText(x, y, 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
@@ -267,6 +267,9 @@ class CanvasWidget(QGraphicsRectItem):
         self.updateLinePosition()
         self.updateWidgetState()
 
+    # we have to increase the default bounding rect so that we also repaint the name of the widget and input/output boxes
+    def boundingRect(self):
+        return QRectF(self.imageFrame.rect()).adjusted(-30, -30, +30, +50)
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
