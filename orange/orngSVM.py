@@ -61,11 +61,11 @@ class SVMLearner(orange.SVMLearner):
                 for i, n1 in enumerate(seq):
                     for n2 in seq[i+1:]:
                         yield n1, n2
-            maxNu = min(2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist))
+            maxNu = min(2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist) if n1 != 0 and n2 !=0)
             if self.nu > maxNu:
                 import warnings
                 warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
-                self.nu = maxNu
+                self.nu = max(maxNu - 1e-7, 0.0)
             
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
                 "coef0", "shrinking", "probability", "cache_size", "eps"]:
