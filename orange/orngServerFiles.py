@@ -436,6 +436,80 @@ def search(sstrings, **kwargs):
     si = _searchinfo()
     return _search(si, sstrings, **kwargs)
 
+def consoleupdate(domains=None, searchstr="essential"):
+    domains = domains or listdomains()
+    sf = ServerFiles()
+    info = dict((d, sf.allinfo(d)) for d in domains)
+    def searchmenu():
+        def printmenu():
+            print "\tSearch tags:", search
+            print "\t1. Add tag."
+            print "\t2. Clear tags."
+            print "\t0. Return to main menu."
+            return raw_input("\tSelect option:")
+        search = searchstr
+        while True:
+            response = printmenu().strip()
+            if response == "1":
+                search += " " + raw_input("\tType new tag/tags:")
+            elif response == "2":
+                search = ""
+            elif response == "0":
+                break
+            else:
+                print "\tWrong option!"
+        return search
+
+    def filemenu(searchstr=""):
+        files = [None]
+        for i, (dom, file) in enumerate(sf.search(searchstr.split())):
+            print "\t%i." % (i + 1), info[dom][file]["title"]
+            files.append((dom, file))
+        print "\t0. Return to main menu."
+        print "\tAction: d-download (e.g. 'd 1' downloads first file)"
+        while True:
+            response = raw_input("\tAction:").strip()
+            if response == "0":
+                break
+            try:
+                action, num = response.split(None, 1)
+                num = int(num)
+            except Exception, ex:
+                print "Wrong option!"
+                continue
+            try:
+                if action.lower() == "d":
+                    download(*(files[num]))
+                    print "\tSuccsessfully downloaded", files[num][-1]
+            except Exception, ex:
+                print "Error occured!", ex
+
+            
+    
+    def printmenu():
+        print "Update database main menu:"
+        print "1. Enter search tags (refine search)."
+        print "2. Print matching available files."
+        print "3. Print all available files."
+        print "0. Exit."
+        return raw_input("Select option:")
+    
+    while True:
+        try:
+            response = printmenu().strip()
+            if response == "1":
+                searchstr = searchmenu()
+            elif response == "2":
+                filemenu(searchstr)
+            elif response == "3":
+                filemenu("")
+            elif response == "0":
+                break
+            else:
+                print "Wrong option!!"
+        except Exception, ex:
+            print "Error occured:", ex
+    
 def example(myusername, mypassword):
 
     locallist = listfiles('test')
