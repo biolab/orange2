@@ -278,3 +278,42 @@ verbose = 0
 def printVerbose(text, *verb):
     if len(verb) and verb[0] or verbose:
         print text
+
+import sys
+class consoleProgressBar(object):
+    def __init__(self, title="", charwidth=40, step=1):
+        self.title = title
+        self.charwidth = charwidth
+        self.step = step
+        self.currstring = ""
+        self.state = 0
+
+    def clear(self, i=-1):
+        if sys.stdout.isatty():
+            sys.stdout.write("\b" * (i if i != -1 else len(self.currstring)))
+        else:
+            sys.stdout.seek(-i if i != -1 else -len(self.currstring), 2)
+
+    def getstring(self):
+        progchar = int(round(float(self.state) * (self.charwidth - 5) / 100.0))
+        return self.title + "=" * (progchar) + ">" + " " * (self.charwidth - 5 - progchar) + "%3i" % int(round(self.state)) + "%"
+
+    def printline(self, string):
+        self.clear()
+        sys.stdout.write(string)
+        sys.stdout.flush()
+        self.currstring = string
+
+    def __call__(self, newstate=None):
+        if newstate == None:
+            newstate = self.state + self.step
+        if int(newstate) != int(self.state):
+            self.state = newstate
+            self.printline(self.getstring())
+        else:
+            self.state = newstate
+
+    def finish(self):
+        self.__call__(100)
+        sys.stdout.write("\n")
+        
