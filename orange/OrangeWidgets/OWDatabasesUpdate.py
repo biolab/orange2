@@ -151,7 +151,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         if os.path.isdir(name):
             import shutil
             shutil.rmtree(name)
-        os.remove(name)
+        elif os.path.isfile(name):
+            os.remove(name)
         os.remove(name + ".info")
         self.state = 2
         self.updateWidget.SetState(self.state)
