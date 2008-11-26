@@ -28,19 +28,19 @@ LIBRARY_FILE = liborange.so
 NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
 
 ifeq ($(OS), Darwin)
-  COMPILEOPTIONS = -arch i386 -arch ppc -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE)
-  LINKOPTIONS = -arch i386 -arch ppc -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include
+  COMPILEOPTIONS = -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE) $(CXXFLAGS)
+  LINKOPTIONS = -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
   LINKER = g++
 else
 ifeq ($(OS), FreeBSD)
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DFREEBSD -O3
-  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DFREEBSD -O3 $(CXXFLAGS)
+  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
   LINKOPTIONS += `gsl-config --libs`
   MAKE = gmake
 else
   # for icc, also add -D"__sync_fetch_and_add(ptr,addend)=_InterlockedExchangeAdd(const_cast<void*>(reinterpret_cast<volatile void*>(ptr)), addend)"
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3
-  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3 $(CXXFLAGS)
+  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
 endif
 endif
 
