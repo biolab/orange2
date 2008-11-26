@@ -280,9 +280,10 @@ def printVerbose(text, *verb):
         print text
 
 import sys
-class consoleProgressBar(object):
+
+class ConsoleProgressBar(object):
     def __init__(self, title="", charwidth=40, step=1):
-        self.title = title
+        self.title = title + " "
         self.charwidth = charwidth
         self.step = step
         self.currstring = ""
