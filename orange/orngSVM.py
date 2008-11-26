@@ -55,21 +55,23 @@ class SVMLearner(orange.SVMLearner):
         if self.kernel_type==4:     #There is a bug in svm. For some unknown reason only the probability model works with custom kernels
             self.probability=True
         ##################################################
+        nu = self.nu
         if self.svm_type == orange.SVMLearner.Nu_SVC: #check nu feasibility
             dist = list(orange.Distribution(examples.domain.classVar, examples))
             def pairs(seq):
                 for i, n1 in enumerate(seq):
                     for n2 in seq[i+1:]:
                         yield n1, n2
-            maxNu = min(2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist) if n1 != 0 and n2 !=0)
+            maxNu = min([2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist) if n1 != 0 and n2 !=0] + [self.nu])
             if self.nu > maxNu:
                 import warnings
                 warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
-                self.nu = max(maxNu - 1e-7, 0.0)
+                nu = max(maxNu - 1e-7, 0.0)
             
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
                 "coef0", "shrinking", "probability", "cache_size", "eps"]:
             self.learner.__dict__[name]=getattr(self, name)
+        self.learner.nu = nu
         return self.learnClassifier(examples)
 
     def learnClassifier(self, examples):
