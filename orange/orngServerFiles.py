@@ -455,7 +455,7 @@ class DownloadProgress(ConsoleProgressBar):
         print "Downloading", filename
         ConsoleProgressBar.__init__(self, "progress:", 20)
         self.size = size
-        self.starttime = time.clock()
+        self.starttime = time.time()
         self.speed = 0.0
 
     def sizeof_fmt(self, num):
@@ -465,7 +465,7 @@ class DownloadProgress(ConsoleProgressBar):
             num /= 1024.0
 
     def getstring(self):
-        speed = int(self.state * self.size / 100.0 / (time.clock() - self.starttime))
+        speed = int(self.state * self.size / 100.0 / (time.time() - self.starttime))
         eta = (100 - self.state) * self.size / 100.0 / speed
         return ConsoleProgressBar.getstring(self) + "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size), self.sizeof_fmt(speed), eta/60, eta%60)
         
