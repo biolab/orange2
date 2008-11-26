@@ -315,7 +315,7 @@ class ServerFiles(object):
         return self._pubhandle(command, data).read()
 
 
-def download(domain, filename, serverfiles=None, callback=None, extract=True):
+def download(domain, filename, serverfiles=None, callback=None, extract=True, verbose=True):
     """
     Downloads a file to a local orange installation.
     """
@@ -327,12 +327,14 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True):
     extract = extract and any(tag.startswith("#uncompressed:") for tag in info["tags"])
     
     target = localpath(domain, filename)
+
+    callback = DownloadProgress(filename, int(info["size"])) if verbose and not callback else callback    
     
     serverfiles.download(domain, filename, target + "tmp" if extract else target, callback=callback)
     
     #file saved, now save info file
 
-    saveFileInfo(target + '.info', info)          
+    saveFileInfo(target + '.info', info)
     
     if extract:
         import tarfile
@@ -344,6 +346,9 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True):
         f.extractall(target)
         f.close()
         os.remove(target + "tmp")
+
+    if type(callback) == DownloadProgress:
+        callback.finish()        
 
 def listfiles(domain):
     """
@@ -436,6 +441,35 @@ def search(sstrings, **kwargs):
     si = _searchinfo()
     return _search(si, sstrings, **kwargs)
 
+from orngMisc import ConsoleProgressBar
+import time
+
+class DownloadProgress(ConsoleProgressBar):
+    def sizeof_fmt(num):
+        for x in ['bytes','KB','MB','GB','TB']:
+            if num < 1024.0:
+                return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
+            num /= 1024.0
+            
+    def __init__(self, filename, size):
+        print "Downloading", filename
+        ConsoleProgressBar.__init__(self, "progress:", 20)
+        self.size = size
+        self.starttime = time.clock()
+        self.speed = 0.0
+
+    def sizeof_fmt(self, num):
+        for x in ['bytes','KB','MB','GB','TB']:
+            if num < 1024.0:
+                return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
+            num /= 1024.0
+
+    def getstring(self):
+        speed = int(self.state * self.size / 100.0 / (time.clock() - self.starttime))
+        eta = (100 - self.state) * self.size / 100.0 / speed
+        return ConsoleProgressBar.getstring(self) + "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size), self.sizeof_fmt(speed), eta/60, eta%60)
+        
+
 def consoleupdate(domains=None, searchstr="essential"):
     domains = domains or listdomains()
     sf = ServerFiles()
@@ -484,8 +518,6 @@ def consoleupdate(domains=None, searchstr="essential"):
             except Exception, ex:
                 print "Error occured!", ex
 
-            
-    
     def printmenu():
         print "Update database main menu:"
         print "1. Enter search tags (refine search)."
