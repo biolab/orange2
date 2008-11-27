@@ -47,7 +47,7 @@ for org in u.GetAvailableOrganisms():
         ## Load the annotations to test them and collect all taxon ids from them
         a = obiGO.Annotations(filename)
         taxons = set([ann.taxon for ann in a.annotations])
-        for taxId in [t.split(":")[-1] for t in taxons]:
+        for taxId in [t.split(":")[-1] for t in taxons if "|" not in t]: ## exclude taxons with cardinality 2
             updatedTaxonomy[taxId].add(org)
         ## Upload the annotation
         if org in _dbOrgMap:
