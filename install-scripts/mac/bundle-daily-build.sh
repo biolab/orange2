@@ -31,6 +31,11 @@ rm -rf /private/tmp/bundle/
 # Gives our Python executable to compile scripts later on
 export PATH=/private/tmp/bundle/Orange.app/Contents/MacOS/:$PATH
 
+# Enables compiling of Universal binaries
+export CFLAGS="-arch ppc -arch i386"
+export CXXFLAGS="-arch ppc -arch i386"
+export LDFLAGS="-arch ppc -arch i386"
+
 if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	echo "Downloading bundle template."
 	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/install-scripts/mac/bundle/ /private/tmp/bundle/
