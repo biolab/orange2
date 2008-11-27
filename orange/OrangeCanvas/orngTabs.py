@@ -504,9 +504,14 @@ def constructCategoriesPopup(canvasDlg):
     categoriesPopup = CanvasPopup(canvasDlg)
     categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } """)
 
-    for category, show in canvasDlg.settings["WidgetTabs"]:
-        if not show:
-            continue
+    widgetTabList = canvasDlg.settings.get("WidgetTabs", None)
+    if widgetTabList:
+        widgetTabList = [wt for wt, ch in canvasDlg.settings["WidgetTabs"] if ch]
+    else:
+        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]
+    extraTabs = [name for name in canvasDlg.widgetRegistry if name not in widgetTabList]
+
+    for category in widgetTabList + extraTabs:
         catmenu = categoriesPopup.addMenu(category)
         categoriesPopup.catActions.append(catmenu)
         for widgetInfo in sorted(canvasDlg.widgetRegistry[category].values(), key=lambda x:x.priority):
