@@ -333,7 +333,7 @@ class TreeGraphicsView(QGraphicsView):
         self.navigator=None
         self.viewport().setMouseTracking(True)
         self.bubbleConstructor=bubbleConstructor
-#        self.setRenderHint(QPainter.Antialiasing, 0)
+        self.setRenderHint(QPainter.Antialiasing)
 #        self.setRenderHint(QPainter.TextAntialiasing, 0)
 #        self.setRenderHint(QPainter.HighQualityAntialiasing, 0)
         
@@ -578,7 +578,7 @@ class TreeNavigator(TreeGraphicsView):
         self.isShown=False
 
     def leech(self):
-        if not self.isShown:
+        if not self.isShown or getattr(self.masterView.scene(), "nodeList", []) == []:
             return
         self.updateRatio()
         if self.rootNode!=self.masterView.scene().nodeList[0]: #display a new tree
@@ -850,7 +850,8 @@ class OWTreeViewer2D(OWWidget):
             self.tree=tree.tree
             self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
             self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
-            self.ClassColors = OWColorPalette.ColorPaletteHSV(len(self.tree.distribution))
+            if hasattr(self.scene, "colorPalette"):
+                self.scene.colorPalette.setNumberOfColors(len(self.tree.distribution))
             self.rootNode=self.walkcreate(self.tree, None)
             self.scene.addItem(self.rootNode)
             self.scene.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
