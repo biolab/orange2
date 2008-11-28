@@ -8,9 +8,38 @@
 from OWTreeViewer2D import *
 import OWColorPalette
 
+class PieChart(QGraphicsRectItem):
+    def __init__(self, dist, r, parent, scene):
+        QGraphicsRectItem.__init__(self, parent, scene)
+        self.dist = dist
+        self.r = r
+        
+    def setR(self, r):
+        self.r = r
+        
+    def boundingRect(self):
+        return QRectF(-self.r, -self.r, 2*self.r, 2*self.r)
+        
+    def paint(self, painter, option, widget = None):
+        distSum = sum(self.dist)
+        startAngle = 0
+        colors = self.scene().colorPalette
+        for i in range(len(self.dist)):
+            angle = self.dist[i]*16 * 360./distSum
+            if angle == 0: continue
+            painter.setBrush(QBrush(colors[i]))
+            painter.setPen(QPen(colors[i]))
+            painter.drawPie(-self.r, -self.r, 2*self.r, 2*self.r, int(startAngle), int(angle))
+            startAngle += angle
+        painter.setPen(QPen(Qt.black))
+        painter.setBrush(QBrush())
+        painter.drawEllipse(-self.r, -self.r, 2*self.r, 2*self.r)
+        
+            
+
 class ClassificationNode(GraphicsNode):
-    def __init__(self,attrVal,*args):
-        GraphicsNode.__init__(self,*args)
+    def __init__(self,attrVal, tree, parent, scene):
+        GraphicsNode.__init__(self, tree, parent, scene)
         self.dist=self.tree.distribution
         self.attrVal=attrVal
         maxInst=max(self.dist)
@@ -33,48 +62,20 @@ class ClassificationNode(GraphicsNode):
 
         self.rule=(isinstance(self.parent, QGraphicsRectItem) and self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
 
-        #print self.rule
-        #self.textObj.extend([self.title, self.name]+self.textList)
         self.textInd=[]
         self.pieObj=[]
         distSum=sum(self.dist)
-        color=OWColorPalette.ColorPaletteHSV(len(self.dist))
         startAngle=0
-        self.pieGroup=QGraphicsItemGroup(self, self.scene())
-        self.pieGroup.setPos(self.rect().width(), self.rect().height()/2)
-        r=self.rect().height()*0.4
-        for i in range(len(self.dist)):
-            angle=360/distSum*self.dist[i]*16
-##            e=QGraphicsEllipseItem(self.rect().height()/2, self.rect().width(), self.rect().height()*0.8, self.rect().height()*0.8, None, self.scene())
-            e=QGraphicsEllipseItem(-r, -r, 2*r, 2*r, self.pieGroup, self.scene())
-            e.setStartAngle(startAngle)
-            e.setSpanAngle(angle)
-            e.setBrush(QBrush(color[i]))
-            e.setZValue(0)
-            startAngle+=angle
-            self.pieObj.append(e)
-##        e = QGraphicsEllipseItem(self.rect().height(), self.rect().width(), self.rect().height()*0.8+4, self.rect().height()*0.8+4, None, self.scene())
-        e = QGraphicsEllipseItem(-r-2, -r-2, 2*r+2, 2*r+2, self.pieGroup, self.scene())
-##        e = QGraphicsEllipseItem(0, 0, r+4, r+4, self.pieGroup, self.scene())
-        e.setStartAngle(0)
-        e.setSpanAngle(360*16)
-        e.setBrush(QBrush(Qt.black))
-        e.setZValue(-1)
-        self.pieObj.append(e)
-        self.sceneObj.extend(self.pieObj)
+        self.pieObj = PieChart(self.dist, self.rect().height()*0.4, self, scene)
+        self.pieObj.setZValue(0)
+        self.pieObj.setPos(self.rect().width(), self.rect().height()/2)
         self.isPieShown=True
 
     def setRect(self, x, y, w, h):
         GraphicsNode.setRect(self, x, y, w, h)
         self.updateText()
-        self.pieGroup.setPos(x+w, h/2)
-        r=h*0.4
-        for e in self.pieObj[:-1]:
-##            e.setRect(self.x()+self.rect().width(), self.y()+self.rect().height()/2, h*0.8,h*0.8)
-            e.setRect(-r, -r, 2*r, 2*r)
-##            e.setRect(0, 0, r, r)
-        self.pieObj[-1].setRect(-r-2, -r-2, 2*r+2, 2*r+2)
-##        self.pieObj[-1].setRect(0, 0, r+4, r+4)
+        self.pieObj.setPos(x+w, h/2)
+        self.pieObj.setR(h*0.4)
 
     def setBrush(self, brush):
         GraphicsTextContainer.setBrush(self, brush)
@@ -83,11 +84,11 @@ class ClassificationNode(GraphicsNode):
 
     def show(self):
         GraphicsNode.show(self)
-        self.pieGroup.setVisible(self.isPieShown)
+        self.pieObj.setVisible(self.isPieShown)
 
     def setPieVisible(self, b=True):
         if self.isVisible():
-            self.pieGroup.setVisible(b)
+            self.pieObj.setVisible(b)
         self.isPieShown=b
 ##        if self.isShown and b:
 ##            for e in self.pieObj:
@@ -189,11 +190,13 @@ BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWClassificationTreeGraph(OWTreeViewer2D):
-    settingsList = OWTreeViewer2D.settingsList+['ShowPies']
+    settingsList = OWTreeViewer2D.settingsList+['ShowPies', "colorSettings", "selectedColorSettingsIndex"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         self.ShowPies=1
         self.TargetClassIndex=0
+        self.colorSettings = None
+        self.selectedColorSettingsIndex = 0
         
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
@@ -218,6 +221,8 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.navWidget.resize(400,400)
         self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
+        
+        OWGUI.button(self.NodeTab, self, "Set Colors", callback=self.setColors, debuggingEnabled = 0)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info")
         nodeInfoButtons = ['Majority class', 'Majority class probability', 'Target class probability', 'Number of instances']
@@ -237,6 +242,25 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
+        
+        dlg = self.createColorDialog()
+        self.scene.colorPalette = dlg.getDiscretePalette("colorPalette")
+
+
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedColorSettingsIndex = dlg.selectedSchemaIndex
+            self.scene.colorPalette = dlg.getDiscretePalette("colorPalette")
+            self.scene.update()
+
+    def createColorDialog(self):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("colorPalette", "Discrete Palette")
+        c.setColorSchemas(self.colorSettings, self.selectedColorSettingsIndex)
+        return c
+
 
     def setNodeInfo(self, widget=None, id=None):
         if widget:
@@ -274,21 +298,21 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                 node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
             elif self.NodeColorMethod == 2: # majority class probability
                 light=400- 300*node.majClassProb
-                node.setBrush(QBrush(self.ClassColors[node.majClass[0]].light(light)))
+                node.setBrush(QBrush(self.scene.colorPalette[node.majClass[0]].light(light)))
             elif self.NodeColorMethod == 3: # target class probability
                 div = node.dist.cases
                 if div > 1e-6:
                     light=400-300*node.dist[self.TargetClassIndex]/div
                 else:
                     light = 100
-                node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
+                node.setBrush(QBrush(self.scene.colorPalette[self.TargetClassIndex].light(light)))
             elif self.NodeColorMethod == 4: # target class distribution
                 div = self.tree.distribution[self.TargetClassIndex]
                 if div > 1e-6:
                     light=200 - 100*node.dist[self.TargetClassIndex]/div
                 else:
                     light = 100
-                node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
+                node.setBrush(QBrush(self.scene.colorPalette[self.TargetClassIndex].light(light)))
         self.scene.update()
         self.treeNav.leech()
 
@@ -347,7 +371,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         b.addTextLine()
         for i,d in enumerate(node.dist.items()):
             if d[1]!=0:
-                b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)",self.ClassColors[i])
+                b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)", self.scene.colorPalette[i])
         b.addTextLine()
         b.addTextLine((node.tree.branches and "Partition on: %(nodename)s" % {"nodename": node.name}) or "(leaf)")
         b.show()
