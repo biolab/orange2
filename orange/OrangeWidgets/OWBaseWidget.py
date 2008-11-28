@@ -319,7 +319,7 @@ class OWBaseWidget(QDialog):
 
     # Get all settings
     # returns map with all settings
-    def getSettings(self):
+    def getSettings(self, alsoContexts = True):
         settings = {}
         if hasattr(self, "settingsList"):
             for name in self.settingsList:
@@ -328,6 +328,14 @@ class OWBaseWidget(QDialog):
                 except:
                     #print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.captionTitle)
                     pass
+        
+        if alsoContexts:
+            contextHandlers = getattr(self, "contextHandlers", {})
+            for contextHandler in contextHandlers.values():
+                contextHandler.mergeBack(self)
+                settings[contextHandler.localContextName] = contextHandler.globalContexts
+                settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
+            
         return settings
 
 
@@ -384,13 +392,6 @@ class OWBaseWidget(QDialog):
 
     def saveSettings(self, file = None):
         settings = self.getSettings()
-
-        contextHandlers = getattr(self, "contextHandlers", {})
-        for contextHandler in contextHandlers.values():
-            contextHandler.mergeBack(self)
-            settings[contextHandler.localContextName] = contextHandler.globalContexts
-            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
-
         if settings:
             if file==None:
                 file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
@@ -420,14 +421,7 @@ class OWBaseWidget(QDialog):
 
     # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
-        str = ""
         settings = self.getSettings()
-
-        contextHandlers = getattr(self, "contextHandlers", {})
-        for contextHandler in contextHandlers.values():
-            settings[contextHandler.localContextName] = getattr(self, contextHandler.localContextName)
-            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
-
         return cPickle.dumps(settings)
 
     def onDeleteWidget(self):
