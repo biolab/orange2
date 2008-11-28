@@ -207,8 +207,7 @@ class OWClassificationTreeViewer(OWWidget):
         if tree:
             self.infoa.setText('Number of nodes: %i' % orngTree.countNodes(tree))
             self.infob.setText('Number of leaves: %i' % orngTree.countLeaves(tree))
-            for name in tree.tree.examples.domain.classVar.values:
-                self.targetCombo.insertItem(name)
+            self.targetCombo.addItems([name for name in tree.tree.examples.domain.classVar.values])
             self.targetClass = 0
             self.openContext("", tree.domain)
         else:
