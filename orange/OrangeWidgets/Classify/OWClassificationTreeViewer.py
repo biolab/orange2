@@ -220,10 +220,8 @@ class OWClassificationTreeViewer(OWWidget):
             dist = self.nodeClassDict[listviewitem].distribution
             listviewitem.setText(targetindex, f % (dist[self.targetClass]/max(1, dist.abs)))
 
-            child = listviewitem.firstChild()
-            while child:
-                updatetarget(child)
-                child = self.getTreeItemSibling(child)
+            for i in range(listviewitem.childCount()):
+                updatetarget(listviewitem.child(i))
 
         if self.ptarget:
             targetindex = 1
@@ -234,7 +232,8 @@ class OWClassificationTreeViewer(OWWidget):
                     targetindex += 1
 
             f = self.precFrmt
-            updatetarget(self.v.firstChild())
+            if self.v.invisibleRootItem():
+                updatetarget(self.v.invisibleRootItem().child(0))
 
     def expandTree(self, lev):
         def expandTree0(listviewitem, lev):
