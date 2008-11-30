@@ -245,6 +245,8 @@ class OWNetworkCanvas(OWGraph):
       self.maxVertexSize = 5
       self.minVertexSize = 5
       self.showComponentAttribute = None
+      
+      self.fontSize = 12
            
       self.setAxisAutoScale(self.xBottom)
       self.setAxisAutoScale(self.yLeft)
@@ -748,7 +750,7 @@ class OWNetworkCanvas(OWGraph):
           
           lbl = str(self.visualizer.graph.items[component[0]][str(self.showComponentAttribute)])
           
-          mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
+          mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter, size=self.fontSize)
  
   def drawToolTips(self):
     # add ToolTips
@@ -800,7 +802,7 @@ class OWNetworkCanvas(OWGraph):
               #    continue 
               
               if lbl:
-                  mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom)
+                  mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom, size=self.fontSize)
                   self.markerKeys[vertex.index] = mkey    
                    
   def drawIndexes(self):
@@ -816,7 +818,7 @@ class OWNetworkCanvas(OWGraph):
               y1 = self.visualizer.network.coors[1][vertex.index]
 
               lbl= str(vertex.index)
-              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignTop)
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignTop, size=self.fontSize)
               self.markerKeys['index ' + str(vertex.index)] = mkey         
 
   def drawWeights(self):
@@ -836,7 +838,7 @@ class OWNetworkCanvas(OWGraph):
               else:
                   lbl = "%.2f" % float(edge.weight)
               
-              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter)
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter, size=self.fontSize)
               self.markerKeys[(edge.u,edge.v)] = mkey
                           
   def getColorIndeces(self, table, attribute, palette):
@@ -998,7 +1000,7 @@ class OWNetworkCanvas(OWGraph):
           xMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
           yMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
           yMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
-          self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment = Qt.AlignCenter)
+          self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment = Qt.AlignCenter, size=self.fontSize)
           self.replot()
           return
       

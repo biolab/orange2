@@ -46,7 +46,8 @@ class OWNetExplorer(OWWidget):
                     "selectedSchemaIndex",
                     "edgeColorSettings",
                     "selectedEdgeSchemaIndex",
-                    "showMissingValues"] 
+                    "showMissingValues",
+                    "fontSize"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -104,6 +105,7 @@ class OWNetExplorer(OWWidget):
         self.vertexDistance = None
         self.showDistances = 0
         self.showMissingValues = 0
+        self.fontSize = 12
         
         self.loadSettings()
         
@@ -162,7 +164,10 @@ class OWNetExplorer(OWWidget):
         self.edgeColorCombo.addItem("(same color)")
         OWGUI.button(colorBox, self, "Set edge color palette", self.setEdgeColorPalette, tooltip = "Set edge color palette", debuggingEnabled = 0)
         
-        self.attBox = OWGUI.widgetBox(self.verticesTab, "Vertex labels | tooltips", orientation="horizontal", addSpace = False)
+        self.attBox = OWGUI.widgetBox(self.verticesTab, "Vertex labels | tooltips", orientation="vertical", addSpace = False)
+        OWGUI.spin(self.attBox, self, "fontSize", 4, 30, 1, label="Set font size:", callback = self.setFontSize)
+        
+        self.attBox = OWGUI.widgetBox(self.attBox, orientation="horizontal", addSpace = False)
         self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedAttLstBox)
         self.tooltipListBox = OWGUI.listBox(self.attBox, self, "tooltipAttributes", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.clickedTooltipLstBox)
         
@@ -303,7 +308,8 @@ class OWNetExplorer(OWWidget):
         self.graph.discEdgePalette = dlg.getDiscretePalette("discPalette")
         
         self.setOptMethod()
-         
+        self.setFontSize()
+        
         self.resize(1000, 600)
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
@@ -1396,6 +1402,13 @@ class OWNetExplorer(OWWidget):
             self.graph.setVerticesSize()
             
         self.graph.replot()
+        
+    def setFontSize(self):
+        if self.graph == None:
+            return
+        
+        self.graph.fontSize = self.fontSize
+        self.graph.drawPlotItems()
         
     def setRenderAntialiased(self):
         self.graph.renderAntialiased = self.renderAntialiased
