@@ -51,21 +51,20 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             if not filename: return
 
         (fil,ext) = os.path.splitext(filename)
-        ext = ext[1:].upper()
-        if ext == "" or ext not in ("BMP", "GIF", "PNG") :
-            ext = "PNG"      # if no format was specified, we choose png
-            filename = filename + ".png"
-
-        if not size:
-            size = self.getSize()
+        if ext.lower() not in [".bmp", ".gif", ".png"] :
+            ext = ".png"                                        # if no format was specified, we choose png
+        filename = fil + ext
 
         if isinstance(self.graph, QGraphicsScene):
-            minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
-            source = QRectF(minx, miny, maxx-minx, maxy-miny)
+            source = self.getSceneBoundingRect().adjusted(-15, -15, 15, 15)
+            size = source.size()
+        elif not size:
+            size = self.getSize()
 
         painter = QPainter()
-        buffer = QPixmap(size)
+        buffer = QPixmap(int(size.width()), int(size.height()))
         painter.begin(buffer)
+        painter.setRenderHint(QPainter.Antialiasing)
         painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
 
         # qwt plot
@@ -82,14 +81,21 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         # QGraphicsScene
         elif isinstance(self.graph, QGraphicsScene):
-            xOff = source.left(); yOff = source.top()
-            target = source.adjusted(-xOff, -yOff, -xOff, -yOff)
+            target = QRectF(0,0, source.width(), source.height())
             self.graph.render(painter, target, source)
 
-        buffer.save(filename, ext)
+        buffer.save(filename)
 
         if closeDialog:
             QDialog.accept(self)
+
+
+    def getSceneBoundingRect(self):
+        source = QRectF()
+        for item in self.graph.items():
+            if item.isVisible(): 
+                source = source.united(item.boundingRect().translated(item.pos()))
+        return source
 
     def saveToMatplotlib(self):
         filename = self.getFileName("graph.py","Python Script (*.py)", ".py")
@@ -97,7 +103,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             if isinstance(self.graph, QwtPlot):
                 self.graph.saveToMatplotlib(filename, self.getSize())
             else:
-                minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
+                rect = self.getSceneBoundingRect()
+                minx, maxx, miny, maxy = rect.x(), rect.x()+rect.width(), rect.y(), rect.y()+rect.height()
                 f = open(filename, "wt")
                 f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\n#constants\nx1 = %f; x2 = %f\ny1 = 0.0; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = 0.01\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\na = gca()\nhold(True)\n" % (minx, maxx, maxy, maxx-minx, maxy-miny))
 
@@ -146,20 +153,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
     # ############################################################
     # EXTRA FUNCTIONS ############################################
-    def getQGraphicsSceneBoundaries(self):
-        source = self.graph.itemsBoundingRect()
-#        source = None
-#        for item in self.graph.items():
-#            if item.isVisible():
-#                if source == None: source = item.boundingRect().translated(item.pos())
-#                else:              source = source.united(item.boundingRect().translated(item.pos()))
-#        if source == None:
-#            source = QRectF(0,0,10,10)
-
-        source.adjust(-15, -15, 15, 15)
-        return source.left(), source.right(), source.top(), source.bottom()
-
-
     def getFileName(self, defaultName, mask, extension):
         fileName = str(QFileDialog.getSaveFileName(self, "Save to..", self.lastSaveDirName + defaultName, mask))
         if not fileName: return None
@@ -171,8 +164,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
     def getSize(self):
         if isinstance(self.graph, QGraphicsScene):
-            minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
-            size = QSize(maxx-minx, maxy-miny)
+            size = self.getSceneBoundingRect().size()
         elif self.selectedSize == 0: size = self.graph.size()
         elif self.selectedSize == 4: size = QSize(self.customX, self.customY)
         else: size = QSize(200 + self.selectedSize*200, 200 + self.selectedSize*200)
