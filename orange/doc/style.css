@@ -49,10 +49,10 @@ H1 {
     font-size: 11px;
     width: 350px;
     background-color: #000000;
-    /*height: 16px;*/
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
+	clear: both;
 }
 
 .wide {         width: 0px;
@@ -68,6 +68,7 @@ H2 {
     vertical-align: middle;
     padding-left: 1px;
     white-space: nowrap;
+	clear: both;
 }
 
 H3 {
@@ -80,7 +81,7 @@ H3 {
 h4 {
     font-weight: bold;
     font-family: Verdana;
-    font-size: 10px;
+    font-size: 11px;
     white-space: nowrap;
 }
 
@@ -245,8 +246,11 @@ TABLE {
     line-height: 1.5;
 }
 
+DL DT {font-weight: bold; padding-top: 6pt; }
+DL DD {margin-left: 24px; }
+
 P.section { font-weight: bold }
-DL.attributes DT { font-family: monospace; font-weight: bold; margin-top: 1em }
+DL.attributes DT { font-family: monospace; font-weight: bold; margin-top: 1em; padding-top: 0pt }
 DL.arguments DT { font-family: monospace; font-weight: bold; margin-left: 3em; margin-bottom: -12pt; margin-top:6pt }
 DL.arguments DD { margin-left: 15em }
 DL.arguments_sm DT { font-family: monospace; font-weight: bold; margin-left: 3em; margin-bottom: -12pt; margin-top:6pt }
@@ -281,3 +285,11 @@ XMP.code, PRE.code {
     padding-left: 12px;
     border: #ebe1a7 thin dotted;
 }
+
+.leftscreenshot { 
+    float:left;
+    margin-top: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
