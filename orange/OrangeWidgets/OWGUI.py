@@ -1594,10 +1594,18 @@ def tabWidget(widget):
         widget.layout().addWidget(w)
     return w
 
-def createTabPage(tabWidget, name, widgetToAdd = None):
+def createTabPage(tabWidget, name, widgetToAdd = None, canScroll = False):
     if widgetToAdd == None:
         widgetToAdd = widgetBox(tabWidget, addToLayout = 0, margin = 4)
-    tabWidget.addTab(widgetToAdd, name)
+    if canScroll:
+        scrollArea = QScrollArea() 
+        tabWidget.addTab(scrollArea, name)
+        scrollArea.setWidget(widgetToAdd)
+        scrollArea.setWidgetResizable(1) 
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff) 
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+    else:
+        tabWidget.addTab(widgetToAdd, name)
     return widgetToAdd
 
 def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
