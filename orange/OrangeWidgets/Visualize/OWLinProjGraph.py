@@ -158,15 +158,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         if self.showProbabilities and self.haveData and self.dataHasClass:
             # construct potentialsClassifier from unscaled positions
-            domain = orange.Domain([self.dataDomain[i].name for i in indices]+[self.dataDomain.classVar], self.dataDomain)
-##            domain = orange.Domain([a[2] for a in self.anchorData]+[self.dataDomain.classVar], self.dataDomain)
+            domain = orange.Domain([self.dataDomain[i].name for i in indices]+[self.dataDomain.classVar.name], self.dataDomain)
             offsets = [self.attrValues[self.attributeNames[i]][0] for i in indices]
             normalizers = [self.getMinMaxVal(i) for i in indices]
             selectedData = numpy.take(self.originalData, indices, axis = 0)
             averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
-            classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
-            #self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, x_positions), numpy.compress(validData, y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
 
 
         # ##############################################################
@@ -255,7 +252,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
             sub_x_positions = projSubData[0]
             sub_y_positions = projSubData[1]
-
 
             for i in range(len(self.rawSubsetData)):
                 if not validSubData[i]: continue    # check if has missing values
@@ -479,14 +475,18 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
                         curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
-   
+
                         marker = None
                         fontsize = 9
                         markerAlign = Qt.AlignCenter
                         self.tooltipCurves.append(curve)
                         labelIndex = self.attributeNameIndex[label]
                         if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                            marker = self.addMarker(str(self.originalData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
+                            if self.dataDomain[labelIndex].varType == orange.VarTypes.Continuous:
+                                text = "%%.%df" % (self.dataDomain[labelIndex].numberOfDecimals) % (self.rawData[index][labelIndex])
+                            else:
+                                text = str(self.rawData[index][labelIndex].value)
+                            marker = self.addMarker(text, markerX, markerY, markerAlign, size = fontsize)
                         elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                             marker = self.addMarker("%.3f" % (self.scaledData[labelIndex][index]), markerX, markerY, markerAlign, size = fontsize)
                         self.tooltipMarkers.append(marker)
@@ -678,12 +678,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         ry -= ry % self.squareGranularity
 
         if not getattr(self, "potentialsImage", None) \
-           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
+           or getattr(self, "potentialContext", None) != (rx, ry, self.shownAttributes, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor, 1, self.normalizeExamples)
+                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells)
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, 1., self.spaceBetweenCells) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells) # the last argument is self.trueScaleFactor (in LinProjGraph...)
                 palette = []
                 sortedClasses = getVariableValuesSorted(self.potentialsClassifier.domain.classVar)
                 for cls in self.potentialsClassifier.classVar.values:
@@ -697,7 +697,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             self.potentialsImage = QImage(imagebmp, rx, ry, QImage.Format_Indexed8)
             self.potentialsImage.setColorTable(OWColorPalette.signedPalette(palette))
             self.potentialsImage.setNumColors(256)
-            self.potentialContext = (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
+            self.potentialContext = (rx, ry, self.shownAttributes, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
 
 
 
