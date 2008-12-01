@@ -98,15 +98,22 @@ class OWDistanceFile(OWWidget):
         #self.filecombo.updateGeometry()
 
         self.error()
+        
+        self.matrix, self.labels, self.data = self.readMatrix(fn)
+        self.relabel()
+            
+    def readMatrix(self, fn):
         msg = None
+        matrix = labels = data = None
+        
         try:
             if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
                 pkl_file = open(fn, 'rb')
-                self.matrix = pickle.load(pkl_file)
-                self.data = None
+                matrix = pickle.load(pkl_file)
+                data = None
                 #print self.matrix
-                if hasattr(self.matrix, 'items'):
-                    self.data = self.matrix.items
+                if hasattr(matrix, 'items'):
+                    data = matrix.items
                 pkl_file.close()
                 
             else:    
@@ -124,13 +131,13 @@ class OWDistanceFile(OWWidget):
                     raise exceptions.Exception
             
                 labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
-                self.matrix = matrix = orange.SymMatrix(dim)
-                self.data = None
+                matrix = orange.SymMatrix(dim)
+                data = None
                 
                 if labeled:
-                    self.labels = []
+                    labels = []
                 else:
-                    self.labels = [""] * dim
+                    labels = [""] * dim
                 for li, lne in enumerate(fle):
                     if li > dim:
                         if not li.strip():
@@ -139,7 +146,7 @@ class OWDistanceFile(OWWidget):
                         raise exceptions.IndexError
                     spl = lne.split("\t")
                     if labeled:
-                        self.labels.append(spl[0].strip())
+                        labels.append(spl[0].strip())
                         spl = spl[1:]
                     if len(spl) > dim:
                         msg = "Line %i too long" % li+2
@@ -147,14 +154,14 @@ class OWDistanceFile(OWWidget):
                     for lj, s in enumerate(spl):
                         if s:
                             try:
-                                self.matrix[li, lj] = float(s)
+                                matrix[li, lj] = float(s)
                             except:
                                 msg = "Invalid number in line %i, column %i" % (li+2, lj)
                                 raise exceptions.Exception 
-                            
-            self.relabel()
         except:
             self.error(msg or "Error while reading the file")
+        
+        return matrix, labels, data
             
     def relabel(self):
         #print 'relabel'
