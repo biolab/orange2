@@ -7,7 +7,7 @@ from PyQt4.Qwt5 import *
 from OWGraphTools import *      # user defined curves, ...
 from OWColorPalette import *      # color palletes, ...
 from OWDlgs import OWChooseImageSizeDlg
-import orange, math
+import orange, math, time
 from OWBaseWidget import unisetattr
 
 NOTHING = 0
@@ -381,7 +381,7 @@ class OWGraph(QwtPlot):
         curve.attach(self)
         return curve
 
-    def addMarker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None):
+    def addMarker(self, name, x, y, alignment = -1, bold = 0, color = None, brushColor = None, size=None, antiAlias = None):
         text = QwtText(name, QwtText.PlainText)
         if color != None:
             text.setColor(color)
@@ -398,6 +398,7 @@ class OWGraph(QwtPlot):
         marker = QwtPlotMarker()
         marker.setLabel(text)
         marker.setValue(x,y)
+        marker.setRenderHint(QwtPlotItem.RenderAntialiased, antiAlias == 1 or self.useAntialiasing)
         if alignment != -1:
             marker.setLabelAlignment(alignment)
         marker.attach(self)
@@ -479,10 +480,7 @@ class OWGraph(QwtPlot):
         oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
         stepX, stepY = self.axisStepSize(QwtPlot.xBottom), self.axisStepSize(QwtPlot.yLeft)
 
-        if len(self.itemList()) > 1000 or sum([item.dataSize() for item in self.itemList() if isinstance(item, QwtPlotCurve)]) > 1000:    # if too many curves then don't be smooth
-            steps = 1
-        else:
-            steps = 10
+        steps = 10
         for i in range(1, steps+1):
             midXMin = oldXMin * (steps-i)/float(steps) + newXMin * i/float(steps)
             midXMax = oldXMax * (steps-i)/float(steps) + newXMax * i/float(steps)
@@ -492,7 +490,13 @@ class OWGraph(QwtPlot):
             self.setAxisScale(QwtPlot.yLeft, midYMin, midYMax, stepY)
             #if i == steps:
             #    self.removeCurve(zoomOutCurveKey)
+            t = time.time()
             self.replot()
+            if time.time()-t > 0.1:
+                self.setAxisScale(QwtPlot.xBottom, newXMin, newXMax, stepX)
+                self.setAxisScale(QwtPlot.yLeft, newYMin, newYMax, stepY)
+                self.replot()
+                break
 
     def closestMarker(self, intX, intY):
         point = QPoint(intX, intY)
@@ -857,10 +861,10 @@ class OWGraph(QwtPlot):
             vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
             horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
             labelColor = marker.label().color()
-            color = (labelColor.red()/255., labelColor.green()/255., labelColor/255.)
+            color = (labelColor.red()/255., labelColor.green()/255., labelColor.blue()/255.)
             alpha = labelColor.alpha()/255.
-            name = str(marker.font().family())
-            weight = marker.font().bold() and "bold" or "normal"
+            name = str(marker.label().font().family())
+            weight = marker.label().font().bold() and "bold" or "normal"
             if marker.__class__ == RotatedMarker: extra = ", rotation = %f" % (marker.rotation)
             else: extra = ""
             f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s'%s, alpha = %.3f)\n" % (x, y, text, vertAlign, horAlign, color, name, weight, extra, alpha))
