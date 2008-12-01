@@ -512,7 +512,9 @@ class ColorPaletteGenerator:
         self.rgbColors = rgbColors
         if type(rgbColors) == dict:
             self.rgbColorsDict = rgbColors
-        self.setNumberOfColors(numberOfColors)
+            self.setNumberOfColors(max(rgbColors.keys()))
+        else:
+            self.setNumberOfColors(numberOfColors)
         
     # set the number of colors in the palette
     def setNumberOfColors(self, numberOfColors):
