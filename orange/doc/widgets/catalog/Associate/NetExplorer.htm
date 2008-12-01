@@ -18,13 +18,13 @@
 <DT>Network (Network)</DT>
 <DD>Network object to plot.</DD>
 <DT>Items (ExampleTable)</DT>
-<DD>Alternative meta data to associate with network.</DD>
+<DD>Additional data about vertices, one example for each vertex.</DD>
 <DT>Items to Mark (ExampleTable)</DT>
 <DD>A subset from items instances to mark.</DD>
 <DT>Items Subset (ExampleTable)</DT>
 <DD>A subset from items instances to hide.</DD>
 <DT>Vertex Distance (SymMatrix)</DT>
-<DD>Distance matrix containing distances between all vertices.</DD>
+<DD>Distance matrix with distances between vertices.</DD>
 </dl>
 
 <h3>Outputs</h3>
@@ -32,28 +32,32 @@
 <DT>Selected Network (Network)</DT>
 <DD>Subnetwork of all selected nodes.</DD>
 <DT>Selected Examples (ExampleTable)</DT>
-<DD>Instances from items ExampleTable that corresponds to selected vertices.</DD>
+<DD>Descriptions of vertices (from the graph of input signal Items) that correspond to selected vertices.</DD>
 <DT>Unselected Examples (ExampleTable)</DT>
-<DD>Instances from items ExampleTable that corresponds to unselected vertices.</DD>
+<DD>Descriptions of vertices corresponding to unselected vertices.</DD>
 <DT>Marked Examples (ExampleTable)</DT>
-<DD>Instances from items ExampleTable that corresponds to marked vertices.</DD>
+<DD>Descriptions of vertices corresponding to marked vertices.</DD>
 </dl>
 
 <h2>Description</h2>
-<p>Net Explorer is used to visualize graphs, let the user explore them by selecting their 
-individual parts and transmit the corresponding data to other widgets. It is currently available 
-only in latest (Qt4) version of Orange.</p>
+<p>Net Explorer visualizes graphs, lets the user explore them by selecting their 
+individual parts and gives the corresponding data to other widgets. It is currently available 
+only in the latest (Qt4) version of Orange.</p>
 
-<p>To use Net Explorer from a python script one should also read <a href="../../../modules/orngNetwork.htm">
-orngNetwork Orange module</a> documentation.</p>
+<p>More information on the use the widget from Python is available in documentation on <a href="../../../modules/orngNetwork.htm">
+orngNetwork Orange module</a>.</p>
 
 <a href="NetExplorer.png"><img class="screenshot"
 src="NetExplorer-S.png" alt="Classification Tree Graph
 - Node Tab" border=0></a></center>
 
 <h3>Navigation</h3>
-<p>Four navigation buttons are located in the upper right corner in control area.</p>
+<p>Four navigation buttons are located in the upper right corner of the control area.</p>
 
+<table>
+<tr valign="top"><td><img class="leftscreenshot" src="NetExplorer-navigation.png"/></td>
+
+<td>
 <p><i>Zooming:</i></p>
 <p>Zooming mode is selected by default. User can zoom in a rectangle by pressing and holding the 
 left mouse button and dragging the mouse to draw a rectangle to zoom in to. Zoom out (one level) 
@@ -67,58 +71,109 @@ command can then be executed by pressing right mouse button.</p>
 
 <p><i>Panning:</i></p>
 <p>Use this mode to drag the network around the canvas.</p>
+</td></tr>
+</table>
 
 <h3>Marking and Selecting</h3>
 <p>The widget features a two-stage procedure for selection of vertices, which allows for a very flexible
 manipulation of subsets of vertices. Vertices can be marked and/or selected. Marked vertices are presented
 by filled circled and selected vertices are highlighted with a yellow border.</p>
 
+<table>
+<tr valign="top"><td><img class="leftscreenshot" src="NetExplorer-select.png"/></td>
+
+<td>
 <p>Vertices can be selected manually by clicking or by drawing selection rectangle. Selection mode is 
-enabled by pressing fifth button from the top in the upper right corner in control area. Another way to
+enabled by pressing fifth button from the top in the upper right corner in control area.
+</td></tr>
+
+<tr>
+<tr valign="top"><td><img class="leftscreenshot" src="NetExplorer-MarkSelect.png"/></td>
+<td> Another way to
 select vertices is to add or remove the marked vertices to or from the selection, or to replace the 
 current selection with the marked vertices (buttons seven to nine).</p>
-
+</td></tr>
+</table>
 <p>The vertices can be marked based upon values of the attributes of the corresponding objects. Most marking
 options are available in the Mark Tab.</p>
 
 <h3>Vertices Tab</h3>
+
+<img class="leftscreenshot" src="NetExplorer-Vertices.png"/>
 <p>Parameters in vertices tab govern the appearance of network vertices and data associated with them. 
 User can select optimization method, vertex color and size attribute, set the labels and tooltips and 
 other rendering options.</p>
 
-<p><i>Optimization methods:</i></p>
-<ul>
-<li>no optimization;</li>
-<li>random;</li>
-<li>Fruchterman-Reingold;</li>
-<li>Fruchterman-Reingold Weighted;</li>
-<li>Fruchterman-Reingold Radial;</li>
-<li>circular crossing reduction;</li>
-<li>circular original;</li>
-<li>circular random;</li>
-</ul>
+<h4><b>Optimization methods</b></h4>
+<dl>
+<dt>No optimization</dt>
+<dd>The vertices are left as they are. If the
+ given network object already contains the vertices placement
+ data (these can be given, for instance, in Pajek format), they
+ are placed accordingly, otherwise their positions are random.</dd>
+ 
+<dt>Random</dt>
+<dd>The vertices are scattered randomly.</dd>
+
+<dt>Fruchterman-Reingold</dt>
+<dd> The standard Fruchterman-Reingold algorithm, which
+ tries to put the pairs of connected vertices to a certain fixed
+ small distance and the unconnected ones to the fixed large
+ distance. A simulated annealing optimization algorithm is used
+ to minimize the stress of the solution.</dd>
+ 
+<dt>Fruchterman-Reingold Weighted</dt>
+<dd> A variation of the Fruchterman-Reingold algorithm which also
+ takes the edge weights into account: the larger the weight, the
+ smaller the desired distance between the two vertices.</dd>
+ 
+<dt>Fruchterman-Reingold Radial</dt>
+<dd> A Fruchterman-Reingold-type algorithm which places a vertex
+ selected by the user at the center of the graph and optimizes
+ the layout around it. The optimization procedure ensures that
+ vertices with shorter paths to the central vertex are closer to
+ it than those with longer paths.</dd>
+ 
+<dt>Circular</dt>
+<dd> The vertices are placed around the circle in the same order in
+ which they are given in the data.</dd>
+
+<dt>Circular crossing reduction</dt>
+<dd> A local optimization algorithm which puts the vertices on the
+ circle and tries to minimize the number of crossed edges.</dd>
+ 
+<dt>Circular random</dt>
+<dd> The vertices are placed randomly around the circle.</dd>
+</dl>
+
 <p>The user can specify the number of iterations of the optimization procedure where applicable.</p>
-<p><i>Labels & tooltips</i></p>
-<p>A number of attributes can be chosen to form vertex labels or tooltips. Font size can also be set.</p>
-<p><i>Show labels on marked vertices only</i></p>
-<p>When selected, only labels on marked nodes are displayed.</p>
-<p><i>Inside view</i></p>
-<p>In this special mode, only selected vertex and vertices closer to it than specified distance are shown.</p>
-<p><i>Show missing values</i></p>
-<p>Indicates whether missing values should be displayed ad questionmarks.</p>
 
-<h3>Edges Tab</h3>
+<h4>Labels and tooltips</h4>
+
+<p>One or more attributes can be chosen to be shown as <span class="option">Vertex labels or tooltips</span>.
+To reduce the visual clutter, the user can also decide to <span class="option">Show labels on marked vertices only</span>.
+Checking <span class="option">Inside view</span> enables a special mode in which only selected vertex and vertices
+closer to it than the specified distance (in terms of the number of connections, not their lengths) are shown.</p>
+
+<p><span class="option">Show missing values</span> decides whether missing values should be displayed (as question marks).</p>
+
+<h3 style="clear: both">Edges Tab</h3>
+
+<img class="leftscreenshot" src="NetExplorer-Edges.png">
+
 <p>Parameters in edges tab are used to specify the appearance of edges. One can set edges color, width and 
-whether weights are displayed.</p>
-<p><i>Explore vertex distances:</i></p>
-<p>When selected, user can examine the distance between vertices that can be given through "Vertex Distance" signal. 
-To display the distance, one must first select a vertex. When hovering over an arbitrary vertex, the distance between 
-selected and the vertex under mouse pointer is displayed as a popup.</p>
+whether weights of edges are displayed.</p>
 
-<h3>Mark Tab</h3>
+<p>When <span class="option">Explore vertex distances</span> is selected, the user can examine the distance between vertices, as given in the "Vertex Distance" signal. To display the distance, one must first select a vertex. When hovering over an arbitrary vertex, the distance between the selected vertex and the vertex under the mouse pointer is displayed as a popup.</p>
+
+<h3 style="clear: both">Mark Tab</h3>
+
+<img class="leftscreenshot" src="NetExplorer-Mark.png">
+
 <p>Most options for interactive network exploration are gathered here. User can search for nodes by value in items meta 
 data, mark neighbours of selected vertices or mark vertices by number of connections.</p>
 
+<!-- mislim, da tole ni potrebno, saj je ocitno iz slike. bi pa bilo to smiselno nasteti, ce bi o vsakem kaj povedal. a skoraj ni kaj
 <p><i>Complete list of marking features:</i></p>
 <ul>
 <li>mark neighbours of focused vertex,</li>
@@ -130,11 +185,13 @@ data, mark neighbours of selected vertices or mark vertices by number of connect
 <li>find hubs (vertices with the most connections),</li>
 <li>mark vertices specified in input signal (Items to Mark signal).</li>
 </ul>
+-->
 
-<h3>Info Tab</h3>
-<p>General information (such as: number of vertices, number of edges, diameter, clustering coefficient) about network are 
-displayed here. To calculate and display degree distribution, click "Degree Distribution" button. Network can be saved in 
-<a href="http://pajek.imfm.si/doku.php">Pajek</a> format clicking on "Save network" button.</p>
+<h3 style="clear: both">Info Tab</h3>
+
+<img class="leftscreenshot" src="NetExplorer-Info.png">
+
+<p>The info tab gives some general information (such as number of vertices, number of edges, diameter, clustering coefficient) about the network. Button <span class="option">Degree Distribution</span> calculates and displays the degree distribution. Finally, the network can be saved in <a href="http://pajek.imfm.si/doku.php">Pajek</a> format by clicking on <span class="option">Save network</span> button.</p>
 
 <h2>Examples</h2>
 <p>The best way to get to know how to use this widget is by playing with it. Try some of the following network data sets:</p>
