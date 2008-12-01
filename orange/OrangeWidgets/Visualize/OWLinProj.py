@@ -57,8 +57,6 @@ class OWLinProj(OWVisWidget):
         self.addProjectedPositions = 0
         self.resetAnchors = 0
 
-        self.boxGeneral = 1
-
         #add a graph widget
         if graphClass:
             self.graph = graphClass(self, self.mainArea, name)
@@ -110,7 +108,7 @@ class OWLinProj(OWVisWidget):
 
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
-        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings", canScroll = 1)
 
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
@@ -156,22 +154,20 @@ class OWLinProj(OWVisWidget):
         box = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
         OWGUI.qwtHSlider(box, self, "graph.scaleFactor", label = 'Inflate points by: ', minValue=1.0, maxValue= 10.0, step=0.1, callback = self.updateGraph, tooltip="If points lie too much together you can expand their position to improve perception", maxWidth = 90)
 
-        cbox = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
+        box = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         #OWGUI.checkBox(box, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
-        OWGUI.checkBox(cbox, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
-        bbox = OWGUI.widgetBox(cbox, orientation = "horizontal")
+        OWGUI.checkBox(box, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
+        bbox = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(bbox, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
         OWGUI.qwtHSlider(bbox, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, showValueLabel = 0)
-        OWGUI.checkBox(cbox, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
-        OWGUI.checkBox(cbox, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
-        OWGUI.checkBox(cbox, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
-        OWGUI.checkBox(cbox, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
-        wbox = OWGUI.widgetBox(cbox, orientation = "horizontal")
+        OWGUI.checkBox(box, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
+        OWGUI.checkBox(box, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'graph.useAntialiasing', 'Use antialiasing', callback = self.updateGraph)
+        wbox = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(wbox, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         smallWidget = OWGUI.SmallWidgetLabel(wbox, pixmap = 1, box = "Advanced settings", tooltip = "Show advanced settings")
         OWGUI.rubber(wbox)
-
-        cbox.updateControls()
 
         box = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(box, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring variables", debuggingEnabled = 0)
@@ -205,7 +201,7 @@ class OWLinProj(OWVisWidget):
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
-        self.cbShowAllAttributes()
+        self.cbShowAllAttributes()      # update list boxes based on the check box value
 
         self.resize(900, 700)
 
@@ -373,7 +369,8 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLinProj()
     ow.show()
-    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo.tab"))
+    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
+    #ow.setShownAttributes(["A6", "A11", "A10", "A13"])
     ow.handleNewSignals()
     a.exec_()
 
