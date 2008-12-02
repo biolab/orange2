@@ -282,18 +282,22 @@ def printVerbose(text, *verb):
 import sys
 
 class ConsoleProgressBar(object):
-    def __init__(self, title="", charwidth=40, step=1):
+    def __init__(self, title="", charwidth=40, step=1, output=sys.stderr):
         self.title = title + " "
         self.charwidth = charwidth
         self.step = step
         self.currstring = ""
         self.state = 0
+        self.output = output
 
     def clear(self, i=-1):
-        if sys.stdout.isatty():
-            sys.stdout.write("\b" * (i if i != -1 else len(self.currstring)))
-        else:
-            sys.stdout.seek(-i if i != -1 else -len(self.currstring), 2)
+        try:
+            if hasattr(self.output, "isatty") and self.output.isatty():
+                self.output.write("\b" * (i if i != -1 else len(self.currstring)))
+            else:
+                self.output.seek(-i if i != -1 else -len(self.currstring), 2)
+        except Exception: ## If for some reason we failed 
+            self.output.write("\n")
 
     def getstring(self):
         progchar = int(round(float(self.state) * (self.charwidth - 5) / 100.0))
@@ -301,8 +305,8 @@ class ConsoleProgressBar(object):
 
     def printline(self, string):
         self.clear()
-        sys.stdout.write(string)
-        sys.stdout.flush()
+        self.output.write(string)
+        self.output.flush()
         self.currstring = string
 
     def __call__(self, newstate=None):
@@ -316,5 +320,5 @@ class ConsoleProgressBar(object):
 
     def finish(self):
         self.__call__(100)
-        sys.stdout.write("\n")
+        self.output.write("\n")
         
