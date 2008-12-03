@@ -1,16 +1,18 @@
 import orange
 import math, sys
 
-def orderLeafs(tree, matrix):
+def orderLeafs(tree, matrix, progressCallback=None):
     """Order the leafs in the clustering tree (based on 'Fast optimal leaf ordering for herarchical clustering. Ziv Bar-Joseph et al.')
     Arguments:
         tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
         matrix --orange.SymMatrix that was used to compute the clustering
+        progressCallback --function used to report progress
     """
     objects = getattr(tree.mapping, "objects", None)
     tree.mapping.setattr("objects", range(len(tree)))
     M = {}
     ordering = {}
+    visitedClusters = set()
     def _optOrdering(tree):
         if len(tree)==1:
             for leaf in tree:
@@ -55,6 +57,10 @@ def orderLeafs(tree, matrix):
                         M[tree, u, w] = M[tree, w, u] = MFunc((m, k))
                         ordering[tree, u, w] = (tree.left, u, m, tree.right, w, k)
                         ordering[tree, w, u] = (tree.right, w, k, tree.left, u, m)
+
+            if progressCallback:
+                progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
+                visitedClusters.add(tree)
         
     _optOrdering(tree)
 

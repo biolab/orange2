@@ -738,7 +738,9 @@ class OWDistanceMap(OWWidget):
         self.rootCluster=orange.HierarchicalClustering(self.matrix,
                 linkage=orange.HierarchicalClustering.Average)
         import orngClustering
-        orngClustering.orderLeafs(self.rootCluster, self.matrix)
+        self.progressBarInit()
+        orngClustering.orderLeafs(self.rootCluster, self.matrix, self.progressBarSet)
+        self.progressBarFinished()
         self.order = list(self.rootCluster.mapping)
         
 
