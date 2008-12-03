@@ -114,9 +114,12 @@ class OWDistanceMap(OWWidget):
         self.maxHSize = 30; self.maxVSize = 30
         self.sorting = [("No sorting", self.sortNone),
                         ("Adjacent distance", self.sortAdjDist),
-                        ("Random order", self.sortRandom)]
+                        ("Random order", self.sortRandom),
+                        ("Clustering", self.sortClustering),
+                        ("Clustering with ordered leafs", self.sortClusteringOrdered)]
 
         self.matrix = self.order = None
+        self.rootCluster = None
 
         # GUI definition
         self.tabs = OWGUI.tabWidget(self.controlArea)
@@ -239,6 +242,7 @@ class OWDistanceMap(OWWidget):
 
         self.selectionLines = []
         self.annotationText = []
+        self.clusterItems = []
 
         self.legendText1 = QGraphicsSimpleTextItem(None, self.scene)
         self.legendText2 = QGraphicsSimpleTextItem(None, self.scene)
@@ -444,6 +448,29 @@ class OWDistanceMap(OWWidget):
 ##            tmpText.setScene(None)
             self.scene.removeItem(tmpText)
 
+        for cluster in self.clusterItems:
+            self.scene.removeItem(cluster)
+
+        if self.rootCluster and self.order:
+            from OWClustering import HierarchicalClusterItem
+            clusterTop = HierarchicalClusterItem(self.rootCluster, None, self.scene)
+            clusterLeft = HierarchicalClusterItem(self.rootCluster, None, self.scene)
+            clusterHeight = 100.0
+            clusterTop.setTransform(QTransform().scale(width/float(len(self.rootCluster)), -clusterHeight/clusterTop.rect().height()).\
+                                    translate(0, -clusterTop.rect().height()))
+            clusterTop.setPos(0, self.offsetY)
+            clusterLeft.setTransform(QTransform().scale(clusterHeight/clusterLeft.rect().height(), width/float(len(self.rootCluster))).\
+                                    rotate(90).translate(0, -clusterTop.rect().height()))
+            clusterLeft.setPos(self.offsetX, 0)
+            self.offsetX += clusterHeight + 10
+            self.offsetY += clusterHeight + 10
+
+            self.clusterItems += [clusterTop, clusterLeft]
+
+            clusterTop.show()            
+            clusterLeft.show()
+            
+
         # determine the font size to fit the cell width
         fontrows = self.getfont(self.CellHeight)
         fontcols = self.getfont(self.CellWidth)
@@ -486,13 +513,15 @@ class OWDistanceMap(OWWidget):
             for i in range(0, len(self.annotationText)/2):
 ##                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
 ##                self.annotationText[i*2].setY(self.offsetY)
-                self.annotationText[i*2].setPos(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth, self.offsetY)
+                self.annotationText[i*2].setPos(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth, self.offsetY + maxWidth)
 ##                self.annotationText[i*2 + 1].setX(self.offsetX)
 ##                self.annotationText[i*2 + 1].setY(self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
-                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
+##                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
+                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxWidth + 3 + (i+0.5)*self.CellHeight)
 
             self.offsetX += maxWidth + 10
-            self.offsetY += maxHeight + 10
+##            self.offsetY += maxHeight + 10
+            self.offsetY += maxWidth + 10
 
         # rendering of legend
         if self.ShowLegend==1:
@@ -509,6 +538,12 @@ class OWDistanceMap(OWWidget):
             self.legendText2.hide()
 
         # paint distance map
+
+        if self.rootCluster and self.order:
+            ## We now know the location of bitmap
+            clusterTop.setPos(self.offsetX, clusterTop.y())
+            clusterLeft.setPos(clusterLeft.x(), self.offsetY)
+            
         self.distanceImage = ImageItem(bitmap, self.scene, width, height,
                                        palette, x=self.offsetX, y=self.offsetY, z=0)
         self.distanceImage.height = height
@@ -692,6 +727,20 @@ class OWDistanceMap(OWWidget):
         import random
         self.order = range(len(self.matrix.items))
         random.shuffle(self.order)
+        self.rootCluster = None
+
+    def sortClustering(self):
+        self.rootCluster=orange.HierarchicalClustering(self.matrix,
+                linkage=orange.HierarchicalClustering.Average)
+        self.order = list(self.rootCluster.mapping)
+
+    def sortClusteringOrdered(self):
+        self.rootCluster=orange.HierarchicalClustering(self.matrix,
+                linkage=orange.HierarchicalClustering.Average)
+        import orngClustering
+        orngClustering.orderLeafs(self.rootCluster, self.matrix)
+        self.order = list(self.rootCluster.mapping)
+        
 
     def sortItems(self):
         if not self.matrix:
