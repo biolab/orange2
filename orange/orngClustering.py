@@ -1,8 +1,8 @@
 import orange
 import math, sys
 
-def orderLeafs(tree, matrix, progressCallback=None):
-    """Order the leafs in the clustering tree (based on 'Fast optimal leaf ordering for herarchical clustering. Ziv Bar-Joseph et al.')
+def orderLeaves(tree, matrix, progressCallback=None):
+    """Order the leaves in the clustering tree (based on 'Fast optimal leaf ordering for herarchical clustering. Ziv Bar-Joseph et al.')
     Arguments:
         tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
         matrix --orange.SymMatrix that was used to compute the clustering
@@ -301,7 +301,7 @@ if __name__=="__main__":
 ##    d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
     d.Plot("graph.png")
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    orderLeafs(root, matrix)
+    orderLeaves(root, matrix)
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
     d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
