@@ -219,7 +219,7 @@ class OWDataTable(OWWidget):
             for i in range(numEx):
 ##                table.setItem(i, j, TableWidgetItem(data[i][key]
 ##                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-                item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
+                item = OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
                 item.setData(OrangeValueRole, QVariant(str(data[i][key])))
 
         table.resizeRowsToContents()
