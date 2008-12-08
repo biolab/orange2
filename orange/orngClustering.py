@@ -1,5 +1,31 @@
 import orange
 import math, sys
+from orange import HierarchicalClustering
+
+def exampleTableClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
+    """ Clusters the example table 'data' 
+    """
+    distance = distance if distance != None else orange.ExamplesDistanceConstructor_Euclidean(data)
+    matrix = orange.SymMatrix(len(data))
+    for i in range(len(data)):
+        for j in range(i+1):
+            matrix[i, j] = distance(data[i], data[j])
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
+    if order:
+        orderLeaves(root, matrix, progressCallback=progressCallback)
+    return root
+
+def attributeClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
+    """ Cluster the attrubutes of table 'data'
+    """
+    matrix = orange.SymMatrix(len(data.domain.attributes))
+    for a1 in range(len(data.domain.attributes)):
+        for a2 in range(a1):
+            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, self.data, 0).p
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
+    if order:
+        orderLeaves(root, matrix, progressCallback=progressCallback)
+    return root
 
 def orderLeaves(tree, matrix, progressCallback=None):
     """Order the leaves in the clustering tree (based on 'Fast optimal leaf ordering for herarchical clustering. Ziv Bar-Joseph et al.')
