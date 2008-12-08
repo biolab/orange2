@@ -264,7 +264,7 @@ class ColorPaletteDlg(OWBaseWidget):
                 self.__dict__["exCont"+name+"color"+str(i)].setColor(self.rgbToQColor(color))
                 if check and chk:
                     colorsList.append(self.rgbToQColor(color))
-            self.__dict__["exCont"+name+"colorCount"] = len(colors)
+            self.__dict__["exCont"+name+"colorCount"] = self.__dict__.get("exCont"+name+"colorCount", len(colors))
             self.__dict__["exCont"+name+"View"].setExContPalette(self.rgbToQColor(l), self.rgbToQColor(r), colorsList)
 
     def paletteSelected(self):
