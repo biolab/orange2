@@ -390,6 +390,7 @@ class OWDistanceMap(OWWidget):
     def constructDistanceMap(self):
         if self.matrix:
             self.distanceMapConstructor = orange.DistanceMapConstructor(distanceMatrix = self.matrix)
+            self.sortItems()
             self.createDistanceMap()
 
     def createDistanceMap(self):
