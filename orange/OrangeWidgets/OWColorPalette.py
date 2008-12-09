@@ -2,6 +2,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from OWWidget import *
 import OWGUI
+import math
 
 defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)]
 defaultColorBrewerPalette = {3: [(127, 201, 127), (190, 174, 212), (253, 192, 134)], 4: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153)], 5: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176)], 6: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127)], 7: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127), (191, 91, 23)], 8: [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153), (56, 108, 176), (240, 2, 127), (191, 91, 23), (102, 102, 102)]} 
@@ -481,8 +482,9 @@ class ContinuousPaletteGenerator:
 class ExtendedContinuousPaletteGenerator:
     def __init__(self, color1, color2, passThroughColors):
         self.colors = [color1] + passThroughColors + [color2]
+        self.gammaFunc = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
 
-    def getRGB(self, val):
+    def getRGB(self, val, gamma=1.0):
         index = int(val * (len(self.colors) - 1))
         if index == len(self.colors) - 1:
             return (self.colors[-1].red(), self.colors[-1].green(), self.colors[-1].blue())
@@ -490,6 +492,8 @@ class ExtendedContinuousPaletteGenerator:
             red1, green1, blue1 = self.colors[index].red(), self.colors[index].green(), self.colors[index].blue()
             red2, green2, blue2 = self.colors[index + 1].red(), self.colors[index + 1].green(), self.colors[index + 1].blue()
             x = val * (len(self.colors) - 1) - index
+            if gamma != 1.0:
+                x = self.gammaFunc(x, gamma)
             return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
 ##        if self.passThroughBlack:
 ##            if val < 0.5:
