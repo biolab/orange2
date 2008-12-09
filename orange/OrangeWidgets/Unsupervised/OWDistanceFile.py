@@ -13,6 +13,66 @@ import exceptions
 import os.path
 import pickle
 
+def readMatrix(fn):
+    msg = None
+    matrix = labels = data = None
+    
+    if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
+        pkl_file = open(fn, 'rb')
+        matrix = pickle.load(pkl_file)
+        data = None
+        #print self.matrix
+        if hasattr(matrix, 'items'):
+            data = matrix.items
+        pkl_file.close()
+        
+    else:    
+        #print fn
+        fle = open(fn)
+        while 1:
+            lne = fle.readline().strip()
+            if lne:
+                break
+        spl = lne.split()
+        try:
+            dim = int(spl[0])
+        except:
+            msg = "Matrix dimension expected in the first line"
+            raise exceptions.Exception
+    
+        labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
+        matrix = orange.SymMatrix(dim)
+        data = None
+        
+        if labeled:
+            labels = []
+        else:
+            labels = [""] * dim
+        for li, lne in enumerate(fle):
+            if li > dim:
+                if not li.strip():
+                    continue
+                msg = "File too long"
+                raise exceptions.IndexError
+            spl = lne.split("\t")
+            if labeled:
+                labels.append(spl[0].strip())
+                spl = spl[1:]
+            if len(spl) > dim:
+                msg = "Line %i too long" % li+2
+                raise exceptions.IndexError
+            for lj, s in enumerate(spl):
+                if s:
+                    try:
+                        matrix[li, lj] = float(s)
+                    except:
+                        msg = "Invalid number in line %i, column %i" % (li+2, lj)
+
+    if msg:
+        raise exceptions.Exception(msg)
+
+    return matrix, labels, data
+
 class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
@@ -99,69 +159,11 @@ class OWDistanceFile(OWWidget):
 
         self.error()
         
-        self.matrix, self.labels, self.data = self.readMatrix(fn)
-        self.relabel()
-            
-    def readMatrix(self, fn):
-        msg = None
-        matrix = labels = data = None
-        
         try:
-            if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
-                pkl_file = open(fn, 'rb')
-                matrix = pickle.load(pkl_file)
-                data = None
-                #print self.matrix
-                if hasattr(matrix, 'items'):
-                    data = matrix.items
-                pkl_file.close()
-                
-            else:    
-                #print fn
-                fle = open(fn)
-                while 1:
-                    lne = fle.readline().strip()
-                    if lne:
-                        break
-                spl = lne.split()
-                try:
-                    dim = int(spl[0])
-                except:
-                    msg = "Matrix dimension expected in the first line"
-                    raise exceptions.Exception
-            
-                labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
-                matrix = orange.SymMatrix(dim)
-                data = None
-                
-                if labeled:
-                    labels = []
-                else:
-                    labels = [""] * dim
-                for li, lne in enumerate(fle):
-                    if li > dim:
-                        if not li.strip():
-                            continue
-                        msg = "File too long"
-                        raise exceptions.IndexError
-                    spl = lne.split("\t")
-                    if labeled:
-                        labels.append(spl[0].strip())
-                        spl = spl[1:]
-                    if len(spl) > dim:
-                        msg = "Line %i too long" % li+2
-                        raise exceptions.IndexError
-                    for lj, s in enumerate(spl):
-                        if s:
-                            try:
-                                matrix[li, lj] = float(s)
-                            except:
-                                msg = "Invalid number in line %i, column %i" % (li+2, lj)
-                                raise exceptions.Exception 
+            self.matrix, self.labels, self.data = readMatrix(fn)
+            self.relabel()
         except:
-            self.error(msg or "Error while reading the file")
-        
-        return matrix, labels, data
+            self.error("Error while reading the file")
             
     def relabel(self):
         #print 'relabel'
