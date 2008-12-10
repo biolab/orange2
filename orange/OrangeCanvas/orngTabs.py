@@ -508,7 +508,7 @@ def constructCategoriesPopup(canvasDlg):
     if widgetTabList:
         widgetTabList = [wt for wt, ch in canvasDlg.settings["WidgetTabs"] if ch]
     else:
-        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]
+        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Prototypes"]
     extraTabs = [name for name in canvasDlg.widgetRegistry if name not in widgetTabList]
 
     for category in widgetTabList + extraTabs:
