@@ -3120,6 +3120,58 @@ PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(
 	PyCATCH
 }
 
+PyObject *SymMatrix_avgLinkage(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Clusters -> SymMatrix)")
+{
+	PyTRY
+	CAST_TO(TSymMatrix, matrix);
+
+	PyObject *clusters;
+
+	if (!PyArg_ParseTuple(args, "O:SymMatrix.avgLinkage", &clusters))
+		return PYNULL;
+
+	int size = PyList_Size(clusters);
+
+	TSymMatrix *symmatrix = new TSymMatrix(size);
+	PSymMatrix wsymmatrix = symmatrix;
+
+	symmatrix->matrixType = TSymMatrix::Symmetric;
+
+	int i,j,k,l;
+	for (i = 0; i < size; i++)
+	{
+		for (j	 = i; j < size; j++)
+		{
+			PyObject *cluster_i = PyList_GetItem(clusters, i);
+			PyObject *cluster_j = PyList_GetItem(clusters, j);
+			int size_i = PyList_Size(cluster_i);
+			int size_j = PyList_Size(cluster_j);
+			float sum = 0;
+			for (k = 0; k < size_i; k++)
+			{
+				for (l = 0; l < size_j; l++)
+				{
+					int item_k = PyInt_AsLong(PyList_GetItem(cluster_i, k));
+					int item_l = PyInt_AsLong(PyList_GetItem(cluster_j, l));
+
+					if (item_k >= matrix->dim || item_l >= matrix->dim)
+						raiseError("index out of range");
+
+					sum += matrix->getitem(item_k, item_l);
+				}
+			}
+
+			sum /= (size_i * size_j);
+			symmatrix->getref(i, j) = sum;
+		}
+	}
+
+	PyObject *pysymmatrix = WrapOrange(wsymmatrix);
+	return pysymmatrix;
+
+	PyCATCH
+}
+
 PyObject *SymMatrix_invert(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Invert type -> None)")
 {
 	/* ******************
@@ -4109,7 +4161,7 @@ PyObject *PyEdge_Int(TPyEdge *self)
 PyNumberMethods PyEdge_as_number = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	(inquiry)PyEdge_Nonzero,                           /* nb_nonzero */
-	0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0,
 	(unaryfunc)PyEdge_Int,    /* nb_int */
 	0,
 	(unaryfunc)PyEdge_Float,  /* nb_float */
@@ -4706,6 +4758,13 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 
 				PyList_SetItem(degrees, v1,  PyInt_FromLong(v1_degree));
 				PyList_SetItem(degrees, *ni, PyInt_FromLong(v2_degree));
+			}
+		}
+
+		if (!graph->directed) {
+			for(int v1 = 0; v1 < graph->nVertices; v1++) {
+				int v1_degree = PyInt_AsLong(PyList_GetItem(degrees, v1));
+				PyList_SetItem(degrees, v1,  PyInt_FromLong(v1_degree / 2));
 			}
 		}
 
