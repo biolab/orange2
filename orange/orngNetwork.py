@@ -221,7 +221,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if callbackProgress : callbackProgress()
             step += 1
            
-    def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None):
+    def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return 1
@@ -236,7 +236,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         mds = orngMDS.MDS(self.vertexDistance)
-        mds.Torgerson() 
+        
+        if torgerson:
+            mds.Torgerson() 
+        
         mds.getStress(orngMDS.KruskalStress)
         components = self.graph.getConnectedComponents()
         
