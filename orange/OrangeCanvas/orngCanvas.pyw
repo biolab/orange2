@@ -195,7 +195,7 @@ class OrangeCanvasDlg(QMainWindow):
         if self.settings.has_key("WidgetTabs") and self.settings["WidgetTabs"] != []:
             widgetTabList = self.settings["WidgetTabs"]
         else:
-            widgetTabList = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]]
+            widgetTabList = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Prototypes"]]
 
         # find widgets and create tab with buttons
         self.settings["WidgetTabs"] = self.tabs.createWidgetTabs(widgetTabList, self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
