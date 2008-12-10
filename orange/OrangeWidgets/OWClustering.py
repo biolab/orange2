@@ -1,4 +1,5 @@
 from OWWidget import *
+from functools import partial
 
 class HierarchicalClusterItem(QGraphicsRectItem):
     """ An object used to draw orange.HierarchicalCluster on a QGraphicsScene
@@ -8,6 +9,11 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         self.scaleH = 1.0
         self.scaleW = 1.0
         self._selected = False
+        self._highlight = False
+        self.highlightPen = QPen(Qt.black, 2)
+        self.highlightPen.setCosmetic(True)
+        self.standardPen = QPen(Qt.blue, 1)
+        self.standardPen.setCosmetic(True)
         self.cluster = cluster
         self.branches = []
         if cluster.branches:
@@ -26,6 +32,7 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         pen.setCosmetic(True)
         self.setPen(pen)
         self.setBrush(QBrush(Qt.white, Qt.SolidPattern))
+##        self.setAcceptHoverEvents(True)
         
         if self.isTopLevel(): ## top level cluster
             self.clusterGeometryReset()
@@ -60,6 +67,9 @@ class HierarchicalClusterItem(QGraphicsRectItem):
             painter.drawLine(self.rect().bottomRight(), QPointF(self.rect().right(), self.branches[-1].rect().bottom()))
         else:
             pass #painter.drawText(QRectF(0, 0, 30, 1), Qt.AlignLeft, str(self.cluster[0]))
+        
+    def boundingRect(self):
+        return self.rect()
 
     def setPen(self, pen):
         QGraphicsRectItem.setPen(self, pen)
@@ -69,14 +79,38 @@ class HierarchicalClusterItem(QGraphicsRectItem):
     def setBrush(self, brush):
         QGraphicsRectItem.setBrush(self, brush)
         for branch in self.branches:
-            branch.setBrush(brush)        
+            branch.setBrush(brush)
 
+    def setHighlight(self, state):
+        self._highlight = bool(state)
+        if type(state) == QPen:
+            self.setPen(state)
+        else:
+            self.setPen(self.highlightPen if self._highlight else self.standardPen)
+
+    @partial(property, fset=setHighlight)
+    def highlight(self):
+        return self._highlight
+
+    def setSelected(self, state):
+        self._selected = bool(state)
+        if type(state) == QBrush:
+            self.setBrush(state)
+        else:
+            self.setBrush(Qt.NoBrush if self._selected else QBrush(Qt.red, Qt.SolidPattern))
+
+    @partial(property, fset=setSelected)
+    def selected(self):
+        return self._selected
+
+    
     def __iter__(self):
         """ Iterates over all leaf nodes in cluster
         """
-        for branch in self.branches:
-            for item in branch:
-                yield item
+        if self.branches:
+            for branch in self.branches:
+                for item in branch:
+                    yield item
         else:
             yield self
 
