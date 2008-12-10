@@ -331,6 +331,8 @@ class OWDistanceMap(OWWidget):
                 selected = orange.ExampleTable(items[0].domain, ex)
                 self.send("Examples", selected)
 
+    def getGammaCorrectedPalette(self):
+        return [QColor(*self.contPalette.getRGB(float(i)/250, gamma=self.Gamma)).rgb() for i in range(250)] + self.palette[-6:]
 
     def setColor(self, index=0):
         self.selectedSchemaIndex = index
@@ -338,7 +340,7 @@ class OWDistanceMap(OWWidget):
         self.colorCombo.setPalettes("palette", dialog)
         self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
         
-        palette = dialog.getExtendedContinuousPalette("palette")
+        self.contPalette = palette = dialog.getExtendedContinuousPalette("palette")
         unknown = dialog.getColor("unknown").rgb()
         underflow = dialog.getColor("underflow").rgb()
         overflow = dialog.getColor("overflow").rgb()
@@ -439,9 +441,10 @@ class OWDistanceMap(OWWidget):
             self.offsetY = 5
 
 ##        palette = self.colorPalette.getCurrentColorSchema().getPalette()
-        palette = self.palette
+        palette = self.getGammaCorrectedPalette() #self.palette
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth),
-                            int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
+                            int(self.CellHeight), lo, hi, 1.0, self.Grid)
+##                            int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
 ##        self.scene.setSceneRect(0, 0, 2000, 2000) # this needs adjustment
 
