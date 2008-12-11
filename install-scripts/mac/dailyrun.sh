@@ -14,5 +14,8 @@ DAILY_REVISION=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/
 echo "Running bundle-daily-build.sh" > /private/tmp/bundle-daily-build.log
 /Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log || cat /private/tmp/bundle-daily-build.log
 
+echo "Running bundle-64bit-daily-build.sh" > /private/tmp/bundle-64bit-daily-build.log
+/Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log || cat /private/tmp/bundle-64bit-daily-build.log
+
 echo "Running fink-daily-build.sh" > /private/tmp/bundle-daily-build.log
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log || cat /private/tmp/fink-daily-build.log
