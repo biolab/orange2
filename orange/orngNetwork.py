@@ -1,4 +1,4 @@
-import math, random, numpy
+import math, numpy
 import orange, orangeom, orngMDS
 import os.path
 
@@ -101,7 +101,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def getData(self, i, j):
         if self.graph.items is orange.ExampleTable:
             return self.data[i][j]
-        elif self.graph.data is List:
+        elif self.graph.data is type([]):
             return self.data[i][j]
         
     def nVertices(self):
@@ -127,18 +127,18 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             x = x - x_center
             y = y - y_center
             
-            r = numpy.sqrt(x**2 + y**2)
-            fi = numpy.arctan2(y, x)
+            r = numpy.math.sqrt(x**2 + y**2)
+            fi = numpy.math.atan2(y, x)
             
 #            if M[i] > 0:    
 #                fi += numpy.pi / 180
 #            elif M[i] < 0:
 #                fi -= numpy.pi / 180
                 
-            fi += factor * M[i] * numpy.pi / 180
+            fi += factor * M[i] * numpy.math.pi / 180
                 
-            x = r * numpy.cos(fi)
-            y = r * numpy.sin(fi)
+            x = r * numpy.math.cos(fi)
+            y = r * numpy.math.sin(fi)
             
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
@@ -173,7 +173,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_center = x.mean()
                 y_center = y.mean()
                 
-                r = numpy.sqrt((x - x_center)**2 + (y - y_center)**2)
+                r = numpy.math.sqrt((x - x_center)**2 + (y - y_center)**2)
                 Mi = 0
                 
 #                u_x = self.graph.coors[0][component].reshape(-1,1)
@@ -196,20 +196,20 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                     u = component[j]
                     Mu = 0
                     for v in outer_vertices:
-                         d = self.vertexDistance[u,v]
-                         u_x = self.graph.coors[0][u]
-                         u_y = self.graph.coors[1][u]
-                         v_x = self.graph.coors[0][v]
-                         v_y = self.graph.coors[1][v]
-                         l = math.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
-                         e = math.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
-                         #print "l:",l,"r[i]:",r[i],"e:",e
-                         fiVR = math.atan2(v_y - u_y, v_x - u_x)
-                         fiV = math.atan2(u_y - y_center, u_x - x_center)
-                         fi = math.pi - (fiVR - fiV)
-                         #fi = math.acos((l**2 + r[i]**2 - e**2) / (2*l*r[i]))
+                        d = self.vertexDistance[u,v]
+                        u_x = self.graph.coors[0][u]
+                        u_y = self.graph.coors[1][u]
+                        v_x = self.graph.coors[0][v]
+                        v_y = self.graph.coors[1][v]
+                        l = math.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
+                        e = math.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
+                        #print "l:",l,"r[i]:",r[i],"e:",e
+                        fiVR = math.atan2(v_y - u_y, v_x - u_x)
+                        fiV = math.atan2(u_y - y_center, u_x - x_center)
+                        fi = math.pi - (fiVR - fiV)
+                        #fi = math.acos((l**2 + r[i]**2 - e**2) / (2*l*r[i]))
                          
-                         Mu += (1 - d) / (e**2) * l * math.sin(fi)
+                        Mu += (1 - d) / (e**2) * l * math.sin(fi)
                          
                     Mi += Mu * r[j]
                     #print "i:",i,"M:",Mu * r[i]
@@ -314,53 +314,6 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 break;
              
         return 0
-            
-    #procedura za razporejanje nepovezanih vozlisc na kroznico okoli grafa
-    def postProcess(self):
-        UDist=20
-        pos1=where(sum(self.graph,1), 0, 1)
-        pos2=where(sum(self.graph,0), 0, 1)
-        pos=logical_and(pos1, pos2)  #iscemo SAMO TISTA, ki nimajo ne vhodnih ne izhodnih povezav!
-
-        ncCount=sum(pos)
-        if ncCount==0:  #ce je graf povezan
-            return
-
-        #else:
-        #max in min na povezanem delu grafa
-        conCoorsX=compress(logical_not(pos), self.xCoors)
-        conCoorsY=compress(logical_not(pos), self.yCoors)
-
-        if len(conCoorsX)==0:  #ce je celoten graf nepovezan
-            maxX=self.maxWidth
-            maxY=self.maxHeight
-            minX=0
-            minY=0
-        else:
-            maxX=max(conCoorsX)
-            maxY=max(conCoorsY)
-            minX=min(conCoorsX)
-            minY=min(conCoorsY)
-
-        cX=(maxX+minX)/2.0  #sredisce
-        cY=(maxY+minY)/2.0
-
-        R=max((abs(maxX)-abs(cX)), (abs(maxY)-abs(cY))) * math.sqrt(2) +UDist  #polmer kroga
-
-        angles=arange(0,(2*pi),2*pi/ncCount)  #radiani
-        allAngles=zeros(self.nVertices(), 'f')
-
-        #ta zanka ni v Numeric zato, ker je angles[] krajsi od allAngles[] (graf ni povezan)
-        count=0
-        for i in range(0, self.nVertices()):
-            if (pos[i]==1):
-                allAngles[i]=angles[count]
-                count+=1
-
-        ccX=R*cos(allAngles)+cX  #koordinate na kroznici
-        ccY=R*sin(allAngles)+cY
-        self.xCoors = where(pos, ccX, self.xCoors)
-        self.yCoors = where(pos, ccY, self.yCoors)
 
     def saveNetwork(self, fn):
         name = ''
