@@ -220,7 +220,103 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if callbackUpdateCanvas: callbackUpdateCanvas()
             if callbackProgress : callbackProgress()
             step += 1
-           
+            
+    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0):
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            return 1
+        
+        if self.graph == None:
+            return 1
+        
+        if self.vertexDistance.dim != self.graph.nVertices:
+            return 1
+        
+        components = self.graph.getConnectedComponents()
+        self.stopMDS = 0
+        
+        self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
+        matrix = self.vertexDistance.avgLinkage(components)
+        mds = orngMDS.MDS(matrix)
+        
+        if torgerson:
+            mds.Torgerson()
+            
+        mds.getStress(orngMDS.KruskalStress)
+        
+        stepCount = 0 
+        while stepCount < mdsSteps and not self.stopMDS: 
+            oldStress = mds.avgStress
+            mds.getStress(orngMDS.KruskalStress)
+            
+            for l in range(mdsRefresh):
+                stepCount += 1
+                mds.SMACOFstep()
+                
+                if callbackProgress:
+                    callbackProgress(mds.avgStress, stepCount)
+                
+                if stepCount >= mdsSteps:
+                    break;
+            
+            mds.getStress(orngMDS.KruskalStress)
+            component_props = []
+            
+            for component in components:                
+                x = self.graph.coors[0][component]
+                y = self.graph.coors[1][component]
+                
+                x_avg_graph = sum(x) / len(x)
+                y_avg_graph = sum(y) / len(y)
+                
+                graph_range = max([math.sqrt((x[i]-x_avg_graph)*(x[i]-x_avg_graph) + (y[i]-y_avg_graph)*(y[i]-y_avg_graph)) for i in range(len(x))])
+                
+                component_props.append((x_avg_graph, y_avg_graph, graph_range))
+   
+            maxrange = 0
+            count = 0
+            # find min distance between components
+            for i in range(1, len(components)):
+                for j in range(i - 1):
+                    component_i = components[i]
+                    component_j = components[j]
+                    
+                    x_avg_mds_i = mds.points[i][0]
+                    y_avg_mds_i = mds.points[i][1]
+                    
+                    x_avg_mds_j = mds.points[j][0]
+                    y_avg_mds_j = mds.points[j][1]
+                    
+                    x_avg_graph_i, y_avg_graph_i, graph_range_i = component_props[i]
+                    x_avg_graph_j, y_avg_graph_j, graph_range_j = component_props[j]
+                    
+                    graphsdist = graph_range_i + graph_range_j
+                    #graphsdist = 1.1 * graphsdist
+                    mdsdist = math.sqrt((x_avg_mds_i-x_avg_mds_j)*(x_avg_mds_i-x_avg_mds_j) + (y_avg_mds_i-y_avg_mds_j)*(y_avg_mds_i-y_avg_mds_j))
+                    if mdsdist != 0:
+                        component_range = graphsdist / mdsdist                
+                        maxrange += component_range
+                        count += 1
+                    
+            maxrange = maxrange / count
+            for i in range(len(components)):
+                component = components[i]
+                x_avg_graph, y_avg_graph, graph_range = component_props[i]
+                x = mds.points[i][0]
+                y = mds.points[i][1]
+                
+                for u in component:
+                    self.graph.coors[0][u] = self.graph.coors[0][u] - x_avg_graph + (x * maxrange * mdsFactor)
+                    self.graph.coors[1][u] = self.graph.coors[1][u] - y_avg_graph + (y * maxrange * mdsFactor)
+            
+            if callbackUpdateCanvas:
+                callbackUpdateCanvas()
+                    
+            if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
+                break;
+             
+        return 0
+            
     def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
@@ -232,6 +328,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.vertexDistance.dim != self.graph.nVertices:
             return 1
         
+        components = self.graph.getConnectedComponents()
+        
         self.stopMDS = 0
         
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
@@ -241,7 +339,6 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             mds.Torgerson() 
         
         mds.getStress(orngMDS.KruskalStress)
-        components = self.graph.getConnectedComponents()
         
         stepCount = 0 
         while stepCount < mdsSteps and not self.stopMDS: 
