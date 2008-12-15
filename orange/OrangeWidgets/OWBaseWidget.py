@@ -673,7 +673,7 @@ class OWBaseWidget(QDialog):
 
     def focusInEvent(self, *ev):
         #print "focus in"
-        #if qApp.canvasDlg.settings["synchronizeHelp"]:
+        #if qApp.canvasDlg.settings["synchronizeHelp"]:  on ubuntu: pops up help window on first widget focus for every widget   
         #    qApp.canvasDlg.helpWindow.showHelpFor(self, True)
         QDialog.focusInEvent(self, *ev)
         
