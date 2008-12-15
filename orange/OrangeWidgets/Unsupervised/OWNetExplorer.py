@@ -281,11 +281,13 @@ class OWNetExplorer(OWWidget):
         self.mdsSteps = 120
         self.mdsRefresh = 30
         self.mdsTorgerson = 0
+        self.mdsAvgLinkage = 0
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
         OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         OWGUI.checkBox(ib, self, 'mdsTorgerson', "Torgerson's initial approximation")
+        OWGUI.checkBox(ib, self, 'mdsAvgLinkage', "Use average linkage")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         self.rotateFactor = 10
@@ -382,7 +384,12 @@ class OWNetExplorer(OWWidget):
         
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
-        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)
+        
+        if self.mdsAvgLinkage:
+            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)
+        else:
+            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)
+            
         self.btnMDS.setChecked(False)
         self.btnMDS.setText("MDS on graph components")
         self.progressBarFinished()
