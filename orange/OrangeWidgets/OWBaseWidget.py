@@ -672,9 +672,9 @@ class OWBaseWidget(QDialog):
             pass
 
     def focusInEvent(self, *ev):
-        print "focus in"
-        if qApp.canvasDlg.settings["synchronizeHelp"]:
-            qApp.canvasDlg.helpWindow.showHelpFor(self, True)
+        #print "focus in"
+        #if qApp.canvasDlg.settings["synchronizeHelp"]:
+        #    qApp.canvasDlg.helpWindow.showHelpFor(self, True)
         QDialog.focusInEvent(self, *ev)
         
     
