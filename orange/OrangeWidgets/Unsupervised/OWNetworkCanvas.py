@@ -16,7 +16,7 @@ from orangeom import Network
 
 class NetworkVertex():
     def __init__(self):
-        self.index = -1
+        self.index = - 1
         self.marked = False
         self.show = True
         self.selected = False
@@ -42,7 +42,7 @@ class NetworkEdge():
         self.pen = QPen(Qt.lightGray, 1)
 
 class NetworkCurve(QwtPlotCurve):
-  def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
+  def __init__(self, parent, pen=QPen(Qt.black), xData=None, yData=None):
       QwtPlotCurve.__init__(self, "Network Curve")
 
       self.coors = None
@@ -147,7 +147,7 @@ class NetworkCurve(QwtPlotCurve):
             x = px1 - px2
             y = py1 - py2
             
-            fi = math.atan2(y,x) * 180 * 16 / math.pi 
+            fi = math.atan2(y, x) * 180 * 16 / math.pi 
 
             if not fi is None:
                 # (180*16) - fi - (20*16), (40*16)
@@ -157,7 +157,7 @@ class NetworkCurve(QwtPlotCurve):
             x = px1 - px2
             y = py1 - py2
             
-            fi = math.atan2(y,x) * 180 * 16 / math.pi 
+            fi = math.atan2(y, x) * 180 * 16 / math.pi 
             if not fi is None:
                 # (180*16) - fi - (20*16), (40*16)
                 painter.drawPie(px1 - d, py1 - d, 2 * d, 2 * d, 2560 - fi, 640)
@@ -169,7 +169,7 @@ class NetworkCurve(QwtPlotCurve):
             
             th = painter.fontMetrics().height()
             tw = painter.fontMetrics().width(lbl)
-            r = QRect(x - tw/2, y - th/2, tw, th)
+            r = QRect(x - tw / 2, y - th / 2, tw, th)
             painter.fillRect(r, QBrush(Qt.white))
             painter.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, lbl)
     
@@ -192,7 +192,7 @@ class NetworkCurve(QwtPlotCurve):
           painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
         
 class OWNetworkCanvas(OWGraph):
-  def __init__(self, master, parent = None, name = "None"):
+  def __init__(self, master, parent=None, name="None"):
       OWGraph.__init__(self, parent, name)
       self.master = master
       self.parent = parent
@@ -208,7 +208,7 @@ class OWNetworkCanvas(OWGraph):
       self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
       self.visualizer = None
       self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
-      self.edgesKey = -1
+      self.edgesKey = - 1
       #self.vertexSize = 6
       self.nVertices = 0
       self.enableXaxis(0)
@@ -286,7 +286,7 @@ class OWNetworkCanvas(OWGraph):
       k = int(frSteps / breakpoints)
       o = frSteps % breakpoints
       iteration = 0
-      coolFactor = exp(log(10.0/10000.0) / frSteps)
+      coolFactor = exp(log(10.0 / 10000.0) / frSteps)
       #print coolFactor
       if k > 0:
           while iteration < breakpoints:
@@ -316,7 +316,7 @@ class OWNetworkCanvas(OWGraph):
       if self.sendMarkedNodes != None:
           self.sendMarkedNodes(self.networkCurve.getMarkedVertices())
       
-  def removeSelection(self, replot = True):
+  def removeSelection(self, replot=True):
       self.networkCurve.unSelect()
       
       if replot:
@@ -330,7 +330,7 @@ class OWNetworkCanvas(OWGraph):
           for i in nodes:
               neighbours = set(self.visualizer.graph.getNeighbours(i))
               #print "neighbours: " + str(neighbours)
-              self.selectNeighbours(sel, neighbours - sel, depth+1, maxdepth)
+              self.selectNeighbours(sel, neighbours - sel, depth + 1, maxdepth)
       
   def getSelectedExamples(self):
       selection = self.networkCurve.getSelectedVertices()
@@ -433,7 +433,7 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 50:
+          if ndx != - 1 and mind < 50:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
               self.networkCurve.setMarkedVertices(toMark)
               self.drawPlotItems()
@@ -454,13 +454,13 @@ class OWNetworkCanvas(OWGraph):
               py = self.invTransform(0, event.y())   
               v, mind = self.visualizer.closestVertex(px, py)
                             
-              if v != -1 and mind < 100:
+              if v != - 1 and mind < 100:
                   if self.visualizer.vertexDistance == None:
                       dst = 'vertex distance signal not set'
                   else:
                       dst = 0
                       for u in selection:
-                          dst += self.visualizer.vertexDistance[u,v]
+                          dst += self.visualizer.vertexDistance[u, v]
                       dst = dst / len(selection)
                       
                   self.showTip(event.pos().x(), event.pos().y(), str(dst))
@@ -470,11 +470,11 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 30:
+          if ndx != - 1 and mind < 30:
               if not self.optimizing:
                   self.optimizing = 1
                   initTemp = 1000
-                  coolFactor = exp(log(10.0/10000.0) / 500)
+                  coolFactor = exp(log(10.0 / 10000.0) / 500)
                   from qt import qApp
                   for i in range(10):
                       if self.stopOptimizing:
@@ -525,7 +525,7 @@ class OWNetworkCanvas(OWGraph):
           self.state = SELECT_RECTANGLE
           self.mouseCurrentlyPressed = 0
           
-          self.moveGroup=False
+          self.moveGroup = False
           #self.GMmouseStartEvent=None
           
       if self.state == SELECT_RECTANGLE:
@@ -542,8 +542,11 @@ class OWNetworkCanvas(OWGraph):
           
               selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
 
-              for ndx in selection:
-                  self.vertices[ndx].selected = True
+              def selectVertex(ndx):
+                  if self.vertices[ndx].show:
+                      self.vertices[ndx].selected = True
+                      
+              map(selectVertex, selection)
               
               if len(selection) == 0 and x1 == x2 and y1 == y2:
                   self.removeSelection()
@@ -565,7 +568,7 @@ class OWNetworkCanvas(OWGraph):
           #print "W"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
-          self.visualizer.rotateVertices([selection], [-1])
+          self.visualizer.rotateVertices([selection], [ - 1])
           self.drawPlotItems(replot=1)
           
       elif keyEvent.key() == 81:
@@ -578,7 +581,7 @@ class OWNetworkCanvas(OWGraph):
 
   def clickedSelectedOnVertex(self, pos):
       min = 1000000
-      ndx = -1
+      ndx = - 1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -590,16 +593,16 @@ class OWNetworkCanvas(OWGraph):
       minx2 = self.invTransform(2, 10)
       miny2 = self.invTransform(0, 10)
       
-      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != -1:
+      if min < d and ndx != - 1:
           return self.vertices[ndx].selected
       else:
           return False
       
   def clickedOnVertex(self, pos):
       min = 1000000
-      ndx = -1
+      ndx = - 1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -611,16 +614,16 @@ class OWNetworkCanvas(OWGraph):
       minx2 = self.invTransform(2, 10)
       miny2 = self.invTransform(0, 10)
       
-      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != -1:
+      if min < d and ndx != - 1:
           return True
       else:
           return False
               
   def selectVertex(self, pos):
       min = 1000000
-      ndx = -1
+      ndx = - 1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -632,9 +635,9 @@ class OWNetworkCanvas(OWGraph):
       minx2 = self.invTransform(2, 10)
       miny2 = self.invTransform(0, 10)
       
-      d = sqrt((minx2-minx1)**2 + (miny2-miny1)**2)
+      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != -1:
+      if min < d and ndx != - 1:
           if self.insideview:
               self.networkCurve.unSelect()
               self.vertices[ndx].selected = not self.vertices[ndx].selected
@@ -655,7 +658,7 @@ class OWNetworkCanvas(OWGraph):
       if self.visualizer == None:
           return
       
-      self.removeDrawingCurves(removeLegendItems = 0)
+      self.removeDrawingCurves(removeLegendItems=0)
       self.tips.removeAll()
       self.networkCurve.setData(self.visualizer.network.coors[0], self.visualizer.network.coors[1])
       
@@ -679,7 +682,7 @@ class OWNetworkCanvas(OWGraph):
               y.append(r * sin(fi) + 5000)
               fi += step
               
-          self.addCurve("radius", Qt.white, Qt.green, 1, style = QwtPlotCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
+          self.addCurve("radius", Qt.white, Qt.green, 1, style=QwtPlotCurve.Lines, xData=x, yData=y, showFilledSymbols=False)
       
       if self.renderAntialiased:
           self.networkCurve.setRenderHint(QwtPlotItem.RenderAntialiased)
@@ -750,7 +753,7 @@ class OWNetworkCanvas(OWGraph):
           
           lbl = str(self.visualizer.graph.items[component[0]][str(self.showComponentAttribute)])
           
-          mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter, size=self.fontSize)
+          mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
  
   def drawToolTips(self):
     # add ToolTips
@@ -769,7 +772,7 @@ class OWNetworkCanvas(OWGraph):
         for ndx in self.tooltipText:
             value = str(values[ndx])
             # wrap text
-            i=0
+            i = 0
             while i < len(value) / 100:
                 value = value[:((i + 1) * 100) + i] + "\n" + value[((i + 1) * 100) + i:]
                 i += 1
@@ -777,7 +780,7 @@ class OWNetworkCanvas(OWGraph):
             lbl = lbl + str(value) + "\n"
   
         if lbl != '':
-          lbl = lbl[:-1]
+          lbl = lbl[: - 1]
           self.tips.addToolTip(x1, y1, lbl)
           self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
                  
@@ -802,7 +805,7 @@ class OWNetworkCanvas(OWGraph):
               #    continue 
               
               if lbl:
-                  mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignBottom, size=self.fontSize)
+                  mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignBottom, size=self.fontSize)
                   self.markerKeys[vertex.index] = mkey    
                    
   def drawIndexes(self):
@@ -817,8 +820,8 @@ class OWNetworkCanvas(OWGraph):
               x1 = self.visualizer.network.coors[0][vertex.index]
               y1 = self.visualizer.network.coors[1][vertex.index]
 
-              lbl= str(vertex.index)
-              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignTop, size=self.fontSize)
+              lbl = str(vertex.index)
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignTop, size=self.fontSize)
               self.markerKeys['index ' + str(vertex.index)] = mkey         
 
   def drawWeights(self):
@@ -838,8 +841,8 @@ class OWNetworkCanvas(OWGraph):
               else:
                   lbl = "%.2f" % float(edge.weight)
               
-              mkey = self.addMarker(lbl, float(x1), float(y1), alignment = Qt.AlignCenter, size=self.fontSize)
-              self.markerKeys[(edge.u,edge.v)] = mkey
+              mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignCenter, size=self.fontSize)
+              self.markerKeys[(edge.u, edge.v)] = mkey
                           
   def getColorIndeces(self, table, attribute, palette):
       colorIndices = {}
@@ -847,7 +850,7 @@ class OWNetworkCanvas(OWGraph):
       minValue = None
       maxValue = None
       
-      if attribute[0] != "(" or attribute[-1] != ")":
+      if attribute[0] != "(" or attribute[ - 1] != ")":
           i = 0
           for var in table.domain.variables:
               if var.name == attribute:
@@ -1000,7 +1003,7 @@ class OWNetworkCanvas(OWGraph):
           xMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
           yMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
           yMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
-          self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment = Qt.AlignCenter, size=self.fontSize)
+          self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment=Qt.AlignCenter, size=self.fontSize)
           self.replot()
           return
       
@@ -1039,20 +1042,20 @@ class OWNetworkCanvas(OWGraph):
               edge.arrowv = 1
               
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
-              row = visualizer.graph.links.filter(u=(i+1,i+1), v=(j+1,j+1))
+              row = visualizer.graph.links.filter(u=(i + 1, i + 1), v=(j + 1, j + 1))
               
               if len(row) == 0:
-                  row = visualizer.graph.links.filter(u=(j+1,j+1), v=(i+1,i+1))
-                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j+1) and str(int(x[1])) == str(int(i+1)))]
+                  row = visualizer.graph.links.filter(u=(j + 1, j + 1), v=(i + 1, i + 1))
+                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j + 1) and str(int(x[1])) == str(int(i + 1)))]
               else:
-                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i+1) and str(int(x[1])) == str(int(j+1)))]
+                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i + 1) and str(int(x[1])) == str(int(j + 1)))]
                   
               if len(row) == 1:
                   edge.label = []
                   for k in range(2, len(row[0])):
                       edge.label.append(str(row[0][k]))
               else:
-                  print i,j,"not found"
+                  print i, j, "not found"
               
               if len(indexes) == 1:
                   edge.links_index = indexes[0]
