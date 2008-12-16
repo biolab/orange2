@@ -47,7 +47,9 @@ class OWNetExplorer(OWWidget):
                     "edgeColorSettings",
                     "selectedEdgeSchemaIndex",
                     "showMissingValues",
-                    "fontSize"] 
+                    "fontSize",
+                    "mdsTorgerson",
+                    "mdsAvgLinkage"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -106,6 +108,8 @@ class OWNetExplorer(OWWidget):
         self.showDistances = 0
         self.showMissingValues = 0
         self.fontSize = 12
+        self.mdsTorgerson = 0
+        self.mdsAvgLinkage = 0
         
         self.loadSettings()
         
@@ -280,8 +284,6 @@ class OWNetExplorer(OWWidget):
         self.mdsFactor = 10
         self.mdsSteps = 120
         self.mdsRefresh = 30
-        self.mdsTorgerson = 0
-        self.mdsAvgLinkage = 0
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
         OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
