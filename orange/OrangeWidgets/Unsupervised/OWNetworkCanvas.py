@@ -8,7 +8,6 @@ SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
 MOVE_SELECTION = 100
 
-import copy
 from OWGraph import *
 from numpy import *
 from orngScaleScatterPlotData import *
@@ -475,7 +474,7 @@ class OWNetworkCanvas(OWGraph):
                   self.optimizing = 1
                   initTemp = 1000
                   coolFactor = exp(log(10.0 / 10000.0) / 500)
-                  from qt import qApp
+                  
                   for i in range(10):
                       if self.stopOptimizing:
                           self.stopOptimizing = 0
