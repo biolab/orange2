@@ -1,4 +1,4 @@
-import math, random, numpy
+import math, numpy
 import orange, orangeom, orngMDS
 import os.path
 
@@ -10,7 +10,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.setGraph(graph)
         self.graph = graph
         
-        self.maxWidth  = 1000
+        self.maxWidth = 1000
         self.maxHeight = 1000
         
         self.attributeList = {}
@@ -101,7 +101,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def getData(self, i, j):
         if self.graph.items is orange.ExampleTable:
             return self.data[i][j]
-        elif self.graph.data is List:
+        elif self.graph.data is type([]):
             return self.data[i][j]
         
     def nVertices(self):
@@ -127,7 +127,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             x = x - x_center
             y = y - y_center
             
-            r = numpy.sqrt(x**2 + y**2)
+            r = numpy.sqrt(x ** 2 + y ** 2)
             fi = numpy.arctan2(y, x)
             
 #            if M[i] > 0:    
@@ -161,7 +161,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         step = 0
         M = [1]
         while step < maxSteps and max(M) > minMoment and not self.stopRotate:
-            M = [0]*len(components) 
+            M = [0] * len(components) 
             for i in range(len(components)):
                 component = components[i]
                 
@@ -173,48 +173,20 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_center = x.mean()
                 y_center = y.mean()
                 
-                r = numpy.sqrt((x - x_center)**2 + (y - y_center)**2)
-                Mi = 0
-                
-#                u_x = self.graph.coors[0][component].reshape(-1,1)
-#                u_y = self.graph.coors[0][component].reshape(-1,1)
-#                v_x = self.graph.coors[0][list(outer_vertices)]
-#                v_y = self.graph.coors[0][list(outer_vertices)]
-#                
-#                l = numpy.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
-#                e = numpy.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
-#                fiVR = numpy.arctan2(v_y - u_y, v_x - u_x)
-#                fiV = numpy.arctan2(u_y - y_center, u_x - x_center)
-#                fi = numpy.pi - (fiVR - fiV)
-#                
-#                Mi = (1) / (e**2)
-#                Mi = Mi * l
-#                Mi = Mi * numpy.sin(fi) 
-#                Mi = Mi * r.reshape(-1,1)
-                
                 for j in range(len(component)):
                     u = component[j]
-                    Mu = 0
+
                     for v in outer_vertices:
-                         d = self.vertexDistance[u,v]
-                         u_x = self.graph.coors[0][u]
-                         u_y = self.graph.coors[1][u]
-                         v_x = self.graph.coors[0][v]
-                         v_y = self.graph.coors[1][v]
-                         l = math.sqrt((u_x - v_x)**2 + (u_y - v_y)**2)
-                         e = math.sqrt((v_x - x_center)**2 + (v_y - y_center)**2)
-                         #print "l:",l,"r[i]:",r[i],"e:",e
-                         fiVR = math.atan2(v_y - u_y, v_x - u_x)
-                         fiV = math.atan2(u_y - y_center, u_x - x_center)
-                         fi = math.pi - (fiVR - fiV)
-                         #fi = math.acos((l**2 + r[i]**2 - e**2) / (2*l*r[i]))
-                         
-                         Mu += (1 - d) / (e**2) * l * math.sin(fi)
-                         
-                    Mi += Mu * r[j]
-                    #print "i:",i,"M:",Mu * r[i]
-                
-                M[i] = Mi
+                        d = self.vertexDistance[u, v]
+                        u_x = self.graph.coors[0][u]
+                        u_y = self.graph.coors[1][u]
+                        v_x = self.graph.coors[0][v]
+                        v_y = self.graph.coors[1][v]
+                        L = [(u_x - v_x), (u_y - v_y)]
+                        R = [(u_x - x_center), (u_y - y_center)]
+                        e = math.sqrt((v_x - x_center) ** 2 + (v_y - y_center) ** 2)
+                        
+                        M[i] += (1 - d) / (e ** 2) * numpy.cross(R, L)
                 
             self.rotateVertices(components, M, factor)
             if callbackUpdateCanvas: callbackUpdateCanvas()
@@ -269,7 +241,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_avg_graph = sum(x) / len(x)
                 y_avg_graph = sum(y) / len(y)
                 
-                graph_range = max([math.sqrt((x[i]-x_avg_graph)*(x[i]-x_avg_graph) + (y[i]-y_avg_graph)*(y[i]-y_avg_graph)) for i in range(len(x))])
+                graph_range = max([math.sqrt((x[i] - x_avg_graph) * (x[i] - x_avg_graph) + (y[i] - y_avg_graph) * (y[i] - y_avg_graph)) for i in range(len(x))])
                 
                 component_props.append((x_avg_graph, y_avg_graph, graph_range))
    
@@ -277,10 +249,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             count = 0
             # find min distance between components
             for i in range(1, len(components)):
-                for j in range(i - 1):
-                    component_i = components[i]
-                    component_j = components[j]
-                    
+                for j in range(i - 1):                    
                     x_avg_mds_i = mds.points[i][0]
                     y_avg_mds_i = mds.points[i][1]
                     
@@ -292,7 +261,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                     
                     graphsdist = graph_range_i + graph_range_j
                     #graphsdist = 1.1 * graphsdist
-                    mdsdist = math.sqrt((x_avg_mds_i-x_avg_mds_j)*(x_avg_mds_i-x_avg_mds_j) + (y_avg_mds_i-y_avg_mds_j)*(y_avg_mds_i-y_avg_mds_j))
+                    mdsdist = math.sqrt((x_avg_mds_i - x_avg_mds_j) * (x_avg_mds_i - x_avg_mds_j) + (y_avg_mds_i - y_avg_mds_j) * (y_avg_mds_i - y_avg_mds_j))
                     if mdsdist != 0:
                         component_range = graphsdist / mdsdist                
                         maxrange += component_range
@@ -312,7 +281,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if callbackUpdateCanvas:
                 callbackUpdateCanvas()
                     
-            if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
+            if oldStress * 1e-3 > math.fabs(oldStress - mds.avgStress): 
                 break;
              
         return 0
@@ -371,7 +340,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_avg_graph = sum(x) / len(x)
                 y_avg_graph = sum(y) / len(y)
                 
-                graph_range = max([math.sqrt((x[i]-x_avg_graph)*(x[i]-x_avg_graph) + (y[i]-y_avg_graph)*(y[i]-y_avg_graph)) for i in range(len(x))])
+                graph_range = max([math.sqrt((x[i] - x_avg_graph) * (x[i] - x_avg_graph) + (y[i] - y_avg_graph) * (y[i] - y_avg_graph)) for i in range(len(x))])
                 
                 component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, graph_range))
             
@@ -380,16 +349,13 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             count = 0
             # find min distance between components
             for i in range(1, len(components)):
-                for j in range(i - 1):
-                    component_i = components[i]
-                    component_j = components[j]
-                    
+                for j in range(i - 1):                    
                     x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, graph_range_i = component_props[i]
                     x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, graph_range_j = component_props[j]
                     
                     graphsdist = graph_range_i + graph_range_j
                     #graphsdist = 1.1 * graphsdist
-                    mdsdist = math.sqrt((x_avg_mds_i-x_avg_mds_j)*(x_avg_mds_i-x_avg_mds_j) + (y_avg_mds_i-y_avg_mds_j)*(y_avg_mds_i-y_avg_mds_j))
+                    mdsdist = math.sqrt((x_avg_mds_i - x_avg_mds_j) * (x_avg_mds_i - x_avg_mds_j) + (y_avg_mds_i - y_avg_mds_j) * (y_avg_mds_i - y_avg_mds_j))
                     if mdsdist != 0:
                         component_range = graphsdist / mdsdist                
                         maxrange += component_range
@@ -407,57 +373,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if callbackUpdateCanvas:
                 callbackUpdateCanvas()
                     
-            if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress): 
+            if oldStress * 1e-3 > math.fabs(oldStress - mds.avgStress): 
                 break;
              
         return 0
-            
-    #procedura za razporejanje nepovezanih vozlisc na kroznico okoli grafa
-    def postProcess(self):
-        UDist=20
-        pos1=where(sum(self.graph,1), 0, 1)
-        pos2=where(sum(self.graph,0), 0, 1)
-        pos=logical_and(pos1, pos2)  #iscemo SAMO TISTA, ki nimajo ne vhodnih ne izhodnih povezav!
-
-        ncCount=sum(pos)
-        if ncCount==0:  #ce je graf povezan
-            return
-
-        #else:
-        #max in min na povezanem delu grafa
-        conCoorsX=compress(logical_not(pos), self.xCoors)
-        conCoorsY=compress(logical_not(pos), self.yCoors)
-
-        if len(conCoorsX)==0:  #ce je celoten graf nepovezan
-            maxX=self.maxWidth
-            maxY=self.maxHeight
-            minX=0
-            minY=0
-        else:
-            maxX=max(conCoorsX)
-            maxY=max(conCoorsY)
-            minX=min(conCoorsX)
-            minY=min(conCoorsY)
-
-        cX=(maxX+minX)/2.0  #sredisce
-        cY=(maxY+minY)/2.0
-
-        R=max((abs(maxX)-abs(cX)), (abs(maxY)-abs(cY))) * math.sqrt(2) +UDist  #polmer kroga
-
-        angles=arange(0,(2*pi),2*pi/ncCount)  #radiani
-        allAngles=zeros(self.nVertices(), 'f')
-
-        #ta zanka ni v Numeric zato, ker je angles[] krajsi od allAngles[] (graf ni povezan)
-        count=0
-        for i in range(0, self.nVertices()):
-            if (pos[i]==1):
-                allAngles[i]=angles[count]
-                count+=1
-
-        ccX=R*cos(allAngles)+cX  #koordinate na kroznici
-        ccY=R*sin(allAngles)+cY
-        self.xCoors = where(pos, ccX, self.xCoors)
-        self.yCoors = where(pos, ccY, self.yCoors)
 
     def saveNetwork(self, fn):
         name = ''
@@ -466,7 +385,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if ext == '':
                 fn = root + '.net'
             
-            graphFile = file(fn,'w+')
+            graphFile = file(fn, 'w+')
         except IOError:
             return 1
 
@@ -478,7 +397,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
 
         #izpis opisov vozlisc
-        graphFile.write('*Vertices% 8d\n' %self.graph.nVertices)
+        graphFile.write('*Vertices% 8d\n' % self.graph.nVertices)
         for v in range(self.graph.nVertices):
             graphFile.write('% 8d ' % (v + 1))
 #            if verticesParms[v].label!='':
@@ -486,9 +405,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 #            else:
             try:
                 label = self.graph.items[v]['label']
-                graphFile.write(str('"'+ str(label) + '"') + ' \t')
+                graphFile.write(str('"' + str(label) + '"') + ' \t')
             except:
-                graphFile.write(str('"'+ str(v) + '"') + ' \t')
+                graphFile.write(str('"' + str(v) + '"') + ' \t')
             
             x = self.network.coors[0][v]
             y = self.network.coors[1][v]
@@ -504,15 +423,15 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         #najprej neusmerjene
         if self.graph.directed:
             graphFile.write('*Arcs \n')
-            for (i,j) in self.graph.getEdges():
-                if len(self.graph[i,j]) > 0:
-                    graphFile.write('%8d %8d %f' % (i+1, j+1, float(str(self.graph[i,j]))))
+            for (i, j) in self.graph.getEdges():
+                if len(self.graph[i, j]) > 0:
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self.graph[i, j]))))
                     graphFile.write('\n')
         else:
             graphFile.write('*Edges \n')
-            for (i,j) in self.graph.getEdges():
-                if len(self.graph[i,j]) > 0:
-                    graphFile.write('%8d %8d %f' % (i+1, j+1, float(str(self.graph[i,j]))))
+            for (i, j) in self.graph.getEdges():
+                if len(self.graph[i, j]) > 0:
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self.graph[i, j]))))
                     graphFile.write('\n')
 
         graphFile.write('\n')
