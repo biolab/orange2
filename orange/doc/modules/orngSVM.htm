@@ -9,7 +9,7 @@
 
 <p>orngSVM provides accsess to orange Support Vector Machine functionality.</p>
 <p>Important!!! On some datasets this learner can perform very badly. It is a known fact that SVM's can be very sensitive to the proper choice of the parameters. If you are having problems with
-learner's accuracy try scaling the data and using the <code>parameter_selection</code> function or choose an easier approach and use the <code>SVMLearnerEasy</code> function whitch does this automatically.</p>
+learner's accuracy try scaling the data and using diffrent parameters or choose an easier approach and use the <code>SVMLearnerEasy</code> class whitch does this automatically.</p>
 <h2>SVMLearner</h2>
 <p><INDEX name="classes/SVMLearner (in orngSVM)">SVMLearner is a function that constructs a SVMLearner class and optionaly trains it on provided examples</p>
 <p class=section >Arguments</p>
@@ -52,20 +52,6 @@ in libSVM package. Use this if the <code>SVMLearner</code> performs badly. </p>
 <h2>SVMLearnerSparseEasy</h2>
 <p><INDEX name="classes/SVMLearnerSparseEasy (in orngSVM)">Same as <code>SVMLearnerEasy</code> except that it learns from the examples mata attributes.  Note that meta attributes dont need to be registerd with the dataset domain, or present in all the examples.
 Use this if you are using large sparse datasets (and have absolutely no respect for the fourth dimension commonly named as time). </p>
-
-<h2>parameterSelection</h2>
-<p>parameterSelection tool that uses cross validation to find the optimal parameters.</p>
-<p class=section>Arguments</p>
-<dl class=arguments>
-    <dt>learner</dt>
-    <dd>Learner to use</dd>
-    <dt>data</dt>
-    <dd>Data to use for learning and testing</dd>
-    <dt>folds</dt>
-    <dd>Number of cross validation folds</dd>
-    <dt>parameters</dt>
-    <dd>Dictionary with parameters as keys and containing lists of values (eg. {"gamma":[0.5,0.6,0.7],"C":[1.0,1.1.2])</dd>
-</dl>
 
 <h2>getLinearSVMWeights</h2>
 <p>Returns a list of weights of linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ...
