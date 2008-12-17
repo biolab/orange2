@@ -6,7 +6,7 @@
 #  (http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
 
 
-import orange, orngTest, orngStat, sys, math
+import orange, orngTest, orngStat, orngWrap, sys, math
 
 try:
     import orngSVM_Jakulin
@@ -14,6 +14,15 @@ try:
     BasicSVMClassifier=orngSVM_Jakulin.BasicSVMClassifier
 except:
     pass
+
+def maxNu(examples):
+    nu = 1.0
+    dist = list(orange.Distribution(examples.domain.classVar, examples))
+    def pairs(seq):
+        for i, n1 in enumerate(seq):
+            for n2 in seq[i+1:]:
+                yield n1, n2
+    return min([2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist) if n1 != 0 and n2 !=0] + [nu])
 
 class SVMLearner(orange.SVMLearner):
     def __new__(cls, examples=None, weightID=0, **kwargs):
@@ -42,7 +51,11 @@ class SVMLearner(orange.SVMLearner):
         self.__dict__.update(kwargs)
         self.learner=orange.SVMLearner(**kwargs)
 
-    def __call__(self, examples, weight=0):
+    @staticmethod
+    def maxNu(examples):
+        return maxNu(examples)
+
+    def __call__(self, examples, weight=0):            
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
             self.svm_type+=3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
@@ -57,15 +70,11 @@ class SVMLearner(orange.SVMLearner):
         ##################################################
         nu = self.nu
         if self.svm_type == orange.SVMLearner.Nu_SVC: #check nu feasibility
-            dist = list(orange.Distribution(examples.domain.classVar, examples))
-            def pairs(seq):
-                for i, n1 in enumerate(seq):
-                    for n2 in seq[i+1:]:
-                        yield n1, n2
-            maxNu = min([2.0 * min(n1, n2) / (n1 + n2) for n1, n2 in pairs(dist) if n1 != 0 and n2 !=0] + [self.nu])
+            maxNu = self.maxNu(examples)
             if self.nu > maxNu:
-                import warnings
-                warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
+                if getattr(self, "verbose", 0):
+                    import warnings
+                    warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
                 nu = max(maxNu - 1e-7, 0.0)
             
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
@@ -105,62 +114,13 @@ class SVMLearnerSparse(SVMLearner):
         SVMLearner.__init__(self, **kwds)
         self.learner=orange.SVMLearnerSparse(**kwds)
 
-def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
-    """parameter selection tool: uses cross validation to find the optimal parameters.
-    parameters argument is a dictionary containing ranges for parameters
-    return value is a dictionary with optimal parameters and error
-    the callback function takes two arguments, a 0.0-1.0 float(progress), and the current best parameters
-    >>>params=parameter_selection(learner, data, 10, {"C":range(1,10,2), "gama":range(0.5,2.0,0.25)})"""
-    global steps, curStep
-    steps=1
-    for c in parameters.values():
-        steps*=len(c)
-    curStep=1
-    def mysetattr(obj, name, value):
-        names=name.split(".")
-        for name in names[:-1]:
-            obj=getattr(obj, name)
-        setattr(obj, name, value)
-        
-    def search(learner, data, folds, keys, ranges, current, best={}, callback=None):
-        global steps, curStep
-        if len(keys)==1:
-            for p in ranges[0]:
-                mysetattr(learner, keys[0], p)
-                current[keys[0]]=p
-                te=orngTest.crossValidation([learner], data, folds)
-                if data.domain.classVar.varType==orange.VarTypes.Discrete:
-                    [res]=orngStat.CA(te)
-                    res=1-res
-                else:
-                    [res]=orngStat.MSE(te)
-                if res<best["error"]:
-                    best.update(current)
-                    best["error"]=res
-                curStep+=1
-                if callback:
-                    callback(curStep/float(steps), best)
-        else:
-            for p in ranges[0]:
-                mysetattr(learner, keys[0], p)
-                current[keys[0]]=p
-                search(learner, data, folds, keys[1:], ranges[1:], current, best, callback)
-                
-    keys=parameters.keys()
-    ranges=[parameters[key] for key in keys]
-    best["error"]=sys.maxint
-    current={}
-    for key in keys:
-        best[key]=parameters[key][0]
-        current[key]=parameters[key][0]
-    search(learner, data, folds, keys, ranges, current, best, callback)
-    return best
-
     
 class SVMLearnerEasy(SVMLearner):
     def __init__(self, **kwds):
-        self.folds=5
+        self.folds=4
+        self.verbose=0
         SVMLearner.__init__(self, **kwds)
+        self.learner = SVMLearner(**kwds)
         
     def learnClassifier(self, examples):
         transformer=orange.DomainContinuizer()
@@ -171,19 +131,20 @@ class SVMLearnerEasy(SVMLearner):
         newexamples=examples.translate(newdomain)
         #print newexamples[0]
         params={}
+        parameters = []
+        self.learner.normalization = False ## Normalization already done
+        
         if self.svm_type in [1,4]:
             numOfNuValues=9
-            params["nu"]=map(lambda a: float(a)/numOfNuValues, range(1,1+numOfNuValues))
+            maxNu = max(self.maxNu(newexamples) - 1e-7, 0.0)
+            parameters.append(("nu", [i/10.0 for i in range(1, 9) if i/10.0 < maxNu] + [maxNu]))
         else:
-            params["C"]=map(lambda a: 2**a, range(-5,15,2))
+            parameters.append(("C", [2**a for a in  range(-5,15,2)]))
         if self.kernel_type==2:
-            params["gamma"]=map(lambda a: 2**a, range(-3,15,2))+[0]
-        best=parameter_selection(self.learner, newexamples, self.folds, params)
-        #print best["error"]
-        del best["error"]
-        for name, val in best.items():
-            setattr(self.learner, name, val)
-        return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain, examples)
+            parameters.append(("gamma", [2**a for a in range(-5,5,2)]+[0]))
+        tunedLearner = orngWrap.TuneMParameters(object=self.learner, parameters=parameters, folds=self.folds)
+        
+        return SVMClassifierClassEasyWrapper(tunedLearner(newexamples, verbose=self.verbose), newdomain, examples)
 
 class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
     def __init__(self, **kwds):

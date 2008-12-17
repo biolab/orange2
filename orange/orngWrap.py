@@ -123,11 +123,12 @@ class TuneMParameters(TuneParameters):
         bestpar = findBest.winner()[1]
         if verbose:
             print "*** Optimal set of parameters: ",
-            for pi, value in enumerate(bestpar):
-                for i, par in enumerate(to_set[pi]):
-                    setattr(par[0], par[1], value)
-                    if verbose:
-                        print "%s: %s" % (parnames[pi][i], value),
+        for pi, value in enumerate(bestpar):
+            for i, par in enumerate(to_set[pi]):
+                setattr(par[0], par[1], value)
+                if verbose:
+                    print "%s: %s" % (parnames[pi][i], value),
+        if verbose:
             print
 
         if returnWhat==Tune1Parameter.returnNone:
