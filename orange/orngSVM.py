@@ -85,14 +85,37 @@ class SVMLearner(orange.SVMLearner):
 
     def learnClassifier(self, examples):
         if self.normalization:
-            dc = orange.DomainContinuizer()
-            dc.classTreatment = orange.DomainContinuizer.Ignore
-            dc.continuousTreatment = orange.DomainContinuizer.NormalizeBySpan
-            dc.multinomialTreatment = orange.DomainContinuizer.NValues
-            newdomain = dc(examples)
-            examples = examples.translate(newdomain)
-            return SVMClassifier(self.learner(examples), newdomain)
+            examples = self._normalize(examples)
+            return SVMClassifier(self.learner(examples), examples.domain)
         return self.learner(examples)
+
+    def tuneParameters(self, examples, parameters=None, folds=5, verbose=0):
+        parameters = ["nu", "C", "gamma"] if parameters == None else parameters
+        searchParams = []
+        normalization = self.normalization
+        if normalization:
+            examples = self._normalize(examples)
+            self.normalization = False
+        if self.svm_type in [SVMLearner.Nu_SVC, SVMLearner.Nu_SVR] and "nu" in parameters:
+            numOfNuValues=9
+            maxNu = max(self.maxNu(examples) - 1e-7, 0.0)
+            searchParams.append(("nu", [i/10.0 for i in range(1, 9) if i/10.0 < maxNu] + [maxNu]))
+        elif "C" in parameters:
+            searchParams.append(("C", [2**a for a in  range(-5,15,2)]))
+        if self.kernel_type==2 and "gamma" in parameters:
+            searchParams.append(("gamma", [2**a for a in range(-5,5,2)]+[0]))
+        tunedLearner = orngWrap.TuneMParameters(object=self, parameters=searchParams, folds=folds, returnWhat=orngWrap.TuneMParameters.returnLearner)
+        tunedLearner(examples, verbose=verbose)
+        if normalization:
+            self.normalization = normalization
+
+    def _normalize(self, examples):
+        dc = orange.DomainContinuizer()
+        dc.classTreatment = orange.DomainContinuizer.Ignore
+        dc.continuousTreatment = orange.DomainContinuizer.NormalizeBySpan
+        dc.multinomialTreatment = orange.DomainContinuizer.NValues
+        newdomain = dc(examples)
+        return examples.translate(newdomain)
 
 class SVMClassifier(object):
     def __init__(self, classifier, domain):
