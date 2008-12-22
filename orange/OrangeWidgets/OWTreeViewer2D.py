@@ -26,26 +26,11 @@ class GraphicsTextContainer(QGraphicsRectItem):
         self.setBrush(QBrush(Qt.white))
         self.isShown=False
 
-#    def setCanvas(self, canvas):
-#        QGraphicsRectItem.setCanvas(self, canvas)
-#        for o in self.textObj+self.canvasObj+self.spliterObj:
-#            o.setCanvas(canvas)
-
-#    def setPos(self, x, y):
-#        dx, dy=x-self.x(), y-self.y()
-#        QGraphicsRectItem.setPos(self, x, y)
-#        for o in self.textObj+self.canvasObj+self.spliterObj:
-#            o.moveBy(dx, dy)
-
     def setZValue(self, z):
         QGraphicsRectItem.setZValue(self,z)
         for o in self.textObj+self.spliterObj:
             o.setZValue(z+1)
 
-#    def setSize(self, w, h):
-#        QGraphicsRectItem.setSize(self, w, h)
-#        for s in self.spliterObj:
-#            s.setLine(0,0,w-1,0)
 
     def setRect(self, x, y, w, h):
         QGraphicsRectItem.setRect(self, x, y, w, h)
@@ -288,25 +273,48 @@ class GraphicsNode(GraphicsTextContainer):
     def setSelectionBox(self):
         self.isSelected=True
         if self.selectionSquare:
-             self.selectionSquare = sl=self.selectionSquare
+             self.selectionSquare = sl = self.selectionSquare
         else:
-             self.selectionSquare = sl = [QGraphicsLineItem(self, self.scene()) for i in range(8)]
+##             self.selectionSquare = sl = [QGraphicsLineItem(self, self.scene()) for i in range(8)]
+             self.selectionSquare = sl = [QGraphicsPathItem(self, self.scene()) for i in range(8)]
              self.sceneObj.extend(self.selectionSquare)
         for line in sl:
             line.setZValue(-5)
 ##            line.setPos(self.x(),self.y())
             line.setPen(QPen(QColor(0, 0, 150), 3))
-        xleft = -3; xright = self.rect().width() + 2
-        yup = -3; ydown = self.rect().height() + 2
-        xspan = self.rect().width() / 4; yspan = self.rect().height() / 4
-        sl[0].setLine(xleft, yup, xleft + xspan, yup)
-        sl[1].setLine(xleft, yup-1, xleft, yup + yspan)
-        sl[2].setLine(xright, yup, xright - xspan, yup)
-        sl[3].setLine(xright, yup-1, xright, yup + yspan)
-        sl[4].setLine(xleft, ydown, xleft + xspan, ydown)
-        sl[5].setLine(xleft, ydown+2, xleft, ydown - yspan)
-        sl[6].setLine(xright, ydown, xright - xspan, ydown)
-        sl[7].setLine(xright, ydown+2, xright, ydown - yspan)
+        xleft = -3.0; xright = self.rect().width() + 2.0
+        yup = -3.0; ydown = self.rect().height() + 2.0
+        xspan = self.rect().width() / 4.0; yspan = self.rect().height() / 4.0
+        path = QPainterPath(QPointF(xleft + xspan, yup))
+        path.lineTo(xleft, yup)
+        path.lineTo(xleft, yup + yspan)
+##        sl[0].setLine(xleft, yup, xleft + xspan, yup)
+        sl[0].setPath(path)
+        
+        path = QPainterPath(QPointF(xleft, ydown - yspan))
+        path.lineTo(xleft, ydown)
+        path.lineTo(xleft + xspan, ydown)
+        sl[1].setPath(path)
+
+        path = QPainterPath(QPointF(xright - xspan, ydown))
+        path.lineTo(xright, ydown)
+        path.lineTo(xright, ydown - yspan)
+        sl[2].setPath(path)
+
+        path = QPainterPath(QPointF(xright, yup + yspan))
+        path.lineTo(xright, yup)
+        path.lineTo(xright - xspan, yup)
+        sl[4].setPath(path)
+
+##        sl[0].setLine(xleft, yup, xleft + xspan, yup)        
+##        sl[1].setLine(xleft, yup-1, xleft, yup + yspan)
+##        sl[1].setLine(xleft, yup-1, xleft, yup + yspan)
+##        sl[2].setLine(xright, yup, xright - xspan, yup)
+##        sl[3].setLine(xright, yup-1, xright, yup + yspan)
+##        sl[4].setLine(xleft, ydown, xleft + xspan, ydown)
+##        sl[5].setLine(xleft, ydown+2, xleft, ydown - yspan)
+##        sl[6].setLine(xright, ydown, xright - xspan, ydown)
+##        sl[7].setLine(xright, ydown+2, xright, ydown - yspan)
         if self.isShown:
             self.show()
 
