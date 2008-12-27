@@ -1,8 +1,8 @@
 Package: qscintilla2-qt4-mac
-Version: 2.2
-Revision: 4
+Version: 2.3.2
+Revision: 1
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/QScintilla2/QScintilla-gpl-%v.tar.gz
-Source-MD5: a6056c444494f3f849020d241f86c286
+Source-MD5: 2e112d01988f2e044c43a1e7f5e1dd87
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://www.riverbankcomputing.co.uk/software/qscintilla
 License: GPL
