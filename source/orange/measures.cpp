@@ -110,13 +110,13 @@ PContingency prepareBinaryCheat(PDistribution classDistribution, PContingency or
   outerDistribution->normalized = origContingency->outerDistribution->normalized;
 
   if (classDistribution->variable->varType == TValue::INTVAR) {
-    dis0 = CLONE(TDiscDistribution, cont->discrete->front().AS(TDiscDistribution));
-    dis1 = CLONE(TDiscDistribution, cont->discrete->back().AS(TDiscDistribution));
+    dis0 = cont->discrete->front().AS(TDiscDistribution);
+    dis1 = cont->discrete->back().AS(TDiscDistribution);
     con0 = con1 = NULL;
   }
   else {
-    con0 = CLONE(TContDistribution, cont->discrete->front().AS(TContDistribution));
-    con1 = CLONE(TContDistribution, cont->discrete->back().AS(TContDistribution));
+    con0 = cont->discrete->front().AS(TContDistribution);
+    con1 = cont->discrete->back().AS(TContDistribution);
     dis0 = dis1 = NULL;
   }
 
