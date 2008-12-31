@@ -32,7 +32,7 @@ SplitOff: <<
 	<<
 	Shlibs: %p/lib/qt4-mac/lib/libqscintilla2.3.dylib 3.0.0 %n (>= 2.2-1)
 	DocFiles: LICENSE* NEWS README ChangeLog GPL_EXCEPTION* OPENSOURCE-NOTICE.TXT
-	Files: lib/qt4-mac/lib/libqscintilla2.3*dylib
+	Files: lib/qt4-mac/lib/libqscintilla2.5*dylib
 <<
 CompileScript: <<
 	#!/bin/bash -ev
