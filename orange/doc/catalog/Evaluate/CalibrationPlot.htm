@@ -1,0 +1,47 @@
+<html>
+<head>
+<title>Calibration Plot</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Calibration Plot</h1>
+
+<img class="screenshot" src="../icons/CalibrationPlot.png">
+<p>Shows the match between the classifiers' probability predictions and actual class probabilities.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Evaluation Results (orngTest.ExperimentResults)</DT>
+<DD>Results of classifiers' tests on data</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<p>None</p>
+
+<h2>Description</h2>
+
+<p>Calibration plot plots the class probabilities against those predicted by the classifier(s).</p>
+
+<img class="screenshot" src="CalibrationPlot.png"/>
+
+<p>Option <span class="option">Target class</span> chooses the positive class. In case there are more than two classes, the widget considers all other classes as a single, negative class. If the test results contain more than one classifier, the user can choose which curves she or he wants to see plotted.</p>
+
+<p>The diagonal represents the optimal behaviour; the close the classifier gets, the more accurate its predictions.</p>
+
+<p>If <span class="option">Show rug</span> is enable, ticks at the bottom and the top of the graph represents negative and positive examples (respectively). Their position corresponds to classifier's probability prediction and the color shows the classifier. On the bottom of the graph, the points to the left are those which are (correctly) assigned a low probability of the target class, and those to the right are incorrectly assigned high probabilities. On the top of the graph, the instances to the right are correctly assigned hight probabilities and vice versa.</p>
+
+<h2>Example</h2>
+
+<p>At the moment, the only widget which give the right type of the signal needed by the Calibration Plot is <a href="TestLearners.htm">Test Learners</a>. The Lift Curve will hence always follow Test Learners and, since it has no outputs, no other widgets follow it. Here is a typical example.</p>
+
+<img class="schema" src="ROCLiftCalibration-Schema.png"/>
+
+</body>
+</html>

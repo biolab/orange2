@@ -1,0 +1,67 @@
+<html>
+<head>
+<title>Select Attributes</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Select Attributes</h1>
+
+<img class="screenshot" src="../icons/SelectAttributes.png">
+<p>Manual selection of attributes and composition of data domain.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set composed using the domain specification
+constructed using the widget.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Select Attributes widget is used to manually compose your data
+domain, that is, to decide which attributes will be used and
+how. Orange distinguishes between ordinary attributes, an (optional)
+class attributes and meta attributes. For instance, for building a
+classification model, the domain would be composed of a set of
+attributes and a discrete class attribute. Meta attributes are not
+used in modelling, but several widgets can use them for providing
+optional labels to instances.</p>
+
+<p>Orange attributes are typed and are either discrete, continuous or
+a character string. The attribute type is marked with a symbol
+appearing before the name of the attribute (D, C, S,
+respectively).</p>
+
+<p>Changes made to the domain are propagated to the output by pressing an <span class="option">Apply</span> button. <span class="option">Reset</span> will present
+the attributes as defined in original domain in the data set from the
+input signal</p>
+
+<img class="screenshot" src="SelectAttributes.png" alt="Select Attributes" border=0>
+
+<h2>Examples</h2>
+
+<p>Below is a simple example how to use this widget. The input is fed
+directly from the <a href="File.htm">File</a> widget, and the output
+to the <a href="DataTable.htm">Data Table</a> widget. We have also
+linked the former to the File widget so that one can inspect the
+difference in the domain composition.</p>
+
+<img
+src="SelectAttributes-Example1.png" alt="Schema with Select
+Attributes" class="schema">
+
+</body>
+</html>

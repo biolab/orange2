@@ -1,0 +1,76 @@
+<html>
+<head>
+<title>ROC Analysis</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>ROC Analysis</h1>
+
+<img class="screenshot" src="../icons/ROCAnalysis.png">
+<p>Shows the ROC curves and analyzes them.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Evaluation Results (orngTest.ExperimentResults)</DT>
+<DD>Results of classifiers' tests on data</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<p>None</p>
+
+<h2>Description</h2>
+
+<p>The widget show ROC curves for the tested models and the corresponding convex hull. Given the costs of false positives and false negatives, it can also determine the optimal classifier and threshold.</p>
+
+<img class="screenshot" src="ROCAnalysis.png"/>
+
+<p>Option <span class="option">Target class</span> chooses the positive class. In case there are more than two classes, the widget considers all other classes as a single, negative class.</p>
+
+<p>If the test results contain more than one classifier, the user can choose which curves she or he wants to see plotted. <img class="leftscreenshot" src="ROCAnalysis-Convex.png"/> Option <span class="option">Show convex curves</span> refers to convex curves over each individual classifier (the thin lines on the cutout on the left). <span class="option">Show convex hull</span> plots a convex hull over ROC curves for all classifiers (the thick yellow line). Plotting both types of convex curves them makes sense since selecting a threshold in a concave part of the curve cannot yield optimal results, disregarding the cost matrix. Besides, it is possible to reach any point on the convex curve by combining the classifiers represented by the points at the border of the concave region.</p>
+
+<p style="clear:both">The diagonal line represents the behaviour of a random classifier.</p>
+
+<p>When the data comes from multiple iterations of training and testing, such as k-fold cross validation, the results can be (and usually are) averaged. The averaging options are:
+<ul>
+<li><span class="option">Merge (expected ROC perf.)</span> treats all the test data as if it came from a single iteration</li>
+<li><span class="option">Vertical</span> averages the curves vertically, showing the corresponding confidence intervals</li>
+<li><span class="option">Threshold</span> traverses over threshold, averages the curves positions at them and shows horizontal and vertical confidence intervals</li>
+<li><span class="option">None</span> does not average but prints all the curves instead</li>
+</ul>
+</p>
+
+<p><div style="float:left; text-align:center"><img src="ROCAnalysis-Vertical.png" /><br/>Vertical</div>
+<div style="float:left; text-align:center"><img src="ROCAnalysis-Threshold.png" /><br/>Threshold</div>
+<div style="float:left; text-align:center"><img src="ROCAnalysis-None.png" /><br/>None</div>
+</p>
+
+<p style="clear:both">&nbsp;</p>
+
+<p><img class="leftscreenshot" src="ROCAnalysis-Analysis.png"><p>The second sheet of settings is dedicated to analysis of the curve. The user can specify the cost of false positives and false negatives, and the prior target class probability. <span class="option">Compute from Data</span> sets it to the proportion of examples of this class in the data.</p>
+
+<p>Iso-performance line is a line in the ROC space such that all points on the line give the same profit/loss. The line to the upper left are better those down and right. The direction of the line depends upon the above costs and probabilities. Put together, this gives a recipe for depicting the optimal threshold for the given costs: it is the point where the tangent with the given inclination touches the curve. If we go higher or more to the left, the points on the isoperformance line cannot be reached by the learner. Going down or to the right, decreases the performance.</p>
+
+<p>The widget can show the performance line, which changes as the user changes the parameters. The points where the line touches any of the curves - that is, the optimal point for any of the given classifiers - is also marked and the corresponding threshold (the needed probability of the target class for the example to be classified into that class) is shown besides.</p>
+
+<p>The widget allows setting costs from 1 to 1000. The units are not important, as are not the magnitudes. What matters is the relation between the two costs, so setting them to 100 and 200 will give the same result as 400 and 800.</p>
+
+<p style="clear:both"><div style="float:left; text-align:center; margin-right:10px"><img src="ROCAnalysis-Performance2.png" /><br/>Defaults: both costs equal (500), Prior target class probability 44% (from the data)</div>
+<div style="float:left; text-align:center"><img src="ROCAnalysis-Performance1.png" /><br/>False positive cost: 838, False negative cost 650, Prior target class probability 73%</div>
+
+<p><span class="option">Default threshold (0.5) point</span> shows the point on the ROC curve achieved by the classifier if it predicts the target class if its probability equals or exceeds 0.5.</p>
+
+<h2>Example</h2>
+
+<p>At the moment, the only widget which give the right type of the signal needed by ROC Analysis is <a href="TestLearners.htm">Test Learners</a>. The ROC Analysis will hence always follow Test Learners and, since it has no outputs, no other widgets follow it. Here is a typical example.</p>
+
+<img class="schema" src="ROCLiftCalibration-Schema.png"/>
+
+</body>
+</html>
