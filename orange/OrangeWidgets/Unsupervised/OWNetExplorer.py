@@ -261,8 +261,11 @@ class OWNetExplorer(OWWidget):
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
         OWGUI.label(ib, self, "Clustering Coefficient: %(clustering_coefficient).1f%%")
         
-        OWGUI.button(self.infoTab, self, "Degree distribution", callback=self.showDegreeDistribution)
-        OWGUI.button(self.infoTab, self, "Save network", callback=self.saveNetwork)
+        ib = OWGUI.widgetBox(self.infoTab, orientation="horizontal")
+        
+        OWGUI.button(ib, self, "Degree distribution", callback=self.showDegreeDistribution)
+        OWGUI.button(ib, self, "Save network", callback=self.saveNetwork)
+        OWGUI.button(ib, self, "Save image", callback=self.graph.saveToFile)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
