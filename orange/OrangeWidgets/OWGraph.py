@@ -18,7 +18,7 @@ PANNING = 4
 SELECT = 5
 
 class OWGraph(QwtPlot):
-    def __init__(self, parent = None, name = "None"):
+    def __init__(self, parent = None, name = "None", showLegend=1):
         "Constructs the graph"
         QwtPlot.__init__(self, parent)
         self.parentName = name
@@ -66,7 +66,9 @@ class OWGraph(QwtPlot):
         self.selectionCurveList = []
         self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
         self.sendSelectionOnUpdate = 0
-        self.insertLegend(QwtLegend(), QwtPlot.BottomLegend)
+        self.showLegend = showLegend
+        if self.showLegend:
+            self.insertLegend(QwtLegend(), QwtPlot.BottomLegend)
 
         self.gridCurve = QwtPlotGrid()
         #self.gridCurve.attach(self)
@@ -85,7 +87,6 @@ class OWGraph(QwtPlot):
         self.optimizedDrawing = 1
         self.pointWidth = 5
         self.showFilledSymbols = 1
-        self.showLegend = 1
         self.alphaValue = 255
         self.setCanvasColor(QColor(Qt.white))
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
