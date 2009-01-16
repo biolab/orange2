@@ -361,66 +361,6 @@ class FreeViz:
     # S2N HEURISTIC FUNCTIONS
     # ###############################################################
 
-    # if autoSetParameters is set then try different values for parameters and see how good projection do we get
-    # if not then just use current parameters to place anchors
-    def s2nMixAnchorsAutoSet(self):
-        # check if we have data and a discrete class
-        if not self.graph.haveData or len(self.graph.rawData) == 0 or not self.graph.dataHasDiscreteClass:
-            self.setStatusBarText("No data or data without a discrete class") 
-            return
-
-        import orngVizRank
-        if self.graph.normalizeExamples:
-            vizrank = orngVizRank.VizRank(orngVizRank.RADVIZ)
-        else:
-            vizrank = orngVizRank.VizRank(orngVizRank.LINEAR_PROJECTION)
-        vizrank.qualityMeasure = orngVizRank.AVERAGE_CORRECT
-        if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
-
-        if self.autoSetParameters:
-            results = {}
-            self.s2nSpread = 0
-            permutations = orngVisFuncts.generateDifferentPermutations(range(len(self.graph.dataDomain.classVar.values)))
-            for perm in permutations:
-                self.classPermutationList = perm
-                for val in self.attrsNum:
-                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.graph.dataDomain.attributes): continue    # allow the computations once
-                    self.s2nPlaceAttributes = val
-                    if not self.s2nMixAnchors(0):
-                        return
-                    if self.__class__ != FreeViz:
-                        qApp.processEvents()
-
-                    acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
-                    if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
-                    else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
-
-                    results[acc] = (perm, val)
-            if results.keys() == []: return
-            self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
-            if self.__class__ != FreeViz:
-                qApp.processEvents()
-            if not self.s2nMixAnchors(0):        # update the best number of attributes
-                return
-
-            results = []
-            anchors = self.graph.anchorData
-            attributeNameIndex = self.graph.attributeNameIndex
-            attrIndices = [attributeNameIndex[val[2]] for val in anchors]
-            for val in range(10):
-                self.s2nSpread = val
-                if not self.s2nMixAnchors(0):
-                    return
-                acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
-                results.append(acc)
-                if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
-                else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
-            self.s2nSpread = results.index(max(results))
-
-            self.setStatusBarText("Best projection value is %.2f" % (max(results)))
-
-        # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
-        self.s2nMixAnchors()
 
 
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
@@ -497,13 +437,13 @@ class FreeViz:
 
         vectors = None
         if method == DR_PCA:
-            vectors = FreeViz.findSPCAProjection(self, dataMatrix, classArray, SPCA = 0)
+            vals, vectors = createPCAProjection(self, dataMatrix, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
         elif method == DR_SPCA and self.graph.dataHasClass:
-            vectors = FreeViz.findSPCAProjection(self, dataMatrix, classArray, SPCA = 1)
+            vals, vectors = createPCAProjection(self, dataMatrix, classArray, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
         elif method == DR_PLS and self.graph.dataHasClass:
             dataMatrix = dataMatrix.transpose()
             classMatrix = numpy.transpose(numpy.matrix(classArray))
-            vectors = FreeViz.findPLSProjection(self, dataMatrix, classMatrix, 2)
+            vectors = createPLSProjection(self, dataMatrix, classMatrix, 2)
             vectors = vectors.T
 
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
@@ -529,104 +469,115 @@ class FreeViz:
 
 
 
-    def findPLSProjection(self, X,Y,Ncomp):
-        '''Predict Y from X using first Ncomp principal components'''
+def createPLSProjection(self, X,Y, Ncomp = 2):
+    '''Predict Y from X using first Ncomp principal components'''
 
-        # data dimensions
-        n, mx = numpy.shape(X)
-        my = numpy.shape(Y)[1]
+    # data dimensions
+    n, mx = numpy.shape(X)
+    my = numpy.shape(Y)[1]
 
-        # Z-scores of original matrices
-        YMean = Y.mean()
-        X,Y = center(X), center(Y)
+    # Z-scores of original matrices
+    YMean = Y.mean()
+    X,Y = center(X), center(Y)
 
-        P = numpy.empty((mx,Ncomp))
-        W = numpy.empty((mx,Ncomp))
-        C = numpy.empty((my,Ncomp))
-        T = numpy.empty((n,Ncomp))
-        U = numpy.empty((n,Ncomp))
-        B = numpy.zeros((Ncomp,Ncomp))
+    P = numpy.empty((mx,Ncomp))
+    W = numpy.empty((mx,Ncomp))
+    C = numpy.empty((my,Ncomp))
+    T = numpy.empty((n,Ncomp))
+    U = numpy.empty((n,Ncomp))
+    B = numpy.zeros((Ncomp,Ncomp))
 
-        E,F = X,Y
+    E,F = X,Y
 
-        # main algorithm
-        for i in range(Ncomp):
+    # main algorithm
+    for i in range(Ncomp):
 
-            u = numpy.random.random_sample((n,1))
-            w = normalize(numpy.dot(E.T,u))
-            t = normalize(numpy.dot(E,w))
+        u = numpy.random.random_sample((n,1))
+        w = normalize(numpy.dot(E.T,u))
+        t = normalize(numpy.dot(E,w))
+        c = normalize(numpy.dot(F.T,t))
+
+        dif = t
+        # iterations for loading vector t
+        while numpy.linalg.norm(dif) > 10e-16:
             c = normalize(numpy.dot(F.T,t))
+            u = numpy.dot(F,c)
+            w = normalize(numpy.dot(E.T,u))
+            t0 = normalize(numpy.dot(E,w))
+            dif = t - t0
+            t = t0
 
-            dif = t
-            # iterations for loading vector t
-            while numpy.linalg.norm(dif) > 10e-16:
-                c = normalize(numpy.dot(F.T,t))
-                u = numpy.dot(F,c)
-                w = normalize(numpy.dot(E.T,u))
-                t0 = normalize(numpy.dot(E,w))
-                dif = t - t0
-                t = t0
+        T[:,i] = t.T
+        U[:,i] = u.T
+        C[:,i] = c.T
+        W[:,i] = w.T
 
-            T[:,i] = t.T
-            U[:,i] = u.T
-            C[:,i] = c.T
-            W[:,i] = w.T
+        b = numpy.dot(t.T,u)[0,0]
+        B[i][i] = b
+        p = numpy.dot(E.T,t)
+        P[:,i] = p.T
+        E = E - numpy.dot(t,p.T)
+        xx = b * numpy.dot(t,c.T)
+        F = F - xx
 
-            b = numpy.dot(t.T,u)[0,0]
-            B[i][i] = b
-            p = numpy.dot(E.T,t)
-            P[:,i] = p.T
-            E = E - numpy.dot(t,p.T)
-            xx = b * numpy.dot(t,c.T)
-            F = F - xx
+    # esimated Y
+    #YE = numpy.dot(numpy.dot(T,B),C.T)*numpy.std(Y, axis = 0) + YMean
+    #Y = Y*numpy.std(Y, axis = 0)+ YMean
+    #BPls = numpy.dot(numpy.dot(numpy.linalg.pinv(P.T),B),C.T)
 
-        # esimated Y
-        #YE = numpy.dot(numpy.dot(T,B),C.T)*numpy.std(Y, axis = 0) + YMean
-        #Y = Y*numpy.std(Y, axis = 0)+ YMean
-        #BPls = numpy.dot(numpy.dot(numpy.linalg.pinv(P.T),B),C.T)
+    return W
 
-        return W
+# if no class data is provided we create PCA projection
+# if there is class data then create SPCA projection
+def createPCAProjection(self, dataMatrix, classArray = None, NComps = -1, useGeneralizedEigenvectors = 1):
+    try:
+        dataMatrix = numpy.transpose(dataMatrix)
 
-    def findSPCAProjection(self, dataMatrix, classArray, SPCA = 1):
-        try:
-            dataMatrix = numpy.transpose(dataMatrix)
+        s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
+        dataMatrix -= s       # substract average value to get zero mean
 
-            s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
-            dataMatrix -= s       # substract average value to get zero mean
+        if classArray != None and useGeneralizedEigenvectors:
+            covarMatrix = numpy.dot(numpy.transpose(dataMatrix), dataMatrix)
+            matrix = inv(covarMatrix)
+            matrix = numpy.dot(matrix, numpy.transpose(dataMatrix))
+        else:
+            matrix = numpy.transpose(dataMatrix)
 
+        # compute dataMatrixT * L * dataMatrix
+        if classArray != None:
             # define the Laplacian matrix
             L = numpy.zeros((len(dataMatrix), len(dataMatrix)))
             for i in range(len(dataMatrix)):
                 for j in range(i+1, len(dataMatrix)):
                     L[i,j] = -int(classArray[i] != classArray[j])
                     L[j,i] = -int(classArray[i] != classArray[j])
-
+    
             s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
             for i in range(len(dataMatrix)):
                 L[i,i] = -s[i]
 
-            if self.useGeneralizedEigenvectors:
-                covarMatrix = numpy.dot(numpy.transpose(dataMatrix), dataMatrix)
-                matrix = inv(covarMatrix)
-                matrix = numpy.dot(matrix, numpy.transpose(dataMatrix))
-            else:
-                matrix = numpy.transpose(dataMatrix)
+            matrix = numpy.dot(matrix, L)
 
-            # compute dataMatrixT * L * dataMatrix
-            if SPCA:
-                matrix = numpy.dot(matrix, L)
+        matrix = numpy.dot(matrix, dataMatrix)
 
-            matrix = numpy.dot(matrix, dataMatrix)
-
-            vals, vectors = eig(matrix)
-            firstInd  = list(vals).index(max(vals))     # save the index of the largest eigenvector
-            vals[firstInd] = -1
-            secondInd = list(vals).index(max(vals));    # save the index of the second largest eigenvector
-
-            vectors = vectors.transpose()
-            return numpy.take(vectors, [firstInd, secondInd], axis = 0)
-        except:
-            return None
+        vals, vectors = eig(matrix)
+        vals = list(vals)
+        
+        if NComps == -1:
+            NComps = len(vals)
+        NComps = min(NComps, len(vals))
+        
+        retVals = []
+        retIndices = []
+        for i in range(NComps):
+            retVals.append(max(vals))
+            bestInd = vals.index(max(vals))
+            retIndices.append(bestInd)
+            vals[bestInd] = -1
+        
+        return retVals, numpy.take(vectors.transpose(), retIndices, axis = 0)
+    except:
+        return None, None
 
 
 # #############################################################################
@@ -677,49 +628,6 @@ class FreeVizLearner(orange.Learner):
     def __call__(self, examples, weightID = 0):
         return FreeVizClassifier(examples, self.FreeViz)
 
-
-
-# #############################################################################
-# class that represents S2N Heuristic classifier
-class S2NHeuristicClassifier(orange.Classifier):
-    def __init__(self, data, freeviz):
-        self.FreeViz = freeviz
-        self.data = data
-
-        if self.FreeViz.__class__ != FreeViz:
-            self.FreeViz.parentWidget.setData(data)
-        else:
-            self.FreeViz.setData(data)
-            self.FreeViz.graph.setData(data)
-
-        self.FreeViz.s2nMixAnchorsAutoSet()
-
-    def __call__(self, example, returnType):
-        table = orange.ExampleTable(example.domain)
-        table.append(example)
-
-        if self.FreeViz.__class__ != FreeViz:
-            self.FreeViz.parentWidget.subsetdata(table)      # show the example is we use the widget
-        else:
-            self.FreeViz.graph.setSubsetData(table)
-
-        anchorData = self.FreeViz.graph.anchorData
-        attributeNameIndex = self.FreeViz.graph.attributeNameIndex
-        scaleFunction = self.FreeViz.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
-
-        attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
-        attrVals = [scaleFunction(example, index) for index in attrListIndices]
-
-        table = self.FreeViz.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.FreeViz.graph.trueScaleFactor, useAnchorData = 1)
-        kValue = int(math.sqrt(len(self.data)))
-        knn = orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
-
-        [xTest, yTest] = self.FreeViz.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
-        classifier = knn(table, 0)
-        (classVal, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
-
-        if returnType == orange.GetBoth: return classVal, dist
-        else:                            return classVal
 
 
 class S2NHeuristicLearner(orange.Learner):
