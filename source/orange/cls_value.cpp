@@ -202,12 +202,17 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
       }
     return true;
   }
-
+  
   if (var && var->varType == PYTHONVAR) {
     value = TValue(mlnew TPythonValue(args), PYTHONVAR);
     return true;
   }
   
+  if (args == Py_None) {
+    value = var ? var->DK() : TValue(TValue::INTVAR, valueDK);
+    return true;
+  }
+
   if (PyInt_Check(args)) {
     int ii = int(PyInt_AsLong(args));
 
@@ -1132,7 +1137,7 @@ PYXTRACT_IGNORE static PyObject *Value_Type_repr(PyObject *self)
   return stringFromList(self, Value_Type_values);
 }
 
-PyObject *Value_Type__reduce__(PyObject *self);
+PYXTRACT_IGNORE PyObject *Value_Type__reduce__(PyObject *self);
 PyMethodDef Value_Type_methods[] = { {"__reduce__", (binaryfunc)Value_Type__reduce__, METH_NOARGS, "reduce"}, {NULL, NULL}};
 PyTypeObject PyValue_Type_Type = {PyObject_HEAD_INIT(&PyType_Type) 0, "Value.Type", sizeof(PyIntObject), 0, 0, 0, 0, 0, 0, (reprfunc)Value_Type_repr, 0, 0, 0, 0, 0, (reprfunc)Value_Type_repr, 0, 0, 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES, 0, 0, 0, 0, 0, 0, 0, Value_Type_methods, 0, 0, &PyInt_Type};
 
@@ -1146,7 +1151,7 @@ void *PTValue_Type(void *l)
 { return PyValue_Type_FromLong(*(long *)l); }
 
 
-PyObject *Value_Type__reduce__(PyObject *self)
+PYXTRACT_IGNORE PyObject *Value_Type__reduce__(PyObject *self)
 { return Py_BuildValue("O(i)", getExportedFunction("__pickleLoaderValueType"), ((PyIntObject *)(self))->ob_ival); }
 
 PyObject *__pickleLoaderValueType(PyObject *, PyObject *args) PYARGS(METH_O, "")

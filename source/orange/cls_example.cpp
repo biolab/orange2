@@ -81,7 +81,11 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
         *(ei++)=PyValue_AS_Value(li);
 
     else {
-      if (PyString_Check(li))
+      if (li == Py_None) {
+        *(ei++) = (*vi)->DK();
+      }
+        
+      else if (PyString_Check(li))
           (*vi)->str2val(string(PyString_AsString(li)), *(ei++));
 
       else if ((*vi)->varType==TValue::INTVAR) {
