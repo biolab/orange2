@@ -237,7 +237,6 @@ class OWAssociationRulesViewer(OWWidget):
         header = trules.horizontalHeader()
         trules.setHorizontalHeaderLabels([m[1] for m in self.measures]+["Rule"])
         trules.setItemDelegate(OWGUI.TableBarItem(self, trules))
-        trules.setSortingEnabled(True)
         trules.normalizers = []
 
         bottomGrid = QGridLayout()
@@ -294,7 +293,7 @@ class OWAssociationRulesViewer(OWWidget):
 
 
     def updateRuleList(self):
-        self.selectedRules = sum(sum((row[self.sel_colmin : self.sel_colmax+1] for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]), []), []) 
+        self.selectedRules = sum(sum((row[self.sel_colmin : self.sel_colmax+1] for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]), []), [])
         self.displayRules()
         self.updateConfSupp()
         self.saveButton.setEnabled(len(self.selectedRules) > 0)
@@ -307,6 +306,8 @@ class OWAssociationRulesViewer(OWWidget):
 
             rulecol = len(self.measures)
             trules.normalizers = []
+            self.trules.setUpdatesEnabled(False)
+            self.trules.setSortingEnabled(False)
             try:
                 self.progressBarInit()
                 progressStep = 100./(rulecol+1)
@@ -334,6 +335,9 @@ class OWAssociationRulesViewer(OWWidget):
             self.trules.resizeRowsToContents()
             
             self.showHideColumns()
+            self.trules.setSortingEnabled(True)
+            self.trules.setUpdatesEnabled(True)
+
 
 
     def showHideColumns(self):
