@@ -42,31 +42,33 @@ SplitOff: <<
 		
 		This package provides a Python module for bioinformatics add-on.
 	<<
-	Shlibs: <<
-		%p/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/_GOLib.so 0.0.0 %n (>= 0.0.0-1)
-	<<
+	# Commented out, currently there are no shlibs used
+	#Shlibs: <<
+	#	%p/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/_GOLib.so 0.0.0 %n (>= 0.0.0-1)
+	#<<
 	Files: <<
-		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
+		#lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
 		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.py
 		lib/python2.5/site-packages/orange-bioinformatics.pth
 		share/doc/orange-bioinformatics-svn-py25
 	<<
 <<
-CompileScript: <<
-	#!/bin/bash -ev
-	
-	# Compile scripts later on assume Python executable is named "python" - so we give them that
-	export PATH=%b:$PATH
-	ln -s %p/bin/python2.5 python
-	
-	# Compiles
-	cd source
-	make
-	cd ../
-	
-	# Cleans
-	rm python
-<<
+# Commented out, currently there are no shlibs used so nothing to compile
+#CompileScript: <<
+#	#!/bin/bash -ev
+#	
+#	# Compile scripts later on assume Python executable is named "python" - so we give them that
+#	export PATH=%b:$PATH
+#	ln -s %p/bin/python2.5 python
+#	
+#	# Compiles
+#	cd source
+#	make
+#	cd ../
+#	
+#	# Cleans
+#	rm python
+#<<
 InstallScript: <<
 	#!/bin/bash -ev
 	
