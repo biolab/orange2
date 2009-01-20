@@ -2,6 +2,7 @@ import os
 from OWBaseWidget import *
 import OWGUI
 from PyQt4.Qwt5 import *
+from PyQt4.QtSvg import *
 from ColorPalette import *
 
 class OWChooseImageSizeDlg(OWBaseWidget):
@@ -47,11 +48,11 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
     def saveImage(self, filename = None, size = None, closeDialog = 1):
         if not filename:
-            filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", ".png")
+            filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF);;Scalable Vector Graphics (*.SVG)", ".png")
             if not filename: return
 
         (fil,ext) = os.path.splitext(filename)
-        if ext.lower() not in [".bmp", ".gif", ".png"] :
+        if ext.lower() not in [".bmp", ".gif", ".png", ".svg"] :
             ext = ".png"                                        # if no format was specified, we choose png
         filename = fil + ext
 
@@ -62,10 +63,16 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             size = self.getSize()
 
         painter = QPainter()
-        buffer = QPixmap(int(size.width()), int(size.height()))
+        if filename.lower().endswith(".svg"):
+            buffer = QSvgGenerator()
+            buffer.setFileName(filename)
+            buffer.setSize(QSize(int(size.width()), int(size.height())))
+        else:
+            buffer = QPixmap(int(size.width()), int(size.height()))
         painter.begin(buffer)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+        if not filename.lower().endswith(".svg"):
+            painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
 
         # qwt plot
         if isinstance(self.graph, QwtPlot):
@@ -84,7 +91,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             target = QRectF(0,0, source.width(), source.height())
             self.graph.render(painter, target, source)
 
-        buffer.save(filename)
+        if not filename.lower().endswith(".svg"):
+            buffer.save(filename)
 
         if closeDialog:
             QDialog.accept(self)
