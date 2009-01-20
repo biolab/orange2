@@ -1696,6 +1696,27 @@ def legend2PiCTeX(file, legend, **options):
     del file
 
 
+def compute_CD(avranks, N):
+
+    k = len(avranks)
+
+    #f = friedman(N, k, avranks)
+    #print "friedman", f
+    #print "iman", iman(f, N, k), "F dist DOF", k-1, (k-1)*(N-1)
+
+    #nemenyi two tailed p=0.05
+    q = [0, 0, 1.960, 2.343, 2.568, 2.728, 2.850, 2.949, 3.031, 3.102, 3.164 ]
+    #nemenyi two tailed p=0.1
+    #q = [0, 0, 1.645, 2.052, 2.291, 2.459, 2.589, 2.693, 2.780, 2.855, 2.920 ]    
+    #bonferroni-dunn p=0.05
+    #q = [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576, 2.638, 2.690, 2.724, 2.773 ]
+    #bonferroni-dunn p=0.1
+    #q = [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326, 2.394, 2.450, 2.498, 2.539 ]
+
+    cd = q[k]*(k*(k+1)/(6.0*N))**0.5
+
+    return cd
+ 
 
 def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False):
     """
@@ -1911,8 +1932,7 @@ def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=
     printFigure(fig, filename)
 
 if __name__ == "__main__":
-    graph_ranks("test.eps", [1.4, 2.0, 5.6], ["prva", "druga", "TREqja" ], width=6, cd=2, lowv=-1)
-    graph_ranks("test2.eps", [1.4, 2.0, 5.6], ["prva", "druga", "TREqja" ], width=6, cd=2, lowv=-1, reverse=True)
-    graph_ranks("test3.eps", [1.4, 4.5, 5.6, 3.5, 2.5], ["prva", "druga", "tretja", "cetrta", "peta" ], cd=2, width=6, textspace=1.5)
-    graph_ranks("test4.eps", [1.4, 4.5, 5.6, 3.5, 2.5], ["prva", "druga", "tretja", "cetrta", "peta" ], cd=2, width=6, textspace=1.5, reverse=True)
-
+    avranks =  [1.4, 4.5, 5.6, 3.5, 2.5]
+    names = ["prva", "druga", "tretja", "cetrta", "peta" ]
+    cd = compute_CD(avranks, 5)
+    graph_ranks("test.eps", avranks, names, cd=cd, width=6, textspace=1.5)
