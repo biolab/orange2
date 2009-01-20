@@ -2,6 +2,13 @@ import orange
 import math, sys
 from orange import HierarchicalClustering
 
+try:
+    import matplotlib
+    from matplotlib.figure import Figure
+    import  matplotlib.pyplot as plt #import plot, show
+except ImportError:
+    matplotlib = None
+
 def exampleTableClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
     """ Clusters the example table 'data' 
     """
@@ -121,8 +128,8 @@ def orderLeaves(tree, matrix, progressCallback=None):
         else:
             print "Error:", u, w, tree[0], tree[-1]
 
-    _check(tree, u ,w)            
-        
+    _check(tree, u ,w)
+    
 
     if objects:
         tree.mapping.setattr("objects", objects)
@@ -305,9 +312,110 @@ class DendrogramPlot(object):
 ##            import orangene
 ##            map = orangene.HeatmapConstructor(orange.ExampleTable(rows), None) 
         self.image.save(file, "PNG")
-    
 
-if __name__=="__main__":
+class ScalableText(matplotlib.text.Text):
+    _max_width = 1.0
+    def draw(self, renderer):
+        x, y = self.xy
+        fontsize = 1
+        self.set_font_size(fontsize)
+        l, b, w, h = self.get_window_extent(renderer).bounds
+        while w < self._max_width:
+            fontsize += 1
+            self.set_font_size(fontsize)
+            l, b, w, h = self.get_window_extent(renderer).bounds
+            
+            
+class DendrogramPlotPylab(object):
+    def __init__(self, root, data=None, labels=None, width=500, height=400):
+        if not matplotlib:
+            raise Exception("Need matplotlib library!")
+        self.root = root
+        self.data = data
+        self.labels = labels if labels else [str(i) for i in range(len(root))]
+        self.width = width
+        self.height = height
+        self.heatmap_width = 0.0
+
+    def plotDendrogram(self):
+        self.text_items = []
+        def draw_tree(tree):
+            if tree.branches:
+                points = []
+                for branch in tree.branches:
+                    center = draw_tree(branch)
+                    plt.plot([center[0], self.root.height - tree.height], [center[1], center[1]], color="black")
+                    points.append(center)
+                plt.plot([self.root.height - tree.height, self.root.height - tree.height], [points[0][1], points[-1][1]], color="black")
+                return (self.root.height - tree.height, (points[0][1] + points[-1][1])/2.0)
+            else:
+##                self.text_items.append(self.ax.text(self.root.height, tree.first, self.labels[tree.mapping[tree.first]], va="center", ha="left"))
+##                t = plt.text(self.root.height, tree.first, self.labels[tree.mapping[tree.first]], va="center")
+##                self.text_items.append(t)
+##                c = matplotlib.table.Cell((self.root.height, tree.first), 1, 1, text=self.labels[tree.mapping[tree.first]], loc="left", edgecolor=None)
+##                plt.gca().add_patch(c)
+##                c.set_clip_box(plt.gca().bbox)
+##                plt.annotate(self.labels[tree.mapping[tree.first]], (self.root.height + 1.0, tree.first), (self.root.height + self.labels_offset, tree.first), arrowprops={"width":1})
+                return (self.root.height, tree.first)
+        draw_tree(self.root)
+        
+    def plotHeatMap(self):
+        import numpy.ma as ma
+        import numpy
+##        plt.subplot(1, 2, 2)
+        dx, dy = self.root.height, 0
+        fx, fy = self.root.height/len(self.data.domain.attributes), 1.0
+        data, c, w = self.data.toNumpyMA()
+        data = (data - ma.min(data))/(ma.max(data) - ma.min(data))
+        x = numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape))
+        y = numpy.arange(data.shape[0] + 1)/float(numpy.max(data.shape))*len(self.root)
+        self.heatmap_width = numpy.max(x)
+##        x, y = numpy.arange(x + self.root.height + 1.0, y)
+        X, Y = numpy.meshgrid(x + self.root.height, y - 0.5)
+##        plt.imshow(data[self.root.mapping], interpolation='nearest')
+##        plt.figimage(data[self.root.mapping], xo=100, yo=0, origin="lower")
+        mesh = plt.pcolormesh(X, Y, data[self.root.mapping], edgecolor="b", linewidth=2)
+        
+##        for i in self.root.mapping:
+##            for j, val in enumerate(self.data[i]):
+##                r = plt.Rectangle((dx + j*fx, dy + i*fy), fx, fy, facecolor="red" if j%2 else "blue")
+##                plt.axes().add_artist(r)
+##                r.set_clip_box(plt.axes().bbox)
+                
+    
+    def plotLabels(self):
+        for y, ind in enumerate(self.root):
+            t = plt.text(self.root.height + self.heatmap_width, y, self.labels[ind], va="center")
+            self.text_items.append(t)
+
+    
+    def plot(self, show=True, filename=None):
+        self.fontsize = 8
+##        self.fig = Figure(figsize=(self.width, self.height))
+##        self.fig = Figure(figsize=(1, 1))
+        self.fig = plt.figure()
+##        plt.subplot(1, 2, 1)
+##        self.ax = self.fig.add_axes([0, 0, 1, 1])
+        
+##        plt.axes().set_axis_off()
+        self.labels_offset = self.root.height/20.0
+        self.plotDendrogram()
+        self.plotHeatMap()
+        self.plotLabels()
+        if filename:
+            canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(self.fig)
+            canvas.print_figure("graph.png")
+        if show:
+            plt.show()
+
+def _test1():
+    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
+    root = exampleTableClustering(data, order=False)
+    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data])
+    d.plot(show=True, filename="graph.png")
+        
+
+def _test2():
 ##    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
 ##    data = orange.ExampleTable("doc//datasets//iris.tab")
     data = orange.ExampleTable("doc//datasets//zoo.tab")
@@ -331,7 +439,11 @@ if __name__=="__main__":
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
     d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
-    d.Plot("graphOrdered.png")
+    d.Plot("graphOrdered.png")    
+if __name__=="__main__":
+    _test1()
+
+
     
     
         
