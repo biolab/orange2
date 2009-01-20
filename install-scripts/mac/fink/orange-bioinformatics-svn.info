@@ -53,8 +53,8 @@ SplitOff: <<
 		share/doc/orange-bioinformatics-svn-py25
 	<<
 <<
+CompileScript: <<
 # Commented out, currently there are no shlibs used so nothing to compile
-#CompileScript: <<
 #	#!/bin/bash -ev
 #	
 #	# Compile scripts later on assume Python executable is named "python" - so we give them that
@@ -68,7 +68,7 @@ SplitOff: <<
 #	
 #	# Cleans
 #	rm python
-#<<
+<<
 InstallScript: <<
 	#!/bin/bash -ev
 	
