@@ -16,7 +16,7 @@ NeighbourhoodBubble = 1
 
 class Node(object):
     def __init__(self, pos, map=None, vector=None):
-        self.pos = pos #array(pos)
+        self.pos = pos
         self.map = map
         self.vector = vector
 
@@ -291,7 +291,25 @@ class SOMLearner(orange.Learner):
                      epoch=self.epochs)(data, map, progressCallback=progressCallback)
         return SOMMap(map, examples)
 
-        return map
+class SOMSupervisedLearner(SOMLearner):
+    
+    def __call__(self, examples, weightID=0, progressCallback=None):
+        data, classes, w = examples.toNumpyMA()
+        nval = len(examples.domain.classVar.values)
+        ext = ma.zeros((len(data), nval))
+        ext[([i for i, m in enumerate(classes.mask) if m], [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
+        data = ma.hstack((data, ext))
+        map = Map(self.map_shape, topology=self.topology)
+        if self.initialize == Map.InitializeLinear:
+            map.initialize_map_linear(data)
+        else:
+            map.initialize_map_random(data)
+        map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
+                     radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
+                     epoch=self.epochs)(data, map, progressCallback=progressCallback)
+        for node in map:
+            node.vector = node.vector[:-nval]
+        return SOMMap(map, examples)
 
 class SOMMap(orange.Classifier):
     def __init__(self, map, examples):
@@ -307,8 +325,9 @@ class SOMMap(orange.Classifier):
             node = self.getBestMatchingNode(ex)
             node.examples.append(ex)
 
-        for node in self.map:
-            node.classifier = orange.MajorityLearner(node.examples)
+        if examples.domain.classVar:
+            for node in self.map:
+                node.classifier = orange.MajorityLearner(node.examples)
 
     def getBestMatchingNode(self, example):
         example, c, w = orange.ExampleTable([example]).toNumpyMA()
@@ -317,7 +336,6 @@ class SOMMap(orange.Classifier):
         bmu = ma.argmin(ma.sum(Dist**2, 1))
         return list(self.map)[bmu]
         
-
     def __call__(self, example, what=orange.GetValue):
         bmu = self.getBestMatchingNode(example)
         return bmu.classifier(example, what)
@@ -327,6 +345,12 @@ class SOMMap(orange.Classifier):
             return getattr(self.map, name)
         except AttributeError:
             raise AttributeError(name)
+
+    def __iter__(self):
+        return iter(self.map)
+
+    def __getitem__(self, val):
+        return self.map.__getitem__(val)
 
 def getUMat(som):
     dim1=som.map_shape[0]*2-1
@@ -356,7 +380,7 @@ def __fillHex(array, som):
     dy=[0, 0,1, 1,-1,-1]
     for i in range(0, xDim*2, 2):
         for j in range(0, yDim*2, 2):
-            l=[numpy.array[i+ddx, j+ddy] for ddx, ddy in zip(dx, dy) if check(i+ddx, j+ddy)]
+            l=[array[i+ddx, j+ddy] for ddx, ddy in zip(dx, dy) if check(i+ddx, j+ddy)]
             array[i][j]=sum(l)/len(l)
     return array
 
@@ -376,7 +400,7 @@ def __fillRect(array, som):
     dy=[0, 0,-1,1,1,-1, 1,-1]
     for i in range(0, xDim*2, 2):
         for j in range(0, yDim*2, 2):
-            l=[numpy.array[i+ddx,j+ddy] for ddx,ddy in zip(dx,dy) if check(i+ddx, j+ddy)]
+            l=[array[i+ddx,j+ddy] for ddx,ddy in zip(dx,dy) if check(i+ddx, j+ddy)]
             array[i][j]=sum(l)/len(l)
     return array
 
