@@ -1,6 +1,16 @@
+##!interval=7
+##!contact=ales.erjavec@fri.uni-lj.si
+
 from urllib import urlopen
 import orngServerFiles
-import os
+import os, sys
+
+from getopt import getopt
+
+opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
+
+username = opt.get("-u", opt.get("--user", "username"))
+password = opt.get("-p", opt.get("--password", "password"))
 
 
 ontology = urlopen("ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2008.bin")
@@ -45,7 +55,7 @@ print "Ontology downloaded."
 
 
 ordinary = orngServerFiles.ServerFiles()
-authenticated = orngServerFiles.ServerFiles("username", "password")
+authenticated = orngServerFiles.ServerFiles(username, password)
 
 authenticated.upload('MeSH', 'mesh-ontology.dat', 'mesh-ontology.dat', title="MeSH ontology", tags=['MeSH', 'ontology', 'orngMeSH'])
 #authenticated.upload('MeSH', 'cid-annotation.dat', 'cid-annotation.dat', title="Annotation for chemicals (CIDs)", tags =['CID','MeSH','orngMeSH','annotation'])

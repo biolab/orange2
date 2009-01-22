@@ -1,5 +1,14 @@
+##!interval=7
+##!contact=ales.erjavec@fri.uni-lj.si
+
 import obiGO, obiGenomicsUpdate, orngEnviron, orngServerFiles
 import os, sys, shutil, urllib2, tarfile
+from getopt import getopt
+
+opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
+
+username = opt.get("-u", opt.get("--user", "username"))
+password = opt.get("-p", opt.get("--password", "password"))
 
 from collections import defaultdict
 
@@ -9,7 +18,7 @@ try:
 except Exception:
     pass
 
-serverFiles=orngServerFiles.ServerFiles("username", "password")
+serverFiles = orngServerFiles.ServerFiles(username, password)
 
 u = obiGO.Update(local_database_path = tmpDir)
 
@@ -64,6 +73,7 @@ for org in u.GetAvailableOrganisms():
         serverFiles.unprotect("GO", "gene_association." + org + ".tar.gz")
         
 try:
+    import cPickle
     tax = cPickle.load(open(os.path.join(path, "taxonomy.pickle")))
 except Exception:
     tax = {}

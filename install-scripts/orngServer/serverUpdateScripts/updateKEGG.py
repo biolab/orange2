@@ -1,12 +1,21 @@
+##!interval=7
+##!contact=ales.erjavec@fri.uni-lj.si
+
 import obiKEGG, obiGenomicsUpdate
 import orngServerFiles, orngEnviron
-import os, tarfile, urllib2
+import os, sys, tarfile, urllib2
+from getopt import getopt
+
+opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
+
+username = opt.get("-u", opt.get("--user", "username"))
+password = opt.get("-p", opt.get("--password", "password"))
 
 
 path = os.path.join(orngEnviron.bufferDir, "tmp_kegg/")
 
 u = obiKEGG.Update(local_database_path=path)
-serverFiles=orngServerFiles.ServerFiles("username", "password")
+serverFiles=orngServerFiles.ServerFiles(username, password)
 
 lines = [line.split("\t") for line in urllib2.urlopen("ftp://ftp.genome.jp/pub/kegg/genes/taxonomy").readlines() if not line.startswith("#")]
 keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").replace(")", "") if line[-1].endswith("(EST)\n") else line[-1].strip()) for line in lines if len(line)>1])
