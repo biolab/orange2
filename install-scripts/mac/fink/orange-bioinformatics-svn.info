@@ -47,11 +47,11 @@ SplitOff: <<
 #		%p/lib/python2.5/site-packages/orange/add-ons/Bioinformatics/_GOLib.so 0.0.0 %n (>= 0.0.0-1)
 #	<<
 	Files: <<
-#		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
 		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.py
 		lib/python2.5/site-packages/orange-bioinformatics.pth
 		share/doc/orange-bioinformatics-svn-py25
 	<<
+#		lib/python2.5/site-packages/orange/add-ons/Bioinformatics/*.so
 <<
 CompileScript: <<
 # Commented out, currently there are no shlibs used so nothing to compile
