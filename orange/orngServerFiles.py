@@ -287,20 +287,29 @@ class ServerFiles(object):
         else:
             return False
 
-    def _sechandle(self, command, data):
-        self.installOpener()
-        if data:
-            return urllib2.urlopen(self.secureroot + command, data)
+
+    def _server_request(self, root, command, data, repeat=2):
+        def do():
+            self.installOpener()
+            if data:
+                return urllib2.urlopen(root + command, data)
+            else:
+                return urllib2.urlopen(root + command)
+
+        if repeat <= 0:
+            do()
         else:
-            return urllib2.urlopen(self.secureroot + command)
+            try:
+                return do()
+            except:
+                return self._server_request(root, command, data, repeat=repeat-1)
+
+    def _sechandle(self, command, data):
+        return self._server_request(self.secureroot, command, data)
  
     def _pubhandle(self, command, data):
-        self.installOpener()
-        data = self.addAccessCode(data)
-        if data:
-            return urllib2.urlopen(self.publicroot + command, data)
-        else:
-            return urllib2.urlopen(self.publicroot + command)
+        data2 = self.addAccessCode(data)
+        return self._server_request(self.publicroot, command, data2)
 
     def _secopen(self, command, data):
         return self._sechandle(command, data).read()
@@ -564,7 +573,8 @@ def example(myusername, mypassword):
     #create domain
     try: 
         s.create_domain("test") 
-    except: 
+    except:
+        print "Failed to create the domain"
         pass
 
     #upload this file - save it by a different name
