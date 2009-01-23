@@ -86,24 +86,26 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING
 		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES
 		
-		echo "Compiling add-on."
-		cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/
-		make
-		cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
-		
-		echo "Correcting install names for modules."
-		for module in *.so ; do
-			[ -L $module ] && continue
-		
-			install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/$module $module
+		if [ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/ ]; then
+			echo "Compiling add-on."
+			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/
+			make
+			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
 			
-			perl -MFile::Spec::Functions=abs2rel -e '
-			for (`/usr/bin/otool -L -X $ARGV[0]`) {
-				next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
-				system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
-			}
-			' $module
-		done
+			echo "Correcting install names for modules."
+			for module in *.so ; do
+				[ -L $module ] && continue
+			
+				install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/$module $module
+				
+				perl -MFile::Spec::Functions=abs2rel -e '
+				for (`/usr/bin/otool -L -X $ARGV[0]`) {
+					next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
+					system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
+				}
+				' $module
+			done
+		fi
 		
 		echo "Cleaning up."
 		rm -rf source/ setup.py
@@ -197,24 +199,26 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING
 		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES
 		
-		echo "Compiling add-on."
-		cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/
-		make
-		cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
-		
-		echo "Correcting install names for modules."
-		for module in *.so ; do
-			[ -L $module ] && continue
-		
-			install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/$module $module
+		if [ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/ ]; then
+			echo "Compiling add-on."
+			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/
+			make
+			cd /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
 			
-			perl -MFile::Spec::Functions=abs2rel -e '
-			for (`/usr/bin/otool -L -X $ARGV[0]`) {
-				next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
-				system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
-			}
-			' $module
-		done
+			echo "Correcting install names for modules."
+			for module in *.so ; do
+				[ -L $module ] && continue
+			
+				install_name_tool -id @executable_path/../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/$module $module
+				
+				perl -MFile::Spec::Functions=abs2rel -e '
+				for (`/usr/bin/otool -L -X $ARGV[0]`) {
+					next unless m|^\s+(/private/tmp/bundle/Orange.app/.*) \(.*\)$|;
+					system("/usr/bin/install_name_tool", "-change", $1, "\@loader_path/" . abs2rel($1), $ARGV[0]); 
+				}
+				' $module
+			done
+		fi
 		
 		echo "Cleaning up."
 		rm -rf source/ setup.py
