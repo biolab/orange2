@@ -613,6 +613,7 @@ class OWDiscretize(OWWidget):
             self.indiLabels = [""] * self.attrList.count()
 
             self.graph.setData(None, self.data)
+            self.selectedAttr = 0
             self.openContext("", data)
 #            if self.classDiscretization == 2:
 #                self.discretizeClass()
