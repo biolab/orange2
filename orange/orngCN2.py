@@ -210,12 +210,13 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
 
 
 class CN2UnorderedClassifier(orange.RuleClassifier):
-    def __init__(self, rules, examples, weightID = 0, **argkw):
+    def __init__(self, rules = None, examples = None, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
         self.weightID = weightID
         self.__dict__.update(argkw)
-        self.prior = orange.Distribution(examples.domain.classVar, examples)
+        if examples:
+            self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue, retRules = False):
         def add(disc1, disc2, sumd):
