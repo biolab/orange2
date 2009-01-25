@@ -113,12 +113,12 @@ def readWidgets(directory, category, cachedWidgetDescriptions):
             # We import modules using imp.load_source to avoid storing them in sys.modules,
             # but we need to append the path to sys.path in case the module would want to load
             # something
-            sys.path.append(dirname)
+            dirnameInPath = dirname in sys.path
+            if not dirnameInPath:
+                sys.path.append(dirname)
             wmod = imp.load_source(widgname, filename)
-            try: # I have no idea, why we need this, but it seems to disappear sometimes?!
+            if not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
                 sys.path.remove(dirname)
-            except:
-                pass
             widgClass = wmod.__dict__[widgname]
             inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(inputList))
             outputClasses = set(y.__name__ for x in eval(outputList) for y in eval(x[1], wmod.__dict__).mro())
