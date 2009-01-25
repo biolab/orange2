@@ -46,7 +46,7 @@ def LogRegLearner(examples = None, weightID=0, **kwds):
     else:
         return lr
 
-class LogRegLearnerClass:
+class LogRegLearnerClass(orange.Learner):
     def __init__(self, removeSingular=0, fitter = None, **kwds):
         self.__dict__ = kwds
         self.removeSingular = removeSingular
@@ -102,7 +102,7 @@ def Univariate_LogRegLearner(examples=None, **kwds):
     else:
         return learner
 
-class Univariate_LogRegLearner_Class:
+class Univariate_LogRegLearner_Class(orange.Learner):
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
@@ -118,7 +118,7 @@ class Univariate_LogRegLearner_Class:
 
         return Univariate_LogRegClassifier(beta = beta, beta_se = beta_se, P = P, wald_Z = wald_Z, domain = domain)
 
-class Univariate_LogRegClassifier:
+class Univariate_LogRegClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
@@ -134,7 +134,7 @@ def LogRegLearner_getPriors(examples = None, weightID=0, **kwds):
     else:
         return lr
 
-class LogRegLearnerClass_getPriors:
+class LogRegLearnerClass_getPriors(object):
     def __init__(self, removeSingular=0, **kwds):
         self.__dict__ = kwds
         self.removeSingular = removeSingular
@@ -618,7 +618,7 @@ def getLikelihood(fitter, examples):
         
 
 
-class StepWiseFSS_class:
+class StepWiseFSS_class(orange.Learner):
   def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
     self.__dict__.update(kwds)
     self.addCrit = addCrit
@@ -755,7 +755,7 @@ def StepWiseFSS_Filter(examples = None, **kwds):
         return filter
 
 
-class StepWiseFSS_Filter_class:
+class StepWiseFSS_Filter_class(object):
     def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
         self.addCrit = addCrit
         self.deleteCrit = deleteCrit
