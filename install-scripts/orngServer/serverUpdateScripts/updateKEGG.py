@@ -26,10 +26,12 @@ uncompressedSize = lambda filename: sum(info.size for info in tarfile.open(filen
 
 realPath = os.path.realpath(os.curdir)
 os.chdir(path)
-                        
+
 for func, args in u.GetDownloadable() + u.GetUpdatable():
     if func == obiKEGG.Update.UpdateOrganism:
         org = args[0]
+        if len(org) > 3 and org.startswith("d"):
+            continue
         orgName = keggOrgNames.get(org, org)
         func(u, org)
         filename = "kegg_organism_" + org + ".tar.gz"
@@ -71,6 +73,7 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
     for file in files:
         tFile.add(file)
     tFile.close()
+    print "Uploading", filename
     serverFiles.upload("KEGG", filename, filepath, title=title, tags=tags+["#uncompressed:%i" % uncompressedSize(filepath)])
     serverFiles.unprotect("KEGG", filename)
         
