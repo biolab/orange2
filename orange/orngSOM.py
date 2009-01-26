@@ -20,12 +20,6 @@ class Node(object):
         self.map = map
         self.vector = vector
 
-    def node_distance(self, other):
-        return sum([abs(x1 - x1) for x1, x2 in zip(self.pos, other.pos)])
-
-    def adjust(self, target, influence):
-        self.vector = self.vector + (target.vector - self.vector)*influence
-
 class Map(object):
     HexagonalTopology = HexagonalTopology
     RectangularTopology = RectangularTopology
@@ -40,18 +34,28 @@ class Map(object):
         self.map = [[Node((i, j), self) for j in range(map_shape[1])] for i in range(map_shape[0])]
         
     def __getitem__(self, pos):
+        """ Return the node at position x, y
+        """
         x, y = pos
         return self.map[x][y]
 
     def __iter__(self):
+        """ Iterate over all nodes in the map
+        """
         for row in self.map:
             for node in row:
                 yield node
 
     def vectors(self):
+        """ Return all vectors of the map as rows in an numpy.array
+        """
         return numpy.array([node.vector for node in self])
 
     def unit_distances(self):
+        """ Return a NxN numpy.array of internode distances (based on
+        node position in the map, not vector space) where N is the number of
+        nodes
+        """
         nodes = list(self)
         dist = numpy.zeros((len(nodes), len(nodes)))
 
@@ -62,6 +66,8 @@ class Map(object):
         return numpy.array(dist)
 
     def unit_coords(self):
+        """ Return the unit coordinates of all nodes
+        """
         nodes = list(self)
         coords = numpy.zeros((len(nodes), len(self.map_shape)))
         coords[:, 0] = numpy.floor(numpy.arange(len(nodes)) / self.map_shape[0])
@@ -76,6 +82,9 @@ class Map(object):
 
 
     def initialize_map_random(self, data=None, dimension=5):
+        """ Initialize the map nodes vectors randomly, by supplying
+        either training data or dimension of the data
+        """
         if data != None:
             min, max = ma.min(data, 0), ma.max(data, 0);
             dimension = data.shape[1]
@@ -85,6 +94,9 @@ class Map(object):
             node.vector = min + numpy.random.rand(dimension) * (max - min)
 
     def initialize_map_linear(self, data, map_shape=(10, 20)):
+        """ Initialize the map node vectors lineary over the subspace
+        of the two most significant eigenvectors
+        """
         data = data.copy() #ma.array(data)
         dim = data.shape[1]
         mdim = len(map_shape)
@@ -128,6 +140,17 @@ class Map(object):
         return getUMat(self)
         
 class Solver(object):
+    """ SOM Solver class used to train the map.
+    Arguments:
+        * neighbourhood - Neighbourhood function (NeighbourhoodGaussian, or NeighbourhoodBubble)
+        * radius_ini    - Inttial radius
+        * raduis_fin    - Final radius
+        * epoch         - Number of training iterations
+        * batch_train   - If True run the batch training algorithem (default), else use the sequential one
+        * learning_rate - If learning rate for the sequential training algorithem
+
+    Both the batch ans sequential algorithems are based on SOM Toolkit for Matlab
+    """
     def __init__(self, **kwargs):
         self.neighbourhood = NeighbourhoodGaussian
         self.learning_rate = 0.05
@@ -147,6 +170,8 @@ class Solver(object):
         return (1 - epoch/self.epochs)*self.learning_rate
             
     def __call__(self, data, map, progressCallback=None):
+        """ Train the map on data. Use progressCallback to Report on the progress.
+        """
         self.data = data
         self.map = map
 
@@ -264,7 +289,8 @@ class Solver(object):
  
             
 class SOMLearner(orange.Learner):
-    
+    """ SOMLearner is a class used to learn SOM from orange.ExampleTable
+    """
     def __init__(self, **kwargs):
         self.map_shape = (5, 10)
         self.initialize = InitializeLinear
@@ -292,7 +318,8 @@ class SOMLearner(orange.Learner):
         return SOMMap(map, examples)
 
 class SOMSupervisedLearner(SOMLearner):
-    
+    """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable
+    """
     def __call__(self, examples, weightID=0, progressCallback=None):
         data, classes, w = examples.toNumpyMA()
         nval = len(examples.domain.classVar.values)
@@ -330,6 +357,8 @@ class SOMMap(orange.Classifier):
                 node.classifier = orange.MajorityLearner(node.examples)
 
     def getBestMatchingNode(self, example):
+        """ Return the best matching node
+        """
         example, c, w = orange.ExampleTable([example]).toNumpyMA()
         vectors = self.map.vectors()
         Dist = vectors - example
@@ -347,9 +376,13 @@ class SOMMap(orange.Classifier):
             raise AttributeError(name)
 
     def __iter__(self):
+        """ Iterate over all nodes in the map
+        """
         return iter(self.map)
 
     def __getitem__(self, val):
+        """ Return the node at position x, y
+        """
         return self.map.__getitem__(val)
 
 def getUMat(som):
