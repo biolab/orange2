@@ -56,8 +56,6 @@ class GraphicsSOMItem(QGraphicsPolygonItem):
             c.setStartAngle(startAngle)
             c.setSpanAngle(angle)
             c.setBrush(QBrush(colors[i]))
-##            c.setZValue(10)
-##            c.move(self.x()-size/2, self.y()-size/2)
             c.show()
             startAngle += angle
             self.histObj.append(c)  
@@ -67,8 +65,6 @@ class GraphicsSOMItem(QGraphicsPolygonItem):
             self.scene().removeItem(e)
         self.histObj = []
         c = QGraphicsEllipseItem(-size/2, -size/2, size, size, self, self.scene())
-##        c.setZValue(10)
-##        c.move(self.x(), self.y())
         c.setBrush(QBrush(DefColor))
         c.setPen(QPen(Qt.white))
         c.show()
@@ -146,37 +142,6 @@ class GraphicsSOMRectangle(GraphicsSOMItem):
         x = self.outlinePoints[0].x() - self.outlinePoints[1].x()
         y = self.outlinePoints[0].y() - self.outlinePoints[3].y()
         return (x,y)
-
-class GraphicsSOMPlane(QGraphicsItem):
-    def __init__(self, som=None, parent=None, *args):
-        QGraphicsItem.__init__(self, parent, *args)
-        self.setSOM(som)
-
-    def setSOM(self, som=None):
-        self.som = som
-        self.scene.removeItems(self.childItems())
-        for node, coords in zip(som.map, som.map.unit_coords()):
-            x, y = coords
-            item = GraphicsSOMHexagon(self, self.scene()) if som.topology == orngSOM.HexagonalTopology \
-                   else GraphicsSOMRectangle(self, self.scene())
-            item.setPos(x, y)
-##            h.setSize(size)
-            item.setNode(n)
-##            (xa, ya) = h.advancement()
-##            h.setPos(x + n.pos[0]*xa, y + n.pos[1]*ya + offset*ya/2)
-##            h.show()
-
-    def setPalette(self, pallete):
-        self.palette = palette
-
-    def setComponent(self, component):
-        self.component = component
-        
-    def boundingRect(self):
-        return self.childrenBoundingRect()
-    
-    def paint(self, *args):
-        pass
     
 baseColor = QColor(20,20,20)  
 
@@ -412,35 +377,12 @@ class SOMScene(QGraphicsScene):
         for o in self.canvasObj:
             self.removeItem(o) #o.setCanvas(None)
         self.canvasObj=[]
-
-##    def buildToolTip(self, item, pos):
-##        node = item.node
-##        text = "Items: %i" % len(node.examples)
-##        if self.includeCodebook:
-##            text += "<hr><b>Codebook vector:</b><br>" + "<br>".join(\
-##                [a.variable.name + ": " + str(a) for a in node.referenceExample \
-##                 if a.variable != node.referenceExample.domain.classVar])
-##        
-##        if node.examples.domain.classVar and len(node.examples):
-##            dist = orange.Distribution(node.examples.domain.classVar, node.examples)
-##            if node.examples.domain.classVar.varType == orange.VarTypes.Continuous:
-##                text += "<hr>Avg " + node.examples.domain.classVar.name + ":" + ("%.3f" % dist.average())
-##            else:
-##                colors = OWColorPalette.ColorPaletteHSV(len(node.examples.domain.classVar.values))
-##                text += "<hr>" + "<br>".join(["<span style=\"color:%s\">%s</span>" %(colors[i].name(), str(value) + ": " + str(dist[i])) \
-##                                             for i, value in enumerate(node.examples.domain.classVar.values)])
-##        
-##        item.setToolTip(text)
             
     def mouseMoveEvent(self, event):
         pos = event.scenePos()
         if self.selectionRect:
             rect = self.selectionRect.rect()
             self.selectionRect.setRect(QRectF(rect.x(), rect.y(), pos.x() - rect.x(), pos.y() - rect.y()))
-##        obj = self.items(pos)
-##        if obj and isinstance(obj[-1], GraphicsSOMItem) and obj[-1].hasNode:
-##            if self.showBubbleInfo:
-##                self.buildToolTip(obj[-1], event.screenPos())
         
     def mousePressEvent(self, event):
         pos = event.scenePos()
