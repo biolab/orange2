@@ -500,7 +500,7 @@ def consoleupdate(domains=None, searchstr="essential"):
             elif response == "0":
                 break
             else:
-                print "\tWrong option!"
+                print "\tUnknown option!"
         return search
 
     def filemenu(searchstr=""):
@@ -518,7 +518,7 @@ def consoleupdate(domains=None, searchstr="essential"):
                 action, num = response.split(None, 1)
                 num = int(num)
             except Exception, ex:
-                print "Wrong option!"
+                print "Unknown option!"
                 continue
             try:
                 if action.lower() == "d":
@@ -532,6 +532,7 @@ def consoleupdate(domains=None, searchstr="essential"):
         print "1. Enter search tags (refine search)."
         print "2. Print matching available files."
         print "3. Print all available files."
+        print "4. Update all local files."
         print "0. Exit."
         return raw_input("Select option:")
     
@@ -544,12 +545,23 @@ def consoleupdate(domains=None, searchstr="essential"):
                 filemenu(searchstr)
             elif response == "3":
                 filemenu("")
+            elif response == "4":
+                update_local_files()
             elif response == "0":
                 break
             else:
-                print "Wrong option!!"
+                print "Unknown option!"
         except Exception, ex:
             print "Error occured:", ex
+
+def update_local_files(verbose=True):
+    sf = ServerFiles()
+    for domain, filename in search(""):
+        uptodate = sf.info(domain, filename)["datetime"] >= info(domain, filename)["datetime"]
+        if not uptodate:
+            download(domain, filename, sf)
+        if verbose:
+            print filename, "Ok" if uptodate else "Updated"
     
 def example(myusername, mypassword):
 
