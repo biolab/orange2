@@ -1,6 +1,8 @@
 #!/bin/bash -e
 #
 # Should be run as: sudo ./fink-daily-build.sh [stable revision] [daily revision]
+# 
+# You can also chown it to root and set suexec bit
 #
 
 # Those packages should not be installed as we are just building them (and dependencies)
