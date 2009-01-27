@@ -318,7 +318,10 @@ class SOMLearner(orange.Learner):
         return SOMMap(map, examples)
 
 class SOMSupervisedLearner(SOMLearner):
-    """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable
+    """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
+    class information in the learning process, by adding a value for each class to the training
+    instances, where 1.0 signals class membership and all other values are 0.0. After teh training,
+    the new values are discarded from the node vectors.
     """
     def __call__(self, examples, weightID=0, progressCallback=None):
         data, classes, w = examples.toNumpyMA()
