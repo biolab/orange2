@@ -8,9 +8,12 @@ VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.5
 WAIT_TIME=60
 IP_ADDRESS='172.16.213.100'
 
-[ $VMRUN list | grep -q "$VMIMAGE" ] && { echo "VMware already running." exit 1; }
+if "$VMRUN" list | grep -q "$VMIMAGE"; then
+	echo "VMware already running."
+	exit 1
+fi
 
-$VMRUN start "$VMIMAGE" nogui
+"$VMRUN" start "$VMIMAGE" nogui
 
 # Wait for VMware to start
 sleep $WAIT_TIME
