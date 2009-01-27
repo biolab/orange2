@@ -1,14 +1,17 @@
-import math, numpy
-import orange, orangeom, orngMDS
+import math
+import numpy
+import orange
+import orangeom
+import orngMDS
 import os.path
 
 class NetworkOptimization(orangeom.NetworkOptimization):
-    def __init__(self, graph=None, name="None"):
-        if graph is None:
-            graph = orangeom.Network(2, 0)
+    def __init__(self, network=None, name="None"):
+        if network is None:
+            network = orangeom.Network(2, 0)
             
-        self.setGraph(graph)
-        self.graph = graph
+        self.setGraph(network)
+        self.graph = network
         
         self.maxWidth = 1000
         self.maxHeight = 1000
@@ -109,9 +112,6 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             return self.graph.nVertices
         
     def rotateVertices(self, components, M, factor=10):    
-        #print len(components)
-        #print M
-        
         for i in range(len(components)):
             if M[i] == 0:
                 continue
@@ -129,11 +129,6 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             r = numpy.sqrt(x ** 2 + y ** 2)
             fi = numpy.arctan2(y, x)
-            
-#            if M[i] > 0:    
-#                fi += numpy.pi / 180
-#            elif M[i] < 0:
-#                fi -= numpy.pi / 180
                 
             fi += factor * M[i] * numpy.pi / 180
                 
