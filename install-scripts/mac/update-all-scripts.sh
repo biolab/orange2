@@ -3,8 +3,6 @@
 # Should be run as: ./update-all-scripts.sh
 #
 
-cd /Users/ailabc/
-
 curl --silent --output update-all-scripts.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/update-all-scripts.sh
 curl --silent --output bundle-64bit-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/bundle-64bit-daily-build.sh
 curl --silent --output bundle-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/bundle-daily-build.sh
