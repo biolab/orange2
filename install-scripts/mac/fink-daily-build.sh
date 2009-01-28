@@ -29,6 +29,11 @@ APT_ARGS="--assume-yes"
 # Path to Fink root
 FINK_ROOT=/sw
 
+ARCH=`arch`
+if [ $ARCH == "ppc" ]; then
+	ARCH="powerpc"
+fi
+
 # Sets error handler
 trap "echo \"Script failed\"" ERR
 
@@ -307,16 +312,16 @@ echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
-mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
 
 echo "Copying to repository all binary packages."
-cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
-cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 
 echo "Removing old binary packages."
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
-cd /Volumes/fink/dists/10.5/main/binary-darwin-i386/
+cd /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 perl -e '
 for (<*.deb>) {
 	m/(.*?)_/;
@@ -330,13 +335,13 @@ while (($f,$n) = each(%fs)) {
 
 echo "Making packages list."
 cd /Volumes/fink/
-perl -MFink::Scanpackages -e 'Fink::Scanpackages->scan("dists/10.5/main/binary-darwin-i386/");' | gzip - > dists/10.5/main/binary-darwin-i386/Packages.gz
+perl -MFink::Scanpackages -e "Fink::Scanpackages->scan('dists/10.5/main/binary-darwin-$ARCH/');" | gzip - > dists/10.5/main/binary-darwin-$ARCH/Packages.gz
 
-echo 'Archive: ailab
+echo "Archive: ailab
 Origin: Fink
 Component: main
-Architecture: darwin-i386
-Label: Fink' > dists/10.5/main/binary-darwin-i386/Release
+Architecture: darwin-$ARCH
+Label: Fink" > dists/10.5/main/binary-darwin-$ARCH/Release
 
 echo "Copying to repository all info files."
 rm -f /Volumes/fink/dists/10.5/main/finkinfo/*
@@ -347,14 +352,14 @@ cd /Volumes/fink/dists/10.5/main/finkinfo/
 tar -czf all.tgz *.info
 
 echo "Removing unnecessary source archives."
-perl -e '
-for (</Volumes/fink/dists/10.5/main/binary-darwin-i386/orange-*.deb>) {
-	m/_(.+)-\d+_darwin-i386\.deb/;
-	$versions{$1} = 1;
+perl -e "
+for (</Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/orange-*.deb>) {
+	m/_(.+)-\\d+_darwin-$ARCH\\.deb/;
+	\$versions{\$1} = 1;
 }
 for (</Volumes/fink/dists/10.5/main/source/*.tgz>) {
-	m/.+-(.+)\.tgz/;
-	next if $versions{$1};
+	m/.+-(.+)\\.tgz/;
+	next if \$versions{\$1};
 	unlink;
 }
-'
+"
