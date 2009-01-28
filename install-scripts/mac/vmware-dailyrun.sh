@@ -21,15 +21,15 @@ sleep $WAIT_TIME
 # We use public/private keys SSH authentication so no need for password
 
 # We run it twice so that we als use maybe updated "update-all-scripts.sh" script
-ssh ailabc@$IP_ADDRESS /Users/ailabc/update-all-scripts.sh
-ssh ailabc@$IP_ADDRESS /Users/ailabc/update-all-scripts.sh
+ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
+ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 
 # dailyrun.sh is added to /etc/sudoers so no password is required
 # /etc/sudoers entry: ailabc ALL=NOPASSWD:/Users/ailabc/dailyrun.sh
 # WARNING: This is generally unsecure as an attacker could change dailyrun.sh file and ...
 #          but we are using it in a VMware which is used only for this script, so ...
-ssh ailabc@$IP_ADDRESS sudo /Users/ailabc/dailyrun.sh
+ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun.sh"
 
 # shutdown is added to /etc/sudoers so no password is required
 # /etc/sudoers entry: ailabc ALL=NOPASSWD:/sbin/shutdown -h now
-ssh ailabc@$IP_ADDRESS sudo /sbin/shutdown -h now
+ssh ailabc@$IP_ADDRESS "sudo /sbin/shutdown -h now > /dev/null"
