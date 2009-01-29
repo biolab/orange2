@@ -33,7 +33,11 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
         if len(org) > 3 and org.startswith("d"):
             continue
         orgName = keggOrgNames.get(org, org)
-        func(u, org)
+        try:
+            func(u, org)
+        except Exception, ex:
+            print ex
+            continue
         filename = "kegg_organism_" + org + ".tar.gz"
         rel_path = u.api._rel_org_dir(org)
         files = [os.path.normpath("pathway//"+rel_path),
