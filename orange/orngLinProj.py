@@ -437,13 +437,13 @@ class FreeViz:
 
         vectors = None
         if method == DR_PCA:
-            vals, vectors = createPCAProjection(self, dataMatrix, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
+            vals, vectors = createPCAProjection(dataMatrix, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
         elif method == DR_SPCA and self.graph.dataHasClass:
-            vals, vectors = createPCAProjection(self, dataMatrix, classArray, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
+            vals, vectors = createPCAProjection(dataMatrix, classArray, NComps = 2, useGeneralizedEigenvectors = self.useGeneralizedEigenvectors)
         elif method == DR_PLS and self.graph.dataHasClass:
             dataMatrix = dataMatrix.transpose()
             classMatrix = numpy.transpose(numpy.matrix(classArray))
-            vectors = createPLSProjection(self, dataMatrix, classMatrix, 2)
+            vectors = createPLSProjection(dataMatrix, classMatrix, 2)
             vectors = vectors.T
 
         # test if all values are 0, if there is an invalid number in the array and if there are complex numbers in the array
@@ -469,7 +469,7 @@ class FreeViz:
 
 
 
-def createPLSProjection(self, X,Y, Ncomp = 2):
+def createPLSProjection(X,Y, Ncomp = 2):
     '''Predict Y from X using first Ncomp principal components'''
 
     # data dimensions
@@ -529,8 +529,13 @@ def createPLSProjection(self, X,Y, Ncomp = 2):
 
 # if no class data is provided we create PCA projection
 # if there is class data then create SPCA projection
-def createPCAProjection(self, dataMatrix, classArray = None, NComps = -1, useGeneralizedEigenvectors = 1):
+def createPCAProjection(dataMatrix, classArray = None, NComps = -1, useGeneralizedEigenvectors = 1):
     try:
+        if type(dataMatrix) == numpy.ma.core.MaskedArray:
+            dataMatrix = numpy.array(dataMatrix)
+        if classArray != None and type(classArray) == numpy.ma.core.MaskedArray:
+            classArray = numpy.array(classArray)
+            
         dataMatrix = numpy.transpose(dataMatrix)
 
         s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
@@ -575,7 +580,7 @@ def createPCAProjection(self, dataMatrix, classArray = None, NComps = -1, useGen
             retIndices.append(bestInd)
             vals[bestInd] = -1
         
-        return retVals, numpy.take(vectors.transpose(), retIndices, axis = 0)
+        return retVals, numpy.take(vectors.T, retIndices, axis = 0)         # i-th eigenvector is the i-th column in vectors so we have to transpose the array
     except:
         return None, None
 
