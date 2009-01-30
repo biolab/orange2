@@ -52,9 +52,9 @@ def getVariableValueIndices(variable, sortValuesForDiscreteAttrs = 1):
 # if we have a class remove the examples with missing class value
 # discretize the continuous class into discrete class with two values
 # discretize continuous attributes using entropy discretization (or equiN if we don't have a class or class is continuous)
-def discretizeDomain(data, removeUnusedValues = 1):
+def discretizeDomain(data, removeUnusedValues = 1, numberOfIntervals = 2):
     entroDisc = orange.EntropyDiscretization()
-    equiDisc  = orange.EquiNDiscretization(numberOfIntervals = 2)
+    equiDisc  = orange.EquiNDiscretization(numberOfIntervals = numberOfIntervals)
     discAttrs = []
 
     className = data and len(data) > 0 and data.domain.classVar and data.domain.classVar.name or None
@@ -303,11 +303,12 @@ class orngScaleData:
     def getValidSubsetList(self, indices, alsoClassIfExists = 1):
         if self.validSubsetDataArray == None or len(self.validSubsetDataArray) == 0:
             return numpy.array([], numpy.bool)
+        inds = indices[:]
         if alsoClassIfExists and self.dataClassIndex: 
-            indices.append(self.dataClassIndex)
-        selectedArray = self.validSubsetDataArray.take(indices, axis = 0)
+            inds.append(self.dataClassIndex)
+        selectedArray = self.validSubsetDataArray.take(inds, axis = 0)
         arr = numpy.add.reduce(selectedArray)
-        return numpy.equal(arr, len(indices))
+        return numpy.equal(arr, len(inds))
 
     # get array with numbers that represent the example indices that have a valid data value
     def getValidIndices(self, indices):
