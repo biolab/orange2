@@ -9,6 +9,7 @@ mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),
                   ("Pearson's Chi Square (with class)", CHI_SQUARE_CLASS),
                   ("Cramer's Phi (with class)", CRAMERS_PHI_CLASS),
                   ("Information Gain (in % of class entropy removed)", INFORMATION_GAIN),
+                  ("Gain Ratio", GAIN_RATIO),
                   ("Distance Measure", DISTANCE_MEASURE),
                   ("Minimum Description Length", MDL),
                   ("Interaction Gain (in % of class entropy removed)", INTERACTION_GAIN),
@@ -56,9 +57,6 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.showDataSubset = 1
         self.invertSelection = 0
         self.mosaicSize = 300
-
-        self.attrLenDict = {}
-        self.shownResults = []
 
         self.loadSettings()
         self.layout().setMargin(0)
@@ -349,6 +347,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def clearResults(self):
         orngMosaic.clearResults(self)
         self.resultList.clear()
+        self.shownResults = []
         self.attrLenDict = {}
         self.attrLenList.clear()
 
@@ -357,13 +356,11 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     def updateShownProjections(self, *args):
         self.resultList.clear()
-        self.resultListIndices = []
         self.shownResults = []
 
         for i in range(len(self.results)):
-            if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
+            if self.attrLenDict.get(len(self.results[i][ATTR_LIST]), 0):
                 self.resultList.addItem("%.3f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
-                self.resultListIndices.append(i)
                 self.shownResults.append(self.results[i])
         qApp.processEvents()
 
@@ -406,7 +403,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if not example and not self.visualizationWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
-        if len(self.results) == 0:
+        if len(self.shownResults) == 0:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
 
@@ -440,8 +437,6 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     def finishedAddingResults(self):
         self.skipUpdate = 1
-
-        self.attrLenDict = dict([(i,1) for i in range(self.attributeCount+1)])
 
         self.attrLenList.clear()
         for i in range(1,5):
@@ -483,7 +478,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         orngMosaic.save(self, name)
 
-        self.setStatusBarText("Saved %d visualizations" % (len(self.results)))
+        self.setStatusBarText("Saved %d visualizations" % (len(self.shownResults)))
 
 
     # load projections from a file
@@ -528,7 +523,6 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
         orngMosaic.insertItem(self, score, attrList, index, tryIndex, extraInfo)
         self.resultList.insertItem(index, "%.3f : %s" % (score, self.buildAttrString(attrList)))
-        self.resultListIndices.insert(index, index)
 
 
     # ######################################################
@@ -1048,7 +1042,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     def getSelectedProjection(self):
         if self.resultList.selectedItems() == []: return None
-        return self.results[self.resultListIndices[self.resultList.row(self.resultList.selectedItems()[0])]]  # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
+        return self.shownResults[self.resultList.row(self.resultList.selectedItems()[0])]
 
     def stopEvaluationClick(self):
         self.cancelEvaluation = 1
@@ -1113,13 +1107,13 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def graphProjectionQuality(self):
         import OWkNNOptimization
         dialog = OWkNNOptimization.OWGraphProjectionQuality(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager)
-        dialog.setResults(self.results)
+        dialog.setResults(self.shownResults)
         dialog.show()
 
     def identifyOutliers(self):
         import OWkNNOptimization
         dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, OWkNNOptimization.VIZRANK_MOSAIC, signalManager = self.signalManager, widget = self.visualizationWidget)
-        dialog.setResults(self.data, self.results)
+        dialog.setResults(self.data, self.shownResults)
         dialog.show()
 
 #test widget appearance
