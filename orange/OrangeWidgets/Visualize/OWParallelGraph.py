@@ -90,7 +90,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
-
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
 
@@ -332,6 +331,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
         else:
             self.legend().clear()
+            self.oldLegendKeys = []
 
         self.replot()
 
@@ -384,7 +384,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     clsVal = classValueSorted[i]
 
                     newColor = QColor(self.discPalette[i])
-                    newColor.setAlpha(self.alphaValue2)
+                    newColor.setAlpha(self.alphaValue)
 
                     width = float(attrValCont[clsVal]*0.5) / float(maxVal)
                     interval = 1.0/float(2*attrLen)
