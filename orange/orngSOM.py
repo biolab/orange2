@@ -13,6 +13,7 @@ InitializeLinear = 0
 InitializeRandom = 1
 NeighbourhoodGaussian = 0
 NeighbourhoodBubble = 1
+NeighbourhoodEpanechicov = 2
 
 class Node(object):
     def __init__(self, pos, map=None, vector=None):
@@ -27,6 +28,7 @@ class Map(object):
     InitializeRandom = InitializeRandom
     NeighbourhoodGaussian = NeighbourhoodGaussian
     NeighbourhoodBubble = NeighbourhoodBubble
+    NeighbourhoodEpanechicov = NeighbourhoodEpanechicov
         
     def __init__(self, map_shape=(20, 40), topology=HexagonalTopology):
         self.map_shape = map_shape
@@ -66,7 +68,7 @@ class Map(object):
         return numpy.array(dist)
 
     def unit_coords(self):
-        """ Return the unit coordinates of all nodes
+        """ Return the unit coordinates of all nodes in the map as an numpy.array
         """
         nodes = list(self)
         coords = numpy.zeros((len(nodes), len(self.map_shape)))
@@ -222,6 +224,9 @@ class Solver(object):
 
             if self.neighbourhood == Map.NeighbourhoodGaussian:
                 h = numpy.exp(-self.unit_distances[:, bmu]/(2*self.radius(epoch))) * (self.unit_distances[:, bmu] <= self.radius(epoch))
+            elif self.neighbourhood == Map.NeighbourhoodEpanechicov:
+                h = 1.0 - (self.unit_distances[:bmu]/self.radius(epoch))**2
+                h = h * (h >= 0.0)
             else:
                 h = 1.0*(self.unit_distances[:, bmu] <= self.radius(epoch))
             h = h * self.alpha(epoch)
@@ -269,6 +274,9 @@ class Solver(object):
 
         if self.neighbourhood == Map.NeighbourhoodGaussian:        
             H = numpy.exp(-self.unit_distances/(2*self.radius(epoch))) * (self.unit_distances <= self.radius(epoch))
+        elif self.neighbourhood == Map.NeighbourhoodEpanechicov:
+            H = 1.0 - (self.unit_distances/self.radius(epoch))**2
+            H = H * (H >= 0.0)
         else:
             H = 1.0*(self.unit_distances <= self.radius(epoch))
 
@@ -276,9 +284,7 @@ class Solver(object):
         
         P[(best_nodes, range(len(best_nodes)))] = numpy.ones(len(best_nodes))
         
-        _1 = ma.dot(P, self.data)
-        
-        S = ma.dot(H, _1)
+        S = ma.dot(H, ma.dot(P, self.data))
         
         A = ma.dot(H, ma.dot(P, ~self.data._mask))
 
@@ -290,17 +296,21 @@ class Solver(object):
             
 class SOMLearner(orange.Learner):
     """ SOMLearner is a class used to learn SOM from orange.ExampleTable
+
+    Example:
+        >>> som = orngSOM.SOMLearner(map_shape=()
     """
-    def __init__(self, **kwargs):
+    def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, neighbourhood=NeighbourhoodGaussian,
+                 batch_train=True, learning_rate=0.05, radius_ini=3, radius_fin=1, epochs=1000, **kwargs):
         self.map_shape = (5, 10)
-        self.initialize = InitializeLinear
-        self.topology = HexagonalTopology
-        self.neighbourhood = NeighbourhoodGaussian
-        self.batch_train = True
-        self.learning_rate = 0.05
-        self.radius_ini = 2
-        self.radius_fin = 1
-        self.epochs = 1000
+        self.initialize = initialize
+        self.topology = topology
+        self.neighbourhood = neighbourhood
+        self.batch_train = batch_train
+        self.learning_rate = learning_rate
+        self.radius_ini = radius_ini
+        self.radius_fin = radius_fin
+        self.epochs = epochs
         self.eps = 1e-4
         
         orange.Learner.__init__(self, **kwargs)
@@ -319,8 +329,8 @@ class SOMLearner(orange.Learner):
 
 class SOMSupervisedLearner(SOMLearner):
     """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
-    class information in the learning process, by adding a value for each class to the training
-    instances, where 1.0 signals class membership and all other values are 0.0. After teh training,
+    class information in the learning process. This is achieved by adding a value for each class to the training
+    instances, where 1.0 signals class membership and all other values are 0.0. After the training,
     the new values are discarded from the node vectors.
     """
     def __call__(self, examples, weightID=0, progressCallback=None):
