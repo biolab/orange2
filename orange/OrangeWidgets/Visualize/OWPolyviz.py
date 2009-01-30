@@ -30,7 +30,7 @@ class OWPolyviz(OWLinProj):
 
         # SETTINGS TAB
         self.extraTopBox.show()
-        OWGUI.hSlider(self.extraTopBox, self, 'graph.lineLength', box=' Line length ', minValue=0, maxValue=10, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(self.extraTopBox, self, 'graph.lineLength', box='Line length: ', minValue=0, maxValue=10, step=1, callback = self.updateGraph)
 
 
 
