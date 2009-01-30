@@ -111,11 +111,11 @@ class OWVizRank(VizRank, OWWidget):
         self.measureComboDiscClassBox = OWGUI.widgetBox(self.SettingsTab, "Measure of Classification Success")
         OWGUI.comboBox(self.measureComboDiscClassBox, self, "qualityMeasure", items = ["Classification accuracy", "Average Probability Assigned to the Correct Class", "Brier Score", "Area under Curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
         
-        self.measureComboContClassBox = OWGUI.widgetBox(self.SettingsTab, "Measure of Regression Accuracy")
-        OWGUI.comboBox(self.measureComboDiscClassBox, self, "qualityMeasureContClass", items = ["Classification accuracy", "Average Probability Assigned to the Correct Class", "Brier Score", "Area under Curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
-        
-        self.measureComboNoClassBox = OWGUI.widgetBox(self.SettingsTab, "Measure of Cluster Interestingness")
-        OWGUI.comboBox(self.measureComboNoClassBox, self, "qualityMeasureCluster", items = ["Example distance"], tooltip = "Measure to evaluate how well are points in the projection separated into clusters.")
+#        self.measureComboContClassBox = OWGUI.widgetBox(self.SettingsTab, "Measure of Regression Accuracy")
+#        OWGUI.comboBox(self.measureComboDiscClassBox, self, "qualityMeasureContClass", items = ["Classification accuracy", "Average Probability Assigned to the Correct Class", "Brier Score", "Area under Curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
+#        
+#        self.measureComboNoClassBox = OWGUI.widgetBox(self.SettingsTab, "Measure of Cluster Interestingness")
+#        OWGUI.comboBox(self.measureComboNoClassBox, self, "qualityMeasureCluster", items = ["Example distance"], tooltip = "Measure to evaluate how well are points in the projection separated into clusters.")
 
         self.attributeSelectionBox = OWGUI.widgetBox(self.SettingsTab, "Attribute Subset Selection")
         OWGUI.comboBox(self.attributeSelectionBox, self, "attrSubsetSelection", items = ["Deterministically Using the Selected Attribute Ranking Measures", "Use Gamma Distribution and Test All Possible Placements", "Use Gamma Distribution and Test Only One Possible Placement"])
@@ -124,13 +124,13 @@ class OWVizRank(VizRank, OWWidget):
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsDiscClassBox, self, "attrCont", "For continuous attributes:", items = [val for (val, m) in contMeasuresDiscClass], callback = self.removeEvaluatedAttributes)
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsDiscClassBox, self, "attrDisc", "For discrete attributes:", items = [val for (val, m) in discMeasuresDiscClass], callback = self.removeEvaluatedAttributes)
         
-        self.heuristicsSettingsNoClassBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsNoClassBox, self, "attrContNoClass", "For continuous attributes:", items = [val for (val, m) in contMeasuresNoClass], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsNoClassBox, self, "attrDiscNoClass", "For discrete attributes:", items = [val for (val, m) in discMeasuresNoClass], callback = self.removeEvaluatedAttributes)
-        
-        self.heuristicsSettingsContClassBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsContClassBox, self, "attrContContClass", "For continuous attributes:", items = [val for (val, m) in contMeasuresContClass], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsContClassBox, self, "attrDiscContClass", "For discrete attributes:", items = [val for (val, m) in discMeasuresContClass], callback = self.removeEvaluatedAttributes)
+#        self.heuristicsSettingsNoClassBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
+#        OWGUI.comboBoxWithCaption(self.heuristicsSettingsNoClassBox, self, "attrContNoClass", "For continuous attributes:", items = [val for (val, m) in contMeasuresNoClass], callback = self.removeEvaluatedAttributes)
+#        OWGUI.comboBoxWithCaption(self.heuristicsSettingsNoClassBox, self, "attrDiscNoClass", "For discrete attributes:", items = [val for (val, m) in discMeasuresNoClass], callback = self.removeEvaluatedAttributes)
+#        
+#        self.heuristicsSettingsContClassBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
+#        OWGUI.comboBoxWithCaption(self.heuristicsSettingsContClassBox, self, "attrContContClass", "For continuous attributes:", items = [val for (val, m) in contMeasuresContClass], callback = self.removeEvaluatedAttributes)
+#        OWGUI.comboBoxWithCaption(self.heuristicsSettingsContClassBox, self, "attrDiscContClass", "For discrete attributes:", items = [val for (val, m) in discMeasuresContClass], callback = self.removeEvaluatedAttributes)
         
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Projection List")
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = 'Maximum number of top-ranked projections that are shown in the list box. This is also the number of projections that will be saved if you click "Save" button.', items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
@@ -365,12 +365,12 @@ class OWVizRank(VizRank, OWWidget):
         self.optimizationSettingsDiscClassBox.setVisible(self.graph.dataHasDiscreteClass)
         self.optimizationSettingsNoClassBox.setVisible(not self.graph.dataHasClass)
         self.measureComboDiscClassBox.setVisible(self.graph.dataHasDiscreteClass)
-        self.measureComboNoClassBox.setVisible(not self.graph.dataHasClass)
-        self.measureComboContClassBox.setVisible(self.graph.dataHasContinuousClass)
+#        self.measureComboNoClassBox.setVisible(not self.graph.dataHasClass)
+#        self.measureComboContClassBox.setVisible(self.graph.dataHasContinuousClass)
         self.tabs.setTabEnabled(2, self.graph.dataHasDiscreteClass)
-        self.heuristicsSettingsContClassBox.setVisible(self.graph.dataHasContinuousClass)
+#        self.heuristicsSettingsContClassBox.setVisible(self.graph.dataHasContinuousClass)
         self.heuristicsSettingsDiscClassBox.setVisible(self.graph.dataHasDiscreteClass)
-        self.heuristicsSettingsNoClassBox.setVisible(not self.graph.dataHasClass)
+#        self.heuristicsSettingsNoClassBox.setVisible(not self.graph.dataHasClass)
         
         
         if not self.graph.dataHasDiscreteClass:
@@ -406,7 +406,7 @@ class OWVizRank(VizRank, OWWidget):
 
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
     def insertItem(self, index, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}, updateStatusBar = 0):
-        VizRank.insertItem(self, index, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}, updateStatusBar = 0)
+        VizRank.insertItem(self, index, accuracy, other_results, lenTable, attrList, tryIndex, generalDict, updateStatusBar = 0)
 
         if index < self.resultListLen:
             string = ""
@@ -441,9 +441,11 @@ class OWVizRank(VizRank, OWWidget):
         if maxLen == -1: return
         if maxLen == 2: vals = [2]
         else: vals = range(3, maxLen+1)
+        
         for val in vals:
             self.attrLenList.addItem(str(val))
             self.attrLenDict[val] = 1
+        
         self.attrLenList.selectAll()
         self.resultList.setCurrentRow(0)
 
