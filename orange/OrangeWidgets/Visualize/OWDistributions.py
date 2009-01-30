@@ -81,6 +81,7 @@ class OWDistributionGraph(OWGraph):
         curve.setVisible(visible)
         curve.setXAxis(xAxis)
         curve.setYAxis(yAxis)
+        curve.setItemAttribute(QwtPlotItem.Legend, 0)
         return curve
 
 
@@ -388,7 +389,7 @@ class OWDistributionGraph(OWGraph):
         self.replot()
 
 class OWDistributions(OWWidget):
-    settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
+    settingsList = ["numberOfBars", "barSize", "graph.showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
     contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes", "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], matchValues=DomainContextHandler.MatchValuesClass)}
 
     def __init__(self, parent=None, signalManager = None):
@@ -418,8 +419,6 @@ class OWDistributions(OWWidget):
         self.yaxisTitle = "frequency"
         self.yPaxisTitle = ""
 
-        self.loadSettings()
-
         # GUI
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
@@ -430,6 +429,8 @@ class OWDistributions(OWWidget):
         self.graph.setYRlabels(None)
         self.graph.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        
+        self.loadSettings()
 
         # inputs
         # data and graph temp variables
@@ -461,7 +462,7 @@ class OWDistributions(OWWidget):
         OWGUI.checkBox(box4, self, 'showYaxisTitle', 'Show Y axis title', callback = self.setShowYaxisTitle)
         OWGUI.lineEdit(box4, self, 'yaxisTitle', callback = self.setYaxisTitle)
 
-        OWGUI.checkBox(box, self, 'showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
+        OWGUI.checkBox(box, self, 'graph.showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
 
         box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
@@ -536,7 +537,6 @@ class OWDistributions(OWWidget):
         self.graph.replot()
 
     def setShowContinuousClassGraph(self):
-        self.graph.showContinuousClassGraph=self.showContinuousClassGraph
         self.graph.refreshPureVisibleOutcomes()
 
     #Sets the number of bars for histograms of continuous variables
