@@ -152,8 +152,8 @@ class OWGraph(QwtPlot):
         else:
             self.setAxisScaleDraw(QwtPlot.yLeft, QwtScaleDraw())
             self.setAxisAutoScale(QwtPlot.yLeft)
-            self.setAxisMaxMinor(QwtPlot.yLeft, 10)
-            self.setAxisMaxMajor(QwtPlot.yLeft, 10)
+            self.setAxisMaxMinor(QwtPlot.yLeft, 5)
+            self.setAxisMaxMajor(QwtPlot.yLeft, 8)
 
     def setYRlabels(self, labels):
         "Sets the Y-axis labels on the right."
@@ -171,8 +171,8 @@ class OWGraph(QwtPlot):
         else:
             self.setAxisScaleDraw(QwtPlot.yRight, QwtScaleDraw())
             self.setAxisAutoScale(QwtPlot.yRight)
-            self.setAxisMaxMinor(QwtPlot.yRight, 10)
-            self.setAxisMaxMajor(QwtPlot.yRight, 10)
+            self.setAxisMaxMinor(QwtPlot.yRight, 5)
+            self.setAxisMaxMajor(QwtPlot.yRight, 8)
 
     def setXlabels(self, labels):
         "Sets the x-axis labels if x-axis discrete."
@@ -191,8 +191,8 @@ class OWGraph(QwtPlot):
         else:
             self.setAxisScaleDraw(QwtPlot.xBottom, QwtScaleDraw())
             self.setAxisAutoScale(QwtPlot.xBottom)
-            self.setAxisMaxMinor(QwtPlot.xBottom, 10)
-            self.setAxisMaxMajor(QwtPlot.xBottom, 10)
+            self.setAxisMaxMinor(QwtPlot.xBottom, 5)
+            self.setAxisMaxMajor(QwtPlot.xBottom, 8)
 
     def enableXaxis(self, enable):
         self.enableAxis(QwtPlot.xBottom, enable)
