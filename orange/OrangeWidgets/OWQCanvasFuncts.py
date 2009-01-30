@@ -2,7 +2,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 class OWCanvasText(QGraphicsTextItem):
-    def __init__(self, canvas, text = "", x  = 0, y = 0, alignment = 0, bold = 0, font = None, z = 0, htmlText=None, tooltip = None, show = 1):
+    def __init__(self, canvas, text = "", x  = 0, y = 0, alignment = Qt.AlignLeft | Qt.AlignTop, bold = 0, font = None, z = 0, htmlText=None, tooltip = None, show = 1):
         QGraphicsTextItem.__init__(self, text, None, canvas)
 
         if font:
@@ -15,6 +15,7 @@ class OWCanvasText(QGraphicsTextItem):
         self.alignment = alignment
 
         self.setPos(x, y)
+        self.x, self.y = x, y
         self.setZValue(z)
         if tooltip: self.setToolTip(tooltip)
 
@@ -22,6 +23,7 @@ class OWCanvasText(QGraphicsTextItem):
         else: self.hide()
 
     def setPos(self, x, y):
+        self.x, self.y = x, y
         rect = self.boundingRect()
         if int(self.alignment & Qt.AlignRight):     x -= rect.width()
         elif int(self.alignment & Qt.AlignHCenter): x-= rect.width()/2.
