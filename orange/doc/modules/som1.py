@@ -6,9 +6,9 @@
 
 import orngSOM
 import orange
-l=orngSOM.SOMLearner(xDim=5, yDim=10, parameters=[{"iterations":1000, "radius":5, "alpha":0.02},{"iterations":10000, "alpha":0.05}]) #radius in the second phase will be the same as in the first
-c=l(orange.ExampleTable("iris.tab"))
-for n in c.nodes:
-    print "node:", n.x,n.y
+som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
+map = som(orange.ExampleTable("iris.tab"))
+for n in map:
+    print "node:", n.pos[0], n.pos[1]
     for e in n.examples:
-	print "\t",e
+        print "\t",e
