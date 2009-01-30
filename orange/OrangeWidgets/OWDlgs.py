@@ -4,6 +4,7 @@ import OWGUI
 from PyQt4.Qwt5 import *
 from PyQt4.QtSvg import *
 from ColorPalette import *
+import OWQCanvasFuncts
 
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
@@ -101,7 +102,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     def getSceneBoundingRect(self):
         source = QRectF()
         for item in self.graph.items():
-            if item.isVisible(): 
+            if item.isVisible():
                 source = source.united(item.boundingRect().translated(item.pos()))
         return source
 
@@ -114,9 +115,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 rect = self.getSceneBoundingRect()
                 minx, maxx, miny, maxy = rect.x(), rect.x()+rect.width(), rect.y(), rect.y()+rect.height()
                 f = open(filename, "wt")
+                f.write("# This Python file uses the following encoding: utf-8\n")
                 f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\n#constants\nx1 = %f; x2 = %f\ny1 = 0.0; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = 0.01\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\na = gca()\nhold(True)\n" % (minx, maxx, maxy, maxx-minx, maxy-miny))
 
-                sortedList = [(item.z(), item) for item in self.graph.items()]
+                sortedList = [(item.zValue(), item) for item in self.graph.items()]
                 sortedList.sort()   # sort items by z value
 
                 for (z, item) in sortedList:
@@ -124,28 +126,33 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                     if hasattr(item, "isVisible"):
                         if not item.isVisible(): continue
                     elif not item.visible(): continue
-                    if item.__class__ in [QCanvasEllipse, QCanvasLine, QCanvasPolygon and QCanvasRectangle]:
+                    if item.__class__ in [QGraphicsRectItem, QGraphicsLineItem]:
                         penc, penAlpha  = self._getColorFromObject(item.pen())
-                        brushc, brushAlpha = self._getColorFromObject(item.brush())
                         penWidth = item.pen().width()
 
-                        if   isinstance(item, QCanvasEllipse): continue
-                        elif isinstance(item, QCanvasPolygon): continue
-                        elif isinstance(item, QCanvasRectangle):
+                        if isinstance(item, QGraphicsRectItem):
                             x,y,w,h = item.rect().x(), maxy-item.rect().y()-item.rect().height(), item.rect().width(), item.rect().height()
+                            brushc, brushAlpha = self._getColorFromObject(item.brush())
                             f.write("a.add_patch(Rectangle((%d, %d), %d, %d, edgecolor=%s, facecolor = %s, linewidth = %d, fill = %d))\n" % (x,y,w,h, penc, brushc, penWidth, type(brushc) == tuple))
-                        elif isinstance(item, QCanvasLine):
-                            x1,y1, x2,y2 = item.startPoint().x(), maxy-item.startPoint().y(), item.endPoint().x(), maxy-item.endPoint().y()
+                        elif isinstance(item, QGraphicsLineItem):
+                            x1,y1, x2,y2 = item.line().x1(), maxy-item.line().y1(), item.line().x2(), maxy-item.line().y2()
                             f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d, alpha = %.3f)\n" % ([x1,x2], [y1,y2], penc, penWidth, brushAlpha))
-                    elif item.__class__ == QCanvasText:
-                        align = item.textFlags()
-                        xalign = (align & Qt.AlignLeft and "left") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "right")
-                        yalign = (align & Qt.AlignBottom and "bottom") or (align & Qt.AlignTop and "top") or (align & Qt.AlignVCenter and "center")
+                    elif item.__class__ in [QGraphicsTextItem, OWQCanvasFuncts.OWCanvasText]:
+                        if item.__class__  == QGraphicsTextItem:
+                            xalign, yalign = "left", "top"
+                            x, y = item.x(), item.y()
+                        else:
+                            align = item.alignment
+                            #xalign = (align & Qt.AlignLeft and "right") or (align & Qt.AlignRight and "left") or (align & Qt.AlignHCenter and "center")
+                            #yalign = (align & Qt.AlignBottom and "top") or (align & Qt.AlignTop and "bottom") or (align & Qt.AlignVCenter and "center")
+                            xalign = (align & Qt.AlignLeft and "left") or (align & Qt.AlignRight and "right") or (align & Qt.AlignHCenter and "center")
+                            yalign = (align & Qt.AlignBottom and "bottom") or (align & Qt.AlignTop and "top") or (align & Qt.AlignVCenter and "center")
+                            x, y = item.x, item.y
                         vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
                         horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
-                        color = tuple([item.color().red()/255., item.color().green()/255., item.color().blue()/255.])
+                        color = tuple([item.defaultTextColor().red()/255., item.defaultTextColor().green()/255., item.defaultTextColor().blue()/255.])
                         weight = item.font().bold() and "bold" or "normal"
-                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s', alpha = %.3f)\n" % (item.x(), maxy-item.y(), str(item.label().text()), vertAlign, horAlign, color, str(item.font().family()), weight, item.alpha()/float(255)))
+                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s', alpha = %.3f)\n" % (item.x, maxy-item.y, unicode(item.toPlainText()).encode("utf-8"), vertAlign, horAlign, color, str(item.font().family()), weight, item.defaultTextColor().alpha()/float(255)))
 
                 f.write("# disable grid\ngrid(False)\n\n")
                 f.write("#hide axis\naxis('off')\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
