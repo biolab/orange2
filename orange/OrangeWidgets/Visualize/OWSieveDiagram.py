@@ -263,7 +263,7 @@ class OWSieveDiagram(OWWidget):
 
                 # create rectangle
                 rect = OWCanvasRectangle(self.canvas, currX+2, currY+2, width-4, height-4, z = -10)
-                self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                self.addRectIndependencePearson(rect, currX+2, currY+2, width-4, height-4, (xAttr, xVal), (yAttr, yVal), actual, sum)
 
                 expected = float(xVal*yVal)/float(sum)
                 pearson = (actual - expected) / sqrt(expected)
@@ -281,7 +281,7 @@ class OWSieveDiagram(OWWidget):
             currX += width
 
         # show attribute names
-        OWCanvasText(self.canvas, self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, bold = 1)
+        OWCanvasText(self.canvas, self.attrY, xOff-20, yOff + sqareSize/2, Qt.AlignRight, bold = 1)
         OWCanvasText(self.canvas, self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, bold = 1)
 
         #self.canvas.update()
@@ -325,6 +325,7 @@ class OWSieveDiagram(OWWidget):
         else:
             pearson = max(pearson, -10)
             kvoc = 1 - 0.4*pearson
+        
         self.addLines(x,y,w,h, kvoc, pen)
 
 
@@ -332,19 +333,19 @@ class OWSieveDiagram(OWWidget):
     # add lines
     def addLines(self, x,y,w,h, diff, pen):
         if not self.showLines: return
-        if diff == 0: return
+        if w == 0 or h == 0: return
 
         # create lines
         dist = 20   # original distance between two lines in pixels
         dist = dist * diff
         temp = dist
         while (temp < w):
-            OWCanvasLine(self.canvas, temp+x, y+1, temp+x, y+h-2, 1, pen.color())
+            OWCanvasLine(self.canvas, temp+x, y, temp+x, y+h, 1, pen.color())
             temp += dist
 
         temp = dist
         while (temp < h):
-            OWCanvasLine(self.canvas, x+1, y+temp, x+w-2, y+temp, 1, pen.color())
+            OWCanvasLine(self.canvas, x, y+temp, x+w, y+temp, 1, pen.color())
             temp += dist
 
     def saveToFileCanvas(self):
