@@ -12,6 +12,7 @@ import orngVisFuncts
 from orngCI import FeatureByCartesianProduct
 import OWGUI
 from math import sqrt
+from orngScaleData import discretizeDomain
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
@@ -54,7 +55,7 @@ class OWSieveMultigram(OWVisWidget):
 
         OWGUI.button(self.GeneralTab, self, "Find Interesting Attr.", callback = self.interestingSubsetSelection, debuggingEnabled = 0)
 
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.lineWidth', label = "Max line width:", minValue=1, maxValue=10, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.lineWidth', box = 1, label = "Max line width:", minValue=1, maxValue=10, step=1, callback = self.updateGraph)
         residualBox = OWGUI.widgetBox(self.SettingsTab, "Attribute independence (Pearson residuals)")
         OWGUI.hSlider(residualBox, self, 'graph.maxPearson', label = "Max residual:", minValue=4, maxValue=12, step=1, callback = self.updateGraph)
         OWGUI.hSlider(residualBox, self, 'graph.minPearson', label = "Min residual:", minValue=0, maxValue=4, step=1, callback = self.updateGraph, tooltip = "The minimal absolute residual value that will be shown in graph")
@@ -67,8 +68,15 @@ class OWSieveMultigram(OWVisWidget):
     # receive new data and update all fields
     def setData(self, data):
         self.closeContext()
+        self.information()
         self.data = None
-        if data: self.data = orange.Preprocessor_dropMissing(data)
+        if data: 
+            data = orange.Preprocessor_dropMissing(data)
+        if data and data.domain.hasContinuousAttributes():
+            data = discretizeDomain(data, 1)
+            self.information("Continuous attributes were discretized using entropy discretization.")
+
+        self.data = data
         self.computeProbabilities()
 
         self.setShownAttributeList()

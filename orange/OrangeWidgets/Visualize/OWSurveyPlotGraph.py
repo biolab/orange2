@@ -26,6 +26,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels):
         self.clear()
+        self.selectedRectangle = None
         self.tips.removeAll()
 
         self.attrLabels = labels
