@@ -24,23 +24,20 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         OWGraph.__init__(self, parent, name)
         orngScaleScatterPlotData.__init__(self)
 
-        self.pointWidth = 5
+        self.pointWidth = 8
         self.jitterContinuous = 0
         self.jitterSize = 5
         self.showAxisScale = 1
         self.showXaxisTitle = 1
         self.showYLaxisTitle = 1
         self.showLegend = 1
-##        self.showClusters = 0
         self.tooltipKind = 1
         self.showFilledSymbols = 1
         self.showProbabilities = 0
 
         self.tooltipData = []
         self.scatterWidget = scatterWidget
-##        self.clusterOptimization = None
         self.insideColors = None
-##        self.clusterClosure = None
         self.shownAttributeIndices = []
         self.shownXAttribute = ""
         self.shownYAttribute = ""
@@ -107,7 +104,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.shownAttributeIndices = attrIndices
 
         # set axis for x attribute
-        discreteX = (self.dataDomain[xAttrIndex].varType == orange.VarTypes.Discrete)
+        discreteX = self.dataDomain[xAttrIndex].varType == orange.VarTypes.Discrete
         if discreteX:
             xVarMax -= 1; xVar -= 1
             xmin = xVarMin - (self.jitterSize + 10.)/100.
@@ -122,7 +119,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showContinuousColorLegend * xVar * 0.07, discreteX)
 
         # set axis for y attribute
-        discreteY = (self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete)
+        discreteY = self.dataDomain[yAttrIndex].varType == orange.VarTypes.Discrete
         if discreteY:
             yVarMax -= 1; yVar -= 1
             ymin = yVarMin - (self.jitterSize + 10.)/100.
@@ -145,8 +142,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         # #######################################################
         # show probabilities
-        if self.showProbabilities and colorIndex >= 0 and self.dataHasClass:
-            domain = orange.Domain([self.dataDomain[xAttrIndex], self.dataDomain[yAttrIndex], orange.EnumVariable(self.dataDomain.classVar.name, values = getVariableValuesSorted(self.dataDomain.classVar))])
+        if self.showProbabilities and colorIndex >= 0 and self.dataDomain[colorIndex].varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+            if self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete: domain = orange.Domain([self.dataDomain[xAttrIndex], self.dataDomain[yAttrIndex], orange.EnumVariable(self.attributeNames[colorIndex], values = getVariableValuesSorted(self.dataDomain[colorIndex]))])
+            else:                                                               domain = orange.Domain([self.dataDomain[xAttrIndex], self.dataDomain[yAttrIndex], orange.FloatVariable(self.attributeNames[colorIndex])])
             xdiff = xmax-xmin; ydiff = ymax-ymin
             scX = xData/xdiff
             scY = yData/ydiff
