@@ -62,7 +62,7 @@ class OWScatterPlot(OWWidget):
         #GUI
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
-        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings", canScroll = True)
 
         #add a graph widget
         self.mainArea.layout().addWidget(self.graph)
@@ -165,6 +165,7 @@ class OWScatterPlot(OWWidget):
         self.graph.enableGridYL(self.showGridlines)
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+        #self.SettingsTab.resize(self.SettingsTab.sizeHint())
 
         self.resize(700, 550)
 
@@ -242,7 +243,6 @@ class OWScatterPlot(OWWidget):
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
             self.classificationResults = (self.classificationResults, "Probability of correct classification = %.2f%%")
 
-        self.updateGraph()
 
     # set the learning method to be used in VizRank
     def setVizRankLearner(self, learner):
@@ -298,16 +298,17 @@ class OWScatterPlot(OWWidget):
             if attr.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                 self.attrXCombo.addItem(self.icons[attr.varType], attr.name)
                 self.attrYCombo.addItem(self.icons[attr.varType], attr.name)
-            self.attrColorCombo.addItem(self.icons[attr.varType], attr.name)
-            self.attrSizeCombo.addItem(self.icons[attr.varType], attr.name)
-            if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.addItem(self.icons[attr.varType], attr.name)
+                self.attrColorCombo.addItem(self.icons[attr.varType], attr.name)
+                self.attrSizeCombo.addItem(self.icons[attr.varType], attr.name)
+            if attr.varType == orange.VarTypes.Discrete: 
+                self.attrShapeCombo.addItem(self.icons[attr.varType], attr.name)
             self.attrLabelCombo.addItem(self.icons[attr.varType], attr.name)
 
         self.attrX = str(self.attrXCombo.itemText(0))
         if self.attrYCombo.count() > 1: self.attrY = str(self.attrYCombo.itemText(1))
         else:                           self.attrY = str(self.attrYCombo.itemText(0))
 
-        if self.data.domain.classVar:
+        if self.data.domain.classVar and self.data.domain.classVar.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
             self.attrColor = self.data.domain.classVar.name
         else:
             self.attrColor = ""
@@ -365,10 +366,13 @@ class OWScatterPlot(OWWidget):
         self.graph.replot()
 
     def pointSizeChange(self):
-        for curve in self.graph.itemList():
-            if isinstance(curve, QwtPlotCurve):
-                curve.symbol().setSize(self.graph.pointWidth)
-        self.graph.replot()
+        if self.attrSize:
+            self.updateGraph()
+        else:
+            for curve in self.graph.itemList():
+                if isinstance(curve, QwtPlotCurve):
+                    curve.symbol().setSize(self.graph.pointWidth)
+            self.graph.replot()
 
     def setShowGridlines(self):
         self.graph.enableGridXB(self.showGridlines)
