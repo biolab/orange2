@@ -356,12 +356,12 @@ class OWLinProj(OWVisWidget):
         if hasattr(self, "freeVizDlg"):
             self.freeVizDlg.saveSettings()
 
-    def hideEvent(self, ce):
+    def hideEvent(self, ev):
         self.vizrank.hide()
         if hasattr(self, "freeVizDlg"):
             self.freeVizDlg.hide()
-        self.hide()     # TODO: maybe this doesn't work!!
-        #OWVisWidget.destroy(self, dw, dsw)
+        OWVisWidget.hideEvent(self, ev)
+        
 
 
 #test widget appearance
@@ -369,8 +369,9 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLinProj()
     ow.show()
-    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
-    #ow.setShownAttributes(["A6", "A11", "A10", "A13"])
+    #ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
+    data = orange.ExampleTable(r"e:\Development\Orange Datasets\brown\brown-selected.tab")
+    ow.setData(data)
     ow.handleNewSignals()
     a.exec_()
 
