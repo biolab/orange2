@@ -14,7 +14,6 @@ class SignalCanvasView(QGraphicsView):
         self.dlg = dlg
         self.canvasDlg = canvasDlg
         self.bMouseDown = False
-        self.bLineDragging = False
         self.tempLine = None
         self.inWidget = None
         self.outWidget = None
@@ -75,8 +74,8 @@ class SignalCanvasView(QGraphicsView):
         self.inWidget.setZValue(-100)
         
         canvasPicsDir  = os.path.join(self.canvasDlg.canvasDir, "icons")
-        if os.path.exists(os.path.join(canvasPicsDir, "frame2.png")):
-            widgetBack = QPixmap(os.path.join(canvasPicsDir, "frame2.png"))
+        if os.path.exists(os.path.join(canvasPicsDir, "frame.png")):
+            widgetBack = QPixmap(os.path.join(canvasPicsDir, "frame.png"))
         else:
             widgetBack = outWidget.imageFrame
 
@@ -136,12 +135,11 @@ class SignalCanvasView(QGraphicsView):
         point = self.mapToScene(ev.pos())
         activeItem = self.scene().itemAt(QPointF(ev.pos()))
         if type(activeItem) == QGraphicsRectItem and activeItem not in [self.outWidget, self.inWidget]:
-            self.bLineDragging = 1
             self.tempLine = QGraphicsLineItem(None, self.dlg.canvas)
             self.tempLine.setLine(point.x(), point.y(), point.x(), point.y())
             self.tempLine.setPen(QPen(QColor(0,255,0), 1))
             self.tempLine.setZValue(-300)
-            return
+            
         elif type(activeItem) == QGraphicsLineItem:
             for (line, outName, inName, outBox, inBox) in self.lines:
                 if line == activeItem:
@@ -151,7 +149,7 @@ class SignalCanvasView(QGraphicsView):
     # ###################################################################
     # mouse button was released #########################################
     def mouseMoveEvent(self, ev):
-        if self.bLineDragging:
+        if self.tempLine:
             curr = self.mapToScene(ev.pos())
             start = self.tempLine.line().p1()
             self.tempLine.setLine(start.x(), start.y(), curr.x(), curr.y())
@@ -160,10 +158,8 @@ class SignalCanvasView(QGraphicsView):
     # ###################################################################
     # mouse button was released #########################################
     def mouseReleaseEvent(self, ev):
-        if self.bLineDragging:
-            self.bLineDragging = 0
+        if self.tempLine:
             activeItem = self.scene().itemAt(QPointF(ev.pos()))
-
             if type(activeItem) == QGraphicsRectItem:
                 activeItem2 = self.scene().itemAt(self.tempLine.line().p1())
                 if activeItem.x() < activeItem2.x(): outBox = activeItem; inBox = activeItem2
@@ -177,6 +173,7 @@ class SignalCanvasView(QGraphicsView):
                     self.dlg.addLink(outName, inName)
 
             self.tempLine.hide()
+            self.tempLine = None
             self.scene().update()
 
 
@@ -419,8 +416,8 @@ class CanvasOptionsDlg(QDialog):
         self.topLayout = QVBoxLayout(self)
         self.topLayout.setSpacing(0)
         self.resize(500,500)
-
-        self.removeTabs = []
+        self.toAdd = []
+        self.toRemove = []
 
         self.tabs = QTabWidget(self)
         GeneralTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
@@ -520,6 +517,7 @@ class CanvasOptionsDlg(QDialog):
         self.upButton = orngGui.button(w, self, "Up", callback = self.moveUp)
         self.downButton = orngGui.button(w, self, "Down", callback = self.moveDown)
         w.layout().addSpacing(20)
+        self.addButton = orngGui.button(w, self, "Add", callback = self.addCategory)
         self.removeButton = orngGui.button(w, self, "Remove", callback = self.removeCategory)
         self.removeButton.setEnabled(0)
         w.layout().addStretch(1)
@@ -556,13 +554,31 @@ class CanvasOptionsDlg(QDialog):
     def enableDisableButtons(self, itemIndex):
         self.upButton.setEnabled(itemIndex > 0)
         self.downButton.setEnabled(itemIndex < self.tabOrderList.count()-1)
-        self.removeButton.setEnabled(not self.canvasDlg.tabs.tabDict[str(self.tabOrderList.item(self.tabOrderList.currentRow()).text())].builtIn)
+        catName = str(self.tabOrderList.currentItem().text())
+        if not self.canvasDlg.widgetRegistry.has_key(catName): return
+        self.removeButton.setEnabled(os.path.normpath(self.canvasDlg.widgetDir) not in os.path.normpath(self.canvasDlg.widgetRegistry[catName].directory))
+        #self.removeButton.setEnabled(1)
 
+    def addCategory(self):
+        dir = str(QFileDialog.getExistingDirectory(self, "Select the folder that contains the add-on:"))
+        if dir != "":
+            if os.path.split(dir)[1] == "widgets":     # register a dir above the dir that contains the widget folder
+                dir = os.path.split(dir)[0]
+            if os.path.exists(os.path.join(dir, "widgets")):
+                name = os.path.split(dir)[1]
+                self.toAdd.append((name, dir))
+                self.tabOrderList.addItem(name)
+                self.tabOrderList.item(self.tabOrderList.count()-1).setCheckState(Qt.Checked)
+            else:
+                QMessageBox.information( None, "Information", 'The specified folder does not seem to contain an Orange add-on.', QMessageBox.Ok + QMessageBox.Default)
+            
+        
     def removeCategory(self):
         curCat = str(self.tabOrderList.item(self.tabOrderList.currentRow()).text())
-        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas? This will not remove any files." % curCat, QMessageBox.Ok , QMessageBox.Cancel | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
-            self.removeTabs.append(curCat)
-            self.tabOrderList.takeItem(self.tabOrderList.currentRow())
+        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Ok , QMessageBox.Cancel | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Ok:
+            self.toRemove.append((curCat, self.canvasDlg.widgetRegistry[curCat].directory))
+            item = self.tabOrderList.takeItem(self.tabOrderList.row(self.tabOrderList.currentItem()))
+            #if item: item.setHidden(1)
 
 
 class KeyEdit(QLineEdit):
@@ -621,6 +637,8 @@ class WidgetShortcutDlg(QDialog):
         
         extraTabs = [(name, 1) for name in canvasDlg.widgetRegistry.keys() if name not in [tab for (tab, s) in canvasDlg.settings["WidgetTabs"]]]
         for tabName, show in canvasDlg.settings["WidgetTabs"] + extraTabs:
+            if not canvasDlg.widgetRegistry.has_key(tabName):
+                continue
             scrollArea = QScrollArea()
             self.tabs.addTab(scrollArea, tabName)
             #scrollArea.setWidgetResizable(1)       # you have to use this or set size to wtab manually - otherwise nothing gets shown

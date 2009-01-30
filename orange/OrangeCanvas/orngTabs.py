@@ -119,16 +119,14 @@ class WidgetButton(QFrame, WidgetButtonBase):
             return
         self.busy = 1
 
-        vrect = QRectF(schema.visibleRegion().boundingRect())
-        widgetRect = QRect(QPoint(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))), QSize(60, 60)).adjusted(-30, -30, -30, -30)
-        inside = schema.canvasView.rect().contains(widgetRect)
+        inside = schema.canvasView.rect().contains(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())) - QPoint(50,50))
         p = QPointF(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(schema.canvasView.mapToScene(QPoint(0, 0)))
 
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         if dinwin and (dinwin != schema or not inside):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
-             dinwin.canvasView.scene().update()
+             #dinwin.canvasView.scene().update()
 
         if inside:
             if not widget:
@@ -141,7 +139,6 @@ class WidgetButton(QFrame, WidgetButtonBase):
                 return
 
             widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
-            schema.canvasView.scene().update()
 
             import orngCanvasItems
             items = schema.canvas.collidingItems(widget)
@@ -190,6 +187,86 @@ class WidgetTreeItem(QTreeWidgetItem, WidgetButtonBase):
     
     def adjustSize(self):
         pass
+
+
+class MyTreeWidget(QTreeWidget):
+    def __init__(self, canvasDlg, parent = None):
+        QTreeWidget.__init__(self, parent)
+        self.canvasDlg = canvasDlg
+        self.setMouseTracking(1)
+        self.setHeaderHidden(1)
+        self.mousePressed = 0
+        self.mouseRightClick = 0
+        self.connect(self, SIGNAL("itemClicked (QTreeWidgetItem *,int)"), self.itemClicked)
+
+        
+    def mouseMoveEvent(self, e):
+        if not self.mousePressed:   # this is needed, otherwise another widget in the tree might get selected while we drag the icon to the canvas
+            QTreeWidget.mouseMoveEvent(self, e)
+        ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
+        ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
+        schema = self.canvasDlg.schema
+        if hasattr(self, "busy"):
+            return
+        self.busy = 1
+
+        inside = schema.canvasView.rect().contains(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())) - QPoint(50,50))
+        p = QPointF(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(schema.canvasView.mapToScene(QPoint(0, 0)))
+
+        dinwin, widget = getattr(self, "widgetDragging", (None, None))
+        if dinwin and (dinwin != win or not inside):
+             dinwin.removeWidget(widget)
+             delattr(self, "widgetDragging")
+             dinwin.canvasView.scene().update()
+
+        if inside:
+            if not widget and self.selectedItems() != [] and isinstance(self.selectedItems()[0], WidgetTreeItem):
+                widget = schema.addWidget(self.selectedItems()[0].widgetInfo, p.x(), p.y())
+                self.widgetDragging = schema, widget
+
+            # in case we got an exception when creating a widget instance
+            if widget == None:
+                delattr(self, "busy")
+                return
+
+            widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
+            schema.canvasView.scene().update()
+
+            import orngCanvasItems
+            items = schema.canvas.collidingItems(widget)
+            widget.invalidPosition = widget.selected = (schema.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
+
+        delattr(self, "busy")
+        
+    def mousePressEvent(self, e):
+        QTreeWidget.mousePressEvent(self, e)
+        self.mousePressed = 1
+        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
+        self.mouseRightClick = e.button() == Qt.RightButton
+        
+    def mouseReleaseEvent(self, e):
+        QTreeWidget.mouseReleaseEvent(self, e)
+        dinwin, widget = getattr(self, "widgetDragging", (None, None))
+        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
+        if widget:
+            if widget.invalidPosition:
+                dinwin.removeWidget(widget)
+                dinwin.canvasView.scene().update()
+            elif self.shiftPressed and len(dinwin.widgets) > 1:
+                dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
+            delattr(self, "widgetDragging")
+           
+        self.mousePressed = 0
+        
+    def itemClicked(self, item, column):
+        if isinstance(item, WidgetTreeFolder):
+            return
+        win = self.canvasDlg.schema
+        win.addWidget(item.widgetInfo)
+        if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
+            win.addLine(win.widgets[-2], win.widgets[-1])
+    
+    
     
 
             
@@ -224,8 +301,6 @@ class WidgetListBase:
             tab = self.insertWidgetTab(tabName, show)
             
             directory = widgetRegistry[tabName].directory
-            tab.builtIn = not directory
-
             widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in widgetRegistry[tabName].items()]
             widgets.sort()
             exIndex = 0
@@ -389,86 +464,6 @@ class MyQToolBox(QToolBox):
         return QSize(self.desiredSize, 100)
 
 
-class MyTreeWidget(QTreeWidget):
-    def __init__(self, canvasDlg, parent = None):
-        QTreeWidget.__init__(self, parent)
-        self.canvasDlg = canvasDlg
-        self.setMouseTracking(1)
-        self.setHeaderHidden(1)
-        self.mousePressed = 0
-        self.mouseRightClick = 0
-        self.connect(self, SIGNAL("itemClicked (QTreeWidgetItem *,int)"), self.itemClicked)
-
-        
-    def mouseMoveEvent(self, e):
-        if not self.mousePressed:   # this is needed, otherwise another widget in the tree might get selected while we drag the icon to the canvas
-            QTreeWidget.mouseMoveEvent(self, e)
-        ### Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
-        ### Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
-        win = self.canvasDlg.schema
-        if hasattr(self, "busy"):
-            return
-        self.busy = 1
-
-        vrect = QRectF(win.visibleRegion().boundingRect())
-        inside = win.canvasView.rect().contains(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos())))
-        p = QPointF(win.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(win.canvasView.mapToScene(QPoint(0, 0)))
-
-        dinwin, widget = getattr(self, "widgetDragging", (None, None))
-        if dinwin and (dinwin != win or not inside):
-             dinwin.removeWidget(widget)
-             delattr(self, "widgetDragging")
-             dinwin.canvasView.scene().update()
-
-        if inside:
-            if not widget and self.selectedItems() != [] and isinstance(self.selectedItems()[0], WidgetTreeItem):
-                widget = win.addWidget(self.selectedItems()[0].widgetInfo, p.x(), p.y())
-                self.widgetDragging = win, widget
-
-            # in case we got an exception when creating a widget instance
-            if widget == None:
-                delattr(self, "busy")
-                return
-
-            widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
-            win.canvasView.scene().update()
-
-            import orngCanvasItems
-            items = win.canvas.collidingItems(widget)
-            widget.invalidPosition = widget.selected = (win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget) > 0)
-
-        delattr(self, "busy")
-        
-    def mousePressEvent(self, e):
-        QTreeWidget.mousePressEvent(self, e)
-        self.mousePressed = 1
-        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
-        self.mouseRightClick = e.button() == Qt.RightButton
-        
-    def mouseReleaseEvent(self, e):
-        QTreeWidget.mouseReleaseEvent(self, e)
-        dinwin, widget = getattr(self, "widgetDragging", (None, None))
-        self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
-        if widget:
-            if widget.invalidPosition:
-                dinwin.removeWidget(widget)
-                dinwin.canvasView.scene().update()
-            elif self.shiftPressed and len(dinwin.widgets) > 1:
-                dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
-            delattr(self, "widgetDragging")
-           
-        self.mousePressed = 0
-        
-    def itemClicked(self, item, column):
-        if isinstance(item, WidgetTreeFolder):
-            return
-        win = self.canvasDlg.schema
-        win.addWidget(item.widgetInfo)
-        if (self.mouseRightClick or self.shiftPressed) and len(win.widgets) > 1:
-            win.addLine(win.widgets[-2], win.widgets[-1])
-    
-    
-
 class CanvasPopup(QMenu):
     def __init__(self, canvasDlg):
         QMenu.__init__(self, canvasDlg)
@@ -504,14 +499,17 @@ def constructCategoriesPopup(canvasDlg):
     categoriesPopup = CanvasPopup(canvasDlg)
     categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } """)
 
-    widgetTabList = canvasDlg.settings.get("WidgetTabs", None)
-    if widgetTabList:
-        widgetTabList = [wt for wt, ch in canvasDlg.settings["WidgetTabs"] if ch]
-    else:
-        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Prototypes"]
-    extraTabs = [name for name in canvasDlg.widgetRegistry if name not in widgetTabList]
-
-    for category in widgetTabList + extraTabs:
+    for category, show in canvasDlg.settings["WidgetTabs"]:
+        if not show or not canvasDlg.widgetRegistry.has_key(category):
+            continue
+##    widgetTabList = canvasDlg.settings.get("WidgetTabs", None)
+##    if widgetTabList:
+##        widgetTabList = [wt for wt, ch in canvasDlg.settings["WidgetTabs"] if ch]
+##    else:
+##        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Prototypes"]
+##    extraTabs = [name for name in canvasDlg.widgetRegistry if name not in widgetTabList]
+##
+##    for category in widgetTabList + extraTabs:
         catmenu = categoriesPopup.addMenu(category)
         categoriesPopup.catActions.append(catmenu)
         for widgetInfo in sorted(canvasDlg.widgetRegistry[category].values(), key=lambda x:x.priority):

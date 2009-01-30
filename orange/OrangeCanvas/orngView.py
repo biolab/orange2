@@ -11,10 +11,8 @@ import orngHistory, orngTabs
 class SchemaView(QGraphicsView):
     def __init__(self, doc, *args):
         apply(QGraphicsView.__init__,(self,) + args)
-        #self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.doc = doc
         self.bWidgetDragging = False               # are we currently dragging a widget
-        self.bLineDragging = False                 # are we currently drawing a line
         self.bMultipleSelection = False            # are we currently in the process of drawing a rectangle containing widgets that we wish to select
         self.movingWidget = None
         self.mouseDownPosition = QPoint(0,0)
@@ -171,7 +169,6 @@ class SchemaView(QGraphicsView):
                 activeItem.setSelected(1)
                 if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
                     self.unselectAllWidgets()
-                    self.bLineDragging = True
                     pos = activeItem.getEdgePoint(self.mouseDownPosition)
                     self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
                     self.tempLine.setLine(pos.x(), pos.y(), pos.x(), pos.y())
@@ -251,9 +248,8 @@ class SchemaView(QGraphicsView):
                 item.updateLineCoords()
             self.scene().update()
 
-        elif self.bLineDragging:
-            if self.tempLine:
-                self.tempLine.setLine(self.tempLine.line().x1(), self.tempLine.line().y1(), point.x(), point.y())
+        elif self.tempLine:
+            self.tempLine.setLine(self.tempLine.line().x1(), self.tempLine.line().y1(), point.x(), point.y())
             self.scene().update()
 
         elif self.bMultipleSelection:
@@ -293,7 +289,7 @@ class SchemaView(QGraphicsView):
 
 
         # if we are drawing line
-        elif self.bLineDragging:
+        elif self.tempLine:
             # show again the empty input/output boxes
             for widget in self.doc.widgets:
               widget.resetLeftRightEdges()      
@@ -304,9 +300,8 @@ class SchemaView(QGraphicsView):
                 item = inWidget or outWidget
 
             p1 = self.tempLine.line().p1()
-            if self.tempLine != None:
-                self.tempLine.hide()
-                self.tempLine = None
+            self.tempLine.hide()
+            self.tempLine = None
 
             # we must check if we have really connected some output to input
             if type(item) == orngCanvasItems.CanvasWidget and self.tempWidget and item != self.tempWidget:
@@ -314,9 +309,9 @@ class SchemaView(QGraphicsView):
                      QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
                     if self.tempWidget.mouseInsideLeftChannel(p1):
-                        line = self.doc.addLine(item, self.tempWidget)
+                        self.doc.addLine(item, self.tempWidget)
                     else:
-                        line = self.doc.addLine(self.tempWidget, item)
+                        self.doc.addLine(self.tempWidget, item)
             else:
                 if self.outWidget:
                     orngTabs.categoriesPopup.selectByInputs(self.outWidget.widgetInfo)
@@ -327,10 +322,11 @@ class SchemaView(QGraphicsView):
                 if action:
                     xOff = -48 * bool(self.inWidget)
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x()+xOff, point.y()-24)
-                    if self.doc.signalManager.signalProcessingInProgress:
-                        QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
-                    else:
-                        line = self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
+                    if newWidget != None:
+                        if self.doc.signalManager.signalProcessingInProgress:
+                            QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
+                        else:
+                            self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
 
         else:
             activeItem = self.scene().itemAt(point)
@@ -345,7 +341,6 @@ class SchemaView(QGraphicsView):
 
         self.scene().update()
         self.bWidgetDragging = False
-        self.bLineDragging = False
         self.bMultipleSelection = False
         self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 

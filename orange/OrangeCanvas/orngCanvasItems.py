@@ -121,7 +121,15 @@ class CanvasWidget(QGraphicsRectItem):
         m = __import__(widgetInfo.fileName)
         self.instance = m.__dict__[widgetInfo.fileName].__new__(m.__dict__[widgetInfo.fileName], _owInfo = canvasDlg.settings["owInfo"], _owWarning = canvasDlg.settings["owWarning"], _owError = canvasDlg.settings["owError"], _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"], _category = widgetInfo.category, _settingsFromSchema = widgetSettings)
         self.instance.__init__(signalManager=signalManager)
-
+        self.isProcessing = 0   # is this widget currently processing signals
+        self.progressBarShown = 0
+        self.widgetState = {}
+        self.caption = widgetInfo.name
+        self.selected = False
+        self.invalidPosition = False    # is the widget positioned over other widgets
+        self.inLines = []               # list of connected lines on input
+        self.outLines = []              # list of connected lines on output
+        
         self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(view.processingHandler)
         self.instance.setWidgetStateHandler(self.updateWidgetState)
@@ -136,7 +144,6 @@ class CanvasWidget(QGraphicsRectItem):
         self.view = view
         self.canvasDlg = canvasDlg
         self.image = QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo))
-
         canvasPicsDir  = os.path.join(canvasDlg.canvasDir, "icons")
         self.imageLeftEdge = QPixmap(os.path.join(canvasPicsDir,"leftEdge.png"))
         self.imageRightEdge = QPixmap(os.path.join(canvasPicsDir,"rightEdge.png"))
@@ -150,15 +157,8 @@ class CanvasWidget(QGraphicsRectItem):
         self.edgeSize = QSizeF(self.imageLeftEdge.size())
 
         self.setRect(0,0, self.widgetSize.width(), self.widgetSize.height())
-        self.selected = False
-        self.invalidPosition = False    # is the widget positioned over other widgets
-        self.inLines = []               # list of connected lines on input
-        self.outLines = []              # list of connected lines on output
-        self.caption = widgetInfo.name
-        self.progressBarShown = 0
         self.oldPos = self.pos()        
-        self.isProcessing = 0   # is this widget currently processing signals
-        self.widgetState = {}
+        
         self.infoIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Info"], None, canvas)
         self.warningIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Warning"], None, canvas)
         self.errorIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Error"], None, canvas)
@@ -269,7 +269,20 @@ class CanvasWidget(QGraphicsRectItem):
 
     # we have to increase the default bounding rect so that we also repaint the name of the widget and input/output boxes
     def boundingRect(self):
-        return QRectF(self.imageFrame.rect()).adjusted(-30, -30, +30, +50)
+        # get the width of the widget's caption
+        pixmap = QPixmap(200,40)
+        painter = QPainter()
+        painter.begin(pixmap)
+        width = max(0, painter.boundingRect(QRectF(0,0,200,40), Qt.AlignLeft, self.caption).width() - 60) / 2
+        painter.end()
+        
+        rect = QRectF(self.imageFrame.rect()).adjusted(-10-width, -4, +10+width, +25)
+        if self.progressBarShown:
+            rect.setTop(rect.top()-20)
+        widgetState = self.instance.widgetState
+        if widgetState.get("Info", {}).values() + widgetState.get("Warning", {}).values() + widgetState.get("Error", {}).values() != []:
+            rect.setTop(rect.top()-21)
+        return rect
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
@@ -335,7 +348,6 @@ class CanvasWidget(QGraphicsRectItem):
 
         if self.isProcessing or self.selected:
             painter.setPen(QPen(color))
-#            painter.setBrush(QBrush(color))
             painter.drawRect(-3, -3, self.widgetSize.width()+6, self.widgetSize.height()+6)
 
 
@@ -349,7 +361,9 @@ class CanvasWidget(QGraphicsRectItem):
         painter.setPen(QPen(QColor(0,0,0)))
         midX, midY = self.widgetSize.width()/2., self.widgetSize.height() + 5
         painter.drawText(midX-200/2, midY, 200, 20, Qt.AlignTop | Qt.AlignHCenter, self.caption)
-
+        
+        #painter.drawRect(self.boundingRect())
+        
         yPos = -22
         if self.progressBarShown:
             rect = QRectF(0, yPos, self.widgetSize.width(), 16)

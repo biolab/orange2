@@ -10,7 +10,7 @@ orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 if not orangeDir in sys.path:
     sys.path.append(orangeDir)
 
-from orngEnviron import *
+import orngEnviron
 
 class WidgetDescription:
     def __init__(self, **attrs):
@@ -21,15 +21,10 @@ class WidgetCategory(dict):
         self.update(widgets)
         self.directory = directory
    
-storedCategories = None
-
 def readCategories():
-    global storedCategories
-    if storedCategories:
-        return storedCategories
-    
-    widgetDirName = os.path.realpath(directoryNames["widgetDir"])
-    canvasSettingsDir = os.path.realpath(directoryNames["canvasSettingsDir"])
+    global widgetsWithError 
+    widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
+    canvasSettingsDir = os.path.realpath(orngEnviron.directoryNames["canvasSettingsDir"])
     cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle")
 
     try:
@@ -46,7 +41,7 @@ def readCategories():
             directories.append((dirName, directory, ""))
 
     # read list of add-ons (in orange/add-ons as well as those additionally registered by the user)
-    for (name, dirName) in addOns:
+    for (name, dirName) in orngEnviron.addOns:
         addOnWidgetsDir = os.path.join(dirName, "widgets")
         if os.path.isdir(addOnWidgetsDir):
             directories.append((name, addOnWidgetsDir, addOnWidgetsDir))
@@ -61,9 +56,10 @@ def readCategories():
             categories[catName] = WidgetCategory(plugin and dirName or "", widgets)
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
-    storedCategories = categories
     if splashWindow:
         splashWindow.hide()
+    if widgetsWithError != []:
+        print "The following widgets could not be imported and will not be available: " + ", ".join(widgetsWithError)
     return categories
 
 
@@ -72,10 +68,12 @@ re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.D
 
 hasErrors = False
 splashWindow = None
+widgetsWithError = []
 
 def readWidgets(directory, category, cachedWidgetDescriptions):
     import sys, imp
-    global hasErrors, splashWindow
+    global hasErrors, splashWindow, widgetsWithError
+    
     
     widgets = []
     for filename in glob.iglob(os.path.join(directory, "*.py")):
@@ -159,10 +157,11 @@ def readWidgets(directory, category, cachedWidgetDescriptions):
             widgets.append((name, widgetInfo))
         except Exception, msg:
             if not hasErrors:
-                print "The following widgets could not be imported and will not be available"
-                hasErrors = True 
+                print "There were problems importing the following widgets:"
+                hasErrors = True
             print "   %s: %s" % (widgname, msg)
-        
+            widgetsWithError.append(widgname)
+       
     return widgets
 
 

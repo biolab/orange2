@@ -12,7 +12,7 @@ import os.path, os
 
 class OutputWindow(QDialog):
     def __init__(self, canvasDlg, *args):
-        apply(QDialog.__init__,(self,) + args)
+        QDialog.__init__(self, None, Qt.Window)
         self.canvasDlg = canvasDlg
 
         self.textOutput = QTextEdit(self)

@@ -30,7 +30,6 @@ class SchemaDoc(QWidget):
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.layout().addWidget(self.canvasView)
         self.layout().setMargin(0)
-        
         self.schemaID = orngHistory.logNewSchema()
 
 
@@ -70,8 +69,9 @@ class SchemaDoc(QWidget):
     # save a temp document whenever anything changes. this doc is deleted on closeEvent
     # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
     def saveTempDoc(self):
-        tempName = os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp")
-        self.save(tempName)
+        if self.widgets != []:
+            tempName = os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp")
+            self.save(tempName)
         
     def removeTempDoc(self):
         tempName = os.path.join(self.canvasDlg.canvasSettingsDir, "tempSchema.tmp")
@@ -86,27 +86,29 @@ class SchemaDoc(QWidget):
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
     def addLine(self, outWidget, inWidget, enabled = True):
+        if outWidget == inWidget: 
+            return None
         # check if line already exists
         line = self.getLine(outWidget, inWidget)
         if line:
             self.resetActiveSignals(outWidget, inWidget, None, enabled)
-            return
+            return None
 
         if self.signalManager.existsPath(inWidget.instance, outWidget.instance):
-            QMessageBox.critical( self, "Orange Canvas", "Cyclic connections are not allowed in Orange Canvas.", QMessageBox.Ok)
-            return
+            QMessageBox.critical( self, "Failed to Connect", "Circular connections are not allowed in Orange Canvas.", QMessageBox.Ok)
+            return None
 
         dialog = SignalDialog(self.canvasDlg, None)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
         if connectStatus == 0:
-            QMessageBox.information( self, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok)
+            QMessageBox.information( self, "Failed to Connect", "Selected widgets don't share a common signal type.", QMessageBox.Ok)
             return
 
         # if there are multiple choices, how to connect this two widget, then show the dialog
         if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
             if dialog.exec_() == QDialog.Rejected:
-                return
+                return None
 
         self.signalManager.setFreeze(1)
         linkCount = 0
@@ -238,7 +240,7 @@ class SchemaDoc(QWidget):
             self.removeLine1(line)
 
     # add new widget
-    def addWidget(self, widgetInfo, x= -1, y=-1, caption = "", widgetSettings = {}):
+    def addWidget(self, widgetInfo, x= -1, y=-1, caption = "", widgetSettings = {}, saveTempDoc = True):
         qApp.setOverrideCursor(Qt.WaitCursor)
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widgetInfo, self.canvasDlg.defaultPic, self.canvasDlg, widgetSettings)
@@ -271,7 +273,7 @@ class SchemaDoc(QWidget):
                 if not invalidPosition:
                     break
             
-        self.canvasView.ensureVisible(newwidget)
+        #self.canvasView.ensureVisible(newwidget)
 
         if caption == "": caption = newwidget.caption
 
@@ -283,7 +285,8 @@ class SchemaDoc(QWidget):
         newwidget.instance.setWindowTitle(caption)
 
         self.widgets.append(newwidget)
-        self.saveTempDoc()
+        if saveTempDoc:
+            self.saveTempDoc()
         self.canvas.update()
 
         # show the widget and activate the settings
@@ -304,7 +307,7 @@ class SchemaDoc(QWidget):
         return newwidget
 
     # remove widget
-    def removeWidget(self, widget):
+    def removeWidget(self, widget, saveTempDoc = True):
         if not widget:
             return
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
@@ -313,12 +316,15 @@ class SchemaDoc(QWidget):
         self.signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
-        self.saveTempDoc()
+        if saveTempDoc:
+            self.saveTempDoc()
         
         orngHistory.logRemoveWidget(self.schemaID, (widget.widgetInfo.category, widget.widgetInfo.name))
 
     def clear(self):
-        for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
+        self.canvasDlg.setCaption()
+        for widget in self.widgets[::-1]:   
+            self.removeWidget(widget, saveTempDoc = False)   # remove widgets from last to first
         self.canvas.update()
         self.saveTempDoc()
 
@@ -337,11 +343,11 @@ class SchemaDoc(QWidget):
         self.canvas.update()
 
     # return a new widget instance of a widget with filename "widgetName"
-    def addWidgetByFileName(self, widgetFileName, x, y, caption, widgetSettings = {}):
+    def addWidgetByFileName(self, widgetFileName, x, y, caption, widgetSettings = {}, saveTempDoc = True):
         for category in self.canvasDlg.widgetRegistry.keys():
             for name, widget in self.canvasDlg.widgetRegistry[category].items():
                 if widget.fileName == widgetFileName:  
-                    return self.addWidget(widget, x, y, caption, widgetSettings)
+                    return self.addWidget(widget, x, y, caption, widgetSettings, saveTempDoc)
         return None
 
     # return the widget instance that has caption "widgetName"
@@ -473,7 +479,7 @@ class SchemaDoc(QWidget):
             for widget in widgets.getElementsByTagName("widget"):
                 name = widget.getAttribute("widgetName")
                 settings = cPickle.loads(settingsDict[widget.getAttribute("caption")])
-                tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), settings)
+                tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), settings, saveTempDoc = False)
                 if not tempWidget:
                     #QMessageBox.information(self, 'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
                     failureText += '<nobr>Unable to create instance of a widget <b>%s</b></nobr><br>' %(name)
@@ -728,3 +734,7 @@ if __name__ == "__main__":
         else:
             #e.ignore()
             QWidget.keyPressEvent(self, e)
+
+#    def resizeEvent(self, ev):
+#        QWidget.resizeEvent(self, ev)
+#        self.canvas.addRect(self.canvasView.size().width()-1, self.canvasView.size().height()-1, 1, 1)
