@@ -298,7 +298,8 @@ class SOMLearner(orange.Learner):
     """ SOMLearner is a class used to learn SOM from orange.ExampleTable
 
     Example:
-        >>> som = orngSOM.SOMLearner(map_shape=()
+        >>> som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
+        >>> map = som(orange.ExampleTable("iris.tab"))
     """
     def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, neighbourhood=NeighbourhoodGaussian,
                  batch_train=True, learning_rate=0.05, radius_ini=3, radius_fin=1, epochs=1000, **kwargs):
@@ -329,9 +330,9 @@ class SOMLearner(orange.Learner):
 
 class SOMSupervisedLearner(SOMLearner):
     """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
-    class information in the learning process. This is achieved by adding a value for each class to the training
-    instances, where 1.0 signals class membership and all other values are 0.0. After the training,
-    the new values are discarded from the node vectors.
+    class information in the learning process. This is achieved by adding a value for each class
+    to the training instances, where 1.0 signals class membership and all other values are 0.0.
+    After the training, the new values are discarded from the node vectors.
     """
     def __call__(self, examples, weightID=0, progressCallback=None):
         data, classes, w = examples.toNumpyMA()
