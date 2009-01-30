@@ -11,7 +11,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
     settingsList = ["stepsBeforeUpdate", "restrain", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
                     "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive",
-                    "disableRepulsive", "useGeneralizedEigenvectors"]
+                    "disableRepulsive", "useGeneralizedEigenvectors", "touringSpeed"]
 
     forceRelValues = ["4 : 1", "3 : 1", "2 : 1", "3 : 2", "1 : 1", "2 : 3", "1 : 2", "1 : 3", "1 : 4"]
     attractRepelValues = [(4, 1), (3, 1), (2, 1), (3, 2), (1, 1), (2, 3), (1, 2), (1, 3), (1, 4)]
@@ -27,6 +27,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.forceRelation = 5
         self.disableAttractive = 0
         self.disableRepulsive = 0
+        self.touringSpeed = 4
         self.graph = graph
 
         if self.graph:
@@ -42,7 +43,7 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.layout().setMargin(0)
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.MainTab = OWGUI.createTabPage(self.tabs, "Main")
-        self.S2NHeuristicTab = OWGUI.createTabPage(self.tabs, "S2N Heuristic")
+        self.ProjectionsTab = OWGUI.createTabPage(self.tabs, "Projections")
 
         # ###########################
         # MAIN TAB
@@ -94,18 +95,22 @@ class FreeVizOptimization(OWWidget, FreeViz):
         OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.parentWidget.updateGraph)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
 
-##        box = OWGUI.widgetBox(self.MainTab, "Differential Evolution")
-##        self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)
-##        box2 = OWGUI.widgetBox(box, 0, orientation = "horizontal")
-##        self.createPopulationButton = OWGUI.button(box2, self, "Create population", callback = self.createPopulation)
-##        self.evolvePopulationButton = OWGUI.button(box2, self, "Evolve population", callback = self.evolvePopulation)
-##
-        #box = OWGUI.widgetBox(self.MainTab, 1)
-        #self.energyLabel = QLabel(box, "Energy: ")
-
-        # ##########################
-        # S2N HEURISTIC TAB
-        box = OWGUI.widgetBox(self.S2NHeuristicTab, "Signal to Noise Heuristic")
+        if parentName.lower() != "radviz":
+            pcaBox = OWGUI.widgetBox(self.ProjectionsTab, "Principal Component Analysis")
+            OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
+            OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
+            OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
+            plsBox = OWGUI.widgetBox(self.ProjectionsTab, "Partial Least Squares")
+            OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
+        
+        box = OWGUI.widgetBox(self.ProjectionsTab, "Projection Tours")
+        self.startTourButton = OWGUI.button(box, self, "Start Random Touring", callback = self.startRandomTouring)
+        self.stopTourButton = OWGUI.button(box, self, "Stop Touring", callback = self.stopRandomTouring)
+        self.stopTourButton.hide()
+        OWGUI.hSlider(box, self, 'touringSpeed', label = "Speed:  ", minValue=1, maxValue=10, step=1)
+        OWGUI.rubber(self.ProjectionsTab)
+        
+        box = OWGUI.widgetBox(self.ProjectionsTab, "Signal to Noise Heuristic")
         #OWGUI.comboBoxWithCaption(box, self, "s2nSpread", "Anchor spread: ", tooltip = "Are the anchors for each class value placed together or are they distributed along the circle", items = range(11), callback = self.s2nMixAnchors)
         box2 = OWGUI.widgetBox(box, 0, orientation = "horizontal")
         OWGUI.widgetLabel(box2, "Anchor spread:           ")
@@ -113,25 +118,51 @@ class FreeVizOptimization(OWWidget, FreeViz):
         OWGUI.comboBoxWithCaption(box, self, "s2nPlaceAttributes", "Attributes to place: ", tooltip = "Set the number of top ranked attributes to place. You can select a higher value than the actual number of attributes", items = self.attrsNum, callback = self.s2nMixAnchors, sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, 'autoSetParameters', 'Automatically find optimal parameters')
         self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)
-        OWGUI.rubber(self.S2NHeuristicTab)
 
-        # ##########################
-        # SUPERVISED PCA TAB
-        if parentName.lower() != "radviz":
-            self.LinearTransformationTab = OWGUI.createTabPage(self.tabs, "Dimensionality Reduction")
-            pcaBox = OWGUI.widgetBox(self.LinearTransformationTab, "Principal Component Analysis")
-            #OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
-            OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
-            OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
-            plsBox = OWGUI.widgetBox(self.LinearTransformationTab, "Partial Least Squares")
-            OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
-            OWGUI.rubber(self.LinearTransformationTab)
 
         self.forceLawChanged()
         self.updateForces()
         self.cbforcebal.setDisabled(self.cbDisableAttractive.isChecked() or self.cbDisableRepulsive.isChecked())
         self.resize(320,650)
 ##        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
+
+
+    def startRandomTouring(self):
+        self.startTourButton.hide()
+        self.stopTourButton.show()
+        
+        labels = [self.graph.anchorData[i][2] for i in range(len(self.graph.anchorData))]
+        newXPositions = numpy.array([x[0] for x in self.graph.anchorData])
+        newYPositions = numpy.array([x[1] for x in self.graph.anchorData])
+        step = steps = 0
+        self.canTour = 1
+        while hasattr(self, "canTour"):
+            if step >= steps:
+                oldXPositions = newXPositions
+                oldYPositions = newYPositions
+                newXPositions = numpy.random.uniform(-1, 1, len(self.graph.anchorData))
+                newYPositions = numpy.random.uniform(-1, 1, len(self.graph.anchorData))
+                m = math.sqrt(max(newXPositions**2 + newYPositions**2))
+                newXPositions/= m
+                newYPositions/= m
+                maxDist = max(numpy.sqrt((newXPositions - oldXPositions)**2 + (newYPositions - oldYPositions)**2))
+                steps = int(maxDist * 300)
+                step = 0
+            midX = newXPositions * step/steps + oldXPositions * (steps-step)/steps
+            midY = newYPositions * step/steps + oldYPositions * (steps-step)/steps
+            self.graph.anchorData = [(midX[i], midY[i], labels[i]) for i in range(len(labels))]
+            step += self.touringSpeed
+            self.graph.updateData()
+            if step % 10 == 0:
+                qApp.processEvents()
+            #self.graph.repaint()
+                        
+        
+    def stopRandomTouring(self):
+        self.startTourButton.show()
+        self.stopTourButton.hide()
+        if hasattr(self, "canTour"):
+            delattr(self, "canTour")
 
 
     # ##############################################################
@@ -262,12 +293,75 @@ class FreeVizOptimization(OWWidget, FreeViz):
         self.findProjection(DR_PCA, setAnchors = 1)
 
     def findSPCAProjection(self):
+        if not self.graph.dataHasClass: 
+            QMessageBox.information( None, self.parentName, 'Supervised PCA can only be applied on data with a class attribute.', QMessageBox.Ok + QMessageBox.Default)
+            return
         self.findProjection(DR_SPCA, setAnchors = 1)
 
     def findPLSProjection(self):
         self.findProjection(DR_PLS, setAnchors = 1)
+        
+    def hideEvent(self, ev):
+        self.stopRandomTouring()        # if we were touring then stop
+        self.saveSettings()
+        OWWidget.hideEvent(self, ev)
 
 
+    # if autoSetParameters is set then try different values for parameters and see how good projection do we get
+    # if not then just use current parameters to place anchors
+    def s2nMixAnchorsAutoSet(self):
+        # check if we have data and a discrete class
+        if not self.graph.haveData or len(self.graph.rawData) == 0 or not self.graph.dataHasDiscreteClass:
+            self.setStatusBarText("No data or data without a discrete class") 
+            return
+
+        vizrank = self.parentWidget.vizrank
+        if self.__class__ != FreeViz: from PyQt4.QtGui import qApp
+
+        if self.autoSetParameters:
+            results = {}
+            self.s2nSpread = 0
+            permutations = orngVisFuncts.generateDifferentPermutations(range(len(self.graph.dataDomain.classVar.values)))
+            for perm in permutations:
+                self.classPermutationList = perm
+                for val in self.attrsNum:
+                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.graph.dataDomain.attributes): continue    # allow the computations once
+                    self.s2nPlaceAttributes = val
+                    if not self.s2nMixAnchors(0):
+                        return
+                    if self.__class__ != FreeViz:
+                        qApp.processEvents()
+
+                    acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
+                    if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
+                    else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
+
+                    results[acc] = (perm, val)
+            if results.keys() == []: return
+            self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
+            if self.__class__ != FreeViz:
+                qApp.processEvents()
+            if not self.s2nMixAnchors(0):        # update the best number of attributes
+                return
+
+            results = []
+            anchors = self.graph.anchorData
+            attributeNameIndex = self.graph.attributeNameIndex
+            attrIndices = [attributeNameIndex[val[2]] for val in anchors]
+            for val in range(10):
+                self.s2nSpread = val
+                if not self.s2nMixAnchors(0):
+                    return
+                acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
+                results.append(acc)
+                if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
+                else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
+            self.s2nSpread = results.index(max(results))
+
+            self.setStatusBarText("Best projection value is %.2f" % (max(results)))
+
+        # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
+        self.s2nMixAnchors()
 
 
 
