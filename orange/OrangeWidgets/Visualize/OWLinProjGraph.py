@@ -163,7 +163,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             normalizers = [self.getMinMaxVal(i) for i in indices]
             selectedData = numpy.take(self.originalData, indices, axis = 0)
             averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
 
 
         # ##############################################################
