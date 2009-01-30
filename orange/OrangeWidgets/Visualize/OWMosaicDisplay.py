@@ -181,17 +181,18 @@ class OWMosaicDisplay(OWWidget):
         #box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         box = OWGUI.widgetBox(self.SettingsTab, "Visual Settings", addSpace = 1)
-        OWGUI.comboBoxWithCaption(box, self, "cellspace", "Minimum cell distance: ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+        
+        OWGUI.hSlider(box, self, 'cellspace', label = "Cell distance: ", minValue=1, maxValue=15, step=1, callback = self.updateGraph, tooltip = "What is the minimum distance between two rectangles in the plot?")
         OWGUI.checkBox(box, self, "removeUnusedValues", "Remove unused attribute values", tooltip = "Do you want to remove unused attribute values?\nThis setting will not be considered until new data is received.")
 
         self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell Distribution Settings", addSpace = 1)
         OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
         OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show apriori distribution with lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
 
-        self.box8 = OWGUI.widgetBox(self.SettingsTab, "Subboxes in Cells", addSpace = 1)
-        OWGUI.spin(self.box8, self, 'boxSize', 1, 15, 1, '', "Subbox Size (pixels): ", orientation = "horizontal", callback = self.updateGraph)
+        self.box8 = OWGUI.widgetBox(self.SettingsTab, "Boxes in Cells", addSpace = 1)
+        OWGUI.hSlider(self.box8, self, 'boxSize', label = "Size: ", minValue=1, maxValue=15, step=1, callback = self.updateGraph, tooltip = "What is the size of the boxes on the left and right edge of each cell?")
         OWGUI.checkBox(self.box8, self, 'showSubsetDataBoxes', 'Show class distribution of subset data', callback = self.updateGraph, tooltip = "Show small boxes at right (or bottom) edge of cells to represent class distribution of examples from example subset input.")
-        OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use subboxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
+        OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use boxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
         indBox = OWGUI.indentedBox(self.box8)
         OWGUI.comboBox(indBox, self, 'showAprioriDistributionBoxes', items = ["Expected class distribution", "Apriori class distribution"], tooltip = "Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).", callback = self.updateGraph)
 
@@ -634,6 +635,8 @@ class OWMosaicDisplay(OWWidget):
             total = 0
             for i in range(len(clsValues)):
                 val = self.conditionalDict[attrVals + "-" + clsValues[i]]
+                if val == 0:
+                    continue
                 if self.horizontalDistribution:
                     if i == len(clsValues)-1: v = x1-x0 - total
                     else:                       v = ((x1-x0)* val)/self.conditionalDict[attrVals]
