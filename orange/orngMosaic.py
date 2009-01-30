@@ -15,12 +15,13 @@ CHI_SQUARE = 0
 CHI_SQUARE_CLASS = 1
 CRAMERS_PHI_CLASS = 2
 INFORMATION_GAIN = 3
-DISTANCE_MEASURE = 4
-MDL = 5
-INTERACTION_GAIN = 6
-AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 7
-GINI_INDEX = 8
-CN2_RULES = 9
+GAIN_RATIO = 4
+DISTANCE_MEASURE = 5
+MDL = 6
+INTERACTION_GAIN = 7
+AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 8
+GINI_INDEX = 9
+CN2_RULES = 10
 
 # conditional probability estimation
 RELATIVE = 0
@@ -89,7 +90,6 @@ class orngMosaic:
         self.mValue = 2.0
         self.probabilityEstimation = M_ESTIMATE
         self.learnerName = "Mosaic Classifier"
-        self.resultListIndices = []
         self.saveSettingsList = ["attrDisc", "qualityMeasure", "percentDataUsed"]       # this is the default list of settings to save when saving interesting projections. change the list to get different behavior
 
         # classification
@@ -109,6 +109,8 @@ class orngMosaic:
 
         self.data = None
         self.results = []
+        self.shownResults = []
+        self.attrLenDict = {}
 
     def clearResults(self):
         self.results = []
@@ -245,7 +247,6 @@ class orngMosaic:
                 self.data = fullData.select(orange.MakeRandomIndices2(fullData, 1.0-float(self.percentDataUsed)/100.0))
 
             self.clearResults()
-            self.resultListIndices = []
 
             if len(self.data) == 0:
                 self.data = fullData
@@ -361,6 +362,8 @@ class orngMosaic:
 
 
     def finishEvaluation(self, evaluatedProjections):
+        self.attrLenDict = dict([(i,1) for i in range(self.attributeCount+1)])
+        
         if self.__class__.__name__ != "orngMosaic":
             secs = time.time() - self.startTime
             self.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
@@ -425,6 +428,9 @@ class orngMosaic:
             classEntropy = Entropy(numpy.array([val for val in self.aprioriDistribution]))
             if classEntropy:
                 retVal = retVal * 100.0 / classEntropy
+        
+        elif self.qualityMeasure == GAIN_RATIO:
+            retVal = orange.MeasureAttribute_gainRatio(newFeature, self.data)
 
         elif self.qualityMeasure == INTERACTION_GAIN:
             new = orange.MeasureAttribute_info(newFeature, self.data)
@@ -473,15 +479,15 @@ class orngMosaic:
     def findArguments(self, example = None):
         self.arguments = dict([(val, []) for val in self.classVals])
 
-        if not example or len(self.results) == 0: return None, None
+        if not example or len(self.shownResults) == 0: return None, None
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
 
         if self.__class__.__name__ != "orngMosaic":
             from PyQt4.QtGui import qApp
 
         usedArguments = 0
-        for index in range(len(self.results)):
-            (score, attrList, tryIndex, extraInfo) = self.results[index]
+        for index in range(len(self.shownResults)):
+            (score, attrList, tryIndex, extraInfo) = self.shownResults[index]
             args = self.evaluateArgument(example, attrList, score)      # call evaluation of a specific projection
             if not args: continue
 
@@ -907,6 +913,7 @@ class orngMosaic:
     # insert new result - give parameters: score of projection, number of examples in projection and list of attributes.
     def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
         self.results.insert(index, (score, attrList, tryIndex, extraInfo))
+        self.shownResults.insert(index, (score, attrList, tryIndex, extraInfo))
 
    
     # from a list of attributes build a nice string with attribute names
@@ -941,7 +948,7 @@ class orngMosaic:
 
         file = open(filename, "wt")
         file.write("%s\n" % (str(dict)))
-        for (score, attrList, tryIndex, extraInfo) in self.results:
+        for (score, attrList, tryIndex, extraInfo) in self.shownResults:
             file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
         file.flush()
         file.close()
@@ -1156,30 +1163,13 @@ class CartesianClassifier(orange.Classifier):
 
 #test widget appearance
 if __name__=="__main__":
-    #data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
-    #data = orange.ExampleTable(r"E:\Development\Orange Datasets\uci\brown-selected.tab")
     data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
-    #data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\breast-cancer-wisconsin-disc.tab")
-    #data = orange.ExampleTable(r"E:\\temp.tab")
     a = mergeAttrValues(data, ["milk", "legs"], MeasureAttribute_MDL())
 
     mosaic = orngMosaic()
     mosaic.setData(data)
     mosaic.qualityMeasure = DISTANCE_MEASURE
     mosaic.evaluateProjections()
-    #ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
-    #ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
-##    mosaic.classificationMethod = MOS_COMBINING
-##    mosaic.evaluateProjections()
-##    classVal, prob = mosaic.findArguments(mosaic.data[25])
-    #mosaic.findOptimalAttributeOrder(["milk", "legs"])
 
     learner = MosaicTreeLearner(mosaic)
     classifier = learner(data)
-    #print classifier(data[0])
-    #mosaic.qualityMeasure = GINI_INDEX
-    #print "Gini", mosaic._Evaluate(["domestic", "predator", "venomous"])
-    #mosaic.qualityMeasure = DISTANCE_MEASURE
-    #print "Distance", mosaic._Evaluate(["domestic", "predator", "venomous"])
-    #mosaic.qualityMeasure = MDL
-    #print "MDL", mosaic._Evaluate(["domestic", "predator", "venomous"])
