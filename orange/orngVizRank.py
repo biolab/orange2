@@ -491,10 +491,11 @@ class VizRank:
 
         # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
         acc = sum(prediction) / float(max(1, len(results.results)))                 # accuracy over all class values
-        val = sum([prediction[index] for index in self.selectedClasses])    # accuracy over all selected classes
+        classes = self.selectedClasses or range(len(self.graph.dataDomain.classVar.values))
+        val = sum([prediction[index] for index in classes])    # accuracy over all selected classes
 
         currentClassDistribution = [int(v) for v in orange.Distribution(table.domain.classVar, table)]
-        s = sum([currentClassDistribution[index] for index in self.selectedClasses])
+        s = sum([currentClassDistribution[index] for index in classes])
 
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
 
