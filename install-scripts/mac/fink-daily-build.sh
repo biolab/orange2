@@ -15,7 +15,7 @@ DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange
 
 # Packages which, when installing, want special confirmation from the user
 # We keep those packages installed all the time
-SPECIAL_PACKAGES="passwd"
+SPECIAL_PACKAGES="passwd xinitrc"
 
 # Additional source directories which get packed
 STABLE_SOURCE_DIRS="install-scripts/mac/bundle-lite/"
