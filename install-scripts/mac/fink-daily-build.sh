@@ -278,7 +278,10 @@ yes | fink $FINK_ARGS install $SPECIAL_PACKAGES
 # Removes possiblly installed packages which we want built
 fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
-apt-get $APT_ARGS remove --purge $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+for package $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES ; do
+	echo $package "purge" | dpkg --set-selections
+done
+apt-get $APT_ARGS dselect-upgrade
 
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
