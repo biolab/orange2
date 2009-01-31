@@ -2,6 +2,10 @@
 #
 # Should be run as: sudo ./fink-daily-build.sh [stable revision] [daily revision]
 #
+# If [stable revision] and/or [daily revision] is specified it makes source archives and updates
+# our info files with those revisions (if any is not specified it uses its latest revision)
+# before building Fink packages
+#
 
 # Those packages should not be installed as we are just building them (and dependencies)
 # The order is important as for validation to work we should first build packages which do not depend on other
@@ -34,6 +38,10 @@ if [ $ARCH == "ppc" ]; then
 	ARCH="powerpc"
 fi
 
+if [ $1 ] || [ $2 ]; then
+	PACKAGE_SOURCE=1
+fi
+
 # Sets error handler
 trap "echo \"Script failed\"" ERR
 
@@ -43,7 +51,9 @@ test -r $FINK_ROOT/bin/init.sh || { echo "Fink cannot be found." exit 2; }
 
 [ -e /Volumes/fink/ ] || { echo "/Volumes/fink/ not mounted."; exit 3; }
 
-[ -e /Volumes/download/ ] || { echo "/Volumes/download/ not mounted."; exit 4; }
+if [ $PACKAGE_SOURCE ]; then
+	[ -e /Volumes/download/ ] || { echo "/Volumes/download/ not mounted."; exit 4; }
+fi
 
 # Configures environment for Fink
 . $FINK_ROOT/bin/init.sh
@@ -68,24 +78,33 @@ if [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-
 	exit 8
 fi
 
-# Defaults are current latest revisions in stable branch and trunk
-STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
-# svn info does not return proper exit status on an error so we check it this way
-[ $STABLE_REVISION ] || exit 9
-DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
-# svn info does not return proper exit status on an error so we check it this way
-[ $DAILY_REVISION ] || exit 10
+if [ $PACKAGE_SOURCE ]; then
+	# Defaults are current latest revisions in stable branch and trunk
+	STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+	# svn info does not return proper exit status on an error so we check it this way
+	[ $STABLE_REVISION ] || exit 9
+	DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+	# svn info does not return proper exit status on an error so we check it this way
+	[ $DAILY_REVISION ] || exit 10
+fi
 
 echo "Preparing local ailab Fink info files repository."
 mkdir -p $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
-
-# Gets Fink package info files from SVN
-svn export --force --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
-
-# Injects revision versions into templates
-perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-perl -pi -e "s/__DAILY_REVISION__/$DAILY_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+if [ $PACKAGE_SOURCE ]; then	
+	# Gets Fink package info files from SVN
+	svn export --force --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
+	
+	# Injects revision versions into templates
+	perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	perl -pi -e "s/__DAILY_REVISION__/$DAILY_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+else
+	# Gets current (daily) info files from SVN
+	echo "Updating local ailab Fink info files repository."
+	curl http://www.ailab.si/orange/fink/dists/10.5/main/finkinfo/all.tgz --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+	tar -xzf $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/ailab/main/finkinfo/
+	rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+fi
 
 if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 	echo "Adding local ailab Fink info files repository to Fink configuration."
@@ -103,145 +122,147 @@ if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
 	echo 'APT::Get::Assume-Yes "true";' > $FINK_ROOT/etc/apt/apt.conf.d/daily-build
 fi
 
-mkdir -p /Volumes/fink/dists/10.5/main/source/
-
-if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
-	echo "Making source archive orange-1.0b.$STABLE_REVISION."
+if [ $PACKAGE_SOURCE ]; then
+	mkdir -p /Volumes/fink/dists/10.5/main/source/
 	
-	rm -rf /tmp/orange-1.0b.$STABLE_REVISION/ /tmp/orange-1.0b.$STABLE_REVISION.tgz
-	
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/orange/ /tmp/orange-1.0b.$STABLE_REVISION/
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/source/ /tmp/orange-1.0b.$STABLE_REVISION/source/
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /tmp/orange-1.0b.$STABLE_REVISION/source/crs/
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/orange-1.0b.$STABLE_REVISION/COPYING
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/LICENSES
-	
-	[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING /tmp/orange-1.0b.$STABLE_REVISION/
-	[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/
-	
-	tar -czf /tmp/orange-1.0b.$STABLE_REVISION.tgz -C /tmp/ orange-1.0b.$STABLE_REVISION
-	
-	MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
-	
-	mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
-	
-	rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
-	
-	echo "Registering new source archive."
-	egrep -v '^SOURCE_STABLE=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-	echo "SOURCE_STABLE=orange-1.0b.$STABLE_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
-	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
-else
-	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
-fi
-
-perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-
-if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
-	echo "Making source archive orange-svn-0.0.$DAILY_REVISION."
-	
-	rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/ /tmp/orange-svn-0.0.$DAILY_REVISION.tgz
-	
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ /tmp/orange-svn-0.0.$DAILY_REVISION/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/source/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/crs/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/COPYING
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/LICENSES
-	
-	[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/
-	[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/
-	
-	tar -czf /tmp/orange-svn-0.0.$DAILY_REVISION.tgz -C /tmp/ orange-svn-0.0.$DAILY_REVISION
-	
-	MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
-	
-	mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
-	
-	rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
-	
-	echo "Registering new source archive."
-	egrep -v '^SOURCE_DAILY=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-	echo "SOURCE_DAILY=orange-svn-0.0.$DAILY_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
-	mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
-else
-	MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
-fi
-
-perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-
-for dir in $STABLE_SOURCE_DIRS ; do
-	# Gets only the last part of the directory name, converts to lower case and removes dashes
-	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
-	SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
-	STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
-	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
-		echo "Making source archive $STABLE_SOURCE_NAME."
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
+		echo "Making source archive orange-1.0b.$STABLE_REVISION."
 		
-		rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
+		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/ /tmp/orange-1.0b.$STABLE_REVISION.tgz
 		
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/$dir /tmp/$STABLE_SOURCE_NAME/
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/$STABLE_SOURCE_NAME/COPYING
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/$STABLE_SOURCE_NAME/LICENSES
+		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/orange/ /tmp/orange-1.0b.$STABLE_REVISION/
+		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/source/ /tmp/orange-1.0b.$STABLE_REVISION/source/
+		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /tmp/orange-1.0b.$STABLE_REVISION/source/crs/
+		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/orange-1.0b.$STABLE_REVISION/COPYING
+		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/LICENSES
 		
-		[ -e /tmp/$STABLE_SOURCE_NAME/doc/COPYING ] && mv /tmp/$STABLE_SOURCE_NAME/doc/COPYING /tmp/$STABLE_SOURCE_NAME/
-		[ -e /tmp/$STABLE_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$STABLE_SOURCE_NAME/doc/LICENSES /tmp/$STABLE_SOURCE_NAME/
+		[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING /tmp/orange-1.0b.$STABLE_REVISION/
+		[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/
 		
-		tar -czf /tmp/$STABLE_SOURCE_NAME.tgz -C /tmp/ $STABLE_SOURCE_NAME
+		tar -czf /tmp/orange-1.0b.$STABLE_REVISION.tgz -C /tmp/ orange-1.0b.$STABLE_REVISION
 		
-		MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
+		MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
 		
-		mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
-	
-		rm -rf /tmp/$STABLE_SOURCE_NAME/
+		mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
+		
+		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
 		
 		echo "Registering new source archive."
-		egrep -v "^SOURCE_${SOURCE_VAR}_STABLE=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-		echo "SOURCE_${SOURCE_VAR}_STABLE=$STABLE_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+		egrep -v '^SOURCE_STABLE=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+		echo "SOURCE_STABLE=orange-1.0b.$STABLE_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 	else
-		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz`
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 	fi
 	
-	perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-done
-
-for dir in $DAILY_SOURCE_DIRS ; do
-	# Gets only the last part of the directory name, converts to lower case and removes dashes
-	SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
-	SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
-	DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
+	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
-		echo "Making source archive $DAILY_SOURCE_NAME."
+	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
+		echo "Making source archive orange-svn-0.0.$DAILY_REVISION."
 		
-		rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
+		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/ /tmp/orange-svn-0.0.$DAILY_REVISION.tgz
 		
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/$dir /tmp/$DAILY_SOURCE_NAME/
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/$DAILY_SOURCE_NAME/COPYING
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/$DAILY_SOURCE_NAME/LICENSES
+		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ /tmp/orange-svn-0.0.$DAILY_REVISION/
+		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/source/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/
+		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/crs/
+		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/COPYING
+		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/LICENSES
 		
-		[ -e /tmp/$DAILY_SOURCE_NAME/doc/COPYING ] && mv /tmp/$DAILY_SOURCE_NAME/doc/COPYING /tmp/$DAILY_SOURCE_NAME/
-		[ -e /tmp/$DAILY_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$DAILY_SOURCE_NAME/doc/LICENSES /tmp/$DAILY_SOURCE_NAME/
+		[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/
+		[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/
 		
-		tar -czf /tmp/$DAILY_SOURCE_NAME.tgz -C /tmp/ $DAILY_SOURCE_NAME
+		tar -czf /tmp/orange-svn-0.0.$DAILY_REVISION.tgz -C /tmp/ orange-svn-0.0.$DAILY_REVISION
 		
-		MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
+		MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
 		
-		mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
-	
-		rm -rf /tmp/$DAILY_SOURCE_NAME/
+		mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
+		
+		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
 		
 		echo "Registering new source archive."
-		egrep -v "^SOURCE_${SOURCE_VAR}_DAILY=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
-		echo "SOURCE_${SOURCE_VAR}_DAILY=$DAILY_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+		egrep -v '^SOURCE_DAILY=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+		echo "SOURCE_DAILY=orange-svn-0.0.$DAILY_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 	else
-		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz`
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 	fi
 	
-	perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-done
+	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	
+	for dir in $STABLE_SOURCE_DIRS ; do
+		# Gets only the last part of the directory name, converts to lower case and removes dashes
+		SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
+		SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
+		STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
+		
+		if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
+			echo "Making source archive $STABLE_SOURCE_NAME."
+			
+			rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
+			
+			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/$dir /tmp/$STABLE_SOURCE_NAME/
+			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/$STABLE_SOURCE_NAME/COPYING
+			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/$STABLE_SOURCE_NAME/LICENSES
+			
+			[ -e /tmp/$STABLE_SOURCE_NAME/doc/COPYING ] && mv /tmp/$STABLE_SOURCE_NAME/doc/COPYING /tmp/$STABLE_SOURCE_NAME/
+			[ -e /tmp/$STABLE_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$STABLE_SOURCE_NAME/doc/LICENSES /tmp/$STABLE_SOURCE_NAME/
+			
+			tar -czf /tmp/$STABLE_SOURCE_NAME.tgz -C /tmp/ $STABLE_SOURCE_NAME
+			
+			MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
+			
+			mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
+		
+			rm -rf /tmp/$STABLE_SOURCE_NAME/
+			
+			echo "Registering new source archive."
+			egrep -v "^SOURCE_${SOURCE_VAR}_STABLE=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+			echo "SOURCE_${SOURCE_VAR}_STABLE=$STABLE_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+			mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+		else
+			MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz`
+		fi
+		
+		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	done
+	
+	for dir in $DAILY_SOURCE_DIRS ; do
+		# Gets only the last part of the directory name, converts to lower case and removes dashes
+		SOURCE_NAME=`basename $dir | tr "[:upper:]" "[:lower:]" | tr -d "-"`
+		SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
+		DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
+		
+		if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
+			echo "Making source archive $DAILY_SOURCE_NAME."
+			
+			rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
+			
+			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/$dir /tmp/$DAILY_SOURCE_NAME/
+			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/$DAILY_SOURCE_NAME/COPYING
+			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/$DAILY_SOURCE_NAME/LICENSES
+			
+			[ -e /tmp/$DAILY_SOURCE_NAME/doc/COPYING ] && mv /tmp/$DAILY_SOURCE_NAME/doc/COPYING /tmp/$DAILY_SOURCE_NAME/
+			[ -e /tmp/$DAILY_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$DAILY_SOURCE_NAME/doc/LICENSES /tmp/$DAILY_SOURCE_NAME/
+			
+			tar -czf /tmp/$DAILY_SOURCE_NAME.tgz -C /tmp/ $DAILY_SOURCE_NAME
+			
+			MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
+			
+			mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
+		
+			rm -rf /tmp/$DAILY_SOURCE_NAME/
+			
+			echo "Registering new source archive."
+			egrep -v "^SOURCE_${SOURCE_VAR}_DAILY=" /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
+			echo "SOURCE_${SOURCE_VAR}_DAILY=$DAILY_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
+			mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+		else
+			MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz`
+		fi
+		
+		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	done
+fi
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."

@@ -2,6 +2,8 @@
 #
 # Should be run as: ./bundle-daily-build.sh [stable revision] [daily revision]
 #
+# If [stable revision] and/or [daily revision] is/are not specified it uses its latest revision
+#
 
 # Lists of add-ons to include
 STABLE_ADDONS=""
