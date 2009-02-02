@@ -384,9 +384,15 @@ class DendrogramPlotPylab(object):
                 
     
     def plotLabels(self):
-        for y, ind in enumerate(self.root):
-            t = plt.text(self.root.height + self.heatmap_width, y, self.labels[ind], va="center")
-            self.text_items.append(t)
+        import numpy
+        plt.yticks(numpy.arange(len(self.labels) - 1, 0, -1), self.labels)
+        for tick in plt.gca().yaxis.get_major_ticks():
+            tick.tick1On = False    
+            tick.label1On = False
+            tick.label2On = True
+##        for y, ind in enumerate(self.root):
+##            t = plt.text(self.root.height + self.heatmap_width, y, self.labels[ind], va="center")
+##            self.text_items.append(t)
 
     
     def plot(self, show=True, filename=None):
@@ -396,7 +402,7 @@ class DendrogramPlotPylab(object):
         self.fig = plt.figure()
 ##        plt.subplot(1, 2, 1)
 ##        self.ax = self.fig.add_axes([0, 0, 1, 1])
-        
+##        
 ##        plt.axes().set_axis_off()
         self.labels_offset = self.root.height/20.0
         self.plotDendrogram()
