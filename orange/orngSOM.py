@@ -166,7 +166,7 @@ class Solver(object):
         self.__dict__.update(kwargs)
 
     def radius(self, epoch):
-        return self.radius_ini + (float(self.radius_ini) - self.radius_fin)*(float(epoch) / self.epochs)
+        return self.radius_ini - (float(self.radius_ini) - self.radius_fin)*(float(epoch) / self.epochs)
 
     def alpha(self, epoch):
         return (1 - epoch/self.epochs)*self.learning_rate
@@ -252,7 +252,7 @@ class Solver(object):
             self.train_step_batch(epoch)
             if progressCallback:
                 progressCallback(100.0*epoch/self.epochs)
-            if epoch > 5 and numpy.mean(numpy.abs(numpy.array(self.qerror[-5:-1]) - self.qerror[-1])) <= self.eps:
+            if False and epoch > 5 and numpy.mean(numpy.abs(numpy.array(self.qerror[-5:-1]) - self.qerror[-1])) <= self.eps:
                 break
 ##            vec_plot.set_xdata(self.vectors[:, 0])
 ##            vec_plot.set_ydata(self.vectors[:, 1])
@@ -301,8 +301,8 @@ class SOMLearner(orange.Learner):
         >>> som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
         >>> map = som(orange.ExampleTable("iris.tab"))
     """
-    def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, neighbourhood=NeighbourhoodGaussian,
-                 batch_train=True, learning_rate=0.05, radius_ini=3, radius_fin=1, epochs=1000, **kwargs):
+    def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, topology=HexagonalTopology, neighbourhood=NeighbourhoodGaussian,
+                 batch_train=True, learning_rate=0.05, radius_ini=3.0, radius_fin=1.0, epochs=1000, **kwargs):
         self.map_shape = (5, 10)
         self.initialize = initialize
         self.topology = topology
@@ -325,7 +325,7 @@ class SOMLearner(orange.Learner):
             map.initialize_map_random(data)
         map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epoch=self.epochs)(data, map, progressCallback=progressCallback)
+                     epochs=self.epochs)(data, map, progressCallback=progressCallback)
         return SOMMap(map, examples)
 
 class SOMSupervisedLearner(SOMLearner):
@@ -454,7 +454,7 @@ def __fillRect(array, som):
 if __name__ == "__main__":
     data = orange.ExampleTable("doc//datasets//iris.tab")
     learner = SOMLearner()
-    learner = SOMLearner(batch_train=True, initialize=InitializeRandom)
+    learner = SOMLearner(batch_train=True, initialize=InitializeLinear, radius_ini=3, radius_fin=1, neighbourhood=Map.NeighbourhoodGaussian, epochs=1000)
     map = learner(data)
     for e in data:
         print map(e), e.getclass()
