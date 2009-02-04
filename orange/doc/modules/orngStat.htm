@@ -520,7 +520,7 @@ data = orange.ExampleTable("housing")
 # definition of regressors
 lr = r.LinearRegressionLearner(name="lr")
 rt = orngTree.TreeLearner(measure="retis", mForPruning=2,
-                          minExamples=20, name="rt")
+		  minExamples=20, name="rt")
 maj = orange.MajorityLearner(name="maj")
 knn = orange.kNNLearner(k=10, name="knn")
 
@@ -529,14 +529,14 @@ learners = [maj, rt, knn, lr]
 # cross validation, selection of scores, report of results
 results = orngTest.crossValidation(learners, data, folds=3)
 scores = [("MSE", orngStat.MSE),   ("RMSE", orngStat.RMSE),
-          ("MAE", orngStat.MAE),   ("RSE", orngStat.RSE),
-          ("RRSE", orngStat.RRSE), ("RAE", orngStat.RAE),
-          ("R2", orngStat.R2)]
+  ("MAE", orngStat.MAE),   ("RSE", orngStat.RSE),
+  ("RRSE", orngStat.RRSE), ("RAE", orngStat.RAE),
+  ("R2", orngStat.R2)]
 
 print "Learner   " + "".join(["%-8s" % s[0] for s in scores])
 for i in range(len(learners)):
-    print "%-8s " % learners[i].name + \
-    "".join(["%7.3f " % s[1](results)[i] for s in scores])
+print "%-8s " % learners[i].name + \
+"".join(["%7.3f " % s[1](results)[i] for s in scores])
 </xmp>
 
 <p>The code above produces the following output:</p>
@@ -550,7 +550,51 @@ lr        24.092   4.908   3.425   0.285   0.534   0.515   0.715
 
 <H2>Plotting Functions</H2>
 
-&lt;&lt;to be written&gt;&gt;
+<DL>
+<DT><B>graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False)</B></DT>
+<DD>
+Draws a CD graph, which is used to display  the differences in methods' 
+performance. See Janez Demsar, Statistical Comparisons of Classifiers over 
+Multiple Data Sets, 7(Jan):1--30, 2006.
+
+<p>Needs matplotlib to work.</p>
+
+<dl>
+<dt>filename</dt><dd>Output file name (with extension). Formats supported by matplotlib can be used.</dd></dt>
+<dt>avranks</dt><dd>List of average methods' ranks.</dd></dt>
+<dt>names</dt><dd>List of methods' names.</dd></dt>
+<dt>cd</dt><dd>Critical difference. Used for marking methods that whose difference is not statistically significant.</dd></dt>
+<dt>lowv</dt><dd>The lowest shown rank, if None, use 1.</dd></dt>
+<dt>highv</dt><dd>he highest shown rank, if None, use len(avranks).</dd></dt>
+<dt>width</dt><dd>Width of the drawn figure in inches, default 6 in.</dd></dt>
+<dt>textspace</dt><dd>Space on figure sides left for the description of methods, default 1 in.</dd></dt>
+<dt>reverse</dt><dd>If True, the lowest rank is on the right. Default: False.</dd></dt>
+</dl>
+
+<p class="header"><a href="statExamples-regression.py">statExamples-graph_ranks.py</a></p>
+<xmp class="code">
+import orange, orngStat
+
+names = ["first", "third", "second", "fourth" ]
+avranks =  [1.9, 3.2, 2.8, 3.3 ] 
+cd = orngStat.compute_CD(avranks, 30) #tested on 30 datasets
+orngStat.graph_ranks("statExamples-graph_ranks1.png", avranks, names, \
+    cd=cd, width=6, textspace=1.5)
+</xmp>
+
+<p>The code above produces the following graph:<br>
+<img src=statExamples-graph_ranks1.png></p>
+
+
+</DD>
+</DL>
+
+<DL>
+<DT><B>compute_CD(avranks, N)</B></DT>
+<DD> Returns critical difference for Nemenyi two tailed test with p=0.05 given a average ranks and number of tested datasets N.
+</DD>
+</DL>
+
 
 <H2>Utility Functions</H2>
 
