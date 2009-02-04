@@ -81,41 +81,53 @@ PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const f
 { checkProperty(examples);
   checkProperty(distance);
 
-  TRandomGenerator rgen(e.sumValues());
+  
+  TExample *nex = e.domain != examples->domain ? new TExample(examples->domain, e) : NULL;
+  const TExample &tex = nex ? *nex : e;
+  PExampleGenerator res;
+  
+  try {
+    TRandomGenerator rgen(e.sumValues());
 
-  needsClass = needsClass && examples->domain->classVar;
+    needsClass = needsClass && examples->domain->classVar;
 
-  set<TNNRec> NN;
-  PEITERATE(ei, examples) {
-    if (!(needsClass && (*ei).getClass().isSpecial())) {
-      const float dist = distance->operator()(e, *ei);
-      if (includeSame || (dist>0.0))
-        NN.insert(TNNRec(*ei, rgen.randlong(), dist));
+    set<TNNRec> NN;
+    PEITERATE(ei, examples) {
+      if (!(needsClass && (*ei).getClass().isSpecial())) {
+        const float dist = distance->operator()(tex, *ei);
+        if (includeSame || (dist>0.0))
+          NN.insert(TNNRec(*ei, rgen.randlong(), dist));
+      }
+    }
+
+    PDomain dom = tex.domain;
+    // This creates an ExampleTable with a references to 'examples'
+    TExampleTable *ret = mlnew TExampleTable(examples, 1);
+    res = ret;
+
+    if (k<=0.0)
+      ITERATE(set<TNNRec>, in, NN) {
+        TExample &exam = (*in).example;
+        if (distanceID)
+          exam.setMeta(distanceID, TValue((*in).dist));
+        ret->addExample(exam);
+      }
+    else {
+      float needs = k;
+      ITERATE(set<TNNRec>, in, NN) {
+        TExample &exam = (*in).example;
+        if (distanceID)
+          exam.setMeta(distanceID, TValue((*in).dist));
+        ret->addExample(exam);
+        if ((needs -= WEIGHT((*in).example)) <= 0.0)
+          break;
+      }
     }
   }
-
-  PDomain dom = e.domain;
-  // This creates an ExampleTable with a references to 'examples'
-  TExampleTable *ret = mlnew TExampleTable(examples, 1);
-  PExampleGenerator res = ret;
-
-  if (k<=0.0)
-    ITERATE(set<TNNRec>, in, NN) {
-      TExample &exam = (*in).example;
-      if (distanceID)
-        exam.setMeta(distanceID, TValue((*in).dist));
-      ret->addExample(exam);
-    }
-  else {
-    float needs = k;
-    ITERATE(set<TNNRec>, in, NN) {
-      TExample &exam = (*in).example;
-      if (distanceID)
-        exam.setMeta(distanceID, TValue((*in).dist));
-      ret->addExample(exam);
-      if ((needs -= WEIGHT((*in).example)) <= 0.0)
-        break;
-    }
+  catch (...) {
+    if (nex)
+      delete nex;
+    throw;
   }
 
   return res;
