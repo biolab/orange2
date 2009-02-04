@@ -238,8 +238,24 @@ void TMeasureAttribute::thresholdFunction(TFloatFloatList &res, PVariable var, P
 
 float TMeasureAttribute::bestThreshold(PDistribution &left_right, float &score, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset)
 { 
-  if (needs > Contingency_Class)
-    raiseError("cannot compute thresholds");
+  if (needs > Contingency_Class) {
+    TFloatFloatList res;
+    thresholdFunction(res, var, gen, apriorClass, weightID);
+    if (!res.size()) {
+      score = 0;
+      return ILLEGAL_FLOAT;
+    }
+    float &score = res.front().second;
+    float &bestThresh = res.front().first;
+    ITERATE(TFloatFloatList, ii, res) {
+      if ((*ii).second > score) {
+        bestThresh = (*ii).first;
+        score = (*ii).second;
+      }
+    }
+    return score;
+  }
+  
   if (!gen->domain->classVar)
     raiseError("can't evaluate attributes on class-less domains");
 
