@@ -803,6 +803,13 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
 }
 
 
+inline const char *checkCtrl(const char *c) {
+  for(const char *cc = c; *cc; cc++)
+    if (*cc < 32)
+      raiseErrorWho("write", "string '%s' cannot be written to a file since it contains invalid characters", c);
+  return c;
+}
+
 void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const char *DK, const char *DC)
 { 
   const TDomain domain = rg->domain.getReference();
@@ -822,7 +829,7 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
         fprintf(file, DC);
       else {
         (*vi)->val2filestr(*ri, st, *ex);
-        fprintf(file, st.c_str());
+        fprintf(file, checkCtrl(st.c_str()));
       }
     }
 
@@ -837,7 +844,7 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
           fprintf(file, DC);
         else {
           (*mi).variable->val2filestr((*ex)[(*mi).id], st, *ex);
-          fprintf(file, "%s", st.c_str());
+          fprintf(file, "%s", checkCtrl(st.c_str()));
         }
       }
     }
@@ -857,10 +864,10 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
               fprintf(file, " ");
 
             if (mval.floatV == 1.0)
-              fprintf(file, var.name.c_str());
+              fprintf(file, checkCtrl(var.name.c_str()));
             else {
               var.val2filestr(mval, st, *ex);
-              fprintf(file, "%s=%s", var.name.c_str(), st.c_str());
+              fprintf(file, "%s=%s", checkCtrl(var.name.c_str()), checkCtrl(st.c_str()));
             }
           }
         }
@@ -892,10 +899,10 @@ void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
       fprintf(file, "d");
     else {
       enumv->val2str(val, sval); 
-      fprintf(file, escSpaces(sval).c_str());
+      fprintf(file, checkCtrl(escSpaces(sval).c_str()));
       while(enumv->nextValue(val)) {
         enumv->val2str(val, sval);
-        fprintf(file, " %s", escSpaces(sval).c_str());
+        fprintf(file, " %s", checkCtrl(escSpaces(sval).c_str()));
       }
     }
   }
@@ -908,7 +915,7 @@ void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
       fprintf(file, "python");
     else {
       PyObject *pyclassname = PyObject_GetAttrString((PyObject *)(var.counter)->ob_type, "__name__");
-      fprintf(file, "python:%s", PyString_AsString(pyclassname));
+      fprintf(file, "python:%s", checkCtrl(PyString_AsString(pyclassname)));
       Py_DECREF(pyclassname);
     }
   }  
@@ -928,7 +935,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   // First line: attribute names
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
-    fprintf(file, "%s", (*vi)->name.c_str());
+    fprintf(file, "%s", checkCtrl((*vi)->name.c_str()));
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional) {
@@ -937,7 +944,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     }
     else {
       PUTDELIM;
-      fprintf(file, "%s", (*mi).variable->name.c_str());
+      fprintf(file, "%s", checkCtrl((*mi).variable->name.c_str()));
     }
   }
 
@@ -1046,12 +1053,12 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
   bool ho = false;
   const_PITERATE(TVarList, vi, dom->attributes) {
     PUTDELIM;
-    fprintf(file, "%s%s", (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(*vi) ? "D#" : ""), checkCtrl((*vi)->name.c_str()));
   }
   
   if (dom->classVar) {
     PUTDELIM;
-    fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), checkCtrl(dom->classVar->name.c_str()));
   }
 
 
@@ -1064,7 +1071,7 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
     }
     else {
       PUTDELIM;
-      fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+      fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), checkCtrl((*mi).variable->name.c_str()));
     }
   }
 
