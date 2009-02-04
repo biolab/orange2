@@ -120,7 +120,9 @@ public:
      except if createNewOn==OK, in which case status is always OK.  */
   static TVariable *make(const string &name, const int &varType, TStringList *fixedOrderValues = NULL, set<string> *value = NULL,
                                 const int createNewOn = Incompatible, int *status = NULL);
-                                
+                  
+  virtual bool isEquivalentTo(const TVariable &old) const;
+  
   TVariable(const int &avarType = TValue::NONE, const bool &ordered = false);
   TVariable(const string &aname, const int &avarType=TValue::NONE, const bool &ordered = false);
 
@@ -169,6 +171,8 @@ public:
   TEnumVariable(const string &aname, PStringList val);
   TEnumVariable(const TEnumVariable &);
 
+  virtual bool isEquivalentTo(const TVariable &old) const;
+
   void addValue(const string &);
   bool hasValue(const string &);
 
@@ -192,28 +196,6 @@ private:
 };
 
 
-// A class describing integer variables
-class ORANGE_API TIntVariable : public TVariable {
-public:
-  __REGISTER_CLASS
-
-  int startValue; //P lowest value
-  int endValue;   //P highest value
-
-  TIntVariable();
-  TIntVariable(const string &aname);
-
-  virtual bool   firstValue(TValue &val) const;
-  virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1);
-
-  virtual int noOfValues() const;
-
-  virtual void val2str(const TValue &val, string &str) const;
-  virtual void str2val(const string &valname, TValue &valu);
-  virtual bool str2val_try(const string &valname, TValue &valu);
-};
-
 
 
 class ORANGE_API TFloatVariable : public TVariable {
@@ -230,6 +212,8 @@ public:
 
   TFloatVariable();
   TFloatVariable(const string &aname);
+
+  virtual bool isEquivalentTo(const TVariable &old) const;
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;

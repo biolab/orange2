@@ -192,6 +192,13 @@ TVariable *TVariable::make(const string &name, const int &varType, TStringList *
 }
 
 
+bool TVariable::isEquivalentTo(const TVariable &old) const {
+  return    (varType == old.varType) && (ordered == old.ordered) && (distributed == old.distributed)
+         && (!sourceVariable || !old.sourceVariable || (sourceVariable == old.sourceVariable))
+         && (!getValueFrom || !old.getValueFrom || (getValueFrom == old.getValueFrom));
+}
+
+
 TVariable::TVariable(const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
@@ -350,6 +357,20 @@ TEnumVariable::TEnumVariable(const TEnumVariable &var)
   baseValue(var.baseValue)
 {}
 
+
+bool TEnumVariable::isEquivalentTo(const TVariable &old) const
+{
+  TEnumVariable const *eold = dynamic_cast<TEnumVariable const *>(&old);
+  
+  if (!eold || !TVariable::isEquivalentTo(old) ||
+         ((baseValue != -1) && (eold->baseValue != -1) && (baseValue != eold->baseValue)))
+     return false;
+     
+  TStringList::const_iterator vi1(values->begin()), ve1(values->end());
+  TStringList::const_iterator vi2(eold->values->begin()), ve2(eold->values->end());
+  for(; (vi1 != ve1) && (vi2 != ve2) && (*vi1 == *vi2); vi1++, vi2++);
+  return (vi1 == ve1) || (vi2 == ve2);
+}
 
 
 int  TEnumVariable::noOfValues() const
@@ -601,88 +622,6 @@ void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &s
 }
 
 
-TIntVariable::TIntVariable()
-: TVariable(TValue::INTVAR, true),
-  startValue(0),
-  endValue(-1)
-{}
-
-
-TIntVariable::TIntVariable(const string &aname)
-: TVariable(aname, TValue::INTVAR, true),
-  startValue(0),
-  endValue(-1)
-{}
-
-
-#define CHECK_INTERVAL if (startValue>endValue) raiseError("interval not given");
-
-bool TIntVariable::firstValue(TValue &val) const
-{ CHECK_INTERVAL
-  return ((val = TValue(startValue)).intV<endValue);
-}
-
-
-bool TIntVariable::nextValue(TValue &val) const
-{ CHECK_INTERVAL
-  return (++val.intV<=endValue);
-}
-
-
-TValue TIntVariable::randomValue(const int &rand)
-{ CHECK_INTERVAL
-
-  if (!randomGenerator)
-    randomGenerator = mlnew TRandomGenerator();
-
-  return TValue(rand<0 ? randomGenerator->randint(startValue, endValue) : (rand % (endValue-startValue+1) + startValue));
-}
-
-
-int TIntVariable::noOfValues() const
-{ return startValue<=endValue ? endValue-startValue+1 : -1; }
-
-
-
-void TIntVariable::str2val(const string &valname, TValue &valu)
-{ if (str2special(valname, valu))
-    return ;
-
-  int i;
-  if (!sscanf(valname.c_str(), "%i", &i))
-    raiseError("invalid argument (integer expected)");
-  if ((startValue<=endValue) && ((i<startValue) || (i>endValue)))
-    raiseError("value %i is out of range %i-%i", i, startValue, endValue);
-
-  valu = TValue(i);
-}
-
-
-bool TIntVariable::str2val_try(const string &valname, TValue &valu)
-{ if (str2special(valname, valu))
-    return true;
-
-  int i;
-  if (!sscanf(valname.c_str(), "%i", &i) || ((startValue<=endValue) && ((i<startValue) || (i>endValue))))
-    return false;
-
-  valu = TValue(i);
-  return true;
-}
-
-
-void TIntVariable::val2str(const TValue &valu, string &vname) const
-{ if (valu.isSpecial())
-    special2str(valu, vname);
-  else {
-    char buf[10];
-    sprintf(buf, "%i", valu.intV);
-    vname=buf;
-  }
-}
-
-
-
 TFloatVariable::TFloatVariable()
 : TVariable(TValue::FLOATVAR, true),
   startValue(-1.0),
@@ -703,6 +642,13 @@ TFloatVariable::TFloatVariable(const string &aname)
   scientificFormat(false),
   adjustDecimals(2)
 {}
+
+bool TFloatVariable::isEquivalentTo(const TVariable &old) const
+{
+  TFloatVariable const *eold = dynamic_cast<TFloatVariable const *>(&old);
+  return eold && TVariable::isEquivalentTo(old) && 
+         (startValue == eold->startValue) && (endValue == eold->endValue) && (stepValue == eold->stepValue);
+}
 
 
 bool TFloatVariable::firstValue(TValue &val) const
