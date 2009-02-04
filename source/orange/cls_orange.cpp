@@ -462,18 +462,18 @@ PyObject *packOrangeDictionary(PyObject *self)
 }
 
 
-/* Never tested! 
+int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args);
+
 int unpackOrangeDictionary(PyObject *self, PyObject *dict)
 {
   PyObject *d_key, *d_value;
   Py_ssize_t i = 0;
   while (PyDict_Next(dict, &i, &d_key, &d_value)) {
-	  if (Orange_setAttrLow(self, d_key, d_value, false) == -1)
+	  if (Orange_setattr1((TPyOrange *)self, d_key, d_value) == -1)
 	    return -1;
 	}
   return 0;
 }
-*/
 
 ORANGE_API PyObject *Orange__reduce__(PyObject *self, PyObject *, PyObject *)
 {
