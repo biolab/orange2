@@ -1697,6 +1697,9 @@ def legend2PiCTeX(file, legend, **options):
 
 
 def compute_CD(avranks, N):
+    """
+    Returns critical difference for Nemenyi two tailed test with p=0.05.
+    """
 
     k = len(avranks)
 
@@ -1720,7 +1723,29 @@ def compute_CD(avranks, N):
 
 def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False):
     """
-    Draws a CD graph. Needs matplotlib in order to work.
+    Draws a CD graph, which is used to display  the differences in methods' 
+    performance.
+    See Janez Demsar, Statistical Comparisons of Classifiers over 
+    Multiple Data Sets, 7(Jan):1--30, 2006. 
+
+    Needs matplotlib to work.
+
+    Arguments:
+    filename -- Output file name (with extension). Formats supported
+        by matplotlib can be used.
+    avranks -- List of average methods' ranks.
+    names -- List of methods' names.
+
+    Keyword arguments:
+    cd -- Critical difference. Used for marking methods that whose
+        difference is not statistically significant.
+    lowv -- The lowest shown rank, if None, use 1.
+    highv -- The highest shown rank, if None, use len(avranks).
+    width -- Width of the drawn figure in inches, default 6 in.
+    textspace -- Space on figure sides left for the description
+        of methods, default 1 in.
+    reverse -- If True, the lowest rank is on the right. Default:
+        False.
 
     Maintainer: Marko Toplak
     """
