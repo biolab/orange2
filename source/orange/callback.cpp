@@ -255,7 +255,7 @@ void TMeasureAttribute_Python::thresholdFunction(TFloatFloatList &res,
         PyObject *n1 = NULL, *n2 = NULL;
         if (!(PyTuple_Check(litem) && (PyTuple_Size(litem) == 2)
                 && ((n1 = PyNumber_Float(PyTuple_GET_ITEM(litem, 0))) != NULL)
-                && ((n2 = PyNumber_Float(PyTuple_GET_ITEM(litem, 0))) != NULL))) {
+                && ((n2 = PyNumber_Float(PyTuple_GET_ITEM(litem, 1))) != NULL))) {
             Py_DECREF(pyres);
             Py_XDECREF(n1);
             Py_XDECREF(n2);
