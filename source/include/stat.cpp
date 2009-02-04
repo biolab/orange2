@@ -251,8 +251,9 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
       // adjust the top end so that the window includes the reference point
       //   (note that the last point included is to-1, so this one must be >= refx)
       for(; (to != highedge) && (refx > (*(to-1)).x); needpoints -= (*(to++)).w);
+      const int diffto = (to == highedge ? (to-1)->x : to->x) - refx;
       // adjust the bottom end as high as it goes but so that the window still covers at least needpoints points
-      for(; (from != to) && ((*to).x - refx < refx - (*from).x) && (needpoints + (*from).w < 0); needpoints += (*(from++)).w);
+      for(; (from != to) && (diffto < refx - (*from).x) && (needpoints + (*from).w < 0); needpoints += (*(from++)).w);
 
       while ((to!=highedge) && ((*to).x - refx < refx - (*from).x)) {
         // 'to' is not at the high edge and to's point is closer that from's, so include it
