@@ -240,7 +240,6 @@ TMetaVector *knownMetas(PyObject *keywords)
 }
 
 ABSTRACT(Variable, Orange)
-C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, getValueFrom=])")
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
@@ -464,6 +463,47 @@ PyObject *Variable_specialValue(PyObject *self, PyObject *arg) PYARGS(METH_O, "(
 }
 
 
+
+PyObject *replaceVarWithEquivalent(PyObject *pyvar)
+{
+  PVariable newVar = PyOrange_AsVariable(pyvar);
+  TEnumVariable *enewVar = newVar.AS(TEnumVariable);
+  TVariable *oldVar = TVariable::getExisting(newVar->name, newVar->varType, enewVar ? enewVar->values.getUnwrappedPtr() : NULL, NULL, TVariable::Incompatible);
+  if (oldVar && oldVar->isEquivalentTo(newVar.getReference())) {
+    if (newVar->sourceVariable)
+      oldVar->sourceVariable = newVar->sourceVariable;
+    if (newVar->getValueFrom)
+      oldVar->getValueFrom = newVar->getValueFrom;
+    Py_DECREF(pyvar);
+    return WrapOrange(PVariable(oldVar));
+  }
+  return pyvar;
+}
+
+
+PyObject *Variable__reduce__(PyObject *self)
+{
+	PyTRY
+		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderVariable"), self->ob_type, packOrangeDictionary(self));
+	PyCATCH
+}
+
+PyObject *__pickleLoaderVariable(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, dictionary)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PyObject *dict;
+	  if (!PyArg_ParseTuple(args, "OO:__pickleLoaderEnumVariable", &type, &dict))
+		  return NULL;
+		PyObject *emptyTuple = PyTuple_New(0);
+		PyObject *pyVar = type->tp_new(type, emptyTuple, NULL);
+		Py_DECREF(emptyTuple);
+		if (unpackOrangeDictionary(pyVar, dict) == -1)
+		  PYERROR(PyExc_AttributeError, "cannot construct the variable from the pickle", PYNULL)
+		return replaceVarWithEquivalent(pyVar);
+	PyCATCH
+}
+
 PyObject *EnumVariable__reduce__(PyObject *self)
 {
 	PyTRY
@@ -514,7 +554,7 @@ PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VAR
         }
     }
  
-    return pyvar;
+    return replaceVarWithEquivalent(pyvar);
 	PyCATCH
 }
 
@@ -524,19 +564,6 @@ PyObject *EnumVariable_getitem_sq(PyObject *self, int index)
     if (!var->values || (index<0) || (index>=int(var->values->size())))
       PYERROR(PyExc_IndexError, "index out of range", PYNULL);
     return Value_FromVariableValue(PyOrange_AsVariable(self), TValue(index));
-  PyCATCH
-}
-
-
-PyObject *IntVariable_getitem_sq(PyObject *self, int index)
-{ PyTRY
-    CAST_TO(TIntVariable, var);
-    int maxInd = var->endValue - var->startValue;
-    if (maxInd<0)
-      PYERROR(PyExc_IndexError, "interval not specified", PYNULL);
-    if ((index<0) || (index>maxInd))
-      PYERROR(PyExc_IndexError, "index out of range", PYNULL);
-    return Value_FromVariableValue(PyOrange_AsVariable(self), TValue(var->startValue+index));
   PyCATCH
 }
 
