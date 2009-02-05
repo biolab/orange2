@@ -288,7 +288,7 @@ class OWNetExplorer(OWWidget):
         self.mdsSteps = 120
         self.mdsRefresh = 30
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
-        OWGUI.spin(ib, self, "mdsFactor", 1, 10000, 1, label="Scaling factor: ")
+        OWGUI.doubleSpin(ib, self, "mdsFactor", 0, 10000, 0.000001, label="Scaling factor: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         OWGUI.checkBox(ib, self, 'mdsTorgerson', "Torgerson's initial approximation")
@@ -391,9 +391,9 @@ class OWNetExplorer(OWWidget):
         self.progressBarInit()
         
         if self.mdsAvgLinkage:
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)
-        else:
             self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)
+        else:
+            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson)            
             
         self.btnMDS.setChecked(False)
         self.btnMDS.setText("MDS on graph components")
