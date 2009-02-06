@@ -163,7 +163,7 @@ int TOrange::dropReferences()
 
 
 
-extern char excbuf[256], excbuf2[256]; // defined in errors.cpp
+extern char excbuf[512], excbuf2[512]; // defined in errors.cpp
 
 void TOrange::raiseError(const char *anerr, ...) const
 { va_list vargs;

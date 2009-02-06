@@ -28,7 +28,7 @@
 
 bool exhaustiveWarnings = false;
 
-char excbuf[512], excbuf2[256];
+char excbuf[512], excbuf2[512];
 
 void raiseError(const char *anerr, ...)
 { va_list vargs;
@@ -51,7 +51,7 @@ void raiseErrorWho(const char *who, const char *anerr, ...)
     va_start(vargs);
   #endif
 
-  snprintf(excbuf2, 256, "%s: %s", who, anerr);
+  snprintf(excbuf2, 512, "%s: %s", who, anerr);
   vsnprintf(excbuf, 512, excbuf2, vargs);
   throw mlexception(excbuf);
 }
