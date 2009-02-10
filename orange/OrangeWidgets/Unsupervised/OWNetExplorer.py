@@ -49,7 +49,10 @@ class OWNetExplorer(OWWidget):
                     "showMissingValues",
                     "fontSize",
                     "mdsTorgerson",
-                    "mdsAvgLinkage"] 
+                    "mdsAvgLinkage",
+                    "mdsSteps",
+                    "mdsRefresh",
+                    "mdsStressDelta"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -110,6 +113,9 @@ class OWNetExplorer(OWWidget):
         self.fontSize = 12
         self.mdsTorgerson = 0
         self.mdsAvgLinkage = 0
+        self.mdsSteps = 120
+        self.mdsRefresh = 30
+        self.mdsStressDelta = 0.00001
         
         self.loadSettings()
         
@@ -284,13 +290,8 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo.addItem("Select attribute")
         
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
-        self.mdsFactor = 1
-        self.mdsSteps = 120
-        self.mdsRefresh = 30
-        self.mdsStressDelta = 0.00001
         self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
-        OWGUI.doubleSpin(ib, self, "mdsFactor", 0.000001, 10000, 0.000001, label="Scaling factor: ")
-        OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.00000000000000000001, label="Min stress change: ")
+        OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
         OWGUI.checkBox(ib, self, 'mdsTorgerson', "Torgerson's initial approximation")
@@ -393,9 +394,9 @@ class OWNetExplorer(OWWidget):
         self.progressBarInit()
         
         if self.mdsAvgLinkage:
-            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)
+            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)
         else:
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsFactor, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)            
+            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)            
             
         self.btnMDS.setChecked(False)
         self.btnMDS.setText("MDS on graph components")
