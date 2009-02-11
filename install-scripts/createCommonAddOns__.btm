@@ -56,7 +56,7 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > %COMPILELOG
-  break_on_error
+  rem break_on_error
   move /z %TMPDIR\add-ons\Text\dist\*.win32-py%npver.exe %TMPDIR\%PKG_TEXT-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  

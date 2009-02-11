@@ -1,6 +1,5 @@
 @echo off
 set QTVER=qt44-3rdparty
-REM set QTVER=qt23-3rdparty
 call createSnapshot.btm %QTVER >& win-snapshot-create.%QTVER.log
 
 iff %ERRORS != 0 then

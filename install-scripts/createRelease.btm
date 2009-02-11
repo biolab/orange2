@@ -10,17 +10,24 @@ set WIN_PYTHON=orange-win-w-python-%VERSION
 set ADDON_BIOINFORMATICS=orangeAddOn-bioinformatics-%VERSION
 set ADDON_TEXT=orangeAddOn-text-%VERSION
 
-REM # update source(s)
-cdd %TMPDIR\..
-del /syeq release
-svn checkout http://www.ailab.si/svn/
+rem # update source(s) to revision HEAD
+cdd %TMPDIR
+svn update --ignore-externals
 
-REM # build
+rem # build core
+cdd %SCRIPTDIR
 call createCommon__.btm release %1 %WIN %WIN_PYTHON
+break_on_error
 
-REM # publish on web
+rem # build add ons
+rem cdd %SCRIPTDIR
+rem call createCommonAddOns__.btm release %ADDON_BIOINFORMATICS %ADDON_TEXT
+rem break_on_error
+
+rem # if no errors then publish on web (everything at the same time)
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
 
+rem # remember new filenames
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm
