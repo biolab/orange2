@@ -22,9 +22,9 @@ alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ quit %error
 
 REM # python, packaging and compiling
 set PYTHONBASE=e:\Python
-set PYTHONVERSIONS=25 24 23
+set PYTHONVERSIONS=25
 REM # text mining can not be compiled for Python 23
-set PYTHONVERSIONS_ADDONs=25 24
+set PYTHONVERSIONS_ADDONs=25
 alias python="%PYTHONBASE%25\python.exe"
 set .py="%PYTHONBASE%25\python.exe"
 
