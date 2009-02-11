@@ -113,7 +113,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         
     def rotateVertices(self, components, M, factor=10):    
         for i in range(len(components)):
-            if M[i] == 0:
+            if M[i] < 0.0001:
                 continue
             
             component = components[i]
@@ -129,8 +129,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             r = numpy.sqrt(x ** 2 + y ** 2)
             fi = numpy.arctan2(y, x)
-                
-            fi += factor * M[i] * numpy.pi / 180
+            
+            if M[i] > 0:
+                fi += numpy.pi / 18
+            else:
+                fi -= numpy.pi / 18
+            #fi += factor * M[i] * numpy.pi / 180
                 
             x = r * numpy.cos(fi)
             y = r * numpy.sin(fi)
@@ -182,13 +186,15 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         e = math.sqrt((v_x - x_center) ** 2 + (v_y - y_center) ** 2)
                         
                         M[i] += (1 - d) / (e ** 2) * numpy.cross(R, L)
-                
+            
+            tmpM = numpy.array(M)
+            print numpy.min(tmpM), numpy.max(tmpM),numpy.average(tmpM),numpy.min(numpy.abs(tmpM))
             self.rotateVertices(components, M, factor)
             if callbackUpdateCanvas: callbackUpdateCanvas()
             if callbackProgress : callbackProgress()
             step += 1
     
-    def mdsUpdateData(self, components, mds, mdsFactor, callbackUpdateCanvas):
+    def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
         component_props = []
         x_mds = []
         y_mds = []
@@ -225,15 +231,15 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             component = components[i]
             x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
             
-            self.graph.coors[0][component] = self.graph.coors[0][component] - x_avg_graph + (x_avg_mds *  mdsFactor * self.diag_coors / diag_mds)
-            self.graph.coors[1][component] = self.graph.coors[1][component] - y_avg_graph + (y_avg_mds *  mdsFactor * self.diag_coors / diag_mds)
+            self.graph.coors[0][component] = self.graph.coors[0][component] - x_avg_graph + (x_avg_mds *  self.diag_coors / diag_mds)
+            self.graph.coors[1][component] = self.graph.coors[1][component] - y_avg_graph + (y_avg_mds *  self.diag_coors / diag_mds)
         
         if callbackUpdateCanvas:
             callbackUpdateCanvas()
     
     def mdsCallback(self, a,b=None):
         if not self.mdsStep % self.mdsRefresh:
-            self.mdsUpdateData(self.mdsComponents, self.mds, self.mdsFactor, self.callbackUpdateCanvas)
+            self.mdsUpdateData(self.mdsComponents, self.mds, self.callbackUpdateCanvas)
             
             if self.callbackProgress != None:
                 self.callbackProgress(self.mds.avgStress, self.mdsStep)
@@ -245,7 +251,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False):
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False):
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return 1
@@ -271,7 +277,6 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.mds = orngMDS.MDS(matrix)
         # set min stress difference between 0.01 and 0.00001
         self.minStressDelta = minStressDelta
-        self.mdsFactor = mdsFactor
         self.callbackUpdateCanvas = callbackUpdateCanvas
         self.callbackProgress = callbackProgress
         
@@ -279,11 +284,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.mds.Torgerson() 
         
         self.mds.optimize(mdsSteps, orngMDS.SgnRelStress, self.minStressDelta, progressCallback=self.mdsCallback)
-        if self.mdsStep % self.mdsRefresh:
-            self.mdsUpdateData(self.mdsComponents, self.mds, mdsFactor, callbackUpdateCanvas)
+        self.mdsUpdateData(self.mdsComponents, self.mds, callbackUpdateCanvas)
         
-            if callbackProgress != None:
-                callbackProgress(self.mds.avgStress, self.mdsStep)
+        if callbackProgress != None:
+            callbackProgress(self.mds.avgStress, self.mdsStep)
         
         del self.diag_coors
         del self.mdsRefresh
@@ -291,13 +295,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         del self.mds
         del self.mdsComponents
         del self.minStressDelta
-        del self.mdsFactor
         del self.callbackUpdateCanvas
         del self.callbackProgress
         return 0
 
-    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, mdsFactor, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0):
-        return self.mdsComponents(mdsSteps, mdsRefresh, mdsFactor, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True)
+    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0):
+        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True)
 
     def saveNetwork(self, fn):
         name = ''
