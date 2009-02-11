@@ -20,7 +20,7 @@ class ReportWindow(QWidget):
         self.setWindowTitle("Report")
         self.setWindowIcon(QIcon(os.path.join(orngEnviron.widgetDir, "icons/Unknown.png")))
         global report
-        if 1 or not self.checkExtLibrary():
+        if not self.checkExtLibrary():
             report = None
             return
 
@@ -50,7 +50,7 @@ class ReportWindow(QWidget):
     def checkExtLibrary(self):
         if os.path.exists(os.path.join(reportsDir, "ext-2.2")):
             return True
-        resp = QMessageBox("Additional library download", "Your version of Orange supports creating reports, but it needs to download the Ext library (~330 MB) for JavaScript. Proceed?\n\nIf you answer no, it will ask again next time you run Orange; sorry for the inconvenience ;)", QMessageBox.Question, QMessageBox.Yes|QMessageBox.Default, QMessageBox.No|QMessageBox.Escape, QMessageBox.NoButton).exec_()
+        resp = QMessageBox("Additional library download", "Your version of Orange supports creating reports, but it needs to download the Ext library (~330 kB) for JavaScript. Proceed?\n\nIf you answer no, it will ask again next time you run Orange; sorry for the inconvenience ;)", QMessageBox.Question, QMessageBox.Yes|QMessageBox.Default, QMessageBox.No|QMessageBox.Escape, QMessageBox.NoButton).exec_()
         if resp == QMessageBox.No:
             return False
         try:
