@@ -101,6 +101,14 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.resize(830, 400)
 
+    def sendReport(self):
+        self.reportSettings("Information",
+                            [("Target class",self.tree.domain.classVar.values[self.targetClass]),
+                         ("Tree size", "%i nodes, %i leaves" % (self.treeNodes, self.treeLeaves))])
+        self.reportSection("Tree")
+        import OWReport
+        self.reportRaw(OWReport.reportTree(self.v))
+        
     def getTreeItemSibling(self, item):
             parent = item.parent()
             if not parent:
@@ -205,12 +213,14 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.targetCombo.clear()
         if tree:
-            self.infoa.setText('Number of nodes: %i' % orngTree.countNodes(tree))
-            self.infob.setText('Number of leaves: %i' % orngTree.countLeaves(tree))
+            self.treeNodes, self.treeLeaves = orngTree.countNodes(tree), orngTree.countLeaves(tree) 
+            self.infoa.setText('Number of nodes: %i' % self.treeNodes)
+            self.infob.setText('Number of leaves: %i' % self.treeLeaves)
             self.targetCombo.addItems([name for name in tree.tree.examples.domain.classVar.values])
             self.targetClass = 0
             self.openContext("", tree.domain)
         else:
+            self.treeNodes = self.treeLeaves = 0
             self.infoa.setText('No tree on input.')
             self.infob.setText('')
             self.openContext("", None)

@@ -192,6 +192,10 @@ BodyCasesColor_Default = QColor(0, 0, 128)
 class OWClassificationTreeGraph(OWTreeViewer2D):
     settingsList = OWTreeViewer2D.settingsList+['ShowPies', "colorSettings", "selectedColorSettingsIndex"]
     contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
+    
+    nodeColorOpts = ['Default', 'Instances in node', 'Majority class probability', 'Target class probability', 'Target class distribution']
+    nodeInfoButtons = ['Majority class', 'Majority class probability', 'Target class probability', 'Number of instances']
+    
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         self.ShowPies=1
         self.TargetClassIndex=0
@@ -225,16 +229,15 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWGUI.button(self.NodeTab, self, "Set Colors", callback=self.setColors, debuggingEnabled = 0)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info")
-        nodeInfoButtons = ['Majority class', 'Majority class probability', 'Target class probability', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
         self.NodeInfoW = []; self.dummy = 0
-        for i in range(len(nodeInfoButtons)):
+        for i in range(len(self.nodeInfoButtons)):
             setattr(self, nodeInfoSettings[i], i in self.NodeInfo)
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
-                               nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
+                               self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Majority class probability', 'Target class probability', 'Target class distribution'], box='Node Color',
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
 
         OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
@@ -245,6 +248,16 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         
         dlg = self.createColorDialog()
         self.scene.colorPalette = dlg.getDiscretePalette("colorPalette")
+
+
+    def sendReport(self):
+        self.reportSettings("Information",
+                            [("Node color", self.nodeColorOpts[self.NodeColorMethod]),
+                             ("Target class", self.tree.examples.domain.classVar.values[self.TargetClassIndex]),
+                             ("Data in nodes", ", ".join(s for i, s in enumerate(self.nodeInfoButtons) if self.NodeInfoW[i].isChecked())),
+                             ("Line widths", ["Constant", "Proportion of all instances", "Proportion of parent's instances"][self.LineWidthMethod]),
+                             ("Tree size", "%i nodes, %i leaves" % (orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree)))])
+        OWTreeViewer2D.sendReport(self)
 
 
     def setColors(self):

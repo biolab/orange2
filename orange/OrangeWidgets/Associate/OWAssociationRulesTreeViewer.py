@@ -89,6 +89,17 @@ class OWAssociationRulesTreeViewer(OWWidget):
         
         self.rules = None
 
+    def sendReport(self):
+        import OWReport
+        self.reportSettings("Rule statistics",
+                            [("Number of rules", self.nRules),
+                             ("Selected rules", self.nSelectedRules),
+                             ("Examples covered by selected rules' precondition", self.nSelectedExamples),
+                             ("Matching examples", self.nMatchingExamples),
+                             ("Mismatching examples", self.nMismatchingExamples)
+                             ])
+        self.reportSection("Rules")
+        self.reportRaw(OWReport.reportTree(self.treeRules))
 
     def setWholeRules(self, node = None):
         if not node:

@@ -254,6 +254,24 @@ class OWDistanceMap(OWWidget):
 ##        if self.ColorSchemas:
 ##            self.colorPalette.setColorSchemas(self.ColorSchemas)
 
+    def sendReport(self):
+        self.reportSettings("Data",
+                            [("Matrix dimension", self.matrix.dim)])
+        self.reportSettings("Settings",
+                            [("Merge", "%i elements in a cell" % self.Merge if self.Merge > 1 else "none"),
+                             ("Sorting", self.sorting[self.Sort][0].lower()),
+                             ("Thresholds", "low %.1f, high %.1f" % (self.CutLow, self.CutHigh) if self.CutEnabled else "none"),
+                             ("Gamma", "%.2f" % self.Gamma)])
+        self.reportRaw("<br/>")
+        buffer = QPixmap(self.scene.width(), self.scene.height())
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        self.scene.render(painter)
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+
+                             
+        
     def createColorStripe(self, palette, offsetX):
         dx = v_legend_width
         dy = v_legend_height

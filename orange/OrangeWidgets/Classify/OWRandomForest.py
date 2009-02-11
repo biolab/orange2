@@ -72,6 +72,16 @@ class OWRandomForest(OWWidget):
 
         self.setLearner()
 
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Number of trees", self.trees),
+                             ("Considered number of attributes at each split", self.attributeP if self.attributes else "not set"),
+                             ("Seed for random generator", self.rseed),
+                             ("Maximal depth of individual trees", self.limitDepthP if self.limitDepth else "not set"),
+                             ("Minimal number of instances in a leaf", self.preNodeInstP if self.preNodeInst else "not limited")
+                           ])
+        self.reportData(self.data)
+        
     def period(self):
         if self.outtree == -1: self.outtree = self.claTrees-1
         elif self.outtree >= self.claTrees: self.outtree = 0

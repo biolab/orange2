@@ -1432,6 +1432,29 @@ class OWNetExplorer(OWWidget):
         self.graph.updateData()
         self.graph.replot()
         
+    def sendReport(self):
+        self.reportSettings("Graph data",
+                            [("Number of vertices", self.nVertices),
+                             ("Number of edges", self.nEdges),
+                             ("Vertices per edge", "%.3f" % self.verticesPerEdge),
+                             ("Edges per vertex", "%.3f" % self.edgesPerVertex),
+                             ("Diameter", self.diameter),
+                             ("Clustering Coefficient", "%.1f%%" % self.clustering_coefficient)
+                             ])
+        if self.color or self.vertexSize or self.markerAttributes or self.edgeColor:
+            self.reportSettings("Visual settings",
+                                [self.color and ("Vertex color", self.colorCombo.currentText()),
+                                 self.vertexSize and ("Vertex size", str(self.vertexSizeCombo.currentText()) + " (inverted)" if self.invertSize else ""),
+                                 self.markerAttributes and ("Labels", ", ".join(self.attributes[i][0] for i in self.markerAttributes)),
+                                 self.edgeColor and ("Edge colors", self.edgeColorCombo.currentText()),
+                                ])
+        self.reportSettings("Optimization",
+                            [("Method", self.optCombo.currentText()),
+                             ("Iterations", self.frSteps)])
+        self.reportSection("Graph")
+        self.reportImage(self.graph.saveToFileDirect)        
+        
+        
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
     ow = OWNetExplorer()

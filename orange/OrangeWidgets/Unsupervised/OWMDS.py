@@ -524,6 +524,23 @@ class OWMDS(OWWidget):
         self.mds.getStress(self.stressFunc[self.StressFunc][1])
         self.graph.replot()
 
+    def sendReport(self):
+        self.reportSettings("Optimization",
+                            [("Stress function", self.stressFunc[self.StressFunc][0]),
+                             ("Minimal stress change", self.minStressDelta),
+                             ("Maximal number of steps", self.maxIterations)])
+        if self.graph.ColorAttr or self.graph.stressBySize or self.graph.SizeAttr or self.graph.ShapeAttr or self.graph.NameAttr or self.graph.ShowStress:
+            self.reportSettings("Visual settings",
+                                [self.graph.ColorAttr and ("Point color", self.colorCombo.currentText()),
+                                 self.graph.stressBySize  and ("Point size", "&lt;stress&gt;")
+                                    or self.graph.SizeAttr and ("Point size", self.sizeCombo.currentText()),
+                                 self.graph.ShapeAttr and ("Point shape", self.shapeCombo.currentText()),
+                                 self.graph.NameAttr and ("Labels", self.nameCombo.currentText()),
+                                 self.graph.ShowStress and ("Proportion of connected pairs", self.graph.proportionGraphed)])
+        self.reportSection("Chart")
+        self.reportImage(self.graph.saveToFileDirect)
+                             
+
 class MDSGraph(OWGraph):
     def __init__(self, parent=None, name=None):
         OWGraph.__init__(self, parent, name)

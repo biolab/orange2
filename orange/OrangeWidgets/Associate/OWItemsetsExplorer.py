@@ -64,8 +64,17 @@ class OWItemsetsExplorer(OWWidget):
 
         self.itemsets= None
 
+    def sendReport(self):
+        import OWReport
+        self.reportSettings("Itemset statistics",
+                            [("Number of itemsets", self.nItemsets),
+                             ("Selected itemsets", self.nSelectedItemsets),
+                             ("Covered examples", self.nSelectedExamples),
+                             ])
+        self.reportSection("Itemsets")
+        self.reportRaw(OWReport.reportTree(self.treeItemsets))
+
     def setWholeItemsets(self, node = None):
-        print "da"
         if not node:
             for i in range(self.treeItemsets.topLevelItemCount()):
                 self.setWholeItemsets(self.treeItemsets.topLevelItem(i))

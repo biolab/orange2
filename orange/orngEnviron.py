@@ -23,11 +23,6 @@ def __getDirectoryNames():
     if not os.path.isdir(picsDir):
         picsDir = ""
 
-    reportsDir = os.path.join(orangeDir, "report")
-    if not os.path.isdir(reportsDir):
-        try: os.makedirs(reportsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
-        except: pass
-
     home = user.home
     if home[-1] == ":":
         home += "\\"
@@ -37,14 +32,17 @@ def __getDirectoryNames():
             try: os.makedirs(applicationDir)
             except: pass
         outputDir = os.path.join(applicationDir, orangeVer)                  # directory for saving settings and stuff
+        reportsDir = os.path.join(home, "My Documents", "Orange Reports")
     elif sys.platform == "darwin":
         applicationDir = os.path.join(home, "Library", "Application Support")
         if not os.path.isdir(applicationDir):
             try: os.makedirs(applicationDir)
             except: pass
         outputDir = os.path.join(applicationDir, orangeVer)
+        reportsDir = os.path.join(home, "Orange Reports")
     else:
         outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
+        reportsDir = os.path.join(home, "orange-reports")
 
     orangeSettingsDir = outputDir
     if sys.platform == "darwin":
@@ -56,7 +54,7 @@ def __getDirectoryNames():
     canvasSettingsDir = os.path.join(outputDir, "OrangeCanvasQt4") if canvasDir <> None else None
     widgetSettingsDir = os.path.join(outputDir, "widgetSettingsQt4") if widgetDir <> None else None
 
-    for dname in [orangeSettingsDir, bufferDir, widgetSettingsDir, canvasSettingsDir]:
+    for dname in [orangeSettingsDir, bufferDir, widgetSettingsDir, canvasSettingsDir, reportsDir]:
         if dname <> None and not os.path.isdir(dname):
             try: os.makedirs(dname)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
             except: pass

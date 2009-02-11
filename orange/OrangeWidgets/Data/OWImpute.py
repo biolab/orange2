@@ -43,7 +43,8 @@ class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
     contextHandlers = {"": PerfectDomainContextHandler("", ["methods"], matchValues = DomainContextHandler.MatchValuesAttributes)}
     indiShorts = ["", "leave", "avg", "model", "random", "remove", ""]
-
+    defaultMethods = ["Don't Impute", "Average/Most frequent", "Model-based imputer", "Random values", "Remove examples with missing values"]
+    
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
@@ -68,7 +69,7 @@ class OWImpute(OWWidget):
         self.loadSettings()
 
         self.controlArea.layout().setSpacing(8)
-        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer (can be slow!)", "Random values", "Remove examples with missing values"], "Default imputation method", callback=self.sendIf)
+        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", self.defaultMethods, "Default imputation method", callback=self.sendIf)
 
         self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
 
@@ -314,7 +315,7 @@ class OWImpute(OWWidget):
         missingValues = []
         toRemove = []
         usedModel = None
-        for attr in imputeClass and self.data.domain or self.data.domain.attributes:
+        for attr in (self.data.domain if imputeClass else self.data.domain.attributes):
             method, value = self.methods.get(attr.name, (0, None))
             if not method:
                 method = self.defaultMethod + 1
@@ -357,6 +358,30 @@ class OWImpute(OWWidget):
             self.imputer = self.RemoverAndImputerConstructor(remover, self.imputer)
 
 
+    def sendReport(self):
+        self.reportData(self.data, "Input data")
+        self.reportSettings("Imputed values",
+                            [("Default method", self.defaultMethods[self.defaultMethod]),
+                             ("Impute class values", OWGUI.YesNo[self.imputeClass])])
+        
+        if self.data:
+            attrs = []
+            eex = getattr(self, "imputedValues", None) 
+            classVar = self.data.domain.classVar
+            imputeClass = self.imputeClass or classVar and self.methods.get(classVar.name, (0, None))[0]
+            for attr in (self.data.domain if imputeClass else self.data.domain.attributes):
+                method, value = self.methods.get(attr.name, (0, None))
+                if method == 6:
+                    attrs.append((attr.name, "%s (%s)" % (attr(value), "set manually")))
+                elif eex and method != 3:
+                    attrs.append((attr.name, str(eex[attr]) + (" (%s)" % self.defaultMethods[method-1] if method else "")))
+                elif method:
+                    attrs.append((attr.name, self.defaultMethods[method-1]))
+            if attrs:
+                self.reportRaw("<br/>")
+                self.reportSettings("", attrs)
+            
+
     def sendIf(self):
         if self.autosend:
             self.sendDataAndImputer()
@@ -375,6 +400,7 @@ class OWImpute(OWWidget):
                     data = constructed(self.data)
                     ## meta-comment: is there a missing 'not' in the below comment?
                     # if the above fails, dataChanged should be set to False
+                    self.imputedValues = constructed(orange.Example(self.data.domain))  
                     self.dataChanged = False
                 except:
                     self.error(0, "Imputation failed; this is typically due to unsuitable model.\nIt can also happen with some imputation techniques if no values are defined.")

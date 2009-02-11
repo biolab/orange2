@@ -363,7 +363,9 @@ class OWLinProj(OWVisWidget):
         OWVisWidget.hideEvent(self, ev)
         
 
-
+    def sendReport(self):
+        self.reportImage(self.graph.saveToFileDirect, QSize(500, 500))
+        
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)

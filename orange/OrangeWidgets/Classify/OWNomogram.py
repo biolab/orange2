@@ -116,7 +116,8 @@ class OWNomogram(OWWidget):
         self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(layoutBox, self, 'Show histogram, size', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
 
         OWGUI.separator(layoutBox)
-        self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram, orientation="horizontal")
+        self.sortOptions = ["No sorting", "Absolute importance", "Positive influence", "Negative influence"]
+        self.sortBox = OWGUI.comboBox(layoutBox, self, "sort_type", label="Sort by ", items=self.sortOptions, callback = self.sortNomogram, orientation="horizontal")
 
 
         OWGUI.rubber(self.controlArea)
@@ -148,10 +149,26 @@ class OWNomogram(OWWidget):
         # mouse pressed flag
         self.mousepr = False
 
+    def sendReport(self):
+        self.reportSettings("Information",
+                            [("Target class", self.cl.domain.classVar.values[self.TargetClassIndex]),
+                             self.confidence_check and ("Confidence intervals", "%i%%" % self.confidence_percent),
+                             ("Sorting", self.sortOptions[self.sort_type] if self.sort_type else "None")])
+        
+        canvases = header, graph, footer = self.header.scene(), self.graph.scene(), self.footer.scene()
+        buffer = QPixmap(max(c.width() for c in canvases), sum(c.height() for c in canvases))
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        header.render(painter, QRectF(0, 0, header.width(), header.height()), QRectF(0, 0, header.width(), header.height()))
+        graph.render(painter, QRectF(0, header.height(), graph.width(), graph.height()), QRectF(0, 0, graph.width(), graph.height()))
+        footer.render(painter, QRectF(0, header.height()+graph.height(), footer.width(), footer.height()), QRectF(0, 0, footer.width(), footer.height()))
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
 
+        
     # Input channel: the Bayesian classifier
     def nbClassifier(self, cl):
-        # thisd subroutine computes standard error of estimated beta. Note that it is used only for discrete data,
+        # this subroutine computes standard error of estimated beta. Note that it is used only for discrete data,
         # continuous data have a different computation.
         def errOld(e, priorError, key, data):
             inf = 0.0
@@ -663,9 +680,9 @@ class OWNomogram(OWWidget):
         ext = ext.upper()
 
         #create buffers and painters
-        headerBuffer = QPixmap(self.header.canvas().size())
-        graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE))
-        footerBuffer = QPixmap(self.footer.canvas().size())
+        headerBuffer = QPixmap(self.header.scene().size())
+        graphBuffer = QPixmap(QSize(self.graph.scene().pright, self.graph.scene().gbottom+EMPTY_SPACE))
+        footerBuffer = QPixmap(self.footer.scene().size())
 
         headerPainter = QPainter(headerBuffer)
         graphPainter = QPainter(graphBuffer)

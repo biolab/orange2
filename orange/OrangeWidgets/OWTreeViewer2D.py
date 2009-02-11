@@ -781,6 +781,10 @@ class OWTreeViewer2D(OWWidget):
         self.tree=None
         self.resize(800, 500)
 
+    def sendReport(self):
+        self.reportSection("Tree")
+        self.reportImage(self.saveGraph)
+        
     def scaleSizes(self):
         pass
 

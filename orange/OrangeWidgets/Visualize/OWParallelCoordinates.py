@@ -274,6 +274,9 @@ class OWParallelCoordinates(OWVisWidget):
         self.optimizationDlg.hide()
         OWWidget.closeEvent(self, ce)
 
+    def sendReport(self):
+        self.reportImage(self.graph.saveToFileDirect, QSize(500, 500))
+
 
 
 CORRELATION = 0
@@ -617,6 +620,7 @@ class ParallelOptimization(OWWidget):
             line = file.readline()[:-1]
             ind+=1
         file.close()
+
 
 #test widget appearance
 if __name__=="__main__":

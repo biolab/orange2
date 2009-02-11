@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys, os, cPickle, orngRegistry, orngEnviron, orngGui
-import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp
+import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
 import orange, user, orngMisc
 
 class OrangeCanvasDlg(QMainWindow):
@@ -142,6 +142,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.move(w,h)
 
         self.helpWindow = orngHelp.HelpWindow(self)
+        self.reportWindow = OWReport.ReportWindow()
         
         self.show()
 
@@ -753,9 +754,11 @@ class OrangeCanvasDlg(QMainWindow):
             ce.accept()
             
             self.helpWindow.close()
+            self.reportWindow.close()
         else:
             ce.ignore()
         
+        self.reportWindow.removeTemp()
         self.saveSettings()
 
 

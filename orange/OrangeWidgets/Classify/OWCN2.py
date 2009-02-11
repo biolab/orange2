@@ -90,7 +90,7 @@ class OWCN2(OWWidget):
                 tooltip="Required significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
-                "Minimum number of examples a rule must\ncover (use 0 for dont care)")
+                "Minimum number of examples a rule must\ncover (use 0 for not setting the limit)")
         OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximal rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
                             tooltip="Maximal number of conditions in the left\npart of the rule (use 0 for don't care)")
 
@@ -126,6 +126,17 @@ class OWCN2(OWWidget):
         self.coveringAlgButtonPressed(self.CoveringButton)
         self.resize(100,100)
         self.setLearner()
+
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Rule quality estimation", ["Laplace", "m-estimate with m=%.2f" % self.m, "WRACC"][self.QualityButton]),
+                             ("Pruning alpha (vs. default rule)", "%.3f" % self.Alpha),
+                             ("Stopping alpha (vs. parent rule)", "%.3f" % self.stepAlpha),
+                             ("Minimum coverage", "%.3f" % self.MinCoverage),
+                             ("Maximal rule length", self.MaxRuleLength if self.useMaxRuleLength else "unlimited"),
+                             ("Beam width", self.BeamWidth),
+                             ("Covering", ["Exclusive", "Weighted with a weight of %.2f" % self.Weight][self.CoveringButton])])
+        self.reportData(self.data)
 
     def setLearner(self):
         if hasattr(self, "btnApply"):

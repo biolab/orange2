@@ -192,6 +192,15 @@ class OWSurveyPlot(OWVisWidget):
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
+    def sendReport(self):
+        self.reportSettings("",
+                            [("Sorting", ", ".join([x for x in (self.primaryAttribute, self.secondaryAttribute) if x != "(None)"]) or "None"), 
+                             ("Continuous attribute ordering", self.attrContOrder),
+                             ("Discrete attribute ordering", self.attrDiscOrder)]
+                             )
+        self.reportRaw("<br/>")
+        self.reportImage(self.graph.saveToFileDirect, QSize(400, 400))
+
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)

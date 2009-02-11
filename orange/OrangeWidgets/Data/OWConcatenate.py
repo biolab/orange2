@@ -26,7 +26,7 @@ class OWConcatenate(OWWidget):
         OWGUI.widgetLabel(bg, "When there is no primary table, the domain should be:")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Union of attributes appearing in all tables")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Intersection of attributes in all tables")
-        OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict betwen input classes.")
+        OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
 
         self.adjustSize()
 
@@ -97,4 +97,15 @@ class OWConcatenate(OWWidget):
                     for additional in self.additional.values():
                         newTable.extend(additional)
 
+        self.dataReport = self.prepareDataReport(newTable)
         self.send("Examples", newTable)
+
+    def sendReport(self):
+        self.reportData(self.primary, "Primary table", 
+                        "None; outputting the %s of attributes from all tables" % ["union", "intersection"][self.mergeAttributes]) 
+        for additional in self.additional.values():
+            self.reportData(additional, "Additional table")
+        if not self.additional:
+            self.reportData(None, "Additional table")
+        self.reportData(self.dataReport, "Merged data")
+

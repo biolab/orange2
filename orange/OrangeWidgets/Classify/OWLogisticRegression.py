@@ -63,6 +63,19 @@ class OWLogisticRegression(OWWidget):
 
         self.applyLearner()
 
+    def sendReport(self):
+        if self.stepwiseLR:
+            step = "add at %i%%, remove at %i%%" % (self.addCrit, self.removeCrit)
+            if self.limitNumAttr:
+                step += "; allow up to %i attributes" % self.numAttr
+        else:
+            step = "No"
+        self.reportSettings("Learning parameters",
+                            [("Stepwise attribute selection", step),
+                             ("Imputation of unknown values", self.imputationMethodsStr[self.imputation])])
+        self.reportData(self.data)
+        
+
     def applyLearner(self):
         imputer = self.imputationMethods[self.imputation]
         removeMissing = not imputer

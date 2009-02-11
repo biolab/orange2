@@ -74,7 +74,20 @@ class OWC45Tree(OWWidget):
         self.setLearner()
 
 
-    # main part:
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Attribute quality measure", ["Information gain", "Gain ratio"][self.infoGain]),
+                             ("Subsetting", OWGUI.YesNo[self.subset]),
+                             ("Probabilistic threshold for continuous attributes", OWGUI.YesNo[self.probThresh]),
+                             self.useMinObjs and ("Minimal number of examples in leaves", self.minObjs),
+                             self.prune and ("Post pruning confidence level", self.cf),
+                             ("Iterative generation", OWGUI.YesNo[self.iterative]),
+                             self.iterative and ("Number of trials", self.trials),
+                             self.iterative and self.manualWindow and ("Initial window size manually set to", self.window),
+                             self.iterative and self.manualIncrement and ("Window increment manually set to", self.increment)])
+        self.reportData(self.data)
+
+
 
     def setData(self,data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
@@ -123,6 +136,7 @@ class OWC45Tree(OWWidget):
 #        else:
 #            self.send("C45 Tree", self.classifier)
 
+        
 ##############################################################################
 # Test the widget, run from DOS prompt
 # > python OWDataTable.py)

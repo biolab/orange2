@@ -64,6 +64,8 @@ class OWSieveMultigram(OWVisWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         self.resize(800, 600)
 
+    def sendReport(self):
+        self.reportImage(self.graph.saveToFileDirect, QSize(500,500))
 
     # receive new data and update all fields
     def setData(self, data):

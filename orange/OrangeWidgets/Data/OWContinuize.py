@@ -25,14 +25,16 @@ class OWContinuize(OWWidget):
                          ("Treat as ordinal", orange.DomainContinuizer.AsOrdinal),
                          ("Divide by number of values", orange.DomainContinuizer.AsNormalizedOrdinal))
 
-    continuousTreats = (("Leave as are", orange.DomainContinuizer.Leave),
+    continuousTreats = (("Leave them as they are", orange.DomainContinuizer.Leave),
                         ("Normalize by span", orange.DomainContinuizer.NormalizeBySpan),
                         ("Normalize by variance", orange.DomainContinuizer.NormalizeByVariance))
 
-    classTreats = (("Leave as is", orange.DomainContinuizer.Ignore),
+    classTreats = (("Leave it as it is", orange.DomainContinuizer.Ignore),
                    ("Treat as ordinal", orange.DomainContinuizer.AsOrdinal),
                    ("Divide by number of values", orange.DomainContinuizer.AsNormalizedOrdinal),
                    ("Specified target value", -1))
+    
+    valueRanges = ["from -1 to 1", "from 0 to 1"]
 
     def __init__(self,parent=None, signalManager = None, name = "Continuizer"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
@@ -68,7 +70,7 @@ class OWContinuize(OWWidget):
         self.controlArea.layout().addSpacing(4)
 
         zbbox = OWGUI.widgetBox(self.controlArea, "Value range")
-        OWGUI.radioButtonsInBox(zbbox, self, "zeroBased", btnLabels=["from -1 to 1", "from 0 to 1"], callback=self.sendDataIf)
+        OWGUI.radioButtonsInBox(zbbox, self, "zeroBased", btnLabels=self.valueRanges, callback=self.sendDataIf)
 
         self.controlArea.layout().addSpacing(4)
 
@@ -131,6 +133,19 @@ class OWContinuize(OWWidget):
                 domain = conzer(self.data)
             self.send("Examples", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
+        
+    def sendReport(self):
+        self.reportData(self.data, "Input data")
+        classVar = self.data.domain.classVar
+        if self.classTreatment == 3 and classVar and classVar.varType == orange.VarTypes.Discrete and len(classVar.values) >= 2:  
+            clstr = "Dummy variable for target '%s'" % classVar.values[self.targetValue]
+        else:
+            clstr = self.classTreats[self.classTreatment][0]
+        self.reportSettings("Settings",
+                            [("Multinominal attributes", self.multinomialTreats[self.multinomialTreatment][0]),
+                             ("Continuous attributes", self.continuousTreats[self.continuousTreatment][0]),
+                             ("Class attribute", clstr),
+                             ("Value range", self.valueRanges[self.zeroBased])])
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

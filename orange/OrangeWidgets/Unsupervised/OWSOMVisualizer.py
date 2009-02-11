@@ -451,6 +451,9 @@ class OWSOMVisualizer(OWWidget):
                                                   ContextField("inputSet", DomainContextHandler.Optional),
                                                   ContextField("scene.component", DomainContextHandler.Optional),
                                                   ContextField("scene.includeCodebook", DomainContextHandler.Optional)])}
+    
+    drawModes = ["None", "U-Matrix", "Component planes"]
+    
     def __init__(self, parent=None, signalManager=None, name="SOMVisualizer"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs = [("SOMMap", orngSOM.SOMMap, self.setSomMap), ("Examples", ExampleTable, self.data)]
@@ -488,7 +491,7 @@ class OWSOMVisualizer(OWWidget):
 
         self.backgroundBox = OWGUI.widgetBox(mainTab, "Background")
         #OWGUI.checkBox(self.backgroundBox, self, "backgroundCheck","Show background", callback=self.setBackground)
-        b = OWGUI.radioButtonsInBox(self.backgroundBox, self, "scene.drawMode", ["None", "U-Matrix", "Component planes"], callback=self.setBackground)
+        b = OWGUI.radioButtonsInBox(self.backgroundBox, self, "scene.drawMode", self.drawModes, callback=self.setBackground)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.componentCombo=OWGUI.comboBox(OWGUI.indentedBox(b), self,"scene.component", callback=self.setBackground)
         self.componentCombo.setEnabled(self.scene.drawMode==2)
@@ -543,6 +546,15 @@ class OWSOMVisualizer(OWWidget):
 ##        self.setFocusPolicy(QWidget.StrongFocus)
         self.resize(600,500)
 
+    def sendReport(self):
+        self.reportSettings("Visual settings",
+                           [("Background", self.drawModes[self.scene.drawMode]+(" - "+self.componentCombo.currentText() if self.scene.drawMode==2 else "")),
+                            ("Histogram", ["data from training set", "data from input subset"][self.inputSet] if self.histogram else "none"),
+                            ("Coloring",  "%s for %s" % (["pie chart", "majority value", "majority value probability"][self.discHistMode], self.attributeCombo.currentText()))
+                           ])
+        self.reportSection("Plot")
+        self.reportImage(OWChooseImageSizeDlg(self.scene).saveImage)
+        
     def setMode(self):
         self.componentCombo.setEnabled(self.scene.drawMode == 2)
         self.scene.redrawSom()
@@ -648,6 +660,7 @@ class OWSOMVisualizer(OWWidget):
         else:
             OWWidget.keyReleaseEvent(self, event)
         
+
         
 if __name__=="__main__":
     ap = QApplication(sys.argv)

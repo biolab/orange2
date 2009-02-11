@@ -23,6 +23,7 @@ class OWClassificationTree(OWWidget):
                     "postMaj", "postMPruning", "postM"]
 
     measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
+    binarizationOpts = ["No binarization", "Exhaustive search for optimal split", "One value against others"]
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
@@ -58,7 +59,7 @@ class OWClassificationTree(OWWidget):
         self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
         OWGUI.separator(self.controlArea)
 
-        OWGUI.radioButtonsInBox(self.controlArea, self, 'bin', ["No binarization", "Exhaustive search for optimal split", "One value against others"], "Binarization")
+        OWGUI.radioButtonsInBox(self.controlArea, self, 'bin', self.binarizationOpts, "Binarization")
         OWGUI.separator(self.controlArea)
 
         self.measureChanged()
@@ -79,6 +80,20 @@ class OWClassificationTree(OWWidget):
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
         self.resize(200,200)
 
+    
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Attribute selection", self.measures[self.estim][0]),
+                             self.estim == 3 and ("ReliefF settings", "%i reference examples, %i neighbours" % (self.relM, self.relK)),
+                             ("Binarization", self.binarizationOpts[self.bin]),
+                             ("Pruning", ", ".join(s for s, c in (
+                                                 ("%i instances in leaves" % self.preLeafInstP, self.preLeafInst),
+                                                 ("%i instance in node" % self.preNodeInstP, self.preNodeInst),
+                                                 ("stop on %i%% purity" % self.preNodeMajP, self.preNodeMaj)) if c)
+                                          or "None"),
+                             ("Recursively merge leaves with same majority class", OWGUI.YesNo[self.postMaj]),
+                             ("Pruning with m-estimate", ["No", "m=%i" % self.postM][self.postMPruning])])
+        self.reportData(self.data)
 
     def setLearner(self):
         if hasattr(self, "btnApply"):

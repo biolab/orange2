@@ -296,6 +296,12 @@ class OWTimeDataVisualizer(OWWidget):
     def closeEvent(self, ce):
         OWWidget.closeEvent(self, ce)
 
+    def sendReport(self):
+        self.reportSettings("",
+                            [("Time attribute", self.graph.timeAttr),
+                             self.graph.colorAttr != "(Same color)" and ("Color", self.graph.colorAttr)])
+        self.reportRaw("<br/>")
+        self.reportImage(self.graph.saveToFileDirect, QSize(400, 400))
 
 #test widget appearance
 if __name__=="__main__":

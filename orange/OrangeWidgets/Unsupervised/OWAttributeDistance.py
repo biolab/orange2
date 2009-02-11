@@ -19,6 +19,8 @@ warnings.filterwarnings("ignore", module="orngInteract")
 class OWAttributeDistance(OWWidget):
     settingsList = ["classInteractions"]
 
+    discMeasures = ("Pearson's chi-square", "2-way interactions - I(A;B)/H(A,B)", "3-way interactions - I(A;B;C)")
+    contMeasures = ("Pearson's correlation", "Spearman's correlation")
     def __init__(self, parent=None, signalManager = None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
@@ -32,17 +34,18 @@ class OWAttributeDistance(OWWidget):
         self.loadSettings()
         rb = OWGUI.radioButtonsInBox(self.controlArea, self, "classInteractions", [], "Distance", callback=self.toggleClass)
         OWGUI.widgetLabel(rb, "Measures on discrete attributes\n   (continuous attributes are discretized into five intervals)")
-        for b in ("Pearson's chi-square", "2-way interactions - I(A;B)/H(A,B)", "3-way interactions - I(A;B;C)"):
+        for b in self.discMeasures:
             OWGUI.appendRadioButton(rb, self, "classInteractions", b)
         
         OWGUI.widgetLabel(rb, "\n"+"Measures on continuous attributes\n   (discrete attributes are treated as ordinal)")
-        for b in ("Pearson's correlation", "Spearman's correlation"):
+        for b in self.contMeasures:
             OWGUI.appendRadioButton(rb, self, "classInteractions", b)
         self.resize(215,50)
 #        self.adjustSize()
 
-    ##############################################################################
-    # callback functions
+    def sendReport(self):
+        self.reportSettings("Settings", [("Distance measure", (self.discMeasures+self.contMeasures)[self.classInteractions])])
+        self.reportData(self.data)
 
     def computeMatrix(self):
         if self.data:
@@ -93,15 +96,10 @@ class OWAttributeDistance(OWWidget):
     def toggleClass(self):
         self.sendData()
 
-
-    ##############################################################################
-    # input output signal management
-
     def dataset(self, data):
         self.data = self.isDataWithClass(data) and data or None
         self.discretizedData = None
         self.sendData()
-
 
     def sendData(self):
         if self.data:

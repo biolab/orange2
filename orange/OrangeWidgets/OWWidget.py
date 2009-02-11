@@ -5,9 +5,11 @@
 #
 
 from OWBaseWidget import *
+# remove the try-except after reporting is ready for deployment
+import OWReport
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Orange Widget", wantGraph = False, wantStatusBar = False, savePosition = True, wantMainArea = 1, noReport = False, showSaveGraph = 1, resizingEnabled = 1, **args):
+    def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, **args):
         """
         Initialization
         Parameters:
@@ -15,33 +17,33 @@ class OWWidget(OWBaseWidget):
             wantGraph - displays a save graph button or not
         """
 
-        OWBaseWidget.__init__(self, parent, signalManager, title, savePosition = savePosition, resizingEnabled = resizingEnabled, **args)
+        OWBaseWidget.__init__(self, parent, signalManager, title, savePosition=savePosition, resizingEnabled=resizingEnabled, **args)
 
         self.setLayout(QVBoxLayout())
         self.layout().setMargin(2)
 
-        self.topWidgetPart = OWGUI.widgetBox(self, orientation = "horizontal", margin = 0)
-        self.leftWidgetPart = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", margin = 0)
+        self.topWidgetPart = OWGUI.widgetBox(self, orientation="horizontal", margin=0)
+        self.leftWidgetPart = OWGUI.widgetBox(self.topWidgetPart, orientation="vertical", margin=0)
         if wantMainArea:
             self.leftWidgetPart.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
             self.leftWidgetPart.updateGeometry()
-            self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding), margin = 0)
+            self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding), margin=0)
             self.mainArea.layout().setMargin(4)
             self.mainArea.updateGeometry()
-        self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = wantMainArea and 0 or 4)
+        self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=wantMainArea and 0 or 4)
 
         self.space = self.controlArea
 
         if wantGraph and showSaveGraph:
-            self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = 2)
+            self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=2)
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)
 
-        self.reportData = None
-        if hasattr(self, "sendReport") and not noReport:
+        self.__reportData = None
+        if OWReport.report and not noReport and hasattr(self, "sendReport"):
             if not hasattr(self, "buttonBackground"):
-                self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = 2)
-            self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.sendReport, debuggingEnabled = 0)
+                self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=6)
+            self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
 
         if wantStatusBar:
             #self.widgetStatusArea = OWGUI.widgetBox(self, orientation = "horizontal", margin = 2)
@@ -79,7 +81,7 @@ class OWWidget(OWBaseWidget):
     def createPixmapWidget(self, parent, iconName):
         w = QLabel(parent)
         parent.layout().addWidget(w)
-        w.setFixedSize(16,16)
+        w.setFixedSize(16, 16)
         w.hide()
         if os.path.exists(iconName):
             w.setPixmap(QPixmap(iconName))
@@ -124,64 +126,132 @@ class OWWidget(OWBaseWidget):
         else:
             self.widgetStatusArea.hide()
 
-    def setStatusBarText(self, text, timeout = 5000):
+    def setStatusBarText(self, text, timeout=5000):
         if hasattr(self, "widgetStatusBar"):
             self.widgetStatusBar.showMessage(" " + text, timeout)
 
-    def startReport(self, name, needDirectory = False):
-        if self.reportData:
+    def reportAndFinish(self):
+        self.sendReport()
+        self.finishReport()
+        
+    def startReport(self, name=None, needDirectory=False):
+        if self.__reportData is not None:
             print "Cannot open a new report when an old report is still active"
             return False
-        self.reportName = name
-        self.reportData = ""
+        self.reportName = name or self.windowTitle()
+        self.__reportData = ""
         if needDirectory:
-            import OWReport
-            return OWReport.reportFeeder.createDirectory()
+            return OWReport.report.createDirectory()
         else:
             return True
 
     def reportSection(self, title):
-        self.reportData += "<H2>%s</H2>\n" % title
+        if self.__reportData is None:
+            self.startReport()
+        self.__reportData += "<h2>%s</h2>\n" % title
 
     def reportSubsection(self, title):
-        self.reportData += "<H3>%s</H3>\n" % title
+        if self.__reportData is None:
+            self.startReport()
+        self.__reportData += "<h3>%s</h3>\n" % title
 
     def reportList(self, items):
+        if self.__reportData is None:
+            self.startReport()
         self.startReportList()
         for item in items:
             self.addToReportList(item)
         self.finishReportList()
 
-    def reportImage(self, filename):
-        self.reportData += '<IMG src="%s"/>' % filename
+    def getUniqueFileName(self, patt):
+        return OWReport.report.getUniqueFileName(patt)
+
+    def getUniqueImageName(self, nm="img"):
+        return OWReport.report.getUniqueFileName(nm + "%06i" + ".png")
+
+    def reportImage(self, filenameOrFunc, *args):
+        if self.__reportData is None:
+            self.startReport()
+            
+        if type(filenameOrFunc) in [str, unicode]:
+            self.__reportData += '<IMG src="%s"/>' % filenameOrFunc
+        else:
+            sfn, ffn = self.getUniqueImageName()
+            filenameOrFunc(ffn, *args)
+            self.reportImage(sfn)
+
 
     def startReportList(self):
-        self.reportData += "<UL>\n"
+        if self.__reportData is None:
+            self.startReport()
+        self.__reportData += "<UL>\n"
 
     def addToReportList(self, item):
-        self.reportData += "    <LI>%s</LI>\n" % item
+        self.__reportData += "    <LI>%s</LI>\n" % item
 
     def finishReportList(self):
-        self.reportData += "</UL>\n"
+        self.__reportData += "</UL>\n"
 
-    def reportSettings(self, settingsList, closeList = True):
-        self.startReportList()
-        for item in settingsList:
-            if item:
-                self.addToReportList("<B>%s:</B> %s" % item)
-        if closeList:
-            self.finishReportList()
+    def reportSettings(self, sectionName="", settingsList=None, closeList=True):
+        if sectionName:
+            self.reportSection(sectionName)
+        elif self.__reportData is None:
+            self.startReport()
+        self.__reportData += "<ul>%s</ul>" % "".join("<b>%s: </b>%s<br/>" % item for item in settingsList if item) 
 
     def reportRaw(self, text):
-        self.reportData += text
+        if self.__reportData is None:
+            self.startReport()
+        self.__reportData += text
 
+    def prepareDataReport(self, data, listAttributes=True, exampleCount=True):
+        if data:
+            res = []
+            if exampleCount:
+                res.append(("Examples", str(len(data))))
+            if listAttributes:
+                if data.domain.attributes:
+                    res.append(("Attributes", "%i %s" % ( 
+                                len(data.domain.attributes), 
+                                 "(%s%s)" % (", ".join(x.name for foo, x in zip(xrange(30), data.domain.attributes)), "..." if len(data.domain.attributes) > 30 else "")
+                              )))
+                else:
+                    res.append(("Attributes", "0"))
+                metas = data.domain.getmetas()
+                if metas:
+                  if len(metas) <= 100:
+                      res.append(("Meta attributes", "%i (%s)" % (len(metas), ", ".join(x.name for x in metas.values()))))
+                  else:
+                      res.append(("Meta attributes", str(len(metas))))
+                res.append(("Class", data.domain.classVar.name if data.domain.classVar else "<none>"))
+            return res
+            
+    def reportData(self, settings, sectionName="Data", ifNone="None", listAttributes = True, exampleCount=True):
+        haveSettings = False
+        try:
+            haveSettings = isinstance(settings, list) and len(settings[0])==2
+        except:
+            pass
+        if not haveSettings:
+            settings = self.prepareDataReport(settings, listAttributes, exampleCount)
+        if not self.__reportData:
+            self.startReport()
+        if sectionName is not None:
+            self.reportSection(sectionName)
+        if settings:
+            self.reportSettings("", settings)
+        elif ifNone is not None:
+            self.reportRaw(ifNone)
+        
+
+       
     def finishReport(self):
-        import OWReport
-        OWReport.reportFeeder(self.reportName, self.reportData or "")
-        self.reportData = None
+        if self.__reportData is not None:
+            OWReport.report(self.reportName, self.__reportData or "")
+            self.__reportData = None
 
 if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    ow=OWWidget()
+    a = QApplication(sys.argv)
+    ow = OWWidget()
     ow.show()
     a.exec_()

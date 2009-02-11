@@ -347,6 +347,16 @@ class OWNetworkFile(OWWidget):
             
         return network.graph
 
+    def sendReport(self):
+        self.reportSettings("Network file",
+                            [("File name", self.filecombo.currentText()),
+                             ("Vertices", self.graph.nVertices),
+                             hasattr(self.graph, "directed") and ("Directed", OWGUI.YesNo[self.graph.directed])])
+        self.reportSettings("Vertices meta data", [("File name", self.datacombo.currentText())])
+        self.reportData(self.graph.items, None)
+        self.reportSettings("Edges meta data", [("File name", self.edgescombo.currentText())])
+        self.reportData(self.graph.links, None, None)
+        
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWNetworkFile()

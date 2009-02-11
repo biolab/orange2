@@ -182,10 +182,17 @@ class OWDataDomain(OWWidget):
 
             newdata = orange.ExampleTable(domain, self.data, filterMetas=1)
             newdata.name = self.data.name
+            self.outdataReport = self.prepareDataReport(newdata)
             self.send("Examples", newdata)
         else:
             self.send("Examples", None)
 
+    def sendReport(self):
+        self.reportData(self.data, "Input data")
+        self.reportData(self.outdataReport, "Output data")
+        if len(self.allAttributes) != len(self.usedAttributes):
+            removed = set.difference(set(self.allAttributes), self.usedAttributes)
+            self.reportSettings("", [("Removed", "%i (%s)" % (len(removed), ", ".join(x[0] for x in removed)))])
 
     def reset(self):
         data = self.data

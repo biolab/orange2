@@ -31,6 +31,12 @@ class OWFile(OWWidget):
                  + "\n".join("%s (%s)" % (ft[:2]) for ft in registeredFileTypes) \
                  + "\nAll files(*.*)"
                  
+    formats = {".tab": "Tab-delimited file", ".txt": "Tab-delimited file", ".data": "C4.5 file",
+               ".dat": "Assistant file", ".rda": "Retis file", ".rdo": "Retis file",
+               ".basket": "Basket file"}
+    formats.update(dict((ft[1][2:], ft[0]) for ft in registeredFileTypes))
+     
+                 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 1)
 
@@ -285,8 +291,15 @@ class OWFile(OWWidget):
         else:
             data.name = fName
 
+        self.dataReport = self.prepareDataReport(data)
         self.send("Examples", data)
         if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
+
+    def sendReport(self):
+        self.reportSettings("File",
+                            [("File name", self.loadedFile),
+                             ("Format", self.formats.get(os.path.splitext(self.loadedFile)[1], "unknown format"))])
+        self.reportData(self.dataReport)
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

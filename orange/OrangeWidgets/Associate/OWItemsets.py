@@ -43,6 +43,12 @@ class OWItemsets(OWWidget):
 
         self.adjustSize()
 
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Algorithm", ["attribute data", "sparse data"][self.useSparseAlgorithm]),
+                             ("Minimal support", self.minSupport),
+                             ("Maximal number of rules", self.maxRules)])
+
 
     def findItemsets(self):
         self.error()

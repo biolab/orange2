@@ -14,6 +14,7 @@ from operator import add
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
+    quantities = ["Number of examples", "Observed and expected examples", "Proportions of predicted", "Proportions of true"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Confusion Matrix", 1)
 
@@ -33,7 +34,7 @@ class OWConfusionMatrix(OWWidget):
         self.learnerList.setMinimumHeight(100)
         OWGUI.separator(self.controlArea)
 
-        OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = ["Number of examples", "Observed and expected examples", "Proportions of predicted", "Proportions of true"], box = "Show", callback=self.reprint)
+        OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = self.quantities, box = "Show", callback=self.reprint)
 
         box = OWGUI.widgetBox(self.controlArea, "Selection", addSpace=True)
         OWGUI.button(box, self, "Correct", callback=self.selectCorrect)
@@ -154,6 +155,26 @@ class OWConfusionMatrix(OWWidget):
 
         self.table.resizeColumnsToContents()
 
+    def sendReport(self):
+        self.reportSettings("Contents",
+                            [("Learner", self.learnerNames[self.selectedLearner[0]]),
+                             ("Data", self.quantities[self.shownQuantity])])
+        
+        self.reportSection("Matrix")
+        classVals = self.res.classValues
+        nClassVals = len(classVals)
+        res = "<table>\n<tr><td></td>" + "".join('<td align="center"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % cv for cv in classVals) + "</tr>\n"
+        for i, cv in enumerate(classVals):
+            res += '<tr><th align="right"><b>%s</b></th>' % cv + \
+                   "".join('<td align="center">%s</td>' % self.table.item(i, j).text() for j in range(nClassVals)) + \
+                   '<th align="right"><b>%s</b></th>' % self.table.item(i, nClassVals).text() + \
+                   "</tr>\n"
+        res += '<tr><th></th>' + \
+               "".join('<td align="center"><b>%s</b></td>' % self.table.item(nClassVals, j).text() for j in range(nClassVals+1)) + \
+               "</tr>\n"
+        res += "</table>\n<p><b>Note:</b> columns represent predictions, row represent true classes</p>"
+        self.reportRaw(res)
+            
 
     def selectCorrect(self):
         if not self.res:

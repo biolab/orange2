@@ -85,6 +85,12 @@ class OWSieveDiagram(OWWidget):
         self.resize(800, 550)
         random.seed()
         
+    def sendReport(self):
+        self.startReport("%s [%s, %s]" % (self.windowTitle(), self.attrX, self.attrY))
+        self.reportSettings("",
+                            [("X-Attribute", self.attrX), ("Y-Attribute", self.attrY),
+                             self.attrCondition != "(None)" and ("Condition", "%s = '%s'" % (self.attrCondition, self.attrConditionValue))])
+        self.reportImage(lambda *x: OWChooseImageSizeDlg(self.canvas).saveImage(*x))
 
 
     # receive new data and update all fields

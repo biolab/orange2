@@ -17,34 +17,34 @@ import copy
 class OWSymMatrixTransform(OWWidget):
     settingsList = ["normalizeMethod", "invertMethod"]
 
+    normalizeMethods = ["None", "To interval [0, 1]", "Sigmoid function, 1/(1+exp(-x))"]
+    inversionMethods = ["None", "-X", "1 - X", "Max - X", "1/X"]
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, "Matrix Transformation", wantMainArea = 0, resizingEnabled = 0)
-        
         self.inputs = [("Matrix", orange.SymMatrix, self.setMatrix, Default)]
         self.outputs = [("Matrix", orange.SymMatrix)]
-
         self.matrix = None
-        self.normalizeMethod = 0
-        self.invertMethod = 0
+        self.normalizeMethod = self.invertMethod = 0
         self.loadSettings()
-                
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalization", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
-        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^-x)", callback = self.setNormalizeMode)
-        
-        OWGUI.separator(self.controlArea)
-        
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Inversion", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
-        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
-        
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", self.normalizeMethods, "Normalization", callback = self.setNormalizeMode, addSpace=True)
+        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", self.inversionMethods, "Inversion", callback = self.setInvertMode)
         self.adjustSize()
 
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Normalization", self.normalizeMethods[self.normalizeMethod]),
+                             ("Inversion", self.inversionMethods[self.invertMethod])])
+        if self.matrix:
+            self.reportSettings("Data", [("Matrix dimension", self.matrix.dim)])
+            items = getattr(self.matrix, "items", None)
+            if items:
+                if isinstance(items, orange.ExampleTable):
+                    self.reportData(items, "Corresponding example table")
+                else:
+                    self.reportSettings("Items",
+                                        [("Labels", ", ".join(items[:5]) + (" ..." if len(items)>5 else ""))])
+        
     def setNormalizeMode(self):
         self.transform()
     

@@ -139,6 +139,9 @@ BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWRegressionTreeViewer2D(OWTreeViewer2D):
+    nodeColorOpts = ['Default', 'Instances in node', 'Variance', 'Deviation', 'Error']
+    nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation', 'Error', 'Number of instances']
+
     def __init__(self, parent=None, signalManager = None, name='RegressionTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
@@ -166,21 +169,28 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.setMouseTracking(True)
 
         nodeInfoBox = OWGUI.widgetBox(self.NodeTab, "Show Info On")
-        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation', 'Error', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
-        for i in range(len(nodeInfoButtons)):
+        for i in range(len(self.nodeInfoButtons)):
             setattr(self, nodeInfoSettings[i], i in self.NodeInfo)
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
-                               nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
+                               self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviation', 'Error'], box='Node Color',
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
         
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
+
+    def sendReport(self):
+        self.reportSettings("Information",
+                            [("Node color", self.nodeColorOpts[self.NodeColorMethod]),
+                             ("Data in nodes", ", ".join(s for i, s in enumerate(self.nodeInfoButtons) if self.NodeInfoW[i].isChecked())),
+                             ("Line widths", ["Constant", "Proportion of all instances", "Proportion of parent's instances"][self.LineWidthMethod]),
+                             ("Tree size", "%i nodes, %i leaves" % (orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree)))])
+        OWTreeViewer2D.sendReport(self)
 
     def setNodeInfo(self, widget=None, id=None):
         if widget:

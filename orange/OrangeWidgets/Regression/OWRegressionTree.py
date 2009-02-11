@@ -67,6 +67,14 @@ class OWRegressionTree(OWWidget):
         self.setLearner()
         self.resize(100,100)
 
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Binarization", OWGUI.YesNo[self.Bin]),
+                             ("Minimal number of instances in internal nodes", self.MinNodeVal if self.MinNodeCheck else "Not limited"),
+                             ("Pruning with m-estimate", "m=%i" % self.PostMPVal if self.PostMPCheck else "No")])
+        self.reportData(self.data)
+        
+
     def setLearner(self):
         learner=orngTree.TreeLearner(mesure="retis",
                          binarization=self.Bin,

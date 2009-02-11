@@ -46,6 +46,13 @@ class OWAssociationRules(OWWidget):
 
         self.adjustSize()
 
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Algorithm", ["attribute data", "sparse data"][self.useSparseAlgorithm]),
+                             ("Induction of classification rules", OWGUI.YesNo[self.classificationRules]),
+                             ("Minimal support", self.minSupport),
+                             ("Minimal confidence", self.minConfidence),
+                             ("Maximal number of rules", self.maxRules)])
 
     def generateRules(self):
         self.error()

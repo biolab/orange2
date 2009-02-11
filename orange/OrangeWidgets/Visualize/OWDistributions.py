@@ -503,6 +503,14 @@ class OWDistributions(OWWidget):
         #self.graph.variableContinuous = self.VariableContinuous
         self.graph.targetValue = self.targetValue
 
+    def sendReport(self):
+        self.startReport("%s [%s: %s]" % (self.windowTitle(), self.attribute, self.targetValue))
+        self.reportSettings("Visualized attribute",
+                            [("Attribute", self.attribute),
+                             ("Target class", self.targetValue)])
+        self.reportRaw("<br/>")
+        self.reportImage(self.graph.saveToFileDirect, QSize(600, 400))
+        
     def setShowMainTitle(self):
         self.graph.setShowMainTitle(self.showMainTitle)
 

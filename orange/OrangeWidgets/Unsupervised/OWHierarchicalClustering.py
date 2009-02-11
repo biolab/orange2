@@ -165,7 +165,24 @@ class OWHierarchicalClustering(OWWidget):
         self.dendrogram.update()
         self.resize(600, 500)
 
-
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Linkage", self.linkageMethods[self.Linkage]),
+                             ("Annotation", self.labelCombo.currentText()),
+                             self.PrintDepthCheck and ("Shown depth limited to", self.PrintDepth),
+                             self.SelectionMode and hasattr(self.dendrogram, "cutOffHeight") and ("Cutoff line at", self.dendrogram.cutOffHeight)])
+        
+        self.reportSection("Dendrogram")
+        canvases = header, graph, footer = self.headerView.scene(), self.dendrogramView.scene(), self.footerView.scene()
+        buffer = QPixmap(max(c.width() for c in canvases), sum(c.height() for c in canvases))
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        header.render(painter, QRectF(0, 0, header.width(), header.height()), QRectF(0, 0, header.width(), header.height()))
+        graph.render(painter, QRectF(0, header.height(), graph.width(), graph.height()), QRectF(0, 0, graph.width(), graph.height()))
+        footer.render(painter, QRectF(0, header.height()+graph.height(), footer.width(), footer.height()), QRectF(0, 0, footer.width(), footer.height()))
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+        
     def dataset(self, data):
         self.matrix=data
         self.closeContext()

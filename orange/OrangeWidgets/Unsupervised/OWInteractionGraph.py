@@ -15,7 +15,7 @@ import os
 from re import *
 from math import floor, ceil
 from orngCI import FeatureByCartesianProduct
-import OWGUI
+import OWGUI, OWDlgs
 
 class IntGraphView(QGraphicsView):
     def __init__(self, parent, name, *args):
@@ -556,6 +556,14 @@ class OWInteractionGraph(OWWidget):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR)
         sizeDlg.exec_()
 
+    def sendReport(self):
+        self.reportData(self.data)
+        self.reportSettings("", [("Selected attributes", ", ".join(str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())))])
+        self.reportSection("Pairwise interaction bars")
+        self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasL).saveImage)
+        self.reportSection("Interaction graph")
+        self.reportImage(OWDlgs.OWChooseImageSizeDlg(self.canvasR).saveImage)
+                            
 
 #test widget appearance
 if __name__=="__main__":

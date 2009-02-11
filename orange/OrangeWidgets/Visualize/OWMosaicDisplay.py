@@ -81,6 +81,9 @@ class OWMosaicDisplay(OWWidget):
                     "showSubsetDataBoxes", "removeUnusedValues"]
 
     contextHandlers = {"": DomainContextHandler("", ["attr1", "attr2", "attr3", "attr4", "manualAttributeValuesDict"], loadImperfect = 0)}
+    
+    interiorColoringOpts = ["Standardized (Pearson) residuals", "Class distribution"]
+    subboxesOpts = ["Expected class distribution", "Apriori class distribution"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Mosaic display", True, True)
@@ -177,7 +180,7 @@ class OWMosaicDisplay(OWWidget):
         # SETTINGS TAB
         # ######################
         box5 = OWGUI.widgetBox(self.SettingsTab, "Colors in Cells Represent...", addSpace = 1)
-        OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.updateGraph)
+        OWGUI.comboBox(box5, self, "interiorColoring", None, items = self.interiorColoringOpts, callback = self.updateGraph)
         #box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         box = OWGUI.widgetBox(self.SettingsTab, "Visual Settings", addSpace = 1)
@@ -194,7 +197,7 @@ class OWMosaicDisplay(OWWidget):
         OWGUI.checkBox(self.box8, self, 'showSubsetDataBoxes', 'Show class distribution of subset data', callback = self.updateGraph, tooltip = "Show small boxes at right (or bottom) edge of cells to represent class distribution of examples from example subset input.")
         OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use boxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
         indBox = OWGUI.indentedBox(self.box8)
-        OWGUI.comboBox(indBox, self, 'showAprioriDistributionBoxes', items = ["Expected class distribution", "Apriori class distribution"], tooltip = "Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).", callback = self.updateGraph)
+        OWGUI.comboBox(indBox, self, 'showAprioriDistributionBoxes', items = self.subboxesOpts, tooltip = "Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).", callback = self.updateGraph)
 
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", addSpace = 1)
         OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the color palette for class values", debuggingEnabled = 0)
@@ -217,6 +220,10 @@ class OWMosaicDisplay(OWWidget):
         self.selectionColorPalette = [QColor(*col) for col in OWColorPalette.defaultRGBColors]
 
 
+    def sendReport(self):
+        self.reportSettings([("Color in cells", self.interiorColoringOpts[self.interiorColoring]),
+                             ("Subboxes", self.subboxesOpts[self.useBoxes])])
+        self.reportImage(lambda *x: OWDlgs.OWChooseImageSizeDlg(self.canvas).saveImage(*x))
 
     def permutationListToggle(self):
         if self.exploreAttrPermutations:

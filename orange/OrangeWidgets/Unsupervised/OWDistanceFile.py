@@ -201,6 +201,25 @@ class OWDistanceFile(OWWidget):
         self.rbInput.setDisabled(data is None)
         self.relabel()
 
+    def sendReport(self):
+        if self.data:
+            if self.takeAttributeNames:
+                attrs = self.data.domain.attributes if len(self.data.domain.attributes) == self.matrix.dim else self.data.domain.variables
+                labels = "Attribute names (%s%s) from the input signal" % (", ".join(x.name for x in list(attrs)[:5]), " ..." if len(attrs)>5 else "")
+            else:
+                labels = "Examples form the input signal"
+        elif self.labels:
+            labels = "Labels from the file (%s%s)" % (", ".join(self.labels[:5]), " ..." if len(self.labels)>5 else "")
+        else:
+            labels = "None" 
+                
+        self.reportSettings("File",
+                            [("File name", self.recentFiles[self.fileIndex or 0]),
+                             ("Matrix dimension", self.matrix.dim),
+                             ("Labels", labels)])
+        if self.data:
+            self.reportData(self.data, "Examples")
+        
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWDistanceFile()

@@ -62,7 +62,15 @@ class OWKNN(OWWidget):
 
         self.resize(100,250)
 
-
+    def sendReport(self):
+        self.reportSettings("Learning parameters",
+                            [("Metrics", self.metricsList[self.metrics][0]),
+                             not self.metrics and ("Continuous attributes", ["Raw", "Normalized"][self.normalize]),
+                             ("Unknown values ignored", OWGUI.YesNo[self.ignoreUnknowns]),
+                             ("Number of neighbours", self.k),
+                             ("Weighting", ["By distances", "By ranked distances"][self.ranks])])
+        self.reportData(self.data)
+        
     def metricsChanged(self):
         if not self.metrics and not self.cbNormalize.isEnabled():
             self.normalize = self.oldNormalize

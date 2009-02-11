@@ -17,6 +17,8 @@ from itertools import izip
 
 class OWKMeans(OWWidget):
     settingsList = ["K", "DistanceMeasure", "classifySelected", "addIdAs", "classifyName"]
+    
+    distanceMeasures = ["Euclidean", "Manhattan"]
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
@@ -39,7 +41,7 @@ class OWKMeans(OWWidget):
         # settings
         box = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
         OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1)
-        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=["Euclidean", "Manhattan"], tooltip=None)
+        OWGUI.comboBox(box, self, "DistanceMeasure", label="Distance measure", items=self.distanceMeasures, tooltip=None)
         OWGUI.button(box, self, "Run Clustering", callback = self.cluster)
         OWGUI.rubber(box)
 
@@ -191,6 +193,19 @@ class OWKMeans(OWWidget):
             ld += ldn
             bicc.append(ldn - numFreePar)
         return ld - numFreePar, bicc
+    
+    def sendReport(self):
+        self.reportSettings("Settings", [("Distance measure", self.distanceMeasures[self.DistanceMeasure]),
+                                         ("Number of clusters", self.K)])
+        self.reportData(self.data)
+        self.reportSection("Cluster data")
+        res = "<table><tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % n for n in ("ID", "Items", "Fitness", "BIC")) + "</tr>\n"
+        for i in range(self.K):
+            res += "<tr>"+"".join('<td align="right">&nbsp;&nbsp;%s&nbsp;&nbsp;</td>' % str(self.table.item(i, j).text()) for j in range(4)) + "</tr>\n"
+        res += "<tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % str(self.table.item(self.K, j).text()) for j in range(4)) + "</tr>\n"
+        res += "</table>"
+        self.reportRaw(res)
+
 
 ##############################################################################
 

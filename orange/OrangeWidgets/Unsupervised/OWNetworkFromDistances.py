@@ -256,6 +256,8 @@ class OWNetworkFromDistances(OWWidget):
                 self.graph = graph
                 
                 
+        self.pconnected = nedges
+        self.nedges = n
         self.infoa.setText("%d vertices" % self.data.dim)
         self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
         self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
@@ -276,6 +278,19 @@ class OWNetworkFromDistances(OWWidget):
         
         self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
 
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Edge thresholds", "%.5f - %.5f" % (self.spinLowerThreshold, self.spinUpperThreshold)),
+                             ("Selected vertices", ["All", "Without isolated vertices", "Largest component", "Connected with vertex"][self.netOption]),
+                             ("Weight", ["Distance", "1 - Distance"][self.dstWeight])])
+        self.reportSection("Histogram")
+        self.reportImage(self.histogram.saveToFileDirect, QSize(400,300))
+        self.reportSettings("Output graph",
+                            [("Vertices", self.data.dim),
+                             ("Edges", self.nedges),
+                             ("Connected vertices", "%i (%.1f%%)" % (self.pconnected, self.pconnected / max(1, float(self.data.dim))*100)),
+                             ])
+                                                                     
 if __name__ == "__main__":    
     appl = QApplication(sys.argv)
     ow = OWNetworkFromDistances()

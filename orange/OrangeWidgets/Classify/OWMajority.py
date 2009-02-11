@@ -52,6 +52,8 @@ class OWMajority(OWWidget):
             self.classifier = None
         self.send("Classifier", self.classifier)
 
+    def sendReport(self):
+        self.reportData(self.data)
 
 ##############################################################################
 # Test the widget, run from DOS prompt

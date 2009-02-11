@@ -236,6 +236,19 @@ class OWCalibrationPlot(OWWidget):
         OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show Rugs', tooltip='', callback=self.setShowRugs)
         self.settingsTab.layout().addStretch(100)
 
+    def sendReport(self):
+        # need to reimport - Qt provides something stupid instead
+        from __builtin__ import hex
+        self.reportSettings("Settings",
+                            [("Classifiers", ", ".join('<font color="#%s">%s</font>' % ("".join(("0"+hex(x)[2:])[-2:] for x in self.classifierColor[cNum].getRgb()[:3]), str(item.text()))
+                                                        for cNum, item in enumerate(self.classifiersQLB.item(i) for i in range(self.classifiersQLB.count()))
+                                                          if item.isSelected())),
+                             ("Target class", self.classCombo.itemText(self.targetClass)),
+                            ])
+        self.reportRaw("<br/>")
+        self.reportImage(self.graphs[self.targetClass].saveToFileDirect, QSize(400, 400))
+
+
     def setCalibrationCurveWidth(self):
         for g in self.graphs:
             g.setCalibrationCurveWidth(self.CalibrationCurveWidth)

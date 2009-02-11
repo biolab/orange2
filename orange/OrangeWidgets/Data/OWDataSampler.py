@@ -206,6 +206,8 @@ class OWDataSampler(OWWidget):
         if remainder:
             remainder.name = self.data.name
         # send data
+        self.nSample = len(sample)
+        self.nRemainder = len(remainder)
         self.send("Sample", sample)
         self.send("Remaining Examples", remainder)
 
@@ -291,6 +293,22 @@ class OWDataSampler(OWWidget):
 
         # call data output routine
         self.sdata()
+
+    def sendReport(self):
+        if self.SelectType == 0:
+            if self.useCases:
+                stype = "Random sample of %i instances" % self.nCases
+            else:
+                stype = "Random sample with %i%% instances" % self.selPercentage
+        elif self.SelectType == 1:
+            stype = "%i-fold cross validation" % self.CVFolds
+        elif self.SelectType == 2:
+            stype = "Leave one out"
+        elif self.SelectType == 3:
+            stype = "Multiple subsets"
+        self.reportSettings("Settings", [("Sampling type", stype), ("Stratification", OWGUI.YesNo[self.Stratified]), ("Random seed", str(self.RandomSeed) if self.UseSpecificSeed else "auto")])
+                             
+        self.reportSettings("Data", [("Input", "%i examples" % len(self.data)), ("Sample", "%i examples" % self.nSample), ("Rest", "%i examples" % self.nRemainder)])
 
 ##############################################################################
 # Test the widget, run from prompt

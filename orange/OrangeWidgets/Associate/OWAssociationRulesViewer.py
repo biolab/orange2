@@ -156,7 +156,7 @@ class OWAssociationRulesViewer(OWWidget):
     settingsList = ["autoSend", "sortedBy"] + [vn[2] for vn in measures]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer", wantMainArea=0)
+        OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer", wantMainArea=0, noReport=True)
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
@@ -242,17 +242,50 @@ class OWAssociationRulesViewer(OWWidget):
         bottomGrid = QGridLayout()
         bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
 
+        self.reportButton = OWGUI.button(bottom, self, "&Report", self.reportAndFinish, addToLayout=0)
         self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
         commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0)
         autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)], addToLayout=0)
         autoSend.makeConsistent()
 
-        bottomGrid.addWidget(self.saveButton, 1, 0)
-        bottomGrid.addWidget(autoSend, 0, 1)
-        bottomGrid.addWidget(commitButton, 1, 1)
+        bottomGrid.addWidget(self.reportButton, 1, 0)
+        bottomGrid.addWidget(self.saveButton, 1, 1)
+        bottomGrid.addWidget(autoSend, 0, 2)
+        bottomGrid.addWidget(commitButton, 1, 2)
 
         self.controlArea.setFixedSize(0, 0)
         self.resize(1000, 380)
+
+    def sendReport(self):
+        self.reportSettings("Rules statistics",
+                            [("Total number of rules", len(self.rules)),
+                             ("Support", "%i%% - %i%%" % (self.supp_allmin*100, self.supp_allmax*100)),
+                             ("Confidence", "%i%% - %i%%" % (self.conf_allmin*100, self.conf_allmax*100)),
+                             ("Number of rules in the graph", self.shownRules.text()),
+                             ("Support", self.shownSupport.text()),
+                             ("Confidence", self.shownConfidence.text()),
+                             ("Selected rules", self.selRules.text()),
+                             ("Support", self.selSupport.text()),
+                             ("Confidence", self.selConfidence.text()),
+                            ])
+
+        self.reportSection("Rule matrix")
+        self.reportRaw("<p>Note: columns correspond to support, rows correspond to confidence</p><br/><center>")
+        buffer = QPixmap(self.ruleScene.width(), self.ruleScene.height())
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        self.ruleScene.render(painter)
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+        self.reportRaw("</center><br/>")
+        
+        self.reportSection("Selected rules")
+        tab = "<table>\n<tr>" + "".join("<th><b>%s</b></th>" % m[1] for m in self.measures if getattr(self, m[2])) + "</tr>\n"
+        shownmeas = [m[2] for m in self.measures if getattr(self, m[2])]
+        for rule in self.selectedRules:
+            tab += "<tr>"+"".join("<td>&nbsp;&nbsp;%.3f</td>" % getattr(rule, m) for m in shownmeas) + "<td>%s</td></tr>\n" % str(rule).replace(" ", "  ").replace(">", "&gt;")
+        tab += "</table>\n"
+        self.reportRaw(tab)
 
 
     def checkScale(self):

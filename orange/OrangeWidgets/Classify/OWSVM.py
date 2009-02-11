@@ -73,6 +73,25 @@ class OWSVM(OWWidget):
         self.searching=False
         self.applySettings()
 
+    def sendReport(self):
+        if self.kernel_type == 0:
+            kernel = "Linear, x.y"
+        elif self.kernel_type == 1:
+            kernel = "Polynomial, (%.4f*x.y+%.4f)<sup>%.4f</sup>" % (self.gamma, self.coef0, self.degree)
+        elif self.kernel_type == 2:
+            kernel = "RBF, e<sup>-%.4f*(x-y).(x-y)</sup>" % self.gamma
+        else:
+            kernel = "Sigmoid, tanh(%.4f*x.y+%.4f)" % (self.gamma, self.coef0)
+        self.reportSettings("Learning parameters",
+                            [("Kernel", kernel),
+                             ("Model complexity", self.C),
+                             ("Tolerance", self.p),
+                             ("Numeric precision", self.eps),
+                             self.useNu and ("Complexity bound", self.nu),
+                             ("Estimate class probabilities", OWGUI.YesNo[self.probability]),
+                             ("Normalize data", OWGUI.YesNo[self.normalization])])
+        self.reportData(self.data)
+        
     def changeKernel(self):
         if self.kernel_type==0:
             for a,b in zip([self.leg, self.led, self.lec], [1,1,1]):

@@ -54,6 +54,11 @@ class OWITree(OWClassificationTreeViewer):
         self.activateLoadedSettings()
         #self.space.updateGeometry()
 
+    def sendReport(self):
+        self.reportData(self.data)
+        self.treeNodes, self.treeLeaves = orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree)
+        super(OWITree, self).sendReport()
+
     def cbAttributeSelected(self):
         val = ""
         if self.data:

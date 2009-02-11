@@ -508,8 +508,11 @@ class OWDiscretize(OWWidget):
 #        self.needsDiscrete.append(graphBox)
         graphOptBox = OWGUI.widgetBox(graphBox)
         OWGUI.separator(graphBox, width=10)
-        self.graph = DiscGraph(self, graphBox)
-        graphBox.layout().addWidget(self.graph)
+        
+        graphGraphBox = OWGUI.widgetBox(graphBox)
+        self.graph = DiscGraph(self, graphGraphBox)
+        graphGraphBox.layout().addWidget(self.graph)
+        reportButton2 = OWGUI.button(graphGraphBox, self, "Report Graph", callback = self.reportGraph)
 
         #graphOptBox.layout().setSpacing(4)
         box = OWGUI.widgetBox(graphOptBox, "Split gain measure", addSpace=True)
@@ -866,6 +869,8 @@ class OWDiscretize(OWWidget):
 
     # This weird construction of the list is needed for easier translation into other languages
     shortDiscNames = [""] + [" (%s)" % x for x in ("leave continuous", "entropy", "equal frequency", "equal width", "removed")] + [(" ("+"custom %i"+")") % x for x in range(1, 4)]
+    # This one is used for reports
+    shortDiscNamesUnpar = ("", "leave continuous", "entropy", "equal frequency", "equal width", "removed", "custom", "custom", "custom")
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
         attr = self.data.domain[idx]
@@ -1059,19 +1064,67 @@ class OWDiscretize(OWWidget):
                 newdomain = orange.Domain(newattrs, None)
 
             newdata = orange.ExampleTable(newdomain, self.originalData)
-            self.send("Examples", newdata)
 
         elif self.discClassData and self.outputOriginalClass:
-            self.send("Examples", self.discClassData)
+            newdata = self.discClassData
 
         elif self.originalData and not (self.originalData.domain.classVar and self.originalData.domain.classVar.varType == orange.VarTypes.Continuous and not self.discClassData):  # no continuous attributes...
-            self.send("Examples", self.originalData)
+            newdata = self.originalData
         else:
-            self.send("Examples", None)
+            newdata = None
 
+        self.send("Examples", newdata)
         dataChanged = False
 
 
+    def sendReport(self):
+        self.reportData(self.data, "Input data")
+        
+        settings = [("Default method", self.shortDiscNamesUnpar[self.discretization+1])]
+        if 3 <= self.discretization <= 4:
+            settings.append(("Number of intervals", str(self.intervals)))
+        self.reportSettings("Settings", settings)
+        
+        if self.data:
+            attrs = []
+            for i, (attr, disc) in enumerate(zip(self.data.domain.attributes, self.discretizers)):
+                if disc:
+                    discType, intervals = self.indiData[i][:2]
+                    cutpoints = ", ".join(str(attr(x)) for x in disc.getValueFrom.transformer.points)
+                    if not cutpoints:
+                        attrs.append((attr.name, "removed"))
+                    elif not discType:
+                        attrs.append((attr.name, cutpoints))
+                    else:
+                        attrs.append((attr.name, "%s (%s)" % (cutpoints, self.shortDiscNamesUnpar[discType])))
+                elif disc == None:
+                    if attr.varType == orange.VarTypes.Continuous:
+                        attrs.append((attr.name, "left continuous"))
+                    else:
+                        attrs.append((attr.name, "already discrete"))
+            classVar = self.data.domain.classVar
+            if classVar:
+                if classVar.varType == orange.VarTypes.Continuous:
+                    attrs.append(("Class ('%s')" % classVar.name, "%s (%s)" % (self.classIntervalsLabel,
+                                  ["equal frequency", "equal width", "custom"][self.classDiscretization])))
+                    attrs.append(("Output discretized class", OWGUI.YesNo[self.outputOriginalClass]))
+        self.reportSettings("Attributes", attrs)
+
+
+    def reportGraph(self):
+        try:
+            attrName = self.data.domain[self.continuousIndices[self.selectedAttr]].name
+        except:
+            return
+        self.reportSettings("Discretization Graph", 
+                            [("Attribute", attrName),
+                             ("Gain measure", self.measures[self.measure][0]),
+                             ("Target class", self.data.domain.classVar.values[self.targetClass])])
+        self.reportRaw("<br/>")
+        self.reportImage(self.graph.saveToFileDirect, QSize(400, 300))
+        self.finishReport()
+
+                
 import sys
 if __name__=="__main__":
     app=QApplication(sys.argv)

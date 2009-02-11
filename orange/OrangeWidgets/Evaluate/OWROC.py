@@ -712,6 +712,20 @@ class OWROC(OWWidget):
       
         self.resize(800, 600)
 
+    def sendReport(self):
+        # need to reimport - Qt provides something stupid instead
+        from __builtin__ import hex
+        self.reportSettings("Settings",
+                            [("Classifiers", ", ".join('<font color="#%s">%s</font>' % ("".join(("0"+hex(x)[2:])[-2:] for x in self.classifierColor[cNum].getRgb()[:3]), str(item.text()))
+                                                        for cNum, item in enumerate(self.classifiersQLB.item(i) for i in range(self.classifiersQLB.count()))
+                                                          if item.isSelected())),
+                             ("Target class", self.classCombo.itemText(self.targetClass)),
+                             ("Costs", "FP=%i, FN=%i" % (self.FPcost, self.FNcost)),
+                             ("Prior target class probability", "%i%%" % self.pvalue)
+                            ])
+        self.reportRaw("<br/>")
+        self.reportImage(self.graphs[self.targetClass].saveToFileDirect, QSize(400, 400))
+        
     def saveToFile(self):
         for g in self.graphs:
             if g.isVisible():

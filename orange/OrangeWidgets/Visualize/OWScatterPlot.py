@@ -410,6 +410,24 @@ class OWScatterPlot(OWWidget):
         self.vizrank.close()
         OWWidget.closeEvent(self, ce)
 
+
+    def sendReport(self):
+        self.startReport("%s [%s - %s]" % (self.windowTitle(), self.attrX, self.attrY))
+        self.reportSettings("Visualized attributes",
+                            [("X", self.attrX),
+                             ("Y", self.attrY),
+                             self.attrColor and ("Color", self.attrColor),
+                             self.attrLabel and ("Label", self.attrLabel),
+                             self.attrShape and ("Shape", self.attrShape),
+                             self.attrSize and ("Size", self.attrSize)])
+        self.reportSettings("Settings",
+                            [("Symbol size", self.graph.pointWidth),
+                             ("Transparency", self.graph.alphaValue),
+                             ("Jittering", self.graph.jitterSize),
+                             ("Jitter continuous attributes", OWGUI.YesNo[self.graph.jitterContinuous])])
+        self.reportSection("Graph")
+        self.reportImage(self.graph.saveToFileDirect, QSize(400, 400))
+
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)

@@ -5,7 +5,7 @@ import os
 
 class HelpWindow(QDialog):
     def __init__(self, canvasDlg):
-        QWidget.__init__(self)
+        QDialog.__init__(self)
         self.setWindowTitle("Orange Canvas Help")
         self.canvasDlg = canvasDlg
         

@@ -48,9 +48,12 @@ class OWExampleDistance(OWWidget):
 
         self.labelCombo.setDisabled(1)
 
+    def sendReport(self):
+        self.reportSettings("Settings",
+                            [("Metrics", self.metrics[self.Metrics][0]),
+                             ("Label", self.Label)])
+        self.reportData(self.data)
 
-    ##############################################################################
-    # callback functions
 
     def computeMatrix(self):
         if not self.data:
@@ -68,9 +71,6 @@ class OWExampleDistance(OWWidget):
         for d in self.data:
             d.name = str(d[str(self.Label)])
         self.send("Distance Matrix", self.matrix)
-
-    ##############################################################################
-    # input signal management
 
     def setLabelComboItems(self):
         d = self.data

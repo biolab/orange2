@@ -16,7 +16,8 @@ class OWPade(OWWidget):
 
     methodNames = ["First Triangle", "Star Univariate Regression", "Tube Regression"]
     methods = [orngPade.firstTriangle, orngPade.starUnivariateRegression, orngPade.tubedRegression]
-
+    outputTypes = ["Qualitative constraint", "Quantitative differences"]
+    
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
         self.inputs = [("Examples", ExampleTable, self.onDataInput)]
@@ -63,7 +64,7 @@ class OWPade(OWWidget):
         threshCB.makeConsistent()
         OWGUI.checkBox(box, self, "useMQCNotation", label = "Use MQC notation")
 
-        box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative constraint", "Quantitative differences"], box="Output class", addSpace = True, callback=self.dimensionsChanged)
+        box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", self.outputTypes, box="Output class", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
 
         box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)
@@ -77,6 +78,20 @@ class OWPade(OWWidget):
         #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
         #self.setFixedWidth(self.sizeHint().width())
 
+    def sendReport(self):
+        self.reportSettings("Learning parameters", 
+                            [("Attributes derived by", ", ".join(self.attributes[i][0] for i in self.dimensions) or "none"),
+                             ("Method", self.methodNames[self.method]),
+                             ("Threshold", self.threshold if self.enableThreshold else "None"),
+                           ])
+        self.reportSettings("Output", 
+                            [("Label", self.outputTypes[self.output]),
+                             not self.output and ("Notation", ["Pade", "QUIN"][self.useMQCNotation]),
+                             ("Meta attributes", ", ".join(s for s, c in [("qualitative constraint", self.derivativeAsMeta),
+                                                                         ("derivative", self.differencesAsMeta),
+                                                                         ("absolute derivative", self.correlationsAsMeta),
+                                                                         ("original class", self.originalAsMeta)] if c) or "none")])
+        self.reportData(self.data)
 
     def onAllAttributes(self):
         self.dimensions = range(len(self.attributes))

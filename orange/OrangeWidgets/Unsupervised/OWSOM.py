@@ -107,6 +107,18 @@ class OWSOM(OWWidget):
                 self.send("Classifier", self.classifier)
             self.send("SOMMap", self.classifier)
         
+
+    def sendReport(self):
+        self.reportSettings("Topology",
+                            [("Shape", ["hexagonal", "rectangular"][self.topology]),
+                             ("Size", "%i columns, %i rows" % (self.xdim, self.ydim))
+                            ])
+        self.reportSettings("Optimization",
+                            [("Initialization", ["linear", "random"][self.initialization]),
+                             ("Neighborhood", ["Gaussian", "bubble"][self.neighborhood]),
+                             ("Radius", "initial: %i, final: %i" % (self.radius1, self.radius2)),
+                             ("Number of iterations", self.iterations1)
+                            ])
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

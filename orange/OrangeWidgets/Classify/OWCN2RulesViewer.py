@@ -115,10 +115,8 @@ class OWCN2RulesViewer(OWWidget):
         OWGUI.checkBox(box,self,"DistBar","Distribution(Bar)",callback=self.drawRules)
 
         OWGUI.separator(self.controlArea)
-        self.sortBox=OWGUI.comboBox(self.controlArea, self, "Sort", "Sorting",
-                                    items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
-                                           "Distribution","Rule"]
-                                    ,callback=self.drawRules)
+        self.sortOptions = ["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class", "Distribution","Rule"]
+        self.sortBox=OWGUI.comboBox(self.controlArea, self, "Sort", "Sorting", items=self.sortOptions, callback=self.drawRules)
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Output")
         OWGUI.checkBox(box,self,"Commit", "Commit on change")
@@ -140,6 +138,20 @@ class OWCN2RulesViewer(OWWidget):
 
         self.connect(self.canvasView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
                 self.headerView.horizontalScrollBar().setValue)
+
+    def sendReport(self):
+        self.reportSettings("",
+                            [("Sorting", self.sortOptions[self.Sort] if self.Sort else "None")])
+        self.reportRaw("<br/>")
+        
+        buffer = QPixmap(self.headerView.width(), self.headerView.height()+16+self.canvasView.height())
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        self.headerView.render(painter)
+        painter.translate(0, self.headerView.height()+16)
+        self.canvasView.render(painter)
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
 
     def clear(self):
         for e in self.obj:

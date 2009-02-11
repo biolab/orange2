@@ -115,6 +115,9 @@ class OWAttributeStatistics(OWWidget):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_()
 
+    def sendReport(self):
+        self.startReport("%s [%s]" % (self.windowTitle(), self.canvas.attr.name))
+        self.reportImage(lambda *x: OWChooseImageSizeDlg(self.canvas).saveImage(*x))
 """
 class DisplayStatistics
 constructs a canvas to display some statistics
@@ -134,7 +137,7 @@ class DisplayStatistics (QGraphicsScene):
         for item in self.items():
             self.removeItem(item)
 
-        attr = data.domain[ind]
+        self.attr = attr = data.domain[ind]
         attr_name = OWQCanvasFuncts.OWCanvasText(self, attr.name, 10, 10)
         if not dist[ind] or not dist[ind].items():
             if not dist[ind]:
