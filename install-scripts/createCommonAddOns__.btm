@@ -27,7 +27,8 @@ for %pyver in (%PYTHONVERSIONS) do (
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > %COMPILELOG
   break_on_error
-  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
+rem when compiled:  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32-py%npver.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
+  move /z %TMPDIR\add-ons\Bioinformatics\dist\*.win32.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
 
   REM # publish, add record to stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)  
   set TMPBINDIR=%TMPDIR\binaries\%pyver\add-ons\Bioinformatics
