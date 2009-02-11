@@ -10,7 +10,7 @@ set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
-svn update
+svn update --ignore-externals
 
 rem # build core
 cdd %SCRIPTDIR
