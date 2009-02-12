@@ -1,7 +1,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtWebKit import *
-import os, time, tempfile, shutil, urllib, zipfile
+import os, time, tempfile, shutil, urllib, zipfile, re, shutil
 import orngEnviron, OWGUI
 
 reportsDir = orngEnviron.reportsDir
@@ -111,15 +111,55 @@ class ReportWindow(QWidget):
             if not os.path.exists(fn):
                 return "file:///"+fn, fn
 
+    img_re = re.compile(r'<IMG.*?\ssrc="(?P<imgname>[^"]*)"', re.DOTALL+re.IGNORECASE)
     def saveReport(self):
-        tt = unicode(self.reportBrowser.page().mainFrame().toHtml())
-        tt = tt[tt.index('<div id="center1"'):]
         filename = QFileDialog.getSaveFileName(self, "Save Report", reportsDir, "Web page (*.html *.htm)")
         if not filename:
             return
 
+        filename = str(filename)
+        path, fname = os.path.split(filename)
+        if not os.path.exists(path):
+            try:
+                os.makedirs(path)
+            except:
+                QMessageBox.error(None, "Error", "Cannot create directory "+path)
+                
+        tt = unicode(self.reportBrowser.page().mainFrame().toHtml())
+        tt = tt[tt.index('<div id="center1"'):]
+        
+        filepref = "file:///"+self.tempdir
+        if filepref[-1] != os.sep:
+            filepref += os.sep
+        print filepref
+        lfilepref = len(filepref)
+        imspos = -1
+        subdir = None
+        while True:
+            imspos = tt.find(filepref, imspos+1)
+            if imspos == -1:
+                break
+            
+            if not subdir:
+                subdir = os.path.splitext(fname)[0]
+                if subdir == fname:
+                    subdir += "_data"
+                cnt = 0
+                osubdir = subdir
+                while os.path.exists(os.path.join(path, subdir)):
+                    cnt += 1
+                    subdir = "%s%05i" % (osubdir, cnt)
+                absubdir = os.path.join(path, subdir)
+                os.mkdir(absubdir)
+
+            imname = tt[imspos+lfilepref:tt.find('"', imspos)]
+            shutil.copy(os.path.join(filepref[8:], imname), os.path.join(absubdir, imname))
+        if subdir:
+            tt = tt.replace(filepref, subdir+"/")
+        tt = tt.replace('<div class="selected"', '<div class="normal"')
         file(filename, "wb").write('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style>%s</style></head><body>'
                                    % file(os.path.join(reportsDir, "index.css")).read() + tt.encode("utf8"))
+                       
 
 #        file(filename, "wb").write("""
 #        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
