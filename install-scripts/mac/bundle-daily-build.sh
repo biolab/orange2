@@ -20,12 +20,28 @@ if [ ! -x /usr/bin/xcodebuild ]; then
 fi
 
 # Defaults are current latest revisions in stable branch and trunk
-STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+STABLE_REVISION_1=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
-[ $STABLE_REVISION ] || exit 3
-DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+[ $STABLE_REVISION_1 ] || exit 3
+STABLE_REVISION_2=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/externals/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
-[ $DAILY_REVISION ] || exit 4
+[ $STABLE_REVISION_2 ] || exit 3
+if [[ $STABLE_REVISION_1 > $STABLE_REVISION_2 ]]; then
+    STABLE_REVISION=$STABLE_REVISION_1
+else
+    STABLE_REVISION=$STABLE_REVISION_2
+fi
+DAILY_REVISION_1=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+# svn info does not return proper exit status on an error so we check it this way
+[ $DAILY_REVISION_1 ] || exit 4
+DAILY_REVISION_2=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+# svn info does not return proper exit status on an error so we check it this way
+[ $DAILY_REVISION_2 ] || exit 4
+if [[ $DAILY_REVISION_1 > $DAILY_REVISION_2 ]]; then
+    DAILY_REVISION=$DAILY_REVISION_1
+else
+    DAILY_REVISION=$DAILY_REVISION_2
+fi
 
 echo "Preparing temporary directory."
 rm -rf /private/tmp/bundle/
@@ -40,7 +56,7 @@ export LDFLAGS="-arch ppc -arch i386"
 
 if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	echo "Downloading bundle template."
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/install-scripts/mac/bundle/ /private/tmp/bundle/
+	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/externals/branches/ver1.0/install-scripts/mac/bundle/ /private/tmp/bundle/
 	
 	echo "Downloading Orange stable source code revision $STABLE_REVISION."
 	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/
@@ -153,7 +169,7 @@ fi
 
 if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Downloading bundle template."
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
+	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
 	
 	echo "Downloading Orange daily source code revision $DAILY_REVISION."
 	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/
