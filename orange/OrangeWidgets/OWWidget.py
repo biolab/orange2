@@ -148,12 +148,12 @@ class OWWidget(OWBaseWidget):
     def reportSection(self, title):
         if self.__reportData is None:
             self.startReport()
-        self.__reportData += "<h2>%s</h2>\n" % title
+        self.__reportData += "\n\n<h2>%s</h2>\n\n" % title
 
     def reportSubsection(self, title):
         if self.__reportData is None:
             self.startReport()
-        self.__reportData += "<h3>%s</h3>\n" % title
+        self.__reportData += "\n\n  <h3>%s</h3>\n\n" % title
 
     def reportList(self, items):
         if self.__reportData is None:
@@ -174,7 +174,7 @@ class OWWidget(OWBaseWidget):
             self.startReport()
             
         if type(filenameOrFunc) in [str, unicode]:
-            self.__reportData += '<IMG src="%s"/>' % filenameOrFunc
+            self.__reportData += '    <IMG src="%s"/>\n' % filenameOrFunc
         else:
             sfn, ffn = self.getUniqueImageName()
             filenameOrFunc(ffn, *args)
@@ -184,20 +184,20 @@ class OWWidget(OWBaseWidget):
     def startReportList(self):
         if self.__reportData is None:
             self.startReport()
-        self.__reportData += "<UL>\n"
+        self.__reportData += "    <UL>\n"
 
     def addToReportList(self, item):
-        self.__reportData += "    <LI>%s</LI>\n" % item
+        self.__reportData += "      <LI>%s</LI>\n" % item
 
     def finishReportList(self):
-        self.__reportData += "</UL>\n"
+        self.__reportData += "    </UL>\n"
 
     def reportSettings(self, sectionName="", settingsList=None, closeList=True):
         if sectionName:
             self.reportSection(sectionName)
         elif self.__reportData is None:
             self.startReport()
-        self.__reportData += "<ul>%s</ul>" % "".join("<b>%s: </b>%s<br/>" % item for item in settingsList if item) 
+        self.__reportData += "    <ul>%s</ul>\n" % "".join("<b>%s: </b>%s<br/>" % item for item in settingsList if item) 
 
     def reportRaw(self, text):
         if self.__reportData is None:
