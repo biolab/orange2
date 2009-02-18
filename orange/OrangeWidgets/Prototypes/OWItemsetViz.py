@@ -8,8 +8,7 @@
 import OWGUI
 
 from OWWidget import *
-from qwt import *
-from qt import *
+from PyQt4.Qwt5 import *
 from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
