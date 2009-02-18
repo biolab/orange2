@@ -111,9 +111,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if self.graph:
             return self.graph.nVertices
         
-    def rotateVertices(self, components, M, factor=10):    
+    def rotateVertices(self, components, phi):   
+        #print phi 
         for i in range(len(components)):
-            if M[i] < 0.0001:
+            if phi[i] == 0:
                 continue
             
             component = components[i]
@@ -130,10 +131,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             r = numpy.sqrt(x ** 2 + y ** 2)
             fi = numpy.arctan2(y, x)
             
-            if M[i] > 0:
-                fi += numpy.pi / 18
-            else:
-                fi -= numpy.pi / 18
+            fi += phi[i]
             #fi += factor * M[i] * numpy.pi / 180
                 
             x = r * numpy.cos(fi)
@@ -142,7 +140,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
             
-    def rotateComponents(self, factor=10, callbackProgress=None, callbackUpdateCanvas=None, maxSteps=100, minMoment=0.01):
+    def rotateComponents(self, maxSteps=100, minMoment=0.0001, callbackProgress=None, callbackUpdateCanvas=None):
         if self.vertexDistance == None:
             return 1
         
@@ -159,8 +157,11 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         vertices = set(range(self.graph.nVertices))
         step = 0
         M = [1]
+        temperature = [[30.0, 1] for i in range(len(components))]
+        dirChange = [0] * len(components)
         while step < maxSteps and max(M) > minMoment and not self.stopRotate:
             M = [0] * len(components) 
+            
             for i in range(len(components)):
                 component = components[i]
                 
@@ -188,10 +189,32 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         M[i] += (1 - d) / (e ** 2) * numpy.cross(R, L)
             
             tmpM = numpy.array(M)
-            print numpy.min(tmpM), numpy.max(tmpM),numpy.average(tmpM),numpy.min(numpy.abs(tmpM))
-            self.rotateVertices(components, M, factor)
+            #print numpy.min(tmpM), numpy.max(tmpM),numpy.average(tmpM),numpy.min(numpy.abs(tmpM))
+            
+            phi = [0] * len(components)
+            for i in range(len(M)):
+                if M[i] > 0:
+                    if temperature[i][1] < 0:
+                        temperature[i][0] = temperature[i][0] * 5 / 10
+                        temperature[i][1] = 1
+                        dirChange[i] += 1
+                        
+                    phi[i] = temperature[i][0] * numpy.pi / 180
+                elif M[i] < 0:  
+                    if temperature[i][1] > 0:
+                        temperature[i][0] = temperature[i][0] * 5 / 10
+                        temperature[i][1] = -1
+                        dirChange[i] += 1
+                    
+                    phi[i] = -temperature[i][0] * numpy.pi / 180
+            
+            # stop rotating when phi is to small to notice the rotation
+            if max(phi) < numpy.pi / 1800:
+                break
+            
+            self.rotateVertices(components, phi)
             if callbackUpdateCanvas: callbackUpdateCanvas()
-            if callbackProgress : callbackProgress()
+            if callbackProgress : callbackProgress(min([dirChange[i] for i in range(len(dirChange)) if M[i] != 0]), 9)
             step += 1
     
     def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
