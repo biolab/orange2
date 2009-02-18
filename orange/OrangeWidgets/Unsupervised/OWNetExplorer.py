@@ -298,9 +298,9 @@ class OWNetExplorer(OWWidget):
         OWGUI.checkBox(ib, self, 'mdsAvgLinkage', "Use average linkage")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
-        self.rotateFactor = 10
+        self.rotateSteps = 100
         self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, toggleButton=1)
-        OWGUI.spin(ib, self, "rotateFactor", 1, 10000, 1, label="Rotate factor: ")
+        OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         
         
         self.icons = self.createAttributeIconDict()
@@ -326,7 +326,8 @@ class OWNetExplorer(OWWidget):
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
     
-    def rotateProgress(self):
+    def rotateProgress(self, curr, max):
+        self.progressBarSet(int(curr * 100 / max))
         qApp.processEvents()
     
     def rotateComponents(self):
@@ -354,7 +355,7 @@ class OWNetExplorer(OWWidget):
         
         self.visualize.vertexDistance = self.vertexDistance
         self.progressBarInit()
-        self.visualize.rotateComponents(self.rotateFactor, self.rotateProgress, self.updateCanvas)
+        self.visualize.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
         self.btnRotate.setChecked(False)
         self.btnRotate.setText("Rotate graph components")
         self.progressBarFinished()
