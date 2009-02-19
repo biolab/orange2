@@ -557,7 +557,8 @@ def consoleupdate(domains=None, searchstr="essential"):
 def update_local_files(verbose=True):
     sf = ServerFiles()
     for domain, filename in search(""):
-        uptodate = sf.info(domain, filename)["datetime"] >= info(domain, filename)["datetime"]
+##        print sf.info(domain, filename)["datetime"], info(domain, filename)["datetime"]
+        uptodate = sf.info(domain, filename)["datetime"] <= info(domain, filename)["datetime"]
         if not uptodate:
             download(domain, filename, sf)
         if verbose:
