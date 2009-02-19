@@ -93,7 +93,7 @@ class ORANGEOM_API TStressFunc_Python : public TStressFunc{
 public:
     __REGISTER_CLASS
     virtual float operator() (float current, float correct, float weight=1.0){
-        PyObject *args=Py_BuildValue("fff", &current, &correct, &weight);
+        PyObject *args=Py_BuildValue("fff", current, correct, weight);
         PyObject *result=callCallback((PyObject*) myWrapper, args);
         Py_DECREF(args);
         double f=PyFloat_AsDouble(result);
