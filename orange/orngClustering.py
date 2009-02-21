@@ -10,8 +10,7 @@ try:
 except ImportError:
     matplotlib = None
 
-# def exampleTableClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
-def hierarchicalClustering_Examples(data,
+def hierarchicalClustering_examples(data,
                                     distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
                                     linkage=orange.HierarchicalClustering.Average,
                                     orderLeaves=True,
@@ -27,9 +26,8 @@ def hierarchicalClustering_Examples(data,
         orderLeaves(root, matrix, progressCallback=progressCallback)
     return root
 
-def attributeClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
-    """ Cluster the attrubutes of table 'data'
-    """
+def hierarchicalClustering_attributes(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
+    """Return hierarhical clustering of attributes in the data set."""
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
