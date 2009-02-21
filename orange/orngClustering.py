@@ -1,5 +1,6 @@
+import math
+import sys
 import orange
-import math, sys
 from orange import HierarchicalClustering
 
 try:
@@ -9,16 +10,20 @@ try:
 except ImportError:
     matplotlib = None
 
-def exampleTableClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
-    """ Clusters the example table 'data' 
-    """
-    distance = distance if distance != None else orange.ExamplesDistanceConstructor_Euclidean(data)
+# def exampleTableClustering(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
+def hierarchicalClustering_Examples(data,
+                                    distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
+                                    linkage=orange.HierarchicalClustering.Average,
+                                    orderLeaves=True,
+                                    progressCallback=None):
+    """Return hierarhical clustering of the data set."""
+    distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
-    if order:
+    if orderLeaves:
         orderLeaves(root, matrix, progressCallback=progressCallback)
     return root
 
@@ -416,7 +421,7 @@ class DendrogramPlotPylab(object):
 
 def _test1():
     data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-    root = exampleTableClustering(data, order=False)
+    root = hierarhicalClustering_Examples(data, order=False)
     d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data])
     d.plot(show=True, filename="graph.png")
         
@@ -448,9 +453,3 @@ def _test2():
     d.Plot("graphOrdered.png")    
 if __name__=="__main__":
     _test1()
-
-
-    
-    
-        
-            
