@@ -10,11 +10,159 @@ try:
 except ImportError:
     matplotlib = None
 
-def hierarchicalClustering_examples(data,
-                                    distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
-                                    linkage=orange.HierarchicalClustering.Average,
-                                    orderLeaves=True,
-                                    progressCallback=None):
+    
+##############################################################################
+# miscellaneous functions (used across this module)
+
+def data_center(data):
+    """Return the central - average - point in the data set"""
+    atts = data.domain.attributes
+    astats = orange.DomainBasicAttrStat(data)
+    center = [astats[a].avg if a.varType == orange.VarTypes.Continuous \
+              else max(enumerate(orange.Distribution(a, data)), key=lambda x:x[1])[0] if a.varType == orange.VarTypes.Discrete
+              else None
+              for a in atts]
+    if data.domain.classVar:
+        center.append(0)
+    return orange.Example(data.domain, center)
+
+##############################################################################
+# k-means clustering
+
+# clustering scoring functions 
+
+def score_distanceToCentroids(km):
+    """Return weighted averaged distance of cluster elements to their centroids."""
+    score = 0
+    for cindx, centroid in enumerate(km.centroids):
+        cdata = km.data.getitemsref([i for i,c in enumerate(km.clusters) if c == cindx])
+        score += sum([km.distance(centroid, d) for d in cdata]) * len(cdata) / len(km.data)
+    return score
+
+def score_conditionalEntropy(km):
+    """cluster quality measured by conditional entropy"""
+    pass
+
+def score_withinClusterDistance(data, clusters, _, distance):
+    """weighted average within-cluster pairwise distance"""
+    pass
+
+minindex = lambda x: x.index(min(x))
+
+# clustering initialization (seeds)
+# initialization functions should be of the type f(data, k, distfun)
+
+def kmeans_init_random(data, k, _):
+    """Return arbitrary k data instances from the data set.""" 
+    return data.getitems(random.sample(range(len(data)), k))
+
+def kmeans_init_diversity(data, k, distfun):
+    """Return k most distant (heuristics) data instances."""
+    center = data_center(data)
+    # the first seed should be the farthest point from the center
+    seeds = [max([(distfun(d, center), d) for d in data])[1]]
+    # other seeds are added iteratively, and are data points that are farthest from the current set of seeds
+    for i in range(1,k):
+        seeds.append(max([(min([distfun(d, s) for s in seeds]), d) for d in data if d not in seeds])[1])
+    return seeds
+
+class KMeans_init_hierarchicalClustering():
+    """Return centers of k clusters obtained by hierachical clustering.""" 
+    def __init__(self, n=100):
+        self.n = n
+
+    def __call__(self, data, k, disfun):
+        sample = orange.ExampleTable(random.sample(data, min(self.n, len(data))))
+        root = hierarchicalClustering(sample)
+        cmap = hierarchicalClustering_topClusters(root, k)
+        print "RET"
+        return [data_center(orange.ExampleTable([sample[e] for e in cl])) for cl in cmap]
+    
+# k-means clustering, main implementation
+
+class KMeans:
+    def __init__(self, data=None, centroids=3, maxiters=None, maxscorechange=None, stopchanges=0, nstart=1, 
+                 initialization=kmeans_init_random,
+                 distance=orange.ExamplesDistanceConstructor_Euclidean,
+                 scoring=score_distanceToCentroids,
+                 inner_callback = None,
+                 outer_callback = None,
+                 initialize_only = False):
+        self.k = centroids if type(centroids)==int else len(centroids)
+        self.centroids = centroids if type(centroids) == orange.ExampleTable else None
+        self.maxiters = maxiters
+        self.nstart = nstart
+        self.initialization = initialization
+        self.distance_constructor = distance
+        self.data = data
+        self.scoring = scoring
+        self.stopchanges = stopchanges
+        self.inner_callback = inner_callback
+        self.outer_callback = outer_callback
+        if not initialize_only:
+            self.run()
+        
+    def __call__(self, data = None):
+        if data:
+            self.data = data
+        self.run()
+    
+    def init_centroids(self):
+        """initialize cluster centroids"""
+        if self.centroids and not self.nstart > 1: # centroids were specified
+            return
+        self.centroids = self.initialization(self.data, self.k, self.distance) 
+        
+    def compute_centeroids(self, data):
+        """Return a centroid of the data set."""
+        return data_center(data)
+    
+    def compute_cluster(self):
+        """calculate membership in clusters"""
+        return [minindex([self.distance(s, d) for s in self.centroids]) for d in self.data]
+    
+    def runone(self):
+        """run a single iteration of k-means clustering"""
+        self.clusters = self.compute_cluster()
+        self.centroids = [self.compute_centeroids(self.data.getitems([i for i, c in enumerate(self.clusters) if c == cl])) for cl in range(self.k)]
+        
+    def run(self):
+        """run a central k-means clustering loop"""
+        self.winner = None
+        for startindx in range(self.nstart):
+            self.distance = self.distance_constructor(self.data)
+            self.init_centroids()
+            old_cluster = None
+            self.iteration = 0
+            stopcondition = False
+            while not stopcondition:
+                self.iteration += 1
+                self.runone()
+                self.nchanges = sum(map(lambda x,y: x<>y, old_cluster, self.clusters)) if old_cluster else len(self.data)
+                self.score = self.scoring(self)
+                old_cluster = self.clusters
+                stopcondition = self.nchanges <= self.stopchanges or (self.maxiters and self.iteration == self.maxiters)
+                old_cluster = self.clusters
+                if self.inner_callback:
+                    self.inner_callback(self)
+            if self.nstart > 1:
+                self.score = self.scoring(self)
+                if not self.winner or self.score < self.winner[0]:
+                    self.winner = (self.score, self.clusters, self.centroids)
+                if self.outer_callback:
+                    self.outer_callback(self)
+
+        if self.nstart > 1:
+            self.score, self.clusters, self.centroids = self.winner
+
+##############################################################################
+# hierarhical clustering
+
+def hierarchicalClustering(data,
+                           distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
+                           linkage=orange.HierarchicalClustering.Average,
+                           order=True,
+                           progressCallback=None):
     """Return hierarhical clustering of the data set."""
     distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))
@@ -22,7 +170,7 @@ def hierarchicalClustering_examples(data,
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
     root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
-    if orderLeaves:
+    if order:
         orderLeaves(root, matrix, progressCallback=progressCallback)
     return root
 
@@ -37,8 +185,38 @@ def hierarchicalClustering_attributes(data, distance=None, linkage=orange.Hierar
         orderLeaves(root, matrix, progressCallback=progressCallback)
     return root
 
+def hierarchicalClustering_clusterList(node, prune=None):
+    """Return a list of clusters down from the node of hierarchical clustering."""
+    if prune:
+        if len(node) <= prune:
+            return [] 
+    if node.branches:
+        return [node] + hierarchicalClustering_clusterList(node.left, prune) + hierarchicalClustering_clusterList(node.right, prune)
+    return [node]
+
+def hierarchicalClustering_topClusters(root, k):
+    """Return k topmost clusters from hierarchical clustering."""
+    candidates = set([root])
+    while len(candidates) < k:
+        repl = max([(max(c.left.height, c.right.height), c) for c in candidates if c.branches])[1]
+        candidates.discard(repl)
+        candidates.add(repl.left)
+        candidates.add(repl.right)
+    return candidates
+
+def hierarhicalClustering_topClustersMembership(root, k):
+    """Return data instances' cluster membership (list of indices) to k topmost clusters."""
+    clist = hierarchicalClustering_topClusters(root, k)
+    cmap = [None] * len(root)
+    for i, c in enumerate(clist):
+        for e in c:
+            cmap[e] = i
+    return cmap
+
 def orderLeaves(tree, matrix, progressCallback=None):
-    """Order the leaves in the clustering tree (based on 'Fast optimal leaf ordering for herarchical clustering. Ziv Bar-Joseph et al.')
+    """Order the leaves in the clustering tree.
+
+    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for herarchical clustering')
     Arguments:
         tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
         matrix --orange.SymMatrix that was used to compute the clustering
@@ -417,9 +595,12 @@ class DendrogramPlotPylab(object):
         if show:
             plt.show()
 
+##############################################################################
+# module testing (should be moved to separate regression scripts)
+
 def _test1():
     data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-    root = hierarhicalClustering_Examples(data, order=False)
+    root = hierarhicalClustering(data, order=False)
     d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data])
     d.plot(show=True, filename="graph.png")
         
@@ -448,6 +629,7 @@ def _test2():
     print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
     d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
     d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
-    d.Plot("graphOrdered.png")    
+    d.Plot("graphOrdered.png")
+
 if __name__=="__main__":
     _test1()
