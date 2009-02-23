@@ -63,7 +63,7 @@ print km.clusters[-10:]
 
 <p>Invoking a call-back function may be useful when tracing the progress of the clustering. Below is a code that uses an <code>inner_callback</code> to report on the number of instances that have changed the cluster and to report on the clustering score.</p>
 
-<p class="header">part of <a href="kmeans-run-callback.py">kmeans-run.py</a> (uses <a href=
+<p class="header">part of <a href="kmeans-run-callback.py">kmeans-run-callback.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
 <xmp class=code>def callback(km):
     print "Iteration: %d, changes: %d, score: %.4f" % (km.iteration,
