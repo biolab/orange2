@@ -563,15 +563,16 @@ class OWNetworkCanvas(OWGraph):
           OWGraph.mouseReleaseEvent(self, event)
 
   def keyPressEvent(self, keyEvent):
+      print keyEvent.key()
       if keyEvent.key() == 87:
-          #print "W"
+          print "W"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
           self.visualizer.rotateVertices([selection], [ - 1])
           self.drawPlotItems(replot=1)
           
       elif keyEvent.key() == 81:
-          #print "Q"
+          print "Q"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
           self.visualizer.rotateVertices([selection], [1])
@@ -1131,7 +1132,7 @@ class OWNetworkCanvas(OWGraph):
                   vertex.pen.setWidthF(1 + float(vertex.size) / 20)
       else:
           for vertex in self.vertices:
-              vertex.size = self.minVertexSize
+              vertex.size = self.maxVertexSize
               vertex.pen.setWidthF(1 + float(vertex.size) / 20)
     
   def updateCanvas(self):
