@@ -8,6 +8,7 @@ class Learner(object):
     def __new__(cls, examples=None, **kwds):
         learner = object.__new__(cls, **kwds)
         if examples:
+            learner.__init__(**kwds)
             return learner(examples)
         else:
             return learner
