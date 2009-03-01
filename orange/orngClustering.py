@@ -1,6 +1,7 @@
 import math
 import sys
 import orange
+import random
 from orange import HierarchicalClustering
 
 try:
@@ -75,7 +76,6 @@ class KMeans_init_hierarchicalClustering():
         sample = orange.ExampleTable(random.sample(data, min(self.n, len(data))))
         root = hierarchicalClustering(sample)
         cmap = hierarchicalClustering_topClusters(root, k)
-        print "RET"
         return [data_center(orange.ExampleTable([sample[e] for e in cl])) for cl in cmap]
     
 # k-means clustering, main implementation
@@ -99,11 +99,12 @@ class KMeans:
         self.stopchanges = stopchanges
         self.inner_callback = inner_callback
         self.outer_callback = outer_callback
-        if not initialize_only:
+        if self.data and not initialize_only:
             self.run()
         
     def __call__(self, data = None):
         if data:
+            print "NEW DATA"
             self.data = data
         self.run()
     
@@ -129,8 +130,8 @@ class KMeans:
     def run(self):
         """run a central k-means clustering loop"""
         self.winner = None
+        self.distance = self.distance_constructor(self.data)
         for startindx in range(self.nstart):
-            self.distance = self.distance_constructor(self.data)
             self.init_centroids()
             old_cluster = None
             self.iteration = 0
