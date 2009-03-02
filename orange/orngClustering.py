@@ -30,7 +30,7 @@ def data_center(data):
 
 # clustering scoring functions 
 
-def score_distanceToCentroids(km):
+def score_distance_to_centroids(km):
     """Return weighted averaged distance of cluster elements to their centroids."""
     score = 0
     for cindx, centroid in enumerate(km.centroids):
@@ -82,7 +82,7 @@ class KMeans:
     def __init__(self, data=None, centroids=3, maxiters=None, maxscorechange=None, stopchanges=0, nstart=1, 
                  initialization=kmeans_init_random,
                  distance=orange.ExamplesDistanceConstructor_Euclidean,
-                 scoring=score_distanceToCentroids,
+                 scoring=score_distance_to_centroids,
                  inner_callback = None,
                  outer_callback = None,
                  initialize_only = False):
