@@ -145,13 +145,14 @@ km = orngClustering.KMeans(data, 3, maxiters=10, inner_callback=in_callback)</xm
 <dd class="ddfun">Returns a center of the instances in the data set (average across data instances for continuous attributes, most frequent value for discrete attributes).</dd>
 <dt>score_distanceToCentroids(kmeans)</dt>
 <dd class="ddfun">Returns an average distance of data instances to their associated centroids. <code>kmeans</code> is a k-means clustering object.</dd>
+</dl>
 
 <p>Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge:</p>
 
 <p class="header">part of <a href="kmeans-cmp-init.py">kmeans-cmp-init.py</a> (uses <a href=
 "iris.tab">iris.tab</a>, <a href=
 "housing.tab">housing.tab</a>, <a href=
-"vehicle.tab">vehicle.tab</a>,)</p>
+"vehicle.tab">vehicle.tab</a>)</p>
 <xmp class=code>import orange
 import orngClustering
 import random
@@ -178,13 +179,94 @@ for data, name in zip(data_sets, data_names):
    vehicle  11   4   3
 </xmp>
 
+<h2>Hierarchical Clustering</h2>
+
+<dl class="attributes">
+<dt>hierarchicalClustering(data,                     distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None)</dt>
+<dd class="ddfun">Returns an object with information of a hierarchical clustering of a given data set. This is a wrapper function around <a href="../reference/Clustering.htm">HierarchicalClustering</a> class implemented in Orange. <code>hierarchicalClustering</code> uses <code>distanceConstructor</code> function (see <a href="../reference/ExamplesDistance.htm">Distances between example</a>) to construct a distance matrix, which is then passed to Orange's hierarchical clustering algorithm, along with a particular linkage method. Ordering of leaves can be requested (<code>order=True</code>) and if so, the leaves will be ordered using <code>orderLeaves</code> function (see below).</dd>
+
+<dt>orderLeaves(root, distanceMatrix)</dt>
+<dd class="ddfun">Given the object with hierarchical clustering (a root node of the tree) and a distance matrix, function uses a fast optimal leaf ordering by Bar-Joseph et al. to impose the order of the branches in the dendrogram so that the distance between the neighboring leaves is minimized.</dd>
+
+<dt>orderLeaves(root, distanceMatrix)</dt>
+<dd class="ddfun">Given the object with hierarchical clustering (a root node of the tree) and a distance matrix, function uses a fast optimal leaf ordering by Bar-Joseph et al. to impose the order of the branches in the dendrogram so that the distance between the neighboring leaves is minimized.</dd>
+
+<dt>hierarchicalClustering_topClusters(root, k)</dt>
+<dd class="ddfun">Returns k topmost clusters (top k nodes of the clustering tree) from hierarchical clustering.</dd>
+
+<dt>hierarhicalClustering_topClustersMembership(root, k)</dt>
+<dd class="ddfun">Returns a list with indexes which indicate the membership of data instances used to create the clustering to top k clusters.</dd>
+</dl>
+
+
+<p>Using <code>hierarchicalClustering</code>, scripts need a single line of code to invoke the clustering and get the object with a result. This is demonstrated in the following script, that considers the Iris data set, performs hierarchical clustering, and then plots the data in two-attribute projection, coloring the points representing data instances according to cluster membership.</p>
+
+<p class="header">part of <a href="hclust-iris.py">hclust-iris.py</a> (uses <a href=
+"iris.tab">iris.tab</a></p>
+<xmp class=code>def plot_scatter(data, cls, attx, atty, filename="hclust-scatter", title=None):
+    """plot a data scatter plot with the position of centeroids"""
+    pylab.rcParams.update({'font.size': 8, 'figure.figsize': [4,3]})
+    x = [float(d[attx]) for d in data]
+    y = [float(d[atty]) for d in data]
+    colors = ["c", "w", "b"]
+    cs = "".join([colors[c] for c in cls])
+    pylab.scatter(x, y, c=cs, s=10)
+    
+    pylab.xlabel(attx)
+    pylab.ylabel(atty)
+    if title:
+        pylab.title(title)
+    pylab.savefig("%s.png" % filename)
+    pylab.close()
+
+data = orange.ExampleTable("iris")
+root = orngClustering.hierarchicalClustering(data)
+n = 3
+cls = orngClustering.hierarhicalClustering_topClustersMembership(root, n)
+plot_scatter(data, cls, "sepal width", "sepal length", title="Hiearchical clustering (%d clusters)" % n)
+</xmp>
+
+<p>The output of the script is a following plot:</p>
+
+<img src="hclust-scatter.png">
+
+
+<h2>DendrogramPlot</h2>
+<p>Class <code>DendrogramPlot</code> implements visualization of the  clustering tree (called dendrogram) and corresponding visualization of attribute heatmap.
+
+<p class=section>Methods</p>
+<dl class=attributes>
+<dt>__init__(tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, lineWidth=2, clusterColors={})</DT>
+<dd><code>tree</code> is an Orange's hierarhical clustering tree object (root node). If <code>data</code> (Orange's ExampleTable) is given than the dendrogram will include a heat map with color-based presentation of attribute's values. The length of the data set should match the number of leaves in the hierarchical clustering tree. Following are arguments that define the height and width of the plot areas, font size for the labels, and width of lines that indicate branches of the tree. Branches are plotted in black, but may be color to visually expose various clusters. The coloring is specified with <code>clusterColors</code>, a dictionary with cluster instances as keys and (r, g, b) tuples as items.</dd>
+
+<dt>plot(filename="graph.png")</dt>
+<dd>Plots the dendrogram and save is to the output file.</dd>
+</dl>
+
+
+<p>To illustrate the use of the dendrogram plotting class, the following scripts uses it on a subset of 20 instances from the Iris data set. Values of the class variables is used for labeling the leaves (and, of course, it is not used for the clustering - only the non-class attributes are used to compute instance distance matrix).</p>
+
+<p class="header">part of <a href="hclust-dendrogram.py">hclust-dendrogram.py</a> (uses <a href=
+"iris.tab">iris.tab</a></p>
+<xmp class=code>data = orange.ExampleTable("iris")
+sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
+root = orngClustering.hierarchicalClustering(sample)
+dendrogram = orngClustering.DendrogramPlot(root, sample, labels=[str(d.getclass()) for d in sample])
+dendrogram.plot("hclust-dendrogram.png")
+</xmp>
+
+<p>The resulting dendrogram is shown below.</p>
+
+<img src="hclust-dendrogram.png">
+
 <h2>References</h2>
 
-<p>E. Forgy. Cluster analysis of multivariate data: Efficiency versus interpretability of classification. Biometrics, 21(3):768-769, 1965.</p>
+<p>Forgy E (1965) Cluster analysis of multivariate data: Efficiency versus interpretability of classification. Biometrics 21(3): 768-769.</p>
 
-<p>J. He, M. Lan, C.-L. Tan, S.-Y. Sung, and H.-B. Low. Initialization of cluster refinement algorithms: A review and comparative study. In Proceedings of International Joint Conference on Neural Networks (IJCNN), pages 297-302, Budapest, Hungary, July 2004.</p>
+<p>He J, Lan M, Tan C-L , Sung S-Y, Low H-B (2004) <a href="http://www.comp.nus.edu.sg/~tancl/Papers/IJCNN04/he04ijcnn.pdf">Initialization of cluster refinement algorithms: A review and comparative study</a>. In Proceedings of International Joint Conference on Neural Networks (IJCNN), pages 297-302, Budapest, Hungary.</p>
 
-<p>I. Katsavounidis, C. Jay, and Zhen Zhang. A new initialization technique for generalized Lloyd iteration. Signal Processing Letters, IEEE, 1(10):144-146, 1994.</p>
+<p>Katsavounidis I, Jay C, Zhang Z (1994) A new initialization technique for generalized Lloyd iteration. IEEE Signal Processing Letters 1(10): 144-146.</p>
 
+<p>Bar-Joseph Z, Gifford DK, Jaakkola TS (2001) <a href="http://bioinformatics.oxfordjournals.org/cgi/content/abstract/17/suppl_1/S22">Fast optimal leaf ordering for herarchical clustering</a>. Bioinformatics 17(Suppl. 1): S22-S29.
 </body>
 </html>
