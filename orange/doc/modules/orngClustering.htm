@@ -202,7 +202,7 @@ for data, name in zip(data_sets, data_names):
 <p>Using <code>hierarchicalClustering</code>, scripts need a single line of code to invoke the clustering and get the object with a result. This is demonstrated in the following script, that considers the Iris data set, performs hierarchical clustering, and then plots the data in two-attribute projection, coloring the points representing data instances according to cluster membership.</p>
 
 <p class="header">part of <a href="hclust-iris.py">hclust-iris.py</a> (uses <a href=
-"iris.tab">iris.tab</a></p>
+"iris.tab">iris.tab)</a></p>
 <xmp class=code>def plot_scatter(data, cls, attx, atty, filename="hclust-scatter", title=None):
     """plot a data scatter plot with the position of centeroids"""
     pylab.rcParams.update({'font.size': 8, 'figure.figsize': [4,3]})
@@ -247,7 +247,7 @@ plot_scatter(data, cls, "sepal width", "sepal length", title="Hiearchical cluste
 <p>To illustrate the use of the dendrogram plotting class, the following scripts uses it on a subset of 20 instances from the Iris data set. Values of the class variables is used for labeling the leaves (and, of course, it is not used for the clustering - only the non-class attributes are used to compute instance distance matrix).</p>
 
 <p class="header">part of <a href="hclust-dendrogram.py">hclust-dendrogram.py</a> (uses <a href=
-"iris.tab">iris.tab</a></p>
+"iris.tab">iris.tab)</a></p>
 <xmp class=code>data = orange.ExampleTable("iris")
 sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
 root = orngClustering.hierarchicalClustering(sample)
@@ -258,6 +258,29 @@ dendrogram.plot("hclust-dendrogram.png")
 <p>The resulting dendrogram is shown below.</p>
 
 <img src="hclust-dendrogram.png">
+
+<p>Following is a similar script to above one, but this time we have 1) distinctively colored the three topmost dendrogram branches, 2) used a color schema for representation of attribute values (default, as above, are shades of gray, in the following script the colors would span between green and red), and 3) included only two attributes in the heat map presentation (note: clustering is still done on all of the data set's attributes).</p>
+
+<p class="header">part of <a href="hclust-colored-dendrogram.py">hclust-colored-dendrogram.py</a> (uses <a href=
+"iris.tab">iris.tab</a></p>
+<xmp class=code>data = orange.ExampleTable("iris")
+sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
+root = orngClustering.hierarchicalClustering(sample)
+reduced = orange.ExampleTable(orange.Domain(sample.domain[:2], False), sample)
+
+my_colors = [(255,0,0), (0,255,0), (0,0,255)]
+cls = orngClustering.hierarchicalClustering_topClusters(root, 3)
+colors = dict([(cl, col) for cl, col in zip(cls, my_colors)])
+
+dendrogram = orngClustering.DendrogramPlot(root, reduced, labels=[str(d.getclass()) for d in sample],
+    clusterColors=colors)
+dendrogram.setMatrixColorScheme((0, 255, 0), (255, 0, 0))
+dendrogram.plot("hclust-colored-dendrogram.png")
+</xmp>
+
+<p>Our "colored" dendrogram is now saved as shown in the figure below:</p>
+
+<img src="hclust-colored-dendrogram.png">
 
 <h2>References</h2>
 
