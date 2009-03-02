@@ -24,7 +24,7 @@
 <P class=section>Methods</P>
 <DL class=attributes>
 <DT>__init__(data=None, centroids=3, maxiters=None, maxscorechange=None, stopchanges=0, nstart=1, initialization=kmeans_init_random, distance=orange.ExamplesDistanceConstructor_Euclidean,
-scoring=score_distanceToCentroids,
+scoring=score_distance_to_centroids,
 inner_callback = None,
 outer_callback = None,
 initialize_only = False)</DT>
@@ -143,7 +143,7 @@ km = orngClustering.KMeans(data, 3, maxiters=10, inner_callback=in_callback)</xm
 <dd class="ddfun">Is actually a class that returns an clustering initialization function that, given the data, k, and a distance function samples <code>n</code> data instances, performs hierarhical clustering, uses it to infer <code>k</code> clusters, and computes a list of cluster-based data centers.</dd>
 <dt>data_center(data)</dt>
 <dd class="ddfun">Returns a center of the instances in the data set (average across data instances for continuous attributes, most frequent value for discrete attributes).</dd>
-<dt>score_distanceToCentroids(kmeans)</dt>
+<dt>score_distance_to_centroids(kmeans)</dt>
 <dd class="ddfun">Returns an average distance of data instances to their associated centroids. <code>kmeans</code> is a k-means clustering object.</dd>
 </dl>
 
