@@ -9,7 +9,6 @@ try:
     import  matplotlib.pyplot as plt #import plot, show
 except ImportError:
     matplotlib = None
-
     
 ##############################################################################
 # miscellaneous functions (used across this module)
