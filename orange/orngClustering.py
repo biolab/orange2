@@ -2,7 +2,6 @@ import math
 import sys
 import orange
 import random
-from orange import HierarchicalClustering
 
 try:
     import matplotlib
@@ -162,9 +161,9 @@ class KMeans:
 def hierarchicalClustering(data,
                            distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
                            linkage=orange.HierarchicalClustering.Average,
-                           order=True,
+                           order=False,
                            progressCallback=None):
-    """Return hierarhical clustering of the data set."""
+    """Return a hierarhical clustering of the data set."""
     distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))
     for i in range(len(data)):
@@ -390,13 +389,13 @@ class DendrogramPlot(object):
 ##        self.textAreaWidth = textAreaWidth
 ##        self.matrixAreaWidth = matrixAreaWidth
 
-    def SetMatrixColorScheme(self, low, hi):
+    def setMatrixColorScheme(self, low, hi):
         """Set the matrix color scheme. low and hi must be (r, g, b) tuples
         """
         self.lowColor = low
         self.hiColor = hi
 
-    def SetClusterColors(self, clusterColors={}):
+    def setClusterColors(self, clusterColors={}):
         """clusterColors must be a dictionary with cluster instances as keys and (r, g, b) tuples as items.
         """
         self.clusterColors = clusterColors
@@ -428,12 +427,9 @@ class DendrogramPlot(object):
                 break
         return text
                 
-    
-    def Plot(self, file="graph.png"):
-        """Draws the dendrogram and saves it to file
-        """
-        if type(file)==str:
-            file = open(file, "wb")
+    def plot(self, filename="graph.png"):
+        """Draw the dendrogram and save it to file."""
+        file = open(filename, "wb")
         topMargin = 10
         bottomMargin = 10
         leftMargin = 10
@@ -493,7 +489,7 @@ class DendrogramPlot(object):
 ##        if self.data:
 ##            import orangene
 ##            map = orangene.HeatmapConstructor(orange.ExampleTable(rows), None) 
-        self.image.save(file, "PNG")
+        self.image.save(file)
 
 class ScalableText(matplotlib.text.Text):
     _max_width = 1.0
@@ -577,7 +573,7 @@ class DendrogramPlotPylab(object):
 ##            self.text_items.append(t)
 
     
-    def plot(self, show=True, filename=None):
+    def plot(self, filename=None, show=False):
         self.fontsize = 8
 ##        self.fig = Figure(figsize=(self.width, self.height))
 ##        self.fig = Figure(figsize=(1, 1))
@@ -592,45 +588,6 @@ class DendrogramPlotPylab(object):
         self.plotLabels()
         if filename:
             canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(self.fig)
-            canvas.print_figure("graph.png")
+            canvas.print_figure(filename)
         if show:
             plt.show()
-
-##############################################################################
-# module testing (should be moved to separate regression scripts)
-
-def _test1():
-    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-    root = hierarhicalClustering(data, order=False)
-    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data])
-    d.plot(show=True, filename="graph.png")
-        
-
-def _test2():
-##    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-##    data = orange.ExampleTable("doc//datasets//iris.tab")
-    data = orange.ExampleTable("doc//datasets//zoo.tab")
-##    data = orange.ExampleTable("doc//datasets//titanic.tab")
-##    m = [[], [ 3], [ 2, 4], [17, 5, 4], [ 2, 8, 3, 8], [ 7, 5, 10, 11, 2], [ 8, 4, 1, 5, 11, 13], [ 4, 7, 12, 8, 10, 1, 5], [13, 9, 14, 15, 7, 8, 4, 6], [12, 10, 11, 15, 2, 5, 7, 3, 1]]
-##    matrix = orange.SymMatrix(m)
-    dist = orange.ExamplesDistanceConstructor_Euclidean(data)
-    matrix = orange.SymMatrix(len(data))
-##    matrix.setattr('items', data)
-    for i in range(len(data)):
-        for j in range(i+1):
-            matrix[i, j] = dist(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
-##    root.mapping.objects = [str(ex.getclass()) for ex in data]
-    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000)
-    d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
-##    d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
-    d.Plot("graph.png")
-    print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    orderLeaves(root, matrix)
-    print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
-    d.SetMatrixColorScheme((0, 255, 0), (255, 0, 0))
-    d.Plot("graphOrdered.png")
-
-if __name__=="__main__":
-    _test1()
