@@ -1168,7 +1168,8 @@ float TContDistribution::dev() const
     else
       raiseError("cannot compute standard deviation (attribute has no defined values)");
 
-  return sqrt((sum2-sum*sum/abs)/abs);
+  const float res = sqrt((sum2-sum*sum/abs)/abs);
+  return res > 0 ? res : 0.0;
 }
   
 float TContDistribution::var() const
@@ -1179,11 +1180,16 @@ float TContDistribution::var() const
     else
       raiseError("cannot compute variance (attribute has no defined values)");
 
-  return (sum2-sum*sum/abs)/abs;
+  const float res = (sum2-sum*sum/abs)/abs;
+  return res > 0 ? res : 0.0;
 }
   
 float TContDistribution::error() const
-{ return abs<=1.0 ? 0.0 : sqrt((sum2-sum*sum/abs)/(abs-1) / abs); }
+{ if (abs <= 1.0)
+    return 0.0;
+  const float res = sqrt((sum2-sum*sum/abs)/(abs-1) / abs);
+  return res > 0 ? res : 0.0;
+}
 
 
 float TContDistribution::percentile(const float &perc) const
