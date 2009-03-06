@@ -1,0 +1,958 @@
+
+<style>
+div.catdiv h2 {
+  border-bottom: none;
+  padding-left: 20px;
+  padding-top: 5px;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+div.catdiv {
+  margin-left: 10px;
+  margin-right: 10px;
+  background-color: #eeeeee;
+  padding-right: 20px;
+}
+
+div.catdiv table {
+  width: 100%;
+  margin: 10px;
+}
+
+div.catdiv table td {
+  background-color: white;
+  height: 20px;
+  margin: 25px;
+  vertical-align: center;
+  border-left: solid #eeeeee 10px;
+  border-bottom: solid #eeeeee 3px;
+}
+
+div.catdiv table td.left {
+  width: 3%;
+  padding: 2px;
+  height: 30px;
+}
+
+div.catdiv table td.right {
+  padding-left: 5px;
+  border-left: none;
+  width: 22%;
+}
+
+div.catdiv table td.empty {
+  background-color: #eeeeee;
+}
+
+div.catdiv table td.left-nodoc {
+  width: 3%;
+  color: #aaaaaa;
+}
+
+div.catdiv table td.right-nodoc {
+  width: 22%;
+  border-left: none;
+  color: #aaaaaa;
+}
+
+div.catdiv table img {
+  border: none;
+  height: 28px;
+  width: 28px;
+}
+</style>
+
+<p style="font-size: 16px; font-weight: bold">Catalog of widgets</p>
+
+<div class="catdiv"><h2>Data</h2>
+
+<table>
+<tr>
+
+  <td id="cid1" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/File.htm'">
+      <img src="icons/File.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid1').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid1').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/File.htm'">
+      File
+  </td>
+
+  <td id="cid2" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/DataTable.htm'">
+      <img src="icons/DataTable.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid2').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid2').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/DataTable.htm'">
+      Data Table
+  </td>
+
+  <td id="cid3" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/SelectAttributes.htm'">
+      <img src="icons/SelectAttributes.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid3').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid3').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/SelectAttributes.htm'">
+      Select Attributes
+  </td>
+
+  <td id="cid4" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Rank.htm'">
+      <img src="icons/Rank.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid4').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid4').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Rank.htm'">
+      Rank
+  </td>
+</tr>
+<tr>
+
+  <td id="cid5" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/PurgeDomain.htm'">
+      <img src="icons/PurgeDomain.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid5').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid5').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/PurgeDomain.htm'">
+      Purge Domain
+  </td>
+
+  <td id="cid6" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/MergeData.htm'">
+      <img src="icons/MergeData.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid6').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid6').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/MergeData.htm'">
+      Merge Data
+  </td>
+
+  <td id="cid7" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Concatenate.htm'">
+      <img src="icons/Concatenate.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid7').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid7').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Concatenate.htm'">
+      Concatenate
+  </td>
+
+  <td id="cid8" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/DataSampler.htm'">
+      <img src="icons/DataSampler.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid8').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid8').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/DataSampler.htm'">
+      Data Sampler
+  </td>
+</tr>
+<tr>
+
+  <td id="cid9" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/SelectData.htm'">
+      <img src="icons/SelectData.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid9').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid9').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/SelectData.htm'">
+      Select Data
+  </td>
+
+  <td id="cid10" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Save.htm'">
+      <img src="icons/Save.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid10').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid10').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Save.htm'">
+      Save
+  </td>
+
+  <td id="cid11" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Discretize.htm'">
+      <img src="icons/Discretize.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid11').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid11').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Discretize.htm'">
+      Discretize
+  </td>
+
+  <td id="cid12" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Continuize.htm'">
+      <img src="icons/Continuize.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid12').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid12').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Continuize.htm'">
+      Continuize
+  </td>
+</tr>
+<tr>
+
+  <td id="cid13" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Impute.htm'">
+      <img src="icons/Impute.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid13').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid13').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Impute.htm'">
+      Impute
+  </td>
+
+  <td id="cid14" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Outliers.htm'">
+      <img src="icons/Outliers.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid14').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid14').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Data/Outliers.htm'">
+      Outliers
+  </td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Visualize</h2>
+
+<table>
+<tr>
+
+  <td id="cid15" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Distributions.htm'">
+      <img src="icons/Distributions.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid15').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid15').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/Distributions.htm'">
+      Distributions
+  </td>
+
+  <td id="cid16" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Scatterplot.htm'">
+      <img src="icons/Scatterplot.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid16').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid16').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/Scatterplot.htm'">
+      Scatterplot
+  </td>
+
+  <td id="cid17" class="left-nodoc">
+      <img src="icons/Scatterplotmatrix.png">
+  </td>
+  <td class="right-nodoc">
+      Scatterplot matrix
+  </td>
+
+  <td id="cid18" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/AttributeStatistics.htm'">
+      <img src="icons/AttributeStatistics.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid18').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid18').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/AttributeStatistics.htm'">
+      Attribute Statistics
+  </td>
+</tr>
+<tr>
+
+  <td id="cid19" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/LinearProjection.htm'">
+      <img src="icons/LinearProjection.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid19').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid19').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/LinearProjection.htm'">
+      Linear Projection
+  </td>
+
+  <td id="cid20" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Radviz.htm'">
+      <img src="icons/Radviz.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid20').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid20').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/Radviz.htm'">
+      Radviz
+  </td>
+
+  <td id="cid21" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Polyviz.htm'">
+      <img src="icons/Polyviz.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid21').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid21').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/Polyviz.htm'">
+      Polyviz
+  </td>
+
+  <td id="cid22" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Parallelcoordinates.htm'">
+      <img src="icons/Parallelcoordinates.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid22').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid22').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/Parallelcoordinates.htm'">
+      Parallel coordinates
+  </td>
+</tr>
+<tr>
+
+  <td id="cid23" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/SurveyPlot.htm'">
+      <img src="icons/SurveyPlot.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid23').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid23').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/SurveyPlot.htm'">
+      Survey Plot
+  </td>
+
+  <td id="cid24" class="left-nodoc">
+      <img src="icons/CorrespondenceAnalysis.png">
+  </td>
+  <td class="right-nodoc">
+      Correspondence Analysis
+  </td>
+
+  <td id="cid25" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Time Data Visualizer
+  </td>
+
+  <td id="cid26" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/MosaicDisplay.htm'">
+      <img src="icons/MosaicDisplay.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid26').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid26').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/MosaicDisplay.htm'">
+      Mosaic Display
+  </td>
+</tr>
+<tr>
+
+  <td id="cid27" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/SieveDiagram.htm'">
+      <img src="icons/SieveDiagram.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid27').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid27').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Visualize/SieveDiagram.htm'">
+      Sieve Diagram
+  </td>
+
+  <td id="cid28" class="left-nodoc">
+      <img src="icons/Sievemultigram.png">
+  </td>
+  <td class="right-nodoc">
+      Sieve multigram
+  </td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Classify</h2>
+
+<table>
+<tr>
+
+  <td id="cid29" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/NaiveBayes.htm'">
+      <img src="icons/NaiveBayes.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid29').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid29').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/NaiveBayes.htm'">
+      Naive Bayes
+  </td>
+
+  <td id="cid30" class="left-nodoc">
+      <img src="icons/SVM.png">
+  </td>
+  <td class="right-nodoc">
+      SVM
+  </td>
+
+  <td id="cid31" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/LogisticRegression.htm'">
+      <img src="icons/LogisticRegression.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid31').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid31').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/LogisticRegression.htm'">
+      Logistic Regression
+  </td>
+
+  <td id="cid32" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/Majority.htm'">
+      <img src="icons/Majority.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid32').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid32').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/Majority.htm'">
+      Majority
+  </td>
+</tr>
+<tr>
+
+  <td id="cid33" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeViewer.htm'">
+      <img src="icons/ClassificationTreeViewer.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid33').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid33').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeViewer.htm'">
+      Classification Tree Viewer
+  </td>
+
+  <td id="cid34" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeGraph.htm'">
+      <img src="icons/ClassificationTreeGraph.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid34').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid34').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeGraph.htm'">
+      Classification Tree Graph
+  </td>
+
+  <td id="cid35" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/CN2RulesViewer.htm'">
+      <img src="icons/CN2RulesViewer.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid35').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid35').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/CN2RulesViewer.htm'">
+      CN2 Rules Viewer
+  </td>
+
+  <td id="cid36" class="left-nodoc">
+      <img src="icons/kNearestNeighbours.png">
+  </td>
+  <td class="right-nodoc">
+      k Nearest Neighbours
+  </td>
+</tr>
+<tr>
+
+  <td id="cid37" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/Nomogram.htm'">
+      <img src="icons/Nomogram.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid37').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid37').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/Nomogram.htm'">
+      Nomogram
+  </td>
+
+  <td id="cid38" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTree.htm'">
+      <img src="icons/ClassificationTree.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid38').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid38').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTree.htm'">
+      Classification Tree
+  </td>
+
+  <td id="cid39" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/CN2.htm'">
+      <img src="icons/CN2.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid39').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid39').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/CN2.htm'">
+      CN2
+  </td>
+
+  <td id="cid40" class="left-nodoc">
+      <img src="icons/RandomForest.png">
+  </td>
+  <td class="right-nodoc">
+      Random Forest
+  </td>
+</tr>
+<tr>
+
+  <td id="cid41" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/C4.5.htm'">
+      <img src="icons/C4.5.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid41').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid41').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/C4.5.htm'">
+      C4.5
+  </td>
+
+  <td id="cid42" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/InteractiveTreeBuilder.htm'">
+      <img src="icons/InteractiveTreeBuilder.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid42').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid42').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Classify/InteractiveTreeBuilder.htm'">
+      Interactive Tree Builder
+  </td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Regression</h2>
+
+<table>
+<tr>
+
+  <td id="cid43" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTree.htm'">
+      <img src="icons/RegressionTree.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid43').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid43').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTree.htm'">
+      Regression Tree
+  </td>
+
+  <td id="cid44" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTreeGraph.htm'">
+      <img src="icons/RegressionTreeGraph.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid44').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid44').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTreeGraph.htm'">
+       Regression Tree Graph
+  </td>
+
+  <td id="cid45" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/Pade.htm'">
+      <img src="icons/Pade.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid45').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid45').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Regression/Pade.htm'">
+      Pade
+  </td>
+<td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Evaluate</h2>
+
+<table>
+<tr>
+
+  <td id="cid46" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/ConfusionMatrix.htm'">
+      <img src="icons/ConfusionMatrix.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid46').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid46').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/ConfusionMatrix.htm'">
+      Confusion Matrix
+  </td>
+
+  <td id="cid47" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/ROCAnalysis.htm'">
+      <img src="icons/ROCAnalysis.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid47').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid47').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/ROCAnalysis.htm'">
+      ROC Analysis
+  </td>
+
+  <td id="cid48" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/LiftCurve.htm'">
+      <img src="icons/LiftCurve.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid48').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid48').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/LiftCurve.htm'">
+      Lift Curve
+  </td>
+
+  <td id="cid49" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/CalibrationPlot.htm'">
+      <img src="icons/CalibrationPlot.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid49').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid49').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/CalibrationPlot.htm'">
+      Calibration Plot
+  </td>
+</tr>
+<tr>
+
+  <td id="cid50" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/TestLearners.htm'">
+      <img src="icons/TestLearners.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid50').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid50').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/TestLearners.htm'">
+      Test Learners
+  </td>
+
+  <td id="cid51" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/Predictions.htm'">
+      <img src="icons/Predictions.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid51').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid51').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Evaluate/Predictions.htm'">
+      Predictions
+  </td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Associate</h2>
+
+<table>
+<tr>
+
+  <td id="cid52" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Associate/AssociationRules.htm'">
+      <img src="icons/AssociationRules.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid52').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid52').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Associate/AssociationRules.htm'">
+      Association Rules
+  </td>
+
+  <td id="cid53" class="left-nodoc">
+      <img src="icons/Itemsets.png">
+  </td>
+  <td class="right-nodoc">
+      Itemsets
+  </td>
+
+  <td id="cid54" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Itemsests Explorer
+  </td>
+
+  <td id="cid55" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Association Rules Filter
+  </td>
+</tr>
+<tr>
+
+  <td id="cid56" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Association Rules Explorer
+  </td>
+<td class="empty"></td><td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Unsupervised</h2>
+
+<table>
+<tr>
+
+  <td id="cid57" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceFile.htm'">
+      <img src="icons/DistanceFile.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid57').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid57').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceFile.htm'">
+      Distance File
+  </td>
+
+  <td id="cid58" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Matrix Transformation
+  </td>
+
+  <td id="cid59" class="left-nodoc">
+      <img src="icons/SaveDistanceFile.png">
+  </td>
+  <td class="right-nodoc">
+      Save Distance File
+  </td>
+
+  <td id="cid60" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Distance Matrix Filter
+  </td>
+</tr>
+<tr>
+
+  <td id="cid61" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceMap.htm'">
+      <img src="icons/DistanceMap.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid61').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid61').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceMap.htm'">
+      Distance Map
+  </td>
+
+  <td id="cid62" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/ExampleDistance.htm'">
+      <img src="icons/ExampleDistance.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid62').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid62').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/ExampleDistance.htm'">
+      Example Distance
+  </td>
+
+  <td id="cid63" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/AttributeDistance.htm'">
+      <img src="icons/AttributeDistance.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid63').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid63').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/AttributeDistance.htm'">
+      Attribute Distance
+  </td>
+
+  <td id="cid64" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/HierarchicalClustering.htm'">
+      <img src="icons/HierarchicalClustering.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid64').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid64').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/HierarchicalClustering.htm'">
+      Hierarchical Clustering
+  </td>
+</tr>
+<tr>
+
+  <td id="cid65" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/InteractionGraph.htm'">
+      <img src="icons/InteractionGraph.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid65').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid65').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/InteractionGraph.htm'">
+      Interaction Graph
+  </td>
+
+  <td id="cid66" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/K-MeansClustering.htm'">
+      <img src="icons/K-MeansClustering.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid66').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid66').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/K-MeansClustering.htm'">
+      K-Means Clustering
+  </td>
+
+  <td id="cid67" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/MDS.htm'">
+      <img src="icons/MDS.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid67').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid67').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/MDS.htm'">
+      MDS
+  </td>
+
+  <td id="cid68" class="left-nodoc">
+      <img src="icons/NetworkFile.png">
+  </td>
+  <td class="right-nodoc">
+      Network File
+  </td>
+</tr>
+<tr>
+
+  <td id="cid69" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/NetExplorer.htm'">
+      <img src="icons/NetExplorer.png"/>
+  </td>
+  <td class="right"
+    onmouseover="this.style.backgroundColor=document.getElementById('cid69').style.backgroundColor='#fff7df'"
+    onmouseout="this.style.backgroundColor=document.getElementById('cid69').style.backgroundColor=null"
+    onclick="this.style.backgroundColor=null; window.location='Unsupervised/NetExplorer.htm'">
+      Net Explorer
+  </td>
+
+  <td id="cid70" class="left-nodoc">
+      <img src="icons/NetworkfromDistances.png">
+  </td>
+  <td class="right-nodoc">
+      Network from Distances
+  </td>
+
+  <td id="cid71" class="left-nodoc">
+      <img src="icons/SOM.png">
+  </td>
+  <td class="right-nodoc">
+      SOM
+  </td>
+
+  <td id="cid72" class="left-nodoc">
+      <img src="icons/SOMVisualizer.png">
+  </td>
+  <td class="right-nodoc">
+      SOMVisualizer
+  </td>
+</tr></table></div>

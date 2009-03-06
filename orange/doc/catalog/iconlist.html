@@ -1,0 +1,780 @@
+
+<style>
+div.catdiv h2 {
+  border-bottom: none;
+  padding-left: 20px;
+  padding-top: 5px;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+div.catdiv {
+  margin-left: 10px;
+  margin-right: 10px;
+  background-color: #eeeeee;
+  padding-right: 20px;
+}
+
+div.catdiv table {
+  width: 100%;
+  margin: 10px;
+}
+
+div.catdiv table td {
+  background-color: white;
+  height: 20px;
+  margin: 25px;
+  vertical-align: center;
+  border-left: solid #eeeeee 10px;
+  border-bottom: solid #eeeeee 3px;
+  padding-left: 5px;
+}
+
+div.catdiv table td.left {
+  width: 3%;
+}
+
+div.catdiv table td.right {
+  border-left: none;
+  width: 22%;
+}
+
+div.catdiv table td.empty {
+  background-color: #eeeeee;
+}
+
+div.catdiv table td.left-nodoc {
+  width: 3%;
+  color: #aaaaaa;
+}
+
+div.catdiv table td.right-nodoc {
+  width: 22%;
+  border-left: none;
+  color: #aaaaaa;
+}
+
+div.catdiv table img {
+  border: none;
+  height: 28px;
+  width: 28px;
+}
+</style>
+
+<p style="font-size: 24px; font-weight: bold">Catalog of widgets</p>
+
+<div class="catdiv"><h2>Data</h2>
+
+<table>
+<tr>
+
+  <td id="cid1" class="left">
+    <a href="Data/File.htm">
+      <img src="icons/File.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid1').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid1').style.backgroundColor=null">
+    <a href="Data/File.htm">
+      File
+    </a></td>
+
+  <td id="cid2" class="left">
+    <a href="Data/DataTable.htm">
+      <img src="icons/DataTable.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid2').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid2').style.backgroundColor=null">
+    <a href="Data/DataTable.htm">
+      Data Table
+    </a></td>
+
+  <td id="cid3" class="left">
+    <a href="Data/SelectAttributes.htm">
+      <img src="icons/SelectAttributes.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid3').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid3').style.backgroundColor=null">
+    <a href="Data/SelectAttributes.htm">
+      Select Attributes
+    </a></td>
+
+  <td id="cid4" class="left">
+    <a href="Data/Rank.htm">
+      <img src="icons/Rank.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid4').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid4').style.backgroundColor=null">
+    <a href="Data/Rank.htm">
+      Rank
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid5" class="left">
+    <a href="Data/PurgeDomain.htm">
+      <img src="icons/PurgeDomain.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid5').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid5').style.backgroundColor=null">
+    <a href="Data/PurgeDomain.htm">
+      Purge Domain
+    </a></td>
+
+  <td id="cid6" class="left">
+    <a href="Data/MergeData.htm">
+      <img src="icons/MergeData.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid6').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid6').style.backgroundColor=null">
+    <a href="Data/MergeData.htm">
+      Merge Data
+    </a></td>
+
+  <td id="cid7" class="left">
+    <a href="Data/Concatenate.htm">
+      <img src="icons/Concatenate.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid7').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid7').style.backgroundColor=null">
+    <a href="Data/Concatenate.htm">
+      Concatenate
+    </a></td>
+
+  <td id="cid8" class="left">
+    <a href="Data/DataSampler.htm">
+      <img src="icons/DataSampler.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid8').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid8').style.backgroundColor=null">
+    <a href="Data/DataSampler.htm">
+      Data Sampler
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid9" class="left">
+    <a href="Data/SelectData.htm">
+      <img src="icons/SelectData.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid9').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid9').style.backgroundColor=null">
+    <a href="Data/SelectData.htm">
+      Select Data
+    </a></td>
+
+  <td id="cid10" class="left">
+    <a href="Data/Save.htm">
+      <img src="icons/Save.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid10').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid10').style.backgroundColor=null">
+    <a href="Data/Save.htm">
+      Save
+    </a></td>
+
+  <td id="cid11" class="left">
+    <a href="Data/Discretize.htm">
+      <img src="icons/Discretize.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid11').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid11').style.backgroundColor=null">
+    <a href="Data/Discretize.htm">
+      Discretize
+    </a></td>
+
+  <td id="cid12" class="left">
+    <a href="Data/Continuize.htm">
+      <img src="icons/Continuize.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid12').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid12').style.backgroundColor=null">
+    <a href="Data/Continuize.htm">
+      Continuize
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid13" class="left">
+    <a href="Data/Impute.htm">
+      <img src="icons/Impute.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid13').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid13').style.backgroundColor=null">
+    <a href="Data/Impute.htm">
+      Impute
+    </a></td>
+
+  <td id="cid14" class="left">
+    <a href="Data/Outliers.htm">
+      <img src="icons/Outliers.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid14').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid14').style.backgroundColor=null">
+    <a href="Data/Outliers.htm">
+      Outliers
+    </a></td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Visualize</h2>
+
+<table>
+<tr>
+
+  <td id="cid15" class="left-nodoc">
+      <img src="icons/Distributions.png">
+  </td>
+  <td class="right-nodoc">
+      Distributions
+  </td>
+
+  <td id="cid16" class="left-nodoc">
+      <img src="icons/Scatterplot.png">
+  </td>
+  <td class="right-nodoc">
+      Scatterplot
+  </td>
+
+  <td id="cid17" class="left-nodoc">
+      <img src="icons/Scatterplotmatrix.png">
+  </td>
+  <td class="right-nodoc">
+      Scatterplot matrix
+  </td>
+
+  <td id="cid18" class="left">
+    <a href="Visualize/AttributeStatistics.htm">
+      <img src="icons/AttributeStatistics.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid18').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid18').style.backgroundColor=null">
+    <a href="Visualize/AttributeStatistics.htm">
+      Attribute Statistics
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid19" class="left-nodoc">
+      <img src="icons/LinearProjection.png">
+  </td>
+  <td class="right-nodoc">
+      Linear Projection
+  </td>
+
+  <td id="cid20" class="left-nodoc">
+      <img src="icons/Radviz.png">
+  </td>
+  <td class="right-nodoc">
+      Radviz
+  </td>
+
+  <td id="cid21" class="left-nodoc">
+      <img src="icons/Polyviz.png">
+  </td>
+  <td class="right-nodoc">
+      Polyviz
+  </td>
+
+  <td id="cid22" class="left-nodoc">
+      <img src="icons/Parallelcoordinates.png">
+  </td>
+  <td class="right-nodoc">
+      Parallel coordinates
+  </td>
+</tr>
+<tr>
+
+  <td id="cid23" class="left-nodoc">
+      <img src="icons/SurveyPlot.png">
+  </td>
+  <td class="right-nodoc">
+      Survey Plot
+  </td>
+
+  <td id="cid24" class="left-nodoc">
+      <img src="icons/CorrespondenceAnalysis.png">
+  </td>
+  <td class="right-nodoc">
+      Correspondence Analysis
+  </td>
+
+  <td id="cid25" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Time Data Visualizer
+  </td>
+
+  <td id="cid26" class="left-nodoc">
+      <img src="icons/MosaicDisplay.png">
+  </td>
+  <td class="right-nodoc">
+      Mosaic Display
+  </td>
+</tr>
+<tr>
+
+  <td id="cid27" class="left-nodoc">
+      <img src="icons/SieveDiagram.png">
+  </td>
+  <td class="right-nodoc">
+      Sieve Diagram
+  </td>
+
+  <td id="cid28" class="left-nodoc">
+      <img src="icons/Sievemultigram.png">
+  </td>
+  <td class="right-nodoc">
+      Sieve multigram
+  </td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Classify</h2>
+
+<table>
+<tr>
+
+  <td id="cid29" class="left">
+    <a href="Classify/NaiveBayes.htm">
+      <img src="icons/NaiveBayes.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid29').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid29').style.backgroundColor=null">
+    <a href="Classify/NaiveBayes.htm">
+      Naive Bayes
+    </a></td>
+
+  <td id="cid30" class="left-nodoc">
+      <img src="icons/SVM.png">
+  </td>
+  <td class="right-nodoc">
+      SVM
+  </td>
+
+  <td id="cid31" class="left">
+    <a href="Classify/LogisticRegression.htm">
+      <img src="icons/LogisticRegression.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid31').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid31').style.backgroundColor=null">
+    <a href="Classify/LogisticRegression.htm">
+      Logistic Regression
+    </a></td>
+
+  <td id="cid32" class="left">
+    <a href="Classify/Majority.htm">
+      <img src="icons/Majority.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid32').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid32').style.backgroundColor=null">
+    <a href="Classify/Majority.htm">
+      Majority
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid33" class="left">
+    <a href="Classify/ClassificationTreeViewer.htm">
+      <img src="icons/ClassificationTreeViewer.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid33').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid33').style.backgroundColor=null">
+    <a href="Classify/ClassificationTreeViewer.htm">
+      Classification Tree Viewer
+    </a></td>
+
+  <td id="cid34" class="left">
+    <a href="Classify/ClassificationTreeGraph.htm">
+      <img src="icons/ClassificationTreeGraph.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid34').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid34').style.backgroundColor=null">
+    <a href="Classify/ClassificationTreeGraph.htm">
+      Classification Tree Graph
+    </a></td>
+
+  <td id="cid35" class="left">
+    <a href="Classify/CN2RulesViewer.htm">
+      <img src="icons/CN2RulesViewer.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid35').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid35').style.backgroundColor=null">
+    <a href="Classify/CN2RulesViewer.htm">
+      CN2 Rules Viewer
+    </a></td>
+
+  <td id="cid36" class="left-nodoc">
+      <img src="icons/kNearestNeighbours.png">
+  </td>
+  <td class="right-nodoc">
+      k Nearest Neighbours
+  </td>
+</tr>
+<tr>
+
+  <td id="cid37" class="left">
+    <a href="Classify/Nomogram.htm">
+      <img src="icons/Nomogram.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid37').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid37').style.backgroundColor=null">
+    <a href="Classify/Nomogram.htm">
+      Nomogram
+    </a></td>
+
+  <td id="cid38" class="left">
+    <a href="Classify/ClassificationTree.htm">
+      <img src="icons/ClassificationTree.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid38').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid38').style.backgroundColor=null">
+    <a href="Classify/ClassificationTree.htm">
+      Classification Tree
+    </a></td>
+
+  <td id="cid39" class="left">
+    <a href="Classify/CN2.htm">
+      <img src="icons/CN2.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid39').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid39').style.backgroundColor=null">
+    <a href="Classify/CN2.htm">
+      CN2
+    </a></td>
+
+  <td id="cid40" class="left-nodoc">
+      <img src="icons/RandomForest.png">
+  </td>
+  <td class="right-nodoc">
+      Random Forest
+  </td>
+</tr>
+<tr>
+
+  <td id="cid41" class="left">
+    <a href="Classify/C4.5.htm">
+      <img src="icons/C4.5.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid41').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid41').style.backgroundColor=null">
+    <a href="Classify/C4.5.htm">
+      C4.5
+    </a></td>
+
+  <td id="cid42" class="left">
+    <a href="Classify/InteractiveTreeBuilder.htm">
+      <img src="icons/InteractiveTreeBuilder.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid42').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid42').style.backgroundColor=null">
+    <a href="Classify/InteractiveTreeBuilder.htm">
+      Interactive Tree Builder
+    </a></td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Regression</h2>
+
+<table>
+<tr>
+
+  <td id="cid43" class="left">
+    <a href="Regression/RegressionTree.htm">
+      <img src="icons/RegressionTree.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid43').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid43').style.backgroundColor=null">
+    <a href="Regression/RegressionTree.htm">
+      Regression Tree
+    </a></td>
+
+  <td id="cid44" class="left">
+    <a href="Regression/RegressionTreeGraph.htm">
+      <img src="icons/RegressionTreeGraph.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid44').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid44').style.backgroundColor=null">
+    <a href="Regression/RegressionTreeGraph.htm">
+       Regression Tree Graph
+    </a></td>
+
+  <td id="cid45" class="left">
+    <a href="Regression/Pade.htm">
+      <img src="icons/Pade.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid45').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid45').style.backgroundColor=null">
+    <a href="Regression/Pade.htm">
+      Pade
+    </a></td>
+<td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Evaluate</h2>
+
+<table>
+<tr>
+
+  <td id="cid46" class="left">
+    <a href="Evaluate/ConfusionMatrix.htm">
+      <img src="icons/ConfusionMatrix.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid46').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid46').style.backgroundColor=null">
+    <a href="Evaluate/ConfusionMatrix.htm">
+      Confusion Matrix
+    </a></td>
+
+  <td id="cid47" class="left">
+    <a href="Evaluate/ROCAnalysis.htm">
+      <img src="icons/ROCAnalysis.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid47').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid47').style.backgroundColor=null">
+    <a href="Evaluate/ROCAnalysis.htm">
+      ROC Analysis
+    </a></td>
+
+  <td id="cid48" class="left">
+    <a href="Evaluate/LiftCurve.htm">
+      <img src="icons/LiftCurve.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid48').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid48').style.backgroundColor=null">
+    <a href="Evaluate/LiftCurve.htm">
+      Lift Curve
+    </a></td>
+
+  <td id="cid49" class="left">
+    <a href="Evaluate/CalibrationPlot.htm">
+      <img src="icons/CalibrationPlot.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid49').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid49').style.backgroundColor=null">
+    <a href="Evaluate/CalibrationPlot.htm">
+      Calibration Plot
+    </a></td>
+</tr>
+<tr>
+
+  <td id="cid50" class="left">
+    <a href="Evaluate/TestLearners.htm">
+      <img src="icons/TestLearners.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid50').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid50').style.backgroundColor=null">
+    <a href="Evaluate/TestLearners.htm">
+      Test Learners
+    </a></td>
+
+  <td id="cid51" class="left">
+    <a href="Evaluate/Predictions.htm">
+      <img src="icons/Predictions.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid51').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid51').style.backgroundColor=null">
+    <a href="Evaluate/Predictions.htm">
+      Predictions
+    </a></td>
+<td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Associate</h2>
+
+<table>
+<tr>
+
+  <td id="cid52" class="left">
+    <a href="Associate/AssociationRules.htm">
+      <img src="icons/AssociationRules.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid52').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid52').style.backgroundColor=null">
+    <a href="Associate/AssociationRules.htm">
+      Association Rules
+    </a></td>
+
+  <td id="cid53" class="left-nodoc">
+      <img src="icons/Itemsets.png">
+  </td>
+  <td class="right-nodoc">
+      Itemsets
+  </td>
+
+  <td id="cid54" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Itemsests Explorer
+  </td>
+
+  <td id="cid55" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Association Rules Filter
+  </td>
+</tr>
+<tr>
+
+  <td id="cid56" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Association Rules Explorer
+  </td>
+<td class="empty"></td><td class="empty"></td><td class="empty"></td></tr></table></div>
+<div class="catdiv"><h2>Unsupervised</h2>
+
+<table>
+<tr>
+
+  <td id="cid57" class="left-nodoc">
+      <img src="icons/DistanceFile.png">
+  </td>
+  <td class="right-nodoc">
+      Distance File
+  </td>
+
+  <td id="cid58" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Matrix Transformation
+  </td>
+
+  <td id="cid59" class="left-nodoc">
+      <img src="icons/SaveDistanceFile.png">
+  </td>
+  <td class="right-nodoc">
+      Save Distance File
+  </td>
+
+  <td id="cid60" class="left-nodoc">
+      <img src="icons/Unknown.png">
+  </td>
+  <td class="right-nodoc">
+      Distance Matrix Filter
+  </td>
+</tr>
+<tr>
+
+  <td id="cid61" class="left-nodoc">
+      <img src="icons/DistanceMap.png">
+  </td>
+  <td class="right-nodoc">
+      Distance Map
+  </td>
+
+  <td id="cid62" class="left-nodoc">
+      <img src="icons/ExampleDistance.png">
+  </td>
+  <td class="right-nodoc">
+      Example Distance
+  </td>
+
+  <td id="cid63" class="left-nodoc">
+      <img src="icons/AttributeDistance.png">
+  </td>
+  <td class="right-nodoc">
+      Attribute Distance
+  </td>
+
+  <td id="cid64" class="left-nodoc">
+      <img src="icons/HierarchicalClustering.png">
+  </td>
+  <td class="right-nodoc">
+      Hierarchical Clustering
+  </td>
+</tr>
+<tr>
+
+  <td id="cid65" class="left-nodoc">
+      <img src="icons/InteractionGraph.png">
+  </td>
+  <td class="right-nodoc">
+      Interaction Graph
+  </td>
+
+  <td id="cid66" class="left-nodoc">
+      <img src="icons/K-MeansClustering.png">
+  </td>
+  <td class="right-nodoc">
+      K-Means Clustering
+  </td>
+
+  <td id="cid67" class="left-nodoc">
+      <img src="icons/MDS.png">
+  </td>
+  <td class="right-nodoc">
+      MDS
+  </td>
+
+  <td id="cid68" class="left-nodoc">
+      <img src="icons/NetworkFile.png">
+  </td>
+  <td class="right-nodoc">
+      Network File
+  </td>
+</tr>
+<tr>
+
+  <td id="cid69" class="left">
+    <a href="Unsupervised/NetExplorer.htm">
+      <img src="icons/NetExplorer.png">
+    </a>
+  </td>
+  <td class="right" onmouseover="document.getElementById('cid69').style.backgroundColor='yellow'"
+    onmouseout="document.getElementById('cid69').style.backgroundColor=null">
+    <a href="Unsupervised/NetExplorer.htm">
+      Net Explorer
+    </a></td>
+
+  <td id="cid70" class="left-nodoc">
+      <img src="icons/NetworkfromDistances.png">
+  </td>
+  <td class="right-nodoc">
+      Network from Distances
+  </td>
+
+  <td id="cid71" class="left-nodoc">
+      <img src="icons/SOM.png">
+  </td>
+  <td class="right-nodoc">
+      SOM
+  </td>
+
+  <td id="cid72" class="left-nodoc">
+      <img src="icons/SOMVisualizer.png">
+  </td>
+  <td class="right-nodoc">
+      SOMVisualizer
+  </td>
+</tr></table></div>
