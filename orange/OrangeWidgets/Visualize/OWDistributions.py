@@ -628,13 +628,17 @@ class OWDistributions(OWWidget):
 
             # set variable combo box
             self.variablesQCB.clear()
+            variables = []
             for attr in self.data.domain.attributes:
                 if attr.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                     self.variablesQCB.addItem(self.icons[attr.varType], attr.name)
+                    variables.append(attr)
 
-            if self.data and len(self.data.domain.attributes) > 0:
+            if self.data and variables: #len(self.data.domain.attributes) > 0:
                 self.attribute = self.data.domain[0].name
-                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
+                self.attribute = variables[0].name
+##                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
+                self.graph.setData(self.data, variables[0].name) # pick first variable
                 #self.setVariable()
 
             self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
@@ -646,7 +650,7 @@ class OWDistributions(OWWidget):
 
             self.openContext("", self.data)
 
-            if self.data and len(self.data.domain.attributes) > 0:
+            if self.data and variables: #len(self.data.domain.attributes) > 0:
                 self.setVariable()
 
         for f in [self.setMainTitle, self.setTarget, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
