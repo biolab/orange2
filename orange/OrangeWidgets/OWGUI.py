@@ -209,25 +209,117 @@ def spin(widget, master, value, min, max, step=1,
         return b
 
 
-def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
-    b = widgetBox(widget, box, orientation)
-    widgetLabel(b, label, labelWidth)
+class DoubleSpinBoxWFocusOut(QDoubleSpinBox):
+    def __init__(self, min, max, step, bi):
+        QDoubleSpinBox.__init__(self, bi)
+        self.setRange(min, max)
+        self.setSingleStep(step)
+        self.setDecimals(math.ceil(-math.log10(step)))
+        self.inSetValue = False
+        self.enterButton = None
 
-    wa = b.control = QDoubleSpinBox() #DoubleSpinBox(min, max, step, value, master, b)
-    wa.setRange(min, max)
-    wa.setSingleStep(step)
-    wa.setDecimals(math.ceil(-math.log10(step)))
-    wa.setValue(getdeepattr(master, value))
-    if b.layout(): b.layout().addWidget(wa)
+    def onChange(self, value):
+        if not self.inSetValue:
+            self.placeHolder.hide()
+            self.enterButton.show()
 
+    def onEnter(self):
+        if self.enterButton.isVisible():
+            self.enterButton.hide()
+            self.placeHolder.show()
+            if self.cback:
+                self.cback(float(str(self.text()).replace(",", ".")))
+            if self.cfunc:
+                self.cfunc()
+
+    # doesn't work: it's probably LineEdit's focusOut that we should (and can't) catch
+    def focusOutEvent(self, *e):
+        QDoubleSpinBox.focusOutEvent(self, *e)
+        if self.enterButton and self.enterButton.isVisible():
+            self.onEnter()
+
+    def setValue(self, value):
+        self.inSetValue = True
+        QDoubleSpinBox.setValue(self, value)
+        self.inSetValue = False
+        
+def doubleSpin(widget, master, value, min, max, step=1,
+         box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
+         callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
+         checked = "", checkCallback = None, posttext = None): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
+    if box or label and not checked:
+        b = widgetBox(widget, box, orientation)
+        hasHBox = orientation == 'horizontal' or not orientation
+    else:
+        b = widget
+        hasHBox = False
+
+    if not hasHBox and (checked or callback and callbackOnReturn or posttext):
+        bi = widgetBox(b, "", 0)
+    else:
+        bi = b
+
+    if checked:
+        wb = checkBox(bi, master, checked, label, labelWidth = labelWidth, callback=checkCallback, debuggingEnabled = debuggingEnabled)
+    elif label:
+        widgetLabel(b, label, labelWidth)
+
+
+    wa = bi.control = DoubleSpinBoxWFocusOut(min, max, step, bi)
+    if bi.layout(): bi.layout().addWidget(wa)
+    # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
-
     if tooltip:
         wa.setToolTip(tooltip)
+    if value:
+        print wa
+        wa.setValue(getdeepattr(master, value))
 
-    connectControl(wa, master, value, callback, "valueChanged(double)", CallFrontDoubleSpin(wa))
-    return b
+    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(double)", CallFrontDoubleSpin(wa))
+
+    if checked:
+        wb.disables = [wa]
+        wb.makeConsistent()
+
+    if callback and callbackOnReturn:
+        wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
+        master.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
+        master.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
+        master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
+        if hasattr(wa, "upButton"):
+            master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+
+    if posttext:
+        widgetLabel(bi, posttext)
+
+##    if debuggingEnabled:
+##        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
+
+    if checked:
+        return wb, wa
+    else:
+        return b
+    
+##    b = widgetBox(widget, box, orientation)
+##    widgetLabel(b, label, labelWidth)
+##
+##    wa = b.control = QDoubleSpinBox() #DoubleSpinBox(min, max, step, value, master, b)
+##    wa.setRange(min, max)
+##    wa.setSingleStep(step)
+##    wa.setDecimals(math.ceil(-math.log10(step)))
+##    wa.setValue(getdeepattr(master, value))
+##    if b.layout(): b.layout().addWidget(wa)
+##
+##    if controlWidth:
+##        wa.setFixedWidth(controlWidth)
+##
+##    if tooltip:
+##        wa.setToolTip(tooltip)
+##
+##    connectControl(wa, master, value, callback, "valueChanged(double)", CallFrontDoubleSpin(wa))
+##    return b
 
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
