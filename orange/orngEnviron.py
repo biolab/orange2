@@ -1,6 +1,7 @@
 import os, sys, user
 
 def __getDirectoryNames():
+    """Return a dictionary with Orange directories."""
     try:
         orangeDir = os.path.split(os.path.abspath(__file__))[0]
     except:
@@ -65,6 +66,7 @@ def samepath(path1, path2):
     return os.path.normcase(os.path.normpath(path1)) == os.path.normcase(os.path.normpath(path2))
 
 def addOrangeDirectoriesToPath():
+    """Add orange directory paths to Python path."""
     pathsToAdd = [orangeDir]
 
     if canvasDir <> None:
