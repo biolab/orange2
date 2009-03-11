@@ -599,7 +599,6 @@ class OWDistributions(OWWidget):
             self.graph.setData(None, None)
             self.data = None
             return
-
         self.dataHasClass = bool(data.domain.classVar)
         if self.dataHasClass:
             self.dataHasDiscreteClass = data.domain.classVar.varType != orange.VarTypes.Continuous
@@ -619,7 +618,6 @@ class OWDistributions(OWWidget):
             self.graph.setData(None, None)
             self.graph.setTargetValue(None)
             self.graph.setVisibleOutcomes(None)
-
             # set targets
             self.targetQCB.clear()
             if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -634,10 +632,8 @@ class OWDistributions(OWWidget):
                     self.variablesQCB.addItem(self.icons[attr.varType], attr.name)
                     variables.append(attr)
 
-            if self.data and variables: #len(self.data.domain.attributes) > 0:
-                self.attribute = self.data.domain[0].name
+            if self.data and variables:
                 self.attribute = variables[0].name
-##                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
                 self.graph.setData(self.data, variables[0].name) # pick first variable
                 #self.setVariable()
 
@@ -649,8 +645,7 @@ class OWDistributions(OWWidget):
                self.setOutcomeNames([])
 
             self.openContext("", self.data)
-
-            if self.data and variables: #len(self.data.domain.attributes) > 0:
+            if self.data and variables:
                 self.setVariable()
 
         for f in [self.setMainTitle, self.setTarget, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
