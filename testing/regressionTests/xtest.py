@@ -18,11 +18,9 @@ def testScripts(complete, just_print):
         win32process.SetPriorityClass(win32api.GetCurrentProcess(), 64)
 
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in ["cvs", "datasets", "widgets", "processed"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in [".svn", "cvs", "datasets", "widgets", "processed"] or (directories and not dir in directories):
             continue
         
-        print "\nDirectory '%s'\n" % dir
-
         os.chdir(dir)
         outputsdir = "%s/%s-output" % (regtestdir, dir)
         if not os.path.exists(outputsdir):
@@ -36,16 +34,27 @@ def testScripts(complete, just_print):
 
         names = [name for name in os.listdir('.') if (testFiles and name in testFiles) or (not testFiles and name[-3:]==".py") and (not name in dont_test)]
         names.sort()
+
+        if names:
+            print "Directory '%s'" % dir
+            print
+
+        # test_set includes all the scripts (file, status) to be tested
         for name in names:
             if not os.path.exists("%s/%s.txt" % (outputsdir, name)):
+                # past result not available
                 test_set.append((name, "new"))
             else:
+                # past result available
                 for state in states:
-                    if os.path.exists("%s/%s.%s.%s.%s.txt" % (outputsdir, name, platform, pyversion, state)):
+                    if os.path.exists("%s/%s.%s.%s.%s.txt" % \
+                                      (outputsdir, name, platform, pyversion, state)):
                         test_set.append((name, state))
+                        # current result already on disk
                         break
                 else:
-                    if os.path.exists("%s/%s.%s.%s.random1.txt" % (outputsdir, name, platform, pyversion)):
+                    if os.path.exists("%s/%s.%s.%s.random1.txt" % \
+                                      (outputsdir, name, platform, pyversion)):
                         test_set.append((name, "random"))
                     elif complete:
                         test_set.append((name, "OK"))
@@ -58,13 +67,14 @@ def testScripts(complete, just_print):
                 
         else:
             if dont_test:
-                print "Skipped: %s\n" % reduce(lambda x,y: "%s, %s" % (x,y), dont_test)
+                print "Skipped: %s\n" % ", ".join(dont_test)
 
             for name, lastResult in test_set:
                 print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
 
                 for state in ["crash", "error", "new", "changed", "random1", "random2"]:
-                    remname = "%s/%s.%s.%s.%s.txt" % (outputsdir, name, platform, pyversion, state)
+                    remname = "%s/%s.%s.%s.%s.txt" % \
+                              (outputsdir, name, platform, pyversion, state)
                     if os.path.exists(remname):
                         os.remove(remname)
                     
@@ -87,7 +97,7 @@ else:
         print "Unrecognized command ('%s')" % command
         sys.exit(1)
     ind = 2
-
+print "CMD = %s" % command
 
 iterations = 3
 testFiles = []
