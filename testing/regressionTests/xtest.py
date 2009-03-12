@@ -1,6 +1,7 @@
 #! usr/bin/env python
 
 import os, re, sys, time
+import orngEnviron
 
 regtestdir = os.getcwd().replace("\\", "/")
 re_israndom = re.compile(r"#\s*xtest\s*:\s*RANDOM")
@@ -11,18 +12,21 @@ platform = sys.platform
 pyversion = sys.version[:3]
 states = ["OK", "changed", "random", "error", "crash"]
 
-def testScripts(complete, just_print):
+def testScripts(complete, just_print, module="orange", directory="."):
+    """Test the scripts in the given directory."""
     global error_status
     if sys.platform == "win32" and sys.executable[-6:].upper() != "_D.EXE":
         import win32process, win32api
         win32process.SetPriorityClass(win32api.GetCurrentProcess(), 64)
 
+    caller_directory = os.getcwd()
+    os.chdir(directory)
     for dir in os.listdir("."):
         if not os.path.isdir(dir) or dir in [".svn", "cvs", "datasets", "widgets", "processed"] or (directories and not dir in directories):
             continue
         
         os.chdir(dir)
-        outputsdir = "%s/%s-output" % (regtestdir, dir)
+        outputsdir = "%s/results/%s/%s" % (regtestdir, module, dir)
         if not os.path.exists(outputsdir):
             os.mkdir(outputsdir)
 
@@ -36,6 +40,7 @@ def testScripts(complete, just_print):
         names.sort()
 
         if names:
+            print "-" * 79
             print "Directory '%s'" % dir
             print
 
@@ -70,6 +75,7 @@ def testScripts(complete, just_print):
                 print "Skipped: %s\n" % ", ".join(dont_test)
 
             for name, lastResult in test_set:
+                print "XXX", name
                 print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
 
                 for state in ["crash", "error", "new", "changed", "random1", "random2"]:
@@ -86,6 +92,8 @@ def testScripts(complete, just_print):
                 os.remove("xtest1_report")
 
         os.chdir("..")
+
+    os.chdir(caller_directory)
 
 
 if len(sys.argv) == 1 or sys.argv[1][0] == "-":
@@ -124,7 +132,6 @@ while ind < len(sys.argv):
         testFiles = sys.argv[ind:]
         break
 
-os.chdir("../doc")
 error_status = 0
-testScripts(command=="test", command=="report")
+testScripts(command=="test", command=="report", module="orange", directory="%s/doc" % orngEnviron.orangeDir)
 sys.exit(error_status)
