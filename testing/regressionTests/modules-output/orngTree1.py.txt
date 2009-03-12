@@ -2,206 +2,206 @@
 
 *** FORMAT: ""
 
-petal width<0.800: Iris-setosa (100.00%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (94.23%)
-|    |    petal length>=5.350: Iris-virginica (100.00%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (66.67%)
-|    |    petal length>=4.850: Iris-virginica (100.00%)
+petal width<=0.800: Iris-setosa (100.00%)
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: Iris-versicolor (94.23%)
+|    |    petal length>5.350: Iris-virginica (100.00%)
+|    petal width>1.750
+|    |    petal length<=4.850: Iris-virginica (66.67%)
+|    |    petal length>4.850: Iris-virginica (100.00%)
 
 
 
 *** FORMAT: "%V (%M out of %N)"
 
-petal width<0.800: Iris-setosa (50.000 out of 50.000)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
-|    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
-|    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
+petal width<=0.800: Iris-setosa (50.000 out of 50.000)
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: Iris-versicolor (49.000 out of 52.000)
+|    |    petal length>5.350: Iris-virginica (2.000 out of 2.000)
+|    petal width>1.750
+|    |    petal length<=4.850: Iris-virginica (2.000 out of 3.000)
+|    |    petal length>4.850: Iris-virginica (43.000 out of 43.000)
 
 
 
 *** FORMAT: "%V (%^MbA%, %^MbP%)"
 
-petal width<0.800: Iris-setosa (100%, 100%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (98%, 100%)
-|    |    petal length>=5.350: Iris-virginica (4%, 40%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (4%, 4%)
-|    |    petal length>=4.850: Iris-virginica (86%, 96%)
+petal width<=0.800: Iris-setosa (100%, 100%)
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: Iris-versicolor (98%, 100%)
+|    |    petal length>5.350: Iris-virginica (4%, 40%)
+|    petal width>1.750
+|    |    petal length<=4.850: Iris-virginica (4%, 4%)
+|    |    petal length>4.850: Iris-virginica (86%, 96%)
 
 
 
 *** FORMAT: "%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)"
 
-petal width<0.800: 0.000 (0% of node, 0% of versicolors)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
-|    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
-|    petal width>=1.750
-|    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
-|    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
+petal width<=0.800: 0.000 (0% of node, 0% of versicolors)
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: 49.000 (94% of node, 98% of versicolors)
+|    |    petal length>5.350: 0.000 (0% of node, 0% of versicolors)
+|    petal width>1.750
+|    |    petal length<=4.850: 1.000 (33% of node, 2% of versicolors)
+|    |    petal length>4.850: 0.000 (0% of node, 0% of versicolors)
 
 
 
 *** FORMAT: "%D"
 
-petal width<0.800: [50.000, 0.000, 0.000]
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: [0.000, 49.000, 3.000]
-|    |    petal length>=5.350: [0.000, 0.000, 2.000]
-|    petal width>=1.750
-|    |    petal length<4.850: [0.000, 1.000, 2.000]
-|    |    petal length>=4.850: [0.000, 0.000, 43.000]
+petal width<=0.800: [50.000, 0.000, 0.000]
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: [0.000, 49.000, 3.000]
+|    |    petal length>5.350: [0.000, 0.000, 2.000]
+|    petal width>1.750
+|    |    petal length<=4.850: [0.000, 1.000, 2.000]
+|    |    petal length>4.850: [0.000, 0.000, 43.000]
 
 
 
 *** FORMAT: "%.2d"
 
-petal width<0.800: [1.00, 0.00, 0.00]
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: [0.00, 0.94, 0.06]
-|    |    petal length>=5.350: [0.00, 0.00, 1.00]
-|    petal width>=1.750
-|    |    petal length<4.850: [0.00, 0.33, 0.67]
-|    |    petal length>=4.850: [0.00, 0.00, 1.00]
+petal width<=0.800: [1.00, 0.00, 0.00]
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length<=5.350: [0.00, 0.94, 0.06]
+|    |    petal length>5.350: [0.00, 0.00, 1.00]
+|    petal width>1.750
+|    |    petal length<=4.850: [0.00, 0.33, 0.67]
+|    |    petal length>4.850: [0.00, 0.00, 1.00]
 
 root: Iris-setosa
-|    petal width<0.800: Iris-setosa
-|    petal width>=0.800: Iris-versicolor
-|    |    petal width<1.750: Iris-versicolor
-|    |    |    petal length<5.350: Iris-versicolor
-|    |    |    petal length>=5.350: Iris-virginica
-|    |    petal width>=1.750: Iris-virginica
-|    |    |    petal length<4.850: Iris-virginica
-|    |    |    petal length>=4.850: Iris-virginica
+|    petal width<=0.800: Iris-setosa
+|    petal width>0.800: Iris-versicolor
+|    |    petal width<=1.750: Iris-versicolor
+|    |    |    petal length<=5.350: Iris-versicolor
+|    |    |    petal length>5.350: Iris-virginica
+|    |    petal width>1.750: Iris-virginica
+|    |    |    petal length<=4.850: Iris-virginica
+|    |    |    petal length>4.850: Iris-virginica
 
 root: 100.0% (.%)
-|    petal width<0.800: 0.0% (0.0%)
-|    petal width>=0.800: 100.0% (100.0%)
-|    |    petal width<1.750: 10.0% (10.0%)
-|    |    |    petal length<5.350: 6.0% (60.0%)
-|    |    |    petal length>=5.350: 4.0% (40.0%)
-|    |    petal width>=1.750: 90.0% (90.0%)
-|    |    |    petal length<4.850: 4.0% (4.4%)
-|    |    |    petal length>=4.850: 86.0% (95.6%)
+|    petal width<=0.800: 0.0% (0.0%)
+|    petal width>0.800: 100.0% (100.0%)
+|    |    petal width<=1.750: 10.0% (10.0%)
+|    |    |    petal length<=5.350: 6.0% (60.0%)
+|    |    |    petal length>5.350: 4.0% (40.0%)
+|    |    petal width>1.750: 90.0% (90.0%)
+|    |    |    petal length<=4.850: 4.0% (4.4%)
+|    |    |    petal length>4.850: 86.0% (95.6%)
 
 root: [50.000, 50.000, 50.000] . .
-|    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]: 
+|    petal width<=0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]: 
 |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
-|    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
-|    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
-|    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]: 
+|    petal width>0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
+|    |    petal width<=1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
+|    |    |    petal length<=5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]: 
 |    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
-|    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]: 
+|    |    |    petal length>5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]: 
 |    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
-|    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
-|    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]: 
+|    |    petal width>1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
+|    |    |    petal length<=4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]: 
 |    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
-|    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]: 
+|    |    |    petal length>4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]: 
 |    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
 
 
 
 *** FORMAT: ""
 
-RM<6.941
-|    LSTAT<14.400
-|    |    DIS<1.385: 45.6
-|    |    DIS>=1.385: 22.9
-|    LSTAT>=14.400
-|    |    CRIM<6.992: 17.1
-|    |    CRIM>=6.992: 12.0
-RM>=6.941
-|    RM<7.437
-|    |    CRIM<7.393: 33.3
-|    |    CRIM>=7.393: 14.4
-|    RM>=7.437
-|    |    TAX<534.500: 45.9
-|    |    TAX>=534.500: 21.9
+RM<=6.941
+|    LSTAT<=14.400
+|    |    DIS<=1.385: 45.6
+|    |    DIS>1.385: 22.9
+|    LSTAT>14.400
+|    |    CRIM<=6.992: 17.1
+|    |    CRIM>6.992: 12.0
+RM>6.941
+|    RM<=7.437
+|    |    CRIM<=7.393: 33.3
+|    |    CRIM>7.393: 14.4
+|    RM>7.437
+|    |    TAX<=534.500: 45.9
+|    |    TAX>534.500: 21.9
 
 
 
 *** FORMAT: "%V"
 
-RM<6.941
-|    LSTAT<14.400
-|    |    DIS<1.385: 45.6
-|    |    DIS>=1.385: 22.9
-|    LSTAT>=14.400
-|    |    CRIM<6.992: 17.1
-|    |    CRIM>=6.992: 12.0
-RM>=6.941
-|    RM<7.437
-|    |    CRIM<7.393: 33.3
-|    |    CRIM>=7.393: 14.4
-|    RM>=7.437
-|    |    TAX<534.500: 45.9
-|    |    TAX>=534.500: 21.9
+RM<=6.941
+|    LSTAT<=14.400
+|    |    DIS<=1.385: 45.6
+|    |    DIS>1.385: 22.9
+|    LSTAT>14.400
+|    |    CRIM<=6.992: 17.1
+|    |    CRIM>6.992: 12.0
+RM>6.941
+|    RM<=7.437
+|    |    CRIM<=7.393: 33.3
+|    |    CRIM>7.393: 14.4
+|    RM>7.437
+|    |    TAX<=534.500: 45.9
+|    |    TAX>534.500: 21.9
 
 root: [SE: 0.409]
-|    RM<6.941: [SE: 0.306]
-|    |    LSTAT<14.400: [SE: 0.320]
-|    |    |    DIS<1.385: [SE: 4.420]: 
+|    RM<=6.941: [SE: 0.306]
+|    |    LSTAT<=14.400: [SE: 0.320]
+|    |    |    DIS<=1.385: [SE: 4.420]: 
 |    |    |        [SE: 4.420]	 45.6 [38.331-52.829]
-|    |    |    DIS>=1.385: [SE: 0.244]: 
+|    |    |    DIS>1.385: [SE: 0.244]: 
 |    |    |        [SE: 0.244]	 22.9 [22.504-23.306]
-|    |    LSTAT>=14.400: [SE: 0.333]
-|    |    |    CRIM<6.992: [SE: 0.338]: 
+|    |    LSTAT>14.400: [SE: 0.333]
+|    |    |    CRIM<=6.992: [SE: 0.338]: 
 |    |    |        [SE: 0.338]	 17.1 [16.584-17.691]
-|    |    |    CRIM>=6.992: [SE: 0.448]: 
+|    |    |    CRIM>6.992: [SE: 0.448]: 
 |    |    |        [SE: 0.448]	 12.0 [11.243-12.714]
-|    RM>=6.941: [SE: 1.031]
-|    |    RM<7.437: [SE: 0.958]
-|    |    |    CRIM<7.393: [SE: 0.692]: 
+|    RM>6.941: [SE: 1.031]
+|    |    RM<=7.437: [SE: 0.958]
+|    |    |    CRIM<=7.393: [SE: 0.692]: 
 |    |    |        [SE: 0.692]	 33.3 [32.214-34.484]
-|    |    |    CRIM>=7.393: [SE: 2.157]: 
+|    |    |    CRIM>7.393: [SE: 2.157]: 
 |    |    |        [SE: 2.157]	 14.4 [10.862-17.938]
-|    |    RM>=7.437: [SE: 1.124]
-|    |    |    TAX<534.500: [SE: 0.817]: 
+|    |    RM>7.437: [SE: 1.124]
+|    |    |    TAX<=534.500: [SE: 0.817]: 
 |    |    |        [SE: 0.817]	 45.9 [44.556-47.237]
-|    |    |    TAX>=534.500: [SE: 0.000]: 
+|    |    |    TAX>534.500: [SE: 0.000]: 
 |    |    |        [SE: 0.000]	 21.9 [21.900-21.900]
 
 root: 277.000 (.)
-|    RM<6.941: 273.000 (1.160)
-|    |    LSTAT<14.400: 107.000 (0.661)
-|    |    |    DIS<1.385: 0.000 (0.000)
-|    |    |    DIS>=1.385: 107.000 (1.020)
-|    |    LSTAT>=14.400: 166.000 (1.494)
-|    |    |    CRIM<6.992: 93.000 (0.971)
-|    |    |    CRIM>=6.992: 73.000 (1.040)
-|    RM>=6.941: 4.000 (0.096)
-|    |    RM<7.437: 3.000 (1.239)
-|    |    |    CRIM<7.393: 0.000 (0.000)
-|    |    |    CRIM>=7.393: 3.000 (15.333)
-|    |    RM>=7.437: 1.000 (0.633)
-|    |    |    TAX<534.500: 0.000 (0.000)
-|    |    |    TAX>=534.500: 1.000 (30.000)
+|    RM<=6.941: 273.000 (1.160)
+|    |    LSTAT<=14.400: 107.000 (0.661)
+|    |    |    DIS<=1.385: 0.000 (0.000)
+|    |    |    DIS>1.385: 107.000 (1.020)
+|    |    LSTAT>14.400: 166.000 (1.494)
+|    |    |    CRIM<=6.992: 93.000 (0.971)
+|    |    |    CRIM>6.992: 73.000 (1.040)
+|    RM>6.941: 4.000 (0.096)
+|    |    RM<=7.437: 3.000 (1.239)
+|    |    |    CRIM<=7.393: 0.000 (0.000)
+|    |    |    CRIM>7.393: 3.000 (15.333)
+|    |    RM>7.437: 1.000 (0.633)
+|    |    |    TAX<=534.500: 0.000 (0.000)
+|    |    |    TAX>534.500: 1.000 (30.000)
 
 root: 439.000 (.%)
-|    RM<6.941: 364.000 (98%)
-|    |    LSTAT<14.400: 200.000 (93%)
-|    |    |    DIS<1.385: 5.000 (127%)
-|    |    |    DIS>=1.385: 195.000 (99%)
-|    |    LSTAT>=14.400: 164.000 (111%)
-|    |    |    CRIM<6.992: 91.000 (96%)
-|    |    |    CRIM>=6.992: 73.000 (105%)
-|    RM>=6.941: 75.000 (114%)
-|    |    RM<7.437: 46.000 (101%)
-|    |    |    CRIM<7.393: 43.000 (100%)
-|    |    |    CRIM>=7.393: 3.000 (100%)
-|    |    RM>=7.437: 29.000 (98%)
-|    |    |    TAX<534.500: 29.000 (103%)
-|    |    |    TAX>=534.500: 0.000 (0%)
+|    RM<=6.941: 364.000 (98%)
+|    |    LSTAT<=14.400: 200.000 (93%)
+|    |    |    DIS<=1.385: 5.000 (127%)
+|    |    |    DIS>1.385: 195.000 (99%)
+|    |    LSTAT>14.400: 164.000 (111%)
+|    |    |    CRIM<=6.992: 91.000 (96%)
+|    |    |    CRIM>6.992: 73.000 (105%)
+|    RM>6.941: 75.000 (114%)
+|    |    RM<=7.437: 46.000 (101%)
+|    |    |    CRIM<=7.393: 43.000 (100%)
+|    |    |    CRIM>7.393: 3.000 (100%)
+|    |    RM>7.437: 29.000 (98%)
+|    |    |    TAX<=534.500: 29.000 (103%)
+|    |    |    TAX>534.500: 0.000 (0%)
 
