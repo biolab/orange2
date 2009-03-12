@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/Users/blaz/Documents/Workspace/orange-testing/regressionTests/xtest1.py", line 93, in <module>
+    execfile(t__name)
+  File "ensemble2.py", line 16, in <module>
+    results = orngTest.crossValidation(learners, data, folds=10)
+  File "/Users/blaz/Documents/Workspace/orange/orngTest.py", line 184, in crossValidation
+    return testWithIndices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
+  File "/Users/blaz/Documents/Workspace/orange/orngTest.py", line 388, in testWithIndices
+    classifiers[i] = learners[i](learnset, weight)
+  File "/Users/blaz/Documents/Workspace/orange/orngEnsemble.py", line 203, in __call__
+    classifiers.append(self.learner(data))
+  File "/Users/blaz/Documents/Workspace/orange/orngEnsemble.py", line 156, in __call__
+    t = self.scons(gen, weightID, contingencies, apriori, cand, clsfr)
+KeyboardInterrupt
