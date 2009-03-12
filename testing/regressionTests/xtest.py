@@ -75,8 +75,9 @@ def testScripts(complete, just_print, module="orange", directory="."):
                 print "Skipped: %s\n" % ", ".join(dont_test)
 
             for name, lastResult in test_set:
-                print "XXX", name
+#                print "XXX", name
                 print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
+                sys.stdout.flush()
 
                 for state in ["crash", "error", "new", "changed", "random1", "random2"]:
                     remname = "%s/%s.%s.%s.%s.txt" % \
