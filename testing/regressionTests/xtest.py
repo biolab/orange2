@@ -1,6 +1,7 @@
 #! usr/bin/env python
 
 import os, re, sys, time
+import getopt
 import orngEnviron
 
 regtestdir = os.getcwd().replace("\\", "/")
@@ -12,7 +13,7 @@ platform = sys.platform
 pyversion = sys.version[:3]
 states = ["OK", "changed", "random", "error", "crash"]
 
-def testScripts(complete, just_print, module="orange", directory="."):
+def testScripts(complete, just_print, module="orange", directory=".", test_files = None):
     """Test the scripts in the given directory."""
     global error_status
     if sys.platform == "win32" and sys.executable[-6:].upper() != "_D.EXE":
@@ -36,10 +37,12 @@ def testScripts(complete, just_print, module="orange", directory="."):
             dont_test = []
         test_set = []
 
-        names = [name for name in os.listdir('.') if (testFiles and name in testFiles) or (not testFiles and name[-3:]==".py") and (not name in dont_test)]
+        names = [name for name in os.listdir('.') \
+                 if (test_files and name in test_files) or 
+                    (not test_files and name[-3:]==".py") and (not name in dont_test)]
         names.sort()
 
-        if names:
+        if names or True:
             print "-" * 79
             print "Directory '%s'" % dir
             print
@@ -75,7 +78,6 @@ def testScripts(complete, just_print, module="orange", directory="."):
                 print "Skipped: %s\n" % ", ".join(dont_test)
 
             for name, lastResult in test_set:
-#                print "XXX", name
                 print "%s (%s): " % (name, lastResult == "new" and lastResult or ("last: %s" % lastResult)),
                 sys.stdout.flush()
 
@@ -97,42 +99,47 @@ def testScripts(complete, just_print, module="orange", directory="."):
     os.chdir(caller_directory)
 
 
-if len(sys.argv) == 1 or sys.argv[1][0] == "-":
-    command = "update"
-    ind = 1
-else:
-    command = sys.argv[1]
-    if command not in ["update", "test", "report"]:
-        print "Unrecognized command ('%s')" % command
-        sys.exit(1)
-    ind = 2
-print "CMD = %s" % command
-
 iterations = 3
-testFiles = []
 directories = []
-
-while ind < len(sys.argv):
-    flag = sys.argv[ind]
-    ind += 1
-    if flag == "-single":
-        iterations = 1
-        
-    elif flag == "-dir":
-        if ind >= len(sys.argv) or sys.argv[ind][0]=="-":
-            print "Missing argument for -dir"
-            sys.exit(1)
-        dir = sys.argv[ind]
-        ind += 1
-        if not dir in directories:
-            directories.append(dir)
-
-    elif flag[0] == "-":
-        print "Unrecognized option: %s" % flag
-    else:
-        testFiles = sys.argv[ind:]
-        break
-
 error_status = 0
-testScripts(command=="test", command=="report", module="orange", directory="%s/doc" % orngEnviron.orangeDir)
-sys.exit(error_status)
+
+def usage():
+    """Print out help."""
+    print "%s update|test|report|errors [-s|-m|-d] [--single|--module m|--dir sd]" % sys.argv[0]
+    print "  test:   regression tests on all scripts"
+    print "  update: regression tests on all previously failed scripts (default)"
+    print "  report: report on testing results"
+    print "  errors: report on errors from regression tests"
+    
+    
+def main(argv):
+    """Process the argument list and run the regression test."""
+    global iterations
+    
+    if not argv:
+        command = "update"
+    else:
+        if argv[0] not in ["update", "test", "report", "errors", "help"]:
+            print "Error: Wrong command"
+            help()
+            sys.exit(1)
+        command = argv[0]
+
+    try:
+        opts, test_files = getopt.getopt(argv[1:], [], ["single", "module=", "dir=", "files=", "verbose="])
+    except getopt.GetoptError:
+        print "Warning: Wrong argument"
+        usage()
+        sys.exit(1)
+    opts = dict(opts) if opts else {}
+    if "--single" in opts:
+        iterations = 1
+    module = opts.get("--module", "orange").split(",") 
+    if "--dir" in opts:
+        directories = opts["--dir"].split(",")
+
+    testScripts(command=="test", command=="report", module="orange", directory="%s/doc" % orngEnviron.orangeDir, 
+                test_files=test_files)
+    # sys.exit(error_status)
+    
+main(sys.argv[1:])
