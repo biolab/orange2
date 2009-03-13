@@ -121,7 +121,7 @@ def main(argv):
     else:
         if argv[0] not in ["update", "test", "report", "errors", "help"]:
             print "Error: Wrong command"
-            help()
+            usage()
             sys.exit(1)
         command = argv[0]
 
