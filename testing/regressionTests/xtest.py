@@ -137,6 +137,7 @@ def main(argv):
     module = opts.get("--module", "orange").split(",") 
     if "--dir" in opts:
         directories = opts["--dir"].split(",")
+    test_files = [tf if ".py" in tf else tf+".py" for tf in test_files]
 
     testScripts(command=="test", command=="report", module="orange", directory="%s/doc" % orngEnviron.orangeDir, 
                 test_files=test_files)
