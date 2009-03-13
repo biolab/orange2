@@ -68,7 +68,7 @@ bool initorangeExceptions()
 
 }
 
-PyObject *orangeVersion = PyString_FromString("0.99b ("__TIME__", "__DATE__")");
+PyObject *orangeVersion = PyString_FromString("2.0b ("__TIME__", "__DATE__")");
 
 PYCONSTANT(version, orangeVersion)
 PYCONSTANT(KernelException, PyExc_OrangeKernel)
