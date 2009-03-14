@@ -60,4 +60,4 @@ data = orange.ExampleTable("voting")
 acc = cross_validation(data, learners, k=10)
 print "Area under ROC:"
 for i in range(len(learners)):
-    print learners[i].name, acc[i]
+    print learners[i].name, "%.2f" % acc[i]
