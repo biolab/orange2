@@ -14,7 +14,7 @@ bg = orngEnsemble.BaggedLearner(tree, name="bagged tree")
 data = orange.ExampleTable("lymphography.tab")
 
 learners = [tree, bs, bg]
-results = orngTest.crossValidation(learners, data)
+results = orngTest.crossValidation(learners, data, folds=3)
 print "Classification Accuracy:"
 for i in range(len(learners)):
     print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
