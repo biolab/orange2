@@ -1,27 +1,27 @@
 BIG TREE:
 root: 0.333
-|    petal width<0.800: 1.000
-|    petal width>=0.800: 0.500
-|    |    petal width<1.750: 0.907
-|    |    |    petal length>=5.350: 1.000
-|    |    |    petal length<5.350: 0.942
-|    |    |    |    petal length<4.950: 0.979
-|    |    |    |    |    petal width<1.650: 1.000
-|    |    |    |    |    petal width>=1.650: 1.000
-|    |    |    |    petal length>=4.950: 0.500
-|    |    |    |    |    petal width<1.550: 1.000
-|    |    |    |    |    petal width>=1.550: 1.000
-|    |    petal width>=1.750: 0.978
-|    |    |    petal length>=4.850: 1.000
-|    |    |    petal length<4.850: 0.667
-|    |    |    |    sepal width<3.100: 1.000
-|    |    |    |    sepal width>=3.100: 1.000
+|    petal width<=0.800: 1.000
+|    petal width>0.800: 0.500
+|    |    petal width<=1.750: 0.907
+|    |    |    petal length>5.350: 1.000
+|    |    |    petal length<=5.350: 0.942
+|    |    |    |    petal length<=4.950: 0.979
+|    |    |    |    |    petal width<=1.650: 1.000
+|    |    |    |    |    petal width>1.650: 1.000
+|    |    |    |    petal length>4.950: 0.500
+|    |    |    |    |    petal width<=1.550: 1.000
+|    |    |    |    |    petal width>1.550: 1.000
+|    |    petal width>1.750: 0.978
+|    |    |    petal length>4.850: 1.000
+|    |    |    petal length<=4.850: 0.667
+|    |    |    |    sepal width<=3.100: 1.000
+|    |    |    |    sepal width>3.100: 1.000
 
 
 PRE-PRUNED TREE:
 root: 0.333
-|    petal width<0.800: 1.000
-|    petal width>=0.800: 0.500
-|    |    petal width<1.750: 0.907
-|    |    petal width>=1.750: 0.978
+|    petal width<=0.800: 1.000
+|    petal width>0.800: 0.500
+|    |    petal width<=1.750: 0.907
+|    |    petal width>1.750: 0.978
 

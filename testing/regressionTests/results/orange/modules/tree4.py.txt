@@ -1,21 +1,21 @@
 150
 CLASSIFICATION TREE:
-petal width<0.800: Iris-setosa (100.00%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length>=5.350: Iris-virginica (100.00%)
-|    |    petal length<5.350
-|    |    |    petal length<4.950
-|    |    |    |    petal width<1.650: Iris-versicolor (100.00%)
-|    |    |    |    petal width>=1.650: Iris-virginica (100.00%)
-|    |    |    petal length>=4.950
-|    |    |    |    petal width<1.550: Iris-virginica (100.00%)
-|    |    |    |    petal width>=1.550: Iris-versicolor (100.00%)
-|    petal width>=1.750
-|    |    petal length>=4.850: Iris-virginica (100.00%)
-|    |    petal length<4.850
-|    |    |    sepal width<3.100: Iris-virginica (100.00%)
-|    |    |    sepal width>=3.100: Iris-versicolor (100.00%)
+petal width<=0.800: Iris-setosa (100.00%)
+petal width>0.800
+|    petal width<=1.750
+|    |    petal length>5.350: Iris-virginica (100.00%)
+|    |    petal length<=5.350
+|    |    |    petal length<=4.950
+|    |    |    |    petal width<=1.650: Iris-versicolor (100.00%)
+|    |    |    |    petal width>1.650: Iris-virginica (100.00%)
+|    |    |    petal length>4.950
+|    |    |    |    petal width<=1.550: Iris-virginica (100.00%)
+|    |    |    |    petal width>1.550: Iris-versicolor (100.00%)
+|    petal width>1.750
+|    |    petal length>4.850: Iris-virginica (100.00%)
+|    |    petal length<=4.850
+|    |    |    sepal width<=3.100: Iris-virginica (100.00%)
+|    |    |    sepal width>3.100: Iris-versicolor (100.00%)
 
 
 EXAMPLES IN NODES:
