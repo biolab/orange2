@@ -13,7 +13,7 @@ m.matrixType = m.Upper
 print m
 print
 
-m.matrixType = m.Upper_Filled
+m.matrixType = m.UpperFilled
 print m
 print
 
