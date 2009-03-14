@@ -33,9 +33,9 @@ loe = [
 d2 = orange.ExampleTable(domain, loe)
 d2[0] = ["1", "1", 1, "1", "1", "1", "1"]
 
-import Numeric
+import numpy
 d = orange.Domain([orange.FloatVariable('a%i'%x) for x in range(5)])
-a = Numeric.array([[1, 2, 3, 4, 5], [5, 4, 3, 2, 1]])
+a = numpy.array([[1, 2, 3, 4, 5], [5, 4, 3, 2, 1]])
 t = orange.ExampleTable(a)
 print len(t)
 print t[0]
