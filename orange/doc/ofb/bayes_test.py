@@ -14,4 +14,4 @@ knn.name = "knn"
 learners = [knn,bayes]
 results = orngTest.crossValidation(learners, data)
 for i in range(len(learners)):
-    print learners[i].name, orngStat.CA(results)[i]
+    print learners[i].name, "%.3f" % orngStat.CA(results)[i]
