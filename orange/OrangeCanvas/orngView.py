@@ -329,14 +329,15 @@ class SchemaView(QGraphicsView):
                             self.doc.addLine(self.outWidget or newWidget, self.inWidget or newWidget)
 
         else:
-            activeItem = self.scene().itemAt(point)
-            if not activeItem:
-                if (self.mouseDownPosition.x() - point.x())**2 + (self.mouseDownPosition.y() - point.y())**2 < 25:
-                    newCoords = QPoint(ev.globalPos())
-                    orngTabs.categoriesPopup.enableAll()
-                    action = orngTabs.categoriesPopup.exec_(newCoords)
-                    if action:
-                        newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
+            if ev.button() == Qt.RightButton:
+                activeItem = self.scene().itemAt(point)
+                if not activeItem:
+                    if (self.mouseDownPosition.x() - point.x())**2 + (self.mouseDownPosition.y() - point.y())**2 < 25:
+                        newCoords = QPoint(ev.globalPos())
+                        orngTabs.categoriesPopup.enableAll()
+                        action = orngTabs.categoriesPopup.exec_(newCoords)
+                        if action:
+                            newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
                     
 
         self.scene().update()
