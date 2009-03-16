@@ -13,7 +13,15 @@ platform = sys.platform
 pyversion = sys.version[:3]
 states = ["OK", "changed", "random", "error", "crash"]
 
-def testScripts(complete, just_print, module="orange", directory=".", test_files = None):
+def file_name_match(name, patterns):
+    """Is any of the string in patterns a substring of name?"""
+    for p in patterns:
+        if p in name:
+            return True
+    return False
+
+def test_scripts(complete, just_print, module="orange", root_directory=".", 
+                test_files=None, directories=None):
     """Test the scripts in the given directory."""
     global error_status
     if sys.platform == "win32" and sys.executable[-6:].upper() != "_D.EXE":
@@ -21,9 +29,9 @@ def testScripts(complete, just_print, module="orange", directory=".", test_files
         win32process.SetPriorityClass(win32api.GetCurrentProcess(), 64)
 
     caller_directory = os.getcwd()
-    os.chdir(directory)
+    os.chdir(root_directory) # directory to start the testing in
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in [".svn", "cvs", "datasets", "widgets", "processed"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in [".svn", "cvs", "datasets", "widgets", "processed", "catalog"] or (directories and not dir in directories):
             continue
         
         os.chdir(dir)
@@ -37,9 +45,11 @@ def testScripts(complete, just_print, module="orange", directory=".", test_files
             dont_test = []
         test_set = []
 
-        names = [name for name in os.listdir('.') \
-                 if (test_files and name in test_files) or 
-                    (not test_files and name[-3:]==".py") and (not name in dont_test)]
+        # file name filtering
+        names = [name for name in os.listdir('.') if name[-3:]==".py"]
+        if test_files:
+            names = [name for name in names if file_name_match(name, test_files)]
+        names = [name for name in names if name not in dont_test]
         names.sort()
 
         if names or True:
@@ -64,14 +74,14 @@ def testScripts(complete, just_print, module="orange", directory=".", test_files
                     if os.path.exists("%s/%s.%s.%s.random1.txt" % \
                                       (outputsdir, name, platform, pyversion)):
                         test_set.append((name, "random"))
-                    elif complete:
+                    elif complete or just_print:
                         test_set.append((name, "OK"))
                     else:
                         dont_test.append(name)
 
         if just_print:
             for name, lastResult in test_set:
-                print "%s: %s" % (name, lastResult)
+                print "%-30s %s" % (name, lastResult)
                 
         else:
             if dont_test:
@@ -105,42 +115,58 @@ error_status = 0
 
 def usage():
     """Print out help."""
-    print "%s update|test|report|errors [-s|-m|-d] [--single|--module m|--dir sd]" % sys.argv[0]
+    print "%s [update|test|report|errors] -[h|s] [--single|--module=[orange|obi|text]|--dir=<dir>|] <files>" % sys.argv[0]
     print "  test:   regression tests on all scripts"
     print "  update: regression tests on all previously failed scripts (default)"
     print "  report: report on testing results"
     print "  errors: report on errors from regression tests"
+    print
+    print "-s, --single: runs a single test on each script"
+    print "--module=<module>: defines a module to test"
+    print "--dir=<dir>: a comma-separated list of names where any should match the directory to be tested"
+    print "<files>: space separated list of string matching the file names to be tested"
     
     
 def main(argv):
     """Process the argument list and run the regression test."""
     global iterations
     
-    if not argv:
-        command = "update"
-    else:
-        if argv[0] not in ["update", "test", "report", "errors", "help"]:
-            print "Error: Wrong command"
-            usage()
-            sys.exit(1)
-        command = argv[0]
+    command = "update"
+    if argv:
+        if argv[0] in ["update", "test", "report", "errors", "help"]:
+            command = argv[0]
+            del argv[0]
 
     try:
-        opts, test_files = getopt.getopt(argv[1:], [], ["single", "module=", "dir=", "files=", "verbose="])
+        opts, test_files = getopt.getopt(argv, "hs", ["single", "module=", "help", "dir=", "files=", "verbose="])
     except getopt.GetoptError:
         print "Warning: Wrong argument"
         usage()
         sys.exit(1)
     opts = dict(opts) if opts else {}
-    if "--single" in opts:
+    if "--single" in opts or "-s" in opts:
         iterations = 1
-    module = opts.get("--module", "orange").split(",") 
+    if "--help" in opts or '-h' in opts:
+        usage()
+        sys.exit(0)
+    directories = [] 
     if "--dir" in opts:
         directories = opts["--dir"].split(",")
-    test_files = [tf if ".py" in tf else tf+".py" for tf in test_files]
-
-    testScripts(command=="test", command=="report", module="orange", directory="%s/doc" % orngEnviron.orangeDir, 
-                test_files=test_files)
+    
+    module = opts.get("--module", "orange")
+    if module in ["orange", "orng"]:
+        root = "%s/doc" % orngEnviron.orangeDir
+        module = "orange"
+    elif module == "obi":
+        root = orngEnviron.addOnsDir + "/Bioinformatics/doc"
+    elif module == "text":
+        root = orngEnviron.addOnsDir + "/Text/doc"
+    else:
+        print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
+        sys.exit(1)
+    
+    test_scripts(command=="test", command=="report", module=module, root_directory=root, 
+                test_files=test_files, directories=directories)
     # sys.exit(error_status)
     
 main(sys.argv[1:])
