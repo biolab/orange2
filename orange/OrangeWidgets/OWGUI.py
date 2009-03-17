@@ -273,7 +273,6 @@ def doubleSpin(widget, master, value, min, max, step=1,
     if tooltip:
         wa.setToolTip(tooltip)
     if value:
-        print wa
         wa.setValue(getdeepattr(master, value))
 
     cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(double)", CallFrontDoubleSpin(wa))
@@ -301,26 +300,6 @@ def doubleSpin(widget, master, value, min, max, step=1,
         return wb, wa
     else:
         return b
-    
-##    b = widgetBox(widget, box, orientation)
-##    widgetLabel(b, label, labelWidth)
-##
-##    wa = b.control = QDoubleSpinBox() #DoubleSpinBox(min, max, step, value, master, b)
-##    wa.setRange(min, max)
-##    wa.setSingleStep(step)
-##    wa.setDecimals(math.ceil(-math.log10(step)))
-##    wa.setValue(getdeepattr(master, value))
-##    if b.layout(): b.layout().addWidget(wa)
-##
-##    if controlWidth:
-##        wa.setFixedWidth(controlWidth)
-##
-##    if tooltip:
-##        wa.setToolTip(tooltip)
-##
-##    connectControl(wa, master, value, callback, "valueChanged(double)", CallFrontDoubleSpin(wa))
-##    return b
-
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation=None)
