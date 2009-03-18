@@ -2,21 +2,21 @@ import orange, orngSVM
 data=orange.ExampleTable("iris.tab")
 l1=orngSVM.SVMLearner()
 l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5)
-l1.kernel_type=orange.SVMLearner.CUSTOM
+l1.kernel_type=orange.SVMLearner.Custom
 l1.probability=True
 c1=l1(data)
 l1.name="SVM - RBF(Euclidean)"
 
 l2=orngSVM.SVMLearner()
 l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5)
-l2.kernel_type=orange.SVMLearner.CUSTOM
+l2.kernel_type=orange.SVMLearner.Custom
 l2.probability=True
 c2=l2(data)
 l2.name="SVM - RBF(Hamming)"
 
 l3=orngSVM.SVMLearner()
 l3.kernelFunc=orngSVM.CompositeKernelWrapper(orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5),orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5), l=0.5)
-l3.kernel_type=orange.SVMLearner.CUSTOM
+l3.kernel_type=orange.SVMLearner.Custom
 l3.probability=True
 c3=l1(data)
 l3.name="SVM - Composite"
