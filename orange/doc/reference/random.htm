@@ -47,9 +47,11 @@
 
 <p>The <code>initseed</code> can be passed as an argument to constructor, an argument to the method <code>reset</code> or set directly.</p>
 
-<p>There are two methods (beside the constructor). The generator can be reset via the method <code>reset</code>. An optional argument can be given to be stored (and immediately used) as a <code>initseed</code>; if not, the existing value of <code>initseed</code> is used. When called, the generator returns a signed random integer.</p>
+<p>There are two methods (beside the constructor). The generator can be reset via the method <code>reset</code>. An optional argument can be given to be stored (and immediately used) as a <code>initseed</code>; if not, the existing value of <code>initseed</code> is used.</p>
 
-<p>You will seldom use the generator in your Python scripts, since Python itself provides an excellent random generator (moreover, Python 2.3 now uses exactly the same algorithm as Orange). Moreover, Python's random number generator uses current system time for a seed and therefore provides for a more random random number. You can use Python's random number for a "truly" random number seed for Python, as demonstrated below.</p>
+<p>When called, the generator returns a signed random integer. With an optional argument, an integer <code>n</code>, the generator will return integers from 0 to <code>n-1</code>.</p>
+
+<p>You will seldom use the generator in your Python scripts, since Python itself provides an excellent random generator (moreover, from version 2.3 it uses exactly the same algorithm as Orange). Moreover, Python's random number generator uses current system time for a seed and therefore provides for a more random random number. You can use Python's random number for a "truly" random number seed for Python, as demonstrated below.</p>
 
 <P>Usually, you will construct a random generator to be used for a particular object (or more of them; objects can share the same generator).</P>
 
