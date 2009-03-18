@@ -32,8 +32,6 @@
 
 <P><CODE>kNNLearner</CODE> first constructs an object for measuring distances between examples. <CODE>distanceConstructor</CODE> is used if given; otherwise, Euclidean metrics will be used. <CODE>kNNLearner</CODE> then constructs an instance of <a href="FindNearest.htm#FindNearest_BruteForce"><CODE>FindNearest_BruteForce</CODE></a>. Together with ID of meta attribute with weights of examples, <CODE>k</CODE> and <CODE>rankWeight</CODE>, it is passed to a <CODE>kNNClassifier</CODE>.</P>
 
-<P>If <CODE>k</CODE> is set to 0, all examples are taken as neighbours (this might be useful since neighbours are later weighted (see below).</P>
-
 <H2>kNNClassifier</H2>
 <index name="classes/kNNClassifier">
 
@@ -66,7 +64,7 @@
 </UL>
 <P>In both cases, <EM>s</EM> is chosen so that the impact of the farthest example is 0.001.</P>
 
-<P>Weighting gives the classifier certain insensitivity to the number of neighbours used. It makes sense to use larger <CODE>k</CODE>'s or, sometimes even a <CODE>k</CODE> of 0 (by which we tell that we want all examples considered as neighbours).</P>
+<P>Weighting gives the classifier certain insensitivity to the number of neighbours used, making it possible to use large <CODE>k</CODE>'s.</P>
 
 <P>The classifier can treat continuous and discrete attributes, and can even distinguish between ordinal and nominal attributes. See information on <a href="ExamplesDistance.htm">distance measuring</a> for details.</P>
 
