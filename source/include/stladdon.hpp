@@ -152,7 +152,7 @@ void or_random_shuffle(RandomAccessIter first, RandomAccessIter last, RandomNumb
 */
 template<class RanIt>
 void random_sort(RanIt first, RanIt last)
-{ sort(first, last);
+{ stable_sort(first, last);
 
   for(RanIt fs=first, ls; fs!=last; fs=ls) {
     for(ls=fs; ((++ls)!=last) && (*fs==*ls););
@@ -163,7 +163,7 @@ void random_sort(RanIt first, RanIt last)
 // Function that sorts and shuffles elements using common '<' and '==' relations; random function is given
 template<class RanIt, class RandFunc>
 void random_sort(RanIt first, RanIt last, RandFunc rf)
-{ sort(first, last);
+{ stable_sort(first, last);
 
   for(RanIt fs=first, ls; fs!=last; fs=ls) {
     for(ls=fs; ((++ls)!=last) && (*fs==*ls););
@@ -175,7 +175,7 @@ void random_sort(RanIt first, RanIt last, RandFunc rf)
     order (SPred) and equality (EPred) */
 template<class RanIt, class SPred, class EPred>
 void random_sort(RanIt first, RanIt last, SPred spr, EPred epr)
-{ sort(first, last, spr);
+{ stable_sort(first, last, spr);
 
   for(RanIt fs=first, ls; fs!=last; fs=ls) {
     for(ls=fs; ((++ls)!=last) && epr(*fs,*ls););
@@ -187,7 +187,7 @@ void random_sort(RanIt first, RanIt last, SPred spr, EPred epr)
     order (SPred) and equality (EPred) and a random function */
 template<class RanIt, class SPred, class EPred, class RandFunc>
 void random_sort(RanIt first, RanIt last, SPred spr, EPred epr, RandFunc rf)
-{ sort(first, last, spr);
+{ stable_sort(first, last, spr);
 
   for(RanIt fs=first, ls; fs!=last; fs=ls) {
     for(ls=fs; ((++ls)!=last) && epr(*fs,*ls););
