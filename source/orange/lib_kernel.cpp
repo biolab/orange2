@@ -1680,8 +1680,13 @@ PyObject *RandomGenerator_call(PyObject *self, PyObject *args, PyObject *keyword
 { PyTRY
     NO_KEYWORDS
 
-    if (!PyArg_ParseTuple(args, ""))
-      PYERROR(PyExc_TypeError, "no arguments expected", PYNULL);
+    if (args) {
+      if (PyTuple_Size(args) == 1) {
+        return PyInt_FromLong((long)SELF_AS(TRandomGenerator).randlong(PyInt_AsLong(PyTuple_GET_ITEM(args, 0))));
+      }
+      PYERROR(PyExc_TypeError, "zero or one argument expected", PYNULL);
+    }
+    
     return PyInt_FromLong((long)SELF_AS(TRandomGenerator)());
   PyCATCH
 }
