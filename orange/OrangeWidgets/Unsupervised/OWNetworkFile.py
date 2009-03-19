@@ -7,9 +7,9 @@
 """
 
 #
-# OWGrafFile.py
-# The File Widget
-# A widget for opening orange data files
+# OWNetworkFile.py
+# The Network File Widget
+# A widget for opening Network related files
 #
 import OWGUI, string, os.path, user, sys
 
@@ -39,13 +39,13 @@ class OWNetworkFile(OWWidget):
         self.graph = None
         #get settings from the ini file, if they exist
         self.loadSettings()
-        
+
         #GUI
         self.controlArea.layout().setMargin(4)
         self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "horizontal")
         self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
+        button = OWGUI.button(self.box, self, '...', callback = self.browseNetFile, disabled=0, width=25)
         
         self.databox = OWGUI.widgetBox(self.controlArea, box = "Vertices Data File", orientation = "horizontal")
         self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
@@ -63,16 +63,17 @@ class OWNetworkFile(OWWidget):
         self.infob = OWGUI.widgetLabel(box, ' ')
         self.infoc = OWGUI.widgetLabel(box, ' ')
         self.infod = OWGUI.widgetLabel(box, ' ')
-        
+
         self.resize(150,100)
         self.activateLoadedSettings()
+
         # connecting GUI to code
-        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
+        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectNetFile)
         self.connect(self.datacombo, SIGNAL('activated(int)'), self.selectDataFile)
         self.connect(self.edgescombo, SIGNAL('activated(int)'), self.selectEdgesFile)
         
-    # set the file combo box
-    def setFileList(self):
+    # set the comboboxes
+    def setFileLists(self):
         self.filecombo.clear()
         if not self.recentFiles:
             self.filecombo.addItem("(none)")
@@ -109,10 +110,14 @@ class OWNetworkFile(OWWidget):
         self.recentFiles = filter(os.path.exists, self.recentFiles)
         self.recentDataFiles = filter(os.path.exists, self.recentDataFiles)
         self.recentEdgesFiles = filter(os.path.exists, self.recentEdgesFiles)
-        self.setFileList()
+        
+        self.recentFiles.append("(none)")
+        self.recentDataFiles.append("(none)")
+        self.recentEdgesFiles.append("(none)")
+        self.setFileLists()
         
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
-            self.openFile(self.recentFiles[0])
+            self.selectNetFile(0)
 
         if len(self.recentDataFiles) > 1 and os.path.exists(self.recentDataFiles[1]):
             self.selectDataFile(1)
@@ -121,15 +126,16 @@ class OWNetworkFile(OWWidget):
             self.selectEdgesFile(1)
         
     # user selected a graph file from the combo box
-    def selectFile(self, n):
+    def selectNetFile(self, n):
         if n < len(self.recentFiles) :
             name = self.recentFiles[n]
             self.recentFiles.remove(name)
             self.recentFiles.insert(0, name)
 
         if len(self.recentFiles) > 0:
-            self.setFileList()
-            self.openFile(self.recentFiles[0])
+            self.setFileLists()
+            fn = self.recentFiles[0]            
+            self.openFile(fn)
     
     # user selected a data file from the combo box
     def selectEdgesFile(self, n):
@@ -139,7 +145,7 @@ class OWNetworkFile(OWWidget):
             self.recentEdgesFiles.insert(0, name)
 
         if len(self.recentEdgesFiles) > 0:
-            self.setFileList()
+            self.setFileLists()
             self.addEdgesFile(self.recentEdgesFiles[0])
     
     def selectDataFile(self, n):
@@ -149,28 +155,136 @@ class OWNetworkFile(OWWidget):
             self.recentDataFiles.insert(0, name)
 
         if len(self.recentDataFiles) > 0:
-            self.setFileList()
+            self.setFileLists()
             self.addDataFile(self.recentDataFiles[0])
     
     def openFile(self, fn):
-        self.openFileBase(fn)
+        """Read network from file."""
         
-        if '(none)' in self.recentDataFiles: 
-            self.recentDataFiles.remove('(none)')
+        # read network file
+        if fn != "(none)":
+            fileExt = lower(os.path.splitext(fn)[1])
+            if not fileExt in (".net"):
+                self.graph = None
+                self.send("Network", None)
+                self.send("Items", None)
+                self.infoa.setText('No data loaded')
+                self.infob.setText('File extension does not match')
+                self.infoc.setText('')            
+                self.infod.setText('')
+                return
             
-        if '(none)' in self.recentEdgesFiles: 
-            self.recentEdgesFiles.remove('(none)')
+            data = self.readNetFile(fn)
+                
+            if data == None:
+                self.graph = None
+                self.send("Network", None)
+                self.send("Items", None)
+                self.infoa.setText('No data loaded')
+                self.infob.setText('Error reading file')
+                self.infoc.setText('')            
+                self.infod.setText('')
+                return
+
+            self.infoa.setText("%d nodes" % data.nVertices)
             
-        self.recentDataFiles.insert(0, '(none)')
-        self.recentEdgesFiles.insert(0, '(none)')
+            if data.directed:
+                self.infob.setText("Directed graph")
+            else:
+                self.infob.setText("Undirected graph")
+            
+            # make new data and send it
+            fName = os.path.split(fn)[1]
+            if "." in fName:
+                data.name = string.join(string.split(fName, '.')[:-1], '.')
+            else:
+                data.name = fName
+                
+            self.graph = data
+        else:
+            self.graph = None
+            self.send("Network", None)
+            self.send("Items", None)
+            self.infoa.setText('No data loaded')
+            self.infob.setText('')
+            self.infoc.setText('')            
+            self.infod.setText('')
         
-        self.setFileList()
+        # Find items data file for selected network
+        items_candidate = os.path.splitext(fn)[0] + ".tab"
+        if os.path.exists(items_candidate):
+            self.readDataFile(items_candidate)
+            self.recentDataFiles.insert(0, items_candidate)
+        elif os.path.exists(os.path.splitext(fn)[0] + "_items.tab"):
+            items_candidate = os.path.splitext(fn)[0] + "_items.tab"
+            self.readDataFile(items_candidate)
+            self.recentDataFiles.insert(0, items_candidate)
+        else:
+            if '(none)' in self.recentDataFiles: 
+                self.recentDataFiles.remove('(none)')
+            self.recentDataFiles.insert(0, '(none)')
+        
+        # Find links data file for selected network
+        links_candidate = os.path.splitext(fn)[0] + "_links.tab" 
+        if os.path.exists(links_candidate):
+            self.readEdgesFile(links_candidate)
+            self.recentEdgesFiles.insert(0, links_candidate)
+        else:
+            if '(none)' in self.recentEdgesFiles: 
+                self.recentEdgesFiles.remove('(none)')
+            self.recentEdgesFiles.insert(0, '(none)')
+        
+        self.setFileLists()
+        
+        self.send("Network", self.graph)
+        if self.graph != None and self.graph.items != None:
+            self.send("Items", self.graph.items)
+        else:
+            self.send("Items", None)
+        
+    def addDataFile(self, fn):
+        if fn == "(none)" or self.graph == None:
+            self.infoc.setText("No vertices data file specified")
+            self.graph.setattr("items", None)
+            self.send("Network", self.graph)
+            self.send("Items", self.graph.items)
+            return
+         
+        self.readDataFile(fn)
+        
+        self.send("Network", self.graph)
+        self.send("Items", self.graph.items)
+        
+    def readDataFile(self, fn):
+        table = ExampleTable(fn)
+        
+        if len(table) != self.graph.nVertices:
+            self.infoc.setText("Vertices data length does not match number of vertices")
+            
+            if '(none)' in self.recentDataFiles: 
+                self.recentDataFiles.remove('(none)')
+                
+            self.recentDataFiles.insert(0, '(none)')
+            self.setFileLists()
+            return
+        
+        self.graph.setattr("items", table)
+        self.infoc.setText("Vertices data file added")
         
     def addEdgesFile(self, fn):
         if fn == "(none)" or self.graph == None:
-            self.infod.setText("No edges data file specified.")
+            self.infod.setText("No edges data file specified")
+            self.graph.setattr("links", None)
+            self.send("Network", self.graph)
+            self.send("Items", self.graph.items)
             return
-         
+        
+        self.readEdgesFile(fn)
+        
+        self.send("Network", self.graph)
+        self.send("Items", self.graph.items)
+        
+    def readEdgesFile(self, fn):
         table = ExampleTable(fn)
         if self.graph.directed:
             nEdges = len(self.graph.getEdges())
@@ -178,73 +292,43 @@ class OWNetworkFile(OWWidget):
             nEdges = len(self.graph.getEdges()) / 2
             
         if len(table) != nEdges:
-            self.infod.setText("Edges data length does not match number of edges.")
+            self.infod.setText("Edges data length does not match number of edges")
             
             if '(none)' in self.recentEdgesFiles: 
                 self.recentEdgesFiles.remove('(none)')
                 
             self.recentEdgesFiles.insert(0, '(none)')
-            self.setFileList()
+            self.setFileLists()
             return
         
         self.graph.setattr("links", table)
-        self.infod.setText("Edges data file added.")
-        self.send("Network", self.graph)
-        self.send("Items", self.graph.items)
+        self.infod.setText("Edges data file added")
         
+    def browseNetFile(self, inDemos=0):
+        """user pressed the '...' button to manually select a file to load"""
         
-    def addDataFile(self, fn):
-        if fn == "(none)" or self.graph == None:
-            self.infoc.setText("No vertices data file specified.")
-            return
-         
-        table = ExampleTable(fn)
-        
-        if len(table) != self.graph.nVertices:
-            self.infoc.setText("Vertices data length does not match number of vertices.")
-            
-            if '(none)' in self.recentDataFiles: 
-                self.recentDataFiles.remove('(none)')
-                
-            self.recentDataFiles.insert(0, '(none)')
-            self.setFileList()
-            return
-        
-        self.graph.setattr("items", table)
-        self.infoc.setText("Vertices data file added.")
-        self.send("Network", self.graph)
-        self.send("Items", self.graph.items)
-        
-    def browseEdgesFile(self, inDemos=0):
-        if self.graph == None:
-            return
-        
-        "Display a FileDialog and select a file"
-        if len(self.recentEdgesFiles) == 0 or self.recentEdgesFiles[0] == "(none)":
-            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-                if sys.platform == "darwin":
-                    startfile = user.home
-                else:
-                    startfile="."
+        #Display a FileDialog and select a file
+        if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+            if sys.platform == "darwin":
+                startfile = user.home
             else:
-                startfile = os.path.dirname(self.recentFiles[0])
-                
+                startfile = "."
         else:
-            startfile = self.recentEdgesFiles[0]
+            startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Edges Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
-    
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nAll files (*.*)"))
+        
         if filename == "": return
-        if filename in self.recentEdgesFiles: self.recentEdgesFiles.remove(filename)
-        self.recentEdgesFiles.insert(0, filename)
-        self.setFileList()
-        self.addEdgesFile(self.recentEdgesFiles[0])
+        if filename in self.recentFiles: self.recentFiles.remove(filename)
+        self.recentFiles.insert(0, filename)
+        self.setFileLists()
+        self.selectNetFile(0)
         
     def browseDataFile(self, inDemos=0):
         if self.graph == None:
             return
         
-        "Display a FileDialog and select a file"
+        #Display a FileDialog and select a file
         if len(self.recentDataFiles) == 0 or self.recentDataFiles[0] == "(none)":
             if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
                 if sys.platform == "darwin":
@@ -262,87 +346,49 @@ class OWNetworkFile(OWWidget):
         if filename == "": return
         if filename in self.recentDataFiles: self.recentDataFiles.remove(filename)
         self.recentDataFiles.insert(0, filename)
-        self.setFileList()
+        self.setFileLists()
         self.addDataFile(self.recentDataFiles[0])
-    
-    # user pressed the "..." button to manually select a file to load
-    def browseFile(self, inDemos=0):
-        "Display a FileDialog and select a file"
-        if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-            if sys.platform == "darwin":
-                startfile = user.home
+        
+    def browseEdgesFile(self, inDemos=0):
+        if self.graph == None:
+            return
+        
+        #Display a FileDialog and select a file
+        if len(self.recentEdgesFiles) == 0 or self.recentEdgesFiles[0] == "(none)":
+            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+                if sys.platform == "darwin":
+                    startfile = user.home
+                else:
+                    startfile="."
             else:
-                startfile = "."
-        else:
-            startfile = self.recentFiles[0]
+                startfile = os.path.dirname(self.recentFiles[0])
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nAll files (*.*)"))
+        else:
+            startfile = self.recentEdgesFiles[0]
+                
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Edges Data File', startfile, 'Data files (*.tab)\nAll files(*.*)'))
+    
         if filename == "": return
-        if filename in self.recentFiles: self.recentFiles.remove(filename)
-        self.recentFiles.insert(0, filename)
-        self.setFileList()
-        self.openFile(self.recentFiles[0])
+        if filename in self.recentEdgesFiles: self.recentEdgesFiles.remove(filename)
+        self.recentEdgesFiles.insert(0, filename)
+        self.setFileLists()
+        self.addEdgesFile(self.recentEdgesFiles[0])
 
     def setInfo(self, info):
         for (i, s) in enumerate(info):
             self.info[i].setText(s)            
-
-     # Open a file, create data from it and send it over the data channel
-    def openFileBase(self, fn):
-        if fn != "(none)":
-            fileExt = lower(os.path.splitext(fn)[1])
-            if fileExt in (".net"):
-                pass
-            else:
-                return
-            
-            data = self.readNetFile(fn)
-                
-            if data == None:
-                self.send("Network", None)
-                self.send("Items", None)
-                return
-
-            self.infoa.setText("%d nodes" % data.nVertices)
-            
-            if data.directed:
-                self.infob.setText("Directed graph")
-            else:
-                self.infob.setText("Undirected graph")
-            
-            # make new data and send it
-            fName = os.path.split(fn)[1]
-            if "." in fName:
-                data.name = string.join(string.split(fName, '.')[:-1], '.')
-            else:
-                data.name = fName
-                
-            #print "nVertices graph: " + str(data.nVertices)
-            self.graph = data
-            self.send("Network", self.graph)
-            self.send("Items", self.graph.items)
-#            drawer = OWGraphDrawer()
-#            drawer.setGraph(data)
-#            drawer.show()
-        else:
-            self.send("Network", data)
-            self.send("Items", data.items)
 
     def readNetFile(self, fn):
         network = NetworkOptimization()
  
         try:
             network.readNetwork(fn)
-            self.infoc.setText("Vertices data generated and added automatically.")
+            self.infoc.setText("Vertices data generated and added automatically")
         except:
-            self.infoa.setText("Could not read file.")
+            self.infoa.setText("Could not read file")
             self.infob.setText("")
             self.infoc.setText("")
             self.infod.setText("")
-            
-            #del self.recentFiles[0]
-            #self.setFileList()
-            #self.selectFile(0)
             return None
             
         return network.graph
