@@ -1,4 +1,5 @@
 import orange
+from orangeom import Network
 from orngNetwork import NetworkOptimization
 from pylab import *
 
@@ -7,56 +8,56 @@ from pylab import *
 network = NetworkOptimization()
 
 # read network from file
-graph, table = network.readNetwork("combination.net")
+net = network.readNetwork("combination.net")
 
-components = graph.getConnectedComponents()
+components = net.getConnectedComponents()
 print "Connected components"
 print components
 print
 
-distribution = graph.getDegreeDistribution()
+distribution = net.getDegreeDistribution()
 print "Degree distribution"
 print distribution
 print
 
-degrees = graph.getDegrees()
+degrees = net.getDegrees()
 print "Degrees"
 print degrees
 print
 
-hubs = graph.getHubs(3)
+hubs = net.getHubs(3)
 print "Hubs"
 print hubs
 print
 
-path = graph.getShortestPaths(0, 2)
+path = net.getShortestPaths(0, 2)
 print "Shortest path"
 print path
 print
 
-distance = graph.getDistance(0, 2)
+distance = net.getDistance(0, 2)
 print "Distance"
 print distance
 print
 
-diameter = graph.getDiameter()
+diameter = net.getDiameter()
 print "Diameter"
 print diameter
 print
 
-subgraph = graph.getSubGraph([0, 1, 2, 3])
-subNetwork = NetworkOptimization(subgraph)
-subNetwork.fruchtermanReingold(100, 1000)
+subnet = Network(net.getSubGraph([0, 1, 2, 3]))
+subNetOptimization = NetworkOptimization(subnet)
+subNetOptimization.fruchtermanReingold(100, 1000)
 
 # read all edges in subnetwork and plot a line
-for u, v in subNetwork.graph.getEdges():
-    x1, y1 = subNetwork.coors[u][0], subNetwork.coors[u][1]
-    x2, y2 = subNetwork.coors[v][0], subNetwork.coors[v][1]
+for u, v in subnet.getEdges():
+    x1, y1 = subnet.coors[0][u], subnet.coors[1][u]
+    x2, y2 = subnet.coors[0][v], subnet.coors[1][v]
     plot([x1, x2], [y1, y2], 'b-')        
         
 # read x and y coordinates to Python list
-x = [coordinate[0] for coordinate in subNetwork.coors]
-y = [coordinate[1] for coordinate in subNetwork.coors]
+x = [coordinate for coordinate in subnet.coors[0]]
+y = [coordinate for coordinate in subnet.coors[1]]
 
 # plot vertices of subnetwork
 plot(x, y, 'ro')
