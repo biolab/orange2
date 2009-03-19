@@ -25,19 +25,30 @@ def data_center(data):
         center.append(0)
     return orange.Example(data.domain, center)
 
+def avg(x):
+    return float(sum(x)) / len(x)
+
 ##############################################################################
 # k-means clustering
 
 # clustering scoring functions 
 
 def score_distance_to_centroids(km):
-    """Return weighted averaged distance of cluster elements to their centroids."""
-    score = 0
-    for cindx, centroid in enumerate(km.centroids):
-        cdata = km.data.getitemsref([i for i,c in enumerate(km.clusters) if c == cindx])
-        score += sum([km.distance(centroid, d) for d in cdata]) * len(cdata) / len(km.data)
-    return score
+    """Return the sum of distances from cluster elements to their centroids."""
+    return sum([km.distance(km.centroids[km.clusters[i]], d) for i,d in enumerate(km.data)])
 
+def score_silhouette(km, index=None):
+    """Return the silhouette score (of a specific example if index is specified)"""
+    if index == None:
+        return avg([score_silhouette(km, i) for i in range(len(km.data))])
+    cind = km.clusters[index]
+    a = avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
+             km.clusters[i] == cind and i != index])
+    b = min(avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
+                 km.clusters[i] == c])
+            for c in range(len(km.centroids)) if c != cind)
+    return float(b - a) / max(a, b)
+    
 def score_conditionalEntropy(km):
     """cluster quality measured by conditional entropy"""
     pass
