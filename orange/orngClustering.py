@@ -6,7 +6,7 @@ import random
 try:
     import matplotlib
     from matplotlib.figure import Figure
-    import  matplotlib.pyplot as plt #import plot, show
+    import matplotlib.pyplot as plt #import plot, show
 except ImportError:
     matplotlib = None
     
@@ -25,8 +25,13 @@ def data_center(data):
         center.append(0)
     return orange.Example(data.domain, center)
 
+def minindex(x):
+    """Return the index of the minimum element"""
+    return x.index(min(x))
+
 def avg(x):
-    return float(sum(x)) / len(x)
+    """Return the average (mean) of a given list"""
+    return (float(sum(x)) / len(x)) if x else 0
 
 ##############################################################################
 # k-means clustering
@@ -36,6 +41,18 @@ def avg(x):
 def score_distance_to_centroids(km):
     """Return the sum of distances from cluster elements to their centroids."""
     return sum([km.distance(km.centroids[km.clusters[i]], d) for i,d in enumerate(km.data)])
+
+score_distance_to_centroids.minimize = True
+
+def score_conditionalEntropy(km):
+    """cluster quality measured by conditional entropy"""
+    pass
+
+def score_withinClusterDistance(data, clusters, _, distance):
+    """weighted average within-cluster pairwise distance"""
+    pass
+
+score_withinClusterDistance.minimize = True
 
 def score_silhouette(km, index=None):
     """Return the silhouette score (of a specific example if index is specified)"""
@@ -48,16 +65,23 @@ def score_silhouette(km, index=None):
                  km.clusters[i] == c])
             for c in range(len(km.centroids)) if c != cind)
     return float(b - a) / max(a, b)
-    
-def score_conditionalEntropy(km):
-    """cluster quality measured by conditional entropy"""
-    pass
 
-def score_withinClusterDistance(data, clusters, _, distance):
-    """weighted average within-cluster pairwise distance"""
-    pass
-
-minindex = lambda x: x.index(min(x))
+def plot_silhouette(km, filename='tmp.png'):
+    if not matplotlib:
+        raise Exception("Need matplotlib library!")
+    plt.figure()
+    scores = [[] for i in range(km.k)]
+    for i, c in enumerate(km.clusters):
+        scores[c].append(score_silhouette(km, i))
+    csizes = map(len, scores)
+    cpositions = [sum(csizes[:i]) + (i+1)*3 + csizes[i]/2 for i in range(km.k)]
+    scores = reduce(lambda x,y: x + [0]*3 + sorted(y), scores, [])
+    plt.barh(range(len(scores)), scores, linewidth=0, color='c')
+    plt.yticks(cpositions, map(str, range(km.k)))
+    #plt.title('Silhouette plot')
+    plt.ylabel('Cluster')
+    plt.xlabel('Silhouette value')
+    plt.savefig(filename)
 
 # clustering initialization (seeds)
 # initialization functions should be of the type f(data, k, distfun)
@@ -90,22 +114,23 @@ class KMeans_init_hierarchicalClustering():
 # k-means clustering, main implementation
 
 class KMeans:
-    def __init__(self, data=None, centroids=3, maxiters=None, maxscorechange=None, stopchanges=0, nstart=1, 
-                 initialization=kmeans_init_random,
+    def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
+                 stopchanges=0, nstart=1, initialization=kmeans_init_random,
                  distance=orange.ExamplesDistanceConstructor_Euclidean,
-                 scoring=score_distance_to_centroids,
-                 inner_callback = None,
-                 outer_callback = None,
-                 initialize_only = False):
+                 scoring=score_distance_to_centroids, inner_callback = None,
+                 outer_callback = None, initialize_only = False):
+        self.data = data
         self.k = centroids if type(centroids)==int else len(centroids)
         self.centroids = centroids if type(centroids) == orange.ExampleTable else None
         self.maxiters = maxiters
+        self.minscorechange = minscorechange
+        self.stopchanges = stopchanges
         self.nstart = nstart
         self.initialization = initialization
         self.distance_constructor = distance
-        self.data = data
+        self.distance = self.distance_constructor(self.data)
         self.scoring = scoring
-        self.stopchanges = stopchanges
+        self.minimize_score = True if hasattr(scoring, 'minimize') else False
         self.inner_callback = inner_callback
         self.outer_callback = outer_callback
         if self.data and not initialize_only:
@@ -123,7 +148,7 @@ class KMeans:
             return
         self.centroids = self.initialization(self.data, self.k, self.distance) 
         
-    def compute_centeroids(self, data):
+    def compute_centeroid(self, data):
         """Return a centroid of the data set."""
         return data_center(data)
     
@@ -133,31 +158,44 @@ class KMeans:
     
     def runone(self):
         """run a single iteration of k-means clustering"""
+        self.centroids = [self.compute_centeroid(self.data.getitems(
+            [i for i, c in enumerate(self.clusters) if c == cl])) for cl in range(self.k)]
         self.clusters = self.compute_cluster()
-        self.centroids = [self.compute_centeroids(self.data.getitems([i for i, c in enumerate(self.clusters) if c == cl])) for cl in range(self.k)]
         
     def run(self):
         """run a central k-means clustering loop"""
         self.winner = None
-        self.distance = self.distance_constructor(self.data)
         for startindx in range(self.nstart):
             self.init_centroids()
-            old_cluster = None
+            self.clusters = old_cluster = self.compute_cluster()
+            self.score = old_score = self.scoring(self)
+            self.nchanges = len(self.data)
             self.iteration = 0
             stopcondition = False
+            if self.inner_callback:
+                self.inner_callback(self)
             while not stopcondition:
                 self.iteration += 1
                 self.runone()
-                self.nchanges = sum(map(lambda x,y: x<>y, old_cluster, self.clusters)) if old_cluster else len(self.data)
-                self.score = self.scoring(self)
+                self.nchanges = sum(map(lambda x,y: x!=y, old_cluster, self.clusters))
                 old_cluster = self.clusters
-                stopcondition = self.nchanges <= self.stopchanges or (self.maxiters and self.iteration == self.maxiters)
-                old_cluster = self.clusters
+                if self.minscorechange != None:
+                    self.score = self.scoring(self)
+                    scorechange = (self.score - old_score) / old_score
+                    if self.minimize_score:
+                        scorechange = -scorechange
+                    old_score = self.score
+                stopcondition = (self.nchanges <= self.stopchanges or
+                                 self.iteration == self.maxiters or
+                                 (self.minscorechange != None and
+                                  scorechange <= self.minscorechange))
                 if self.inner_callback:
                     self.inner_callback(self)
-            if self.nstart > 1:
+            if self.minscorechange == None:
                 self.score = self.scoring(self)
-                if not self.winner or self.score < self.winner[0]:
+            if self.nstart > 1:
+                if not self.winner or (self.score < self.winner[0] if
+                        self.minimize_score else self.score > self.winner[0]):
                     self.winner = (self.score, self.clusters, self.centroids)
                 if self.outer_callback:
                     self.outer_callback(self)
