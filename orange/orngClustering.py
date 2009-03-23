@@ -709,7 +709,7 @@ class TablePlot(Table):
 ##        return list(self.cells.flat)
 
 class DendrogramPlotPylab(object):
-    def __init__(self, root, data=None, labels=None, dendrogram_width=None, heatmap_width=None, label_width=None, space_width=None, border_width=0.05, params={}):
+    def __init__(self, root, data=None, labels=None, dendrogram_width=None, heatmap_width=None, label_width=None, space_width=None, border_width=0.05, plot_attr_names=False, cmap=None, params={}):
         if not matplotlib:
             raise ImportError("Could not import matplotlib module. Please make sure matplotlib is installed on your system.")
         self.root = root
@@ -721,6 +721,7 @@ class DendrogramPlotPylab(object):
         self.space_width = space_width
         self.border_width = border_width
         self.params = params
+        self.plot_attr_names = plot_attr_names
 
     def plotDendrogram(self):
         self.text_items = []
@@ -748,12 +749,24 @@ class DendrogramPlotPylab(object):
         y = numpy.arange(data.shape[0] + 1)/float(numpy.max(data.shape))*len(self.root)
         self.heatmap_width = numpy.max(x)
 
-        X, Y = numpy.meshgrid(x + self.root.height, y - 0.5)
+        X, Y = numpy.meshgrid(x, y - 0.5)
 
         self.meshXOffset = numpy.max(X)
 
         plt.jet()
         mesh = plt.pcolormesh(X, Y, data[self.root.mapping], edgecolor="b", linewidth=2)
+
+        if self.plot_attr_names:
+            names = [attr.name for attr in self.data.domain.attributes]
+            plt.xticks(numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape)), names)
+        plt.gca().xaxis.tick_top()
+        for label in plt.gca().xaxis.get_ticklabels():
+            label.set_rotation(45)
+
+        for tick in plt.gca().xaxis.get_major_ticks():
+            tick.tick1On = False
+            tick.tick2On = False
+
         
     
     def plotLabels_(self):
@@ -828,47 +841,6 @@ class DendrogramPlotPylab(object):
             canvas.print_figure(filename)
         if show:
             plt.show()
-
-##############################################################################
-# module testing (should be moved to separate regression scripts)
-
-def _test1():
-    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-##    data = orange.ExampleTable("doc//datasets//zoo.tab")
-##    data = orange.ExampleTable("doc//datasets//iris.tab")
-##    data = orange.ExampleTable("E:\\steroltalk-smallchip.tab")
-    root = hierarchicalClustering(data, order=True) #, linkage=orange.HierarchicalClustering.Single)
-    print root
-##    plt.rcParams["font.size"] = 20
-    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], params={})
-    d.plot(show=True, filename="graph.png")
-    
-
-def _test2():
-##    data = orange.ExampleTable("doc//datasets//brown-selected.tab")
-##    data = orange.ExampleTable("doc//datasets//iris.tab")
-    data = orange.ExampleTable("doc//datasets//zoo.tab")
-##    data = orange.ExampleTable("doc//datasets//titanic.tab")
-##    m = [[], [ 3], [ 2, 4], [17, 5, 4], [ 2, 8, 3, 8], [ 7, 5, 10, 11, 2], [ 8, 4, 1, 5, 11, 13], [ 4, 7, 12, 8, 10, 1, 5], [13, 9, 14, 15, 7, 8, 4, 6], [12, 10, 11, 15, 2, 5, 7, 3, 1]]
-##    matrix = orange.SymMatrix(m)
-    dist = orange.ExamplesDistanceConstructor_Euclidean(data)
-    matrix = orange.SymMatrix(len(data))
-##    matrix.setattr('items', data)
-    for i in range(len(data)):
-        for j in range(i+1):
-            matrix[i, j] = dist(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
-##    root.mapping.objects = [str(ex.getclass()) for ex in data]
-    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000)
-    d.setMatrixColorScheme((0, 255, 0), (255, 0, 0))
-##    d.SetClusterColors({root.left:(0,255,0), root.right:(0,0,255)})
-    d.plot("graph.png")
-    print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    orderLeaves(root, matrix)
-    print "Sum:", sum([matrix[root.mapping[i], root.mapping[i+1]] for i in range(len(root.mapping)-1)])
-    d = DendrogramPlot(root, data=data, labels=[str(ex.getclass()) for ex in data], width=500, height=2000, lineWidth=1)
-    d.setMatrixColorScheme((0, 255, 0), (255, 0, 0))
-    d.plot("graphOrdered.png")
 
 if __name__=="__main__":
     data = orange.ExampleTable("doc//datasets//brown-selected.tab")
