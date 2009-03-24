@@ -1,5 +1,5 @@
 # Author: Miha Stajdohar (miha.stajdohar@fri.uni-lj.si)
-#
+# This module 
 
 import os, sys, time, smtplib
 import orngEnviron
@@ -102,3 +102,109 @@ def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
     smtp.sendmail(fro, to, msg.as_string())
     smtp.close()
 
+def cmpBySecondValue(x,y):
+    if x[1] > y[1]:
+        return -1
+    elif x[1] < y[1]:
+        return 1
+    else:
+        return 0
+
+def historyFileToBasket():
+    """Reads history file to a 'basket'.
+        
+       Each element in a basket list contains a list of widgets in one session. 
+    """
+    fin = open(logFile, 'r')
+    
+    basket = []
+    for line in fin:
+        vals = line.split(',')
+        vals = [val.strip() for val in vals]
+        basket.append(vals)
+        
+    fin.close()
+    return basket
+
+def buildWidgetProbabilityTree(basket):
+    """Builds a widget probability 'tree'
+    
+       Levels:
+          0 - probability of inserting a widget in empty canvas
+          1 - probability of inserting a widget after one widget
+          2 - probability of inserting a widget after two widgets
+          3 - probability of inserting a widget after three widgets
+          ...
+    """
+    firstWidget = {}
+    for vals in basket:
+        firstWidget[vals[0]] = firstWidget[vals[0]] + 1 if vals[0] in firstWidget else 1
+    
+    tree = {}
+    tree[0] = firstWidget
+    for i in range(1,10):
+        tree[i] = estimateWidgetProbability(basket, i)
+        
+    return tree
+    
+def estimateWidgetProbability(basket, depth):
+    """Estimates the probability of inserting the widget after several (depth) widgets.""" 
+    widgetProbs = {}
+    for widgets in basket:
+        if len(widgets) > depth:
+            for i in range(len(widgets) - depth):
+                c = ''
+                for j in range(i, i + depth + 1):
+                    c += widgets[j] + ';'
+                c = c[:-1]    
+                widgetProbs[c] = widgetProbs[c] + 1 if c in widgetProbs else 1
+    
+    widgetProbs = widgetProbs.items()
+    c = 0
+    for l in widgetProbs:
+        c += l[1]
+        
+    widgetProbs = [(widgets.split(';'),float(n)/c,n,c) for widgets, n in widgetProbs]
+    widgetProbs.sort(cmpBySecondValue)
+    return widgetProbs
+
+def nextWidgetProbility(state, tree):
+    """Returns a list of candidate widgets and their probability. The list is sorted descending by probability."""
+    predictions = []
+    # calculate probabilities on levels in a tree up to the number of already inserted widgets
+    for i in range(1, len(state)+1):
+        predictions_tmp = []
+        widgetCounts = tree[i]
+        count = 0
+        for widgets, p, c, n in widgetCounts:
+            
+            if len(widgets) > i:
+                #print widgets[-2], state[-1]
+                flag = True
+                for j in range(i):
+                    if widgets[-j-2] != state[-j-1]:
+                        flag = False
+                        
+                if flag:
+                    predictions_tmp.append((widgets, p, c, n))
+                    count += n
+        
+        # compute the probability of next widget in current tree level
+        predictions_tmp = [(predictions_tmp[j][0][-1], float(predictions_tmp[j][2]) / count) for j in range(len(predictions_tmp))]
+        predictions.extend(predictions_tmp)
+    
+    predictions.sort(cmpBySecondValue)
+    predictions_dict = set()
+    # remove double widget entries; leave the one with highest probability 
+    todel = []
+    for i in range(len(predictions)):
+        if predictions[i][0] in found_pred:
+            todel.append(i)
+        else:
+            found_pred.add(predictions[i][0])
+    
+    todel.sort()
+    for i in range(len(todel)):
+        del predictions[todel[len(todel) - i - 1]]
+    
+    return predictions
