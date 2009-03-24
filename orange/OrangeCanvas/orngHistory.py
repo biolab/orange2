@@ -117,13 +117,42 @@ def historyFileToBasket():
     """
     fin = open(logFile, 'r')
     
-    basket = []
+    session_widgets = {}
     for line in fin:
-        vals = line.split(',')
-        vals = [val.strip() for val in vals]
-        basket.append(vals)
+        vals = line.split(";")
+        session = int(vals[1])
+        action = vals[2]
         
+        if len(vals[3].split(" - ")) == 2:
+            group, widget = vals[3].split(" - ")
+            group = group.strip().replace(' ','')
+            widget = widget.strip().replace(' ','')
+        else:
+            vals[3] = vals[3][2:-2].split("', '")
+        
+            if len(vals[3]) == 2:
+                group, widget = vals[3]    
+                group = group.strip().replace(' ','')
+                widget = widget.strip().replace(' ','')
+            else:
+                group, widget = None, None
+        
+        if action == "ADDWIDGET":
+            if session in session_widgets:
+                widgets = session_widgets[session]
+                widgets.append(widget)
+            else:
+                session_widgets[session] = [widget]
+    
     fin.close()
+    
+    basket = []
+    for key in range(1, len(session_widgets)+1):
+        if key in session_widgets and len(session_widgets[key]) > 0:
+            widgets = session_widgets[key]
+            if len(widgets) > 2:
+                basket.append(widgets)
+    
     return basket
 
 def buildWidgetProbabilityTree(basket):
