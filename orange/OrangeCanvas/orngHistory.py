@@ -231,7 +231,8 @@ def nextWidgetProbility(state, tree):
             todel.append(i)
         else:
             predictions_set.add(predictions[i][0])
-    
+
+
     todel.sort()
     for i in range(len(todel)):
         del predictions[todel[len(todel) - i - 1]]
