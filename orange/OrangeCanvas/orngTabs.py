@@ -494,12 +494,24 @@ class CanvasPopup(QMenu):
     def selectByInputs(self, widgetInfo):
         self.selectActions("inputClasses", widgetInfo.outputClasses)
         
-    def setPredictedWidgetsByOutputs(self, widgets, widgetInfo, canvasDlg):
-        print widgets
-        print widgetInfo.inputClasses
-        for widget in widgets: 
-            if canvasDlg.widgetRegistry[widget].outputClasses & widgetInfo.inputClasses:
-                print widget
+    def setPredictedWidgetsByOutputs(self, widgets, widgetInfo, canvasDlg):                
+        candidates = []
+        for widget in widgets:
+            added = False
+            for category, show in canvasDlg.settings["WidgetTabs"]:
+                if not show or not canvasDlg.widgetRegistry.has_key(category):
+                    continue
+
+                for candidate in canvasDlg.widgetRegistry[category]:
+                    if widget.strip().lower() == candidate.replace(' ','').strip().lower():
+                        if canvasDlg.widgetRegistry[category][candidate].outputClasses & widgetInfo.inputClasses:
+                            candidates.append(candidate)
+                            added = True
+                if added:
+                    break
+        
+        candidates = candidates[:min(3, len(candidates))]
+        self.insertQuickActions(candidates, canvasDlg)
     
     def setPredictedWidgetsByInputs(self, widgets, widgetInfo, canvasDlg):
         candidates = []
@@ -518,11 +530,9 @@ class CanvasPopup(QMenu):
                     break
         
         candidates = candidates[:min(3, len(candidates))]
-        print candidates
+        self.insertQuickActions(candidates, canvasDlg)
         
-        for act in categoriesPopup.quickActions:
-            categoriesPopup.removeAction(act)
-        
+    def insertQuickActions(self, candidates, canvasDlg):
         categoriesPopup.clear()
         
         for c in candidates:

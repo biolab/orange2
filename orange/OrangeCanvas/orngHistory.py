@@ -149,7 +149,7 @@ def historyFileToBasket():
     for key in session_widgets:
         if len(session_widgets[key]) > 0:
             widgets = session_widgets[key]
-            if len(widgets) > 2:
+            if len(widgets) > 1:
                 basket.append(widgets)
     
     return basket
@@ -198,6 +198,7 @@ def estimateWidgetProbability(basket, depth):
 
 def nextWidgetProbility(state, tree):
     """Returns a list of candidate widgets and their probability. The list is sorted descending by probability."""
+    state = [w.replace(' ','') for w in state]
     predictions = []
     # calculate probabilities on levels in a tree up to the number of already inserted widgets
     for i in range(1, len(state)+1):
@@ -239,10 +240,10 @@ def nextWidgetProbility(state, tree):
 
 def predictWidgets(state, nWidgets=3, tree=None):
     """Returns the most probable widgets depending on the state and tree."""
+    state = [w.replace(' ','') for w in state]
     if not tree:
         basket = historyFileToBasket()
         tree = buildWidgetProbabilityTree(basket)
         
     widgets = nextWidgetProbility(state, tree)
-    
     return [widgets[i][0] for i in range(min(nWidgets, len(widgets)))]
