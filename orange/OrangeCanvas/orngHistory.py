@@ -75,6 +75,7 @@ def logChangeWidgetPosition(schemaID, nameKey, x, y):
     logAppend(schemaID, "MOVEWIDGET", str(nameKey) + ";" + str(x) + ";" + str(y))
 
 def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
+    """Sends history file to specified email."""
     from email.MIMEMultipart import MIMEMultipart
     from email.MIMEBase import MIMEBase
     from email.MIMEText import MIMEText
@@ -103,6 +104,7 @@ def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
     smtp.close()
 
 def cmpBySecondValue(x,y):
+    """Compares two array by the second value."""
     if x[1] > y[1]:
         return -1
     elif x[1] < y[1]:
@@ -231,7 +233,6 @@ def nextWidgetProbility(state, tree):
             todel.append(i)
         else:
             predictions_set.add(predictions[i][0])
-
 
     todel.sort()
     for i in range(len(todel)):
