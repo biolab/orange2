@@ -503,7 +503,8 @@ class CanvasPopup(QMenu):
     
     def setPredictedWidgetsByInputs(self, widgets, widgetInfo, canvasDlg):
         candidates = []
-        for widget in widgets: 
+        for widget in widgets:
+            added = False
             for category, show in canvasDlg.settings["WidgetTabs"]:
                 if not show or not canvasDlg.widgetRegistry.has_key(category):
                     continue
@@ -512,8 +513,12 @@ class CanvasPopup(QMenu):
                     if widget.strip().lower() == candidate.replace(' ','').strip().lower():
                         if canvasDlg.widgetRegistry[category][candidate].inputClasses & widgetInfo.outputClasses:
                             candidates.append(candidate)
+                            added = True
+                if added:
+                    break
         
         candidates = candidates[:min(3, len(candidates))]
+        print candidates
         
         for act in categoriesPopup.quickActions:
             categoriesPopup.removeAction(act)
@@ -532,7 +537,9 @@ class CanvasPopup(QMenu):
                     act = categoriesPopup.addAction(icon, widgetInfo.name)
                     act.widgetInfo = widgetInfo
                     categoriesPopup.quickActions.append(act)
-        
+                    break
+
+        categoriesPopup.addSeparator()
         for m in categoriesPopup.catActions:
             categoriesPopup.addMenu(m)
 
