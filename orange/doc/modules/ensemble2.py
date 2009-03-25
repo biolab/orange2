@@ -13,7 +13,7 @@ tree = orngTree.TreeLearner(minExamples=2, mForPrunning=2, \
 learners = [tree, forest]
 
 import orngTest, orngStat
-results = orngTest.crossValidation(learners, data, folds=10)
+results = orngTest.crossValidation(learners, data, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
