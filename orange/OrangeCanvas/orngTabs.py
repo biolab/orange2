@@ -537,7 +537,7 @@ class CanvasPopup(QMenu):
 def constructCategoriesPopup(canvasDlg):
     global categoriesPopup
     categoriesPopup = CanvasPopup(canvasDlg)
-    categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } """)
+    categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } QMenu::separator {height: 1px; background: #dddddd; margin-left: 3px; margin-right: 4px;}""")
 
     for category, show in canvasDlg.settings["WidgetTabs"]:
         if not show or not canvasDlg.widgetRegistry.has_key(category):
