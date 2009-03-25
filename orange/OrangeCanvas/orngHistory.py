@@ -129,7 +129,6 @@ def historyFileToBasket():
             widget = widget.strip().replace(' ','')
         else:
             vals[3] = vals[3][2:-2].split("', '")
-        
             if len(vals[3]) == 2:
                 group, widget = vals[3]    
                 group = group.strip().replace(' ','')
@@ -143,12 +142,12 @@ def historyFileToBasket():
                 widgets.append(widget)
             else:
                 session_widgets[session] = [widget]
-    
+
     fin.close()
     
     basket = []
-    for key in range(1, len(session_widgets)+1):
-        if key in session_widgets and len(session_widgets[key]) > 0:
+    for key in session_widgets:
+        if len(session_widgets[key]) > 0:
             widgets = session_widgets[key]
             if len(widgets) > 2:
                 basket.append(widgets)
@@ -223,17 +222,27 @@ def nextWidgetProbility(state, tree):
         predictions.extend(predictions_tmp)
     
     predictions.sort(cmpBySecondValue)
-    predictions_dict = set()
+    predictions_set = set()
     # remove double widget entries; leave the one with highest probability 
     todel = []
     for i in range(len(predictions)):
-        if predictions[i][0] in found_pred:
+        if predictions[i][0] in predictions_set:
             todel.append(i)
         else:
-            found_pred.add(predictions[i][0])
+            predictions_set.add(predictions[i][0])
     
     todel.sort()
     for i in range(len(todel)):
         del predictions[todel[len(todel) - i - 1]]
     
     return predictions
+
+def predictWidgets(state, nWidgets=3, tree=None):
+    """Returns the most probable widgets depending on the state and tree."""
+    if not tree:
+        basket = historyFileToBasket()
+        tree = buildWidgetProbabilityTree(basket)
+        
+    widgets = nextWidgetProbility(state, tree)
+    
+    return [widgets[i][0] for i in range(min(nWidgets, len(widgets)))]
