@@ -23,14 +23,14 @@
 
 <P class=section>Methods</P>
 <DL class=attributes>
-<DT>__init__(data=None, centroids=3, maxiters=None, maxscorechange=None, stopchanges=0, nstart=1, initialization=kmeans_init_random, distance=orange.ExamplesDistanceConstructor_Euclidean,
+<DT>__init__(data=None, centroids=3, maxiters=None, minscorechange=None, stopchanges=0, nstart=1, initialization=kmeans_init_random, distance=orange.ExamplesDistanceConstructor_Euclidean,
 scoring=score_distance_to_centroids,
 inner_callback = None,
 outer_callback = None,
 initialize_only = False)</DT>
-<DD><code>data</code> is an Orange's ExampleTable object that stores the data instances to be clustered. If <code>data</code> is not <code>None</code>, clustering will immediately executed after the initialization of clustering parameters unless <code>initialize_only</code> is set to <code>True</code>. <code>centroids</code> either specify a number of clusters or provide a list of examples that will serve as clustering centroids. The clustering will stop if one of the following conditions is met: the number of clustering iterations exceeds <code>maxiters</code>, the number of instances changing the cluster is equal to <code>stopchanges</code>, or the score associated with current clustering changed for less than <code>maxscorechange</code> from the clustering of the previous iteration. User can also provide a example distance constructor, which, given the data set, will provide a function that measures the distance between two example instances (see <a href="../reference/ExamplesDistance.htm">Distances between Examples</a>). A function to select centroids given the table of data instances, k and a example distance function is provided by <code>initialization</code>, the module includes implementations of several different approaches. <code>scoring</code> is a function that takes clustering object as an argument and returns a score for the clustering. It could be used, for instance, in procedure that repeats the clustering <code>nstart</code> times, returning the clustering with the lowest score. The two callbacks are invoked either after every clustering iteration (<code>inner_callback</code>) or after every clustering restart (in case when <code>nstart</code> is greater than 1, <code>outer_callback</code>).<dd>
+<DD><code>data</code> is an Orange's ExampleTable object that stores the data instances to be clustered. If <code>data</code> is not <code>None</code>, clustering will immediately executed after the initialization of clustering parameters unless <code>initialize_only</code> is set to <code>True</code>. <code>centroids</code> either specify a number of clusters or provide a list of examples that will serve as clustering centroids. The clustering will stop if one of the following conditions is met: the number of clustering iterations exceeds <code>maxiters</code>, the number of instances changing the cluster is equal to <code>stopchanges</code>, or the score associated with current clustering improved for less than <code>minscorechange</code> of the score from previous iteration. If <code>minscorechange</code> is not set, the score will not be computed between iterations. User can also provide a example distance constructor, which, given the data set, will provide a function that measures the distance between two example instances (see <a href="../reference/ExamplesDistance.htm">Distances between Examples</a>). A function to select centroids given the table of data instances, k and a example distance function is provided by <code>initialization</code>, the module includes implementations of several different approaches. <code>scoring</code> is a function that takes clustering object as an argument and returns a score for the clustering. It could be used, for instance, in procedure that repeats the clustering <code>nstart</code> times, returning the clustering with the lowest score. The two callbacks are invoked either after every clustering iteration (<code>inner_callback</code>) or after every clustering restart (in case when <code>nstart</code> is greater than 1, <code>outer_callback</code>).<dd>
 <DT>runone()</DT>
-<DD>Runs one clustering iteration, starting with computation of data membership (associating data instances to their nearest centroid), followed by re-computation of centroids.</DD>
+<DD>Runs one clustering iteration, starting with re-computation of centroids, followed by computation of data membership (associating data instances to their nearest centroid).</DD>
 <DT>run()</DT>
 <DD>Runs clustering until the convergence conditions are met. If <code>nstart</code> is greater than one, <code>nstart</code> runs of the clustering algorithm will be executed, returning the clustering with the best (lowest) score.</DD>
 </DL>
@@ -62,7 +62,7 @@ print km.clusters[-10:]
 <xmp class=code>[1, 1, 2, 1, 1, 1, 2, 1, 1, 2]
 </xmp>
 
-<p>Invoking a call-back function may be useful when tracing the progress of the clustering. Below is a code that uses an <code>inner_callback</code> to report on the number of instances that have changed the cluster and to report on the clustering score.</p>
+<p>Invoking a call-back function may be useful when tracing the progress of the clustering. Below is a code that uses an <code>inner_callback</code> to report on the number of instances that have changed the cluster and to report on the clustering score. For the score to be computed at each iteration we have to set <code>minscorechange</code>, but we can leave it at 0 (or even set it to a negative value, which allows the score to deteriorate by some amount).</p>
 
 <p class="header">part of <a href="kmeans-run-callback.py">kmeans-run-callback.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
@@ -71,7 +71,7 @@ print km.clusters[-10:]
         km.nchanges, km.score)
     
 data = orange.ExampleTable("iris")
-km = orngClustering.KMeans(data, 3, inner_callback = callback)
+km = orngClustering.KMeans(data, 3, minscorechange=0, inner_callback=callback)
 </xmp>
 
 <p>The convergence on Iris data set is fast:</p>
@@ -145,6 +145,10 @@ km = orngClustering.KMeans(data, 3, maxiters=10, inner_callback=in_callback)</xm
 <dd class="ddfun">Returns a center of the instances in the data set (average across data instances for continuous attributes, most frequent value for discrete attributes).</dd>
 <dt>score_distance_to_centroids(kmeans)</dt>
 <dd class="ddfun">Returns an average distance of data instances to their associated centroids. <code>kmeans</code> is a k-means clustering object.</dd>
+<dt>score_silhouette(kmeans, index=None)</dt>
+<dd class="ddfun">Returns an average silhouette score of data instances. If <code>index</code> is specified it instead returns just the silhouette score of that particular data instance. <code>kmeans</code> is a k-means clustering object.</dd>
+<dt>plot_silhouette(kmeans, filename='tmp.png')</dt>
+<dd class="ddfun">Saves a silhuette plot to <code>filename</code>, showing the distributions of silhouette scores in clusters. <code>kmeans</code> is a k-means clustering object.</dd>
 </dl>
 
 <p>Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge:</p>

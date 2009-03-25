@@ -39,8 +39,8 @@ def avg(x):
 # clustering scoring functions 
 
 def score_distance_to_centroids(km):
-    """Return the sum of distances from cluster elements to their centroids."""
-    return sum([km.distance(km.centroids[km.clusters[i]], d) for i,d in enumerate(km.data)])
+    """Return the sum of distances from cluster elements to their centroids"""
+    return sum(km.distance(km.centroids[km.clusters[i]], d) for i,d in enumerate(km.data))
 
 score_distance_to_centroids.minimize = True
 
@@ -48,11 +48,15 @@ def score_conditionalEntropy(km):
     """cluster quality measured by conditional entropy"""
     pass
 
-def score_withinClusterDistance(data, clusters, _, distance):
+def score_withinClusterDistance(km):
     """weighted average within-cluster pairwise distance"""
     pass
 
 score_withinClusterDistance.minimize = True
+
+def score_betweenClusterDistance(km):
+    """Sum of distances from elements to 'nearest miss' centroids"""
+    return sum(min(km.distance(c, d) for j,c in enumerate(km.centroids) if j!=km.clusters[i]) for i,d in enumerate(km.data))
 
 def score_silhouette(km, index=None):
     """Return the silhouette score (of a specific example if index is specified)"""
@@ -64,6 +68,15 @@ def score_silhouette(km, index=None):
     b = min(avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
                  km.clusters[i] == c])
             for c in range(len(km.centroids)) if c != cind)
+    return float(b - a) / max(a, b)
+
+def score_fastsilhouette(km, index=None):
+    """Return the silhouette score (of a specific example if index is specified)"""
+    if index == None:
+        return avg([score_fastsilhouette(km, i) for i in range(len(km.data))])
+    cind = km.clusters[index]
+    a = km.distance(km.data[index], km.centroids[km.clusters[index]])
+    b = min(km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind)
     return float(b - a) / max(a, b)
 
 def plot_silhouette(km, filename='tmp.png'):
@@ -168,7 +181,8 @@ class KMeans:
         for startindx in range(self.nstart):
             self.init_centroids()
             self.clusters = old_cluster = self.compute_cluster()
-            self.score = old_score = self.scoring(self)
+            if self.minscorechange != None:
+                self.score = old_score = self.scoring(self)
             self.nchanges = len(self.data)
             self.iteration = 0
             stopcondition = False
@@ -191,7 +205,7 @@ class KMeans:
                                   scorechange <= self.minscorechange))
                 if self.inner_callback:
                     self.inner_callback(self)
-            if self.minscorechange == None:
+            if self.scoring and self.minscorechange == None:
                 self.score = self.scoring(self)
             if self.nstart > 1:
                 if not self.winner or (self.score < self.winner[0] if
