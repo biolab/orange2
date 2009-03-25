@@ -1,9 +1,7 @@
-# Author:      J Zabkar
-# Version:     1.0
 # Description: Storing and printing out the examples in classification tree
 # Category:    modelling
 # Uses:        iris.tab
-# Referenced:   orngTree.htm
+# Referenced:  orngTree.htm
 
 import orange, orngTree
 
