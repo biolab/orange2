@@ -503,7 +503,7 @@ class CanvasPopup(QMenu):
                     continue
 
                 for candidate in canvasDlg.widgetRegistry[category]:
-                    if widget.strip().lower() == candidate.replace(' ','').strip().lower():
+                    if widget.strip().lower() == candidate.strip().lower():
                         if getattr(canvasDlg.widgetRegistry[category][candidate], actClassesAttr) & ioClasses:
                             candidates.append(candidate)
                             added = True

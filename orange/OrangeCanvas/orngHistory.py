@@ -127,14 +127,14 @@ def historyFileToBasket():
         
         if len(vals[3].split(" - ")) == 2:
             group, widget = vals[3].split(" - ")
-            group = group.strip().replace(' ','')
-            widget = widget.strip().replace(' ','')
+            group = group.strip() #.replace(' ','')
+            widget = widget.strip() #.replace(' ','')
         else:
             vals[3] = vals[3][2:-2].split("', '")
             if len(vals[3]) == 2:
                 group, widget = vals[3]    
-                group = group.strip().replace(' ','')
-                widget = widget.strip().replace(' ','')
+                group = group.strip() #.replace(' ','')
+                widget = widget.strip() #.replace(' ','')
             else:
                 group, widget = None, None
         
@@ -200,7 +200,7 @@ def estimateWidgetProbability(basket, depth):
 
 def nextWidgetProbility(state, tree):
     """Returns a list of candidate widgets and their probability. The list is sorted descending by probability."""
-    state = [w.replace(' ','') for w in state]
+    #state = [w.replace(' ','') for w in state]
     predictions = []
     # calculate probabilities on levels in a tree up to the number of already inserted widgets
     for i in range(1, len(state)+1):
@@ -242,7 +242,7 @@ def nextWidgetProbility(state, tree):
 
 def predictWidgets(state, nWidgets=3, tree=None):
     """Returns the most probable widgets depending on the state and tree."""
-    state = [w.replace(' ','') for w in state]
+    #state = [w.replace(' ','') for w in state]
     if not tree:
         basket = historyFileToBasket()
         tree = buildWidgetProbabilityTree(basket)
