@@ -52,6 +52,7 @@ import urllib2
 
 import os
 import shutil
+import glob
 
 #defserver = "localhost/"
 defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
@@ -332,13 +333,9 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
         serverfiles = ServerFiles()
 
     info = serverfiles.info(domain, filename)
-
     extract = extract and any(tag.startswith("#uncompressed:") for tag in info["tags"])
-    
     target = localpath(domain, filename)
-
     callback = DownloadProgress(filename, int(info["size"])) if verbose and not callback else callback    
-    
     serverfiles.download(domain, filename, target + "tmp" if extract else target, callback=callback)
     
     #file saved, now save info file
@@ -360,13 +357,12 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
         callback.finish()        
 
 def listfiles(domain):
-    """
-    Returns a list of filenames in a given domain on local Orange
-    installation with a valid  info file: useful ones.
+    """Return a list of filenames in a given domain on local Orange
+    installation with a valid info file: useful ones.
     """
     dir = localpath(domain)
     try:
-        files = [ a for a in os.listdir(dir) if a[-5:] == '.info' ]
+        files = [a for a in os.listdir(dir) if a[-5:] == '.info' ]
     except:
         files = []
     okfiles = []
@@ -382,6 +378,19 @@ def listfiles(domain):
                 pass
 
     return okfiles
+
+def remove(domain, filename):
+    filename = localpath(domain, filename)
+    os.remove(filename)
+    os.remove(filename + ".info")
+    
+def remove_domain(domain, force=False):
+    directory = localpath(domain)
+    if force:
+        import shutil
+        shutil.rmtree(directory)
+    else:
+        os.rmdir(directory)
 
 def listdomains():
     dir = localpath()
