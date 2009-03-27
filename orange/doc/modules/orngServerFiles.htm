@@ -13,20 +13,27 @@
 <index name="files">
 
 <p>Module <code>orngServerFiles</code> allows users to download files from a common
-repository. It was designed to simplify the download and updates of 
+repository residing on the Orange server. It was designed to simplify the download and updates of 
 external data sources for Orange Genomics add-on. Furthermore, an authenticated
 user can also manage the repository files with this module.</p>
 
+<p>Orange server file repository was created with the intend to store larger files that do not come with Orange installation, but
+may be required from the user when running specific Orange functions. A typical example is Orange bioinformatics package,
+which relies on large data files storing genome information. These do not come pre-installed, but are rather downloaded
+from the server when needed and stored in the local repository. Module orngServerFiles provides low-level functionality 
+to manage these files, and is used by Orange modules to locate the files from the local repository and update/download them when
+and if needed.</p>
+
 <p>Each file managed by <code>orngServerFiles</code> is described by domain and 
-file name. Domains are like folders - a place where files are put in.</p>
+the file name. Domains are like directories - a place where files are put in.</p>
 
 <h2>Local file management</h2>
 
 <p>Downloaded files are saved under Orange's settings directory, subdirectory
 <code>buffer/bigfiles</code>. For each new domain a subdirectory containing 
 the downloaded files is created. With every download a corresponding 
-info file is created with the same name plus &quot;.info&quot; extension. 
-It contains file's title, tags, size and date and time of the upload.
+info file is created with bearing the same name but added an extension plus &quot;.info&quot;. 
+Info fail contains file's title, tags, size and date and time of the upload.
 </p>
 
 <p class="section">Methods used for managing local files</p>
@@ -38,7 +45,7 @@ files as an authenticated user you should also pass an instance of <code>ServerF
 Callback can be a function without arguments. It will be called once for each downloaded percent of file: 100 times for the whole file.
 </dd>
 <dt>listdomains()</dt>
-<dd>List all domains on local orange installation.</dd>
+<dd>List all file domains in the local repository.</dd>
 <dt>listfiles(domain)</dt>
 <dd>List all files in a domain on local orange installation.</dd>
 <dt>info(domain, filename)</dt>
@@ -48,10 +55,16 @@ Callback can be a function without arguments. It will be called once for each do
 is file's name and value its info.</dd>
 <dt>search(substrings, caseSensitive=False, inTag=True, inTitle=True, inName=True)</dt>
 <dd>Function searches for local files where all substrings in a list are contained
-in at least one choosen field (tag, title, name). It returns a list of tuples: first tuple element
+in at least one chosen field (tag, title, name). It returns a list of tuples: first tuple element
 is the file's domain, second its name.</dd>  
 <dt>localpath(domain [,filename])</dt>
 <dd>Returns local path for the domain. If filename is present, return local path to than filename.</dd>
+<dt>remove_domain(domain [,force])</dt>
+<dd>Removes a domain. If force is True, domain is removed even
+if it is not empty (contains files).</dd>
+<dt>remove(domain, filename)</dt>
+<dd>Removes a file from repository.</dd>
+
 </dl>
 
 <h2>ServerFiles: the repository</h2>
@@ -68,7 +81,7 @@ only authenticated users can see them. They need to be unprotected
 for public use.</p>
 
 <dl class="attributes">
-<dt>Constructor(username=None, password=None, access_code=None)</dt>
+<dt>ServerFiles(username=None, password=None, access_code=None)</dt>
 <dd>Creates a ServerFiles instance. Pass your username and password to use
 the repository as an authenticated user. If you want to use your access code
 (as an ordinary user), pass it also.</dd>
@@ -109,7 +122,7 @@ section, but they will also work for protected files.
 <dd>Creates a repository domain.</dd>
 <dt>remove_domain(domain [,force])</dt>
 <dd>Removes a domain. If force is True, domain is removed even
-if it contains files.</dd>
+if it is not empty (contains files).</dd>
 <dt>remove(domain, filename)</dt>
 <dd>Removes a file from the repository.</dd>
 <dt>protection(domain, filename)</dt>
