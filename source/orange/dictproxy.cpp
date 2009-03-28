@@ -178,8 +178,10 @@ static PyObject *PyOrange_DictProxy_items(TPyOrange_DictProxy *mp)
         Py_DECREF(items);
         return PYNULL;
       }
-       
-      PyList_Append(items, Py_BuildValue("sN", pd->name, pyattr));
+      
+      PyObject *bc = Py_BuildValue("sN", pd->name, pyattr);
+      PyList_Append(items, bc);
+      Py_DECREF(bc);
     }
 
   return items;
