@@ -428,10 +428,10 @@ def needs_update(domain, filename, access_code=None):
         return True
     dt_fmt = "%Y-%m-%d %H:%M:%S"
     dt_local = datetime.datetime.strptime(
-        info("demo", filename)["datetime"][:19], dt_fmt)
+        info(domain, filename)["datetime"][:19], dt_fmt)
     server = ServerFiles(access_code=access_code)
     dt_server = datetime.datetime.strptime(
-        server.info("demo", filename)["datetime"][:19], dt_fmt)
+        server.info(domain, filename)["datetime"][:19], dt_fmt)
     return dt_server > dt_local
 
 def update(domain, filename, access_code=None, verbose=True):
