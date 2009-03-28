@@ -762,8 +762,11 @@ PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples,
 
   PyObject *list=PyList_New(0);
   TExample::const_iterator ei=example.begin();
-  const_PITERATE(TVarList, vi, example.domain->attributes)
-    PyList_Append(list, toValue(*(ei++), *vi, natvt, forDK, forDC, forSpecial));
+  const_PITERATE(TVarList, vi, example.domain->attributes) {
+    PyObject *valo = toValue(*(ei++), *vi, natvt, forDK, forDC, forSpecial);
+    PyList_Append(list, valo);
+    Py_DECREF(valo);
+  }
 
   PyObject *res;
 
@@ -773,6 +776,7 @@ PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples,
       res = Py_BuildValue("NN", list, pyclass);
     else {
       PyList_Append(list, pyclass);
+      Py_DECREF(pyclass);
       res = list;
     }
   }
