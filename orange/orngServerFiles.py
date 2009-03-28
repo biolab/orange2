@@ -7,7 +7,7 @@ is something like a filesystem directory -- a container holding files.
 
 Domain should consist of less than 255 alphanumeric ASCII characters, whereas 
 filenames can be arbitary long and can contain any ASCII character (including
-" ~ . \ / { }). Please, refrain from using not-ASCII character both in
+"" ~ . \ / { }). Please, refrain from using not-ASCII character both in
 domain and filenames. Files can be protected or not. Protected file names can 
 only be accessed by authenticated users!
 
@@ -53,6 +53,7 @@ import urllib2
 import os
 import shutil
 import glob
+import datetime
 
 #defserver = "localhost/"
 defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
@@ -108,6 +109,7 @@ def createPath(target):
         pass
 
 def localpath(domain=None, filename=None):
+    """Return a path for the file in the local repository."""
     import orngEnviron
     if not domain:
         return os.path.join(orngEnviron.directoryNames["bufferDir"], "bigfiles")
@@ -139,9 +141,8 @@ class ServerFiles(object):
         #print "TIME", time.time() - t
  
     def upload(self, domain, filename, file, title="", tags=[]):
-        """
-        Uploads file to the server. File can be an open file or a filename.
-        """
+        """Upload the file to the server.
+        File can be an open file or a filename."""
         if isinstance(file, basestring):
             file = open(file, 'rb')
 
@@ -149,47 +150,51 @@ class ServerFiles(object):
         return self._secopen('upload', data)
 
     def create_domain(self, domain):
+        """Create the domain in the server repository."""
         return self._secopen('createdomain', { 'domain': domain })
 
     def remove_domain(self, domain, force=False):
+        """Remove the domain from the server repository. If force=True
+        remove if the domain is not empty (includes files)."""
         data = { 'domain': domain }
         if force:
             data['force'] = True
         return self._secopen('removedomain', data)
 
     def remove(self, domain, filename):
+        """Remove a file from the server repository."""
         return self._secopen('remove', { 'domain': domain, 'filename': filename })
 
     def unprotect(self, domain, filename):
+        """Unprotect a file in the server repository."""
         return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': '0' })
 
     def protect(self, domain, filename, access_code="1"):
+        """Protect a file in the server repository."""
         return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': access_code })
 
     def protection(self, domain, filename):
+        """Return 1 if the file in the server is protected, else return 0."""
         return self._secopen('protection', { 'domain': domain, 'filename': filename })
 
     def listfiles(self, *args, **kwargs):
+        """List all files from the server repositotory that reside in specific domain."""
         if self._authen(): return self.seclist(*args, **kwargs)
         else: return self.publist(*args, **kwargs)
 
     def listdomains(self, *args, **kwargs):
+        """List the domains from the server repository."""
         if self._authen(): return self.seclistdomains(*args, **kwargs)
         else: return self.publistdomains(*args, **kwargs)
 
     def downloadFH(self, *args, **kwargs):
-        """
-        Returns open file handle of requested file.
-        Parameters: domain and filename.
-        """
+        """Return open file handle of requested file from the server repository given the domain and the filename."""
         if self._authen(): return self.secdownloadFH(*args, **kwargs)
         else: return self.pubdownloadFH(*args, **kwargs)
 
     def download(self, domain, filename, target, callback=None):
-        """
-        Downloads a file into target name. If target is not present,
-        file is downloaded into [bufferDir]/bigfiles/domain/filename
-        """
+        """Download a file into target name. If target is not present,
+        file is downloaded into [bufferDir]/bigfiles/domain/filename."""
         createPathForFile(target)
 
         fdown = self.downloadFH(domain, filename)
@@ -326,9 +331,7 @@ class ServerFiles(object):
 
 
 def download(domain, filename, serverfiles=None, callback=None, extract=True, verbose=True):
-    """
-    Downloads a file to a local orange installation.
-    """
+    """Download a file from a server placing it in a local repository."""
     if not serverfiles:
         serverfiles = ServerFiles()
 
@@ -358,8 +361,7 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
 
 def listfiles(domain):
     """Return a list of filenames in a given domain on local Orange
-    installation with a valid info file: useful ones.
-    """
+    installation with a valid info file: useful ones."""
     dir = localpath(domain)
     try:
         files = [a for a in os.listdir(dir) if a[-5:] == '.info' ]
@@ -380,11 +382,13 @@ def listfiles(domain):
     return okfiles
 
 def remove(domain, filename):
+    """Remove a file from a local repository."""
     filename = localpath(domain, filename)
     os.remove(filename)
     os.remove(filename + ".info")
     
 def remove_domain(domain, force=False):
+    """Remove a domain (directory) from the local repository."""
     directory = localpath(domain)
     if force:
         import shutil
@@ -393,6 +397,7 @@ def remove_domain(domain, force=False):
         os.rmdir(directory)
 
 def listdomains():
+    """Return a list of domains from a local repository."""
     dir = localpath()
     createPath(dir)
     files = [ a for a in os.listdir(dir) ]
@@ -403,16 +408,12 @@ def listdomains():
     return ok
 
 def info(domain, filename):
-    """
-    Returns info of a file
-    """
+    """Returns info of a file in a local repository."""
     target = localpath(domain, filename)
     return openFileInfo(target + '.info')
 
 def allinfo(domain):
-    """
-    Returns all file infos.
-    """
+    """Returns info of all files in a specific domain in a local reposiotory."""
     files = listfiles(domain)
     dic = {}
     for filename in files:
@@ -420,6 +421,29 @@ def allinfo(domain):
         dic[filename] = info(domain, target)
     return dic
 
+def needs_update(domain, filename, access_code=None):
+    """Returns true if a file does not exist in the local repository
+    or if there is a newer version on the server."""
+    if filename not in listfiles(domain):
+        return True
+    dt_fmt = "%Y-%m-%d %H:%M:%S"
+    dt_local = datetime.datetime.strptime(
+        info("demo", filename)["datetime"][:19], dt_fmt)
+    server = ServerFiles(access_code=access_code)
+    dt_server = datetime.datetime.strptime(
+        server.info("demo", filename)["datetime"][:19], dt_fmt)
+    return dt_server > dt_local
+
+def update(domain, filename, access_code=None, verbose=True):
+    """Downloads a file from a server placing it in a local repository
+    if a file on a server is newer or its local version does not exist."""
+    if needs_update(domain, filename, access_code=access_code):
+        if not access_code:
+            download(domain, filename, verbose=verbose)
+        else:
+            server = orngServerFiles.ServerFiles(access_code=access_code)
+            download(domain, filename, serverfiles=server)
+        
 def _searchinfo():
     domains = listdomains()
     infos = {}
