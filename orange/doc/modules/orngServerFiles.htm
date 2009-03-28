@@ -13,7 +13,7 @@
 <index name="files">
 
 <p>Module <code>orngServerFiles</code> allows users to download files from a common
-repository residing on the Orange server. It was designed to simplify the download and updates of 
+repository residing on the Orange server. It was designed to simplify the download and updates of
 external data sources for Orange Genomics add-on. Furthermore, an authenticated
 user can also manage the repository files with this module.</p>
 
@@ -24,7 +24,7 @@ from the server when needed and stored in the local repository. Module orngServe
 to manage these files, and is used by Orange modules to locate the files from the local repository and update/download them when
 and if needed.</p>
 
-<p>Each file managed by <code>orngServerFiles</code> is described by domain and 
+<p>Each file managed by <code>orngServerFiles</code> is described by domain and
 the file name. Domains are like directories - a place where files are put in.</p>
 
 <h2>Local file management</h2>
@@ -47,34 +47,34 @@ Callback can be a function without arguments. It will be called once for each do
 <dt>listdomains()</dt>
 <dd>List all file domains in the local repository.</dd>
 <dt>listfiles(domain)</dt>
-<dd>List all files in a domain on local orange installation.</dd>
+<dd>List all files from a domain in a local repository.</dd>
 <dt>info(domain, filename)</dt>
-<dd>Returns a dictionary containing downloaded file info. Keys: title, tags, size, datetime. </dd>
+<dd>Returns a dictionary containing downloaded file information. Keys: title, tags, size, datetime. </dd>
 <dt>allinfo(domain)</dt>
-<dd>Goes through all files in domain (local) and returns a dictionary, where key
-is file's name and value its info.</dd>
+<dd>Goes through all files in a domain on a local repository and returns a dictionary, where keys are names of the files and values are their information.</dd>
 <dt>search(substrings, caseSensitive=False, inTag=True, inTitle=True, inName=True)</dt>
-<dd>Function searches for local files where all substrings in a list are contained
+<dd>Function searches for files in the local repository where all substrings in a list are contained
 in at least one chosen field (tag, title, name). It returns a list of tuples: first tuple element
-is the file's domain, second its name.</dd>  
+is the domain of the file, second its name.</dd>  
 <dt>localpath(domain [,filename])</dt>
-<dd>Returns local path for the domain. If filename is present, return local path to than filename.</dd>
+<dd>Returns a path for the domain in the local repository. If argument <code>filename</code> is given, returns a path to corresponding file.</dd>
 <dt>remove_domain(domain [,force])</dt>
 <dd>Removes a domain. If force is True, domain is removed even
 if it is not empty (contains files).</dd>
 <dt>remove(domain, filename)</dt>
 <dd>Removes a file from repository.</dd>
+<dt>update(domain, filename, access_code=None, verbose=True)</dt>
+<dd>Downloads the corresponding file from the server and places it in the local repository, but only if the server copy of the file is newer or the local copy does not exist. An optional <code>access_code</code> can be given to allow server access if the file is protected.</dd>
 
 </dl>
 
 <h2>ServerFiles: the repository</h2>
 
-<p>To work with the repository, you need to create an instance of 
-<code>ServerFiles</code>. To access the repository as an authenticated user, 
-an username and password should be passed to the constructor. 
-Afterwards you can use the instance's methods. All password
-protected operations and transfers are secured by SSL; this secures both
-password and content. </p>
+<p>To work with the repository, you need to create an instance of
+<code>ServerFiles</code> object. To access the repository as an authenticated user,
+a username and password should be passed to the constructor.
+All password
+protected operations and transfers are secured by SSL; this secures both password and content.</p>
 
 <p>Repository files are set as protected when first uploaded: 
 only authenticated users can see them. They need to be unprotected 
@@ -84,10 +84,10 @@ for public use.</p>
 <dt>ServerFiles(username=None, password=None, access_code=None)</dt>
 <dd>Creates a ServerFiles instance. Pass your username and password to use
 the repository as an authenticated user. If you want to use your access code
-(as an ordinary user), pass it also.</dd>
+(as an non-authenticated user), pass it also.</dd>
 </dl>
 
-<p class="section">Ordinary users</p>
+<p class="section">Non-authenticated users</p>
 
 <dl class="attributes">
 <dt>download(domain, filename, target, callback=None)</dt>
@@ -114,8 +114,8 @@ information on files in repository is transfered on first call of this function.
 
 <p class="section">Authenticated users</p>
 
-Authenticated users can use methods described in &quot;Ordinary users&quot; 
-section, but they will also work for protected files.
+Authenticated users can use methods described in &quot;Non-authenticated users&quot;
+section, but they can also use the functions that access and modify protected files.
 
 <dl class="attributes">
 <dt>create_domain(domain)</dt>
@@ -193,11 +193,11 @@ authenticated.create_domain('demo2')
 authenticated.upload('demo2', 'orngServerFiles.py', 'orngServerFiles.py', \
     title="orngServerFiles client", tags=["basic", "fileManagement"]) 
 authenticated.upload('demo2', 'urllib2_file.py', 'urllib2_file.py')
-print "Ordinary users see:", ordinary.listfiles('demo2')
-print "Authenticated  users see:", authenticated.listfiles('demo2')
+print "Non-authenticated users see:", ordinary.listfiles('demo2')
+print "Authenticated users see:", authenticated.listfiles('demo2')
 authenticated.unprotect('demo2', 'orngServerFiles.py')
 authenticated.unprotect('demo2', 'urllib2_file.py')
-print "Ordinary users now see:", ordinary.listfiles('demo2')
+print "Non-authenticated users now see:", ordinary.listfiles('demo2')
 print "orngServerFiles.py file info:"
 import pprint; pprint.pprint(ordinary.info('demo2', 'orngServerFiles.py'))
 </xmp>
@@ -205,8 +205,8 @@ import pprint; pprint.pprint(ordinary.info('demo2', 'orngServerFiles.py'))
 <p>Output:</p>
 
 <xmp class=code>Ordinary users see: ['']
-Authenticated  users see: ['orngServerFiles.py', 'urllib2_file.py']
-Ordinary users now see: ['orngServerFiles.py', 'urllib2_file.py']
+Authenticated users see: ['orngServerFiles.py', 'urllib2_file.py']
+Non-authenticated users now see: ['orngServerFiles.py', 'urllib2_file.py']
 orngServerFiles.py file info:
 {'datetime': '2008-08-26 10:30:05.373000',
  'size': '10165',
