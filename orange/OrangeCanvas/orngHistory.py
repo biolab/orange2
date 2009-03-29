@@ -3,9 +3,10 @@
 
 import os, sys, time, smtplib
 import orngEnviron
+from orngSignalManager import OutputSignal
 
 logHistory = 1
-logFile = os.path.join(orngEnviron.directoryNames["canvasSettingsDir"], "history.log")
+logFile = os.path.join(orngEnviron.directoryNames["canvasSettingsDir"], "history_v002.log")
 
 if not os.path.exists(logFile):
     file = open(logFile, "w")
@@ -65,14 +66,25 @@ def logNewSchema():
 def logCloseSchema(schemaID):
     logAppend(schemaID, "CLOSESCHEMA")
     
-def logAddWidget(schemaID, nameKey, x, y):
-    logAppend(schemaID, "ADDWIDGET", str(nameKey) + ";" + str(x) + ";" + str(y))
+def logAddWidget(schemaID, widgetID, widgetName, x, y):
+    logAppend(schemaID, "ADDWIDGET", str(widgetID) + ";" + str(widgetName) + ";" + str(x) + ";" + str(y))
     
-def logRemoveWidget(schemaID, nameKey):
-    logAppend(schemaID, "REMOVEWIDGET", str(nameKey))
+def logRemoveWidget(schemaID, widgetID, widgetName):
+    logAppend(schemaID, "REMOVEWIDGET",  str(widgetID) + ";" + str(widgetName))
 
-def logChangeWidgetPosition(schemaID, nameKey, x, y):
-    logAppend(schemaID, "MOVEWIDGET", str(nameKey) + ";" + str(x) + ";" + str(y))
+def logChangeWidgetPosition(schemaID, widgetID, widgetName, x, y):
+    logAppend(schemaID, "MOVEWIDGET", str(widgetID) + ";" + str(widgetName) + ";" + str(x) + ";" + str(y))
+    
+def logAddLink(schemaID, outWidget, inWidget, outSignalName):
+    """Logs new link to history log file."""
+    signalType = ''
+    for o in outWidget.instance.outputs:
+        output = OutputSignal(*o)
+        if output.name == outSignalName:
+            signalType = str(output.type.__name__)
+            break
+    
+    logAppend(schemaID, "ADDLINK", str(id(outWidget)) + ";" + str(id(inWidget)) + ";" + str(signalType))
 
 def sendHistory(username, password, to, host='fri-postar1.fri1.uni-lj.si'):
     """Sends history file to specified email."""
@@ -125,16 +137,16 @@ def historyFileToBasket():
         session = int(vals[1])
         action = vals[2]
         
-        if len(vals[3].split(" - ")) == 2:
-            group, widget = vals[3].split(" - ")
-            group = group.strip() #.replace(' ','')
-            widget = widget.strip() #.replace(' ','')
-        else:
-            vals[3] = vals[3][2:-2].split("', '")
-            if len(vals[3]) == 2:
-                group, widget = vals[3]    
-                group = group.strip() #.replace(' ','')
-                widget = widget.strip() #.replace(' ','')
+        if len(vals) > 4 and len(vals[4].split(" - ")) == 2:
+            group, widget = vals[4].split(" - ")
+            group = group.strip() 
+            widget = widget.strip() 
+        elif len(vals) > 4:
+            vals[4] = vals[4][2:-2].split("', '")
+            if len(vals[4]) == 2:
+                group, widget = vals[4]    
+                group = group.strip()
+                widget = widget.strip()
             else:
                 group, widget = None, None
         

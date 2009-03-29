@@ -122,7 +122,7 @@ class SchemaDoc(QWidget):
         if line:
             outWidget.updateTooltip()
             inWidget.updateTooltip()
-
+            
         self.saveTempDoc()
         return line
 
@@ -198,6 +198,8 @@ class SchemaDoc(QWidget):
             self.removeLink(outWidget, inWidget, outSignalName, inSignalName)
             QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Something is really wrong; try restarting Orange Canvas.", QMessageBox.Ok + QMessageBox.Default )
             return 0
+        else:
+            orngHistory.logAddLink(self.schemaID, outWidget, inWidget, outSignalName)
 
         line.updateTooltip()
         return 1
@@ -298,11 +300,11 @@ class SchemaDoc(QWidget):
             if self.canvasDlg.settings["saveWidgetsPosition"]:
                 newwidget.instance.restoreWidgetPosition()
             newwidget.setProcessing(0)
+            orngHistory.logAddWidget(self.schemaID, id(newwidget), (newwidget.widgetInfo.category, newwidget.widgetInfo.name), newwidget.x(), newwidget.y())
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
 
-        orngHistory.logAddWidget(self.schemaID, (widgetInfo.category, widgetInfo.name), newwidget.x(), newwidget.y())
         qApp.restoreOverrideCursor()
         return newwidget
 
@@ -319,7 +321,7 @@ class SchemaDoc(QWidget):
         if saveTempDoc:
             self.saveTempDoc()
         
-        orngHistory.logRemoveWidget(self.schemaID, (widget.widgetInfo.category, widget.widgetInfo.name))
+        orngHistory.logRemoveWidget(self.schemaID, id(widget), (widget.widgetInfo.category, widget.widgetInfo.name))
 
     def clear(self):
         self.canvasDlg.setCaption()
