@@ -317,12 +317,12 @@ class SchemaView(QGraphicsView):
                     orngTabs.categoriesPopup.selectByInputs(self.outWidget.widgetInfo)
                     state = [self.doc.widgets[i].widgetInfo.name for i in range(min(len(self.doc.widgets), 5))]
                     predictedWidgets = orngHistory.predictWidgets(state, 20)
-                    orngTabs.categoriesPopup.setPredictedWidgets(predictedWidgets, 'inputClasses', self.outWidget.widgetInfo.outputClasses, self.doc.canvasDlg)
+                    orngTabs.categoriesPopup.setPredictedWidgets(predictedWidgets, 'inputClasses', self.doc.canvasDlg, self.outWidget.widgetInfo.outputClasses)
                 else:
                     orngTabs.categoriesPopup.selectByOutputs(self.inWidget.widgetInfo)
                     state = [self.doc.widgets[i].widgetInfo.name for i in range(min(len(self.doc.widgets), 5))]
                     predictedWidgets = orngHistory.predictWidgets(state, 20)
-                    orngTabs.categoriesPopup.setPredictedWidgets(predictedWidgets, 'outputClasses', self.inWidget.widgetInfo.inputClasses, self.doc.canvasDlg)
+                    orngTabs.categoriesPopup.setPredictedWidgets(predictedWidgets, 'outputClasses', self.doc.canvasDlg, self.inWidget.widgetInfo.inputClasses)
                     
                 newCoords = QPoint(ev.globalPos())
                 action = orngTabs.categoriesPopup.exec_(newCoords)
@@ -342,6 +342,9 @@ class SchemaView(QGraphicsView):
                     if (self.mouseDownPosition.x() - point.x())**2 + (self.mouseDownPosition.y() - point.y())**2 < 25:
                         newCoords = QPoint(ev.globalPos())
                         orngTabs.categoriesPopup.enableAll()
+                        state = [self.doc.widgets[i].widgetInfo.name for i in range(min(len(self.doc.widgets), 5))]
+                        predictedWidgets = orngHistory.predictWidgets(state, 20)
+                        orngTabs.categoriesPopup.setPredictedWidgets(predictedWidgets, 'inputClasses', self.doc.canvasDlg)
                         action = orngTabs.categoriesPopup.exec_(newCoords)
                         if action:
                             newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())

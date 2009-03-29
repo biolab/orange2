@@ -183,7 +183,8 @@ def buildWidgetProbabilityTree(basket):
         firstWidget[vals[0]] = firstWidget[vals[0]] + 1 if vals[0] in firstWidget else 1
     
     tree = {}
-    tree[0] = firstWidget
+    tree[0] = [(widgets.split(';'),float(n)/len(firstWidget),n,len(firstWidget)) for widgets, n in firstWidget.items()]
+    #tree[0] = firstWidget
     for i in range(1,10):
         tree[i] = estimateWidgetProbability(basket, i)
         
@@ -214,27 +215,33 @@ def nextWidgetProbility(state, tree):
     """Returns a list of candidate widgets and their probability. The list is sorted descending by probability."""
     #state = [w.replace(' ','') for w in state]
     predictions = []
-    # calculate probabilities on levels in a tree up to the number of already inserted widgets
-    for i in range(1, len(state)+1):
-        predictions_tmp = []
-        widgetCounts = tree[i]
-        count = 0
-        for widgets, p, c, n in widgetCounts:
+    
+    if state == []:
+        widgetCounts = tree[0]
+        predictions = [(widgetCounts[j][0][-1], float(widgetCounts[j][2]) / 1) for j in range(len(widgetCounts))]
+        print 'prediction', predictions
+    else:
+        # calculate probabilities on levels in a tree up to the number of already inserted widgets
+        for i in range(1, len(state)+1):
+            predictions_tmp = []
+            widgetCounts = tree[i]
+            count = 0
+            for widgets, p, c, n in widgetCounts:
+                
+                if len(widgets) > i:
+                    #print widgets[-2], state[-1]
+                    flag = True
+                    for j in range(i):
+                        if widgets[-j-2] != state[-j-1]:
+                            flag = False
+                            
+                    if flag:
+                        predictions_tmp.append((widgets, p, c, n))
+                        count += n
             
-            if len(widgets) > i:
-                #print widgets[-2], state[-1]
-                flag = True
-                for j in range(i):
-                    if widgets[-j-2] != state[-j-1]:
-                        flag = False
-                        
-                if flag:
-                    predictions_tmp.append((widgets, p, c, n))
-                    count += n
-        
-        # compute the probability of next widget in current tree level
-        predictions_tmp = [(predictions_tmp[j][0][-1], float(predictions_tmp[j][2]) / count) for j in range(len(predictions_tmp))]
-        predictions.extend(predictions_tmp)
+            # compute the probability of next widget in current tree level
+            predictions_tmp = [(predictions_tmp[j][0][-1], float(predictions_tmp[j][2]) / count) for j in range(len(predictions_tmp))]
+            predictions.extend(predictions_tmp)
     
     predictions.sort(cmpBySecondValue)
     predictions_set = set()

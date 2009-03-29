@@ -494,21 +494,25 @@ class CanvasPopup(QMenu):
     def selectByInputs(self, widgetInfo):
         self.selectActions("inputClasses", widgetInfo.outputClasses)
     
-    def setPredictedWidgets(self, widgets, actClassesAttr, ioClasses, canvasDlg):
+    def setPredictedWidgets(self, widgets, actClassesAttr, canvasDlg, ioClasses=None):
         candidates = []
         for widget in widgets:
-            added = False
-            for category, show in canvasDlg.settings["WidgetTabs"]:
-                if not show or not canvasDlg.widgetRegistry.has_key(category):
-                    continue
-
-                for candidate in canvasDlg.widgetRegistry[category]:
-                    if widget.strip().lower() == candidate.strip().lower():
-                        if getattr(canvasDlg.widgetRegistry[category][candidate], actClassesAttr) & ioClasses:
-                            candidates.append(candidate)
-                            added = True
-                if added:
-                    break
+            if ioClasses == None:
+                candidates.append(widget)
+            else:
+                # filter widgets by allowed signal 
+                added = False
+                for category, show in canvasDlg.settings["WidgetTabs"]:
+                    if not show or not canvasDlg.widgetRegistry.has_key(category):
+                        continue
+    
+                    for candidate in canvasDlg.widgetRegistry[category]:
+                        if widget.strip().lower() == candidate.strip().lower():
+                            if getattr(canvasDlg.widgetRegistry[category][candidate], actClassesAttr) & ioClasses:
+                                candidates.append(candidate)
+                                added = True
+                    if added:
+                        break
         
         candidates = candidates[:min(3, len(candidates))]
         self.insertQuickActions(candidates, canvasDlg)
