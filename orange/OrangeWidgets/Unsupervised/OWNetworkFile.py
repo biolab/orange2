@@ -18,7 +18,6 @@ from orngNetwork import *
 
 from orange import Graph
 from orange import GraphAsList
-from orangeom import Network
 
 class OWNetworkFile(OWWidget):
     

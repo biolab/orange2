@@ -11,7 +11,7 @@ MOVE_SELECTION = 100
 from OWGraph import *
 from numpy import *
 from orngScaleScatterPlotData import *
-from orangeom import Network
+from orngNetwork import Network
 
 class NetworkVertex():
     def __init__(self):

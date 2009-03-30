@@ -13,7 +13,6 @@ from orngNetwork import *
 from time import *
 import OWToolbars
 from statc import mean
-from orangeom import Network
 from operator import itemgetter
 
 dir = os.path.dirname(__file__) + "/../icons/"
