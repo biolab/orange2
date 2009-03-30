@@ -401,7 +401,7 @@ WRAPPER(GraphAsList);
 PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON (GraphAsList, "(nVertices, directed[, nEdgeTypes])")
 {
 	PyTRY
-		int nVertices, directed, nEdgeTypes = 1;
+		int nVertices = 1, directed = 0, nEdgeTypes = 1;
     PyObject *pygraph;
 
     if (PyArg_ParseTuple(args, "O:Network", &pygraph))
@@ -432,7 +432,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 
     PyErr_Clear();
 
-    if (PyArg_ParseTuple(args, "ii|i:Network", &nVertices, &directed, &nEdgeTypes))
+    if (PyArg_ParseTuple(args, "|iii:Network", &nVertices, &directed, &nEdgeTypes))
     {
 		  return WrapNewOrange(mlnew TNetwork(nVertices, nEdgeTypes, directed != 0), type);
     }
