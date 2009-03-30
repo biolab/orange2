@@ -1,12 +1,8 @@
 import orngNetwork
 from pylab import *
 
-        
-# vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = orngNetwork.NetworkOptimization()
-
 # read network from file
-net = networkOptimization.readNetwork("K5.net")
+net = orngNetwork.Network.readNetwork("K5.net")
 
 # read all edges and plot a line
 for u, v in net.getEdges():
