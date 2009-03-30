@@ -378,10 +378,8 @@ class OWNetworkFile(OWWidget):
             self.info[i].setText(s)            
 
     def readNetFile(self, fn):
-        network = NetworkOptimization()
- 
         try:
-            network.readNetwork(fn)
+            net = Network.readNetwork(fn)
             self.infoc.setText("Vertices data generated and added automatically")
         except:
             self.infoa.setText("Could not read file")
@@ -390,7 +388,7 @@ class OWNetworkFile(OWWidget):
             self.infod.setText("")
             return None
             
-        return network.graph
+        return net
 
     def sendReport(self):
         self.reportSettings("Network file",

@@ -8,7 +8,7 @@ from pylab import *
 network = NetworkOptimization()
 
 # read network from file
-net = network.readNetwork("combination.net")
+net = Network.readNetwork("combination.net")
 
 components = net.getConnectedComponents()
 print "Connected components"
