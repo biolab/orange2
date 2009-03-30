@@ -8,7 +8,7 @@
 from OWWidget import *
 
 import sys, traceback
-import OWGUI, orangeom
+import OWGUI, orngNetwork
 
 class OWPythonScript(OWWidget):
     
@@ -18,7 +18,7 @@ class OWPythonScript(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
         self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inDistanceMatrix", orange.SymMatrix, self.setDistanceMatrix), ("inNetwork", orangeom.Network, self.setNetwork)]
-        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orangeom.Network)]
+        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orngNetwork.Network)]
         
         self.inNetwork = None
         self.inExampleTable = None

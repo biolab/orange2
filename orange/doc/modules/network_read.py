@@ -1,10 +1,9 @@
-import orange
-from orngNetwork import NetworkOptimization
+import orngNetwork
 from pylab import *
 
         
 # vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = NetworkOptimization()
+networkOptimization = orngNetwork.NetworkOptimization()
 
 # read network from file
 net = networkOptimization.readNetwork("K5.net")

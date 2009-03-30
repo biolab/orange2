@@ -1,5 +1,5 @@
 import orange
-from orangeom import Network
+from orngNetwork import Network
 from orngNetwork import NetworkOptimization
 from pylab import *
 

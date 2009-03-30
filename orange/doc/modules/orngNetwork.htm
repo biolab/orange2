@@ -55,13 +55,12 @@ is the main class for performing network layout optimization. Network structure 
 <p>In our first example we create a Network object with a simple full graph (K5). Vertices are initially placed randomly. Graph is visualized using pylabs matplotlib. NetworkOptimization class is not needed since we do not apply any layout optimization method in this example.</p>
 
 <p class="header"><a href="network_constructor.py">network_constructor.py</a></p>
-<xmp class=code>import orangeom
-from orngNetwork import NetworkOptimization
+<xmp class=code>import orngNetwork
 from pylab import *
 
 # create graph object of type GraphAsList
 # vertices are placed randomly in Network constructor
-net = orangeom.Network(5, 0)
+net = orngNetwork.Network(5, 0)
 
 # set edges
 for i in range(4):
@@ -91,7 +90,7 @@ following graph drawing:</p>
 
 <p class="header">part of <a href="network_optimization.py">network_optimization.py</a></p>
 <xmp class=code># vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = NetworkOptimization(net)
+networkOptimization = orngNetwork.NetworkOptimization(net)
 
 # optimize verices layout with one of included algorithms
 networkOptimization.fruchtermanReingold(100, 1000)
@@ -116,7 +115,7 @@ networkOptimization.fruchtermanReingold(100, 1000)
 <p class="header"><a href="network_read.py">network_read.py</a> (uses <a href="K5.net">K5.net</a>)</p>
 
 <xmp class=code># vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = NetworkOptimization()
+networkOptimization = orngNetwork.NetworkOptimization()
 
 # read network from file
 net = networkOptimization.readNetwork("K5.net")

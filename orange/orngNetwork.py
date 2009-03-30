@@ -5,6 +5,9 @@ import orangeom
 import orngMDS
 import os.path
 
+class Network(orangeom.Network):
+    pass
+
 class NetworkOptimization(orangeom.NetworkOptimization):
     def __init__(self, network=None, name="None"):
         if network is None:

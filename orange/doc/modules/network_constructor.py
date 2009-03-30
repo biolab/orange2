@@ -1,10 +1,9 @@
-import orangeom
-from orngNetwork import NetworkOptimization
+import orngNetwork
 from pylab import *
 
 # create graph object of type GraphAsList
 # vertices are placed randomly in Network constructor
-net = orangeom.Network(5, 0)
+net = orngNetwork.Network(5, 0)
 
 # set edges
 for i in range(4):
