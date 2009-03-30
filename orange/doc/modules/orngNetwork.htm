@@ -110,15 +110,13 @@ networkOptimization.fruchtermanReingold(100, 1000)
 <img src="network_K5_fr.png">
 <h3>Reading and saving a network</h3>
 
-<p>This example demonstrates reading a network. NetworkOptimization class can read or write Pajek (.net) file format.</p>
+<p>This example demonstrates reading a network. Network class can read or write Pajek (.net) file format.</p>
 
 <p class="header"><a href="network_read.py">network_read.py</a> (uses <a href="K5.net">K5.net</a>)</p>
 
-<xmp class=code># vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = orngNetwork.NetworkOptimization()
+<xmp class=code># read the network from file
+net = orngNetwork.Network.readNetwork("K5.net")
 
-# read network from file
-net = networkOptimization.readNetwork("K5.net")
+# save the network to file
+net.saveNetwork("K5.net")
 </xmp>
-
-<p>You can save network in the same way with method <code>saveNetwork(fn)</code>.</p>
