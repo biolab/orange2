@@ -34,8 +34,7 @@
 import orange, statc
 import orngContingency, numpy
 import warnings, math, string, copy
-
-from orangeom import Network
+import orngNetwork
 
 def _nicefloat(f,sig):
     # pretty-float formatter
@@ -312,7 +311,7 @@ class InteractionMatrix:
             
         ### NODE DRAWING ###
         map = {}
-        graph = Network(len(atts), 0)
+        graph = orngNetwork.Network(len(atts), 0)
         table = []
         
         for i in range(len(atts)):
@@ -330,7 +329,7 @@ class InteractionMatrix:
                 r = self.gains[ndx] * 100.0 / self.entropy
                 table.append([i + 1, t, r])  
         
-        d = orange.Domain([orange.IntVariable('index'), orange.StringVariable('label'), orange.FloatVariable('norm. gain')])
+        d = orange.Domain([orange.FloatVariable('index'), orange.StringVariable('label'), orange.FloatVariable('norm. gain')])
         data = orange.ExampleTable(d, table)
         graph.items = data
         
@@ -364,7 +363,7 @@ class InteractionMatrix:
 
             table.append([i, j, mc, dir, color])
 
-        d = orange.Domain([orange.IntVariable('u'), orange.IntVariable('v'), orange.StringVariable('label'), orange.EnumVariable('dir', values = ["both", "none"]), orange.EnumVariable('color', values = ["green", "red"])])
+        d = orange.Domain([orange.FloatVariable('u'), orange.FloatVariable('v'), orange.StringVariable('label'), orange.EnumVariable('dir', values = ["both", "none"]), orange.EnumVariable('color', values = ["green", "red"])])
         data = orange.ExampleTable(d, table)
         graph.links = data
 
