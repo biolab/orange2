@@ -733,4 +733,419 @@ PyObject *Network_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VAR
   PyCATCH
 }
 
+int getWords(string const& s, vector<string> &container)
+{
+    int n = 0;
+	bool quotation = false;
+	container.clear();
+    string::const_iterator it = s.begin(), end = s.end(), first;
+    for (first = it; it != end; ++it)
+    {
+        // Examine each character and if it matches the delimiter
+        if (((!quotation) && ((' ' == *it) || ('\t' == *it) || ('\r' == *it) || ('\f' == *it) || ('\v' == *it))) || ('\n' == *it))
+        {
+            if (first != it)
+            {
+                // extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+
+                // skip the delimiter
+                first = it + 1;
+            }
+            else
+            {
+                ++first;
+            }
+        }
+		else if (('\"' == *it) || ('\'' == *it))
+		{
+			if (quotation)
+			{
+				quotation = false;
+
+				// extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+
+                // skip the delimiter
+                first = it + 1;
+			}
+			else
+			{
+				quotation = true;
+
+				// skip the quotation
+				first = it + 1;
+			}
+		}
+    }
+    if (first != it)
+    {
+        // extract the last field from the string and
+        // append the last field to the given container
+        container.push_back(string(first, it));
+        ++n;
+    }
+    return n;
+}
+
+WRAPPER(ExampleTable)
+PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
+{
+  PyTRY
+
+	TNetwork *graph;
+	PNetwork wgraph;
+	TDomain *domain = new TDomain();
+	PDomain wdomain = domain;
+	TExampleTable *table;
+	PExampleTable wtable;
+	int directed = 0;
+	//cout << "readNetwork" << endl;
+	char *fn;
+
+	if (!PyArg_ParseTuple(args, "s|i:Network.readNetwork", &fn, &directed))
+		return NULL;
+
+	//cout << "File: " << fn << endl;
+
+	string line;
+	ifstream file(fn);
+	string graphName = "";
+	int nVertices = 0;
+
+	if (file.is_open())
+	{
+		// read head
+		while (!file.eof())
+		{
+			getline (file, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				if (stricmp(words[0].c_str(), "*network") == 0)
+				{
+					//cout << "Network" << endl;
+					if (n > 1)
+					{
+						graphName = words[1];
+						//cout << "Graph name: " << graphName << endl;
+					}
+					else
+					{
+						file.close();
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					}
+				}
+				else if (stricmp(words[0].c_str(), "*vertices") == 0)
+				{
+					//cout << "Vertices" << endl;
+					if (n > 1)
+					{
+						istringstream strVertices(words[1]);
+						strVertices >> nVertices;
+						if (nVertices == 0)
+						{
+							file.close();
+							PYERROR(PyExc_SystemError, "invalid file format", NULL);
+						}
+
+						//cout << "nVertices: " << nVertices << endl;
+					}
+					else
+					{
+						file.close();
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					}
+				}
+				else if (stricmp(words[0].c_str(), "*arcs") == 0)
+				{
+					directed = 1;
+					break;
+				}
+			}
+		}
+		file.close();
+	}
+
+	ifstream file1(fn);
+	if (file1.is_open())
+	{
+		// read head
+		while (!file1.eof())
+		{
+			getline (file1, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				if (stricmp(words[0].c_str(), "*vertices") == 0)
+				{
+					//cout << "Vertices" << endl;
+					if (n > 1)
+					{
+						istringstream strVertices(words[1]);
+						strVertices >> nVertices;
+						if (nVertices == 0)
+						{
+							file1.close();
+							PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+						}
+
+						//cout << "nVertices: " << nVertices << endl;
+					}
+					else
+					{
+						file1.close();
+						PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+					}
+
+					break;
+				}
+			}
+		}
+
+		if (nVertices <= 1) {
+			file1.close();
+			PYERROR(PyExc_SystemError, "invalid file1 format; invalid number of vertices (less than 1)", NULL);
+		}
+
+		graph = new TNetwork(nVertices, 0, directed == 1);
+		wgraph = graph;
+
+		TFloatVariable *indexVar = new TFloatVariable("index");
+		indexVar->numberOfDecimals = 0;
+		domain->addVariable(indexVar);
+		domain->addVariable(new TStringVariable("label"));
+		domain->addVariable(new TFloatVariable("x"));
+		domain->addVariable(new TFloatVariable("y"));
+		domain->addVariable(new TFloatVariable("z"));
+		domain->addVariable(new TStringVariable("ic"));
+		domain->addVariable(new TStringVariable("bc"));
+		domain->addVariable(new TStringVariable("bw"));
+		table = new TExampleTable(domain);
+		wtable = table;
+
+		// read vertex descriptions
+		int row = 0;
+		while (!file1.eof())
+		{
+			getline(file1, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				TExample *example = new TExample(domain);
+
+				if ((stricmp(words[0].c_str(), "*arcs") == 0) || (stricmp(words[0].c_str(), "*edges") == 0))
+					break;
+
+				float index = -1;
+				istringstream strIndex(words[0]);
+				strIndex >> index;
+				if ((index <= 0) || (index > nVertices))
+				{
+					file1.close();
+					PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+				}
+
+				//cout << "index: " << index << " n: " << n << endl;
+				(*example)[0] = TValue(index);
+
+				if (n > 1)
+				{
+					string label = words[1];
+					//cout << "label: " << label << endl;
+					(*example)[1] = TValue(new TStringValue(label), STRINGVAR);
+
+					int i = 2;
+					char *xyz = "  xyz";
+					// read coordinates
+					while ((i <= 4) && (i < n))
+					{
+						double coor = -1;
+						istringstream strCoor(words[i]);
+						strCoor >> coor;
+
+						//if ((coor < 0) || (coor > 1))
+						//	break;
+
+						//cout << xyz[i] << ": " << coor << endl;
+						(*example)[i] = TValue((float)coor);
+
+						if (i == 2)
+							graph->pos[0][row] = coor;
+
+						if (i == 3)
+							graph->pos[1][row] = coor;
+
+						i++;
+					}
+					// read attributes
+					while (i < n)
+					{
+						if (stricmp(words[i].c_str(), "ic") == 0)
+						{
+							if (i + 1 < n)
+								i++;
+							else
+							{
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+							}
+
+							//cout << "ic: " << words[i] << endl;
+							(*example)[5] = TValue(new TStringValue(words[i]), STRINGVAR);
+						}
+						else if (stricmp(words[i].c_str(), "bc") == 0)
+						{
+							if (i + 1 < n)
+								i++;
+							else
+							{
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+							}
+
+							//cout << "bc: " << words[i] << endl;
+							(*example)[6] = TValue(new TStringValue(words[i]), STRINGVAR);
+						}
+						else if (stricmp(words[i].c_str(), "bw") == 0)
+						{
+							if (i + 1 < n)
+								i++;
+							else
+							{
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+							}
+
+							//cout << "bw: " << words[i] << endl;
+							(*example)[7] = TValue(new TStringValue(words[i]), STRINGVAR);
+						}
+						i++;
+					}
+
+				}
+				example->id = getExampleId();
+				table->push_back(example);
+				//cout << "push back" <<endl;
+			}
+
+			row++;
+		}
+		// read arcs
+		vector<string> words;
+		int n = getWords(line, words);
+		if (n > 0)
+		{
+			if (stricmp(words[0].c_str(), "*arcs") == 0)
+			{
+				while (!file1.eof())
+				{
+					getline (file1, line);
+					vector<string> words;
+					int n = getWords(line, words);
+					//cout << line << "  -  " << n << endl;
+					if (n > 0)
+					{
+						if (stricmp(words[0].c_str(), "*edges") == 0)
+							break;
+
+						if (n > 1)
+						{
+							int i1 = -1;
+							int i2 = -1;
+							int i3 = -1;
+							istringstream strI1(words[0]);
+							istringstream strI2(words[1]);
+							istringstream strI3(words[2]);
+							strI1 >> i1;
+							strI2 >> i2;
+							strI3 >> i3;
+
+							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
+							{
+								file1.close();
+								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+							}
+
+							if (i1 == i2)
+								continue;
+
+							//cout << "i1: " << i1 << " i2: " << i2 << endl;
+							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
+						}
+					}
+				}
+			}
+		}
+
+		// read edges
+		n = getWords(line, words);
+		if (n > 0)
+		{
+			if (stricmp(words[0].c_str(), "*edges") == 0)
+			{
+				while (!file1.eof())
+				{
+					getline (file1, line);
+					vector<string> words;
+					int n = getWords(line, words);
+
+					//cout << line << "  -  " << n << endl;
+					if (n > 1)
+					{
+						int i1 = -1;
+						int i2 = -1;
+						istringstream strI1(words[0]);
+						istringstream strI2(words[1]);
+						strI1 >> i1;
+						strI2 >> i2;
+
+						int i3 = 1;
+            if (n > 2) {
+  						istringstream strI3(words[2]);
+	  					strI3 >> i3;
+	  			  }
+
+						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
+						{
+							file1.close();
+							PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
+						}
+
+						if (i1 == i2)
+							continue;
+
+						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
+
+						if (directed == 1) {
+							*graph->getOrCreateEdge(i2 - 1, i1 - 1) = i3;
+						}
+					}
+				}
+			}
+		}
+
+		file1.close();
+	}
+	else
+	{
+	  PyErr_Format(PyExc_SystemError, "unable to open file1 '%s'", fn);
+	  return NULL;
+	}
+
+  graph->items = wtable;
+	return WrapOrange(wgraph);
+
+  PyCATCH
+}
 #include "network.px"

@@ -5,10 +5,96 @@ import orangeom
 import orngMDS
 import os.path
 
+
 class Network(orangeom.Network):
-    pass
+    
+    
+    def saveNetwork(self, fileName):
+        """Saves network to Pajek (.net) file."""
+        
+        name = ''
+        try:
+            root, ext = os.path.splitext(fileName)
+            if ext == '':
+                fileName = root + '.net'
+            graphFile = file(fileName, 'w+')
+        except IOError:
+            return 1
+
+        graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
+        if name == '':
+            graphFile.write('*Network ' + '"no name" \n\n')
+        else:
+            graphFile.write('*Network ' + str(name) + ' \n\n')
+
+        #izpis opisov vozlisc
+        graphFile.write('*Vertices% 8d\n' % self.nVertices)
+        for v in range(self.nVertices):
+            graphFile.write('% 8d ' % (v + 1))
+#            if verticesParms[v].label!='':
+#                self.GraphFile.write(str('"'+ verticesParms[v].label + '"') + ' \t')
+#            else:
+            try:
+                label = self.items[v]['label']
+                graphFile.write(str('"' + str(label) + '"') + ' \t')
+            except:
+                graphFile.write(str('"' + str(v) + '"') + ' \t')
+            
+            x = self.coors[0][v]
+            y = self.coors[1][v]
+            #if x < 0: x = 0
+            #if x >= 1: x = 0.9999
+            #if y < 0: y = 0
+            #if y >= 1: y = 0.9999
+            z = 0.5000
+            graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
+            graphFile.write('\n')
+
+        #izpis opisov povezav
+        #najprej neusmerjene
+        if self.directed:
+            graphFile.write('*Arcs \n')
+            for (i, j) in self.getEdges():
+                if len(self[i, j]) > 0:
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self[i, j]))))
+                    graphFile.write('\n')
+        else:
+            graphFile.write('*Edges \n')
+            writtenEdges = {}
+            for (i, j) in self.getEdges():
+                if len(self[i, j]) > 0:
+                    if i > j: i,j = j,i
+                    
+                    if not (i,j) in writtenEdges:
+                        writtenEdges[(i,j)] = 1
+                    else:
+                        continue
+                    
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self[i, j]))))
+                    graphFile.write('\n')
+
+        graphFile.write('\n')
+        graphFile.close()
+        
+        if self.items != None and len(self.items) > 0:
+            (name, ext) = os.path.splitext(fileName)
+            self.items.save(name + "_items.tab")
+            
+        if self.links != None and len(self.links) > 0:
+            (name, ext) = os.path.splitext(fileName)
+            self.links.save(name + "_links.tab")
+
+        return 0
+    
+    def readNetwork(self, fileName, directed=0):
+        """Reads network from Pajek (.net) file."""
+        net = orangeom.Network.readNetwork(self, fileName, directed)
+        return net
+    
 
 class NetworkOptimization(orangeom.NetworkOptimization):
+    
+    
     def __init__(self, network=None, name="None"):
         if network is None:
             network = orangeom.Network(2, 0)
@@ -398,7 +484,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return 0
     
     def readNetwork(self, fn, directed=0):
-        graph = orangeom.NetworkOptimization.readNetwork(self, fn, directed)
+        network = Network(1,directed)
+        graph = network.readNetwork(fn, directed)
         self.setGraph(graph)
         self.graph = graph
         return graph
