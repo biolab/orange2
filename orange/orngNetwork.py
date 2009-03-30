@@ -11,7 +11,6 @@ class Network(orangeom.Network):
     
     def saveNetwork(self, fileName):
         """Saves network to Pajek (.net) file."""
-        
         name = ''
         try:
             root, ext = os.path.splitext(fileName)
