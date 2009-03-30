@@ -219,7 +219,6 @@ def nextWidgetProbility(state, tree):
     if state == []:
         widgetCounts = tree[0]
         predictions = [(widgetCounts[j][0][-1], float(widgetCounts[j][2]) / 1) for j in range(len(widgetCounts))]
-        print 'prediction', predictions
     else:
         # calculate probabilities on levels in a tree up to the number of already inserted widgets
         for i in range(1, len(state)+1):
