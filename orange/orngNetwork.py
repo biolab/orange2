@@ -1,10 +1,6 @@
-import math
-import numpy
-import orange
-import orangeom
+import math, numpy, os.path
+import orange, orangeom
 import orngMDS
-import os.path
-
 
 class Network(orangeom.Network):
     """Orange data structure for representing directed and undirected networks with various types of weighted connections and other data."""

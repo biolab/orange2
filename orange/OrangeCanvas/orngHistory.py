@@ -127,7 +127,8 @@ def cmpBySecondValue(x,y):
 def historyFileToBasket():
     """Reads history file to a 'basket'.
         
-       Each element in a basket list contains a list of widgets in one session. 
+    Each element in a basket list contains a list of widgets in one session. 
+       
     """
     fin = open(logFile, 'r')
     
@@ -169,14 +170,15 @@ def historyFileToBasket():
     return basket
 
 def buildWidgetProbabilityTree(basket):
-    """Builds a widget probability 'tree'
+    """Builds a widget probability 'tree'.
     
-       Levels:
-          0 - probability of inserting a widget in empty canvas
-          1 - probability of inserting a widget after one widget
-          2 - probability of inserting a widget after two widgets
-          3 - probability of inserting a widget after three widgets
-          ...
+    Levels:
+        0 - probability of inserting a widget in empty canvas
+        1 - probability of inserting a widget after one widget
+        2 - probability of inserting a widget after two widgets
+        3 - probability of inserting a widget after three widgets
+        ...
+      
     """
     firstWidget = {}
     for vals in basket:
