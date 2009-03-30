@@ -15,7 +15,6 @@ import orange
 from OWWidget import *
 from OWGraph import *
 from orngNetwork import * 
-from orangeom import Network
 from OWHist import *
 import copy
 import random
