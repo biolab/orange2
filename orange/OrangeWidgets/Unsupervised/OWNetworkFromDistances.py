@@ -12,12 +12,12 @@
 
 import OWGUI
 import orange
+import orngNetwork
+import copy, random
+
 from OWWidget import *
 from OWGraph import *
-from orngNetwork import * 
 from OWHist import *
-import copy
-import random
 
 class OWNetworkFromDistances(OWWidget):
     settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption", "dstWeight"]
@@ -26,7 +26,7 @@ class OWNetworkFromDistances(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
-        self.outputs = [("Network", Network), ("Examples", ExampleTable), ("Distance Matrix", orange.SymMatrix)]
+        self.outputs = [("Network", orngNetwork.Network), ("Examples", ExampleTable), ("Distance Matrix", orange.SymMatrix)]
 
         # set default settings
         self.spinLowerThreshold = 0
@@ -165,7 +165,7 @@ class OWNetworkFromDistances(OWWidget):
             n = 0
             self.error('Estimated number of edges is too high (%d).' % nEdgesEstimate)
         else:
-            graph = Network(self.data.dim, 0)
+            graph = orngNetwork.Network(self.data.dim, 0)
             matrix = self.data
             
             if hasattr(self.data, "items"):               
@@ -209,7 +209,7 @@ class OWNetworkFromDistances(OWWidget):
                 if len(components) > 0:
                     include = reduce(lambda x,y: x+y, components)
                     if len(include) > 1:
-                        self.graph = Network(graph.getSubGraph(include))
+                        self.graph = orngNetwork.Network(graph.getSubGraph(include))
                         matrix = self.data.getitems(include)
                     else:
                         self.graph = None
@@ -221,7 +221,7 @@ class OWNetworkFromDistances(OWWidget):
             elif str(self.netOption) == '2':
                 component = graph.getConnectedComponents()[0]
                 if len(component) > 1:
-                    self.graph = Network(graph.getSubGraph(component))
+                    self.graph = orngNetwork.Network(graph.getSubGraph(component))
                     matrix = self.data.getitems(component)
                 else:
                     self.graph = None
@@ -249,7 +249,7 @@ class OWNetworkFromDistances(OWWidget):
                                         
                         if len(vertices) > 0:
                             #print vertices
-                            self.graph = Network(graph.getSubGraph(vertices))
+                            self.graph = orngNetwork.Network(graph.getSubGraph(vertices))
                             matrix = self.data.getitems(vertices)
             else:
                 self.graph = graph
