@@ -5,13 +5,14 @@
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3200</priority>
 """
-from OWWidget import *
 import orange
 import OWGUI, OWColorPalette
-from OWNetworkCanvas import *
-from orngNetwork import * 
-from time import *
+import orngNetwork
 import OWToolbars
+
+from OWWidget import *
+from OWNetworkCanvas import *
+from time import *
 from statc import mean
 from operator import itemgetter
 
@@ -56,13 +57,13 @@ class OWNetExplorer(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
         #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-        self.inputs = [("Network", Network, self.setGraph, Default), 
+        self.inputs = [("Network", orngNetwork.Network, self.setGraph, Default), 
                        ("Items", orange.ExampleTable, self.setItems),
                        ("Items to Mark", orange.ExampleTable, self.markItems), 
                        ("Items Subset", orange.ExampleTable, self.setExampleSubset), 
                        ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
         
-        self.outputs = [("Selected Network", Network), 
+        self.outputs = [("Selected Network", orngNetwork.Network), 
                         ("Selected Examples", ExampleTable), 
                         ("Unselected Examples", ExampleTable), 
                         ("Marked Examples", ExampleTable)]
@@ -833,7 +834,7 @@ class OWNetExplorer(OWWidget):
             else:
                 fn = str(filename)
             
-            self.graph.visualizer.saveNetwork(fn)
+            self.visualize.graph.saveNetwork(fn)
                     
     def sendData(self):
         graph = self.graph.getSelectedGraph()
@@ -933,7 +934,7 @@ class OWNetExplorer(OWWidget):
         self.nameComponentCombo.addItem("Select attribute")
         self.showComponentCombo.addItem("Select attribute")
       
-    def setGraph(self, graph):        
+    def setGraph(self, graph):      
         if graph == None:
             self.visualize = None
             self.graph.addVisualizer(self.visualize)
@@ -941,7 +942,7 @@ class OWNetExplorer(OWWidget):
             return
         
         #print "OWNetwork/setGraph: new visualizer..."
-        self.visualize = NetworkOptimization(graph)
+        self.visualize = orngNetwork.NetworkOptimization(graph)
         self.graph.addVisualizer(self.visualize)
 
         #for i in range(graph.nVertices):

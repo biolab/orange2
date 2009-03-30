@@ -12,10 +12,9 @@
 # A widget for opening Network related files
 #
 import OWGUI, string, os.path, user, sys
+import orngNetwork
 
 from OWWidget import *
-from orngNetwork import *
-
 from orange import Graph
 from orange import GraphAsList
 
@@ -27,7 +26,7 @@ class OWNetworkFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Network File")
 
         self.inputs = []
-        self.outputs = [("Network", Network), ("Items", ExampleTable)]
+        self.outputs = [("Network", orngNetwork.Network), ("Items", ExampleTable)]
     
         #set default settings
         self.recentFiles = ["(none)"]
@@ -379,7 +378,7 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         try:
-            net = Network.readNetwork(fn)
+            net = orngNetwork.Network.readNetwork(fn)
             self.infoc.setText("Vertices data generated and added automatically")
         except:
             self.infoa.setText("Could not read file")
@@ -387,7 +386,7 @@ class OWNetworkFile(OWWidget):
             self.infoc.setText("")
             self.infod.setText("")
             return None
-            
+        
         return net
 
     def sendReport(self):
