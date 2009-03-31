@@ -72,7 +72,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("Rule", "lib_learner.cpp"),
    normalList("ConditionalProbabilityEstimator", "lib_components.cpp"),
    normalList("ProbabilityEstimator", "lib_components.cpp"),
-   normalList("EVCDist", "lib_learner.cpp"),
+   normalList("EVDist", "lib_learner.cpp"),
 
    normalList("Heatmap", "orangene.cpp"),
    normalList("SOMNode", "som.cpp")
