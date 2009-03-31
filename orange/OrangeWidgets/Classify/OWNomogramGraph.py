@@ -118,6 +118,8 @@ class Descriptor(QGraphicsRectItem):
             points = 1
         else:
             # get points
+            if not self.attribute or not self.attribute.selectedValue:
+                return True
             selectedBeta = self.attribute.selectedValue[2]
             proportionalBeta = self.canvas.mapper.propBeta(selectedBeta, self.attribute)
             maxValue = self.canvas.mapper.getMaxMapperValue()
@@ -179,20 +181,32 @@ class Descriptor(QGraphicsRectItem):
 
         # if bubble wants to jump of the canvas, better catch it !
         selOffset = 20
-        xTemp, yTemp = x+selOffset, y-selOffset-height
-        while not self.canvas.onCanvas(xTemp,yTemp) or not self.canvas.onCanvas(xTemp,yTemp+height) or not self.canvas.onCanvas(xTemp+width,yTemp) or not self.canvas.onCanvas(xTemp+width,yTemp+height):
-            if yTemp == y-selOffset-height and not xTemp <= x-selOffset-width:
+##        xTemp, yTemp = x+selOffset, y-selOffset-height
+        view = self.canvas.views()[0]
+        viewx = view.mapFromScene(x,y).x()
+        viewy = view.mapFromScene(x,y).y()
+        xTemp = viewx + selOffset
+        yTemp = viewy - selOffset - height
+        max_x = view.width()-50
+        max_y = view.height()
+        min_x = 0
+        min_y = 0
+        while not self.inRect(xTemp,yTemp,min_x,min_y,max_x,max_y) or \
+              not self.inRect(xTemp,yTemp+height,min_x,min_y,max_x,max_y) or \
+              not self.inRect(xTemp+width,yTemp,min_x,min_y,max_x,max_y) or \
+              not self.inRect(xTemp+width,yTemp+height,min_x,min_y,max_x,max_y):
+            if yTemp == viewy-selOffset-height and not xTemp <= viewx-selOffset-width:
                 xTemp-=1
-            elif xTemp <= x-selOffset-width and not yTemp >= y+selOffset:
+            elif xTemp <= viewx-selOffset-width and not yTemp >= viewy+selOffset:
                 yTemp+=1
-            elif yTemp >= y+selOffset and not xTemp >= x+selOffset:
+            elif yTemp >= viewy+selOffset and not xTemp >= viewx+selOffset:
                 xTemp+=1
-            elif xTemp>= x+selOffset and not yTemp<y-selOffset-height+2:
+            elif xTemp>= viewx+selOffset and not yTemp<viewy-selOffset-height+2:
                 yTemp-=1
             else:
                 break
 
-        x,y = xTemp, yTemp
+        x,y = view.mapToScene(xTemp, yTemp).x(), view.mapToScene(xTemp, yTemp).y()
 
         # set coordinates
         self.setRect(x,y,width+2, height+2)
@@ -245,6 +259,11 @@ class Descriptor(QGraphicsRectItem):
         self.value.hide()
         self.supportingValName.hide()
         self.supportingValue.hide()
+
+    def inRect(self,x,y,x1,y1,x2,y2):
+        if x < x1 or x > x2 or y < y1 or y > y2:
+            return False
+        return True
 
 
 # Attribute value selector -- a small circle
@@ -333,7 +352,7 @@ class AttValue:
 
         if self.attCreation:
             self.setCreation(canvas)
-        self.text.setPos(self.x, self.text.y())
+        self.text.setPos(self.x, self.text.y)
         if self.enable:
             lineLength = canvas.fontSize/2
             canvasLength = 0
@@ -1389,13 +1408,14 @@ class OWNomogramGraph(QGraphicsView):
         if self.scene():
             self.resizing = True
             self.scene().show()
-        self.setSceneRect(0, 0, self.width(), self.height())
+        self.setSceneRect(0, 0, self.width(), self.scene().height())
 
     # ###################################################################
     # mouse button was pressed #########################################
     def mousePressEvent(self, ev):
+        sc_pos = self.mapToScene(ev.pos())
         if self.scene() and ev.button() == Qt.LeftButton:
-            items = filter(lambda ci: ci.zValue()==50, self.scene().items(QPointF(ev.pos())))
+            items = filter(lambda ci: ci.zValue()==50, self.scene().items(sc_pos))
             if len(items)>0:
                 self.selectedObject = items[0]
                 #self.canvas().updateValues(ev.x(), ev.y(), self.selectedObject)
@@ -1415,10 +1435,11 @@ class OWNomogramGraph(QGraphicsView):
     # mouse is running around, perhaps Jerry is nearby ##################
     # or technically: user moved mouse ##################################
     def mouseMoveEvent(self, ev):
+        sc_pos = self.mapToScene(ev.pos())
         if self.bDragging:
-            self.scene().updateValues(ev.x(), ev.y(), self.selectedObject)
+            self.scene().updateValues(sc_pos.x(), sc_pos.y(), self.selectedObject)
         elif self.scene():
-            items = filter(lambda ci: ci.zValue()==50, self.scene().items(QPointF(ev.pos())))
+            items = filter(lambda ci: ci.zValue()==50, self.scene().items(sc_pos))
             if len(items)>0:
                 if self.mouseOverObject:
                     self.mouseOverObject.hideSelected()

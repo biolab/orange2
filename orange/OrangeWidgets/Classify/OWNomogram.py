@@ -122,7 +122,7 @@ class OWNomogram(OWWidget):
 
         OWGUI.rubber(self.controlArea)
 
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.menuItemPrinter)
 
 
 
@@ -506,9 +506,9 @@ class OWNomogram(OWWidget):
 
         # calculate prior probability (from self.TargetClassIndex)
         if self.bnomogram:
-            self.bnomogram.destroy_and_init(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+            self.bnomogram.destroy_and_init(self, AttValue("Constant", 0.0))
         else:
-            self.bnomogram = BasicNomogram(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+            self.bnomogram = BasicNomogram(self, AttValue("Constant", 0.0))
         self.cl.setattr("rulesOrdering", [])
         for r_i,r in enumerate(cl.rules):
             a = AttrLine(getConditions(r), self.bnomogram)
@@ -536,7 +536,7 @@ class OWNomogram(OWWidget):
         self.cl = None
         
         if cl:
-            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier):
+            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier, orange.RuleClassifier_logit):
                 if isinstance(cl, acceptable):
                     self.cl = cl
                     break
@@ -601,6 +601,8 @@ class OWNomogram(OWWidget):
                 self.nbClassifier(self.cl)
 ##        elif isinstance(self.cl, orngLR_Jakulin.MarginMetaClassifier) and self.data:
 ##            self.svmClassifier(self.cl)
+        elif isinstance(self.cl, orange.RuleClassifier_logit):
+            self.ruleClassifier(self.cl)
 
         elif isinstance(self.cl, orange.LogRegClassifier):
             # get if there are any continuous attributes in data -> then we need data to compute margins
@@ -665,144 +667,42 @@ class OWNomogram(OWWidget):
         if self.bnomogram:
             self.bnomogram.showBaseLine(True)
 
-    def saveToFileCanvas(self):
-        EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
-
-        sizeW = self.graph.scene().sceneRect().width()
-        sizeH = self.graph.scene().sceneRect().height() + self.header.scene().sceneRect().height() + self.footer.scene().sceneRect().height()+EMPTY_SPACE
-        size = QSize(sizeW, sizeH)
-
-        qfileName = QFileDialog.getSaveFileName(None, "Save to...", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-
-        #create buffers and painters
-        headerBuffer = QPixmap(self.header.scene().size())
-        graphBuffer = QPixmap(QSize(self.graph.scene().pright, self.graph.scene().gbottom+EMPTY_SPACE))
-        footerBuffer = QPixmap(self.footer.scene().size())
-
-        headerPainter = QPainter(headerBuffer)
-        graphPainter = QPainter(graphBuffer)
-        footerPainter = QPainter(footerBuffer)
-
-        # fill painters
-        headerPainter.fillRect(headerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        graphPainter.fillRect(graphBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        footerPainter.fillRect(footerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-
-        self.header.drawContents(headerPainter, 0, 0, sizeW, self.header.scene().sceneRect().height())
-        self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.scene().sceneRect().height() +EMPTY_SPACE)
-        self.footer.drawContents(footerPainter, 0, 0, sizeW, self.footer.scene().sceneRect().height())
-
-        buffer = QPixmap(size) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.scene().sceneRect().height(), Qt.CopyROP)
-        bitBlt(buffer, 0, self.header.scene().sceneRect().height(), graphBuffer, 0, 0,  sizeW, self.graph.scene().sceneRect().height() +EMPTY_SPACE, Qt.CopyROP)
-        bitBlt(buffer, 0, self.header.scene().sceneRect().height()+self.graph.scene().sceneRect().height() +EMPTY_SPACE, footerBuffer, 0, 0,  sizeW, self.footer.scene().sceneRect().height(), Qt.CopyROP)
-
-        painter.end()
-        headerPainter.end()
-        graphPainter.end()
-        footerPainter.end()
-
-        buffer.save(fileName, ext)
-
-    def saveToFileCanvas_new(self):
-        EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
-
-        sizeW = self.graph.canvas().pright
-        sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()+EMPTY_SPACE
-        size = QSize(sizeW, sizeH)
-
-        #qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
-        #fileName = str(qfileName)
-        #if fileName == "": return
-        #(fil,ext) = os.path.splitext(fileName)
-        #ext = ext.replace(".","")
-        #ext = ext.upper()
-
-        # create buffers and painters
-        #headerBuffer = QPixmap(self.header.canvas().size())
-        #graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE))
-        #footerBuffer = QPixmap(self.footer.canvas().size())
-
-        #headerPainter = QPainter(headerBuffer)
-        #graphPainter = QPainter(graphBuffer)
-        #footerPainter = QPainter(footerBuffer)
-
-        # fill painters
-        #headerPainter.fillRect(headerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        #graphPainter.fillRect(graphBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        #footerPainter.fillRect(footerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-
-        #self.header.drawContents(headerPainter, 0, 0, sizeW, self.header.canvas().size().height())
-        #self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.canvas().gbottom+EMPTY_SPACE)
-        #self.footer.drawContents(footerPainter, 0, 0, sizeW, self.footer.canvas().size().height())
-
-
-
-        #buffer = QPixmap(size) # any size can do, now using the window size
-        #painter = QPainter(buffer)
-        #painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-
-        #bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.canvas().size().height(), Qt.CopyROP)
-        #bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom+EMPTY_SPACE, Qt.CopyROP)
-        #bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom+EMPTY_SPACE, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
-
+    def menuItemPrinter(self):
         import copy
-        canvas_glued = QCanvas(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE+self.header.size().height()+self.footer.canvas().size().height())
-        # draw header items
-        items_header = self.header.canvas().allItems()
-        for item in items_header:
-            if item.visible():
-                item.setScene(canvas_glued)
-
-        # draw graph items
-        items_graph = self.graph.canvas().allItems()
-        for item in items_graph:
-            if item.visible():
-                item.setScene(canvas_glued)
-                if isinstance(item, QCanvasLine):
-                    item.setPoints(item.startPoint().x(), item.startPoint().y()+self.header.size().height(), item.endPoint().x(), item.endPoint().y()+self.header.size().height())
-                else:
-                    item.setPos(item.x(), item.y()+self.header.size().height())
-
-        # draw graph items
-        items_footer = self.footer.canvas().allItems()
-        for item in items_footer:
-            if item.visible():
-                item.setScene(canvas_glued)
-                item.setPos(item.x(), item.y()+self.header.size().height()+self.graph.canvas().gbottom+EMPTY_SPACE)
-
-        import OWDlgs
+        canvases = header, graph, footer = self.header.scene(), self.graph.scene(), self.footer.scene()
+        # all scenes together
+        scene_confed = QGraphicsScene(0, 0, max(c.width() for c in canvases), sum(c.height() for c in canvases))
+        # add items from header
+        header_its = header.items()
+        for it in header_its:
+            scene_confed.addItem(it)
+        # add items from graph
+        graph_its = graph.items()
+        for it in graph_its:
+            scene_confed.addItem(it)
+            it.moveBy(0., header.height())
+        # add from footer
+        footer_its = footer.items()
+        for it in footer_its:
+            scene_confed.addItem(it)
+            it.moveBy(0.,header.height() + graph.height())
         try:
             import OWDlgs
         except:
-            print "Missing file OWDlgs.py. This file should be in widget directory. Unable to print/save image."
-            return
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(canvas_glued)
+            print "Missing file 'OWDlgs.py'. This file should be in OrangeWidgets folder. Unable to print/save image."
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(scene_confed)
         sizeDlg.exec_()
 
-        for item in items_header:
-            item.setScene(self.header.canvas())
-        for item in items_graph:
-            item.setScene(self.graph.canvas())
-            item.setPos(item.x(), item.y()-self.header.size().height())
-        for item in items_footer:
-            item.setScene(self.footer.canvas())
-            item.setPos(item.x(), item.y()-self.header.size().height()-self.graph.canvas().gbottom-EMPTY_SPACE)
-
-        #painter.end()
-        #headerPainter.end()
-        #graphPainter.end()
-        #footerPainter.end()
-
-        #buffer.save(fileName, ext)
-
+        # set all items back to original canvases            
+        for it in header_its:
+            header.addItem(it)
+        for it in graph_its:
+            graph.addItem(it)
+            it.moveBy(0., -header.height())
+        for it in footer_its:
+            footer.addItem(it)
+            it.moveBy(0, - header.height() - graph.height())
+        self.showNomogram()
 
     # Callbacks
     def showNomogram(self):

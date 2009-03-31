@@ -136,7 +136,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                             f.write("a.add_patch(Rectangle((%d, %d), %d, %d, edgecolor=%s, facecolor = %s, linewidth = %d, fill = %d))\n" % (x,y,w,h, penc, brushc, penWidth, type(brushc) == tuple))
                         elif isinstance(item, QGraphicsLineItem):
                             x1,y1, x2,y2 = item.line().x1(), maxy-item.line().y1(), item.line().x2(), maxy-item.line().y2()
-                            f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d, alpha = %.3f)\n" % ([x1,x2], [y1,y2], penc, penWidth, brushAlpha))
+                            f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d, alpha = %.3f)\n" % ([x1,x2], [y1,y2], penc, penWidth, penAlpha))
                     elif item.__class__ in [QGraphicsTextItem, OWQCanvasFuncts.OWCanvasText]:
                         if item.__class__  == QGraphicsTextItem:
                             xalign, yalign = "left", "top"
