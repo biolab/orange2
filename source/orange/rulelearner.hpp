@@ -30,12 +30,12 @@
 WRAPPER(ProgressCallback)
 WRAPPER(Rule)
 WRAPPER(Discretization)
-WRAPPER(EVCDist)
+WRAPPER(EVDist)
 
 #define TRuleList TOrangeVector<PRule>
 VWRAPPER(RuleList)
-#define TEVCDistList TOrangeVector<PEVCDist>
-VWRAPPER(EVCDistList)
+#define TEVDistList TOrangeVector<PEVDist>
+VWRAPPER(EVDistList)
 
 
 WRAPPER(ExampleGenerator)
@@ -57,8 +57,9 @@ public:
   PExampleTable examples; //P covered examples
   int weightID; //P weight for the stored examples
   float quality; //P some measure of rule quality
-  float complexity; //P
+  int complexity; //P
   float chi; //P 
+  float estRF;
   int requiredConditions; //P conditions that are mandatory in rule - rule attribute significance avoids these
 
   int *coveredExamples;
@@ -116,10 +117,10 @@ public:
 
   float alpha; //P
   float min_coverage; //P
-  float max_rule_complexity; //P
+  int max_rule_complexity; //P
   float min_quality; //P
 
-  TRuleValidator_LRS(const float &alpha = 0.05, const float &min_coverage = 0.0, const float &max_rule_complexity = -1.0, const float &min_quality = -numeric_limits<float>::max());
+  TRuleValidator_LRS(const float &alpha = 0.05, const float &min_coverage = 0.0, const int &max_rule_complexity = -1, const float &min_quality = -numeric_limits<float>::max());
   virtual bool operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 
@@ -145,51 +146,38 @@ class ORANGE_API TRuleEvaluator_Laplace : public TRuleEvaluator {
   virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution );
 };
 
-class ORANGE_API TEVCDist : public TOrange {
+class ORANGE_API TEVDist : public TOrange {
 public:
   __REGISTER_CLASS
 
   float mu; //P mu of Fisher-Tippett distribution
   float beta; //P beta of Fisher-Tippett distribution
-  PFloatList percentiles; //P 10 values - 0 = 5th percentile, 1 = 15th percentile, 9 = 95th percentile
+  PFloatList percentiles; //P usually 10 values - 0 = 5th percentile, 1 = 15th percentile, 9 = 95th percentile, change maxPercentile and step for other settings
+  float maxPercentile; //P maxPercentile Value, default 0.95
+  float step; //P step of percentiles, default 0.1
 
-  TEVCDist();
-  TEVCDist(const float &, const float &, PFloatList &);
+  TEVDist();
+  TEVDist(const float &, const float &, PFloatList &);
   double getProb(const float & chi);
   float median();
 };
 
-WRAPPER(EVCDistGetter)
-class ORANGE_API TEVCDistGetter: public TOrange {
+WRAPPER(EVDistGetter)
+class ORANGE_API TEVDistGetter: public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  virtual PEVCDist operator()(const PRule , const int & parentLength, const int & length) const = 0;
+  virtual PEVDist operator()(const PRule , const int & parentLength, const int & length) const = 0;
 };
 
-class ORANGE_API TEVCDistGetter_Standard: public TEVCDistGetter {
+class ORANGE_API TEVDistGetter_Standard: public TEVDistGetter {
 public:
   __REGISTER_CLASS
 
-  PEVCDistList dists; //P EVC distribution (sorted by rule length, 0 = for rules without conditions)
-  TEVCDistGetter_Standard();
-  TEVCDistGetter_Standard(PEVCDistList);
-  virtual PEVCDist operator()(const PRule, const int & parentLength, const int & length) const;
-};
-
-WRAPPER(ChiFunction)
-class ORANGE_API TChiFunction: public TOrange {
-public:
-  __REGISTER_ABSTRACT_CLASS
-
-  virtual float operator()(PRule rule, PExampleTable data, const int & weightID, const int & targetClass, PDistribution apriori, float & nonOptimistic_Chi) const = 0;
-};
-
-class ORANGE_API TChiFunction_2LOGLR: public TChiFunction {
-public:
-  __REGISTER_CLASS
-
-  virtual float operator()(PRule rule, PExampleTable data, const int & weightID, const int & targetClass, PDistribution apriori, float & nonOptimistic_Chi) const;
+  PEVDistList dists; //P EVC distribution (sorted by rule length, 0 = for rules without conditions)
+  TEVDistGetter_Standard();
+  TEVDistGetter_Standard(PEVDistList);
+  virtual PEVDist operator()(const PRule, const int & parentLength, const int & length) const;
 };
 
 class DiffFunc {
@@ -199,25 +187,37 @@ public:
 
 class LNLNChiSq: public DiffFunc {
 public:
-  PEVCDist evc;
-  float chi;
+  PEVDist evd;
+  float chi, exponent;
   double extremeAlpha;
 
-  LNLNChiSq(PEVCDist evc, const float & chi);
+  LNLNChiSq(PEVDist evd, const float & chi);
   double operator()(float chix);
 };
 
 class LRInv: public DiffFunc {
 public:
-  PExampleTable examples;
-  int weightID, targetClass;
-  PDistribution apriori;
-  PRule tempRule;
-  PChiFunction chiFunction;
-  float nonOptimistic_Chi, chiCorrected, N;
+  float n,P,N,chiCorrected;
 
-  LRInv(PRule, PExampleTable, const int &, const int & targetClass, PDistribution apriori, PChiFunction, float);
+  LRInv(PRule, PRule, const int & targetClass, float chiCorrected);
   double operator()(float p);
+};
+
+class LRInvMean: public DiffFunc {
+public:
+  float p,n,P,N;
+
+  LRInvMean(float, PRule, PRule, const int & targetClass);
+  double operator()(float pc);
+};
+
+
+class LRInvE: public DiffFunc {
+public:
+  float n,p,N,chiCorrected;
+
+  LRInvE(PRule, PRule, const int & targetClass, float chiCorrected);
+  double operator()(float P);
 };
 
 
@@ -225,9 +225,8 @@ class ORANGE_API TRuleEvaluator_mEVC: public TRuleEvaluator {
 public:
   __REGISTER_CLASS
 
-  int m; //P Parameter m for m-estimate after EVC correction
-  PChiFunction chiFunction; //P function for computing chi square significance
-  PEVCDistGetter evcDistGetter; //P get EVC distribution for chi correction
+  float m; //P Parameter m for m-estimate after EVC correction
+  PEVDistGetter evDistGetter; //P get EVC distribution for chi correction
   PVariable probVar;//P probability coverage variable (meta usually)
   PRuleValidator validator; //P rule validator for best rule
   int min_improved; //P minimal number of improved examples
@@ -235,16 +234,19 @@ public:
   PRule bestRule; //P best rule found and evaluated given conditions (min_improved, validator)
   float ruleAlpha; //P minimal 'true' rule significance
   float attributeAlpha; //P minimal attribute significance
+  bool returnExpectedProb; //P if true, evaluator returns expected class probability, if false, current class probability
+  int optimismReduction; //P to select optimstic (0), pessimistic (1) or EVC (2) evaluation
 
   TRuleEvaluator_mEVC();
-  TRuleEvaluator_mEVC(const int & m, PChiFunction, PEVCDistGetter, PVariable, PRuleValidator, const int & min_improved, const float & min_improved_perc);
+  TRuleEvaluator_mEVC(const int & m,  PEVDistGetter, PVariable, PRuleValidator, const int & min_improved, const float & min_improved_perc, const int & optimismReduction);
   void reset();
   bool ruleAttSignificant(PRule, PExampleTable, const int &, const int &targetClass, PDistribution, float &);
   float chiAsimetryCorrector(const float &);
-  float evaluateRule(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) const;
+  float evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
+  float evaluateRulePessimistic(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
+  float evaluateRuleM(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution );
 };
-
 
 class ORANGE_API TRuleEvaluator_LRS : public TRuleEvaluator {
 public:
@@ -486,7 +488,7 @@ public:
   float eval, **f, **p, *betas, *priorBetas;
   bool *isExampleFixed;
   PFloatList avgProb, avgPriorProb;
-  PIntList *ruleIndices, frontRules;
+  PIntList *ruleIndices, prefixRules;
 
   TLogitClassifierState(PRuleList, PExampleTable, const int &);
   TLogitClassifierState(PRuleList,const PDistributionList &,PExampleTable,const int &);
@@ -495,7 +497,7 @@ public:
   void computePs(int);
   void setFixed(int);
   void updateFixedPs(int);
-  void setFrontRule(int);
+  void setPrefixRule(int);
   void computeAvgProbs();
   void computePriorProbs();
   void copyTo(PLogitClassifierState &);
@@ -510,23 +512,24 @@ public:
   PDistribution prior; //P prior distribution
   PDomain domain; //P Domain
   PFloatList ruleBetas; //P Rule betas
-  PFloatList priorProbBetas; //P Prior probabilitiy betas
   float minStep; //P minimal step value
   float minSignificance; //P minimum requested significance for betas. 
-  int priorBetaType; //P 0=priorbeta equals 0, 1=priorBeta equals prior probability, 2=optimize as good as possible
+  float minBeta; //P minimum beta by rule to be included in the model. 
+  bool setPrefixRules; // P should we order prefix rules ? 
+
   PClassifier priorClassifier; //P prior classifier used if provided
   PLogitClassifierState currentState;
+  bool *skipRule;
   PFloatList wsd, wavgCov, wSatQ, wsig; // standard deviations of rule quality
-  PRuleList frontRules; //P rules that trigger before logit sum.
+  PRuleList prefixRules; //P rules that trigger before logit sum.
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, const int &priorProbType = 2);
+  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, bool setPrefixRules = false);
 
   void initialize(const PDistributionList &);
   void updateRuleBetas(float & step);
   void optimizeBetas();
-  void setBestFrontRule();
-  void evaluate();
+  bool setBestPrefixRule();
   void correctPriorBetas(float & step);
   void stabilizeAndEvaluate(float & step, int rule_index);
   float getRuleLoss(int &);

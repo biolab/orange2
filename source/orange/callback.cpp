@@ -634,31 +634,8 @@ float TRuleEvaluator_Python::operator()(PRule rule, PExampleTable table, const i
     return res;
 }
 
-float TChiFunction_Python::operator()(PRule rule, PExampleTable data, const int & weightID, const int & targetClass, PDistribution apriori, float & nonOptimistic_Chi) const
-{
-    if (!data) {
-        raiseError("invalid example table");
-    }
-    if (!rule) {
-        raiseError("invalid rule");
-    }
-    if (!apriori) {
-        raiseError("invalid prior distribution");
-    }
 
-    PyObject *args = Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(data), weightID, targetClass, WrapOrange(apriori));
-    PyObject *result=callCallback((PyObject *)myWrapper, args);
-    Py_DECREF(args);
-
-    float chi;
-    if (!PyArg_ParseTuple(result, "ff", &nonOptimistic_Chi, &chi)) {
-        raiseError("__call__ is expected to return a tuple: (nonOptimistic_Chi, optimistic_chi)");
-    }
-    Py_DECREF(result);
-    return chi;
-}
-
-PEVCDist TEVCDistGetter_Python::operator()(const PRule rule, const int & parentLength, const int & rLength) const
+PEVDist TEVDistGetter_Python::operator()(const PRule rule, const int & parentLength, const int & rLength) const
 {
     if (!rule) {
         raiseError("invalid rule");
@@ -668,10 +645,10 @@ PEVCDist TEVCDistGetter_Python::operator()(const PRule rule, const int & parentL
     PyObject *result=callCallback((PyObject *)myWrapper, args);
     Py_DECREF(args);
 
-    if (!PyOrEVCDist_Check(result)) {
-        raiseError("__call__ is expected to return an EVCDist object.");
+    if (!PyOrEVDist_Check(result)) {
+        raiseError("__call__ is expected to return an EVDist object.");
     }
-    PEVCDist res = PyOrange_AsEVCDist(result);
+    PEVDist res = PyOrange_AsEVDist(result);
     Py_DECREF(result);
     return res;
 }

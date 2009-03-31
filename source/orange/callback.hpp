@@ -157,16 +157,10 @@ public:
   virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution);
 };
 
-class ORANGE_API TEVCDistGetter_Python : public TEVCDistGetter {
+class ORANGE_API TEVDistGetter_Python : public TEVDistGetter {
 public:
   __REGISTER_CLASS
-  virtual PEVCDist operator()(const PRule, const int &, const int &) const;
-};
-
-class ORANGE_API TChiFunction_Python : public TChiFunction {
-public:
-  __REGISTER_CLASS
-  virtual float operator()(PRule rule, PExampleTable data, const int & weightID, const int & targetClass, PDistribution apriori, float & nonOptimistic_Chi) const;
+  virtual PEVDist operator()(const PRule, const int &, const int &) const;
 };
 
 class ORANGE_API TRuleValidator_Python : public TRuleValidator {
