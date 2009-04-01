@@ -20,7 +20,7 @@
 */
 
 #include "filter.hpp"
-#include "table.hpp"    
+#include "table.hpp"
 #include "stat.hpp"
 #include "measures.hpp"
 #include "discretize.hpp"
@@ -33,6 +33,14 @@
 
 DEFINE_TOrangeVector_classDescription(PRule, "TRuleList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PEVDist, "TEVDistList", true, ORANGE_API)
+
+#ifdef _MSC_VER
+#if _MSC_VER < 1300
+template<class T>
+inline T &min(const T&x, const T&y)
+{ return x<y ? x : y; }
+#endif
+#endif
 
 TRule::TRule()
 : weightID(0),
@@ -123,7 +131,7 @@ void TRule::filterAndStore(PExampleTable gen, const int &wei, const int &targetC
     classifier = learner->call(examples,wei);
   }
   else
-    classifier = mlnew TDefaultClassifier(gen->domain->classVar, classDistribution); 
+    classifier = mlnew TDefaultClassifier(gen->domain->classVar, classDistribution);
 /*  if (anExamples > 0) {
     const int bitsInInt = sizeof(int)*8;
     coveredExamplesLength = anExamples/bitsInInt + 1;
@@ -215,7 +223,7 @@ bool TRule::operator <(const TRule &other) const
     return false;
 
   bool different = false;
-  
+
   if (coveredExamples && other.coveredExamples) {
     int *c1i = coveredExamples;
     int *c2i = other.coveredExamples;
@@ -231,7 +239,7 @@ bool TRule::operator <(const TRule &other) const
   }
 
   return different;
-}   
+}
 
 
 bool TRule::operator <=(const TRule &other) const
@@ -278,7 +286,7 @@ bool TRule::operator >(const TRule &other) const
   }
 
   return different;
-}   
+}
 
 
 bool TRule::operator >=(const TRule &other) const
@@ -340,7 +348,7 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
   if (obs_dist.abs == exp_dist.abs) //it turns out that this happens quite often
-    return false; 
+    return false;
 
   if (alpha >= 1.0)
     return true;
@@ -368,7 +376,7 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
     p = 1e-6f;
   if (n<=0.0)
     n = 1e-6f;
-  
+
   float lrs = 2 * (p*log(p/P) + n*log(n/N) - obs_dist.abs * log(obs_dist.abs/exp_dist.abs));
   return (lrs > 0.0) && (chisqprob(lrs, 1.0f) <= alpha);
 }
@@ -427,11 +435,11 @@ float TRuleEvaluator_LRS::operator()(PRule rule, PExampleTable, const int &, con
   const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
   if (!obs_dist.cases)
     return 0.0;
-  
+
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
   if (obs_dist.abs >= exp_dist.abs) //it turns out that this happens quite often
-    return 0.0; 
+    return 0.0;
 
   if (targetClass == -1) {
     float lrs = 0.0;
@@ -478,7 +486,7 @@ float TRuleEvaluator_LRS::operator()(PRule rule, PExampleTable, const int &, con
 }
 
 
-TEVDist::TEVDist(const float & mu, const float & beta, PFloatList & percentiles) 
+TEVDist::TEVDist(const float & mu, const float & beta, PFloatList & percentiles)
 : mu(mu),
   beta(beta),
   percentiles(percentiles)
@@ -487,7 +495,7 @@ TEVDist::TEVDist(const float & mu, const float & beta, PFloatList & percentiles)
   step = (float)0.1;
 }
 
-TEVDist::TEVDist() 
+TEVDist::TEVDist()
 {
   maxPercentile = (float)0.95;
   step = (float)0.1;
@@ -519,7 +527,7 @@ float TEVDist::median()
     return (percentiles->at(percentiles->size()/2));
 }
 
-TEVDistGetter_Standard::TEVDistGetter_Standard(PEVDistList dists) 
+TEVDistGetter_Standard::TEVDistGetter_Standard(PEVDistList dists)
 : dists(dists)
 {}
 
@@ -537,7 +545,7 @@ PEVDist TEVDistGetter_Standard::operator()(const PRule, const int & parentLength
     return dists->at(indx);
   return NULL;
 }
-   
+
 float getChi(float p, float n, float P, float N)
 {
   p = p - 0.5;
@@ -557,7 +565,7 @@ LNLNChiSq::LNLNChiSq(PEVDist evd, const float & chi)
   if (extremeAlpha < 1.0-evd->maxPercentile)
     extremeAlpha = -1.0;
   // exponent used in FT cumulative function (min because it is negative)
-  exponent = min(log(log(1/evd->maxPercentile)),(evd->mu-chi)/evd->beta); 
+  exponent = min(float(log(log(1/evd->maxPercentile))),(evd->mu-chi)/evd->beta);
 }
 
 double LNLNChiSq::operator()(float chix) {
@@ -606,7 +614,7 @@ LRInvE::LRInvE(PRule rule, PRule groundRule, const int & targetClass, float chiC
   N(groundRule->classDistribution->abs),
   chiCorrected(chiCorrected)
 {}
-  
+
 
 double LRInvE::operator()(float P){
   // check how it is done in call
@@ -615,7 +623,7 @@ double LRInvE::operator()(float P){
 }
 
 // Implementation of Brent's root finding method.
-float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFunc * func) 
+float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFunc * func)
 {
   float a = minv;
   float b = maxv;
@@ -728,7 +736,7 @@ bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples,
   for (i=0; i<filter->conditions->size(); i++)
   {
       if (i<rule->requiredConditions)
-        continue;     
+        continue;
       // create a rule without one condition
       TRule *newRule = new TRule();
       PRule wnewRule = newRule;
@@ -771,7 +779,7 @@ float combineEPositives(float N, float P, float oldQ, float n, float q)
   return N*oldQ/P*q*n;
 }
 
-float TRuleEvaluator_mEVC::evaluateRulePessimistic(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) 
+float TRuleEvaluator_mEVC::evaluateRulePessimistic(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb)
 {
   // extreme value distribution; optimism from ground Rule to rule
   PEVDist evd = evDistGetter->call(rule, 0, 0);
@@ -825,7 +833,7 @@ float TRuleEvaluator_mEVC::evaluateRulePessimistic(PRule rule, PExampleTable exa
   return aprioriProb-0.01+0.01*rule_acc;
 }
 
-float TRuleEvaluator_mEVC::evaluateRuleM(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) 
+float TRuleEvaluator_mEVC::evaluateRuleM(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb)
 {
   if (!m & !rule->classDistribution->abs)
     return 0.0;
@@ -838,8 +846,8 @@ float TRuleEvaluator_mEVC::evaluateRuleM(PRule rule, PExampleTable examples, con
 
 
 // evaluates a rule, which can have its base conditions, base rule
-// can be evaluted in any way. 
-float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) 
+// can be evaluted in any way.
+float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb)
 {
   // extreme value distribution; optimism from ground Rule to rule
   PEVDist evd = evDistGetter->call(rule, 0, 0);
@@ -920,7 +928,7 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
     quality = evaluateRuleM(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
   else if (optimismReduction == 1)
     quality = evaluateRulePessimistic(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
-  else 
+  else
     quality = evaluateRuleEVC(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
 
 /*  if (optimismReduction == 2)
@@ -948,15 +956,15 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
     rule->classDistribution->setint(targetClass, oldRuleDist->atint(targetClass));
     rule->classDistribution->abs = rule->classDistribution->atint(targetClass);
     rule->complexity += 1;
- 
+
 	float estRF = rule->estRF;
     if (optimismReduction == 0)
       bestQuality = evaluateRuleM(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
     else if (optimismReduction == 1)
       bestQuality = evaluateRulePessimistic(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
-    else 
+    else
       bestQuality = evaluateRuleEVC(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
-	
+
 	rule->estRF = estRF;
     rule->classDistribution = oldRuleDist;
     rule->chi = rulesTrueChi;
@@ -987,22 +995,22 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
       futureQuality /= rule->classDistribution->atint(targetClass); //apriori->abs; //rule->classDistribution->atint(targetClass);//rule->classDistribution->abs;
     }
   }
-  
+
   // store best rule as best rule and return expected quality of this rule
   rule->quality = quality;
-  if (improved >= min_improved && 
+  if (improved >= min_improved &&
       improved/rule->classDistribution->atint(targetClass) > min_improved_perc &&
-      quality > aprioriProb && 
+      quality > aprioriProb &&
       (!bestRule || (quality>bestRule->quality)) &&
       (!validator || validator->call(rule, examples, weightID, targetClass, apriori))) {
-      
+
       TRule *pbestRule = new TRule(rule.getReference(), true);
       PRule wpbestRule = pbestRule;
       // check if rule is significant enough
       bool ruleGoodEnough = true;
-      if (ruleAlpha < 1.0) 
+      if (ruleAlpha < 1.0)
         ruleGoodEnough = ruleGoodEnough & ((rule->chi > 0.0) && (chisqprob(rule->chi, 1.0f) <= ruleAlpha));
-      if (ruleGoodEnough && attributeAlpha < 1.0) 
+      if (ruleGoodEnough && attributeAlpha < 1.0)
         ruleGoodEnough = ruleGoodEnough & ruleAttSignificant(rule, examples, weightID, targetClass, apriori, aprioriProb);
       if (ruleGoodEnough)
       {
@@ -1015,17 +1023,17 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
 }
 
 bool worstRule(const PRule &r1, const PRule &r2)
-{ return    (r1->quality > r2->quality) 
-          || (r1->quality==r2->quality 
+{ return    (r1->quality > r2->quality)
+          || (r1->quality==r2->quality
           && r1->complexity < r2->complexity);
 }
-/*         || (r1->quality==r2->quality) 
+/*         || (r1->quality==r2->quality)
             && (   (r1->complexity < r2->complexity)
-                || (r1->complexity == r2->complexity) 
+                || (r1->complexity == r2->complexity)
                    && ((int(r1.getUnwrappedPtr()) ^ int(r2.getUnwrappedPtr())) & 16) != 0
                ); }  */
 
-bool inRules(PRuleList rules, PRule rule) 
+bool inRules(PRuleList rules, PRule rule)
 {
   TRuleList::const_iterator ri(rules->begin()), re(rules->end());
   PExampleGenerator rulegen = rule->examples;
@@ -1052,7 +1060,7 @@ void TRuleBeamFilter_Width::operator()(PRuleList &rules, PExampleTable, const in
 {
   if (rules->size() > width) {
     sort(rules->begin(), rules->end(), worstRule);
-  
+
     TRuleList *filteredRules = mlnew TRuleList;
     PRuleList wFilteredRules = filteredRules;
 
@@ -1065,7 +1073,7 @@ void TRuleBeamFilter_Width::operator()(PRuleList &rules, PExampleTable, const in
       }
       ri++;
     }
-    rules =  wFilteredRules;  
+    rules =  wFilteredRules;
   }
 }
 
@@ -1104,7 +1112,7 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
         bestRule = wNewRule;
         wins = 1;
       }
-      else 
+      else
         if (newRule->quality == bestRule->quality)
           _selectBestRule(wNewRule, bestRule, wins, rgen);
     }
@@ -1221,7 +1229,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
             newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
             if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
               ruleList->push_back(newRule);
-          } 
+          }
 
           newRule = mlnew TRule(rule, false);
           ruleList->push_back(newRule);
@@ -1230,11 +1238,11 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, cutoffs.back(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
           newRule->parentRule = wrule;
-        } 
+        }
       }
       else
-        raiseWarning("discretizer not given, continuous attributes will be skipped"); 
-    } 
+        raiseWarning("discretizer not given, continuous attributes will be skipped");
+    }
   }
   if (!discretization)
     discretization = PDiscretization();
@@ -1264,10 +1272,10 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   if (tempRefiner)
     refiner = mlnew TRuleBeamRefiner_Selector;
 /*  bool tempValidator = !validator;
-  if (tempValidator) 
+  if (tempValidator)
     validator = mlnew TRuleValidator_LRS((float)0.01);
   bool tempRuleStoppingValidator = !ruleStoppingValidator;
-  if (tempRuleStoppingValidator) 
+  if (tempRuleStoppingValidator)
     ruleStoppingValidator = mlnew TRuleValidator_LRS((float)0.05); */
   bool tempEvaluator = !evaluator;
   if (tempEvaluator)
@@ -1308,7 +1316,7 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   while(ruleList->size()) {
     PRuleList candidateRules = candidateSelector->call(ruleList, data, weightID);
     PITERATE(TRuleList, ri, candidateRules) {
-      PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
+      PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);
       PITERATE(TRuleList, ni, newRules) {
         (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
         if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
@@ -1316,8 +1324,8 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
         if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, (*ri)->classDistribution)) {
           ruleList->push_back(*ni);
         }
-      }  
-    } 
+      }
+    }
     ruleFilter->call(ruleList,data,weightID);
   }
 
@@ -1357,7 +1365,7 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
 {
   // Initialize default values if values not set
   bool tempDataStopping = !dataStopping && !ruleStopping;
-  if (tempDataStopping) 
+  if (tempDataStopping)
     dataStopping = mlnew TRuleDataStoppingCriteria_NoPositives;
 
   bool tempRuleFinder = !ruleFinder;
@@ -1421,15 +1429,15 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
 
 
   // Restore values
-  if (tempDataStopping) 
+  if (tempDataStopping)
     dataStopping = PRuleDataStoppingCriteria();
   if (tempRuleFinder)
     ruleFinder = PRuleFinder();
   if (tempCoverAndRemove)
     coverAndRemove = PRuleCovererAndRemover();
 
-  PRuleClassifierConstructor clConstructor = 
-    classifierConstructor ? classifierConstructor : 
+  PRuleClassifierConstructor clConstructor =
+    classifierConstructor ? classifierConstructor :
     PRuleClassifierConstructor(mlnew TRuleClassifierConstructor_firstRule());
   return clConstructor->call(ruleList, gen, weightID);
 };
@@ -1445,7 +1453,7 @@ bool TRuleDataStoppingCriteria_NoPositives::operator()(PExampleTable data, const
 
 bool TRuleStoppingCriteria_NegativeDistribution::operator()(PRuleList ruleList, PRule rule, PExampleTable data, const int &weightID) const
 {
-  if (rule && rule->classifier) 
+  if (rule && rule->classifier)
   {
     PDistribution aprioriDist = getClassDistribution(data, weightID);
     TDiscDistribution *apriori = aprioriDist.AS(TDiscDistribution);
@@ -1479,14 +1487,14 @@ PExampleTable TRuleCovererAndRemover_Default::operator()(PRule rule, PExampleTab
       if (!filter(*ei))
         table->addExample(*ei);
   }
-  else 
+  else
     PEITERATE(ei, data)
       if (!filter(*ei) || (*ei).getClass().intV!=targetClass)
         table->addExample(*ei);
 
 
   newWeight = weightID;
-  return wtable;  
+  return wtable;
 }
 
 // classifiers
@@ -1568,7 +1576,7 @@ int LinearEquationsSolving(int nDim, double* pfMatr, double* pfVect, double* pfS
         m = i;
       }
     }
-    
+
     // permutation of base line (index k) and max element line(index m)
     if(m != k)
     {
@@ -1859,7 +1867,7 @@ void TLogitClassifierState::updateExampleP(int ei)
 /*  PITERATE(TIntList, ind, frontRules)
 	  if (rules->at(*ind)->call(examples->at(ei))) {
 		p[getClassIndex(rules->at(*ind))][ei] = rules->at(*ind)->quality;
-		for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++) 
+		for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++)
 			if (ci!=getClassIndex(rules->at(*ind)))
 				p[ci][ei] = (1.0-rules->at(*ind)->quality)/(examples->domain->classVar->noOfValues()-1);
 		return;
@@ -1900,14 +1908,14 @@ void TLogitClassifierState::setFixed(int rule_i)
 
 void TLogitClassifierState::updateFixedPs(int rule_i)
 {
-	PITERATE(TIntList, ind, ruleIndices[rule_i]) 
+	PITERATE(TIntList, ind, ruleIndices[rule_i])
   {
     float bestQuality = 0.0;
 		PITERATE(TIntList, fr, prefixRules) {
 			  if (rules->at(*fr)->call(examples->at(*ind)) && rules->at(*fr)->quality > bestQuality) {
           bestQuality = rules->at(*fr)->quality;
 				  p[getClassIndex(rules->at(*fr))][*ind] = rules->at(*fr)->quality;
-				  for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++) 
+				  for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++)
 					  if (ci!=getClassIndex(rules->at(*fr)))
 						  p[ci][*ind] = (1.0-rules->at(*fr)->quality)/(examples->domain->classVar->noOfValues()-1);
 				  break;
@@ -1953,11 +1961,11 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minS
   optimizeBetas();
 
   // find front rules
-  if (setPrefixRules) 
+  if (setPrefixRules)
   {
 	  bool changed = setBestPrefixRule();
 	  while (changed) {
-      optimizeBetas(); 
+      optimizeBetas();
 		  changed = setBestPrefixRule();
 	  }
   }
@@ -1990,7 +1998,7 @@ bool TRuleClassifier_logit::setBestPrefixRule()
     float fixedExamplesPerc = 0.0;
     float oldBrierScore = 0.0, newBrierScore = 0.0;
 
-    // adjust quality of rule according to previously covered 
+    // adjust quality of rule according to previously covered
     float oldQuality = rules->at(i)->quality;
     float sumQualityFixed = 0.0;
     int j, nFixed=0;
@@ -2055,7 +2063,7 @@ void TRuleClassifier_logit::optimizeBetas()
 
   bool minSigChange = true;
   bool minBetaChange = true;
-  
+
   while (minSigChange || minBetaChange)
   {
       step = 2.0;
@@ -2068,7 +2076,7 @@ void TRuleClassifier_logit::optimizeBetas()
       }
       minSigChange = false;
       minBetaChange = false;
-      for (int i=0; i<rules->size(); i++) 
+      for (int i=0; i<rules->size(); i++)
       {
          if (skipRule[i] || rules->at(i)->classDistribution->abs == prior->abs)
              continue;
@@ -2082,7 +2090,7 @@ void TRuleClassifier_logit::optimizeBetas()
 
       // min significance check, the same story as minBeta
       // loop through rules, check if significant, if not set to 0
-      for (int i=0; i<rules->size(); i++) 
+      for (int i=0; i<rules->size(); i++)
       {
          if (skipRule[i] || rules->at(i)->classDistribution->abs == prior->abs)
              continue;
@@ -2099,7 +2107,7 @@ void TRuleClassifier_logit::optimizeBetas()
   }
 }
 
-// Init current state 
+// Init current state
 void TRuleClassifier_logit::initialize(const PDistributionList &probList)
 {
   // compute prior distribution of learning examples
@@ -2111,14 +2119,14 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
   currentState = ncurrentState;
 
   // compute standard deviations of rules
-  TFloatList *sd = new TFloatList(); 
+  TFloatList *sd = new TFloatList();
   wsd = sd;
-  TFloatList *sig = new TFloatList(); 
+  TFloatList *sig = new TFloatList();
   wsig = sig;
   PITERATE(TRuleList, ri, rules) {
   	float maxDiff = (*ri)->classDistribution->atint(getClassIndex(*ri))/(*ri)->classDistribution->abs;
 	  maxDiff -= (*ri)->quality;
-	  wsig->push_back(maxDiff); 
+	  wsig->push_back(maxDiff);
    float n = (*ri)->examples->numberOfExamples();
     float a = n*(*ri)->quality;
     float b = n*(1.0-(*ri)->quality);
@@ -2128,7 +2136,7 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
   }
 
   // compute satisfiable qualities
-  TFloatList *satQ = new TFloatList(); 
+  TFloatList *satQ = new TFloatList();
   wSatQ = satQ;
   if (minSignificance >= 0.5 || minSignificance <= 0.0)
     PITERATE(TRuleList, ri, rules)
@@ -2187,7 +2195,7 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
   for (i=0; i<rules->size(); i++) {
     float newCov = 0.0;
     float counter = 0.0;
-    PITERATE(TIntList, ind, currentState->ruleIndices[i]) 
+    PITERATE(TIntList, ind, currentState->ruleIndices[i])
     {
       //if (getClassIndex(rules->at(i)) == examples->at(*ind).getClass().intV) {
       newCov += coverages[getClassIndex(rules->at(i))][*ind];
@@ -2211,14 +2219,14 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
 void TRuleClassifier_logit::updateRuleBetas(float & step)
 {
   stabilizeAndEvaluate(step,-1);
-  PLogitClassifierState finalState; 
+  PLogitClassifierState finalState;
   currentState->copyTo(finalState);
-  bool changed = true; 
+  bool changed = true;
   float * worstEvalAll;
   worstEvalAll = new float [rules->size()];
   for (int i=0; i<rules->size(); i++)
       worstEvalAll[i] = 1e+6;
-  while (changed) 
+  while (changed)
   {
     changed = false;  /*
     for (int i=0; i<rules->size(); i++) {
@@ -2257,7 +2265,7 @@ void TRuleClassifier_logit::updateRuleBetas(float & step)
             worstI = i;
             worstEval = problem;
         }
-    } 
+    }
     if (worstEval>=0.01)
     {
         currentState->newBeta(worstI,currentState->betas[worstI]+step);
@@ -2285,18 +2293,18 @@ void TRuleClassifier_logit::updateRuleBetas(float & step)
 
 void TRuleClassifier_logit::stabilizeAndEvaluate(float & step, int last_changed_rule_index)
 {
-    PLogitClassifierState tempState; 
+    PLogitClassifierState tempState;
     currentState->copyTo(tempState);
     bool changed = true;
-    while (changed) 
+    while (changed)
     {
         changed = false;
-        for (int i=0; i<rules->size(); i++) 
+        for (int i=0; i<rules->size(); i++)
         {
             if (i == last_changed_rule_index)
                 continue;
-            // if optimistic, decrease beta 
-            if ( (currentState->avgProb->at(i) > rules->at(i)->quality) && (currentState->betas[i]-step)>=0.0) 
+            // if optimistic, decrease beta
+            if ( (currentState->avgProb->at(i) > rules->at(i)->quality) && (currentState->betas[i]-step)>=0.0)
             {
                 currentState->newBeta(i,currentState->betas[i]-step);
                 if (currentState->avgProb->at(i) < rules->at(i)->quality)
@@ -2373,7 +2381,7 @@ PDistribution TRuleClassifier_logit::classDistribution(const TExample &ex)
 	  if ((*rs)->call(ex) && (*rs)->quality > bestQuality) {
       bestQuality = (*rs)->quality;
 		  dist->setint(getClassIndex(*rs),(*rs)->quality);
-		  for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++) 
+		  for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++)
 		    if (ci!=getClassIndex(*rs))
 			    dist->setint(ci,(1.0-(*rs)->quality)/(examples->domain->classVar->noOfValues()-1));
       foundPrefixRule = true;
@@ -2398,10 +2406,10 @@ PDistribution TRuleClassifier_logit::classDistribution(const TExample &ex)
     TRuleList::iterator r(rules->begin()), re(rules->end());
     for (; r!=re; r++, b++)
       if ((*r)->call(cexample)) {
-        if (getClassIndex(*r) == i) 
-  		    f += (*b); 
+        if (getClassIndex(*r) == i)
+  		    f += (*b);
         else if (getClassIndex(*r) == res->noOfElements()-1)
-          f -= (*b); 
+          f -= (*b);
       }
     dist->addint(i,exp(f));
   }
