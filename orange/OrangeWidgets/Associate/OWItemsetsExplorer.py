@@ -1,5 +1,5 @@
 """
-<name>Itemsests Explorer</name>
+<name>Itemsets Explorer</name>
 <description>Itemsets explorer.</description>
 <icon>icons/ItemsetsExplorer.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
