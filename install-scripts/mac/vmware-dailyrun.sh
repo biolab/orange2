@@ -33,11 +33,14 @@ stop_vmware() {
 	# Wait for OS to stop
 	sleep $WAIT_TIME
 	
-	# Ignore errors (VMware should already be stopped)
-	"$VMRUN" stop "$VMIMAGE" nogui > /dev/null || true
+	if "$VMRUN" list | grep -q "$VMIMAGE"; then
+		"$VMRUN" stop "$VMIMAGE" nogui
+	fi
 	
 	return 0
 }
+
+start_vmware
 
 # Check if autologin was successful
 for LOGGED_IN in {1..$RETRIES}; do
