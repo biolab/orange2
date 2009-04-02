@@ -267,7 +267,7 @@ class FeatureByCartesianProductClass:
     newVar = orange.EnumVariable("-".join([a.name for a in bound]))
 
     if (len(bound)==1):
-      newVar.values = bound[0].values[:]
+      newVar.values = list(bound[0].values)
       clsfr = orange.ClassifierByLookupTable(newVar, bound[0])
     else:
       import orngMisc
