@@ -90,6 +90,7 @@ class OWInteractiveHist(OWHist):
 ##        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
+        self.updatingState = False, None
 
     def shadeTails(self):
         if self.type in ["hiTail", "twoTail"]:
@@ -120,9 +121,9 @@ class OWInteractiveHist(OWHist):
         self.shadeTails()
         self.replot()
     
-    def _setBoundary(self, button, cut):
+    def _setBoundary(self, boundary, cut):
         if self.type in ["twoTail", "middle"]:
-            if button == Qt.LeftButton:
+            if boundary == "lower":
                 low, hi = cut, self.upperBoundary
             else:
                 low, hi = self.lowerBoundary, cut
@@ -133,27 +134,47 @@ class OWInteractiveHist(OWHist):
             self.setBoundary(cut, cut)
         
     def mousePressEvent(self, e):
-        if self.state==SELECT:
+        if self.state == SELECT and self.getBoundaryAt(e.pos()) and e.button() == Qt.LeftButton:
+            boundary = self.getBoundaryAt(e.pos())
             cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-            self.mouseCurrentlyPressed = 1
-            self.buttonCurrentlyPressed = e.button()
-            self._setBoundary(e.button(), cut)
+##            self.mouseCurrentlyPressed = 1
+##            self.buttonCurrentlyPressed = e.button()
+            self.updatingState = True, boundary
+            self._setBoundary(boundary, cut)
         else:
             return OWHist.mousePressEvent(self, e)
         
     def mouseMoveEvent(self, e):
-        if self.state==SELECT:
-            if self.mouseCurrentlyPressed:
+        if self.state == SELECT:
+            updating, boundary = self.updatingState
+            if updating:
                 cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-                self._setBoundary(self.buttonCurrentlyPressed, cut)
+                self._setBoundary(boundary, cut)
+            else:
+                if self.getBoundaryAt(e.pos()):
+                    self.canvas().setCursor(Qt.SizeHorCursor)
+                else:
+                    self.canvas().setCursor(self._cursor)
         else:
-            return OWHist.mouseMoveEvent(self ,e)
+            return OWHist.mouseMoveEvent(self ,e)        
 
     def mouseReleaseEvent(self, e):
-        if self.state==SELECT:
+        updating, boundary = self.updatingState
+        if self.state == SELECT and updating:
             cut = self.invTransform(QwtPlot.xBottom, self.canvas().mapFrom(self, e.pos()).x())
-            self._setBoundary(self.buttonCurrentlyPressed, cut)
-            self.mouseCurrentlyPressed = 0
-            self.buttonCurrentlyPressed = None
+            self._setBoundary(boundary, cut)
+            self.updatingState = False, None
         else:
             return OWHist.mouseReleaseEvent(self, e)
+
+    def getBoundaryAt(self, pos):
+        x = self.canvas().mapFrom(self, pos).x()
+        def check (boundary):
+            return abs(self.transform(QwtPlot.xBottom, boundary) - x) <= 3
+        if self.type in ["hiTail", "twoTail", "middleTail"] and check(self.upperBoundary):
+            return "upper"
+        elif self.type in ["lowTail", "twoTail", "middleTail"] and check(self.lowerBoundary):
+            return "lower"
+        else:
+            return None
+            
