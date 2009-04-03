@@ -262,12 +262,14 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
   for(vi = varNames.begin(), ai = atoms.begin(), ei = atoms.end(); ai != ei; ai++, vi++) {
     TProgArguments args("dc: ordered", *ai, false);
 
+/*  Not any more: now they go into the Variable's dictionary
+
     if (args.unrecognized.size()) {
       char *res= mlnew char[128 + (*vi).size()];
       sprintf(res, "unrecognized options at attribute '%s'", (*vi).c_str());
       return res;
     }
-
+*/
     if (args.direct.size()) {
       if (args.direct.size()>1) {
         char *res= mlnew char[128 + (*vi).size()];
@@ -633,6 +635,8 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
           raiseWarning("argument -dc is not supported any more");
 
       ordered = args.exists("ordered");
+
+      desc.userFlags = args.unrecognized;
     }
 
     if (!strcmp((*ti).c_str(), "basket")) {

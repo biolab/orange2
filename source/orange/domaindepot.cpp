@@ -22,6 +22,7 @@
 
 #include "vars.hpp"
 #include "domain.hpp"
+#include "getarg.hpp"
 
 #include "stringvars.hpp"
 
@@ -362,6 +363,9 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
   return pvar;
 }
 
+
+int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+
 PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, const int &createNewOn)
 {
   PVariable var = TVariable::make(desc.name, desc.varType, &desc.fixedOrderValues, &desc.values, createNewOn, &status);
@@ -379,6 +383,13 @@ PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, c
   if (var && desc.ordered)
     var->ordered = true;
     
+  ITERATE(TMultiStringParameters, si, desc.userFlags) {
+      PyObject *name = PyString_FromString((*si).first.c_str());
+      PyObject *value = PyString_FromString((*si).second.c_str());
+      Orange_setattrLow((TPyOrange *)(var.counter), name, value, false);
+      PyErr_Clear();
+  }
+  
   return var;
 }
 
