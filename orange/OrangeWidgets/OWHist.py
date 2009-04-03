@@ -80,13 +80,13 @@ class OWInteractiveHist(OWHist):
     shadeTypes = ["lowTail", "hiTail", "twoTail", "middle"]
     def updateData(self):
         OWHist.updateData(self)
-        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
-        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
-        self.middleShadeKey = self.addCurve("middleShade", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.upperTailShadeKey = self.addCurve("upperTailShade", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.lowerTailShadeKey = self.addCurve("lowerTailShade", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
+        self.middleShadeKey = self.addCurve("middleShade", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps)
 
-        self.upperTailShadeKey.setBrush(QBrush(Qt.red))
-        self.lowerTailShadeKey.setBrush(QBrush(Qt.red))
-        self.middleShadeKey.setBrush(QBrush(Qt.red))        
+        self.upperTailShadeKey.setBrush(QBrush(Qt.blue))
+        self.lowerTailShadeKey.setBrush(QBrush(Qt.blue))
+        self.middleShadeKey.setBrush(QBrush(Qt.blue))
 ##        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
