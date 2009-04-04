@@ -7,7 +7,7 @@ import OWGUI
 from OWWidget import *
 from OWGraph import *
 
-import numpy
+import numpy, math
 
 class OWHist(OWGraph):
     def __init__(self, parent=None, type=0):
@@ -32,6 +32,7 @@ class OWHist(OWGraph):
         self.enableGridYL(False)
 
         self.buttonCurrentlyPressed = None
+        self.updatingState = False, None
 
     def setValues(self, values):
         nBins = 100
@@ -90,16 +91,15 @@ class OWInteractiveHist(OWHist):
 ##        self.setCurveBrush(self.upperTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.lowerTailShadeKey, QBrush(Qt.red))
 ##        self.setCurveBrush(self.middleShadeKey, QBrush(Qt.red))
-        self.updatingState = False, None
 
     def shadeTails(self):
         if self.type in ["hiTail", "twoTail"]:
-            index = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100), 0)
+            index = max(min(int(math.ceil(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx))), 100), 0)
             x = [self.upperBoundary] + list(self.xData[index:])
             y = [self.yData[min(index, 99)]] + list(self.yData[index:])
             self.upperTailShadeKey.setData(x, y)
         if self.type in ["lowTail", "twoTail"]:
-            index = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),100), 0)
+            index = max(min(int(math.ceil(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx))),100), 0)
             x = list(self.xData[:index]) + [self.lowerBoundary]
             y = list(self.yData[:index]) + [self.yData[min(index,99)]]
             self.lowerTailShadeKey.setData(x, y)
