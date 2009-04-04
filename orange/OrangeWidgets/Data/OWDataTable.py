@@ -23,7 +23,7 @@ from orngDataCaching import *
 OrangeValueRole = Qt.UserRole + 1
 
 class OWDataTable(OWWidget):
-    settingsList = ["showDistributions", "showMeta", "distColorRgb"]
+    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
@@ -34,6 +34,7 @@ class OWDataTable(OWWidget):
         self.data = {}          # key: id, value: ExampleTable
         self.showMetas = {}     # key: id, value: (True/False, columnList)
         self.showMeta = 1
+        self.showAttributeLabels = 1
         self.showDistributions = 1
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
@@ -57,6 +58,8 @@ class OWDataTable(OWWidget):
         boxSettings = OWGUI.widgetBox(self.controlArea, "Settings")
         self.cbShowMeta = OWGUI.checkBox(boxSettings, self, "showMeta", 'Show meta attributes', callback = self.cbShowMetaClicked)
         self.cbShowMeta.setEnabled(False)
+        self.cbShowAttLbls = OWGUI.checkBox(boxSettings, self, "showAttributeLabels", 'Show attribute labels (if any)', callback = self.cbShowAttLabelsClicked)
+        self.cbShowAttLbls.setEnabled(True)
         self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
         colBox = OWGUI.indentedBox(boxSettings, orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
@@ -197,10 +200,13 @@ class OWDataTable(OWWidget):
         
         table.setItemDelegate(TableItemDelegate(self, table))
         table.variableNames = [var.name for var in varsMetas]
+        table.data = data
         id = self.table2id.get(table, None)
 
         # set the header (attribute names)
         table.setHorizontalHeaderLabels(table.variableNames)
+        if self.showAttributeLabels:
+            table.setHorizontalHeaderLabels([table.variableNames[i] + ("\n%s" % a.group if hasattr(a, "group") else "") for (i, a) in enumerate(table.data.domain.attributes)])
 
         #table.hide()
         clsColor = QColor(160,160,160)
@@ -270,6 +276,14 @@ class OWDataTable(OWWidget):
                 table.showColumn(c)
                 table.resizeColumnToContents(c)
 
+    def cbShowAttLabelsClicked(self):
+        for table in self.table2id.keys():
+            if self.showAttributeLabels:
+                table.setHorizontalHeaderLabels([table.variableNames[i] + ("\n%s" % a.group if hasattr(a, "group") else "") for (i, a) in enumerate(table.data.domain.attributes)])
+            else:
+                table.setHorizontalHeaderLabels(table.variableNames)
+            # h = table.horizontalHeader().adjustSize()
+
     def cbShowDistributions(self):
         table = self.tabs.currentWidget()
         table.reset()
@@ -282,7 +296,6 @@ class OWDataTable(OWWidget):
         self.progressBarInit()
         self.setTable(table, data)
         self.progressBarFinished()
-
 
     def setInfo(self, data):
         """Updates data info.
@@ -356,15 +369,15 @@ if __name__=="__main__":
     ow = OWDataTable()
 
     #d1 = orange.ExampleTable(r'..\..\doc\datasets\auto-mpg')
-    #d2 = orange.ExampleTable(r'..\..\doc\datasets\voting.tab')
+    d2 = orange.ExampleTable('test-labels')
     #d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
     #d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
-    d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
+    #d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
     #d5 = orange.ExampleTable(r"e:\Development\Orange Datasets\Cancer\SRBCT.tab")
     ow.show()
     #ow.dataset(d1,"auto-mpg")
-    #ow.dataset(d2,"voting")
+    ow.dataset(d2,"voting")
     #ow.dataset(d4,"wpbc")
-    ow.dataset(d5,"adult_sample")
+    #ow.dataset(d5,"adult_sample")
     a.exec_()
     ow.saveSettings()
