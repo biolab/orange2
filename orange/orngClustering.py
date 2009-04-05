@@ -2,6 +2,7 @@ import math
 import sys
 import orange
 import random
+import statc
 
 try:
     import matplotlib
@@ -32,6 +33,62 @@ def minindex(x):
 def avg(x):
     """Return the average (mean) of a given list"""
     return (float(sum(x)) / len(x)) if x else 0
+
+#
+# data distances
+#
+
+class ExamplesDistanceConstructor_PearsonR(orange.ExamplesDistanceConstructor):
+    def __new__(cls, data=None, **argkw):
+        self = orange.ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self.__dict__.update(argkw)
+        if data:
+            return self.__call__(data)
+        else:
+            return self
+
+    def __call__(self, data):
+        indxs = [i for i, a in enumerate(data.domain.attributes) if a.varType==orange.VarTypes.Continuous]
+        return ExamplesDistance_PearsonR(domain=data.domain, indxs=indxs)
+
+class ExamplesDistance_PearsonR(orange.ExamplesDistance):
+    def __init__(self, **argkw):
+        self.__dict__.update(argkw)
+    def __call__(self, e1, e2):
+        X1 = []; X2 = []
+        for i in self.indxs:
+            if not(e1[i].isSpecial() or e2[i].isSpecial()):
+                X1.append(float(e1[i]))
+                X2.append(float(e2[i]))
+        if not X1:
+            return 1.0
+        return (1.0 - statc.pearsonr(X1, X2)[0]) / 2.
+
+class ExamplesDistanceConstructor_SpearmanR(orange.ExamplesDistanceConstructor):
+    def __new__(cls, data=None, **argkw):
+        self = orange.ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self.__dict__.update(argkw)
+        if data:
+            return self.__call__(data)
+        else:
+            return self
+
+    def __call__(self, data):
+        indxs = [i for i, a in enumerate(data.domain.attributes) if a.varType==orange.VarTypes.Continuous]
+        return ExamplesDistance_SpearmanR(domain=data.domain, indxs=indxs)
+
+class ExamplesDistance_SpearmanR(orange.ExamplesDistance):
+    def __init__(self, **argkw):
+        self.__dict__.update(argkw)
+    def __call__(self, e1, e2):
+        X1 = []; X2 = []
+        for i in self.indxs:
+            if not(e1[i].isSpecial() or e2[i].isSpecial()):
+                X1.append(float(e1[i]))
+                X2.append(float(e2[i]))
+        if not X1:
+            return 1.0
+        return (1.0 - statc.spearmanr(X1, X2)[0]) / 2.
 
 ##############################################################################
 # k-means clustering
@@ -79,7 +136,42 @@ def score_fastsilhouette(km, index=None):
     b = min(km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind)
     return float(b - a) / max(a, b)
 
+    def compute_bic(km):
+        """Compute bayesian information criteria score for given clustering"""
+        """NEEDS REWRITING!!!"""
+        data = km.data
+        medoids = km.centroids
+
+        M = len(data.domain.attributes)
+        R = float(len(data))
+        Ri = [km.clusters.count(i) for i in range(km.k)]
+        numFreePar = (len(km.data.domain.attributes) + 1.) * km.k * math.log(R, 2.) / 2.
+        # sigma**2
+        s2 = 0.
+        cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+        for x, midx in izip(data, mapping):
+            medoid = medoids[midx] # medoids has a dummy element at the beginning, so we don't need -1 
+            s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
+        s2 /= (R - K)
+        if s2 < 1e-20:
+            return None, [None]*K
+        # log-lokehood of clusters: l(Dn)
+        # log-likehood of clustering: l(D)
+        ld = 0
+        bicc = []
+        for k in range(1, 1+K):
+            ldn = -1. * Ri[k] * ((math.log(2. * math.pi, 2) / -2.) - (M * math.log(s2, 2) / 2.) + (K / 2.) + math.log(Ri[k], 2) - math.log(R, 2))
+            ld += ldn
+            bicc.append(ldn - numFreePar)
+        return ld - numFreePar, bicc
+
+
+#
+# silhouette plot
+#
+
 def plot_silhouette(km, filename='tmp.png'):
+    """According to clustering results, plots silhouette score for each instance in data set."""
     if not matplotlib:
         raise Exception("Need matplotlib library!")
     plt.figure()
@@ -123,8 +215,10 @@ class KMeans_init_hierarchicalClustering():
         root = hierarchicalClustering(sample)
         cmap = hierarchicalClustering_topClusters(root, k)
         return [data_center(orange.ExampleTable([sample[e] for e in cl])) for cl in cmap]
-    
+
+#    
 # k-means clustering, main implementation
+#
 
 class KMeans:
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
