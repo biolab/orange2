@@ -9,6 +9,7 @@ import orange, math
 import OWGUI
 from OWWidget import *
 import random
+import orngClustering
 
 ##############################################################################
 # main class
@@ -29,10 +30,14 @@ class OWExampleDistance(OWWidget):
         self.data = None
         self.matrix = None
 
-        self.metrics = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-                        ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
-                        ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
-                        ("Relief", orange.ExamplesDistanceConstructor_Relief)]
+        self.metrics = [
+            ("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
+            ("Pearson Rank Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
+            ("Spearman Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
+            ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
+            ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
+            ("Relief", orange.ExamplesDistanceConstructor_Relief),
+            ]
 
         cb = OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics",
             items=[x[0] for x in self.metrics],
