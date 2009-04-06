@@ -670,7 +670,7 @@ try:
     import  matplotlib.pyplot as plt
 except ImportError:
     matplotlib = None
-    Text , Artist, Table, Cell = object, object, obejct, object
+    Text , Artist, Table, Cell = object, object, object, object
 
 ##class ScalableText(Text):
 ##    _max_height = 1.0
