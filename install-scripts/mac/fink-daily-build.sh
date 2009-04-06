@@ -28,6 +28,7 @@ DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-
 OTHER_PACKAGES="db44 db44-aes giflib libungif ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox ptex-base ptex-nox-base jadetex docbook-utils tetex-base tetex-nox-base"
 
 FINK_ARGS="--yes --build-as-nobody"
+FINK_SELFUPDATE_ARGS="--yes"
 APT_ARGS="--assume-yes"
 
 # Path to Fink root
@@ -266,7 +267,7 @@ fi
 
 # Gets all official Fink package info files
 echo "Updating installed Fink packages."
-fink $FINK_ARGS selfupdate --method=rsync
+fink $FINK_SELFUPDATE_ARGS selfupdate --method=rsync
 fink $FINK_ARGS scanpackages
 
 # Updates everything (probably by compiling new packages)
