@@ -434,7 +434,7 @@ class OWNetExplorer(OWWidget):
             self.send("Marked Examples", None)
             return
         
-        if self.visualize != None and self.visualize.graph != None and self.visualize.graph.items != None:                    
+        if self.visualize != None and self.visualize.graph != None and self.visualize.graph.items != None:
             items = self.visualize.graph.items.getitems(markedNodes)
             self.send("Marked Examples", items)
             return
@@ -493,6 +493,77 @@ class OWNetExplorer(OWWidget):
         self.graph.drawPlotItems()
         
     def nameComponents(self):
+        """Names connected components of genes according to GO terms."""
+        self.progressBarInit()
+        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+            return
+        
+        vars = [x.name for x in self.visualize.getVars()]
+        if not self.nameComponentCombo.currentText() in vars:
+            return
+        
+        components = self.visualize.graph.getConnectedComponents()
+        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
+        
+        import obiGO 
+        ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
+        annotations = obiGO.Annotations.Load("goa_human", ontology=ontology, progressCallback=self.progressBarSet) 
+     
+        for i in range(len(components)):
+            component = components[i]
+            genes = [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
+            res = annotations.GetEnrichedTerms(genes, aspect="P")
+            #namingScore = [[(1-p_value) * (float(len(g)) / len(genes)) / (float(ref) / len(annotations.geneNames)), ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
+            #namingScore = [[(1-p_value) * len(g) / ref, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
+            
+            def rank(a, j, reverse=False):                    
+                if len(a) <= 0:
+                    return
+                
+                if reverse:
+                    a.sort(lambda x, y: 1 if x[j] > y[j] else -1 if x[j] < y[j] else 0)
+                    top_value = a[0][j] - 1
+                    top_rank = len(a)
+                    min_rank = float(len(a))
+                    for k in range(len(a)):
+                        if top_value < a[k][j]:
+                            top_value = a[k][j] 
+                            a[k][j] = top_rank / min_rank
+                        else:
+                            a[k][j] = a[k-1][j]
+                        top_rank -= 1
+                else:
+                    a.sort(lambda x, y: 1 if x[j] < y[j] else -1 if x[j] > y[j] else 0)
+                    top_value = a[0][j] + 1
+                    top_rank = len(a)
+                    max_rank = float(len(a))
+                    for k in range(len(a)):
+                        if top_value > a[k][j]:
+                            top_value = a[k][j] 
+                            a[k][j] = top_rank / max_rank
+                        else:
+                            a[k][j] = a[k-1][j]
+                        top_rank -= 1
+            
+            namingScore = [[len(g), ref, p_value, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
+            rank(namingScore, 1, reverse=True)
+            rank(namingScore, 2, reverse=True)
+            rank(namingScore, 0)
+            #print namingScore
+            #print
+            namingScore = [[rank_genes + rank_ref + rank_p_value, name, g, ref, p_value] for rank_genes, rank_ref, rank_p_value, name, g, ref, p_value in namingScore]
+            for v in component:
+                name = str(namingScore[0][1])
+                #attrs = "%d, %d, %lf" % (namingScore[0][2], namingScore[0][3], namingScore[0][4])
+                keyword_table[v]['keyword'] = name# + "\n" + attrs + "\n" + str(namingScore[0][0])
+            
+            self.progressBarSet(i*100.0/len(components))
+                
+        self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
+        self.setItems(orange.ExampleTable([self.visualize.graph.items, keyword_table]))
+        self.progressBarFinished()   
+        
+    def nameComponents_old(self):
         if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
             return
         
