@@ -39,7 +39,7 @@ Info fail contains file's title, tags, size and date and time of the upload.
 <p class="section">Methods used for managing local files</p>
 
 <dl class="attributes">
-<dt>download(domain, filename [,serverfiles], callback=None)</dt>
+<dt>download(domain, filename, serverfiles=None, callback=None, extract=True, verbose=True)</dt>
 <dd>Downloads file from the repository to local orange installation. To download 
 files as an authenticated user you should also pass an instance of <code>ServerFiles</code> class. 
 Callback can be a function without arguments. It will be called once for each downloaded percent of file: 100 times for the whole file.
@@ -58,6 +58,8 @@ in at least one chosen field (tag, title, name). It returns a list of tuples: fi
 is the domain of the file, second its name.</dd>  
 <dt>localpath(domain [,filename])</dt>
 <dd>Returns a path for the domain in the local repository. If argument <code>filename</code> is given, returns a path to corresponding file.</dd>
+<dt>localpath_download(domain, filename, **kwargs)</dt>
+<dd>Returns local path for the given domain and file. If file does not exist on the local machine, download it. Additional arguments are passed to the <code>download</code> function.</dd>
 <dt>remove_domain(domain [,force])</dt>
 <dd>Removes a domain. If force is True, domain is removed even
 if it is not empty (contains files).</dd>
@@ -65,6 +67,7 @@ if it is not empty (contains files).</dd>
 <dd>Removes a file from repository.</dd>
 <dt>update(domain, filename, access_code=None, verbose=True)</dt>
 <dd>Downloads the corresponding file from the server and places it in the local repository, but only if the server copy of the file is newer or the local copy does not exist. An optional <code>access_code</code> can be given to allow server access if the file is protected.</dd>
+
 
 </dl>
 

@@ -359,6 +359,14 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
     if type(callback) == DownloadProgress:
         callback.finish()        
 
+def localpath_download(domain, filename, **kwargs):
+    """ Returns a location of the given file. If file is not on available yet,
+    download it. """
+    pathname = localpath(domain, filename)
+    if not os.path.exists(pathname):
+        download(domain, filename, **kwargs)
+    return pathname
+
 def listfiles(domain):
     """Return a list of filenames in a given domain on local Orange
     installation with a valid info file: useful ones."""
