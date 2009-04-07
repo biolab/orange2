@@ -549,13 +549,19 @@ class OWNetExplorer(OWWidget):
             rank(namingScore, 1, reverse=True)
             rank(namingScore, 2, reverse=True)
             rank(namingScore, 0)
-            #print namingScore
-            #print
             namingScore = [[rank_genes + rank_ref + rank_p_value, name, g, ref, p_value] for rank_genes, rank_ref, rank_p_value, name, g, ref, p_value in namingScore]
+            namingScore.sort(reverse=True)
             for v in component:
+                if len(namingScore) < 1:
+                    print "error. no namingScore"
+                    break
+                if len(namingScore[0]) < 2:
+                    print "error. no namingScore[0]"
+                    break
+                
                 name = str(namingScore[0][1])
                 #attrs = "%d, %d, %lf" % (namingScore[0][2], namingScore[0][3], namingScore[0][4])
-                keyword_table[v]['keyword'] = name# + "\n" + attrs + "\n" + str(namingScore[0][0])
+                keyword_table[v]['keyword'] = name #+ "\n" + attrs + "\n" + str(namingScore[0][0])
             
             self.progressBarSet(i*100.0/len(components))
                 
