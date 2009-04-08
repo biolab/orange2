@@ -334,7 +334,7 @@ def exampleTableToSVMFormat(examples, file):
     cv = examples.domain.classVar
     
     for ex in examples:
-        file.write(str(int(ex[cv])))
+        file.write(str(int(ex[cv]) if cv.varType == orange.VarTypes.Discrete else float(ex[cv])))
         for i, attr in enumerate(attrs):
             if not ex[attr].isSpecial():
                 file.write(" "+str(i+1)+":"+str(ex[attr]))
