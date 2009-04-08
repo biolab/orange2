@@ -16,26 +16,23 @@ except Exception, ex:
 username = opt.get("-u", opt.get("--user", "username"))
 password = opt.get("-p", opt.get("--password", "password"))
 
-##info = obiGene.NCBIGeneInfo.get_geneinfo_from_ncbi()
-##info = obiGene.NCBIGeneInfo.load("D:/Download/gene_info/gene_info")
-info = open("D:/Download/gene_info/gene_info", "rb")
+gene_info_filename = os.path.join(tmpdir, "gene_info")
+obiGene.NCBIGeneInfo.get_geneinfo_from_ncbi(gene_info_filename)
+info = open(gene_info_filename, "rb")
 
 taxids = obiTaxonomy.common_taxids()
 essential = obiTaxonomy.essential_taxids()
-##taxids = obiTaxonomy.essential_taxids()
 
 genes = dict([(taxid, []) for taxid in taxids])
 for gi in info:
     if any(gi.startswith(id + "\t") for id in taxids):
         genes[gi.split("\t", 1)[0]].append(gi.strip())
-        
-##    if gi.tax_id in taxids:
-##        genes[gi.tax_id].append(gi)
-##        
-##del info
-##import gc
-##gc.collect()
 
+##genes = dict([(taxid, []) for taxid in taxids])
+##for gi in info:
+##    if any(gi.tax_id == id for id in taxids):
+##        genes[gi.tax_id].append(repr(gi))
+        
 sf = orngServerFiles.ServerFiles(username, password)
 
 for taxid, genes in genes.items():
