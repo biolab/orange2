@@ -44,6 +44,7 @@ class OWWidget(OWBaseWidget):
             if not hasattr(self, "buttonBackground"):
                 self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=6)
             self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
+            self.reportButton.setAutoDefault(0)
 
         if wantStatusBar:
             #self.widgetStatusArea = OWGUI.widgetBox(self, orientation = "horizontal", margin = 2)
