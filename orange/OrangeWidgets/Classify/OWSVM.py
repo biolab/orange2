@@ -14,7 +14,7 @@ class OWSVM(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
         self.inputs=[("Example Table", ExampleTable, self.setData)]
-        self.outputs=[("Learner", orange.Learner),("Classifier", orange.Classifier),("Support Vectors", ExampleTable)]
+        self.outputs=[("Learner", orange.Learner, Default),("Classifier", orange.Classifier, Default),("Support Vectors", ExampleTable)]
 
         self.kernel_type = 2
         self.gamma = 0.0
