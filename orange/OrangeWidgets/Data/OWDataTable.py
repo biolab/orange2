@@ -225,8 +225,11 @@ class OWDataTable(OWWidget):
             for i in range(numEx):
 ##                table.setItem(i, j, TableWidgetItem(data[i][key]
 ##                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-                item = OWGUI.tableItem(table, i,j, data[i][key].native(), backColor = bgColor)
-                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
+                if data.domain[key].varType == orange.VarTypes.Continuous:
+                    item = OWGUI.tableItem(table, i,j, float(str(data[i][key])), backColor = bgColor)
+                else:
+                    item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
+##                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
 
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
@@ -355,8 +358,8 @@ class TableItemDelegate(QItemDelegate):
                     painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
 ##            text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
 ##        else:
-##        text = index.data(Qt.DisplayRole).toString()
-        text = index.data(OrangeValueRole).toString()
+        text = index.data(Qt.DisplayRole).toString()
+        ##text = index.data(OrangeValueRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)
         painter.restore()
@@ -369,15 +372,16 @@ if __name__=="__main__":
     ow = OWDataTable()
 
     #d1 = orange.ExampleTable(r'..\..\doc\datasets\auto-mpg')
-    d2 = orange.ExampleTable('test-labels')
+    #d2 = orange.ExampleTable('test-labels')
     #d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
     #d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
     #d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
+    d5 = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
     #d5 = orange.ExampleTable(r"e:\Development\Orange Datasets\Cancer\SRBCT.tab")
     ow.show()
     #ow.dataset(d1,"auto-mpg")
-    ow.dataset(d2,"voting")
+    #ow.dataset(d2,"voting")
     #ow.dataset(d4,"wpbc")
-    #ow.dataset(d5,"adult_sample")
+    ow.dataset(d5,"adult_sample")
     a.exec_()
     ow.saveSettings()
