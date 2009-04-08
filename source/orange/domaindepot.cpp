@@ -364,7 +364,7 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
 }
 
 
-int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+int Orange_setattrDictionary(TPyOrange *self, const char *name, PyObject *args, bool warn);
 
 PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, const int &createNewOn)
 {
@@ -383,11 +383,17 @@ PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, c
   if (var && desc.ordered)
     var->ordered = true;
     
-  ITERATE(TMultiStringParameters, si, desc.userFlags) {
-      PyObject *name = PyString_FromString((*si).first.c_str());
+  if (desc.userFlags.size()) {
+    PyObject *attrdict = PyDict_New();
+    ITERATE(TMultiStringParameters, si, desc.userFlags) {
       PyObject *value = PyString_FromString((*si).second.c_str());
-      Orange_setattrLow((TPyOrange *)(var.counter), name, value, false);
-      PyErr_Clear();
+      PyDict_SetItemString(attrdict, (*si).first.c_str(), value);
+      Py_DECREF(value);
+    }
+      
+    Orange_setattrDictionary((TPyOrange *)(var.counter), "attributes", attrdict, false);
+    Py_DECREF(attrdict);
+    PyErr_Clear();
   }
   
   return var;

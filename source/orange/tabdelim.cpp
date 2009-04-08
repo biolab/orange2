@@ -928,6 +928,28 @@ void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
 }
 
 
+void tabDelim_printAttributes(FILE *file, PVariable var, bool needsSpace) {
+  TPyOrange *bvar = (TPyOrange *)(var.counter);
+  PyObject *attrdict = bvar->orange_dict ? PyDict_GetItemString(bvar->orange_dict, "attributes") : NULL;
+  if (attrdict) {
+    PyObject *key, *value;
+    int pos = 0;
+    while (PyDict_Next(attrdict, &pos, &key, &value)) {
+      if (PyString_Check(key))
+        Py_INCREF(key);
+      else
+        key = PyObject_Repr(value);
+      if (PyString_Check(value))
+        Py_INCREF(value);
+      else
+        value = PyObject_Repr(value);
+      fprintf(file, (pos>1) || needsSpace ? " %s=%s" : "%s=%s", PyString_AsString(key), PyString_AsString(value));
+      Py_DECREF(value);
+      Py_DECREF(key);
+    }
+  }
+}
+
 void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, bool listDiscreteValues)
 { 
   TVarList::const_iterator vi, vb(dom->variables->begin()), ve(dom->variables->end());
@@ -985,12 +1007,15 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   ho = false;
   for(vb = vi = dom->attributes->begin(), ve = dom->attributes->end(); vi!=ve; vi++) {
     PUTDELIM;
-    if (((*vi)->varType == TValue::INTVAR) && (*vi)->ordered)
+    bool isOrdered = ((*vi)->varType == TValue::INTVAR) && (*vi)->ordered;
+    if (isOrdered)
       fprintf(file, "-ordered");
+    tabDelim_printAttributes(file, *vi, isOrdered);
   }
   if (dom->classVar) {
     PUTDELIM;
     fprintf(file, "class");
+    tabDelim_printAttributes(file, dom->classVar, true);
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional)
@@ -999,6 +1024,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     fprintf(file, "meta");
     if (((*mi).variable->varType == TValue::INTVAR) && (*mi).variable->ordered)
       fprintf(file, " -ordered");
+    tabDelim_printAttributes(file, (*mi).variable, true);
  }
 
  if (hasOptionalFloats)
