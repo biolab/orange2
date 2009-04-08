@@ -938,7 +938,7 @@ void tabDelim_printAttributes(FILE *file, PVariable var, bool needsSpace) {
       if (PyString_Check(key))
         Py_INCREF(key);
       else
-        key = PyObject_Repr(value);
+        key = PyObject_Repr(key);
       if (PyString_Check(value))
         Py_INCREF(value);
       else
