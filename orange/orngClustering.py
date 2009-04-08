@@ -325,9 +325,9 @@ def hierarchicalClustering(data,
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1)))
     if order:
-        orderLeaves(root, matrix, progressCallback=progressCallback)
+        orderLeaves(root, matrix, progressCallback=lambda value: progressCallback(50.0 + value/2))
     return root
 
 def hierarchicalClustering_attributes(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
