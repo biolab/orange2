@@ -96,7 +96,7 @@ class SVMLearner(orange.SVMLearner):
         if normalization:
             examples = self._normalize(examples)
             self.normalization = False
-        if self.svm_type in [SVMLearner.Nu_SVC, SVMLearner.Nu_SVR] and "nu" in parameters:
+        if self.svm_type == SVMLearner.Nu_SVC and "nu" in parameters:
             numOfNuValues=9
             maxNu = max(self.maxNu(examples) - 1e-7, 0.0)
             searchParams.append(("nu", [i/10.0 for i in range(1, 9) if i/10.0 < maxNu] + [maxNu]))
