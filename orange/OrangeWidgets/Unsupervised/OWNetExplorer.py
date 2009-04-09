@@ -518,33 +518,57 @@ class OWNetExplorer(OWWidget):
             return
             
         def rank(a, j, reverse=False):                    
-            if len(a) <= 0:
-                return
+            if len(a) <= 0: return
             
-            if reverse:
+            if reverse:                
                 a.sort(lambda x, y: 1 if x[j] > y[j] else -1 if x[j] < y[j] else 0)
-                top_value = a[0][j] - 1
+                top_value = a[0][j]
                 top_rank = len(a)
-                min_rank = float(len(a))
+                max_rank = float(len(a))
+                int_ndx = 0
                 for k in range(len(a)):
                     if top_value < a[k][j]:
                         top_value = a[k][j] 
-                        a[k][j] = top_rank / min_rank
-                    else:
-                        a[k][j] = a[k-1][j]
+                        if k - int_ndx > 1:
+                            avg_rank = (a[int_ndx][j] + a[k-1][j]) / 2
+                            for l in range(int_ndx, k):
+                                a[l][j] = avg_rank
+                        
+                        int_ndx = k
+
+                    a[k][j] = top_rank / max_rank
                     top_rank -= 1
+                
+                k += 1
+                if k - int_ndx > 1:
+                    avg_rank = (a[int_ndx][j] + a[k-1][j]) / 2
+                    for l in range(int_ndx, k):
+                        a[l][j] = avg_rank    
+                
             else:
                 a.sort(lambda x, y: 1 if x[j] < y[j] else -1 if x[j] > y[j] else 0)
-                top_value = a[0][j] + 1
+                top_value = a[0][j]
                 top_rank = len(a)
                 max_rank = float(len(a))
+                int_ndx = 0
                 for k in range(len(a)):
                     if top_value > a[k][j]:
                         top_value = a[k][j] 
-                        a[k][j] = top_rank / max_rank
-                    else:
-                        a[k][j] = a[k-1][j]
+                        if k - int_ndx > 1:
+                            avg_rank = (a[int_ndx][j] + a[k-1][j]) / 2
+                            for l in range(int_ndx, k):
+                                a[l][j] = avg_rank
+                        
+                        int_ndx = k
+
+                    a[k][j] = top_rank / max_rank
                     top_rank -= 1
+                
+                k += 1
+                if k - int_ndx > 1:
+                    avg_rank = (a[int_ndx][j] + a[k-1][j]) / 2
+                    for l in range(int_ndx, k):
+                        a[l][j] = avg_rank
         
         for i in range(len(components)):
             component = components[i]
@@ -562,7 +586,7 @@ class OWNetExplorer(OWWidget):
             rank(namingScore, 2, reverse=True)
             rank(namingScore, 0)
             
-            namingScore = [[2.5 * rank_genes + rank_ref + rank_p_value, name, g, ref, p_value] for rank_genes, rank_ref, rank_p_value, name, g, ref, p_value in namingScore]
+            namingScore = [[10 * rank_genes + 0.5 * rank_ref + rank_p_value, name, g, ref, p_value] for rank_genes, rank_ref, rank_p_value, name, g, ref, p_value in namingScore]
             namingScore.sort(reverse=True)
             
             if len(namingScore) < 1:
@@ -574,8 +598,8 @@ class OWNetExplorer(OWWidget):
             
             for v in component:
                 name = str(namingScore[0][1])
-                #attrs = "%d/%d, %d, %lf" % (namingScore[0][2], annotated_genes, namingScore[0][3], namingScore[0][4])
-                keyword_table[v]['keyword'] = name #+ "\n" + attrs + "\n" + str(namingScore[0][0])
+                attrs = "%d/%d, %d, %lf" % (namingScore[0][2], annotated_genes, namingScore[0][3], namingScore[0][4])
+                keyword_table[v]['keyword'] = name + "\n" + attrs + "\n" + str(namingScore[0][0])
             
             self.progressBarSet(i*100.0/len(components))
                 
