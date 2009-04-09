@@ -575,11 +575,13 @@ class OWNetExplorer(OWWidget):
             if len(component) <= 1:
                 continue
             genes = [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
-            res = annotations.GetEnrichedTerms(genes, aspect="P")
+            res1 = annotations.GetEnrichedTerms(genes, aspect="P")
+            res2 = annotations.GetEnrichedTerms(genes, aspect="F")
+            res = res1.items() + res2.items()
             #namingScore = [[(1-p_value) * (float(len(g)) / len(genes)) / (float(ref) / len(annotations.geneNames)), ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             #namingScore = [[(1-p_value) * len(g) / ref, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             
-            namingScore = [[len(g), ref, p_value, ontology[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
+            namingScore = [[len(g), ref, p_value, ontology[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res if p_value < 0.1]
             annotated_genes = max([a[0] for a in namingScore])
             
             rank(namingScore, 1, reverse=True)
