@@ -172,27 +172,45 @@ class OWBaseWidget(QDialog):
         return QDialog.event(self, e)
     """
 
+    def getIconNames(self, iconName):
+        if type(iconName) == list:      # if canvas sent us a prepared list of valid names, just return those
+            return iconName
+        
+        names = []
+        name, ext = os.path.splitext(iconName)
+        for num in [16, 32, 42, 60]:
+            names.append("%s_%d%s" % (name, num, ext))
+        fullPaths = []
+        for paths in [(self.widgetDir, name), (self.widgetDir, "icons", name), (os.path.dirname(sys.modules[self.__module__].__file__), "icons", name)]:
+            for name in names + [iconName]:
+                fname = os.path.join(*paths)
+                if os.path.exists(fname):
+                    fullPaths.append(fname)
+            if fullPaths != []:
+                break
+
+        if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
+            fullPaths.pop()     # if we have the new icons we can remove the default icon
+        return fullPaths
+    
+
     def setWidgetIcon(self, iconName):
-        if os.path.exists(iconName):
-            pass
-        elif os.path.exists(os.path.join(self.widgetDir, iconName)):
-            iconName = os.path.join(self.widgetDir, iconName)
-        elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
-            iconName = os.path.join(self.widgetDir, "icons/" + iconName)
-        elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
-            iconName = os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)
-        elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
-            iconName = os.path.join(self.widgetDir, "icons/Unknown.png")
+        iconNames = self.getIconNames(iconName)
             
-        frame = QPixmap(os.path.join(self.widgetDir, "icons/frame.png"))
-        icon = QPixmap(iconName)
-        result = QPixmap(icon.size())
-        painter = QPainter()
-        painter.begin(result)
-        painter.drawPixmap(0,0, frame)
-        painter.drawPixmap(0,0, icon)
-        painter.end()
-        self.setWindowIcon(QIcon(result))
+        icon = QIcon()
+        for name in iconNames:
+            pix = QPixmap(name)
+            icon.addPixmap(pix)
+#            frame = QPixmap(os.path.join(self.widgetDir, "icons/frame.png"))
+#            icon = QPixmap(iconName)
+#            result = QPixmap(icon.size())
+#            painter = QPainter()
+#            painter.begin(result)
+#            painter.drawPixmap(0,0, frame)
+#            painter.drawPixmap(0,0, icon)
+#            painter.end()
+
+        self.setWindowIcon(icon)
         
 
     # ##############################################
@@ -286,6 +304,7 @@ class OWBaseWidget(QDialog):
         if x != None and y != None:
             self.move(x,y)
         self.show()
+        #self.raise_()
 
 
     def send(self, signalName, value, id = None):
@@ -593,7 +612,7 @@ class OWBaseWidget(QDialog):
         self.startTime = time.time()
         self.setWindowTitle(self.captionTitle + " (0% complete)")
         if self.progressBarHandler:
-            self.progressBarHandler(self, -1)
+            self.progressBarHandler(self, 0)
 
     def progressBarSet(self, value):
         if value > 0:
