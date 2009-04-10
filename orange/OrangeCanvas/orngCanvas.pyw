@@ -14,6 +14,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.setWindowTitle("Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         self.recentDocs = []
+        self.iconNameToIcon = {}
         self.iconSizeList = ["16 x 16", "32 x 32", "40 x 40", "48 x 48", "60 x 60"]
         self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
         self.originalPalette = QApplication.palette()
@@ -217,19 +218,19 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuRecent = QMenu("Recent Schemas", self)
 
         self.menuFile = QMenu("&File", self)
-        self.menuFile.addAction( "New Scheme",  self.menuItemNewScheme)
-        self.menuFile.addAction(QIcon(self.file_open), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
+        self.menuFile.addAction( "New Scheme",  self.menuItemNewScheme, QKeySequence.New)
+        self.menuFile.addAction(QIcon(self.file_open), "&Open...", self.menuItemOpen, QKeySequence.Open )
         self.menuFile.addAction(QIcon(self.file_open), "&Open and Freeze...", self.menuItemOpenFreeze)
         if os.path.exists(os.path.join(self.canvasSettingsDir, "lastSchema.tmp")):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL+Qt.Key_R)
         #self.menuFile.addAction( "&Clear", self.menuItemClear)
         self.menuFile.addSeparator()
-        self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
+        self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, QKeySequence.Save )
         self.menuSaveAsID = self.menuFile.addAction( "Save &As...", self.menuItemSaveAs)
         self.menuFile.addAction( "&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
         self.menuFile.addAction( "&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.addSeparator()
-        self.menuFile.addAction(QIcon(self.file_print), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
+        self.menuFile.addAction(QIcon(self.file_print), "&Print Schema / Save image", self.menuItemPrinter, QKeySequence.Print )
         self.menuFile.addSeparator()
         self.menuFile.addMenu(self.menuRecent)
         self.menuFile.addSeparator()
@@ -345,7 +346,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         for i in range(len(recentDocs)):
             shortName = "&" + str(i+1) + " " + os.path.basename(recentDocs[i])
-            self.menuRecent.addAction(shortName, eval("self.menuItemRecent"+str(i+1)))
+            self.menuRecent.addAction(shortName, lambda: self.openRecentFile(i+1))
 
     def openRecentFile(self, index):
         if len(self.settings["RecentFiles"]) >= index:
@@ -369,33 +370,6 @@ class OrangeCanvasDlg(QMainWindow):
             recentDocs.remove(recentDocs[5])
         self.settings["RecentFiles"] = recentDocs
         self.readRecentFiles()
-
-    def menuItemRecent1(self):
-        self.openRecentFile(1)
-
-    def menuItemRecent2(self):
-        self.openRecentFile(2)
-
-    def menuItemRecent3(self):
-        self.openRecentFile(3)
-
-    def menuItemRecent4(self):
-        self.openRecentFile(4)
-
-    def menuItemRecent5(self):
-        self.openRecentFile(5)
-
-    def menuItemRecent6(self):
-        self.openRecentFile(6)
-
-    def menuItemRecent7(self):
-        self.openRecentFile(7)
-
-    def menuItemRecent8(self):
-        self.openRecentFile(8)
-
-    def menuItemRecent9(self):
-        self.openRecentFile(9)
 
     def menuItemSelectAll(self):
         return
@@ -768,21 +742,38 @@ class OrangeCanvasDlg(QMainWindow):
             self.setWindowTitle(caption + " - Orange Canvas")
         else:
             self.setWindowTitle("Orange Canvas")
+    
+    def getWidgetIcon(self, widgetInfo):
+        if self.iconNameToIcon.has_key(widgetInfo.icon):
+            return self.iconNameToIcon[widgetInfo.icon]
         
+        iconNames = self.getFullWidgetIconName(widgetInfo)
+        icon = QIcon()
+        for name in iconNames:
+            icon.addPixmap(QPixmap(name))
+        self.iconNameToIcon[widgetInfo.icon] = icon
+        return icon
+            
+    
     def getFullWidgetIconName(self, widgetInfo):
-        name = widgetInfo.icon
+        iconName = widgetInfo.icon
+        names = []
+        name, ext = os.path.splitext(iconName)
+        for num in [16, 32, 42, 60]:
+            names.append("%s_%d%s" % (name, num, ext))
+            
         widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)  #os.path.split(self.getFileName())[0]
-
-        for paths in [(self.picsDir, name), 
-                      (self.widgetDir, name), 
-                      (name,), 
-                      (widgetDir, name), 
-                      (widgetDir, "icons", name)]:
-            fname = os.path.join(*paths)
-            if os.path.exists(fname):
-                return fname
-
-        return self.defaultPic
+        fullPaths = []
+        for paths in [(self.picsDir,), (self.widgetDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
+            for name in names + [iconName]:
+                fname = os.path.join(*paths + (name,))
+                if os.path.exists(fname):
+                    fullPaths.append(fname)
+            if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
+                fullPaths.pop()     # if we have the new icons we can remove the default icon
+            if fullPaths != []:
+                return fullPaths    
+        return [self.defaultPic]
 
 
 class MyStatusBar(QStatusBar):

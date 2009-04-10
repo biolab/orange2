@@ -32,7 +32,7 @@ class SignalCanvasView(QGraphicsView):
     def addSignalList(self, outWidget, inWidget):
         self.scene().clear()
         outputs, inputs = outWidget.widgetInfo.outputs, inWidget.widgetInfo.inputs
-        outIconName, inIconName = self.canvasDlg.getFullWidgetIconName(outWidget.widgetInfo), self.canvasDlg.getFullWidgetIconName(inWidget.widgetInfo)
+        outIcon, inIcon = self.canvasDlg.getWidgetIcon(outWidget.widgetInfo), self.canvasDlg.getWidgetIcon(inWidget.widgetInfo)
         self.lines = []
         self.outBoxes = []
         self.inBoxes = []
@@ -46,6 +46,7 @@ class SignalCanvasView(QGraphicsView):
         ySignalSize = 20            # height of the signal box
         xSignalSize = 20            # width of the signal box
         xIconOff = 10
+        iconSize = 48
 
         count = max(len(inputs), len(outputs))
         height = max ((count)*ySignalSpace, 70)
@@ -80,15 +81,16 @@ class SignalCanvasView(QGraphicsView):
             widgetBack = outWidget.imageFrame
 
         # if icons -> show them
-        if outIconName:
+        if outIcon:
             frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
             frame.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
-            self.outWidgetIcon = QGraphicsPixmapItem(QPixmap(outIconName), None, self.dlg.canvas)
+            self.outWidgetIcon = QGraphicsPixmapItem(outIcon.pixmap(iconSize, iconSize), None, self.dlg.canvas)
             self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
-        if inIconName :
+        
+        if inIcon:
             frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
             frame.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - frame.pixmap().width(), yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
-            self.inWidgetIcon = QGraphicsPixmapItem(QPixmap(inIconName), None, self.dlg.canvas)
+            self.inWidgetIcon = QGraphicsPixmapItem(inIcon.pixmap(iconSize, iconSize), None, self.dlg.canvas)
             self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
 
         # show signal boxes and text labels

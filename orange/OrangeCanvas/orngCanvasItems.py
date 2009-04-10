@@ -129,7 +129,8 @@ class CanvasWidget(QGraphicsRectItem):
         self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
-        
+        self.icon = canvasDlg.getWidgetIcon(widgetInfo)
+                
         self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(view.processingHandler)
         self.instance.setWidgetStateHandler(self.updateWidgetState)
@@ -143,7 +144,6 @@ class CanvasWidget(QGraphicsRectItem):
         self.canvas = canvas
         self.view = view
         self.canvasDlg = canvasDlg
-        self.image = QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo))
         canvasPicsDir  = os.path.join(canvasDlg.canvasDir, "icons")
         self.imageLeftEdge = QPixmap(os.path.join(canvasPicsDir,"leftEdge.png"))
         self.imageRightEdge = QPixmap(os.path.join(canvasPicsDir,"rightEdge.png"))
@@ -352,7 +352,8 @@ class CanvasWidget(QGraphicsRectItem):
 
 
         painter.drawPixmap(0, 0, self.imageFrame)
-        painter.drawPixmap(0, 0, self.image)
+        #painter.drawPixmap(0, 0, self.image)
+        painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
 
         if self.widgetInfo.inputs != []:    painter.drawPixmap(-self.edgeSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
         if self.widgetInfo.outputs != []:   painter.drawPixmap(self.widgetSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)

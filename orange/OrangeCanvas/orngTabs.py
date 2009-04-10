@@ -76,7 +76,8 @@ class WidgetButton(QFrame, WidgetButtonBase):
         if buttonType != WB_TOOLBOX:
             self.layout().setSpacing(0)
             
-        self.pixmapWidget.setPixmap(QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo)))
+        self.icon = canvasDlg.getWidgetIcon(widgetInfo)
+        self.pixmapWidget.setPixmap(self.icon.pixmap(self.iconSize, self.iconSize))
         self.pixmapWidget.setScaledContents(1)
         self.pixmapWidget.setFixedSize(QSize(self.iconSize, self.iconSize))
 
@@ -181,7 +182,7 @@ class WidgetTreeItem(QTreeWidgetItem, WidgetButtonBase):
         QTreeWidgetItem.__init__(self, parent)
         WidgetButtonBase.__init__(self, name, widgetInfo, tabs, canvasDlg)
         
-        self.setIcon(0, QIcon(canvasDlg.getFullWidgetIconName(widgetInfo)))
+        self.setIcon(0, canvasDlg.getWidgetIcon(widgetInfo))
         self.setText(0, name)
         self.setToolTip(0, widgetInfo.tooltipText)
     
@@ -528,7 +529,7 @@ class CanvasPopup(QMenu):
                 if c in canvasDlg.widgetRegistry[category]:
                     widgetInfo = canvasDlg.widgetRegistry[category][c]
                     
-                    icon = QIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
+                    icon = canvasDlg.getWidgetIcon(widgetInfo)
                     act = categoriesPopup.addAction(icon, widgetInfo.name)
                     act.widgetInfo = widgetInfo
                     categoriesPopup.quickActions.append(act)
@@ -557,7 +558,7 @@ def constructCategoriesPopup(canvasDlg):
         catmenu = categoriesPopup.addMenu(category)
         categoriesPopup.catActions.append(catmenu)
         for widgetInfo in sorted(canvasDlg.widgetRegistry[category].values(), key=lambda x:x.priority):
-            icon = QIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
+            icon = QIcon(canvasDlg.getWidgetIcon(widgetInfo))
             act = catmenu.addAction(icon, widgetInfo.name)
             act.widgetInfo = widgetInfo
             act.category = catmenu
