@@ -62,7 +62,10 @@ class ExamplesDistance_PearsonR(orange.ExamplesDistance):
                 X2.append(float(e2[i]))
         if not X1:
             return 1.0
-        return (1.0 - statc.pearsonr(X1, X2)[0]) / 2.
+        try:
+            return (1.0 - statc.pearsonr(X1, X2)[0]) / 2.
+        except:
+            return 1.0
 
 class ExamplesDistanceConstructor_SpearmanR(orange.ExamplesDistanceConstructor):
     def __new__(cls, data=None, **argkw):
@@ -88,7 +91,10 @@ class ExamplesDistance_SpearmanR(orange.ExamplesDistance):
                 X2.append(float(e2[i]))
         if not X1:
             return 1.0
-        return (1.0 - statc.spearmanr(X1, X2)[0]) / 2.
+        try:
+            return (1.0 - statc.spearmanr(X1, X2)[0]) / 2.
+        except:
+            return 1.0
 
 ##############################################################################
 # k-means clustering
