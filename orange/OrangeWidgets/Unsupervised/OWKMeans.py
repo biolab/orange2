@@ -22,8 +22,8 @@ class OWKMeans(OWWidget):
     
     distanceMeasures = [
         ("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-        ("Pearson Rank Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
-        ("Spearman Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
+        ("Pearson Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
+        ("Spearman Rank Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
         ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
         ("Maximal", orange.ExamplesDistanceConstructor_Maximal),
         ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
