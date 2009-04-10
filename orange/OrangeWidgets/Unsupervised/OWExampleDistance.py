@@ -32,8 +32,8 @@ class OWExampleDistance(OWWidget):
 
         self.metrics = [
             ("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-            ("Pearson Rank Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
-            ("Spearman Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
+            ("Pearson Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
+            ("Spearman Rank Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
             ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
             ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
             ("Relief", orange.ExamplesDistanceConstructor_Relief),
