@@ -225,7 +225,7 @@ class OWDataTable(OWWidget):
             for i in range(numEx):
 ##                table.setItem(i, j, TableWidgetItem(data[i][key]
 ##                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-                if data.domain[key].varType == orange.VarTypes.Continuous:
+                if data.domain[key].varType == orange.VarTypes.Continuous and not data[i][key].isSpecial():
                     item = OWGUI.tableItem(table, i,j, float(str(data[i][key])), backColor = bgColor)
                 else:
                     item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
