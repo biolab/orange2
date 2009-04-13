@@ -1,6 +1,6 @@
 import orangeom, orange
 import math, random, numpy
-from numpy.linalg import inv, eig      # matrix inverse and eigenvectors
+from numpy.linalg import inv, pinv, eig      # matrix inverse and eigenvectors
 from orngScaleLinProjData import orngScaleLinProjData
 import orngVisFuncts
 try:
@@ -135,9 +135,8 @@ class FreeViz:
             for i in range(steps):
                 if self.__class__ != FreeViz and self.cancelOptimization == 1: return
                 self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
-            if self.graph.__class__ != FreeViz:
-                qApp.processEvents()
-                self.graph.updateData()
+            if self.__class__ != FreeViz: qApp.processEvents()
+            if hasattr(self.graph, "updateGraph"): self.graph.updateData()
             #self.recomputeEnergy()
 
     def optimize_FAST_Separation(self, steps = 10, singleStep = False, distances=None):
@@ -185,8 +184,10 @@ class FreeViz:
                                               mirrorSymmetry = self.mirrorSymmetry)
             neededSteps += steps
 
-            if self.graph.__class__ != FreeViz:
+            if self.__class__ != FreeViz:
                 qApp.processEvents()
+
+            if hasattr(self.graph, "updateData"):
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
 
@@ -530,59 +531,62 @@ def createPLSProjection(X,Y, Ncomp = 2):
 # if no class data is provided we create PCA projection
 # if there is class data then create SPCA projection
 def createPCAProjection(dataMatrix, classArray = None, NComps = -1, useGeneralizedEigenvectors = 1):
-    try:
-        if type(dataMatrix) == numpy.ma.core.MaskedArray:
-            dataMatrix = numpy.array(dataMatrix)
-        if classArray != None and type(classArray) == numpy.ma.core.MaskedArray:
-            classArray = numpy.array(classArray)
-            
-        dataMatrix = numpy.transpose(dataMatrix)
+    if type(dataMatrix) == numpy.ma.core.MaskedArray:
+        dataMatrix = numpy.array(dataMatrix)
+    if classArray != None and type(classArray) == numpy.ma.core.MaskedArray:
+        classArray = numpy.array(classArray)
+        
+    dataMatrix = numpy.transpose(dataMatrix)
 
-        s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
-        dataMatrix -= s       # substract average value to get zero mean
+    s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
+    dataMatrix -= s       # substract average value to get zero mean
 
-        if classArray != None and useGeneralizedEigenvectors:
-            covarMatrix = numpy.dot(numpy.transpose(dataMatrix), dataMatrix)
+    if classArray != None and useGeneralizedEigenvectors:
+        covarMatrix = numpy.dot(numpy.transpose(dataMatrix), dataMatrix)
+        try:
             matrix = inv(covarMatrix)
-            matrix = numpy.dot(matrix, numpy.transpose(dataMatrix))
-        else:
-            matrix = numpy.transpose(dataMatrix)
+        except:
+            return None, None
+        matrix = numpy.dot(matrix, numpy.transpose(dataMatrix))
+    else:
+        matrix = numpy.transpose(dataMatrix)
 
-        # compute dataMatrixT * L * dataMatrix
-        if classArray != None:
-            # define the Laplacian matrix
-            L = numpy.zeros((len(dataMatrix), len(dataMatrix)))
-            for i in range(len(dataMatrix)):
-                for j in range(i+1, len(dataMatrix)):
-                    L[i,j] = -int(classArray[i] != classArray[j])
-                    L[j,i] = -int(classArray[i] != classArray[j])
+    # compute dataMatrixT * L * dataMatrix
+    if classArray != None:
+        # define the Laplacian matrix
+        L = numpy.zeros((len(dataMatrix), len(dataMatrix)))
+        for i in range(len(dataMatrix)):
+            for j in range(i+1, len(dataMatrix)):
+                L[i,j] = -int(classArray[i] != classArray[j])
+                L[j,i] = -int(classArray[i] != classArray[j])
+
+        s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
+        for i in range(len(dataMatrix)):
+            L[i,i] = -s[i]
+
+        matrix = numpy.dot(matrix, L)
+
+    matrix = numpy.dot(matrix, dataMatrix)
+
+    vals, vectors = eig(matrix)
+    if vals.dtype.kind == "c":       # if eigenvalues are complex numbers then do nothing
+         return None, None
+    vals = list(vals)
     
-            s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
-            for i in range(len(dataMatrix)):
-                L[i,i] = -s[i]
+    if NComps == -1:
+        NComps = len(vals)
+    NComps = min(NComps, len(vals))
+    
+    retVals = []
+    retIndices = []
+    for i in range(NComps):
+        retVals.append(max(vals))
+        bestInd = vals.index(max(vals))
+        retIndices.append(bestInd)
+        vals[bestInd] = -1
+    
+    return retVals, numpy.take(vectors.T, retIndices, axis = 0)         # i-th eigenvector is the i-th column in vectors so we have to transpose the array
 
-            matrix = numpy.dot(matrix, L)
-
-        matrix = numpy.dot(matrix, dataMatrix)
-
-        vals, vectors = eig(matrix)
-        vals = list(vals)
-        
-        if NComps == -1:
-            NComps = len(vals)
-        NComps = min(NComps, len(vals))
-        
-        retVals = []
-        retIndices = []
-        for i in range(NComps):
-            retVals.append(max(vals))
-            bestInd = vals.index(max(vals))
-            retIndices.append(bestInd)
-            vals[bestInd] = -1
-        
-        return retVals, numpy.take(vectors.T, retIndices, axis = 0)         # i-th eigenvector is the i-th column in vectors so we have to transpose the array
-    except:
-        return None, None
 
 
 # #############################################################################
@@ -612,7 +616,7 @@ class FreeVizClassifier(orange.Classifier):
         #averages = [graph.averages[i] for i in indices]
         averages = MA.filled(MA.average(graph.originalData.take(indices, axis =0), 1), 1)
 
-        #self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)  # Janez: why would you call this function if you don't want its result???
+        self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
         self.classifier = orange.P2NN(domain,
                                       numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, graph.originalData[graph.dataClassIndex]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
