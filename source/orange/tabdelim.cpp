@@ -933,7 +933,7 @@ void tabDelim_printAttributes(FILE *file, PVariable var, bool needsSpace) {
   PyObject *attrdict = bvar->orange_dict ? PyDict_GetItemString(bvar->orange_dict, "attributes") : NULL;
   if (attrdict) {
     PyObject *key, *value;
-    int pos = 0;
+    Py_ssize_t pos = 0;
     while (PyDict_Next(attrdict, &pos, &key, &value)) {
       if (PyString_Check(key))
         Py_INCREF(key);
