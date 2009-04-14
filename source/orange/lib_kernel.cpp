@@ -356,6 +356,18 @@ PyObject *PythonValue__reduce__(PyObject *self)
 }
 
 
+PyObject *Variable_getattr(TPyOrange *self, PyObject *name)
+{
+  if (PyString_Check(name) && !strcmp(PyString_AsString(name), "attributes")
+      && (!self->orange_dict || !PyDict_Contains(self->orange_dict, name))) {
+    PyObject *dict = PyDict_New();
+    Orange_setattrDictionary(self, name, dict, false);
+    Py_DECREF(dict);
+  }
+
+  return Orange_getattr(self, name);
+}
+
 PyObject *Variable_randomvalue(PyObject *self, PyObject *args) PYARGS(0, "() -> Value")
 { PyTRY
     CAST_TO(TVariable, var);
