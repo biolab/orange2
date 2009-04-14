@@ -609,17 +609,18 @@ class FreeVizClassifier(orange.Classifier):
         graph = self.FreeViz.graph
         ai = graph.attributeNameIndex
         labels = [a[2] for a in graph.anchorData]
-        domain = orange.Domain(labels+[graph.dataDomain.classVar], graph.dataDomain)
         indices = [ai[label] for label in labels]
-        offsets = [graph.domainDataStat[i].min for i in indices]
-        normalizers = [graph.getMinMaxVal(i) for i in indices]
-        #averages = [graph.averages[i] for i in indices]
-        averages = MA.filled(MA.average(graph.originalData.take(indices, axis =0), 1), 1)
 
-        self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
-        self.classifier = orange.P2NN(domain,
-                                      numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, graph.originalData[graph.dataClassIndex]])),
-                                      graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
+        validData = graph.getValidList(indices)
+        domain = orange.Domain([graph.dataDomain[i].name for i in indices]+[graph.dataDomain.classVar.name], graph.dataDomain)
+        offsets = [graph.attrValues[graph.attributeNames[i]][0] for i in indices]
+        normalizers = [graph.getMinMaxVal(i) for i in indices]
+        selectedData = numpy.take(graph.originalData, indices, axis = 0)
+        averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
+        classData = numpy.compress(validData, graph.originalData[graph.dataClassIndex])        
+
+        graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
+        self.classifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, graph.unscaled_x_positions), numpy.compress(validData, graph.unscaled_y_positions), classData])), graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=1)        
 
     # for a given example run argumentation and find out to which class it most often fall
     def __call__(self, example, returnType):
