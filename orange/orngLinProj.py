@@ -619,7 +619,7 @@ class FreeVizClassifier(orange.Classifier):
         averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
         classData = numpy.compress(validData, graph.originalData[graph.dataClassIndex])        
 
-        graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
+        graph.createProjectionAsNumericArray(indices, useAnchorData = 1, removeMissingData = 0, validData = validData, jitterSize = -1)
         self.classifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, graph.unscaled_x_positions), numpy.compress(validData, graph.unscaled_y_positions), classData])), graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=1)        
 
     # for a given example run argumentation and find out to which class it most often fall
