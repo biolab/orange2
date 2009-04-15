@@ -57,7 +57,6 @@ Copy from linear.cpp of LIBLINEAR
 Changes:
 	-#include "linear.h" -> #include "linear.ppp"
 	-#ifndef block around swap, min and max definition
-	-#made info and info_flush external (already defined in svm.cpp)
 */
 
 #include <math.h>
@@ -99,10 +98,10 @@ void info(const char *fmt,...)
 }*/
 extern void info_flush();
 #else
-//void info(char *fmt,...) {}
-extern void info(char *fmt,...);
-//void info_flush() {}
-extern void info_flush();
+void info(char *fmt,...) {}
+//extern void info(char *fmt,...);
+void info_flush() {}
+//extern void info_flush();
 #endif
 
 class l2_lr_fun : public function
