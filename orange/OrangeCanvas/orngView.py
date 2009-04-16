@@ -378,9 +378,8 @@ class SchemaView(QGraphicsView):
         qApp.processEvents()        # allow processing of other events
         for widget in self.doc.widgets:
             if widget.instance == widgetInstance:
-                if value < 0: widget.showProgressBar()
-                elif value > 100: widget.hideProgressBar()
-                else: widget.setProgressBarValue(value)
+                widget.setProgressBarValue(value)
+                qApp.processEvents()        # allow processing of other events
                 return
 
     def processingHandler(self, widgetInstance, value):

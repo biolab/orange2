@@ -123,6 +123,7 @@ class CanvasWidget(QGraphicsRectItem):
         self.instance.__init__(signalManager=signalManager)
         self.isProcessing = 0   # is this widget currently processing signals
         self.progressBarShown = 0
+        self.progressBarValue = -1
         self.widgetState = {}
         self.caption = widgetInfo.name
         self.selected = False
@@ -366,7 +367,7 @@ class CanvasWidget(QGraphicsRectItem):
         #painter.drawRect(self.boundingRect())
         
         yPos = -22
-        if self.progressBarShown:
+        if self.progressBarValue >= 0 and self.progressBarValue <= 100:
             rect = QRectF(0, yPos, self.widgetSize.width(), 16)
             painter.setPen(QPen(QColor(0,0,0)))
             painter.setBrush(QBrush(QColor(255,255,255)))
@@ -434,19 +435,10 @@ class CanvasWidget(QGraphicsRectItem):
         string = string[:-4]
         self.setToolTip(string)
 
-    def showProgressBar(self):
-        self.progressBarShown = 1
-        self.progressBarValue = 0
-        self.updateWidgetState()
-        self.canvas.update()
-
-    def hideProgressBar(self):
-        self.progressBarShown = 0
-        self.updateWidgetState()
-        self.canvas.update()
-
     def setProgressBarValue(self, value):
         self.progressBarValue = value
+        if value < 0 or value > 100:
+            self.updateWidgetState()
         self.canvas.update()
 
     def setProcessing(self, value):
