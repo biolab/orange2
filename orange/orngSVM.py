@@ -45,6 +45,7 @@ class SVMLearner(orange.SVMLearner):
         self.coef0=0
         self.shrinking=1
         self.probability=1
+        self.verbose = False
         self.cache_size=100
         self.eps=0.001
         self.normalization = True
@@ -78,7 +79,7 @@ class SVMLearner(orange.SVMLearner):
                 nu = max(maxNu - 1e-7, 0.0)
             
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
-                "coef0", "shrinking", "probability", "cache_size", "eps"]:
+                "coef0", "shrinking", "probability", "verbose", "cache_size", "eps"]:
             self.learner.__dict__[name]=getattr(self, name)
         self.learner.nu = nu
         return self.learnClassifier(examples)
