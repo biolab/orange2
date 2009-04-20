@@ -99,7 +99,7 @@ static void print_string_stdout(const char *s)
 	fflush(stdout);
 }
 void (*svm_print_string) (const char *) = &print_string_stdout;
-#if 0
+#if 1
 static void info(const char *fmt,...)
 {
 	char buf[BUFSIZ];
@@ -3542,6 +3542,8 @@ int getNumOfElements(PExampleGenerator &examples, bool meta=false, bool useNonMe
 	}
 }
 
+static void print_string_null(const char* s) {}
+
 TSVMLearner::TSVMLearner(){
 	//sparse=false;	//if this learners supports sparse datasets (set to true in TSMVLearnerSparse subclass)
 	svm_type = NU_SVC;
@@ -3556,6 +3558,7 @@ TSVMLearner::TSVMLearner(){
 	p = 0.1f;
 	shrinking = 1;
 	probability = 0;
+	verbose = false;
 	//nr_weight = 0;
 	//weight_label = NULL;
 	//weight = NULL;
@@ -3637,6 +3640,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		raiseError("LibSVM parameter error: %s", error);
 	}
 	//cout<<"training"<<endl;
+	svm_print_string = (verbose)? &print_string_stdout : &print_string_null;
 
 	model=svm_train(&prob,&param);
 

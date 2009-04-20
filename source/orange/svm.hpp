@@ -194,6 +194,7 @@ public:
 	float p;	//P for C_SVR
 	int shrinking;	//P shrinking
 	int probability;	//P probability
+	bool verbose;		//P verbose
 	
 	PKernelFunc kernelFunc;	//P custom kernel function
 
