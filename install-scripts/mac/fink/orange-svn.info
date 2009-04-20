@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 12
+Revision: 13
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -33,7 +33,8 @@ SplitOff: <<
 	Package: orange-svn-py25
 	Depends: <<
 		python25,
-		numpy-py25
+		numpy-py25,
+		pil-py25
 	<<
 	Suggests: orange-svn
 	Conflicts: orange-py25

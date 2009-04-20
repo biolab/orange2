@@ -1,7 +1,7 @@
 Info3: <<
 Package: orange-bioinformatics-svn
 Version: 0.0.__DAILY_REVISION__
-Revision: 14
+Revision: 15
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bioinformatics-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_BIOINFORMATICS__
 Maintainer: Mitar <mitar@tnode.com>
@@ -29,7 +29,8 @@ SplitOff: <<
 	Package: orange-bioinformatics-svn-py25
 	Depends: <<
 		python25,
-		orange-svn-py25 (>= %v)
+		orange-svn-py25 (>= %v),
+		pil-py25
 	<<
 	Suggests: orange-bioinformatics-svn
 	Conflicts: orange-bioinformatics-py25
