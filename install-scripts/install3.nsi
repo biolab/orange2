@@ -205,11 +205,17 @@ Section ""
 					
 			have_pyqt:
 				IfFileExists $PythonDir\lib\site-packages\PyQt4\Qwt5\*.* have_pyqwt
-				    File ${PARTY}\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
+					File ${PARTY}\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
 					ExecWait $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
 					Delete $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
-			
+					
 			have_pyqwt:
+				IfFileExists $PythonDir\lib\site-packages\PIL\*.* have_pil
+					File ${PARTY}\PIL-1.1.6.win32-py2.5.exe
+					ExecWait $DESKTOP\PIL-1.1.6.win32-py2.5.exe
+					Delete $DESKTOP\PIL-1.1.6.win32-py2.5.exe
+					
+			have_pil:
 		!endif
 					
 					
