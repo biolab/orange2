@@ -598,13 +598,26 @@ def consoleupdate(domains=None, searchstr="essential"):
 def update_local_files(verbose=True):
     sf = ServerFiles()
     for domain, filename in search(""):
-##        print sf.info(domain, filename)["datetime"], info(domain, filename)["datetime"]
         uptodate = sf.info(domain, filename)["datetime"] <= info(domain, filename)["datetime"]
         if not uptodate:
             download(domain, filename, sf)
         if verbose:
             print filename, "Ok" if uptodate else "Updated"
-    
+
+def update_by_tags(tags=["essential"], domains=[], verbose=True):
+    sf = ServerFiles()
+    for domain, filename in sf.search(tags + domains, inTitle=False, inName=False):
+        if domains and domain not in domain:
+            continue
+        if os.path.exists(localpath(domain, filename)+".info"):
+            uptodate = sf.info(domain, filename)["datetime"] <= info(domain, filename)["datetime"]
+        else:
+            uptodate = False
+        if not uptodate:
+            download(domain, filename, sf)
+        if verbose:
+            print filename, "Ok" if uptodate else "Updated"
+            
 def example(myusername, mypassword):
 
     locallist = listfiles('test')
