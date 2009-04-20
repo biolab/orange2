@@ -1,6 +1,8 @@
 #!/bin/bash -e
 #
-# Should be run as: ./wmvare-dailyrun.sh
+# Should be run as: ./wmvare-dailyrun.sh [bundle only]
+#
+# If [bundle only] is given it only builds the bundle
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
@@ -8,6 +10,10 @@ VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.5
 WAIT_TIME=60
 RETRIES=5
 IP_ADDRESS='172.16.213.100'
+
+if [ "$1" ]; then
+	BUNDLE_ONLY=1
+fi
 
 # We use public/private keys SSH authentication so no need for password
 
@@ -34,6 +40,7 @@ stop_vmware() {
 	sleep $WAIT_TIME
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
+		echo "Had to force shutdown."
 		"$VMRUN" stop "$VMIMAGE" nogui
 	fi
 	
@@ -67,10 +74,18 @@ fi
 ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 
-# dailyrun.sh is added to /etc/sudoers so no password is required
-# /etc/sudoers entry: ailabc ALL=NOPASSWD:/Users/ailabc/dailyrun.sh
-# WARNING: This is generally unsecure as an attacker could change dailyrun.sh file and ...
-#          but we are using it in a VMware which is used only for this script, so ...
-ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun.sh"
+if [ $BUNDLE_ONLY ]; then
+	# dailyrun-bundleonly.sh is added to /etc/sudoers so no password is required
+	# /etc/sudoers entry: ailabc ALL=NOPASSWD:/Users/ailabc/dailyrun-bundleonly.sh
+	# WARNING: This is generally insecure as an attacker could change dailyrun-bundleonly.sh file and ...
+	#          but we are using it in a VMware which is used only for this script, so ...
+	ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun-bundleonly.sh"
+else
+	# dailyrun.sh is added to /etc/sudoers so no password is required
+	# /etc/sudoers entry: ailabc ALL=NOPASSWD:/Users/ailabc/dailyrun.sh
+	# WARNING: This is generally insecure as an attacker could change dailyrun.sh file and ...
+	#          but we are using it in a VMware which is used only for this script, so ...
+	ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun.sh"
+fi
 
 stop_vmware
