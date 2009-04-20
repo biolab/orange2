@@ -382,7 +382,7 @@ class LineEditWFocusOut(QLineEdit):
 
 def lineEdit(widget, master, value,
              label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None,
-             callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnType = False, focusInCallback = None):
+             callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnType = False, focusInCallback = None, **args):
     if box or label:
         b = widgetBox(widget, box, orientation)
         widgetLabel(b, label, labelWidth)
@@ -391,7 +391,10 @@ def lineEdit(widget, master, value,
         b = widget
         hasHBox = False
 
-    if focusInCallback or callback and not callbackOnType:
+    if args.has_key("baseClass"):
+        wa = args["baseClass"](b)
+        wa.enterButton = None
+    elif focusInCallback or callback and not callbackOnType:
         if not hasHBox:
             bi = widgetBox(b, "", 0)
         else:
@@ -466,14 +469,6 @@ def separator(widget, width=8, height=8):
     return sep
 
 def rubber(widget):
-#    sep = QWidget(widget)
-#    if widget.layout(): widget.layout().addWidget(sep)
-#    sep.setMinimumSize(1, 1)
-#    if orientation=="horizontal" or not orientation:
-#        sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
-#    else:
-#        sep.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
-#    return sep
     widget.layout().addStretch(100)
 
 def createAttributePixmap(char, color = Qt.black):
@@ -1058,8 +1053,10 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         combo.addItems([unicode(i) for i in items])
         if len(items)>0 and value != None:
             if sendSelectedValue and getdeepattr(master, value) in items: combo.setCurrentIndex(items.index(getdeepattr(master, value)))
-            elif not sendSelectedValue:
+            elif not sendSelectedValue and getdeepattr(master, value) < combo.count():
                 combo.setCurrentIndex(getdeepattr(master, value))
+            elif combo.count() > 0:
+                combo.setCurrentIndex(0)
         else:
             combo.setDisabled(True)
 
