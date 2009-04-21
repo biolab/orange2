@@ -15,7 +15,7 @@ if [ "$1" ]; then
 	BUNDLE_ONLY=1
 fi
 
-# We use public/private keys SSH authentication so no need for password
+# We use public/private keys SSH authentication so no need for a password
 
 start_vmware() {
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
@@ -67,6 +67,7 @@ done
 if ! ssh ailabc@$IP_ADDRESS "who | grep -q console"; then
 	# Autologin was not successful after few retries, give up
 	echo "Could not autologin."
+	stop_vmware
 	exit 2
 fi
 
