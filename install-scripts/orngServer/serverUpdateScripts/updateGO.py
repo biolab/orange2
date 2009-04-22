@@ -1,7 +1,7 @@
 ##!interval=7
 ##!contact=ales.erjavec@fri.uni-lj.si
 
-import obiGO, obiGenomicsUpdate, orngEnviron, orngServerFiles
+import obiGO, obiTaxonomy, obiGene, obiGenomicsUpdate, orngEnviron, orngServerFiles
 import os, sys, shutil, urllib2, tarfile
 from getopt import getopt
 
@@ -24,15 +24,17 @@ u = obiGO.Update(local_database_path = tmpDir)
 
 uncompressedSize = lambda filename: sum(info.size for info in tarfile.open(filename).getmembers())
 
+def pp(*args, **kw): print args, kw
+
 if u.IsUpdatable(obiGO.Update.UpdateOntology, ()):
     u.UpdateOntology()
     filename = os.path.join(tmpDir, "gene_ontology_edit.obo.tar.gz")
     ##load the ontology to test it
     o = obiGO.Ontology(filename)
     ##upload the ontology
-##    print "Uploading gene_ontology_edit.obo.tar.gz"
+    print "Uploading gene_ontology_edit.obo.tar.gz"
     serverFiles.upload("GO", "gene_ontology_edit.obo.tar.gz", filename, title = "Gene Ontology (GO)",
-                       tags=["gene", "ontology", "GO", "essential", "#uncompressed:%i" % uncompressedSize(filename)])
+                       tags=["gene", "ontology", "GO", "essential", "#uncompressed:%i" % uncompressedSize(filename), "#version:%i" % obiGO.Ontology.version])
     serverFiles.unprotect("GO", "gene_ontology_edit.obo.tar.gz")
 
 from obiGeneMatch import _dbOrgMap
@@ -44,17 +46,25 @@ keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").re
 additionalNames = {"goa_arabidopsis":"Arabidopsis thaliana", "sgn":"Solanaceae", "PAMGO_Oomycetes":"Oomycete"}
 essentialOrgs = ["goa_human", "sgd", "mgi", "dictyBase"]
 
+orgMap = {"352472":"44689", "562":"83333", "3055":None, "7955":None, "11103":None, "2104":None, "4754":None, "31033":None, "8355":None, "4577":None}
+
+commonOrgs = [obiGO.from_taxid(orgMap.get(id, id)).pop() for id in obiTaxonomy.common_taxids() if orgMap.get(id, id) != None] + ["zfin"]
+
+essentialOrgs = [obiGO.from_taxid(orgMap.get(id, id)).pop() for id in obiTaxonomy.essential_taxids()]
+
 updatedTaxonomy = defaultdict(set)
+import obiTaxonomy
 
 for org in u.GetAvailableOrganisms():
-    if org in exclude:
+    if org in exclude or org not in commonOrgs:
         continue
+    
     if u.IsUpdatable(obiGO.Update.UpdateAnnotation, (org,)):
         u.UpdateAnnotation(org)
         filename = os.path.join(tmpDir, "gene_association." + org + ".tar.gz")
         
         ## Load the annotations to test them and collect all taxon ids from them
-        a = obiGO.Annotations(filename)
+        a = obiGO.Annotations(filename, genematcher=obiGene.GMDirect())
         taxons = set([ann.taxon for ann in a.annotations])
         for taxId in [t.split(":")[-1] for t in taxons if "|" not in t]: ## exclude taxons with cardinality 2
             updatedTaxonomy[taxId].add(org)
@@ -66,10 +76,10 @@ for org in u.GetAvailableOrganisms():
         else:
             orgName = org
             print "unknown organism name translation for:", org
-##        print "Uploading", "gene_association." + org + ".tar.gz"
+        print "Uploading", "gene_association." + org + ".tar.gz"
         serverFiles.upload("GO", "gene_association." + org + ".tar.gz", filename, title = "GO Annotations for " + orgName,
                            tags=["gene", "annotation", "GO", orgName, "#uncompressed:%i" % uncompressedSize(filename),
-                                 "#organism:"+orgName] + (["essential"] if org in essentialOrgs else []))
+                                 "#organism:"+orgName, "#version:%i" % obiGO.Annotations.version] + (["essential"] if org in essentialOrgs else []))
         serverFiles.unprotect("GO", "gene_association." + org + ".tar.gz")
         
 try:
@@ -83,5 +93,5 @@ if any(tax.get(key, set()) != updatedTaxonomy.get(key, set()) for key in set(upd
     tax.update(updatedTaxonomy)
     cPickle.dump(tax, open(os.path.join(path, "taxonomy.pickle"), "w"))
     serverFiles.upload("GO", "taxonomy.pickle", os.path.join(path, "taxonomy.pickle"), title="GO taxon IDs",
-                       tags = ["GO", "taxon", "organism", "essential"])
+                       tags = ["GO", "taxon", "organism", "essential", "#version:%i" % obiGO.Taxonomy.version])
     serverFiles.unprotect("GO", "taxonomy.pickle")
