@@ -12,46 +12,63 @@ class LinearRegressionLearner(object):
     def __new__(self, data=None, name='linear regression', **kwds):
         learner = object.__new__(self, **kwds)
         if data:
-            learner.__init__(name) # force init
+            learner.__init__(name,**kwds) # force init
             return learner(data)
         else:
             return learner  # invokes the __init__
 
-    def __init__(self, name='linear regression', beta0 = True):
+    def __init__(self, name='linear regression', beta0 = True, stepwise=False, add_sig=0.05, remove_sig=0.2, use_attributes=None, **kw):
         self.name = name
         self.beta0 = beta0
+        self.stepwise=stepwise
+        self.add_sig=add_sig
+        self.remove_sig=remove_sig
+        self.use_attributes=use_attributes
+        self.__dict__.update(kw)
 
     def __call__(self, data, weight=None):
-        # missing values handling (impute missing)
-        imputer = orange.ImputerConstructor_model()
-        imputer.learnerContinuous = orange.MajorityLearner()
-        imputer.learnerDiscrete = orange.BayesLearner()
-        imputer = imputer(data)
-        data = imputer(data)
- 
+        if self.stepwise:
+            self.use_attributes=stepwise(data,add_sig=self.add_sig,remove_sig=self.remove_sig)
+        if not self.use_attributes == None:
+            new_domain = orange.Domain(self.use_attributes, data.domain.classVar)
+            data = orange.ExampleTable(new_domain, data)
+
         # continuization (replaces discrete with continuous attributes)
         continuizer = orange.DomainContinuizer()
         continuizer.multinomialTreatment = continuizer.FrequentIsBase
         continuizer.zeroBased = True
         domain0 = continuizer(data)
         data = data.translate(domain0)
+        
+        # missing values handling (impute missing)
+        imputer = orange.ImputerConstructor_model()
+        imputer.learnerContinuous = orange.MajorityLearner()
+        imputer.learnerDiscrete = orange.MajorityLearner()
+        imputer = imputer(data)
+        data = imputer(data)
 
         # convertion to numpy
         A, y, w = data.toNumpy()        # weights ??
-        n, m = numpy.shape(A)
+        if A==None:
+            n = len(data)
+            m = 0
+        else:
+            n, m = numpy.shape(A)
      
         if self.beta0 == True:
-             X = numpy.insert(A,0,1,axis=1) # adds a column of ones
+             if A==None:
+                 X = numpy.ones([len(data),1])
+             else:
+                 X = numpy.insert(A,0,1,axis=1) # adds a column of ones
         else:
              X = A
              
         beta, resid, rank, s = numpy.linalg.lstsq(X,y)  # should also check for rank
         
         yEstimated = dot(X,beta)  # estimation
- 
         # some desriptive statistisc
         muY, sigmaY = numpy.mean(y), numpy.std(y)
-        muX, covX = numpy.mean(A, axis = 0), numpy.cov(A, rowvar = 0)
+        muX, covX = numpy.mean(X, axis = 0), numpy.cov(X, rowvar = 0)
  
         # model statistics
         SST, SSR = numpy.sum((y - muY) ** 2), numpy.sum((yEstimated - muY) ** 2)
@@ -68,13 +85,19 @@ class LinearRegressionLearner(object):
  
         # t statistisc, significance
         t = beta / errCoeff
-        significance = [statc.betai(df*0.5,0.5,df/(df+tt*tt)) for tt in t]
+        df = n-2
+        significance = []
+        for tt in t:
+            try:
+                significance.append(statc.betai(df*0.5,0.5,df/(df+tt*tt)))
+            except:
+                significance.append(1.0)
  
         # standardized coefficients
-        if self.beta0 == True:   
-             stdCoeff = (sqrt(covX.diagonal()) / sigmaY)  * beta[1:]
+        if m>0:
+            stdCoeff = (sqrt(covX.diagonal()) / sigmaY)  * beta
         else:
-             stdCoeff = (sqrt(covX.diagonal()) / sigmaY)  * beta
+            stdCoeff = (sqrt(covX) / sigmaY)  * beta
  
         model = {'descriptives': { 'meanX' : muX, 'covX' : covX, 'meanY' : muY, 'sigmaY' : sigmaY},
                  'model' : {'estCoeff' : beta, 'stdErrorEstimation': errCoeff},
@@ -89,12 +112,15 @@ class LinearRegression:
         self.beta = self.statistics['model']['estCoeff']
 
     def __call__(self, example, resultType = orange.GetValue):
-        example = self.imputer(example)
         ex = orange.Example(self.domain, example)
+        ex = self.imputer(ex)
         ex = numpy.array(ex.native())
 
         if self.beta0:
-            yhat = self.beta[0] + dot(self.beta[1:], ex[:-1])
+            if len(self.beta)>1:
+                yhat = self.beta[0] + dot(self.beta[1:], ex[:-1])
+            else:
+                yhat = self.beta[0]
         else:
             yhat = dot(self.beta, ex[:-1])
         yhat = orange.Value(yhat)
@@ -126,6 +152,59 @@ def printLinearRegression(lr):
         for i in range(len(lr.domain.attributes)-1):
             print fmt % (lr.domain.attributes[i].name, beta[i], err[i], t[i], sig[i])       
 
+def get_sig(m1, m2, n):
+    if m1==None or m2==None:
+        return 1.0
+    p1, p2 = len(m1.domain.attributes), len(m2.domain.attributes)
+    RSS1, RSS2 = m1.statistics["model summary"]["ExplVar"], m2.statistics["model summary"]["ExplVar"]
+    if RSS1<=RSS2 or p2<=p1 or n<=p2:
+        return 1.0
+    F = ((RSS1 - RSS2)/(p2-p1))/(RSS2/(n-p2))
+    return statc.fprob(int(p2-p1),int(n-p2),F)
+
+def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
+    inc_atts = []
+    not_inc_atts = [at for at in data.domain.attributes]
+
+    changed_model = True
+    while changed_model:
+        changed_model = False
+        # remove all unsignificant conditions (learn several models, where each time 
+        # one attribute is removed and check significance)
+        orig_lin_reg = LinearRegressionLearner(data, use_attributes = inc_atts)
+        reduced_lin_reg = []
+        for ati in range(len(inc_atts)):
+            try:
+                reduced_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts[:ati]+inc_atts[(ati+1):]))
+            except:
+                reduced_lin_reg.append(None)
+                           
+        sigs = [get_sig(r,orig_lin_reg,len(data)) for r in reduced_lin_reg]
+        if sigs and max(sigs) > remove_sig:
+            # remove that attribute, start again
+            crit_att = inc_atts[sigs.index(max(sigs))]
+            not_inc_atts.append(crit_att)
+            inc_atts.remove(crit_att)
+            changed_model = True
+            continue
+
+        # add all significant conditions (go through all attributes in not_inc_atts,
+        # is there one that significantly improves the model?
+        more_complex_lin_reg = []
+        for ati in range(len(not_inc_atts)):
+            try:
+                more_complex_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts + [not_inc_atts[ati]]))
+            except:
+                more_complex_lin_reg.append(None)        
+        sigs = [get_sig(orig_lin_reg,r,len(data)) for r in more_complex_lin_reg]
+        if sigs and min(sigs) < add_sig:
+            best_att = not_inc_atts[sigs.index(min(sigs))]
+            inc_atts.append(best_att)
+            not_inc_atts.remove(best_att)
+            changed_model = True
+    return inc_atts        
+
+    
 ########################################################################
 # Partial Least-Squares Regression (PLS)
 
