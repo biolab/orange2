@@ -6,11 +6,13 @@
 <priority>2300</priority>
 """
 
-import orange, orngCluster
-import orngClustering
-import OWGUI
-import math, statc
 from OWWidget import *
+import OWGUI
+import orange
+import orngClustering
+import math
+import statc
+# from PyQt4.Qwt5 import *
 from itertools import izip
 
 ##############################################################################
