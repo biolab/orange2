@@ -206,7 +206,15 @@ class OWDataTable(OWWidget):
         # set the header (attribute names)
         table.setHorizontalHeaderLabels(table.variableNames)
         if self.showAttributeLabels:
-            table.setHorizontalHeaderLabels([table.variableNames[i] + ("\n%s" % a.group if hasattr(a, "group") else "") for (i, a) in enumerate(table.data.domain.attributes)])
+            labelnames = set()
+            for a in data.domain:
+                labelnames.update(a.attributes.keys())
+            labelnames = sorted(list(labelnames))
+            if len(labelnames):
+                table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
+            else:
+                table.setHorizontalHeaderLabels([table.variableNames[i] for (i, a) in enumerate(table.data.domain.attributes)])
+                
 
         #table.hide()
         clsColor = QColor(160,160,160)
@@ -282,7 +290,14 @@ class OWDataTable(OWWidget):
     def cbShowAttLabelsClicked(self):
         for table in self.table2id.keys():
             if self.showAttributeLabels:
-                table.setHorizontalHeaderLabels([table.variableNames[i] + ("\n%s" % a.group if hasattr(a, "group") else "") for (i, a) in enumerate(table.data.domain.attributes)])
+                labelnames = set()
+                for a in table.data.domain:
+                    labelnames.update(a.attributes.keys())
+                labelnames = sorted(list(labelnames))
+                if len(labelnames):
+                    table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
+                else:
+                    table.setHorizontalHeaderLabels([table.variableNames[i] for (i, a) in enumerate(table.data.domain.attributes)])
             else:
                 table.setHorizontalHeaderLabels(table.variableNames)
             # h = table.horizontalHeader().adjustSize()
