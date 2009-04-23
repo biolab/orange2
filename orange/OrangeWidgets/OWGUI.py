@@ -11,6 +11,8 @@ import os.path
 enter_icon = None
 
 def getdeepattr(obj, attr, **argkw):
+    if type(obj) == dict:
+        return obj.get(attr)
     try:
         return reduce(lambda o, n: getattr(o, n),  attr.split("."), obj)
     except:
@@ -190,17 +192,17 @@ def spin(widget, master, value, min, max, step=1,
 
     if callback and callbackOnReturn:
         wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
-        master.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
-        master.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
-        master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
+        QObject.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
+        QObject.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
+        QObject.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
         if hasattr(wa, "upButton"):
-            master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
-            master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            QObject.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            QObject.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
         widgetLabel(bi, posttext)
 
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
 
     if checked:
@@ -283,17 +285,17 @@ def doubleSpin(widget, master, value, min, max, step=1,
 
     if callback and callbackOnReturn:
         wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
-        master.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
-        master.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
-        master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
+        QObject.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
+        QObject.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
+        QObject.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
         if hasattr(wa, "upButton"):
-            master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
-            master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            QObject.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            QObject.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
         widgetLabel(bi, posttext)
 
-##    if debuggingEnabled:
+##    if debuggingEnabled and hasattr(master, "_guiElements"):
 ##        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
 
     if checked:
@@ -318,9 +320,9 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
                                           cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     wa.disables = disables or [] # need to create a new instance of list (in case someone would want to append...)
     wa.makeConsistent = Disabler(wa, master, value)
-    master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
+    QObject.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
     wa.makeConsistent.__call__(value)
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, value, callback)]
     return wa
 
@@ -345,9 +347,9 @@ class LineEditWFocusOut(QLineEdit):
         self.callback = callback
         self.focusInCallback = focusInCallback
         self.enterButton, self.placeHolder = enterButton(parent, self.sizeHint().height())
-        master.connect(self.enterButton, SIGNAL("clicked()"), self.returnPressed)
-        master.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
-        master.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
+        QObject.connect(self.enterButton, SIGNAL("clicked()"), self.returnPressed)
+        QObject.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
+        QObject.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
 
     def markChanged(self, *e):
         self.placeHolder.hide()
@@ -404,7 +406,7 @@ def lineEdit(widget, master, value,
         wa = QLineEdit(b)
         wa.enterButton = None
 
-    if b.layout(): b.layout().addWidget(wa)
+    if b and b.layout(): b.layout().addWidget(wa)
     if value:
         wa.setText(unicode(getdeepattr(master, value)))
 
@@ -416,7 +418,8 @@ def lineEdit(widget, master, value,
     if validator:
         wa.setValidator(validator)
 
-    wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
+    if value:
+        wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
 
     wa.box = b
     return wa
@@ -443,9 +446,9 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
         cfront, cback, cfunc = connectControl(btn, master, value, None, "toggled(bool)", CallFrontButton(btn),
                                   cfunc = callback and FunctionCallback(master, callback, widget=btn))
     elif callback:
-        master.connect(btn, SIGNAL("clicked()"), callback)
+        QObject.connect(btn, SIGNAL("clicked()"), callback)
         
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
 
@@ -456,8 +459,8 @@ def toolButton(widget, master, callback = None, width = None, height = None, too
     if height!= None: btn.setFixedHeight(height)
     if tooltip != None: btn.setToolTip(tooltip)
     if callback:
-        master.connect(btn, SIGNAL("clicked()"), callback)
-    if debuggingEnabled:
+        QObject.connect(btn, SIGNAL("clicked()"), callback)
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
 
@@ -523,7 +526,7 @@ def listBox(widget, master, value = None, labels = None, box = None, tooltip = N
         master.controlledAttributes[labels] = CallFrontListBoxLabels(lb)
     if labels != None:
         setattr(master, labels, getdeepattr(master, labels))
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("listBox", lb, value, callback)]
     return lb
 
@@ -550,7 +553,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
 
     connectControl(bg.group, master, value, callback, "buttonClicked (int)", CallFrontRadioButtons(bg), CallBackRadioButton(bg, master))
 
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
     return bg
 
@@ -601,7 +604,7 @@ def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = Non
 #        w.setToolTip(tooltip)
 #
 #    connectControl(w, master, value, callback, "stateChanged(int)", CallFrontCheckBox(w))
-#    if debuggingEnabled:
+#    if debuggingEnabled and hasattr(master, "_guiElements"):
 #        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
 #    return w
 
@@ -650,7 +653,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
     connectControl(slider, master, value, callback, "valueChanged(int)", CallFrontHSlider(slider))
 
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
 
@@ -693,7 +696,9 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         hb.setToolTip(tooltip)
 
 ##    format = "%s%d.%df" % ("%", precision+3, precision)
-    format = " %s.%df" % ("%", precision)
+#    format = " %s.%df" % ("%", precision)
+    if type(precision) == str:  format = precision
+    else:                       format = " %s.%df" % ("%", precision)
 
     if showValueLabel:
         lbl = widgetLabel(hb, format % minValue)
@@ -706,15 +711,15 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     if logarithmic:
         cfront = CallFrontLogSlider(slider)
         cback = ValueCallback(master, value, f=lambda x: 10**x)
-        if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
+        if showValueLabel: QObject.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
     else:
         cfront = CallFrontHSlider(slider)
         cback = ValueCallback(master, value)
-        if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
+        if showValueLabel: QObject.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
     connectControl(slider, master, value, callback, "valueChanged(double)", cfront, cback)
     slider.box = hb
 
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("qwtHSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
 
@@ -993,9 +998,9 @@ class Searcher:
         t.show()
         le.setFocus()
 
-        self.master.connect(le, SIGNAL("textChanged(const QString &)"), self.textChanged)
-        self.master.connect(le, SIGNAL("returnPressed()"), self.returnPressed)
-        self.master.connect(self.lb, SIGNAL("clicked(QListBoxItem *)"), self.mouseClicked)
+        QObject.connect(le, SIGNAL("textChanged(const QString &)"), self.textChanged)
+        QObject.connect(le, SIGNAL("returnPressed()"), self.returnPressed)
+        QObject.connect(self.lb, SIGNAL("clicked(QListBoxItem *)"), self.mouseClicked)
 
     def textChanged(self, s):
         s = str(s)
@@ -1071,7 +1076,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         else:
             connectControl(combo, master, value, callback, "activated(int)", CallFrontComboBox(combo, None, control2attributeDict))
 
-    if debuggingEnabled:
+    if debuggingEnabled and hasattr(master, "_guiElements"):
         master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, sendSelectedValue, valueType, callback)]
     return combo
 
@@ -1100,7 +1105,7 @@ class collapsableWidgetBox(QGroupBox):
         self.master = master
         self.value = value
         self.callback = callback
-        widget.connect(self, SIGNAL("clicked()"), self.toggled)
+        QObject.connect(self, SIGNAL("clicked()"), self.toggled)
 
 
     def toggled(self, val = 0):
@@ -1174,7 +1179,7 @@ class widgetHider(QWidget):
 def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
     stopCheckbox.disables.append((-1, sendButton))
     sendButton.setDisabled(stopCheckbox.isChecked())
-    master.connect(stopCheckbox, SIGNAL("toggled(bool)"),
+    QObject.connect(stopCheckbox, SIGNAL("toggled(bool)"),
                    lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getdeepattr(master, changedFlag, default=True) and callback())
 
 
@@ -1242,17 +1247,17 @@ class ControlledList(list):
         list.remove(self, item)
 
 
-def connectControlSignal(master, control, signal, f):
+def connectControlSignal(control, signal, f):
     if type(signal) == tuple:
         control, signal = signal
-    master.connect(control, SIGNAL(signal), f)
+    QObject.connect(control, SIGNAL(signal), f)
 
 
 def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
     cback = cback or value and ValueCallback(master, value, fvcb)
     if cback:
         if signal:
-            connectControlSignal(master, control, signal, cback)
+            connectControlSignal(control, signal, cback)
         cback.opposite = cfront
         if value and cfront and hasattr(master, "controlledAttributes"):
             master.controlledAttributes[value] = cfront
@@ -1260,7 +1265,7 @@ def connectControl(control, master, value, f, signal, cfront, cback = None, cfun
     cfunc = cfunc or f and FunctionCallback(master, f)
     if cfunc:
         if signal:
-            connectControlSignal(master, control, signal, cfunc)
+            connectControlSignal(control, signal, cfunc)
         cfront.opposite = cback, cfunc
     else:
         cfront.opposite = (cback,)
@@ -1273,10 +1278,12 @@ class ControlledCallback:
         self.widget = widget
         self.attribute = attribute
         self.f = f
+        self.disabled = 0
+        if type(widget) == dict: return     # we can't assign attributes to dict
         if not hasattr(widget, "callbackDeposit"):
             widget.callbackDeposit = []
         widget.callbackDeposit.append(self)
-        self.disabled = 0
+        
 
     def acyclic_setattr(self, value):
         if self.disabled:
@@ -1294,11 +1301,13 @@ class ControlledCallback:
         if opposite:
             try:
                 opposite.disabled += 1
-                setattr(self.widget, self.attribute, value)
+                if type(self.widget) == dict: self.widget[self.attribute] = value
+                else:                         setattr(self.widget, self.attribute, value)
             finally:
                 opposite.disabled -= 1
         else:
-            setattr(self.widget, self.attribute, value)
+            if type(self.widget) == dict: self.widget[self.attribute] = value
+            else:                         setattr(self.widget, self.attribute, value)
 
 
 class ValueCallback(ControlledCallback):
@@ -1308,7 +1317,8 @@ class ValueCallback(ControlledCallback):
                 self.acyclic_setattr(value)
             except:
                 print "OWGUI.ValueCallback: %s" % value
-#                traceback.print_exception(*sys.exc_info())
+                import traceback, sys
+                traceback.print_exception(*sys.exc_info())
 
 
 class ValueCallbackCombo(ValueCallback):
@@ -1343,7 +1353,8 @@ class SetLabelCallback:
         self.label = label
         self.format = format
         self.f = f
-        widget.callbackDeposit.append(self)
+        if hasattr(widget, "callbackDeposit"):
+            widget.callbackDeposit.append(self)
         self.disabled = 0
 
     def __call__(self, value):
@@ -1360,7 +1371,8 @@ class FunctionCallback:
         self.f = f
         self.id = id
         self.getwidget = getwidget
-        master.callbackDeposit.append(self)
+        if hasattr(master, "callbackDeposit"):
+            master.callbackDeposit.append(self)
         self.disabled = 0
 
     def __call__(self, *value):
