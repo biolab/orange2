@@ -4,7 +4,7 @@
 #
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import os, sys
+import os, sys, math
 ERROR = 0
 WARNING = 1
 
@@ -13,7 +13,49 @@ class TempCanvasLine(QGraphicsLineItem):
         QGraphicsLineItem.__init__(self, None, canvas)
         self.setZValue(-10)
         self.canvasDlg = canvasDlg
+        self.setPen(QPen(canvasDlg.lineColor, 1, Qt.SolidLine, Qt.RoundCap))
+        self.startWidget = None
+        self.endWidget = None
+        self.widget = None
+        
+    def setStartWidget(self, widget):
+        self.startWidget = widget
+        pos = widget.getRightEdgePoint()
+        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
+        
+    def setEndWidget(self, widget):
+        self.endWidget = widget
+        pos = widget.getLeftEdgePoint()
+        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
+        
+    def updateLinePos(self, newPos):
+        if self.startWidget == None and self.endWidget == None: return
+        
+        if self.startWidget != None:   func = "getDistToLeftEdgePoint"
+        else:                          func = "getDistToRightEdgePoint"
+        
+        schema = self.canvasDlg.schema
+        view = schema.canvasView
+        
+        self.widget = None
+        widgets = view.getItemsAtPos(newPos, CanvasWidget)
+        if widgets:
+            self.widget = widgets[0]
+        else:
+            dists = [(getattr(w, func)(newPos), w) for w in schema.widgets]
+            dists.sort()
+            if dists and dists[0][0] < 20:
+                self.widget = dists[0][1]
+        
+        if self.startWidget: pos = self.startWidget.getRightEdgePoint()
+        else:                pos = self.endWidget.getLeftEdgePoint()
 
+        if self.widget not in [self.startWidget, self.endWidget]: 
+            if self.startWidget == None and self.widget.widgetInfo.outputs: newPos = self.widget.getRightEdgePoint()
+            elif self.endWidget == None and self.widget.widgetInfo.inputs:  newPos = self.widget.getLeftEdgePoint()
+        
+        self.setLine(pos.x(), pos.y(), newPos.x(), newPos.y())
+        
     def remove(self):
         self.hide()
 
@@ -50,10 +92,11 @@ class CanvasLine(QGraphicsLineItem):
         self.inWidget = inWidget
         self.view = view
         self.setZValue(-10)
-        self.colors = []
         self.caption = ""
-        self.updateLinePos()
-
+        self.updateTooltip()
+        
+        # this might seem unnecessary, but the pen size 20 is used for collision detection, when we want to see whether to to show the line menu or not 
+        self.setPen(QPen(self.canvasDlg.lineColor, 20, Qt.SolidLine))        
 
     def remove(self):
         self.hide()
@@ -65,10 +108,6 @@ class CanvasLine(QGraphicsLineItem):
         if not signals: return 0
         return int(self.signalManager.isSignalEnabled(self.outWidget.instance, self.inWidget.instance, signals[0][0], signals[0][1]))
 
-    def setEnabled(self, enabled):
-        self.setPen(QPen(self.canvasDlg.lineColor, 5, enabled and Qt.SolidLine or Qt.DashLine))
-        self.updateTooltip()
-
     def getSignals(self):
         signals = []
         for (inWidgetInstance, outName, inName, X) in self.signalManager.links.get(self.outWidget.instance, []):
@@ -77,30 +116,21 @@ class CanvasLine(QGraphicsLineItem):
         return signals
 
     def paint(self, painter, option, widget = None):
-        x1, x2 = self.line().x1(), self.line().x2()
-        y1, y2 = self.line().y1(), self.line().y2()
-
-        if self.getEnabled(): lineStyle = Qt.SolidLine
-        else:                 lineStyle = Qt.DashLine
-
-        painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
-        painter.drawLine(x1, y1, x2, y2)
-
-        if self.canvasDlg.settings["showSignalNames"]:
-            painter.setPen(QColor(80, 80, 80))
-            x = (x1 + x2 - 200)/2.0
-            y = (y1 + y2 - 30)/2.0
-            painter.drawText(x, y, 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
-
-    # set the line positions based on the position of input and output widgets
-    def updateLinePos(self):
         p1 = self.outWidget.getRightEdgePoint()
         p2 = self.inWidget.getLeftEdgePoint()
         self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
-        #self.updateTooltip()
+        
+        painter.setPen(QPen(self.canvasDlg.lineColor, 5 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.drawLine(p1, p2)
+
+        if self.canvasDlg.settings["showSignalNames"]:
+            painter.setPen(QColor(80, 80, 80))
+            mid = (p1+p2-QPointF(200, 30))/2 
+            painter.drawText(mid.x(), mid.y(), 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
     def updateTooltip(self):
-        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><hr>Signals:<br>"
+        status = self.getEnabled() == 0 and " (Disabled)" or ""
+        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b>" + status + "</nobr><hr>Signals:<br>"
         for (outSignal, inSignal) in self.getSignals():
             string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
         string = string[:-4]
@@ -108,8 +138,8 @@ class CanvasLine(QGraphicsLineItem):
 
         # print the text with the signals
         self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
-        l = self.line()
-        self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
+#        l = self.line()
+#        self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
 
 
 # #######################################
@@ -124,10 +154,10 @@ class CanvasWidget(QGraphicsRectItem):
         self.isProcessing = 0   # is this widget currently processing signals
         self.progressBarShown = 0
         self.progressBarValue = -1
+        self.widgetSize = QSizeF(0, 0)
         self.widgetState = {}
         self.caption = widgetInfo.name
         self.selected = False
-        self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
         self.icon = canvasDlg.getWidgetIcon(widgetInfo)
@@ -153,12 +183,11 @@ class CanvasWidget(QGraphicsRectItem):
         self.imageLeftEdgeR = QPixmap(os.path.join(canvasPicsDir,"leftEdgeR.png"))
         self.imageRightEdgeR = QPixmap(os.path.join(canvasPicsDir,"rightEdgeR.png"))
         self.shownLeftEdge, self.shownRightEdge = self.imageLeftEdge, self.imageRightEdge
-        self.imageFrame = QPixmap(os.path.join(canvasPicsDir, "frame.png"))
-        self.widgetSize = QSizeF(self.imageFrame.size())
+        self.imageFrame = QIcon(QPixmap(os.path.join(canvasPicsDir, "frame.png")))
         self.edgeSize = QSizeF(self.imageLeftEdge.size())
-
-        self.setRect(0,0, self.widgetSize.width(), self.widgetSize.height())
-        self.oldPos = self.pos()        
+        self.resetWidgetSize()
+        
+        self.oldPos = self.pos()
         
         self.infoIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Info"], None, canvas)
         self.warningIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Warning"], None, canvas)
@@ -170,6 +199,12 @@ class CanvasWidget(QGraphicsRectItem):
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
             self.instance.restoreWidgetPosition()
+
+
+    def resetWidgetSize(self):
+        size = self.canvasDlg.schemeIconSizeList[self.canvasDlg.settings['schemeIconSize']]
+        self.setRect(0,0, size, size)
+        self.widgetSize = QSizeF(size, size)
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
@@ -220,10 +255,7 @@ class CanvasWidget(QGraphicsRectItem):
 
     def updateText(self, text):
         self.caption = str(text)
-
-    def updateLinePosition(self):
-        for line in self.inLines: line.updateLinePos()
-        for line in self.outLines: line.updateLinePos()
+        self.updateTooltip()
 
     def updateWidgetState(self):
         widgetState = self.instance.widgetState
@@ -265,7 +297,6 @@ class CanvasWidget(QGraphicsRectItem):
             x = round(x/10)*10
             y = round(y/10)*10
         self.setPos(x, y)
-        self.updateLinePosition()
         self.updateWidgetState()
 
     # we have to increase the default bounding rect so that we also repaint the name of the widget and input/output boxes
@@ -277,7 +308,8 @@ class CanvasWidget(QGraphicsRectItem):
         width = max(0, painter.boundingRect(QRectF(0,0,200,40), Qt.AlignLeft, self.caption).width() - 60) / 2
         painter.end()
         
-        rect = QRectF(self.imageFrame.rect()).adjusted(-10-width, -4, +10+width, +25)
+        #rect = QRectF(-10-width, -4, +10+width, +25)
+        rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-10-width, -4, +10+width, +25)
         if self.progressBarShown:
             rect.setTop(rect.top()-20)
         widgetState = self.instance.widgetState
@@ -290,7 +322,7 @@ class CanvasWidget(QGraphicsRectItem):
         if self.widgetInfo.inputs == []: return False
 
         boxRect = QRectF(self.x()-self.edgeSize.width(), self.y() + (self.widgetSize.height()-self.edgeSize.height())/2, self.edgeSize.width(), self.edgeSize.height())
-        boxRect.adjust(-4,-4,4,4)       # enlarge the rectangle
+        boxRect.adjust(-10,-10,5,10)       # enlarge the rectangle
         if isinstance(pos, QPointF) and boxRect.contains(pos): return True
         elif isinstance(pos, QRectF) and boxRect.intersects(pos): return True
         else: return False
@@ -300,11 +332,11 @@ class CanvasWidget(QGraphicsRectItem):
         if self.widgetInfo.outputs == []: return False
 
         boxRect = QRectF(self.x()+self.widgetSize.width(), self.y() + (self.widgetSize.height()-self.edgeSize.height())/2, self.edgeSize.width(), self.edgeSize.height())
-        boxRect.adjust(-4,-4,4,4)       # enlarge the rectangle
+        boxRect.adjust(-5,-10,10,10)       # enlarge the rectangle
         if isinstance(pos, QPointF) and boxRect.contains(pos): return True
         elif isinstance(pos, QRectF) and boxRect.intersects(pos): return True
         else: return False
-
+        
     def canConnect(self, outWidget, inWidget):
         if outWidget == inWidget: return
         outputs = [outWidget.instance.getOutputType(output.name) for output in outWidget.widgetInfo.outputs]
@@ -339,12 +371,24 @@ class CanvasWidget(QGraphicsRectItem):
     def getRightEdgePoint(self):
         return QPointF(self.x()+ self.widgetSize.width() + self.edgeSize.width(), self.y() + self.widgetSize.height()/2)
 
+    def getDistToLeftEdgePoint(self, point):
+        p = self.getLeftEdgePoint()
+        diff = point-p
+        return math.sqrt(diff.x()**2 + diff.y()**2)
+    
+    def getDistToRightEdgePoint(self, point):
+        p = self.getRightEdgePoint()
+        diff = point-p
+        return math.sqrt(diff.x()**2 + diff.y()**2)
+
+
     # draw the widget
     def paint(self, painter, option, widget = None):
         if self.isProcessing:
             color = self.canvasDlg.widgetActiveColor
         elif self.selected:
-            if self.invalidPosition: color = Qt.red
+            if (self.view.findItemTypeCount(self.canvas.collidingItems(self), CanvasWidget) > 0):       # the position is invalid if it is already occupied by a widget 
+                color = Qt.red
             else:                    color = self.canvasDlg.widgetSelectedColor
 
         if self.isProcessing or self.selected:
@@ -352,7 +396,7 @@ class CanvasWidget(QGraphicsRectItem):
             painter.drawRect(-3, -3, self.widgetSize.width()+6, self.widgetSize.height()+6)
 
 
-        painter.drawPixmap(0, 0, self.imageFrame)
+        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
         #painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
 
@@ -399,10 +443,6 @@ class CanvasWidget(QGraphicsRectItem):
         for line in self.inLines: line.finished = finished
         for line in self.outLines: line.finished = finished
 
-    def updateLineCoords(self):
-        for line in self.inLines + self.outLines:
-            line.updateLinePos()
-        
 
     def updateTooltip(self):
         string = "<nobr><b>" + self.caption + "</b></nobr><hr>Inputs:<br>"
@@ -447,3 +487,31 @@ class CanvasWidget(QGraphicsRectItem):
         qApp.processEvents()
 ##        self.repaintWidget()
 
+
+
+class MyCanvasText(QGraphicsSimpleTextItem):
+    def __init__(self, canvas, text, x, y, flags=Qt.AlignLeft, bold=0, show=1):
+        QGraphicsSimpleTextItem.__init__(self, text, None, canvas)
+        self.setPos(x,y)
+        self.setPen(QPen(Qt.black))
+        self.flags = flags
+        if bold:
+            font = self.font();
+            font.setBold(1);
+            self.setFont(font)
+        if show:
+            self.show()
+
+    def paint(self, painter, option, widget = None):
+        #painter.resetMatrix()
+        painter.setPen(self.pen())
+        painter.setFont(self.font())
+
+        xOff = 0; yOff = 0
+        rect = painter.boundingRect(QRectF(0,0,2000,2000), self.flags, self.text())
+        if self.flags & Qt.AlignHCenter: xOff = rect.width()/2.
+        elif self.flags & Qt.AlignRight: xOff = rect.width()
+        if self.flags & Qt.AlignVCenter: yOff = rect.height()/2.
+        elif self.flags & Qt.AlignBottom:yOff = rect.height()
+        #painter.drawText(self.pos().x()-xOff, self.pos().y()-yOff, rect.width(), rect.height(), self.flags, self.text())
+        painter.drawText(-xOff, -yOff, rect.width(), rect.height(), self.flags, self.text())

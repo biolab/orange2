@@ -27,15 +27,9 @@ class OutputWindow(QDialog):
 
         self.defaultExceptionHandler = sys.excepthook
         self.defaultSysOutHandler = sys.stdout
-        self.focusOnCatchException = 1
-        self.focusOnCatchOutput  = 0
-        self.printOutput = 1
-        self.printException = 1
-        self.writeLogFile = 1
 
         self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.html"), "w") # create the log file
         self.unfinishedText = ""
-        self.verbosity = 0
 
         w = h = 500
         if canvasDlg.settings.has_key("outputWindowPos"):
@@ -79,9 +73,6 @@ class OutputWindow(QDialog):
         else:
             self.hide()
 
-    def setVerbosity(self, verbosity):
-        self.verbosity = verbosity
-
     def catchException(self, catch):
         if catch: sys.excepthook = self.exceptionHandler
         else:     sys.excepthook = self.defaultExceptionHandler
@@ -90,27 +81,12 @@ class OutputWindow(QDialog):
         if catch:    sys.stdout = self
         else:         sys.stdout = self.defaultSysOutHandler
 
-    def setFocusOnException(self, focusOnCatchException):
-        self.focusOnCatchException = focusOnCatchException
-
-    def setFocusOnOutput(self, focusOnCatchOutput):
-        self.focusOnCatchOutput = focusOnCatchOutput
-
-    def printOutputInStatusBar(self, printOutput):
-        self.printOutput = printOutput
-
-    def printExceptionInStatusBar(self, printException):
-        self.printException = printException
-
-    def setWriteLogFile(self, write):
-        self.writeLogFile = write
-
     def clear(self):
         self.textOutput.clear()
 
     # print text produced by warning and error widget calls
     def widgetEvents(self, text, eventVerbosity = 1):
-        if self.verbosity >= eventVerbosity:
+        if self.canvasDlg.settings["outputVerbosity"] >= eventVerbosity:
             if text != None:
                 self.write(str(text))
             self.canvasDlg.setStatusBarEvent(QString(text))
@@ -121,10 +97,10 @@ class OutputWindow(QDialog):
         Text = Text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
         #text = "<nobr>" + text + "</nobr>"
 
-        if self.focusOnCatchOutput:
+        if self.canvasDlg.settings["focusOnCatchOutput"]:
             self.canvasDlg.menuItemShowOutputWindow()
 
-        if self.writeLogFile:
+        if self.canvasDlg.settings["writeLogFile"]:
             #self.logFile.write(str(text) + "<br>\n")
             self.logFile.write(Text)
 
@@ -137,7 +113,7 @@ class OutputWindow(QDialog):
         self.textOutput.setTextCursor(cursor)
 
         if Text[-1:] == "\n":
-            if self.printOutput:
+            if self.canvasDlg.settings["printOutputInStatusBar"]:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
             self.unfinishedText = ""
         else:
@@ -154,13 +130,13 @@ class OutputWindow(QDialog):
         return str(s).replace("<", "&lt;").replace(">", "&gt;")
 
     def exceptionHandler(self, type, value, tracebackInfo):
-        if self.focusOnCatchException:
+        if self.canvasDlg.settings["focusOnCatchException"]:
             self.canvasDlg.menuItemShowOutputWindow()
 
         t = localtime()
         text = "<nobr>Unhandled exception of type %s occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>\n" % ( self.getSafeString(type.__name__), t[3],t[4],t[5])
 
-        if self.printException:
+        if self.canvasDlg.settings["printExceptionInStatusBar"]:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
@@ -187,5 +163,5 @@ class OutputWindow(QDialog):
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
         self.textOutput.setTextCursor(cursor)
 
-        if self.writeLogFile:
+        if self.canvasDlg.settings["writeLogFile"]:
             self.logFile.write(str(text) + "<br>\n")

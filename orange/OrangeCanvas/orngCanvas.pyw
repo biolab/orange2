@@ -3,7 +3,7 @@
 #    main file, that creates the MDI environment
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import sys, os, cPickle, orngRegistry, orngEnviron, orngGui
+import sys, os, cPickle, orngRegistry, orngEnviron, OWGUI
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
 import orange, user, orngMisc
 
@@ -15,8 +15,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.windows = []    # list of id for windows in Window menu
         self.recentDocs = []
         self.iconNameToIcon = {}
-        self.iconSizeList = ["16 x 16", "32 x 32", "40 x 40", "48 x 48", "60 x 60"]
-        self.iconSizeDict = dict((val, int(val[:2])) for val in self.iconSizeList)
+        self.toolbarIconSizeList = [16, 32, 40, 48, 60]
+        self.schemeIconSizeList = [32, 40, 48]
+        self.widgetsToolBar = None
         self.originalPalette = QApplication.palette()
 
         self.__dict__.update(orngEnviron.directoryNames)
@@ -48,17 +49,8 @@ class OrangeCanvasDlg(QMainWindow):
         
         # output window
         self.output = orngOutput.OutputWindow(self)
-        #self.output.catchException(self.settings["catchException"])
-        #self.output.catchOutput(self.settings["catchOutput"])
         self.output.catchException(1)
         self.output.catchOutput(1)
-        self.output.setFocusOnException(self.settings["focusOnCatchException"])
-        self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
-        self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
-        self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
-        self.output.setWriteLogFile(self.settings["writeLogFile"])
-        self.output.setVerbosity(self.settings["outputVerbosity"])
-        self.output.hide()
 
         # create error and warning icons
         informationIconName = os.path.join(canvasPicsDir, "information.png")
@@ -104,26 +96,21 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addSeparator()
         w = QWidget()
         w.setLayout(QHBoxLayout())
-        self.widgetOrganizationCombo = orngGui.comboBox(w, label = "Style:", orientation = "horizontal", items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"])
+        
+        items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"]
+        ind = max(len(items)-1, self.settings["widgetListType"])
+        OWGUI.comboBox(w, self.settings, "widgetListType", label = "Style:", orientation = "horizontal", items = items, callback = self.createWidgetsToolbar, debuggingEnabled = 0)
         self.toolbar.addWidget(w)
-        self.connect(self.widgetOrganizationCombo, SIGNAL('activated(int)'), self.widgetListTypeChanged)
-        try:        # maybe we will someday remove some of the options and the index will be too big
-            self.widgetOrganizationCombo.setCurrentIndex(self.settings["widgetListType"])
-        except:
-            pass
-
+        
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(QLabel("Icon size: ", self))
-        self.iconSizeCombo = QComboBox(self)
-        self.iconSizeCombo.addItems(self.iconSizeList)
-        self.toolbar.addWidget(self.iconSizeCombo)
-        self.connect(self.iconSizeCombo, SIGNAL("activated(int)"), self.iconSizeChanged)
-        try:
-            self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index(self.settings["iconSize"]))
-        except:
-            self.iconSizeCombo.setCurrentIndex(self.iconSizeList.index("48 x 48"))
-
+        w = QWidget()
+        w.setLayout(QHBoxLayout())
+        items = ["%d x %d" % (v,v) for v in self.toolbarIconSizeList]
+        self.settings["toolbarIconSize"] = min(len(items)-1, self.settings["toolbarIconSize"])
+        OWGUI.comboBoxWithCaption(w, self.settings, "toolbarIconSize", "Icon size:", items = items, tooltip = "Set the size of the widget icons in the toolbar, tool box, and tree view area", callback = self.createWidgetsToolbar, debuggingEnabled = 0)
+        self.toolbar.addWidget(w)
+        
         self.addToolBarBreak()
         self.createWidgetsToolbar()
         self.readShortcuts()
@@ -170,7 +157,8 @@ class OrangeCanvasDlg(QMainWindow):
 
 
     def createWidgetsToolbar(self):
-        if hasattr(self, "widgetsToolBar"):
+        if self.widgetsToolBar:
+            self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
             if isinstance(self.widgetsToolBar, QToolBar):
                 self.removeToolBar(self.widgetsToolBar)
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
@@ -268,9 +256,9 @@ class OrangeCanvasDlg(QMainWindow):
         if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
             self.menuHelp.addSeparator()
             self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
-
-        #self.menuHelp.addSeparator()
-        #self.menuHelp.addAction("About Orange Canvas", self.menuHelpAbout)
+            
+        self.menuHelp.addSeparator()
+        self.menuHelp.addAction("About Orange", self.menuItemAboutOrange)
 
         # widget popup menu
         self.widgetPopup = QMenu("Widget", self)
@@ -380,15 +368,6 @@ class OrangeCanvasDlg(QMainWindow):
                 widget.setCoords(widget.x(), widget.y())
             self.schema.canvas.update()
 
-    def widgetListTypeChanged(self, ind):
-        self.settings["widgetListType"] = ind
-        self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()        # we have to save these settings before we create a new toolbar
-        self.createWidgetsToolbar()
-
-    def iconSizeChanged(self, ind):
-        self.settings["iconSize"] = self.iconSizeList[ind]
-        self.createWidgetsToolbar()
-
     def menuItemEnableAll(self):
         self.schema.enableAllLines()
 
@@ -474,8 +453,9 @@ class OrangeCanvasDlg(QMainWindow):
         import updateOrange
         self.updateDlg = updateOrange.updateOrangeDlg(None, "", Qt.WDestructiveClose)
 
-    def menuHelpAbout(self):
-        pass
+    def menuItemAboutOrange(self):
+        dlg = orngDlgs.AboutDlg()
+        dlg.exec_()
 
 
 ## to see the signals you have to call: self.output.catchException(0); self.output.catchOutput(0)
@@ -490,95 +470,17 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemCanvasOptions(self):
         dlg = orngDlgs.CanvasOptionsDlg(self, None)
 
-        # set general options settings
-        dlg.snapToGridCB.setChecked(self.settings["snapToGrid"])
-        #dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
-        dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
-        dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
-        #dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
-        dlg.saveWidgetsPositionCB.setChecked(self.settings["saveWidgetsPosition"])
-        dlg.useContextsCB.setChecked(self.settings["useContexts"])
-##        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
-        dlg.showSignalNamesCB.setChecked(self.settings["showSignalNames"])
-
-        dlg.heightEdit.setText(str(self.settings.get("canvasHeight", 600)))
-        dlg.widthEdit.setText(str(self.settings.get("canvasWidth", 700)))
-
-        items = [str(n) for n in QStyleFactory.keys()]
-        ind = items.index(self.settings.get("style", "WindowsXP"))
-        dlg.stylesCombo.setCurrentIndex(ind)
-        dlg.stylesPalette.setChecked(self.settings["useDefaultPalette"])
-
-        # set current exception settings
-        dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
-        dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
-        dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
-        dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
-        dlg.verbosityCombo.setCurrentIndex(self.settings["outputVerbosity"])
-        dlg.ocShow.setChecked(self.settings["ocShow"])
-        dlg.ocInfo.setChecked(self.settings["ocInfo"])
-        dlg.ocWarning.setChecked(self.settings["ocWarning"])
-        dlg.ocError.setChecked(self.settings["ocError"])
-        dlg.owShow.setChecked(self.settings["owShow"])
-        dlg.owInfo.setChecked(self.settings["owInfo"])
-        dlg.owWarning.setChecked(self.settings["owWarning"])
-        dlg.owError.setChecked(self.settings["owError"])
-
-        # fill categories tab list
-        ind = 0
-        for (name, show) in self.settings["WidgetTabs"]:
-            if self.widgetRegistry.has_key(name):
-                dlg.tabOrderList.addItem(name)
-                dlg.tabOrderList.item(ind).setCheckState(show and Qt.Checked or Qt.Unchecked)
-                ind+=1
-
         if dlg.exec_() == QDialog.Accepted:
-            h = int(str(dlg.heightEdit.text()));
-            w = int(str(dlg.widthEdit.text()))
-            self.settings["style"] = str(dlg.stylesCombo.currentText())
-            self.settings["useDefaultPalette"] = dlg.stylesPalette.isChecked()
-            self.updateStyle()
-
-            # save general settings
-            if self.settings["snapToGrid"] != dlg.snapToGridCB.isChecked():
-                self.settings["snapToGrid"] = dlg.snapToGridCB.isChecked()
+            if self.settings["snapToGrid"] != dlg.settings["snapToGrid"]:
                 self.updateSnapToGrid()
 
-            # save exceptions settings
-            #self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
-            #self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
-            self.settings["printExceptionInStatusBar"] = dlg.printExceptionInStatusBarCB.isChecked()
-            self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
-            self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
-            self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
-            self.settings["outputVerbosity"] = dlg.verbosityCombo.currentIndex()
-            self.settings["ocShow"] = dlg.ocShow.isChecked()
-            self.settings["ocInfo"] = dlg.ocInfo.isChecked()
-            self.settings["ocWarning"] = dlg.ocWarning.isChecked()
-            self.settings["ocError"] = dlg.ocError.isChecked()
-            self.settings["owShow"] = dlg.owShow.isChecked()
-            self.settings["owInfo"] = dlg.owInfo.isChecked()
-            self.settings["owWarning"] = dlg.owWarning.isChecked()
-            self.settings["owError"] = dlg.owError.isChecked()
-
-            self.settings["writeLogFile"] = dlg.writeLogFileCB.isChecked()
-            self.settings["canvasHeight"] = int(str(dlg.heightEdit.text()))
-            self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
-            self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
-            self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
-            #self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
-            self.settings["saveWidgetsPosition"] = dlg.saveWidgetsPositionCB.isChecked()
-            self.settings["useContexts"] = dlg.useContextsCB.isChecked()
-##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
-
-            self.settings["widgetSelectedColor"] = dlg.selectedWidgetIcon.color.getRgb()
-            self.settings["widgetActiveColor"]   = dlg.activeWidgetIcon.color.getRgb()
-            self.settings["lineColor"]           = dlg.lineIcon.color.getRgb()
-
+            self.settings.update(dlg.settings)
+            self.updateStyle()
+            
             self.widgetSelectedColor = dlg.selectedWidgetIcon.color
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
             self.lineColor           = dlg.lineIcon.color
-
+            
             # update settings in widgets in current documents
             for widget in self.schema.widgets:
                 widget.instance._useContexts = self.settings["useContexts"]
@@ -587,25 +489,16 @@ class OrangeCanvasDlg(QMainWindow):
                 widget.instance._owError     = self.settings["owError"]
                 widget.instance._owShowStatus= self.settings["owShow"]
                 widget.instance.updateStatusBarState()
+                widget.resetWidgetSize()
                 widget.updateWidgetState()
-
-            self.schema.canvasView.repaint()
-
+                
             # update tooltips for lines in all documents
-            show = dlg.showSignalNamesCB.isChecked()
             for line in self.schema.lines:
-                line.showSignalNames = show
+                line.showSignalNames = self.settings["showSignalNames"]
                 line.updateTooltip()
-
-            #self.output.catchException(self.settings["catchException"])
-            #self.output.catchOutput(self.settings["catchOutput"])
-            self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
-            self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
-            self.output.setFocusOnException(self.settings["focusOnCatchException"])
-            self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
-            self.output.setWriteLogFile(self.settings["writeLogFile"])
-            self.output.setVerbosity(self.settings["outputVerbosity"])
-
+            
+            self.schema.canvasView.repaint()
+        
             import orngEnviron, orngRegistry
             if dlg.toAdd != []:
                 for (name, dir) in dlg.toAdd: 
@@ -648,16 +541,18 @@ class OrangeCanvasDlg(QMainWindow):
     # Loads settings from the widget's .ini file
     def loadSettings(self):
         filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
+        self.settings = {}
         if os.path.exists(filename):
-            file = open(filename, "rb")
-            self.settings = cPickle.load(file)
-            file.close()
-        else:
-            self.settings = {}
+            try:
+                self.settings = cPickle.load(open(filename, "rb"))
+            except:
+                pass
 
-        self.settings.setdefault("widgetListType", 0)
+        self.settings.setdefault("widgetListType", 3)
         self.settings.setdefault("iconSize", "40 x 40")
+        self.settings.setdefault("toolbarIconSize", 2)
         self.settings.setdefault("toolboxWidth", 200)
+        self.settings.setdefault('schemeIconSize', 1)
         self.settings.setdefault("snapToGrid", 1)
         self.settings.setdefault("writeLogFile", 1)
         self.settings.setdefault("dontAskBeforeClose", 1)
@@ -685,7 +580,7 @@ class OrangeCanvasDlg(QMainWindow):
             lowerItems = [str(n).lower() for n in QStyleFactory.keys()]
             currStyle = str(qApp.style().objectName()).lower()
             self.settings.setdefault("style", items[lowerItems.index(currStyle)])
-        self.settings.setdefault("useDefaultPalette", 1)
+        self.settings.setdefault("useDefaultPalette", 0)
 
         self.settings.setdefault("focusOnCatchException", 1)
         self.settings.setdefault("focusOnCatchOutput" , 0)
@@ -717,14 +612,15 @@ class OrangeCanvasDlg(QMainWindow):
         # save the current width of the toolbox, if we are using it
         if isinstance(self.widgetsToolBar, orngTabs.WidgetToolBox):
             self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
+        self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
+        self.settings["showToolbar"] = self.toolbar.isVisible()
 
         closed = self.schema.close()
         if closed:
             self.canvasIsClosing = 1        # output window (and possibly report window also) will check this variable before it will close the window
             self.output.logFile.close()
             self.output.hide()
-            self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
-            self.settings["showToolbar"] = self.toolbar.isVisible()
+            
             ce.accept()
             
             self.helpWindow.close()
@@ -733,6 +629,7 @@ class OrangeCanvasDlg(QMainWindow):
             ce.ignore()
         
         self.reportWindow.removeTemp()
+        
         self.saveSettings()
 
 
