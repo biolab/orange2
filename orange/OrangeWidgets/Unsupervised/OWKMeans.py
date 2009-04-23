@@ -12,7 +12,7 @@ import orange
 import orngClustering
 import math
 import statc
-# from PyQt4.Qwt5 import *
+from PyQt4.Qwt5 import *
 from itertools import izip
 
 ##############################################################################
@@ -178,7 +178,7 @@ class OWKMeans(OWWidget):
             ex[aid] = midx
 
         self.send("Examples", new)
-        # self.send("Centroids", table1.getitems(self.km.centroids))
+        self.send("Centroids", orange.ExampleTable(self.km.centroids))
         
     def setData(self, data):
         """Handle data from the input signal."""
