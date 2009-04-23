@@ -304,9 +304,12 @@ class ConsoleProgressBar(object):
         return self.title + "=" * (progchar) + ">" + " " * (self.charwidth - 5 - progchar) + "%3i" % int(round(self.state)) + "%"
 
     def printline(self, string):
-        self.clear()
-        self.output.write(string)
-        self.output.flush()
+        try:
+            self.clear()
+            self.output.write(string)
+            self.output.flush()
+        except Exception:
+            pass
         self.currstring = string
 
     def __call__(self, newstate=None):
