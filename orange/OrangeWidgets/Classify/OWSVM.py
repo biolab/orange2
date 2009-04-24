@@ -54,8 +54,10 @@ class OWSVM(OWWidget):
 
         OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
-        OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
+        cb = OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors")
         self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
+        cb.disables.append(self.nuBox)
+        cb.makeConsistent()
 ##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
         OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
 
