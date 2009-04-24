@@ -6,7 +6,8 @@
 <priority>3200</priority>
 """
 import orange
-import OWGUI, OWColorPalette
+import OWGUI
+import OWColorPalette
 import orngNetwork
 import OWToolbars
 
@@ -300,6 +301,7 @@ class OWNetExplorer(OWWidget):
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         self.rotateSteps = 100
         self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, toggleButton=1)
+        self.btnRotateMDS = OWGUI.button(ib, self, "Rotate graph components (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
         OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         
         
@@ -329,6 +331,41 @@ class OWNetExplorer(OWWidget):
     def rotateProgress(self, curr, max):
         self.progressBarSet(int(curr * 100 / max))
         qApp.processEvents()
+        
+    def rotateComponentsMDS(self):
+        print "rotate"
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            self.btnRotateMDS.setChecked(False)
+            return
+        
+        if self.visualize == None:
+            self.information('No network found')
+            self.btnRotateMDS.setChecked(False)
+            return
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            self.btnRotateMDS.setChecked(False)
+            return
+        
+        if not self.btnRotateMDS.isChecked():
+          self.visualize.stopMDS = 1
+          #self.btnMDS.setChecked(False)
+          #self.btnMDS.setText("MDS on graph components")
+          return
+        
+        self.btnRotateMDS.setText("Stop")
+        qApp.processEvents()
+        
+        self.visualize.vertexDistance = self.vertexDistance
+        self.progressBarInit()
+        
+        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True)            
+            
+        self.btnRotateMDS.setChecked(False)
+        self.btnRotateMDS.setText("Rotate graph components (MDS)")
+        self.progressBarFinished()
     
     def rotateComponents(self):
         if self.vertexDistance == None:
