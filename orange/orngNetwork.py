@@ -1,5 +1,8 @@
-import math, numpy, os.path
-import orange, orangeom
+import math
+import numpy
+import os.path
+import orange
+import orangeom
 import orngMDS
 
 class Network(orangeom.Network):
@@ -218,7 +221,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center 
             
-    def rotateComponents(self, maxSteps=100, minMoment=0.0001, callbackProgress=None, callbackUpdateCanvas=None):
+    def rotateComponents(self, maxSteps=100, minMoment=0.000000001, callbackProgress=None, callbackUpdateCanvas=None):
+        """Rotate the network components using a spring model."""
         if self.vertexDistance == None:
             return 1
         
@@ -237,7 +241,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         M = [1]
         temperature = [[30.0, 1] for i in range(len(components))]
         dirChange = [0] * len(components)
-        while step < maxSteps and max(M) > minMoment and not self.stopRotate:
+        while step < maxSteps and (max(M) > minMoment or min(M) < -minMoment) and not self.stopRotate:
             M = [0] * len(components) 
             
             for i in range(len(components)):
@@ -270,6 +274,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             #print numpy.min(tmpM), numpy.max(tmpM),numpy.average(tmpM),numpy.min(numpy.abs(tmpM))
             
             phi = [0] * len(components)
+            #print "rotating", temperature, M
             for i in range(len(M)):
                 if M[i] > 0:
                     if temperature[i][1] < 0:
@@ -288,6 +293,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             # stop rotating when phi is to small to notice the rotation
             if max(phi) < numpy.pi / 1800:
+                #print "breaking"
                 break
             
             self.rotateVertices(components, phi)
@@ -296,23 +302,29 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             step += 1
     
     def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
+        """Translate and rotate the network components to computed positions."""
         component_props = []
         x_mds = []
         y_mds = []
+        phi = [None] * len(components)
         
-        for i in range(len(components)):
+        for i in range(len(components)):    
             component = components[i]
             
-            # if we did average linkage before
-            if len(mds.points) == len(components):
+            if len(mds.points) == len(components):  # if average linkage before
                 x_avg_mds = mds.points[i][0]
                 y_avg_mds = mds.points[i][1]
-            else:
+            else:                                   # if not average linkage before
                 x = [mds.points[u][0] for u in component]
                 y = [mds.points[u][1] for u in component]
         
                 x_avg_mds = sum(x) / len(x) 
                 y_avg_mds = sum(y) / len(y)
+                # compute rotation angle
+                c = [numpy.linalg.norm(numpy.cross(mds.points[u], [self.graph.coors[0][u],self.graph.coors[1][u]])) for u in component]
+                n = [numpy.vdot([self.graph.coors[0][u],self.graph.coors[1][u]], [self.graph.coors[0][u],self.graph.coors[1][u]]) for u in component]
+                phi[i] = sum(c) / sum(n)
+                #print phi
             
             x = self.graph.coors[0][component]
             y = self.graph.coors[1][component]
@@ -323,22 +335,32 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             x_mds.append(x_avg_mds) 
             y_mds.append(y_avg_mds)
 
-            component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds))
+            component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi))
         
         diag_mds =  math.sqrt((max(x_mds) - min(x_mds))**2 + (max(y_mds) - min(y_mds))**2)
          
-
         for i in range(len(components)):
             component = components[i]
-            x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds = component_props[i]
+            x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi = component_props[i]
             
-            self.graph.coors[0][component] = self.graph.coors[0][component] - x_avg_graph + (x_avg_mds *  self.diag_coors / diag_mds)
-            self.graph.coors[1][component] = self.graph.coors[1][component] - y_avg_graph + (y_avg_mds *  self.diag_coors / diag_mds)
-        
+            if phi[i]:  # rotate vertices
+                #print "rotate", i, phi[i]
+                r = numpy.array([[numpy.cos(phi[i]), -numpy.sin(phi[i])], [numpy.sin(phi[i]), numpy.cos(phi[i])]])  #rotation matrix
+                c = [x_avg_graph, y_avg_graph]  # center of mass in FR coordinate system
+                v = [numpy.dot(numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]]) - c, r) + c for u in component]
+                self.graph.coors[0][component] = [u[0] for u in v]
+                self.graph.coors[1][component] = [u[1] for u in v]
+                
+            # translate vertices
+            if not self.rotationOnly:
+                self.graph.coors[0][component] = self.graph.coors[0][component] - x_avg_graph + (x_avg_mds * self.diag_coors / diag_mds)
+                self.graph.coors[1][component] = self.graph.coors[1][component] - y_avg_graph + (y_avg_mds * self.diag_coors / diag_mds)
+            
         if callbackUpdateCanvas:
             callbackUpdateCanvas()
     
     def mdsCallback(self, a,b=None):
+        """Refresh the UI when running  MDS on network components."""
         if not self.mdsStep % self.mdsRefresh:
             self.mdsUpdateData(self.mdsComponents, self.mds, self.callbackUpdateCanvas)
             
@@ -352,7 +374,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False):
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False):
+        """Position the network components according to similarities among them."""
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return 1
@@ -369,6 +392,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.stopMDS = 0
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
         self.diag_coors = math.sqrt((min(self.graph.coors[0]) - max(self.graph.coors[0]))**2 + (min(self.graph.coors[1]) - max(self.graph.coors[1]))**2)
+        self.rotationOnly = rotationOnly
         
         if avgLinkage:
             matrix = self.vertexDistance.avgLinkage(self.mdsComponents)
@@ -383,13 +407,17 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         
         if torgerson:
             self.mds.Torgerson() 
-        
+        else:
+            self.mds.points = [[self.graph.coors[0][i]/10000.0, self.graph.coors[1][i]/10000.0] for i in range(len(self.graph.coors))]
+            self.mds.freshD = 0
+            
         self.mds.optimize(mdsSteps, orngMDS.SgnRelStress, self.minStressDelta, progressCallback=self.mdsCallback)
         self.mdsUpdateData(self.mdsComponents, self.mds, callbackUpdateCanvas)
         
         if callbackProgress != None:
             callbackProgress(self.mds.avgStress, self.mdsStep)
         
+        del self.rotationOnly
         del self.diag_coors
         del self.mdsRefresh
         del self.mdsStep
