@@ -336,7 +336,6 @@ class SchemaView(QGraphicsView):
                 orngTabs.categoriesPopup.updateMenu()
                 height = sum([orngTabs.categoriesPopup.actionGeometry(action).height() for action in orngTabs.categoriesPopup.actions()])
                 action = orngTabs.categoriesPopup.exec_(newCoords - QPoint(0, orngTabs.categoriesPopup.categoriesYOffset))
-                print action
                 if action and hasattr(action, "widgetInfo"):
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
                     
