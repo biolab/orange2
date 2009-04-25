@@ -437,7 +437,11 @@ PyTypeObject PyOrange_DictProxy_Type = {
 	PyObject_GenericGetAttr,
 	0,  /* tp_setattro */
 	0,  /* tp_as_buffer */
-	Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |	Py_TPFLAGS_BASETYPE,
+	Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |	Py_TPFLAGS_BASETYPE
+	#ifdef Py_TPFLAGS_DICT_SUBCLASS
+	| Py_TPFLAGS_DICT_SUBCLASS
+	#endif
+	,
 	0,  /* tp_doc */
 	(traverseproc)PyDict_Type.tp_traverse,
 	(inquiry)PyDict_Type.tp_clear,
