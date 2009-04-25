@@ -1,6 +1,6 @@
 """
 <name>Save Distance File</name>
-<description>Loads a distance matrix from a file</description>
+<description>Saves a distance matrix to a file</description>
 <contact>Miha Stajdohar</contact>
 <icon>icons/SaveDistanceFile.png</icon>
 <priority>1150</priority>
