@@ -60,7 +60,7 @@ class OWDataSampler(OWWidget):
         self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Random sampling')
         # repeat checkbox
         self.h1Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
-        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'Repeated sampling')
+        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'With replacement')
 
         # specified number of elements checkbox
         self.h2Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
@@ -316,8 +316,7 @@ class OWDataSampler(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSampler()
-    #data = orange.ExampleTable('iris.tab')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable('../../doc/datasets/iris.tab')
     ow.setData(data)
     ow.show()
     appl.exec_()
