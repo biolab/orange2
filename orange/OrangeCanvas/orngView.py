@@ -14,7 +14,7 @@ class SchemaView(QGraphicsView):
         self.doc = doc
         self.bWidgetDragging = False               # are we currently dragging a widget
         self.movingWidget = None
-        self.mouseDownPosition = QPoint(0,0)
+        self.mouseDownPosition = QPointF(0,0)
         self.tempLine = None
         self.widgetSelectionRect = None
         self.selectedLine = None
