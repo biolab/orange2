@@ -474,7 +474,7 @@ class CanvasWidgetAction(QWidgetAction):
         QWidgetAction.__init__(self, parent)
         self.parent = parent
         self.actions = actions
-        self.widgetSuggestEdit = OWGUIEx.suggestLineEdit(self.parent, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, callback = self.callback, autoSizeListWidget = 1)
+        self.widgetSuggestEdit = OWGUIEx.lineEditHint(self.parent, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, callback = self.callback, autoSizeListWidget = 1)
         self.widgetSuggestEdit.setItems([QListWidgetItem(action.icon(), action.widgetInfo.name) for action in actions])
         self.widgetSuggestEdit.setStyleSheet(""" QLineEdit { background: #fffff0; border: 1px solid orange} """)
         self.widgetSuggestEdit.listWidget.setStyleSheet(""" QListView { background: #fffff0; } QListView::item {padding: 3px 0px 3px 0px} QListView::item:selected { color: white; background: blue;} """)
