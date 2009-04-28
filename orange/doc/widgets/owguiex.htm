@@ -114,13 +114,12 @@ The meaning of attributes <code>label</code>, <code>labelWidth</code>, <code>ori
 
 <dt>callback (default: None)</dt>
 <dd>The specified callback function will be called each time the line edit control is changed (edited).</dd>
-</dl>
 
 <dt>emptyText (default: "")</dt>
 <dd>When the text in the control will be empty and the control will be out of focus, the specified <code>emptyText</code> will be displayed in gray color. This attribute can be used to make it easier for the user to know what is the function of the control. For example, by setting <code>emptyText="Filter attributes..."</code> we can let user know that he can use the control to filter out the attributes.</dd>
 </dl>
 
-Along with the described attributes there are also some important methods that can/have to be used.
+Along with the described attributes there are also some important methods that can/have to be used:
 
 <dl class="attributes">
 
@@ -184,27 +183,23 @@ The meaning of attributes <code>label</code>, <code>labelWidth</code>, <code>ori
 
 <dt>callback (default: None)</dt>
 <dd>The specified callback function will be called each time some suggested item is selected.</dd>
-</dl>
 
 <dt>listUpdateCallback (default: None)</dt>
 <dd>The specified function will be called each time the list of suggested items is updated.</dd>
-</dl>
 
 <dt>nrOfSuggestions (default: 10)</dt>
 <dd>This attribute determines the height of the list of suggested items. By default, the height is determined so that the list will show maximum 10 items. If more items match the criteria, a vertical scrollbar will be shown.</dd>
-</dl>
 
 <dt>autoSizeListWidget (default: 0)</dt>
 <dd>If <code>autoSizeListWidget</code> is 1 then the width of the suggestions list will be adjusted automatically based on the width of the items in the list. The width of the list will be at least as wide as the line edit control.
 </dd>
-</dl>
 
 <dt>delimiters (default: None)</dt>
 <dd>Sometimes we would like to have more than one item in the line edit. To be able to show the suggestions when entering the second, third, ... item, we have to specify which characters are delimiters that separate items. For example, let's assume we would like to use the line edit to specify a list of our favourite colors, which are red, blue and yellow. If we'd like to get a list of suggestions when we start typing the second color name (blue) we have to set <code>delimiters=', '</code> (notice that the string also contains SPACE besides the comma).
 </dd>
 </dl>
 
-Along with the described attributes there is also an important methods that has to be used.
+Along with the described attributes there is also an important methods that has to be used:
 
 <dl class="attributes">
 
