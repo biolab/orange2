@@ -3,68 +3,97 @@ from PyQt4.QtGui import *
 import math, re, string
 from OWGUI import widgetLabel, widgetBox, lineEdit
 
-def filterLineEdit(widget, master, value, *arg, **args):
-    callback = args.get("callback", None) 
+def lineEditFilter(widget, master, value, *arg, **args):
+    callback = args.get("callback", None)
     args["callback"] = None         # we will have our own callback handler
-    args["baseClass"] = FilterLineEdit
+    args["baseClass"] = LineEditFilter
     le = lineEdit(widget, master, value, *arg, **args)
+    le.__dict__.update(args)
     le.callback = callback
-    le.listbox = args.get("listbox", None)
-    le.emptyText = args.get("emptyText", "")
-    le.useRE = args.get("useRE", 0)
+    le.focusOutEvent(None)
     return le
     
 
-class FilterLineEdit(QLineEdit):
+class LineEditFilter(QLineEdit):
     def __init__(self, parent):
         QLineEdit.__init__(self, parent)
-        QObject.connect(self, SIGNAL("textEdited(const QString &)"), self.updateListBoxItems)
-        self.oldText = ""
+        QObject.connect(self, SIGNAL("textEdited(const QString &)"), self.textChanged)
+        self.enteredText = ""
         self.listboxItems = []
         self.listbox = None
+        self.caseSensitive = 1
+        self.matchAnywhere = 0
         self.useRE = 0
         self.emptyText = ""
         self.textFont = self.font()
         self.callback = None
         
     def focusInEvent(self, ev):
-        self.setText(self.oldText)
+        self.setText(self.enteredText)
         self.setStyleSheet("")
         QLineEdit.focusInEvent(self, ev)
         
     def focusOutEvent(self, ev):
-        if self.oldText == "":
+        self.enteredText = self.getText()
+            
+        if self.enteredText == "":
             self.setText(self.emptyText)
             self.setStyleSheet("color: rgb(170, 170, 127);")
-        QLineEdit.focusOutEvent(self, ev)
+        if ev:
+            QLineEdit.focusOutEvent(self, ev)
+            
+    def setText(self, text):
+        if text != self.emptyText:
+            self.enteredText = text
+        if not self.hasFocus() and text == "":
+            text = self.emptyText
+        QLineEdit.setText(self, text)
         
-    def updateListBoxItems(self):
-        if not self.listbox: return 
-        if self.oldText == "" and len(self.listboxItems) != self.listbox.count():
-            self.listboxItems = [(str(self.listbox.item(i).text()), QListWidgetItem(self.listbox.item(i))) for i in range(self.listbox.count())]
-                
-        text = str(self.text())
-        self.oldText = text
+    def getText(self):
+        if str(self.text()) == self.emptyText:
+            return ""
+        else: return str(self.text())
         
-        if text == "":
-            items = [(t, QListWidgetItem(i)) for (t,i) in self.listboxItems]
-        elif self.useRE:
-            pattern = re.compile(text)
-            items = [(itemText, QListWidgetItem(item)) for (itemText, item) in self.listboxItems if pattern.match(itemText)]
+    def setAllListItems(self, items = None):
+        if not items:
+            items = [self.listbox.item(i) for i in range(self.listbox.count())]
+        self.listboxItems = [(str(item.text()), QListWidgetItem(item)) for item in items]
+        
+    def textChanged(self):
+        self.updateListBoxItems()
+        
+    def updateListBoxItems(self, callCallback = 1):
+        if not self.listbox: return
+        last = self.getText()
+       
+        tuples = self.listboxItems                
+        if not self.caseSensitive:
+            tuples = [(text.lower(), item) for (text, item) in tuples]
+            text = text.lower()
+
+        if self.useRE:
+            try:
+                pattern = re.compile(last)
+                tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if pattern.match(text)]
+            except:
+                tuples = [(t, QListWidgetItem(i)) for (t,i) in self.listboxItems]        # in case we make regular expressions crash we show all items
         else:
-            items = [(itemText, QListWidgetItem(item)) for (itemText, item) in self.listboxItems if text in itemText]
+            if self.matchAnywhere:  tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if last in text]
+            else:                   tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if text.startswith(last)]
         
         self.listbox.clear()
-        for (t, item) in items:
+        for (t, item) in tuples:
             self.listbox.addItem(item)
-        if self.callback:
+        
+        if self.callback and callCallback:
             self.callback()
+        
 
 
-def suggestLineEdit(widget, master, value, *arg, **args):
+def lineEditHint(widget, master, value, *arg, **args):
     callback = args.get("callback", None)
     args["callback"] = None         # we will have our own callback handler
-    args["baseClass"] = SuggestLineEdit
+    args["baseClass"] = LineEditHint
     le = lineEdit(widget, master, value, *arg, **args)
     le.setDelimiters(args.get("delimiters", None))      # what are characters that are possible delimiters between items in the edit box
     le.setItems(args.get("items", []))          # items that will be suggested for selection
@@ -72,11 +101,11 @@ def suggestLineEdit(widget, master, value, *arg, **args):
     le.callbackOnComplete = callback                                    # this is called when the user selects one of the items in the list
     return le
         
-class SuggestLineEdit(QLineEdit):        
+class LineEditHint(QLineEdit):        
     def __init__(self, parent):
         QLineEdit.__init__(self, parent)
         QObject.connect(self, SIGNAL("textEdited(const QString &)"), self.textEdited)
-        self.oldText = ""
+        self.enteredText = ""
         self.itemList = []
         self.useRE = 0
         self.emptyText = ""
@@ -173,8 +202,11 @@ class SuggestLineEdit(QLineEdit):
             last = last.lower()
             
         if self.useRE:
-            pattern = re.compile(last)
-            tuples = [(text, item) for (text, item) in tuples if pattern.match(text)]
+            try:
+                pattern = re.compile(last)
+                tuples = [(text, item) for (text, item) in tuples if pattern.match(text)]
+            except:
+                tuples = zip(self.itemsAsStrings, self.itemsAsItems)        # in case we make regular expressions crash we show all items
         else:
             if self.matchAnywhere:  tuples = [(text, item) for (text, item) in tuples if last in text]
             else:                   tuples = [(text, item) for (text, item) in tuples if text.startswith(last)]
@@ -187,21 +219,21 @@ class SuggestLineEdit(QLineEdit):
                 for item in items:
                     self.listWidget.addItem(QListWidgetItem(item))
             self.listWidget.setCurrentRow(0)
+
+            self.listWidget.setUpdatesEnabled(1)
+            width = max(self.width(), self.autoSizeListWidget and self.listWidget.sizeHintForColumn(0)+10)
+            if self.autoSizeListWidget:
+                self.listWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  
+            self.listWidget.resize(width, self.listWidget.sizeHintForRow(0) * (min(self.nrOfSuggestions, len(items)))+5)
+            self.listWidget.move(self.mapToGlobal(QPoint(0, self.height())))
+            self.listWidget.show()
+##            if not self.delimiters and items and not self.matchAnywhere:
+##                self.setText(last + str(items[0].text())[len(last):])
+##                self.setSelection(len(str(self.text())), -(len(str(self.text()))-len(last)))            
+##            self.setFocus()
         else:
             self.listWidget.hide()
             return
-        
-        self.listWidget.setUpdatesEnabled(1)
-        width = max(self.width(), self.autoSizeListWidget and self.listWidget.sizeHintForColumn(0)+10)
-        if self.autoSizeListWidget:
-            self.listWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  
-        self.listWidget.resize(width, self.listWidget.sizeHintForRow(0) * (min(self.nrOfSuggestions, len(items)) + 3))
-        self.listWidget.move(self.mapToGlobal(QPoint(0, self.height())))
-        self.listWidget.show()
-#        if not self.delimiters and items and not self.matchAnywhere:
-#            self.setText(last + str(items[0].text())[len(last):])
-#            self.setSelection(len(str(self.text())), -(len(str(self.text()))-len(last)))            
-#        self.setFocus()
         
         if self.listUpdateCallback:
             self.listUpdateCallback()
@@ -216,7 +248,7 @@ if __name__ == "__main__":
 #    dlg.filter = ""
 #    dlg.listboxValue = ""
 #    dlg.resize(300, 200)
-#    lineEdit = filterLineEdit(dlg.controlArea, dlg, "filter", "test", useRE = 1, emptyText = "filter...")
+#    lineEdit = lineEditFilter(dlg.controlArea, dlg, "filter", "test", useRE = 1, emptyText = "filter...")
 #        
 #    lineEdit.listbox = OWGUI.listBox(dlg.controlArea, dlg, "listboxValue")
 #    names = []
@@ -227,50 +259,50 @@ if __name__ == "__main__":
 
     dlg.text = ""
     
-#    s = suggestLineEdit(dlg.controlArea, dlg, "text", useRE = 1, items = ["janez", "joza", "danica", "jani", "jok", "jure", "jaz"])
+    s = lineEditHint(dlg.controlArea, dlg, "text", useRE = 1, items = ["janez", "joza", "danica", "jani", "jok", "jure", "jaz"], delimiters = ",; ")
     
     
-    def getFullWidgetIconName(category, widgetInfo):
-        import os
-        iconName = widgetInfo.icon
-        names = []
-        name, ext = os.path.splitext(iconName)
-        for num in [16, 32, 42, 60]:
-            names.append("%s_%d%s" % (name, num, ext))
-            
-        widgetDir = str(category.directory)  
-        fullPaths = []
-        dirs = orngEnviron.directoryNames
-        for paths in [(dirs["picsDir"],), (dirs["widgetDir"],), (dirs["widgetDir"], "icons")]:
-            for name in names + [iconName]:
-                fname = os.path.join(*paths + (name,))
-                if os.path.exists(fname):
-                    fullPaths.append(fname)
-            if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
-                fullPaths.pop()     # if we have the new icons we can remove the default icon
-            if fullPaths != []:
-                return fullPaths    
-        return ""  
-
-
-    s = suggestLineEdit(dlg.controlArea, dlg, "text", useRE = 0, caseSensitive = 0, matchAnywhere = 0)
-    s.listWidget.setSpacing(2)
-    s.setStyleSheet(""" QLineEdit { background: #fffff0; border: 1px solid blue} """)
-    s.listWidget.setStyleSheet(""" QListView { background: #fffff0; } QListView::item {padding: 3px 0px 3px 0px} QListView::item:selected, QListView::item:hover { color: white; background: blue;} """)
-    import orngRegistry, orngEnviron
-    cats = orngRegistry.readCategories()
-    items = []
-    for cat in cats.values():
-        for widget in cat.values():
-            iconNames = getFullWidgetIconName(cat, widget)
-            icon = QIcon()
-            for name in iconNames:
-                icon.addPixmap(QPixmap(name))
-            item = QListWidgetItem(icon, widget.name)
-            #item.setSizeHint(QSize(100, 32))
-            #
-            items.append(item)
-    s.setItems(items)
+##    def getFullWidgetIconName(category, widgetInfo):
+##        import os
+##        iconName = widgetInfo.icon
+##        names = []
+##        name, ext = os.path.splitext(iconName)
+##        for num in [16, 32, 42, 60]:
+##            names.append("%s_%d%s" % (name, num, ext))
+##            
+##        widgetDir = str(category.directory)  
+##        fullPaths = []
+##        dirs = orngEnviron.directoryNames
+##        for paths in [(dirs["picsDir"],), (dirs["widgetDir"],), (dirs["widgetDir"], "icons")]:
+##            for name in names + [iconName]:
+##                fname = os.path.join(*paths + (name,))
+##                if os.path.exists(fname):
+##                    fullPaths.append(fname)
+##            if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
+##                fullPaths.pop()     # if we have the new icons we can remove the default icon
+##            if fullPaths != []:
+##                return fullPaths    
+##        return ""  
+##
+##
+##    s = lineEditHint(dlg.controlArea, dlg, "text", useRE = 0, caseSensitive = 0, matchAnywhere = 0)
+##    s.listWidget.setSpacing(2)
+##    s.setStyleSheet(""" QLineEdit { background: #fffff0; border: 1px solid blue} """)
+##    s.listWidget.setStyleSheet(""" QListView { background: #fffff0; } QListView::item {padding: 3px 0px 3px 0px} QListView::item:selected, QListView::item:hover { color: white; background: blue;} """)
+##    import orngRegistry, orngEnviron
+##    cats = orngRegistry.readCategories()
+##    items = []
+##    for cat in cats.values():
+##        for widget in cat.values():
+##            iconNames = getFullWidgetIconName(cat, widget)
+##            icon = QIcon()
+##            for name in iconNames:
+##                icon.addPixmap(QPixmap(name))
+##            item = QListWidgetItem(icon, widget.name)
+##            #item.setSizeHint(QSize(100, 32))
+##            #
+##            items.append(item)
+##    s.setItems(items)
         
     dlg.show()
     a.exec_()
