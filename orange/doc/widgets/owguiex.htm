@@ -83,7 +83,7 @@ H2 { margin-top: 36px; font-size: 10pt; background-color: white; font-weight: bo
 
 <h1>Common Attributes</h1>
 
-<P>Since this file is basically an extension of the OWGUI library, many of the attributes that can be specified when constructing a control are described in the "Common attributes" section in the <a href="owgui.htm">documentation on OWGUI</a>. It is highly recomended that you are familiar with those attributes.</P>
+<P>Since this file is basically an extension of the OWGUI library, many of the attributes that can be specified when constructing a control are described in the "Common attributes" section in the documentation on <a href="owgui.htm">OWGUI</a>. It is highly recomended that you are familiar with those attributes.</P>
 
 
 <h1>Controls</h1>
@@ -98,7 +98,8 @@ H2 { margin-top: 36px; font-size: 10pt; background-color: white; font-weight: bo
 lineEditFilter(widget, master, value [, label, labelWidth, orientation, box, tooltip, valueType, validator, controlWidth, caseSensitive, useRE, matchAnywhere, callback, emptyText])
 </p>
 
-The meaning of attributes label, labelWidth, orientation, box, tooltip, valueType, validator and controlWidth are described in the <a href="owgui.htm#lineedit">OWGUI.lineEdit documentation</a>. 
+The meaning of attributes <code>label</code>, <code>labelWidth</code>, <code>orientation</code>, <code>box</code>, <code>tooltip</code>, <code>valueType</code>, <code>validator</code> and <code>controlWidth</code> are described in the <a href="owgui.htm#lineedit">OWGUI.lineEdit</a> documentation. 
+
 
 <dl class="attributes">
 
@@ -131,6 +132,7 @@ Along with the described attributes there are also some important methods that c
 
 <DT>updateListBoxItems(callCallback=1)</DT>
 <DD>We can call this function if we want manually to cause the update of the associated list box based on the content of the line edit. The value of <code>callCallback</code> argument determines whether we would like to call the callback function after this update or not.</DD>
+</dl>
 
 <span>
 <span onclick="toggleVisibility(this);" class="hideshow">Show Example</span>
@@ -167,7 +169,7 @@ lineEdit.setAllListItems(names)
 lineEditHint(widget, master, value [, label, labelWidth, orientation, box, tooltip, valueType, validator, controlWidth, caseSensitive, useRE, matchAnywhere, callback, listUpdateCallback, nrOfSuggestions, autoSizeListWidget, delimiters])
 </p>
 
-The meaning of attributes label, labelWidth, orientation, box, tooltip, valueType, validator and controlWidth are described in the <a href="owgui.htm#lineedit">OWGUI.lineEdit documentation</a>. 
+The meaning of attributes <code>label</code>, <code>labelWidth</code>, <code>orientation</code>, <code>box</code>, <code>tooltip</code>, <code>valueType</code>, <code>validator</code> and <code>controlWidth</code> are described in the <a href="owgui.htm#lineedit">OWGUI.lineEdit</a> documentation. 
 
 <dl class="attributes">
 
@@ -208,6 +210,7 @@ Along with the described attributes there is also an important methods that has 
 
 <DT>setItems(items)</DT>
 <DD>Using this method we tell the line edit control what are the possible items that can be suggested when user is entering text. The list of items can be a list of strings or <code>QListWidgetItem</code> instances.</DD>
+</dl>
 
 <span>
 <span onclick="toggleVisibility(this);" class="hideshow">Show Example</span>
