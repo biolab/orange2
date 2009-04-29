@@ -434,7 +434,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenLocalOrangeHelp(self):
         import webbrowser
-        webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/reference/default.htm"))
+        webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/catalog/index.html"))
 
     def menuOpenLocalCanvasHelp(self):
         import webbrowser
@@ -442,7 +442,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange")
+        webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
