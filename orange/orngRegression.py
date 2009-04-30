@@ -106,9 +106,10 @@ class LinearRegressionLearner(object):
  
         return LinearRegression(statistics = model, domain = data.domain, name = self.name, beta0 = self.beta0, imputer=imputer)
 
-class LinearRegression:
+class LinearRegression(orange.Classifier):
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        for a,b in kwds.items():
+            self.setattr(a,b)
         self.beta = self.statistics['model']['estCoeff']
 
     def __call__(self, example, resultType = orange.GetValue):
