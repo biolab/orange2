@@ -7,7 +7,7 @@
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
 VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.5 64-bit.vmwarevm/Mac OS X Server 10.5 64-bit.vmx'
-WAIT_TIME=60
+WAIT_TIME=180
 RETRIES=5
 IP_ADDRESS='172.16.213.100'
 
