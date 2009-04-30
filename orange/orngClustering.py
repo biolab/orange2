@@ -3,13 +3,6 @@ import sys
 import orange
 import random
 import statc
-
-try:
-    import matplotlib
-    from matplotlib.figure import Figure
-    import matplotlib.pyplot as plt #import plot, show
-except ImportError:
-    matplotlib = None
     
 ##############################################################################
 # miscellaneous functions (used across this module)
@@ -178,8 +171,7 @@ def score_fastsilhouette(km, index=None):
 
 def plot_silhouette(km, filename='tmp.png'):
     """According to clustering results, plots silhouette score for each instance in data set."""
-    if not matplotlib:
-        raise Exception("Need matplotlib library!")
+    import matplotlib.pyplot as plt
     plt.figure()
     scores = [[] for i in range(km.k)]
     for i, c in enumerate(km.clusters):
@@ -331,9 +323,9 @@ def hierarchicalClustering(data,
     for i in range(len(data)):
         for j in range(i+1):
             matrix[i, j] = distance(data[i], data[j])
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1)))
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
-        orderLeaves(root, matrix, progressCallback=lambda value: progressCallback(50.0 + value/2))
+        orderLeaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def hierarchicalClustering_attributes(data, distance=None, linkage=orange.HierarchicalClustering.Average, order=False, progressCallback=None):
@@ -673,40 +665,10 @@ try:
     from matplotlib.table import Table, Cell
     from matplotlib.text import Text
     from matplotlib.artist import Artist
-    import  matplotlib.pyplot as plt
+##    import  matplotlib.pyplot as plt
 except ImportError:
     matplotlib = None
     Text , Artist, Table, Cell = object, object, object, object
-
-##class ScalableText(Text):
-##    _max_height = 1.0
-##    cachedFontSize = None
-##    def draw(self, renderer):
-##        fontSize = self.fontsizesetter(renderer)
-##        if fontSize != self.get_fontsize():
-##            self.set_fontsize(fontSize)
-##        Text.draw(self, renderer)
-##
-##    def fontsizesetter(self, renderer):
-##        if ScalableText.cachedFontSize != None:
-##            return ScalableText.cachedFontSize
-##        transform = plt.gca().transData #.inverted()
-##        _, y1 = transform.transform_point((0,0))
-##        _, y2 = transform.transform_point((0,1))
-##        fontsize = max(int(abs(y1 - y2)*0.85), 1)
-##        ScalableText.cachedFontSize = fontsize
-##        return fontsize
-##
-##    def get_width(self, renderer):
-##        fontSize = self.fontsizesetter(renderer)
-##        if fontSize != self.get_fontsize():
-##            self.set_fontsize(fontSize)
-##        l, b, w, h = self.get_window_extent(renderer).bounds
-##        transform = plt.gca().transData.inverted()
-##        x1, _ = transform.transform_point((0, 0))
-##        x2, _ = transform.transform_point((w, 0))
-##        w = abs(x1 - x2)*1.05
-##        return w
 
 class TableCell(Cell):
     PAD = 0.05
@@ -721,6 +683,7 @@ class TablePlot(Table):
         self.xy = xy
         self.set_transform(self._axes.transData)
         self._fixed_widhts = None
+        import matplotlib.pyplot as plt
         self.max_fontsize = plt.rcParams.get("font.size", 12)
 
     def add_cell(self, row, col, *args, **kwargs):
@@ -826,6 +789,8 @@ class DendrogramPlotPylab(object):
     def __init__(self, root, data=None, labels=None, dendrogram_width=None, heatmap_width=None, label_width=None, space_width=None, border_width=0.05, plot_attr_names=False, cmap=None, params={}):
         if not matplotlib:
             raise ImportError("Could not import matplotlib module. Please make sure matplotlib is installed on your system.")
+        import matplotlib.pyplot as plt
+        self.plt = plt
         self.root = root
         self.data = data
         self.labels = labels if labels else [str(i) for i in range(len(root))]
@@ -844,9 +809,9 @@ class DendrogramPlotPylab(object):
                 points = []
                 for branch in tree.branches:
                     center = draw_tree(branch)
-                    plt.plot([center[0], tree.height], [center[1], center[1]], color="black")
+                    self.plt.plot([center[0], tree.height], [center[1], center[1]], color="black")
                     points.append(center)
-                plt.plot([tree.height, tree.height], [points[0][1], points[-1][1]], color="black")
+                self.plt.plot([tree.height, tree.height], [points[0][1], points[-1][1]], color="black")
                 return (tree.height, (points[0][1] + points[-1][1])/2.0)
             else:
                 return (0.0, tree.first)
@@ -867,17 +832,17 @@ class DendrogramPlotPylab(object):
 
         self.meshXOffset = numpy.max(X)
 
-        plt.jet()
-        mesh = plt.pcolormesh(X, Y, data[self.root.mapping], edgecolor="b", linewidth=2)
+        self.plt.jet()
+        mesh = self.plt.pcolormesh(X, Y, data[self.root.mapping], edgecolor="b", linewidth=2)
 
         if self.plot_attr_names:
             names = [attr.name for attr in self.data.domain.attributes]
-            plt.xticks(numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape)), names)
-        plt.gca().xaxis.tick_top()
-        for label in plt.gca().xaxis.get_ticklabels():
+            self.plt.xticks(numpy.arange(data.shape[1] + 1)/float(numpy.max(data.shape)), names)
+        self.plt.gca().xaxis.tick_top()
+        for label in self.plt.gca().xaxis.get_ticklabels():
             label.set_rotation(45)
 
-        for tick in plt.gca().xaxis.get_major_ticks():
+        for tick in self.plt.gca().xaxis.get_major_ticks():
             tick.tick1On = False
             tick.tick2On = False
 
@@ -885,36 +850,36 @@ class DendrogramPlotPylab(object):
     
     def plotLabels_(self):
         import numpy
-##        plt.yticks(numpy.arange(len(self.labels) - 1, 0, -1), self.labels)
-##        for tick in plt.gca().yaxis.get_major_ticks():
+##        self.plt.yticks(numpy.arange(len(self.labels) - 1, 0, -1), self.labels)
+##        for tick in self.plt.gca().yaxis.get_major_ticks():
 ##            tick.tick1On = False
 ##            tick.label1On = False
 ##            tick.label2On = True
 ##        text = TableTextLayout(xy=(self.meshXOffset+1, len(self.root)), tableText=[[label] for label in self.labels])
         text = TableTextLayout(xy=(self.meshXOffset*1.005, len(self.root) - 1), tableText=[[label] for label in self.labels])
-        text.set_figure(plt.gcf())
-        plt.gca().add_artist(text)
-        plt.gca()._set_artist_props(text)
+        text.set_figure(self.plt.gcf())
+        self.plt.gca().add_artist(text)
+        self.plt.gca()._set_artist_props(text)
 
     def plotLabels(self):
-##        table = TablePlot(xy=(self.meshXOffset*1.005, len(self.root) -1), axes=plt.gca())
-        table = TablePlot(xy=(0, len(self.root) -1), axes=plt.gca())
-        table.set_figure(plt.gcf())
+##        table = TablePlot(xy=(self.meshXOffset*1.005, len(self.root) -1), axes=self.plt.gca())
+        table = TablePlot(xy=(0, len(self.root) -1), axes=self.plt.gca())
+        table.set_figure(self.plt.gcf())
         for i,label in enumerate(self.labels):
             table.add_cell(i, 0, width=1, height=1, text=label, loc="left", edgecolor="w")
         table.set_zorder(0)
-        plt.gca().add_artist(table)
-        plt.gca()._set_artist_props(table)
+        self.plt.gca().add_artist(table)
+        self.plt.gca()._set_artist_props(table)
     
     def plot(self, filename=None, show=False):
-        plt.rcParams.update(self.params)
+        self.plt.rcParams.update(self.params)
         labelLen = max(len(label) for label in self.labels)
         w, h = 800, 600
         space = 0.01 if self.space_width == None else self.space_width
         border = self.border_width
         width = 1.0 - 2*border
         height = 1.0 - 2*border
-        textLineHeight = min(max(h/len(self.labels), 4), plt.rcParams.get("font.size", 12))
+        textLineHeight = min(max(h/len(self.labels), 4), self.plt.rcParams.get("font.size", 12))
         maxTextLineWidthEstimate = textLineHeight*labelLen
 ##        print maxTextLineWidthEstimate
         textAxisWidthRatio = 2.0*maxTextLineWidthEstimate/w
@@ -925,9 +890,9 @@ class DendrogramPlotPylab(object):
         heatmapAreaRatio = min(1.0*y/h*x/w, 0.3) if self.heatmap_width == None else self.heatmap_width
         dendrogramAreaRatio = 1.0 - labelsAreaRatio - heatmapAreaRatio - 2*space if self.dendrogram_width == None else self.dendrogram_width
 
-        self.fig = plt.figure()
+        self.fig = self.plt.figure()
         self.labels_offset = self.root.height/20.0
-        dendrogramAxes = plt.axes([border, border, width*dendrogramAreaRatio, height])
+        dendrogramAxes = self.plt.axes([border, border, width*dendrogramAreaRatio, height])
         dendrogramAxes.xaxis.grid(True)
         import matplotlib.ticker as ticker
 
@@ -935,7 +900,7 @@ class DendrogramPlotPylab(object):
         dendrogramAxes.yaxis.set_minor_locator(ticker.NullLocator())
         dendrogramAxes.invert_xaxis()
         self.plotDendrogram()
-        heatmapAxes = plt.axes([border + width*dendrogramAreaRatio + space, border, width*heatmapAreaRatio, height], sharey=dendrogramAxes)
+        heatmapAxes = self.plt.axes([border + width*dendrogramAreaRatio + space, border, width*heatmapAreaRatio, height], sharey=dendrogramAxes)
 
         heatmapAxes.xaxis.set_major_locator(ticker.NullLocator())
         heatmapAxes.xaxis.set_minor_locator(ticker.NullLocator())
@@ -943,7 +908,7 @@ class DendrogramPlotPylab(object):
         heatmapAxes.yaxis.set_minor_locator(ticker.NullLocator())
         
         self.plotHeatMap()
-        labelsAxes = plt.axes([border + width*(dendrogramAreaRatio + heatmapAreaRatio + 2*space), border, width*labelsAreaRatio, height], sharey=dendrogramAxes)
+        labelsAxes = self.plt.axes([border + width*(dendrogramAreaRatio + heatmapAreaRatio + 2*space), border, width*labelsAreaRatio, height], sharey=dendrogramAxes)
         self.plotLabels()
         labelsAxes.set_axis_off()
         labelsAxes.xaxis.set_major_locator(ticker.NullLocator())
@@ -954,7 +919,7 @@ class DendrogramPlotPylab(object):
             canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(self.fig)
             canvas.print_figure(filename)
         if show:
-            plt.show()
+            self.plt.show()
 
 if __name__=="__main__":
     data = orange.ExampleTable("doc//datasets//brown-selected.tab")
