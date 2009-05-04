@@ -195,6 +195,7 @@ class OWDatabasesUpdate(OWWidget):
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
         self.filesView.setItemDelegate(UpdateItemDelegate(self.filesView))
+        self.connect(self.filesView.model(), SIGNAL("layoutChanged()"), self.SearchUpdate)
         box.layout().addWidget(self.filesView)
 
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
