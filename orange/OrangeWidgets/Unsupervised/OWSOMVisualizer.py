@@ -1,6 +1,6 @@
 """
-<name>SOMVisualizer</name>
-<description>SOM visualizer</description>
+<name>SOM Visualizer</name>
+<description>Visualizes a trained self organising maps.</description>
 <icon>SOMVisualizer.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>5020</priority>
@@ -454,7 +454,7 @@ class OWSOMVisualizer(OWWidget):
     
     drawModes = ["None", "U-Matrix", "Component planes"]
     
-    def __init__(self, parent=None, signalManager=None, name="SOMVisualizer"):
+    def __init__(self, parent=None, signalManager=None, name="SOM visualizer"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs = [("SOMMap", orngSOM.SOMMap, self.setSomMap), ("Examples", ExampleTable, self.data)]
         self.outputs = [("Examples", ExampleTable)]

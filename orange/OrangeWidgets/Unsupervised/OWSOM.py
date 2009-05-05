@@ -1,6 +1,6 @@
 """
 <name>SOM</name>
-<description>Self organizing maps</description>
+<description>Self organizing maps learner.</description>
 <icon>SOM.png</icon>
 <contact>Ales Erjavec (ales.erjevec(@at@)fri.uni.lj.si)</contact> 
 <priority>5010</priority>
@@ -27,7 +27,7 @@ class OWSOM(OWWidget):
         self.neighborhood = 0
         self.topology = 0
         self.alphaType = 0
-        self.iterations1 = 1000
+        self.iterations1 = 100
         self.iterations2 = 10000
         self.radius1 = 3
         self.radius2 = 1
@@ -43,11 +43,11 @@ class OWSOM(OWWidget):
 ##        self.AlphaMap=[1, 2]
         self.learnerName = OWGUI.lineEdit(self.controlArea, self, "LearnerName", box="Learner/Classifier Name", tooltip="Name to be used by other widgets to identify yor Learner/Classifier")
 ##        self.learnerName.setText("SOM Classifier")
-        box = OWGUI.widgetBox(self.controlArea, self, "Dimensions")
+##        box = OWGUI.widgetBox(self.controlArea, self, "Dimensions")
+        box = OWGUI.radioButtonsInBox(self.controlArea, self, "topology", ["Hexagonal topology", "Rectangular topology"], box="Topology")
         OWGUI.spin(box, self, "xdim", 4, 1000, orientation="horizontal", label="Columns")
         OWGUI.spin(box, self, "ydim", 4, 1000, orientation="horizontal", label="Rows")
         OWGUI.radioButtonsInBox(self.controlArea, self, "initialization", ["Linear", "Random"], box="Map Initialization")
-        OWGUI.radioButtonsInBox(self.controlArea, self, "topology", ["Hexagonal topology", "Rectangular topology"], box="Topology")
         OWGUI.radioButtonsInBox(self.controlArea, self, "neighborhood", ["Gaussian neighborhood", "Bubble neighborhood"], box="Neighborhood")
 ##        OWGUI.radioButtonsInBox(self.controlArea, self, "alphaType", ["Linear function", "Inverse function"], box="Alpha Function Type")
         b = OWGUI.widgetBox(self.controlArea, "Radius")
@@ -55,7 +55,7 @@ class OWSOM(OWWidget):
         OWGUI.spin(b, self, "radius2", 1,50, orientation="horizontal", label="Final radius")
 
         b = OWGUI.widgetBox(self.controlArea , "Stoping Conditions")
-        OWGUI.spin(b, self, "iterations1", 10, 10000, label="Num. iterations")
+        OWGUI.spin(b, self, "iterations1", 10, 10000, label="Iterations")
 ##        OWGUI.doubleSpin(b, self, "eps", 0.0, 1.0, 1e-5, label="Eps")
 ##        tabW=OWGUI.tabWidget(self.controlArea)
 ##        b1=OWGUI.createTabPage(tabW, "Step 1")
