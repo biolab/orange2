@@ -303,7 +303,7 @@ class SOMLearner(orange.Learner):
     """
     def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, topology=HexagonalTopology, neighbourhood=NeighbourhoodGaussian,
                  batch_train=True, learning_rate=0.05, radius_ini=3.0, radius_fin=1.0, epochs=1000, **kwargs):
-        self.map_shape = (5, 10)
+        self.map_shape = map_shape
         self.initialize = initialize
         self.topology = topology
         self.neighbourhood = neighbourhood
