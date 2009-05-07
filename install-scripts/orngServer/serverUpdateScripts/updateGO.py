@@ -70,7 +70,7 @@ for org in u.GetAvailableOrganisms():
             updatedTaxonomy[taxId].add(org)
         ## Upload the annotation
         if org in _dbOrgMap:
-            orgName = keggOrgNames[_dbOrgMap[org]]
+            orgName = keggOrgNames[_dbOrgMap[org]].split("(")[0].strip()
         elif org in additionalNames:
             orgName = additionalNames[org]
         else:
