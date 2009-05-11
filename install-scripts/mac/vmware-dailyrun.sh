@@ -23,7 +23,7 @@ start_vmware() {
 		exit 1
 	fi
 	
-	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login|FAILED TO establish the default connection to the WindowServer'
+	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
 	
 	# Wait for VMware and OS to start
 	sleep $WAIT_TIME
@@ -41,7 +41,7 @@ stop_vmware() {
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
 		echo "Had to force shutdown."
-		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login|FAILED TO establish the default connection to the WindowServer'
+		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
 	fi
 	
 	return 0
