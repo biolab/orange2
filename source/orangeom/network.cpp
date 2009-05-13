@@ -443,7 +443,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 }
 
 
-PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
+PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper, kNN, andor) -> noConnectedNodes")
 {
 	PyTRY
 	CAST_TO(TNetwork, network);
@@ -451,8 +451,10 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	PyObject *pyMatrix;
 	double lower;
 	double upper;
+	int kNN = 0;
+	int andor = 0;
 
-	if (!PyArg_ParseTuple(args, "Odd:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper))
+	if (!PyArg_ParseTuple(args, "Odd|ii:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper, &kNN, &andor))
 		return PYNULL;
 
 	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
@@ -516,7 +518,8 @@ PyObject *Network_fromSymMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARA
 	PyCATCH;
 }
 
-PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper) -> noConnectedNodes")
+typedef std::pair<int, int> coord_t;
+PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(matrix, lower, upper, kNN, andor) -> noConnectedNodes")
 {
 	PyTRY
 	CAST_TO(TNetwork, network);
@@ -524,17 +527,22 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 	PyObject *pyMatrix;
 	double lower;
 	double upper;
+	int kNN = 0;
+	int andor = 0;
 
-	if (!PyArg_ParseTuple(args, "Odd:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper))
+	if (!PyArg_ParseTuple(args, "Odd|ii:Network.fromDistanceMatrix", &pyMatrix, &lower, &upper, &kNN, &andor))
 		return PYNULL;
 
 	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
+	cout << "kNN: " << kNN << endl;
+	cout << "andor: " << andor << endl;
 
 	if (matrix->dim != network->nVertices)
 		PYERROR(PyExc_TypeError, "DistanceMatrix dimension should equal number of vertices.", PYNULL);
 
 	int i,j;
 	int nConnected = 0;
+	vector<coord_t> edges_interval;
 
 	if (matrix->matrixType == 0) {
 		// lower
@@ -545,10 +553,8 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 				double value = matrix->getitem(j,i);
 				//cout << " value " << value << endl;
 				if (lower <=  value && value <= upper) {
-					//cout << "value: " << value << endl;
-					double* w = network->getOrCreateEdge(j, i);
-					*w = value;
 					connected = true;
+					edges_interval.push_back(coord_t(j, i));
 				}
 			}
 
@@ -568,9 +574,8 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 			for (j = i+1; j < matrix->dim; j++) {
 				double value = matrix->getitem(i,j);
 				if (lower <=  value && value <= upper) {
-					double* w = network->getOrCreateEdge(i, j);
-					*w = value;
 					connected = true;
+					edges_interval.push_back(coord_t(i, j));
 				}
 			}
 
@@ -582,6 +587,42 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 			if (neighbours.size() > 0)
 				nConnected++;
 		}
+	}
+	cout << "calculating knn, dim: " << matrix->dim << endl;
+	vector<coord_t> edges_knn;
+
+	if (kNN > 0) {
+		for (i = 0; i < matrix->dim; i++) {
+			vector<int> closest;
+			matrix->getknn(i, kNN, closest);
+
+			for (j = 0; j < closest.size(); j++) {
+				edges_knn.push_back(coord_t(i, closest[j]));
+			}
+		}
+	}
+
+	cout << "n edges: " << edges_interval.size() + edges_knn.size() << endl;
+
+	if (andor == 0) {
+		cout << "insert interval" << endl;
+		for (i=0; i < edges_interval.size(); i++) {
+			//cout << edges_interval[i].first << ", " << edges_interval[i].second << endl;
+			double* w = network->getOrCreateEdge(edges_interval[i].first, edges_interval[i].second);
+			double value = matrix->getitem(edges_interval[i].first, edges_interval[i].second);
+			*w = value;
+			//cout << edges_interval[i].first << "," << edges_interval[i].second << "," << *w << endl;
+		}
+		cout << "insert knn" << endl;
+		for (i = 0; i < edges_knn.size(); i++) {
+			//cout << edges_knn[i].first << ", " << edges_knn[i].second << endl;
+			double* w = network->getOrCreateEdge(edges_knn[i].first, edges_knn[i].second);
+			double value = matrix->getitem(edges_knn[i].first, edges_knn[i].second);
+			*w = value;
+			//cout << edges_interval[i].first << "," << edges_interval[i].second << "," << *w << endl;
+
+		}
+
 	}
 
 	return Py_BuildValue("i", nConnected);
