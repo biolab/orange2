@@ -20,7 +20,7 @@ from OWGraph import *
 from OWHist import *
 
 class OWNetworkFromDistances(OWWidget):
-    settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption", "dstWeight"]
+    settingsList=["spinLowerThreshold", "spinUpperThreshold", "netOption", "dstWeight", "kNN", "andor", "excludeLimit"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Network from Distances")
@@ -35,8 +35,10 @@ class OWNetworkFromDistances(OWWidget):
         self.spinUpperChecked = False
         self.netOption = 0
         self.dstWeight = 0
+        self.kNN = 0
+        self.andor = 0
         self.data = None
-        
+        self.excludeLimit = 1
         # get settings from the ini file, if they exist
         self.loadSettings()
         
@@ -53,12 +55,18 @@ class OWNetworkFromDistances(OWWidget):
         
         OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", orientation='horizontal', callback=self.changeLowerSpin, valueType=float)
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", orientation='horizontal', callback=self.changeUpperSpin, valueType=float)
+        ribg = OWGUI.radioButtonsInBox(boxGeneral, self, "andor", [], orientation='horizontal', callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "andor", "OR", callback = self.generateGraph)
+        b = OWGUI.appendRadioButton(ribg, self, "andor", "AND", callback = self.generateGraph)
+        b.setEnabled(False)
+        OWGUI.spin(boxGeneral, self, "kNN", 0, 1000, 1, label="kNN:", orientation='horizontal', callback=self.generateGraph)
         
         # Options
         self.attrColor = ""
         ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
-        OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude unconnected vertices", callback = self.generateGraph)
+        OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude small components", callback = self.generateGraph)
+        OWGUI.spin(OWGUI.indentedBox(ribg), self, "excludeLimit", 1, 100, 1, label="Less vertices than: ", callback = (lambda h=True: self.generateGraph(h)))
         OWGUI.appendRadioButton(ribg, self, "netOption", "Largest connected component only", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Connected component with vertex")
         self.attribute = None
@@ -111,17 +119,21 @@ class OWNetworkFromDistances(OWWidget):
         vars = []
         if (self.data != None):
             if hasattr(self.data, "items"):
+                 
                 if isinstance(self.data.items, orange.ExampleTable):
-                    vars[:0] = self.data.items.domain.variables
+                    vars = list(self.data.items.domain.variables)
                 
                     metas = self.data.items.domain.getmetas(0)
                     for i, var in metas.iteritems():
                         vars.append(var)
                         
         self.icons = self.createAttributeIconDict()
-                        
+                     
         for var in vars:
-            self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
+            try:
+                self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
+            except:
+                print "error adding ", var, " to the attribute combo"
 
     def changeLowerSpin(self):
         if self.spinLowerThreshold < self.histogram.minValue:
@@ -145,13 +157,16 @@ class OWNetworkFromDistances(OWWidget):
         
         self.generateGraph()
         
-    def generateGraph(self):
+    def generateGraph(self, N_changed = False):
         self.searchStringTimer.stop()
         self.attributeCombo.box.setEnabled(False)
         self.error()
         matrix = None
         self.warning('')
         
+        if N_changed:
+            self.netOption = 1
+            
         if self.data == None:
             self.infoa.setText("No data loaded.")
             self.infob.setText("")
@@ -179,7 +194,7 @@ class OWNetworkFromDistances(OWWidget):
             # set the threshold
             # set edges where distance is lower than threshold
                   
-            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold)
+            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold, self.kNN, self.andor)
             edges = graph.getEdges()
             
             #print graph.nVertices, self.matrix.dim
@@ -205,7 +220,7 @@ class OWNetworkFromDistances(OWWidget):
             #print 'self.netOption',self.netOption
             # exclude unconnected
             if str(self.netOption) == '1':
-                components = [x for x in graph.getConnectedComponents() if len(x) > 1]
+                components = [x for x in graph.getConnectedComponents() if len(x) > self.excludeLimit]
                 if len(components) > 0:
                     include = reduce(lambda x,y: x+y, components)
                     if len(include) > 1:

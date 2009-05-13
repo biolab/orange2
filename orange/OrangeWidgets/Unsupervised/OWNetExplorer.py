@@ -26,34 +26,14 @@ dlg_unselected = dir + "Dlg_UnselectedNodes.png"
 dlg_showall = dir + "Dlg_clear.png"
 
 class OWNetExplorer(OWWidget):
-    settingsList = ["autoSendSelection", 
-                    "spinExplicit", 
-                    "spinPercentage",
-                    "maxLinkSize",
-                    "maxVertexSize",
-                    "renderAntialiased",
-                    "labelsOnMarkedOnly",
-                    "invertSize",
-                    "optMethod",
-                    "lastVertexSizeColumn",
-                    "lastColorColumn",
-                    "lastNameComponentAttribute",
-                    "lastLabelColumns",
-                    "lastTooltipColumns",
-                    "showWeights",
-                    "showIndexes", 
-                    "showEdgeLabels", 
-                    "colorSettings", 
-                    "selectedSchemaIndex",
-                    "edgeColorSettings",
-                    "selectedEdgeSchemaIndex",
-                    "showMissingValues",
-                    "fontSize",
-                    "mdsTorgerson",
-                    "mdsAvgLinkage",
-                    "mdsSteps",
-                    "mdsRefresh",
-                    "mdsStressDelta"] 
+    settingsList = ["autoSendSelection", "spinExplicit", "spinPercentage",
+    "maxLinkSize", "maxVertexSize", "renderAntialiased", "labelsOnMarkedOnly",
+    "invertSize", "optMethod", "lastVertexSizeColumn", "lastColorColumn",
+    "lastNameComponentAttribute", "lastLabelColumns", "lastTooltipColumns",
+    "showWeights", "showIndexes",  "showEdgeLabels", "colorSettings", 
+    "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
+    "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
+    "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -117,7 +97,8 @@ class OWNetExplorer(OWWidget):
         self.mdsSteps = 120
         self.mdsRefresh = 30
         self.mdsStressDelta = 0.00001
-        
+        self.organism = 'goa_human'
+        self.showTextMiningInfo = 0
         self.loadSettings()
         
         self.visualize = None
@@ -277,31 +258,36 @@ class OWNetExplorer(OWWidget):
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
         ib = OWGUI.widgetBox(self.infoTab, "Prototype")
-        OWGUI.button(ib, self, "Collapse", callback=self.collapse)
+        #OWGUI.button(ib, self, "Collapse", callback=self.collapse)
         
         #ib = OWGUI.widgetBox(ibProto, "Name components")
-        OWGUI.label(ib, self, "Name components:")
+        OWGUI.lineEdit(ib, self, "organism", "Organism:", orientation='horizontal')
+        
         self.nameComponentAttribute = 0
-        self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponentAttribute", callback=self.nameComponents)
+        self.nameComponentCombo = OWGUI.comboBox(ib, self, "nameComponentAttribute", callback=self.nameComponents, label="Name components:", orientation="horizontal")
         self.nameComponentCombo.addItem("Select attribute")
         
-        OWGUI.label(ib, self, "Show labels on components:")
         self.showComponentAttribute = 0
-        self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents)
+        self.showComponentCombo = OWGUI.comboBox(ib, self, "showComponentAttribute", callback=self.showComponents, label="Labels on components:", orientation="horizontal")
         self.showComponentCombo.addItem("Select attribute")
+        OWGUI.checkBox(ib, self, 'showTextMiningInfo', "Show text mining info")
         
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
-        self.btnMDS = OWGUI.button(ib, self, "MDS on graph components", callback=self.mdsComponents, toggleButton=1)
+        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
+        self.btnMDS = OWGUI.button(ibs, self, "MDS components", callback=self.mdsComponents, toggleButton=1)
+        self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
+        self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
+        
         OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
-        OWGUI.checkBox(ib, self, 'mdsTorgerson', "Torgerson's initial approximation")
-        OWGUI.checkBox(ib, self, 'mdsAvgLinkage', "Use average linkage")
+        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
+        OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
+        OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         self.rotateSteps = 100
-        self.btnRotate = OWGUI.button(ib, self, "Rotate graph components", callback=self.rotateComponents, toggleButton=1)
-        self.btnRotateMDS = OWGUI.button(ib, self, "Rotate graph components (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
+        
         OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         
         
@@ -547,7 +533,7 @@ class OWNetExplorer(OWWidget):
         
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
-        annotations = obiGO.Annotations.Load("goa_human", ontology=ontology, progressCallback=self.progressBarSet)
+        annotations = obiGO.Annotations.Load(self.organism, ontology=ontology, progressCallback=self.progressBarSet)
 
         allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.visualize.graph.items])
         if len(annotations.geneNames & allGenes) < 1:
@@ -619,6 +605,9 @@ class OWNetExplorer(OWWidget):
             #namingScore = [[(1-p_value) * len(g) / ref, ontology.terms[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res.items() if p_value < 0.1]
             
             namingScore = [[len(g), ref, p_value, ontology[GOId].name, len(g), ref, p_value] for GOId, (g, p_value, ref) in res if p_value < 0.1]
+            if len(namingScore) == 0:
+                continue
+            
             annotated_genes = max([a[0] for a in namingScore])
             
             rank(namingScore, 1, reverse=True)
@@ -638,7 +627,10 @@ class OWNetExplorer(OWWidget):
             for v in component:
                 name = str(namingScore[0][1])
                 attrs = "%d/%d, %d, %lf" % (namingScore[0][2], annotated_genes, namingScore[0][3], namingScore[0][4])
-                keyword_table[v]['keyword'] = name + "\n" + attrs + "\n" + str(namingScore[0][0])
+                info = ''
+                if self.showTextMiningInfo:
+                    info = "\n" + attrs + "\n" + str(namingScore[0][0])
+                keyword_table[v]['keyword'] = name + info
             
             self.progressBarSet(i*100.0/len(components))
                 
