@@ -7,7 +7,7 @@
 """
 from OWWidget import *
 from OWGraph import *
-import OWGUI
+import OWGUI, OWGUIEx
 
 class OWDataDomain(OWWidget):
     contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes", 
@@ -54,7 +54,9 @@ class OWDataDomain(OWWidget):
         boxAvail = OWGUI.widgetBox(self, 'Available Attributes', addToLayout = 0)
         grid.addWidget(boxAvail, 0, 0, 3, 1)
 
+        self.filterInputAttrs = OWGUIEx.lineEditFilter(boxAvail, self, None, useRE = 1, emptyText = "filter attributes...", callback = self.setInputAttributes, caseSensitive = 0)
         self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection, enableDragDrop = 1, dragDropCallback = self.updateInterfaceAndApplyButton)
+        self.filterInputAttrs.listbox = self.inputAttributesList 
 
         vbAttr = OWGUI.widgetBox(self, addToLayout = 0)
         grid.addWidget(vbAttr, 0, 1)
@@ -133,6 +135,7 @@ class OWDataDomain(OWWidget):
 
         self.data = data
         self.attributes = {}
+        self.filterInputAttrs.setText("")
 
         if data:
             domain = data.domain
@@ -146,7 +149,7 @@ class OWDataDomain(OWWidget):
             if self.receivedAttrList:
                 self.chosenAttributes = [(a.name, a.varType) for a in self.receivedAttrList]
                 cas = set(chosenAttributes)
-                self.inputAttributes = [(a.name, a.varType) for a in domain.attirbutes if (a.name, a.varType) not in cas]
+                self.inputAttributes = [(a.name, a.varType) for a in domain.attributes if (a.name, a.varType) not in cas]
             else:
                 self.chosenAttributes = [(a.name, a.varType) for a in domain.attributes]
                 self.inputAttributes = []
@@ -164,7 +167,7 @@ class OWDataDomain(OWWidget):
         self.openContext("", data)
 
         self.usedAttributes = set(self.chosenAttributes + self.classAttribute + self.metaAttributes)
-#        self.setInputAttributes()
+        self.setInputAttributes()
 
         self.setOutput()
         self.updateInterfaceState()
@@ -224,6 +227,8 @@ class OWDataDomain(OWWidget):
             
     # this is called when we have dropped some items into a listbox using drag and drop and we have to update interface
     def updateInterfaceAndApplyButton(self):
+        self.usedAttributes = set(self.chosenAttributes + self.classAttribute + self.metaAttributes)    # we used drag and drop so we have to compute which attributes are now used
+        self.setInputAttributes()
         self.updateInterfaceState()
         self.applyButton.setEnabled(True)
         
@@ -281,13 +286,19 @@ class OWDataDomain(OWWidget):
                 restList.append(attr)
         return selList, restList
 
-
     def setInputAttributes(self):
         self.selectedInput = []
         if self.data:
             self.inputAttributes = filter(lambda x:x not in self.usedAttributes, self.allAttributes)
         else:
             self.inputAttributes = []
+        #print "before: ", self.inputAttributes
+        self.filterInputAttrs.setAllListItems()
+        self.filterInputAttrs.updateListBoxItems(callCallback = 0)
+        if self.data and self.inputAttributesList.count() != len(self.inputAttributes):       # the user has entered a filter - we have to remove some inputAttributes
+            itemsText = [str(self.inputAttributesList.item(i).text()) for i in range(self.inputAttributesList.count())]
+            self.inputAttributes = [ (item, self.data.domain[item].varType) for item in itemsText]
+        #print "after: ", self.inputAttributes
         self.updateInterfaceState()
 
     def removeFromUsed(self, attributes):
