@@ -27,7 +27,10 @@ class LineEditFilter(QLineEdit):
         self.emptyText = ""
         self.textFont = self.font()
         self.callback = None
-        
+     
+    def setListBox(self, listbox):
+        self.listbox = listbox
+           
     def focusInEvent(self, ev):
         self.setText(self.enteredText)
         self.setStyleSheet("")
@@ -57,7 +60,11 @@ class LineEditFilter(QLineEdit):
     def setAllListItems(self, items = None):
         if not items:
             items = [self.listbox.item(i) for i in range(self.listbox.count())]
-        self.listboxItems = [(str(item.text()), QListWidgetItem(item)) for item in items]
+        if not items: return
+        if type(items[0]) == str:           # if items contain strings
+            self.listboxItems = [(item, QListWidgetItem(item)) for item in items]
+        else:                               # if items contain QListWidgetItems
+            self.listboxItems = [(str(item.text()), QListWidgetItem(item)) for item in items]
         
     def textChanged(self):
         self.updateListBoxItems()
@@ -69,7 +76,7 @@ class LineEditFilter(QLineEdit):
         tuples = self.listboxItems                
         if not self.caseSensitive:
             tuples = [(text.lower(), item) for (text, item) in tuples]
-            text = text.lower()
+            last = last.lower()
 
         if self.useRE:
             try:
@@ -108,7 +115,6 @@ class LineEditHint(QLineEdit):
         self.enteredText = ""
         self.itemList = []
         self.useRE = 0
-        self.emptyText = ""
         self.callbackOnComplete = None
         self.listUpdateCallback = None
         self.autoSizeListWidget = 0
@@ -245,21 +251,21 @@ if __name__ == "__main__":
     import OWWidget
     dlg = OWWidget.OWWidget()
     
-#    dlg.filter = ""
-#    dlg.listboxValue = ""
-#    dlg.resize(300, 200)
-#    lineEdit = lineEditFilter(dlg.controlArea, dlg, "filter", "test", useRE = 1, emptyText = "filter...")
-#        
-#    lineEdit.listbox = OWGUI.listBox(dlg.controlArea, dlg, "listboxValue")
-#    names = []
-#    for i in range(10000):
-#        name = "".join([string.ascii_lowercase[random.randint(0, len(string.ascii_lowercase)-1)] for c in range(10)])
-#        names.append(name)
-#    lineEdit.listbox.addItems(names)
-
-    dlg.text = ""
+    dlg.filter = ""
+    dlg.listboxValue = ""
+    dlg.resize(300, 200)
+    lineEdit = lineEditFilter(dlg.controlArea, dlg, "filter", "Filter:", useRE = 1, emptyText = "filter...")
+        
+    lineEdit.setListBox(OWGUI.listBox(dlg.controlArea, dlg, "listboxValue"))
+    names = []
+    for i in range(10000):
+        names.append("".join([string.ascii_lowercase[random.randint(0, len(string.ascii_lowercase)-1)] for c in range(10)]))
+    lineEdit.listbox.addItems(names)
+    lineEdit.setAllListItems(names)
     
-    s = lineEditHint(dlg.controlArea, dlg, "text", useRE = 1, items = ["janez", "joza", "danica", "jani", "jok", "jure", "jaz"], delimiters = ",; ")
+#    dlg.text = ""
+#    
+#    s = lineEditHint(dlg.controlArea, dlg, "text", useRE = 1, items = ["janez", "joza", "danica", "jani", "jok", "jure", "jaz"], delimiters = ",; ")
     
     
 ##    def getFullWidgetIconName(category, widgetInfo):
