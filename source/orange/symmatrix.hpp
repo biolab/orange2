@@ -24,6 +24,13 @@
 #define __SYMMATRIX_HPP
 
 #include "root.hpp"
+#include <vector>
+#include <stdio.h>
+#include "stdlib.h"
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
 
 class ORANGE_API TSymMatrix : public TOrange
 {
@@ -47,7 +54,7 @@ public:
   { mldelete elements; }
 
   int getindex(const int &i, const int &j, bool raiseExceptions = true) const;
-    
+
   inline float &getref(const int &i, const int &j)
   { return elements[getindex(i, j)]; }
 
@@ -57,6 +64,27 @@ public:
   inline const float getitem(const int &i, const int &j) const
   { const int index = getindex(i, j, false);
     return index<0 ? float(0.0) : elements[getindex(i, j)];
+  }
+
+  typedef std::pair<int, double> coord_t;
+  struct pkt_less {
+      bool operator ()(const coord_t &e1, const coord_t &e2) const {
+    	  return (e1.second < e2.second);
+      }
+  };
+
+  void getknn(const int &i, const int &k, vector<int> &knn) {
+	  vector<coord_t> knn_tmp;
+	  int j;
+	  for (j=0; j < dim; j++)
+		  if (j != i)
+		  	knn_tmp.push_back(coord_t(j, elements[getindex(i, j)]));
+
+		sort(knn_tmp.begin(), knn_tmp.end(), pkt_less());
+
+		for (j=0; j < k; j++) {
+			knn.push_back(knn_tmp[j].first);
+		}
   }
 
   void index2coordinates(const float *f, int &x, int &y) const
