@@ -40,7 +40,7 @@ def __getDirectoryNames():
             try: os.makedirs(applicationDir)
             except: pass
         outputDir = os.path.join(applicationDir, orangeVer)
-        reportsDir = os.path.join(home, "Orange Reports")
+        reportsDir = os.path.join(home, "Library/Application Support/orange/Reports")
     else:
         outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
         reportsDir = os.path.join(home, "orange-reports")
