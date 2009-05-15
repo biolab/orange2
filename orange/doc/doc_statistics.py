@@ -9,6 +9,10 @@ if test_type in ["orange", "orng"]:
     module_head = "orng"
 elif test_type == "obi":
     orange_dir = orngEnviron.addOnsDir + "/Bioinformatics"
+    if not os.path.exists(orange_dir):
+        orange_dir = os.path.split(orngEnviron.orangeDir)[0] + "/Bioinformatics"
+    if not os.path.exists(orange_dir):
+        orange_dir = os.path.split(orngEnviron.orangeDir)[0] + "/bioinformatics"
     module_head = "obi"
 elif test_type == "text":
     orange_dir = orngEnviron.addOnsDir + "/Text"
