@@ -492,9 +492,11 @@ def search(sstrings, **kwargs):
     return _search(si, sstrings, **kwargs)
 
 from orngMisc import ConsoleProgressBar
-import time
+import time, threading
 
 class DownloadProgress(ConsoleProgressBar):
+    redirect = None
+    lock = threading.Lock()
     def sizeof_fmt(num):
         for x in ['bytes','KB','MB','GB','TB']:
             if num < 1024.0:
@@ -519,6 +521,27 @@ class DownloadProgress(ConsoleProgressBar):
         eta = (100 - self.state) * self.size / 100.0 / speed
         return ConsoleProgressBar.getstring(self) + "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size), self.sizeof_fmt(speed), eta/60, eta%60)
         
+    def __call__(self, *args, **kwargs):
+        ret = ConsoleProgressBar.__call__(self, *args, **kwargs)
+        if self.redirect:
+            self.redirect(self.state)
+        return ret
+    
+    @classmethod
+    def setredirect(cls, redirect):
+        cls.redirect = redirect
+        return cls
+    
+    @classmethod
+    def __enter__(cls):
+        cls.lock.acquire()
+        return cls
+    
+    @classmethod
+    def __exit__(cls, exc_type, exc_value, traceback):
+        cls.redirect = None
+        cls.lock.release()
+        return False
 
 def consoleupdate(domains=None, searchstr="essential"):
     domains = domains or listdomains()
