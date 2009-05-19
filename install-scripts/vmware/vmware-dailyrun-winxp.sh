@@ -1,15 +1,16 @@
 #!/bin/bash -e
 #
-# Should be run as: ./wmvare-dailyrun.winXP.sh
+# Should be run as: ./wmvare-dailyrun-winxp.sh
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
 VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/winXP.dailyBuild/Windows XP Professional.vmx'
 WAIT_TIME=3600
+NAME='Windows XP'
 
 start_vmware() {
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "VMware image of winXP is already running."
+		echo "[$NAME] VMware is already running."
 		exit 1
 	fi
 	
@@ -23,7 +24,7 @@ stop_vmware() {
 	sleep $WAIT_TIME
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "Had to force shutdown winXP."
+		echo "[$NAME] Had to force shutdown."
 		"$VMRUN" stop "$VMIMAGE" nogui
 	fi
 	
@@ -32,4 +33,3 @@ stop_vmware() {
 
 start_vmware
 #stop_vmware
-

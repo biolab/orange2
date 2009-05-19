@@ -1,15 +1,16 @@
 #!/bin/bash -e
 #
-# Should be run as: ./wmvare-dailyrun.sh [bundle only]
+# Should be run as: ./wmvare-dailyrun-macosx.sh [bundle only]
 #
 # If [bundle only] is given it only builds the bundle
 #
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
 VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.5 64-bit.vmwarevm/Mac OS X Server 10.5 64-bit.vmx'
-WAIT_TIME=180
+WAIT_TIME=600
 RETRIES=5
 IP_ADDRESS='172.16.213.100'
+NAME='Mac OS X'
 
 if [ "$1" ]; then
 	BUNDLE_ONLY=1
@@ -19,11 +20,13 @@ fi
 
 start_vmware() {
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "VMware is already running."
+		echo "[$NAME] VMware is already running."
 		exit 1
 	fi
 	
-	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
+	# PIPESTATUS check at the end is needed so that Bash tests (because of the -e switch) return value of the VMRUN and not grep
+	# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
+	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' ; ((! ${PIPESTATUS[0]}))
 	
 	# Wait for VMware and OS to start
 	sleep $WAIT_TIME
@@ -40,8 +43,10 @@ stop_vmware() {
 	sleep $WAIT_TIME
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "Had to force shutdown."
-		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
+		echo "[$NAME] Had to force shutdown."
+		# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
+		# PIPESTATUS check at the end is needed so that Bash tests (because of the -e switch) return value of the VMRUN and not grep
+		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' ; ((! ${PIPESTATUS[0]}))
 	fi
 	
 	return 0
@@ -66,7 +71,7 @@ done
 
 if ! ssh ailabc@$IP_ADDRESS "who | grep -q console"; then
 	# Autologin was not successful after few retries, give up
-	echo "Could not autologin."
+	echo "[$NAME] Could not autologin."
 	stop_vmware
 	exit 2
 fi
