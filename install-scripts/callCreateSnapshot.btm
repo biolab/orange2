@@ -13,7 +13,7 @@ cdd %SCRIPTDIR
 sendmail %MAIL_TO %subj @%SCRIPTDIR\win-snapshot-create.%QTVER.log
 
 rem # copy log(s) to web in any case (success or error)
-set BUILDLOGDIR=%DOWNLOADDIR\buildLogs
+set BUILDLOGDIR=%DOWNLOADDIR\buildLogs\winxp
 if not direxist %BUILDLOGDIR mkdir /s %BUILDLOGDIR
 del /eq %BUILDLOGDIR\win-snapshot-*.log
 move /z %SCRIPTDIR\win-snapshot-create.%QTVER.log %BUILDLOGDIR
