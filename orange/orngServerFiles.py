@@ -496,7 +496,7 @@ import time, threading
 
 class DownloadProgress(ConsoleProgressBar):
     redirect = None
-    lock = threading.Lock()
+    lock = threading.RLock()
     def sizeof_fmt(num):
         for x in ['bytes','KB','MB','GB','TB']:
             if num < 1024.0:
