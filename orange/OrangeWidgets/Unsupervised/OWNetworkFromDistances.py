@@ -106,7 +106,7 @@ class OWNetworkFromDistances(OWWidget):
         # draw histogram
         data.matrixType = orange.SymMatrix.Symmetric
         values = data.getValues()
-        #print "values:",values
+        print "values:",values
         self.histogram.setValues(values)
         
         low = min(values)
@@ -185,11 +185,13 @@ class OWNetworkFromDistances(OWWidget):
             
             if hasattr(self.data, "items"):               
                 if type(self.data.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
-                    graph.setattr("items", self.data.items)
+                    #graph.setattr("items", self.data.items)
+                    graph.items = self.data.items
                 else:
                     data = [[str(x)] for x in self.data.items]
                     items = orange.ExampleTable(orange.Domain(orange.StringVariable('label'), 0), data)
-                    graph.setattr("items", list(items))
+                    #graph.setattr("items", list(items))
+                    graph.items = list(items)
                 
             # set the threshold
             # set edges where distance is lower than threshold
@@ -278,7 +280,8 @@ class OWNetworkFromDistances(OWWidget):
         
         #print 'self.graph:',self.graph+
         if self.graph != None:
-            setattr(matrix, "items", self.graph.items)
+            #setattr(matrix, "items", self.graph.items)
+            matrix.items = self.graph.items
         
         self.send("Network", self.graph)
         

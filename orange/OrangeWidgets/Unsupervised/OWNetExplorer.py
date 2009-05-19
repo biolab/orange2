@@ -529,7 +529,10 @@ class OWNetExplorer(OWWidget):
         
         self.progressBarInit()
         components = [c for c in self.visualize.graph.getConnectedComponents() if len(c) > 1]
-        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
+        if 'keyword' in self.visualize.graph.items.domain:
+            keyword_table = self.visualize.graph.items
+        else:
+            keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
         
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
