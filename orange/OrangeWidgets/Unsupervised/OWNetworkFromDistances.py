@@ -106,15 +106,13 @@ class OWNetworkFromDistances(OWWidget):
         # draw histogram
         data.matrixType = orange.SymMatrix.Symmetric
         values = data.getValues()
-        print "values:",values
+        #print "values:",values
         self.histogram.setValues(values)
         
         low = min(values)
         upp = max(values)
         self.spinLowerThreshold = self.spinUpperThreshold = low - (0.03 * (upp - low))
-        
         self.generateGraph()
-        
         self.attributeCombo.clear()
         vars = []
         if (self.data != None):
