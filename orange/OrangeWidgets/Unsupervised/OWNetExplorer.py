@@ -275,6 +275,7 @@ class OWNetExplorer(OWWidget):
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnMDS = OWGUI.button(ibs, self, "MDS components", callback=self.mdsComponents, toggleButton=1)
+        self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=self.exactSimulation, toggleButton=1)
         self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
         
@@ -423,7 +424,41 @@ class OWNetExplorer(OWWidget):
             self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)            
             
         self.btnMDS.setChecked(False)
-        self.btnMDS.setText("MDS on graph components")
+        self.btnMDS.setText("MDS components")
+        self.progressBarFinished()
+        
+    def exactSimulation(self):
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            self.btnESIM.setChecked(False)
+            return
+        
+        if self.visualize == None:
+            self.information('No network found')
+            self.btnESIM.setChecked(False)
+            return
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            self.btnESIM.setChecked(False)
+            return
+        
+        if not self.btnESIM.isChecked():
+          self.visualize.stopMDS = 1
+          #self.btnMDS.setChecked(False)
+          #self.btnMDS.setText("MDS on graph components")
+          return
+        
+        self.btnESIM.setText("Stop")
+        qApp.processEvents()
+        
+        self.visualize.vertexDistance = self.vertexDistance
+        self.progressBarInit()
+        
+        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, False, self.mdsStressDelta, exactSimulation=True)            
+            
+        self.btnESIM.setChecked(False)
+        self.btnESIM.setText("eSim")
         self.progressBarFinished()
         
     def setVertexDistance(self, matrix):
