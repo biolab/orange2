@@ -34,19 +34,19 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 [ -e /Volumes/fink/ ] || { open "smb://orange@estelle.fri.uni-lj.si/fink/"; sleep 30; }
 [ -e /Volumes/download/ ] || { open "smb://orange@estelle.fri.uni-lj.si/download/"; sleep 30; }
 
-/Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION > /private/tmp/bundle-daily-build.log
+/Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?
 echo "Orange (bundle) [$EXIT_VALUE]" > /Volumes/download/buildLogs/osx/bundle-daily-build.log
 cat /private/tmp/bundle-daily-build.log >> /Volumes/download/buildLogs/osx/bundle-daily-build.log
 (($EXIT_VALUE)) && echo "Running bundle-daily-build.sh failed"
 
-/Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION > /private/tmp/bundle-64bit-daily-build.log
+/Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
 EXIT_VALUE=$?
 echo "Orange (bundle-64bit) [$EXIT_VALUE]" > /Volumes/download/buildLogs/osx/bundle-64bit-daily-build.log
 cat /private/tmp/bundle-64bit-daily-build.log >> /Volumes/download/buildLogs/osx/bundle-64bit-daily-build.log
 (($EXIT_VALUE)) && echo "Running bundle-64bit-daily-build.sh failed"
 
-/Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION > /private/tmp/fink-daily-build.log
+/Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log
 EXIT_VALUE=$?
 echo "Orange (fink) [$EXIT_VALUE]" > /Volumes/download/buildLogs/osx/fink-daily-build.log
 cat /private/tmp/fink-daily-build.log >> /Volumes/download/buildLogs/osx/fink-daily-build.log
