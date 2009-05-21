@@ -47,3 +47,5 @@ termcapinfo xterm*|linux*|rxvt*|Eterm* OP
 # (which has scrollback), not the alternate screen buffer.
 #
 termcapinfo xterm|xterms|xs|rxvt ti@:te@
+
+shell -/bin/bash
