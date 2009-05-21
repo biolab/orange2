@@ -770,6 +770,9 @@ class OWNetworkCanvas(OWGraph):
         lbl = ""
         values = self.visualizer.graph.items[vertex.index]
         for ndx in self.tooltipText:
+            if not ndx in self.visualizer.graph.items.domain:
+                continue
+            
             value = str(values[ndx])
             # wrap text
             i = 0
