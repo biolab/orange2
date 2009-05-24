@@ -14,3 +14,6 @@ curl --silent --output fink-restore-selections.sh http://www.ailab.si/svn/orange
 curl --silent --output fink-selfupdate-orange.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink-selfupdate-orange.sh
 
 chmod +x *.sh
+
+# Zero exit value
+true
