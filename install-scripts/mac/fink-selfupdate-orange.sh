@@ -8,6 +8,9 @@ FINK_ROOT=${1:-/sw}
 
 MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
+# Sets error handler
+trap "echo \"Script failed\"" ERR
+
 ((`id -u` == 0)) || { echo "Must run as root user (use sudo)."; exit 1; }
 
 test -r $FINK_ROOT/bin/init.sh || { echo "Fink cannot be found." exit 2; }
