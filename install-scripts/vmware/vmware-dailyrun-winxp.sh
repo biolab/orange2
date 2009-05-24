@@ -8,6 +8,9 @@ VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/winXP.dailyBuild/Win
 WAIT_TIME=3600
 NAME='Windows XP'
 
+# Sets error handler
+trap "echo \"Script failed\"" ERR
+
 start_vmware() {
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
 		echo "[$NAME] VMware is already running."

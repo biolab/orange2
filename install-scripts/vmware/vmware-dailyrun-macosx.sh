@@ -16,6 +16,9 @@ if [ "$1" ]; then
 	BUNDLE_ONLY=1
 fi
 
+# Sets error handler
+trap "echo \"Script failed\"" ERR
+
 # We use public/private keys SSH authentication so no need for a password
 
 start_vmware() {
