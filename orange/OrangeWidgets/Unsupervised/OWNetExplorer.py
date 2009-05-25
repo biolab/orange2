@@ -10,6 +10,7 @@ import OWGUI
 import OWColorPalette
 import orngNetwork
 import OWToolbars
+import math
 
 from OWWidget import *
 from OWNetworkCanvas import *
@@ -276,6 +277,8 @@ class OWNetExplorer(OWWidget):
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnMDS = OWGUI.button(ibs, self, "MDS components", callback=self.mdsComponents, toggleButton=1)
         self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=self.exactSimulation, toggleButton=1)
+        self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=self.mdsVertices, toggleButton=1)
+        ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
         
@@ -390,29 +393,38 @@ class OWNetExplorer(OWWidget):
         self.progressBarSet(int(stepCount * 100 / self.mdsSteps))
         qApp.processEvents()
         
-    def mdsComponents(self):
+    def mdsComponents(self, mdsType=orngNetwork.MdsType.componentMDS):
+        if mdsType == orngNetwork.MdsType.componentMDS:
+            btn = self.btnMDS
+        elif mdsType == orngNetwork.MdsType.exactSimulation:
+            btn = self.btnESIM
+        elif mdsType == orngNetwork.MdsType.MDS:
+            btn = self.btnMDSv
+        
+        btnCaption = btn.text()
+        
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
-            self.btnMDS.setChecked(False)
+            btn.setChecked(False)
             return
         
         if self.visualize == None:
             self.information('No network found')
-            self.btnMDS.setChecked(False)
+            btn.setChecked(False)
             return
         
         if self.vertexDistance.dim != self.visualize.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
-            self.btnMDS.setChecked(False)
+            btn.setChecked(False)
             return
         
-        if not self.btnMDS.isChecked():
-          self.visualize.stopMDS = 1
-          #self.btnMDS.setChecked(False)
-          #self.btnMDS.setText("MDS on graph components")
-          return
+        if not btn.isChecked():
+            self.visualize.stopMDS = 1
+            btn.setChecked(False)
+            btn.setText(btnCaption)
+            return
         
-        self.btnMDS.setText("Stop")
+        btn.setText("Stop")
         qApp.processEvents()
         
         self.visualize.vertexDistance = self.vertexDistance
@@ -421,45 +433,17 @@ class OWNetExplorer(OWWidget):
         if self.mdsAvgLinkage:
             self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)
         else:
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)            
-            
-        self.btnMDS.setChecked(False)
-        self.btnMDS.setText("MDS components")
+            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType)            
+        
+        btn.setChecked(False)
+        btn.setText(btnCaption)
         self.progressBarFinished()
         
     def exactSimulation(self):
-        if self.vertexDistance == None:
-            self.information('Set distance matrix to input signal')
-            self.btnESIM.setChecked(False)
-            return
+        self.mdsComponents(orngNetwork.MdsType.exactSimulation)
         
-        if self.visualize == None:
-            self.information('No network found')
-            self.btnESIM.setChecked(False)
-            return
-        
-        if self.vertexDistance.dim != self.visualize.graph.nVertices:
-            self.error('Distance matrix dimensionality must equal number of vertices')
-            self.btnESIM.setChecked(False)
-            return
-        
-        if not self.btnESIM.isChecked():
-          self.visualize.stopMDS = 1
-          #self.btnMDS.setChecked(False)
-          #self.btnMDS.setText("MDS on graph components")
-          return
-        
-        self.btnESIM.setText("Stop")
-        qApp.processEvents()
-        
-        self.visualize.vertexDistance = self.vertexDistance
-        self.progressBarInit()
-        
-        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, False, self.mdsStressDelta, exactSimulation=True)            
-            
-        self.btnESIM.setChecked(False)
-        self.btnESIM.setText("eSim")
-        self.progressBarFinished()
+    def mdsVertices(self):
+        self.mdsComponents(orngNetwork.MdsType.MDS)
         
     def setVertexDistance(self, matrix):
         self.error('')
@@ -1374,8 +1358,15 @@ class OWNetExplorer(OWWidget):
     Layout Optimization
     """
     def optLayout(self):
-        if not self.optButton.isChecked():
+        if self.visualize == None:   #grafa se ni
+            self.optButton.setChecked(False)
             return
+        
+        if not self.optButton.isChecked():
+            self.optButton.setChecked(False)
+            return
+        
+        qApp.processEvents()
             
         if self.optMethod == 1:
             self.random()
@@ -1393,7 +1384,8 @@ class OWNetExplorer(OWWidget):
             self.circularRandom()
             
         self.optButton.setChecked(False)
-    
+        qApp.processEvents()
+        
     def setOptMethod(self, method=None):
         if method != None:
             self.optMethod = method
@@ -1403,10 +1395,12 @@ class OWNetExplorer(OWWidget):
         else:
             self.optButton.setEnabled(True)
             
-        if str(self.optMethod) == '2' or str(self.optMethod) == '3':
+        if str(self.optMethod) in ['2', '3', '4']:
             self.stepsSpin.setEnabled(True)
         else:
             self.stepsSpin.setEnabled(False)
+            self.optButton.setChecked(True)
+            self.optLayout()
 
     def random(self):
         #print "OWNetwork/random.."
@@ -1438,7 +1432,7 @@ class OWNetExplorer(OWWidget):
         k = int(self.frSteps / breakpoints)
         o = self.frSteps % breakpoints
         iteration = 0
-        coolFactor = exp(log(10.0/10000.0) / self.frSteps)
+        coolFactor = math.exp(math.log(10.0/10000.0) / self.frSteps)
 
         if k > 0:
             while iteration < breakpoints:
@@ -1470,9 +1464,12 @@ class OWNetExplorer(OWWidget):
         self.optButton.setText("Optimize layout")
         
     def frSpecial(self):
+        if self.visualize == None:   #grafa se ni
+            return
+        
         steps = 100
         initTemp = 1000
-        coolFactor = exp(log(10.0/10000.0) / steps)
+        coolFactor = math.exp(math.log(10.0/10000.0) / steps)
         oldXY = []
         for rec in self.visualize.network.coors:
             oldXY.append([rec[0], rec[1]])
@@ -1483,6 +1480,9 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
                 
     def frRadial(self):
+        if self.visualize == None:   #grafa se ni
+            return
+        
         #print "F-R Radial"
         k = 1.13850193174e-008
         nodes = self.visualize.nVertices()
@@ -1509,18 +1509,21 @@ class OWNetExplorer(OWWidget):
         
     def circularOriginal(self):
         #print "Circular Original"
-        self.visualize.circularOriginal()
-        self.updateCanvas()
+        if self.visualize != None:
+            self.visualize.circularOriginal()
+            self.updateCanvas()
            
     def circularRandom(self):
         #print "Circular Random"
-        self.visualize.circularRandom()
-        self.updateCanvas()
+        if self.visualize != None:
+            self.visualize.circularRandom()
+            self.updateCanvas()
 
     def circularCrossingReduction(self):
         #print "Circular Crossing Reduction"
-        self.visualize.circularCrossingReduction()
-        self.updateCanvas()
+        if self.visualize != None:
+            self.visualize.circularCrossingReduction()
+            self.updateCanvas()
       
     """
     Network Visualization
