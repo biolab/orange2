@@ -1696,9 +1696,12 @@ def legend2PiCTeX(file, legend, **options):
     del file
 
 
-def compute_CD(avranks, N):
+def compute_CD(avranks, N, p="0.05", type="nemenyi"):
     """
-    Returns critical difference for Nemenyi two tailed test with p=0.05.
+    if type == "nemenyi":
+        critical difference for Nemenyi two tailed test.
+    if type == "bonferroni-dunn":
+        critical difference for Bonferroni-Dunn test
     """
 
     k = len(avranks)
@@ -1706,22 +1709,22 @@ def compute_CD(avranks, N):
     #f = friedman(N, k, avranks)
     #print "friedman", f
     #print "iman", iman(f, N, k), "F dist DOF", k-1, (k-1)*(N-1)
+    
+    d = {}
 
-    #nemenyi two tailed p=0.05
-    q = [0, 0, 1.960, 2.343, 2.568, 2.728, 2.850, 2.949, 3.031, 3.102, 3.164 ]
-    #nemenyi two tailed p=0.1
-    #q = [0, 0, 1.645, 2.052, 2.291, 2.459, 2.589, 2.693, 2.780, 2.855, 2.920 ]    
-    #bonferroni-dunn p=0.05
-    #q = [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576, 2.638, 2.690, 2.724, 2.773 ]
-    #bonferroni-dunn p=0.1
-    #q = [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326, 2.394, 2.450, 2.498, 2.539 ]
+    d[("nemenyi", "0.05")] = [0, 0, 1.960, 2.343, 2.568, 2.728, 2.850, 2.949, 3.031, 3.102, 3.164 ]
+    d[("nemenyi", "0.1")] = [0, 0, 1.645, 2.052, 2.291, 2.459, 2.589, 2.693, 2.780, 2.855, 2.920 ]    
+    d[("bonferroni-dunn", "0.05")] =  [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576, 2.638, 2.690, 2.724, 2.773 ]
+    d[("bonferroni-dunn", "0.1")] = [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326, 2.394, 2.450, 2.498, 2.539 ]
+
+    q = d[(type, p)]
 
     cd = q[k]*(k*(k+1)/(6.0*N))**0.5
 
     return cd
  
 
-def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False):
+def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, highv=None, width=6, textspace=1, reverse=False):
     """
     Draws a CD graph, which is used to display  the differences in methods' 
     performance.
@@ -1746,6 +1749,9 @@ def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=
         of methods, default 1 in.
     reverse -- If True, the lowest rank is on the right. Default:
         False.
+    cdmethod -- None by default. It can be an index of element in avranks or
+        or names which specifies the method which should be marked
+        with an interval.
 
     Maintainer: Marko Toplak
     """
@@ -1840,7 +1846,7 @@ def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=
 
     distanceh = 0.25
 
-    if cd:
+    if cd and cdmethod == None:
     
         #get pairs of non significant methods
 
@@ -1932,7 +1938,7 @@ def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=
         line([(rankpos(ssums[i]), cline), (rankpos(ssums[i]), chei), (textspace+scalewidth+0.1, chei)], linewidth=0.7)
         text(textspace+scalewidth+0.2, chei, nnames[i], ha="left", va="center")
 
-    if cd:
+    if cd and cdmethod == None:
 
         #upper scale
         if not reverse:
@@ -1954,10 +1960,20 @@ def graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=
 
         drawLines(lines)
 
+    elif cd:
+        begin = rankpos(ssums[cdmethod]-cd)
+        end = rankpos(ssums[cdmethod]+cd)
+        line([(begin, cline), (end, cline)], linewidth=2.5) 
+        line([(begin, cline + bigtick/2), (begin, cline - bigtick/2)], linewidth=2.5)
+        line([(end, cline + bigtick/2), (end, cline - bigtick/2)], linewidth=2.5)
+ 
     printFigure(fig, filename)
 
 if __name__ == "__main__":
     avranks =  [1.4, 4.5, 5.6, 3.5, 2.5]
     names = ["prva", "druga", "tretja", "cetrta", "peta" ]
-    cd = compute_CD(avranks, 5)
-    graph_ranks("test.eps", avranks, names, cd=cd, width=6, textspace=1.5)
+    cd = compute_CD(avranks, 10)
+    cd = compute_CD(avranks, 10, type="bonferroni-dunn")
+    print cd
+
+    graph_ranks("test.eps", avranks, names, cd=cd, cdmethod=0, width=6, textspace=1.5)
