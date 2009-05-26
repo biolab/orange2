@@ -1961,8 +1961,8 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         drawLines(lines)
 
     elif cd:
-        begin = rankpos(ssums[cdmethod]-cd)
-        end = rankpos(ssums[cdmethod]+cd)
+        begin = rankpos(avranks[cdmethod]-cd)
+        end = rankpos(avranks[cdmethod]+cd)
         line([(begin, cline), (end, cline)], linewidth=2.5) 
         line([(begin, cline + bigtick/2), (begin, cline - bigtick/2)], linewidth=2.5)
         line([(end, cline + bigtick/2), (end, cline - bigtick/2)], linewidth=2.5)
