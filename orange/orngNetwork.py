@@ -362,8 +362,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                   (u, v) in self.graph.getEdges()]
         e = sum(e) / float(len(e))
         
-        x = [mds.points[u][0] for u in range(self.graph.nVertices)]
-        y = [mds.points[u][1] for u in range(self.graph.nVertices)]
+        x = [mds.points[u][0] for u in range(len(mds.points))]
+        y = [mds.points[u][1] for u in range(len(mds.points))]
         w = max(x) - min(x)
         h = max(y) - min(y)
         d = math.sqrt(w**2 + h**2)
