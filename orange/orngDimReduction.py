@@ -81,7 +81,7 @@ class PCA(Base):
         self.compute()
         
         nPCs = self.getCount(nPCs, varianceExplained)
-        return self.eigVectors[:nPCs]
+        return MA.take(self.eigVectors, range(nPCs), axis=1)
         
         
     def getProjectedData(self, nPCs = None, varianceExplained = None):
@@ -185,7 +185,7 @@ class FDA(Base):
         self.compute()
         
         nPCs = self.getCount(nPCs, varianceExplained)
-        return self.eigVectors[:nPCs]
+        return MA.take(self.eigVectors, range(nPCs), axis=1)
 
             
     def getProjectedData(self, nPCs = None, varianceExplained = None):
