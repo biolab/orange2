@@ -34,7 +34,8 @@ class OWNetExplorer(OWWidget):
     "showWeights", "showIndexes",  "showEdgeLabels", "colorSettings", 
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
     "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
-    "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo"] 
+    "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
+    "toolbarSelection"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -100,6 +101,8 @@ class OWNetExplorer(OWWidget):
         self.mdsStressDelta = 0.00001
         self.organism = 'goa_human'
         self.showTextMiningInfo = 0
+        self.toolbarSelection = 0
+        
         self.loadSettings()
         
         self.visualize = None
