@@ -162,8 +162,11 @@ class NavigateSelectToolbar(QWidget):
                 if f[1] == "buttonSendSelections":
                     button.setEnabled(not autoSend)                    
 
-        self.action(0)
-
+        if hasattr(self.widget, "toolbarSelection"):
+            self.action(self.widget.toolbarSelection)
+        else:
+            self.action(0)
+            
     def action(self, b):
         f = self.functions[b]
         if not f:
