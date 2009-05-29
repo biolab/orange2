@@ -24,6 +24,9 @@
 
 #include "mds.hpp"
 
+PyObject *orangeVersion = PyString_FromString("2.0b ("__TIME__", "__DATE__")");
+
+PYCONSTANT(version, orangeVersion)
 
 bool initorangeomExceptions()
 { return true; }
