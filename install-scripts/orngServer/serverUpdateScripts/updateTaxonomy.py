@@ -1,7 +1,8 @@
-import obiTaxonomy
-import orngServerFiles
 ##!interval=7
 ##!contact=ales.erjavec@fri.uni-lj.si
+
+import obiTaxonomy
+import orngServerFiles
 
 import orngEnviron
 import os, sys, tarfile

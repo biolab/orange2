@@ -49,8 +49,8 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
         orgName = keggOrgNames.get(org, org)
         try:
             func(u, org)
-            org = obiKEGG.KEGGOrganism(org, genematcher=obiGene.GMDirect(), local_database_path=path)
-            genes = org.genes ## test to see if the _genes.pickle was created
+            organism = obiKEGG.KEGGOrganism(org, genematcher=obiGene.GMDirect(), local_database_path=path)
+            genes = organism.genes ## test to see if the _genes.pickle was created
         except Exception, ex:
             print ex
             continue
