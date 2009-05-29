@@ -343,10 +343,21 @@ mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
 echo "Copying to repository all binary packages."
 cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+cd /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+
+echo "Fixing possible problems with binary packages filenames."
+# Some packages include Fink epoch which uses colon as a delimiter and breaks package retrieval from the repository web server
+# We remove epoch as it should not be there in the first place
+perl -e '
+for (<*.deb>) {
+	if (m/^(.+)_\d+%3a(.+)$/) {
+		rename $_, "$1_$2";
+	}
+}
+'
 
 echo "Removing old binary packages."
 # (Versions of packages which have more then 5 versions and those old versions are more than one month old.)
-cd /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 perl -e '
 for (<*.deb>) {
 	m/(.*?)_/;
