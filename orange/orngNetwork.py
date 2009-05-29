@@ -16,6 +16,13 @@ MdsType = MdsTypeClass()
 class Network(orangeom.Network):
     """Orange data structure for representing directed and undirected networks with various types of weighted connections and other data."""
     
+    def __init__(self, *args):
+        self.optimization = NetworkOptimization(self)
+        
+    def save(self, fileName):
+        """Saves network to Pajek (.net) file."""
+        self.saveNetwork(fileName)
+        
     def saveNetwork(self, fileName):
         """Saves network to Pajek (.net) file."""
         name = ''
@@ -85,12 +92,16 @@ class Network(orangeom.Network):
             self.links.save(name + "_links.tab")
 
         return 0
-    
+        
     @staticmethod
     def readNetwork(fileName, directed=0):
         """Reads network from Pajek (.net) file."""
         return Network(orangeom.Network().readNetwork(fileName, directed))
-        
+    
+    @staticmethod
+    def read(fileName, directed=0):
+        """Reads network from Pajek (.net) file."""
+        return Network(orangeom.Network().readNetwork(fileName, directed))
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     """main class for performing network layout optimization. Network structure is defined in orangeom.Network class."""
