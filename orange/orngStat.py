@@ -1696,6 +1696,26 @@ def legend2PiCTeX(file, legend, **options):
     del file
 
 
+def compute_friedman(avranks, N):
+    """
+    Returns a tuple (friedman statistic, degrees of freedom)
+    and (Iman statistic - F-distribution, degrees of freedom)
+    """
+
+    k = len(avranks)
+
+    def friedman(N, k, ranks):
+        return 12*N*(sum([rank**2.0 for rank in ranks]) - (k*(k+1)*(k+1)/4.0) )/(k*(k+1))
+
+    def iman(fried, N, k):
+        return (N-1)*fried/(N*(k-1) - fried)
+
+    f = friedman(N, k, avranks)
+    im = iman(f, N, k)
+    fdistdof = (k-1, (k-1)*(N-1))
+
+    return (f, k-1), im, fdistdof
+
 def compute_CD(avranks, N, p="0.05", type="nemenyi"):
     """
     if type == "nemenyi":
@@ -1705,6 +1725,8 @@ def compute_CD(avranks, N, p="0.05", type="nemenyi"):
     """
 
     k = len(avranks)
+
+
 
     #f = friedman(N, k, avranks)
     #print "friedman", f
@@ -1970,10 +1992,12 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     printFigure(fig, filename)
 
 if __name__ == "__main__":
-    avranks =  [1.4, 4.5, 5.6, 3.5, 2.5]
-    names = ["prva", "druga", "tretja", "cetrta", "peta" ]
-    cd = compute_CD(avranks, 10)
-    cd = compute_CD(avranks, 10, type="bonferroni-dunn")
+    avranks =  [3.143, 2.000, 2.893, 1.964]
+    names = ["prva", "druga", "tretja", "cetrta" ]
+    cd = compute_CD(avranks, 14)
+    #cd = compute_CD(avranks, 10, type="bonferroni-dunn")
     print cd
 
-    graph_ranks("test.eps", avranks, names, cd=cd, cdmethod=0, width=6, textspace=1.5)
+    print compute_friedman(avranks, 14)
+
+    #graph_ranks("test.eps", avranks, names, cd=cd, cdmethod=0, width=6, textspace=1.5)
