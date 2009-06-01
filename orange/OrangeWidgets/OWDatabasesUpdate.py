@@ -161,7 +161,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.UpdateToolTip()
 
     def __contains__(self, item):
-        return any(item.lower() in tag.lower() for tag in self.tags)
+        return any(item.lower() in tag.lower() for tag in self.tags + [self.title])
 
 class UpdateItemDelegate(QItemDelegate):
     def sizeHint(self, option, index):
@@ -182,12 +182,13 @@ class OWDatabasesUpdate(OWWidget):
         self.domains = domains
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
-        OWGUI.lineEdit(box, self, "searchString", "Search", callbackOnType=True, callback=self.SearchUpdate)
+        import OWGUIEx
+        self.lineEditFilter = OWGUIEx.lineEditHint(box, self, "searchString", "Search", caseSensitive=False, delimiters=" ", matchAnywhere=True, listUpdateCallback=self.SearchUpdate, callbackOnType=True, callback=self.SearchUpdate)
         OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
-        box = OWGUI.widgetBox(self.mainArea, "Tags")
-        self.tagsWidget = QTextEdit(self.mainArea)
-        box.setMaximumHeight(150)
-        box.layout().addWidget(self.tagsWidget)
+#        box = OWGUI.widgetBox(self.mainArea, "Tags")
+#        self.tagsWidget = QTextEdit(self.mainArea)
+#        box.setMaximumHeight(150)
+#        box.layout().addWidget(self.tagsWidget)
         box = OWGUI.widgetBox(self.mainArea, "Files")
         self.filesView = QTreeWidget(self)
         self.filesView.setHeaderLabels(["Options", "Title", "Tags", "Status", "Size"])
@@ -227,8 +228,9 @@ class OWDatabasesUpdate(OWWidget):
         self.retryButton.hide()
         self.progressBarInit()
         self.filesView.clear()
-        self.tagsWidget.clear()
+#        self.tagsWidget.clear()
         self.allTags = set()
+        allTitles = set()
         self.updateItems = []
         if self.domains == None:
             domains = orngServerFiles.listdomains()
@@ -254,6 +256,7 @@ class OWDatabasesUpdate(OWWidget):
                         items.append((self.filesView, domain, file, None, infoServer))
                     if infoServer:
                         self.allTags.update(infoServer["tags"])
+                        allTitles.update(infoServer["title"].split())
                     self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
         except IOError, ex:
             self.error(0, "Could not connect to server! Press the Retry button to try again.")
@@ -263,6 +266,7 @@ class OWDatabasesUpdate(OWWidget):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
+        self.lineEditFilter.setItems([hint for hint in sorted(self.allTags.union(allTitles)) if not hint.startswith("#")])
         self.SearchUpdate()
         self.UpdateInfoLabel()
 
@@ -291,7 +295,8 @@ class OWDatabasesUpdate(OWWidget):
             item.setHidden(hide)
             if not hide:
                 tags.update(item.tags)
-        self.tagsWidget.setText(", ".join(sorted(tags, key=lambda tag: chr(1) + tag.lower() if strings and tag.lower().startswith(strings[-1].lower()) else tag.lower())))
+#        self.lineEditFilter.setItems(sorted(tags, key=lambda tag: chr(1) + tag.lower() if strings and tag.lower().startswith(strings[-1].lower()) else tag.lower()))
+#        self.tagsWidget.setText(", ".join(sorted(tags, key=lambda tag: chr(1) + tag.lower() if strings and tag.lower().startswith(strings[-1].lower()) else tag.lower())))
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
