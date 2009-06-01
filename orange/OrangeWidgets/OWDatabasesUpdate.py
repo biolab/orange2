@@ -183,7 +183,7 @@ class OWDatabasesUpdate(OWWidget):
         self.serverFiles = orngServerFiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         import OWGUIEx
-        self.lineEditFilter = OWGUIEx.lineEditHint(box, self, "searchString", "Search", caseSensitive=False, delimiters=" ", matchAnywhere=True, listUpdateCallback=self.SearchUpdate, callbackOnType=True, callback=self.SearchUpdate)
+        self.lineEditFilter = OWGUIEx.lineEditHint(box, self, "searchString", "Filter", caseSensitive=False, delimiters=" ", matchAnywhere=True, listUpdateCallback=self.SearchUpdate, callbackOnType=True, callback=self.SearchUpdate)
         OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
 #        box = OWGUI.widgetBox(self.mainArea, "Tags")
 #        self.tagsWidget = QTextEdit(self.mainArea)
@@ -266,7 +266,7 @@ class OWDatabasesUpdate(OWWidget):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
-        self.lineEditFilter.setItems([hint for hint in sorted(self.allTags.union(allTitles)) if not hint.startswith("#")])
+        self.lineEditFilter.setItems([hint for hint in sorted(self.allTags) if not hint.startswith("#")])
         self.SearchUpdate()
         self.UpdateInfoLabel()
 
