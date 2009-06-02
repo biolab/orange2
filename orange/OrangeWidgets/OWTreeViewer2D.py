@@ -684,7 +684,7 @@ class OWTreeViewer2D(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='TreeViewer2D'):
         OWWidget.__init__(self, parent, signalManager, name)
-        self.callbackDeposit = [] # deposit for OWGUI callback functions
+#        self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.root = None
         self.selectedNode = None
 

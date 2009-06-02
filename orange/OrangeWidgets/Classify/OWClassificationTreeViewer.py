@@ -43,7 +43,7 @@ class OWClassificationTreeViewer(OWWidget):
                   ('Relative distribution', 'Distribution (rel)'), 
                   ('Absolute distribution', 'Distribution (abs)'))
 
-        self.callbackDeposit = []
+#        self.callbackDeposit = []
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.setClassificationTree)]
         self.outputs = [("Examples", ExampleTable)]
