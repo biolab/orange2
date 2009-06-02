@@ -160,6 +160,9 @@ class OWDistanceFile(OWWidget):
         self.error()
         
         try:
+            self.matrix = None
+            self.labels = None
+            self.data = None
             self.matrix, self.labels, self.data = readMatrix(fn)
             self.relabel()
         except:
@@ -186,8 +189,10 @@ class OWDistanceFile(OWWidget):
                 else:
                     self.error("The number of examples doesn't match the matrix dimension")
         else:
-            matrix.setattr("items", self.labels)
-            
+            lbl = orange.StringVariable('label')
+            self.data = orange.ExampleTable(orange.Domain([lbl]), 
+                                            [[str(l)] for l in self.labels])
+            omatrix.setattr("items", self.data)
 
         if self.data == None and self.labels == None:
             matrix.setattr("items", range(matrix.dim))
