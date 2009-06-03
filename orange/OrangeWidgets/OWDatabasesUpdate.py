@@ -14,7 +14,9 @@ def sizeof_fmt(num):
         num /= 1024.0
 
 class UpdateThread(QThread):
+    semaphore = QSemaphore(5)
     def __init__(self, item, *args):
+        self.semaphore.acquire()
         QThread.__init__(self)
         self.item = item
         self.args = args
@@ -27,6 +29,7 @@ class UpdateThread(QThread):
             self.quit()
             return
         self.emit(SIGNAL("finish(int)"), 0)
+        self.semaphore.release()
         self.quit()
 
     def advance(self):
