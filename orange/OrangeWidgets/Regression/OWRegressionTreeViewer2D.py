@@ -180,7 +180,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
         
-        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
+        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
 

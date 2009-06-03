@@ -11,6 +11,7 @@ import OWGUI, OWToolbars
 from OWWidget import *
 
 from ColorPalette import *
+from OWDlgs import OWChooseImageSizeDlg
 import OWColorPalette
 import OWToolbars
 
@@ -73,7 +74,7 @@ class OWDistanceMap(OWWidget):
                     "ShowItemsInBalloon", "SendOnRelease", "colorSettings", "selectedSchemaIndex", "palette"]
 
     def __init__(self, parent=None, signalManager = None):
-        self.callbackDeposit = [] # deposit for OWGUI callback function
+#        self.callbackDeposit = [] # deposit for OWGUI callback function
         OWWidget.__init__(self, parent, signalManager, 'Distance Map')
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
@@ -189,7 +190,7 @@ class OWDistanceMap(OWWidget):
         self.colorCombo.setCurrentIndex(self.selectedSchemaIndex)
         self.connect(self.colorCombo, SIGNAL("activated(int)"), self.setColor)
         box.layout().addWidget(self.colorCombo, 2)
-        OWGUI.button(box, self, "Edit colors", callback=self.openColorDialog)
+        OWGUI.button(box, self, "Edit colors", callback=self.openColorDialog, debuggingEnabled = 0)
         OWGUI.rubber(tab)
 
         self.setColor(self.selectedSchemaIndex)        
@@ -221,7 +222,6 @@ class OWDistanceMap(OWWidget):
                               self.sendOutput, QIcon(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release")
         OWGUI.rubber(tab)
-
 ##        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
@@ -249,6 +249,9 @@ class OWDistanceMap(OWWidget):
 
         self.errorText = QGraphicsSimpleTextItem("Bitmap is too large.", None, self.scene)
         self.errorText.setPos(10,10)
+        
+        OWGUI.button(self.controlArea, self, "&Save Graph", lambda:OWChooseImageSizeDlg(self.scene).exec_(), debuggingEnabled = 0)
+
 
         #restore color schemas from settings
 ##        if self.ColorSchemas:
