@@ -497,26 +497,26 @@ class OWSOMVisualizer(OWWidget):
         self.componentCombo.setEnabled(self.scene.drawMode==2)
         OWGUI.checkBox(self.backgroundBox, self, "scene.showGrid", "Show grid", callback=self.scene.updateGrid)
         #b=OWGUI.widgetBox(mainTab, "Histogram")
-        OWGUI.separator(mainTab)
+        #OWGUI.separator(mainTab)
         
         b = OWGUI.widgetBox(mainTab, "Histogram") ##QVButtonGroup("Histogram", mainTab)
 #        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.checkBox(b, self, "histogram", "Show histogram", callback=self.setHistogram)
         OWGUI.radioButtonsInBox(OWGUI.indentedBox(b), self, "inputSet", ["Use training set", "Use input subset"], callback=self.setHistogram)
-        OWGUI.separator(mainTab)
+        #OWGUI.separator(mainTab)
         
         b1= OWGUI.widgetBox(mainTab) ##QVBox(mainTab)
 #        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         b=OWGUI.hSlider(b1, self, "scene.objSize","Plot size", 10,100,step=10,ticks=10, callback=call)
 #        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         #OWGUI.checkBox(b1, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
-        OWGUI.separator(b1)
+        #OWGUI.separator(b1)
 
         b1 = OWGUI.widgetBox(b1, "Tooltip Info")
         OWGUI.checkBox(b1, self, "scene.showToolTip","Show tooltip", callback=self.scene.updateToolTips)
         OWGUI.checkBox(b1, self, "scene.includeCodebook", "Include codebook vector", callback=self.scene.updateToolTips)
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.separator(mainTab)
+        #OWGUI.separator(mainTab)
         
         self.histogramBox = OWGUI.widgetBox(histTab, "Coloring")
         self.attributeCombo = OWGUI.comboBox(self.histogramBox, self, "attribute", callback=self.setHistogram)
@@ -544,7 +544,7 @@ class OWSOMVisualizer(OWWidget):
         self.selectionList = []
         self.ctrlPressed = False
 ##        self.setFocusPolicy(QWidget.StrongFocus)
-        self.resize(600,500)
+        self.resize(800,500)
 
     def sendReport(self):
         self.reportSettings("Visual settings",

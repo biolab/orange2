@@ -165,7 +165,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.headerView.horizontalScrollBar().setValue)
         self.dendrogram.setSceneRect(0, 0, self.HDSize,self.VDSize)
         self.dendrogram.update()
-        self.resize(600, 500)
+        self.resize(800, 500)
         
         self.matrix = None
 
