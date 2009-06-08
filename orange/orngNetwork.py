@@ -421,7 +421,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
     def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS):
         """Position the network components according to similarities among them."""
-        print "mdsType", mdsType
+
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
             return 1
