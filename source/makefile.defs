@@ -28,6 +28,7 @@ LIBRARY_FILE = liborange.so
 NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
 
 ifeq ($(OS), Darwin)
+  export MACOSX_DEPLOYMENT_TARGET = 10.4
   COMPILEOPTIONS = -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE) $(CXXFLAGS)
   LINKOPTIONS = -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
   LINKER = g++
