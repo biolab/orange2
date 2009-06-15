@@ -275,8 +275,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuBar.addMenu(self.menuHelp)
         self.setMenuBar(self.menuBar)
 
-        self.printer = QPrinter()
-
     def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
