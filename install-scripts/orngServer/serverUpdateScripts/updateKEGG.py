@@ -41,7 +41,7 @@ realPath = os.path.realpath(os.curdir)
 os.chdir(path)
 
 for func, args in u.GetDownloadable() + u.GetUpdatable():
-##for func, args in [(obiKEGG.Update.UpdateOrganism, ("hsa",))]:
+#for func, args in [(obiKEGG.Update.UpdateOrganism, ("xla",))]:
     if func == obiKEGG.Update.UpdateOrganism and args[0] in commonOrgs:
         org = args[0]
 ##        if len(org) > 3 and (org.startswith("d") or org.startswith("e")):
@@ -50,7 +50,9 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
         try:
             func(u, org)
             organism = obiKEGG.KEGGOrganism(org, genematcher=obiGene.GMDirect(), local_database_path=path)
-            genes = organism.genes ## test to see if the _genes.pickle was created
+            genes = list(organism.genes) ## test to see if the _genes.pickle was created
+            print genes[:5]
+            print path
         except Exception, ex:
             print ex
             continue
