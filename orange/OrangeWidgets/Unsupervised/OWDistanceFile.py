@@ -101,7 +101,11 @@ class OWDistanceFile(OWWidget):
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)
         button.setMaximumWidth(25)
-        self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self, "takeAttributeNames", ["Use examples as items", "Use attribute names"], "Items from input data", callback = self.relabel)
+        self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self,
+                        "takeAttributeNames", ["Use examples as items", 
+                        "Use attribute names"], "Items from input data", 
+                        callback = self.relabel)
+        
         self.rbInput.setDisabled(True)
 #
 #        Moved to SymMatrixTransform widget
@@ -134,7 +138,8 @@ class OWDistanceFile(OWWidget):
             lastPath = os.path.split(self.recentFiles[0])[0]
         else:
             lastPath = "."
-        fn = str(QFileDialog.getOpenFileName(self, "Open Distance Matrix File", lastPath, "Distance matrix (*.*)"))
+        fn = str(QFileDialog.getOpenFileName(self, "Open Distance Matrix File", 
+                                             lastPath, "Distance matrix (*.*)"))
         fn = os.path.abspath(fn)
         if fn in self.recentFiles: # if already in list, remove it
             self.recentFiles.remove(fn)
@@ -172,7 +177,7 @@ class OWDistanceFile(OWWidget):
         #print 'relabel'
         self.error()
         matrix = self.matrix
-
+        print 1
         if matrix and self.data:
             if self.takeAttributeNames:
                 domain = self.data.domain
@@ -192,13 +197,12 @@ class OWDistanceFile(OWWidget):
             lbl = orange.StringVariable('label')
             self.data = orange.ExampleTable(orange.Domain([lbl]), 
                                             [[str(l)] for l in self.labels])
-            omatrix.setattr("items", self.data)
-
+            matrix.setattr("items", self.data)
+        
         if self.data == None and self.labels == None:
             matrix.setattr("items", range(matrix.dim))
         
         self.matrix.matrixType = orange.SymMatrix.Symmetric
-        #print self.matrix.matrixType
         self.send("Distance Matrix", self.matrix)
 
     def getExamples(self, data):
