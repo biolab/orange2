@@ -17,20 +17,26 @@ class LinearRegressionLearner(object):
         else:
             return learner  # invokes the __init__
 
-    def __init__(self, name='linear regression', beta0 = True, stepwise=False, add_sig=0.05, remove_sig=0.2, use_attributes=None, **kw):
+    def __init__(self, name='linear regression', beta0 = True, use_attributes = None, stepwise=False, add_sig=0.05, remove_sig=0.2, stepwise_before = True, **kw):
         self.name = name
         self.beta0 = beta0
         self.stepwise=stepwise
+        self.stepwise_before = stepwise_before
         self.add_sig=add_sig
         self.remove_sig=remove_sig
-        self.use_attributes=use_attributes
+        self.use_attributes = use_attributes
         self.__dict__.update(kw)
 
     def __call__(self, data, weight=None):
-        if self.stepwise:
-            self.use_attributes=stepwise(data,add_sig=self.add_sig,remove_sig=self.remove_sig)
         if not self.use_attributes == None:
             new_domain = orange.Domain(self.use_attributes, data.domain.classVar)
+            new_domain.addmetas(data.domain.getmetas())
+            data = orange.ExampleTable(new_domain, data)
+            
+        if self.stepwise and self.stepwise_before:
+            use_attributes=stepwise(data,add_sig=self.add_sig,remove_sig=self.remove_sig)
+            new_domain = orange.Domain(use_attributes, data.domain.classVar)
+            new_domain.addmetas(data.domain.getmetas())
             data = orange.ExampleTable(new_domain, data)
 
         # continuization (replaces discrete with continuous attributes)
@@ -39,6 +45,12 @@ class LinearRegressionLearner(object):
         continuizer.zeroBased = True
         domain0 = continuizer(data)
         data = data.translate(domain0)
+
+        if self.stepwise and not self.stepwise_before:
+            use_attributes=stepwise(data,add_sig=self.add_sig,remove_sig=self.remove_sig)
+            new_domain = orange.Domain(use_attributes, data.domain.classVar)
+            new_domain.addmetas(data.domain.getmetas())
+            data = orange.ExampleTable(new_domain, data)        
         
         # missing values handling (impute missing)
         imputer = orange.ImputerConstructor_model()
@@ -179,7 +191,7 @@ def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
                 reduced_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts[:ati]+inc_atts[(ati+1):]))
             except:
                 reduced_lin_reg.append(None)
-                           
+        
         sigs = [get_sig(r,orig_lin_reg,len(data)) for r in reduced_lin_reg]
         if sigs and max(sigs) > remove_sig:
             # remove that attribute, start again
@@ -196,7 +208,8 @@ def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
             try:
                 more_complex_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts + [not_inc_atts[ati]]))
             except:
-                more_complex_lin_reg.append(None)        
+                more_complex_lin_reg.append(None)
+
         sigs = [get_sig(orig_lin_reg,r,len(data)) for r in more_complex_lin_reg]
         if sigs and min(sigs) < add_sig:
             best_att = not_inc_atts[sigs.index(min(sigs))]
