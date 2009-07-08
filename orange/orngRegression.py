@@ -47,7 +47,7 @@ class LinearRegressionLearner(object):
         data = data.translate(domain0)
 
         if self.stepwise and not self.stepwise_before:
-            use_attributes=stepwise(data,add_sig=self.add_sig,remove_sig=self.remove_sig)
+            use_attributes=stepwise(data,weight,add_sig=self.add_sig,remove_sig=self.remove_sig)
             new_domain = orange.Domain(use_attributes, data.domain.classVar)
             new_domain.addmetas(data.domain.getmetas())
             data = orange.ExampleTable(new_domain, data)        
@@ -74,9 +74,16 @@ class LinearRegressionLearner(object):
                  X = numpy.insert(A,0,1,axis=1) # adds a column of ones
         else:
              X = A
-             
-        beta, resid, rank, s = numpy.linalg.lstsq(X,y)  # should also check for rank
-        
+
+        # set weights
+        W = numpy.identity(len(data))
+        if weight:
+            for di, d in enumerate(data):
+                W[di,di] = float(d[weight])
+
+        D = dot(dot(numpy.linalg.pinv(dot(dot(X.T,W),X)), X.T), W) # adds some robustness by computing the pseudo inverse; normal inverse could fail due to singularity of the X.T*W*X
+        beta = dot(D,y)
+
         yEstimated = dot(X,beta)  # estimation
         # some desriptive statistisc
         muY, sigmaY = numpy.mean(y), numpy.std(y)
@@ -175,7 +182,7 @@ def get_sig(m1, m2, n):
     F = ((RSS1 - RSS2)/(p2-p1))/(RSS2/(n-p2))
     return statc.fprob(int(p2-p1),int(n-p2),F)
 
-def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
+def stepwise(data, weight, add_sig = 0.05, remove_sig = 0.2):
     inc_atts = []
     not_inc_atts = [at for at in data.domain.attributes]
 
@@ -188,7 +195,7 @@ def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
         reduced_lin_reg = []
         for ati in range(len(inc_atts)):
             try:
-                reduced_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts[:ati]+inc_atts[(ati+1):]))
+                reduced_lin_reg.append(LinearRegressionLearner(data, weight, use_attributes = inc_atts[:ati]+inc_atts[(ati+1):]))
             except:
                 reduced_lin_reg.append(None)
         
@@ -206,7 +213,7 @@ def stepwise(data, add_sig = 0.05, remove_sig = 0.2):
         more_complex_lin_reg = []
         for ati in range(len(not_inc_atts)):
             try:
-                more_complex_lin_reg.append(LinearRegressionLearner(data, use_attributes = inc_atts + [not_inc_atts[ati]]))
+                more_complex_lin_reg.append(LinearRegressionLearner(data, weight, use_attributes = inc_atts + [not_inc_atts[ati]]))
             except:
                 more_complex_lin_reg.append(None)
 
