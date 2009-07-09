@@ -177,7 +177,7 @@ WRAPPER(KernelFunc)
 class ORANGE_API TSVMLearner : public TLearner{
 public:
 	__REGISTER_CLASS
-	
+
   CLASSCONSTANTS(SVMType: C_SVC=C_SVC; Nu_SVC=NU_SVC; OneClass=ONE_CLASS; Epsilon_SVR=EPSILON_SVR; Nu_SVR=NU_SVR)
   CLASSCONSTANTS(Kernel: Linear=LINEAR; Polynomial=POLY; RBF=RBF; Sigmoid=SIGMOID; Custom=CUSTOM)
 
@@ -195,14 +195,20 @@ public:
 	int shrinking;	//P shrinking
 	int probability;	//P probability
 	bool verbose;		//P verbose
-	
+
+	int nr_weight;		/* for C_SVC */
+	int *weight_label;	/* for C_SVC */
+	double* weight;		/* for C_SVC */
+
 	PKernelFunc kernelFunc;	//P custom kernel function
 
 	PExampleTable tempExamples;
 
 	TSVMLearner();
+	~TSVMLearner();
 
 	PClassifier operator()(PExampleGenerator, const int & = 0);
+
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
 	virtual int getNumOfElements(PExampleGenerator examples);

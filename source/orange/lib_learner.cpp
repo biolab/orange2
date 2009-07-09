@@ -1298,7 +1298,47 @@ C_CALL(SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
 C_NAMED(SVMClassifier, ClassifierFD," ")
 C_NAMED(SVMClassifierSparse, SVMClassifier," ")
 
+PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "('list of tuple pairs') -> None")
+{
+	PyTRY
 
+	PyObject *pyWeights;
+	if (!PyArg_ParseTuple(args, "O:SVMLearner.setWeights", &pyWeights)) {
+		//PyErr_Format(PyExc_TypeError, "SVMLearner.setWeights: an instance of Python List expected got '%s'", pyWeights->ob_type->tp_name);
+		PYERROR(PyExc_TypeError, "SVMLearner.setWeights: Python List of attribute weights expected", PYNULL);
+		return PYNULL;
+	}
+
+	CAST_TO(TSVMLearner, learner);
+
+	int size = PyList_Size(pyWeights);
+	cout << "n weights: " << size << endl;
+	int i;
+
+	free(learner->weight_label);
+	free(learner->weight);
+
+	learner->nr_weight = size;
+	learner->weight_label = NULL;
+	learner->weight = NULL;
+
+	if (size > 0) {
+		learner->weight_label = (int *)malloc((size)*sizeof(int));
+		learner->weight = (double *)malloc((size)*sizeof(double));
+	}
+
+	for (i = 0; i < size; i++) {
+		int l;
+		double w;
+		PyArg_ParseTuple(PyList_GetItem(pyWeights, i), "id:SVMLearner.setWeights", &l, &w);
+		learner->weight[i] = w;
+		learner->weight_label[i] = l;
+		cout << "class: " << l << ", w: " << w << endl;
+	}
+
+	RETURN_NONE;
+	PyCATCH
+}
 
 PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrKernelFunc_Type)
@@ -1447,7 +1487,6 @@ PyObject *__pickleLoaderSVMClassifierSparse(PyObject *, PyObject *args) PYARGS(M
     return WrapOrange(svm);
   PyCATCH
 }
-
 
 PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "(Example) -> list of floats")
 {PyTRY
