@@ -1312,7 +1312,7 @@ PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywor
 	CAST_TO(TSVMLearner, learner);
 
 	int size = PyList_Size(pyWeights);
-	cout << "n weights: " << size << endl;
+	//cout << "n weights: " << size << endl;
 	int i;
 
 	free(learner->weight_label);
@@ -1333,7 +1333,7 @@ PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywor
 		PyArg_ParseTuple(PyList_GetItem(pyWeights, i), "id:SVMLearner.setWeights", &l, &w);
 		learner->weight[i] = w;
 		learner->weight_label[i] = l;
-		cout << "class: " << l << ", w: " << w << endl;
+		//cout << "class: " << l << ", w: " << w << endl;
 	}
 
 	RETURN_NONE;
