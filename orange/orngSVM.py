@@ -51,6 +51,7 @@ class SVMLearner(orange.SVMLearner):
         self.normalization = True
         self.__dict__.update(kwargs)
         self.learner=orange.SVMLearner(**kwargs)
+        self.weight = []
 
     @staticmethod
     def maxNu(examples):
@@ -82,6 +83,7 @@ class SVMLearner(orange.SVMLearner):
                 "coef0", "shrinking", "probability", "verbose", "cache_size", "eps"]:
             self.learner.__dict__[name]=getattr(self, name)
         self.learner.nu = nu
+        self.learner.setWeights(self.weight)
         return self.learnClassifier(examples)
 
     def learnClassifier(self, examples):
@@ -148,7 +150,7 @@ class SVMLearnerEasy(SVMLearner):
         
     def learnClassifier(self, examples):
         transformer=orange.DomainContinuizer()
-        transformer.multinominalTreatment=orange.DomainContinuizer.NValues
+        transformer.multinomialTreatment=orange.DomainContinuizer.NValues
         transformer.continuousTreatment=orange.DomainContinuizer.NormalizeBySpan
         transformer.classTreatment=orange.DomainContinuizer.Ignore
         newdomain=transformer(examples)
@@ -300,7 +302,7 @@ class RFE(object):
 
     def getAttrScores(self, data, stopAt=0):
         iter = 1
-        attrs = data.domain.attributes
+        attrs = data.domain.attributese
         attrScores = {}
         while len(attrs)>stopAt:
             weights = getLinearSVMWeights(self.learner(data))
