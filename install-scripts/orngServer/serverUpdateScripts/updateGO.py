@@ -48,9 +48,10 @@ if u.IsUpdatable(obiGO.Update.UpdateOntology, ()):
 
 orgMap = {"352472":"44689", "562":"83333", "3055":None, "7955":None, "11103":None, "2104":None, "4754":None, "31033":None, "8355":None, "4577":None}
 
-commonOrgs = dict([(obiGO.from_taxid(orgMap.get(id, id)).pop(), orgMap.get(id, id)) for id in obiTaxonomy.common_taxids() if orgMap.get(id, id) != None])
+#commonOrgs = dict([(obiGO.from_taxid(orgMap.get(id, id)).pop(), orgMap.get(id, id)) for id in obiTaxonomy.common_taxids() if orgMap.get(id, id) != None])
+commonOrgs = dict([(obiGO.from_taxid(id), id) for id in obiTaxonomy.common_taxids() if obiGO.from_taxid(id) != None])
 
-essentialOrgs = [obiGO.from_taxid(orgMap.get(id, id)).pop() for id in obiTaxonomy.essential_taxids()]
+essentialOrgs = [obiGO.from_taxid(id) for id in obiTaxonomy.essential_taxids()]
 
 exclude = ["goa_uniprot", "goa_pdb", "GeneDB_tsetse", "reactome", "goa_zebrafish", "goa_rat", "goa_mouse"]
 
