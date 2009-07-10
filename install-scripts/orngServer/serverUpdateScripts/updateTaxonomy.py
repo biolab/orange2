@@ -6,6 +6,7 @@ import orngServerFiles
 
 import orngEnviron
 import os, sys, tarfile
+import socket
 
 from getopt import getopt
 
@@ -21,7 +22,13 @@ u = obiTaxonomy.Update(local_database_path=path)
 uncompressedSize = lambda filename: sum(info.size for info in tarfile.open(filename).getmembers())
 
 if u.IsUpdatable(obiTaxonomy.Update.UpdateTaxonomy, ()):
-    u.UpdateTaxonomy()
+    for i in range(3):
+        try:
+            u.UpdateTaxonomy()
+            break
+        except socket.timeout, ex:
+            print ex
+            pass
     serverFiles.upload("Taxonomy", "ncbi_taxonomy.tar.gz", os.path.join(path, "ncbi_taxonomy.tar.gz"), title ="NCBI Taxonomy",
                        tags=["NCBI", "taxonomy", "organism names", "essential", "#uncompressed:%i" % uncompressedSize(os.path.join(path, "ncbi_taxonomy.tar.gz"))])
     serverFiles.unprotect("Taxonomy", "ncbi_taxonomy.tar.gz")
