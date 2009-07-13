@@ -12,7 +12,7 @@ class Test(OWWidget):
         self.chosenNumbers = [0, 2, 3]
 
         OWGUI.listBox(self.controlArea, self, "chosenColor", "colors", box="Color", callback=self.checkAll)
-        OWGUI.listBox(self.controlArea, self, "chosenNumbers", "numbers", box="Number", selectionMode=QListBox.Multi, callback=self.checkAll)
+        OWGUI.listBox(self.controlArea, self, "chosenNumbers", "numbers", box="Number", selectionMode=QListWidget.MultiSelection, callback=self.checkAll)
 
         OWGUI.separator(self.controlArea)
         
@@ -32,6 +32,5 @@ class Test(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = Test()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

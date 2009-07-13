@@ -10,7 +10,7 @@ class Test(OWWidget):
         # GUI
         self.spinval = 10
         OWGUI.spin(self.controlArea, self, "spinval", 0, 100, box="Value A")
-        box = QVGroupBox("Options", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Options")
         self.alpha = 30
         self.beta = 4
         OWGUI.spin(box, self, "alpha", 0, 100, label="Alpha:", labelWidth=60,
@@ -18,8 +18,8 @@ class Test(OWWidget):
         OWGUI.spin(box, self, "beta", -10, 10, label="Beta:", labelWidth=60,
                    orientation="horizontal", callback=self.setInfo)
 
-        box = QVGroupBox("Info", self.controlArea)
-        self.info = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.info = OWGUI.widgetLabel(box, "")
         self.setInfo()
         
         self.resize(100,50)
@@ -33,6 +33,5 @@ class Test(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = Test()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

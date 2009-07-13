@@ -20,12 +20,12 @@ class OWDataSamplerC(OWWidget):
         self.loadSettings()
 
         # GUI
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input yet, waiting to get something.', box)
-        self.infob = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
+        self.infob = OWGUI.widgetLabel(box, '')
 
         OWGUI.separator(self.controlArea)
-        self.optionsBox = QVGroupBox("Options", self.controlArea)
+        self.optionsBox = OWGUI.widgetBox(self.controlArea, "Options")
         OWGUI.spin(self.optionsBox, self, 'proportion', min=10, max=90, step=10,
                    label='Sample Size [%]:', callback=[self.selection, self.checkCommit])
         OWGUI.checkBox(self.optionsBox, self, 'commitOnChange', 'Commit data on selection change')
@@ -68,8 +68,7 @@ class OWDataSamplerC(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerC()
-    appl.setMainWidget(ow)
     ow.show()
-    dataset = orange.ExampleTable('iris.tab')
+    dataset = orange.ExampleTable('../datasets/iris.tab')
     ow.data(dataset)
-    appl.exec_loop()
+    appl.exec_()

@@ -162,8 +162,8 @@ self.chkA = 1
 self.chkB = 0
 self.dx = 15
 
-box = QVGroupBox("Settings", self.controlArea)
-gridbox = QVGroupBox("Grid Opions", self.controlArea)
+box = OWGUI.widgetBox(self.controlArea, "Settings")
+gridbox = OWGUI.widgetBox(self.controlArea, "Grid Opions")
 gridbox.setEnabled(self.chkB)
 OWGUI.checkBox(box, self, "chkA", "Verbose")
 OWGUI.checkBox(box, self, "chkB", "Display Grid", disables=[gridbox])
@@ -199,8 +199,8 @@ self.val2 = "Some more text ..."
 self.valF = 10.2
 
 OWGUI.lineEdit(self.controlArea, self, "val1", box="Text Entry")
-box = QVGroupBox("Options (with lineEdit)", self.controlArea)
-OWGUI.lineEdit(box, self, "val2",
+box = OWGUI.widgetBox(self.controlArea, "Options (with lineEdit)")
+OWGUI.lineEdit(box, self, "val2", 
                label="Name:", orientation="horizontal", labelWidth=40)
 OWGUI.lineEdit(box, self, "valF", label="Float:",
                orientation="horizontal", labelWidth=40, valueType=float)
@@ -343,8 +343,8 @@ listBox(widget, master, value, labels[, box, tooltip, callback, selectionMode])<
 <dt>labels (required)</dt>
 <dd>The name of master's attribute containing the list box's labels. Similar to <code>items</code> in combo box, list <code>labels</code> have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the second can be either an icon on an integer, representing the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.</dd>
 
-<dt>selectionMode (default: QListBox.Single)</dt>
-<dd>Tells whether the user can select a single item (<code>QListBox.Single</code>), multiple items (<code>QListBox.Multi</code>, <code>QListBox.Extended</code>) or nothing (<code>QListBox.NoSelection</code>).</dd>
+<dt>selectionMode (default: QListWidget.SingleSelection)</dt>
+<dd>Tells whether the user can select a single item (<code>QListWidget.SingleSelection</code>), multiple items (<code>QListWidget.MultiSelection</code>, <code>QListWidget.ExtendedSelection</code>) or nothing (<code>QListWidget.NoSelection</code>).</dd>
 </dl>
 
 <P><code>value</code> is automatically cast to <code>OWGUI.ControlledList</code> (this is needed because the list should report any changes to the control, the list box; <code>OWGUI.ControlledList</code> is like an ordinary Python <code>list</code> except that it triggers synchronization with the list box at every change).</P>
@@ -369,7 +369,7 @@ self.chosenNumbers = [0, 2, 3]
 OWGUI.listBox(self.controlArea, self, "chosenColor", "colors",
               box="Color", callback=self.checkAll)
 OWGUI.listBox(self.controlArea, self, "chosenNumbers", "numbers",
-              box="Number", selectionMode=QListBox.Multi, callback=self.checkAll)
+              box="Number", selectionMode=QListWidget.MultiSelection, callback=self.checkAll)
 
 box = OWGUI.widgetBox(self.controlArea, "Debug info")
 OWGUI.label(box, self, "Color: %(chosenColor)s")
@@ -402,7 +402,7 @@ OWGUI.listBox(self.controlArea, self, "chosenAttribute", "attributes",
               box="Attributes", callback=self.setValues)
 OWGUI.separator(self.controlArea)
 OWGUI.listBox(self.controlArea, self, "chosenValues", "values",
-              box="Values", selectionMode=QListBox.Multi)
+              box="Values", selectionMode=QListWidget.MultiSelection)
 
 
 # The following assignments usually don't take place in __init__
@@ -459,7 +459,7 @@ invoke the callback which sets the text in the info box.</p>
 <td width="600px">
 <xmp class=code>self.spinval = 10
 OWGUI.spin(self.controlArea, self, "spinval", 0, 100, box="Value A")
-box = QVGroupBox("Options", self.controlArea)
+box = OWGUI.widgetBox(self.controlArea, "Options")
 self.alpha = 30
 self.beta = 4
 OWGUI.spin(box, self, "alpha", 0, 100, label="Alpha:", labelWidth=60,
@@ -467,8 +467,8 @@ OWGUI.spin(box, self, "alpha", 0, 100, label="Alpha:", labelWidth=60,
 OWGUI.spin(box, self, "beta", -10, 10, label="Beta:", labelWidth=60,
            orientation="horizontal", callback=self.setInfo)
 
-box = QVGroupBox("Info", self.controlArea)
-self.info = QLabel('', box)
+box = OWGUI.widgetBox(self.controlArea, "Info")
+self.info = OWGUI.widgetLabel(box, "")
 self.setInfo()
 </xmp>
 </td><td valign="top">

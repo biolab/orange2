@@ -13,8 +13,8 @@ class Test(OWWidget):
         self.chkB = 0
         self.dx = 15
 
-        box = QVGroupBox("Settings", self.controlArea)
-        gridbox = QVGroupBox("Grid Opions", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Settings")
+        gridbox = OWGUI.widgetBox(self.controlArea, "Grid Opions")
         gridbox.setEnabled(self.chkB)
         OWGUI.checkBox(box, self, "chkA", "Verbose")
         OWGUI.checkBox(box, self, "chkB", "Display Grid", disables=[gridbox])
@@ -28,6 +28,5 @@ class Test(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = Test()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

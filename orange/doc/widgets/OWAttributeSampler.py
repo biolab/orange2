@@ -19,7 +19,7 @@ class OWAttributeSampler(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
-        self.outputs = [("Examples", ExampleTableWithClass)]
+        self.outputs = [("Examples", ExampleTable)]
 
         self.icons = self.createAttributeIconDict()
 
@@ -28,7 +28,7 @@ class OWAttributeSampler(OWWidget):
         self.classAttribute = None
         self.loadSettings()
 
-        OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListBox.Extended)
+        OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListWidget.ExtendedSelection)
         OWGUI.separator(self.controlArea)
         self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute", box="Class attribute")
         OWGUI.separator(self.controlArea)
@@ -73,10 +73,9 @@ class OWAttributeSampler(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWAttributeSampler()
-    appl.setMainWidget(ow)
     ow.show()
 
     data = orange.ExampleTable('../datasets/iris.tab')
     ow.dataset(data)
 
-    appl.exec_loop()
+    appl.exec_()

@@ -14,7 +14,7 @@ class Test(OWWidget):
                       box="Attributes", callback=self.setValues)
         OWGUI.separator(self.controlArea)
         OWGUI.listBox(self.controlArea, self, "chosenValues", "values",
-                      box="Values", selectionMode=QListBox.Multi)
+                      box="Values", selectionMode=QListWidget.MultiSelection)
 
         self.controlArea.setFixedSize(150, 250)
         self.adjustSize()
@@ -42,6 +42,5 @@ class Test(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = Test()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

@@ -50,6 +50,5 @@ class OWXLearner(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWXLearner()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

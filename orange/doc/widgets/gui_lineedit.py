@@ -12,7 +12,7 @@ class Test(OWWidget):
         self.valF = 10.2
         
         OWGUI.lineEdit(self.controlArea, self, "val1", box="Text Entry")
-        box = QVGroupBox("Options (with lineEdit)", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Options (with lineEdit)")
         OWGUI.lineEdit(box, self, "val2", 
                        label="Name:", orientation="horizontal", labelWidth=40)
         OWGUI.lineEdit(box, self, "valF", label="Float:",
@@ -26,6 +26,5 @@ class Test(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = Test()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()

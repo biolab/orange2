@@ -16,9 +16,9 @@ class OWDataSamplerA(OWWidget):
         self.outputs = [("Sampled Data", ExampleTable)]
 
         # GUI
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input yet, waiting to get something.', box)
-        self.infob = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
+        self.infob = OWGUI.widgetLabel(box, '')
         self.resize(100,50)
 
     def data(self, dataset):
@@ -41,8 +41,7 @@ class OWDataSamplerA(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerA()
-    appl.setMainWidget(ow)
     ow.show()
-    dataset = orange.ExampleTable('iris.tab')
+    dataset = orange.ExampleTable('../datasets/iris.tab')
     ow.data(dataset)
-    appl.exec_loop()
+    appl.exec_()
