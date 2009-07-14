@@ -83,7 +83,7 @@ subgroups of the widgets within the same group can be imposed.</P>
 tokens. Each widget would define its input and output channels in
 something like:</P>
 
-<xmp class="code">self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">self.inputs = [("Test Data Set", ExampleTable, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
 self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 </xmp>
 
@@ -154,16 +154,17 @@ header in our Data Sampler widget should look something like:</P>
 import OWGUI
 
 class OWDataSamplerA(OWWidget):
+    
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'SampleData')
+        OWWidget.__init__(self, parent, signalManager, 'SampleDataA')
         
         self.inputs = [("Data", ExampleTable, self.data)]
         self.outputs = [("Sampled Data", ExampleTable)]
 
         # GUI
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input yet, waiting to get something.', box)
-        self.infob = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
+        self.infob = OWGUI.widgetLabel(box, '')
         self.resize(100,50)
 </xmp>
 
@@ -219,7 +220,7 @@ specification of the input channel):</p>
             self.send("Sampled Data", sample)
         else:
             self.infoa.setText('No data on input yet, waiting to get something.')
-            self.infob.setText('', box)
+            self.infob.setText('')
             self.send("Sampled Data", None)
 </xmp>
 
@@ -252,8 +253,7 @@ will call it <a href="DataSamplerA.png">DataSamplerA.png</a> and will
 put it in icons subdirectory of OrangeWidgets directory (together with
 all other icons of other widgets).</p>
 
-<p>For a test, we now open Orange Canvas and run Rebuild Widget
-Registry command from Options menu. There should be a new pane in a
+<p>For a test, we now open Orange Canvas. There should be a new pane in a
 widget toolbox called Test (this is the name of the directory we have
 used to put in our widget). If we click on this pane, it displays an
 icon of our widget. Try to hoover on it to see if the header and
@@ -303,11 +303,10 @@ this, we finished Data Sampler with:</p>
 <xmp class="code">if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerA()
-    appl.setMainWidget(ow)
     ow.show()
     dataset = orange.ExampleTable('iris.tab')
     ow.data(dataset)
-    appl.exec_loop()
+    appl.exec_()
 </xmp>
 
 <p>These are essentially some calls to Qt routines that run GUI for our

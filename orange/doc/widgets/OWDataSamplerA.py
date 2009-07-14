@@ -31,7 +31,7 @@ class OWDataSamplerA(OWWidget):
             self.send("Sampled Data", sample)
         else:
             self.infoa.setText('No data on input yet, waiting to get something.')
-            self.infob.setText('', box)
+            self.infob.setText('')
             self.send("Sampled Data", None)
             
 

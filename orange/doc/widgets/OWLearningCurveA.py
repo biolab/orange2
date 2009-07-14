@@ -7,7 +7,6 @@
 
 from OWWidget import *
 import OWGUI, orngTest, orngStat
-from qttable import *
 
 class OWLearningCurveA(OWWidget):
     settingsList = ["folds", "steps", "scoringF", "commitOnChange"]
@@ -30,17 +29,17 @@ class OWLearningCurveA(OWWidget):
         self.scores = []   # list of current scores, learnerID:[learner scores]
 
         # GUI
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input.', box)
-        self.infob = QLabel('No learners.', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input.')
+        self.infob = OWGUI.widgetLabel(box, 'No learners.')
 
         OWGUI.separator(self.controlArea)
-        box = QVGroupBox("Evaluation Scores", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Evaluation Scores")
         scoringNames = [x[0] for x in self.scoring]
         OWGUI.comboBox(box, self, "scoringF", items=scoringNames, callback=self.computeScores)
 
         OWGUI.separator(self.controlArea)
-        box = QVGroupBox("Options", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Options")
         OWGUI.spin(box, self, 'folds', 2, 100, step=1, label='Cross validation folds:  ',
                    callback=lambda: self.computeCurve(self.commitOnChange))
         OWGUI.spin(box, self, 'steps', 2, 100, step=1, label='Learning curve points:  ',
@@ -50,12 +49,7 @@ class OWLearningCurveA(OWWidget):
         self.commitBtn = OWGUI.button(box, self, "Apply Setting", callback=self.computeCurve, disabled=1)
 
         # table widget
-        self.layout = QVBoxLayout(self.mainArea)
-        self.table = QTable(self.mainArea)
-        self.table.setSelectionMode(QTable.NoSelection)
-        self.header = self.table.horizontalHeader()
-        self.vheader = self.table.verticalHeader()
-        self.layout.add(self.table)
+        self.table = OWGUI.table(self.mainArea, selectionMode=QTableWidget.NoSelection)
                 
         self.resize(500,200)
 
@@ -142,20 +136,18 @@ class OWLearningCurveA(OWWidget):
         self.curvePoints = [(x+1.)/self.steps for x in range(self.steps)]
 
     def setTable(self):
-        self.table.setNumCols(0)
-        self.table.setNumCols(len(self.learners))
-        self.table.setNumRows(self.steps)
+        self.table.setColumnCount(0)
+        self.table.setColumnCount(len(self.learners))
+        self.table.setRowCount(self.steps)
 
         # set the headers
-        for (i, l) in enumerate(self.learners):
-            self.header.setLabel(i, l[1].name)
-        for (i, p) in enumerate(self.curvePoints):
-            self.vheader.setLabel(i, "%4.2f" % p)
+        self.table.setHorizontalHeaderLabels([l.name for i,l in self.learners])
+        self.table.setVerticalHeaderLabels(["%4.2f" % p for p in self.curvePoints])
 
         # set the table contents
         for l in range(len(self.learners)):
             for p in range(self.steps):
-                self.table.setText(p, l, "%7.5f" % self.scores[l][p])
+                OWGUI.tableItem(self.table, p, l, "%7.5f" % self.scores[l][p])
 
         for i in range(len(self.learners)):
             self.table.setColumnWidth(i, 80)
@@ -166,14 +158,13 @@ class OWLearningCurveA(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWLearningCurveA()
-    appl.setMainWidget(ow)
     ow.show()
     
     l1 = orange.BayesLearner()
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-    data = orange.ExampleTable('iris.tab')
+    data = orange.ExampleTable('../datasets/iris.tab')
     ow.dataset(data)
 
     l2 = orange.BayesLearner()
@@ -191,4 +182,4 @@ if __name__=="__main__":
 #    ow.learner(None, 2)
 #    ow.learner(None, 4)
 
-    appl.exec_loop()
+    appl.exec_()

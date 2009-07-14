@@ -75,12 +75,12 @@ wrote a library called OWGUI (I never liked the name, but could never
 come up with something better). With this library, the GUI definition
 part of the options box is a bit dense but rather very short:</p>
 
-<xmp class="code">        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input yet, waiting to get something.', box)
-        self.infob = QLabel('', box)
+<xmp class="code">        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
+        self.infob = OWGUI.widgetLabel(box, '')
 
         OWGUI.separator(self.controlArea)
-        self.optionsBox = QVGroupBox("Options", self.controlArea)
+        self.optionsBox = OWGUI.widgetBox(self.controlArea, "Options")
         OWGUI.spin(self.optionsBox, self, 'proportion', min=10, max=90, step=10,
                    label='Sample Size [%]:', callback=[self.selection, self.checkCommit])
         OWGUI.checkBox(self.optionsBox, self, 'commitOnChange', 'Commit data on selection change')
