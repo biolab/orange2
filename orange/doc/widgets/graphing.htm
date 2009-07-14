@@ -32,53 +32,39 @@ offered in a tabbed pane together with a graph. The code for
 definition of the tabbed pane, and initialization of the graph is:</p>
 
 <xmp class="code"># start of content (right) area
-self.layout = QVBoxLayout(self.mainArea)
-tabs = QTabWidget(self.mainArea, 'tabs')
-        
+tabs = OWGUI.tabWidget(self.mainArea)
+
 # graph widget
-tab = QVGroupBox(self)
-self.graph = QwtPlot(tab, None)
+tab = OWGUI.createTabPage(tabs, "Graph")
+self.graph = OWGraph(tab)
 self.graph.setAxisAutoScale(QwtPlot.xBottom)
 self.graph.setAxisAutoScale(QwtPlot.yLeft)
-tabs.insertTab(tab, "Graph")
+tab.layout().addWidget(self.graph)
 self.setGraphGrid()
-
-# table widget
-tab = QVGroupBox(self)
-self.table = QTable(tab)
-self.table.setSelectionMode(QTable.NoSelection)
-self.header = self.table.horizontalHeader()
-self.vheader = self.table.verticalHeader()
-tabs.insertTab(tab, "Table")
-
-self.layout.add(tabs)
 </xmp>
 
-<p>We use <code>QVBoxLayout</code> to enable the automatic resizing of
-the graph (and the table widget) when the size of the window is
-changed. For the graph, we use <code>setAxisAutoScale</code> to
+<p><code>OWGrap</code> is a convenience subclass of QwtPlot and is imported from OWGraph module. For the graph, we use <code>setAxisAutoScale</code> to
 request that the axis are automatically set in regard to the data that
 is plotted in the graph. We plot the graph in using the following
 code:</p>
 
 <xmp class="code">def drawLearningCurve(self, learner):
     if not self.data: return
-    curvekey = self.graph.insertCurve(learner.name)
-    self.graph.setCurveData(curvekey, self.curvePoints, learner.score)
-    learner.curvekey = curvekey
+    curve = self.graph.addCurve(learner.name, xData=self.curvePoints, yData=learner.score, autoScale=True)
+    
+    learner.curve = curve
     self.setGraphStyle(learner)
     self.graph.replot()
 </xmp>
 
-<p>This is simple. In Qwt, each curve we plot has associated
-identifier (<code>curvekey</code>). We store this identifier with a
+<p>This is simple. We store the curve returned from <code>addCurve</code> with a
 learner, and use a trick allowed in Orange that we can simply store
 this as a new attribute to the learning object. By default, Orange
 would give a warning of the type</p>
 
 <xmp class="code">c:\Python23\Lib\site-packages\orange\OrangeWidgets\Test\OWLearningCurveC.py:269:
- AttributeWarning: 'curvekey' is not a builtin attribute of 'kNNLearner'
-  setattr(learner, "curvekey", curvekey)
+ AttributeWarning: 'curve' is not a builtin attribute of 'kNNLearner'
+  setattr(learner, "curve", curve)
 </xmp>
 
 <p>but we surpress such warnings with a line</p>
@@ -92,15 +78,15 @@ plotted in Qwt graph. The details on how the plot is set are dealt
 with in <code>setGraphStyle</code> function:</code></p>
 
 <xmp class="code">def setGraphStyle(self, learner):
-    curvekey = learner.curvekey
+    curve = learner.curve
     if self.graphDrawLines:
-        self.graph.setCurveStyle(curvekey, QwtCurve.Lines)
+        curve.setStyle(QwtPlotCurve.Lines)
     else:
-        self.graph.setCurveStyle(curvekey, QwtCurve.NoCurve)
-    self.graph.setCurveSymbol(curvekey, QwtSymbol(QwtSymbol.Ellipse, \
+        curve.setStyle(QwtPlotCurve.NoCurve)
+    curve.setSymbol(QwtSymbol(QwtSymbol.Ellipse, \
       QBrush(QColor(0,0,0)), QPen(QColor(0,0,0)),
       QSize(self.graphPointSize, self.graphPointSize)))
-    self.graph.setCurvePen(curvekey, QPen(learner.color, 5))
+    curve.setPen(QPen(learner.color, 5))
 </xmp>
 
 <p>Notice that the color of the plot line that is specific to the
@@ -121,14 +107,15 @@ integer as an attribute, and returns a list of corresponding number of
 colors. In our learning curve widget, we use it within a function that
 sets the list box with learners:</p>
 
-<xmp class="code">def updateclb(self):
+<xmp class="code">def updatellb(self):
     self.blockSelectionChanges = 1
-    self.clb.clear()
+    self.llb.clear()
     colors = ColorPaletteHSV(len(self.learners))
     for (i,lt) in enumerate(self.learners):
         l = lt[1]
-        self.clb.insertItem(ColorPixmap(colors[i]), l.name)
-        self.clb.setSelected(i, l.isSelected)
+        item = QListWidgetItem(ColorPixmap(colors[i]), l.name)
+        self.llb.addItem(item)
+        item.setSelected(l.isSelected)
         l.color = colors[i]
     self.blockSelectionChanges = 0
 </xmp>
@@ -137,15 +124,13 @@ sets the list box with learners:</p>
 includes a learner and a small box in learner's color, which is in
 this widget also used as a sort of a legend for the graph. This box is
 returned by <code>ColorPixmap</code> function defined in
-<code>OWTools.py</code>. Else, the classifier's list box control is
+<code>OWColorPalette.py</code>. Else, the classifier's list box control is
 defined in the initialization of the widget using:</p>
 
-<xmp class="code">self.cbox = QVGroupBox("Learners", self.controlArea)
-self.llb = QListBox(self.cbox)
-self.llb.setSelectionMode(QListBox.Multi)
+<xmp class="code">self.cbox = OWGUI.widgetBox(self.controlArea, "Learners")
+self.llb = OWGUI.listBox(self.cbox, self, "selectedLearners", selectionMode=QListWidget.MultiSelection, callback=self.learnerSelectionChanged)
+
 self.llb.setMinimumHeight(50)
-self.connect(self.llb, SIGNAL("selectionChanged()"),
-             self.classifierSelectionChanged)
 self.blockSelectionChanges = 0
 </xmp>
 
@@ -168,13 +153,13 @@ graph (the user just selected a learner):</p>
     if self.blockSelectionChanges: return
     for (i,lt) in enumerate(self.learners):
         l = lt[1]
-        if l.isSelected <> self.llb.isSelected(i):
+        if l.isSelected != (i in self.selectedLearners):
             if l.isSelected: # learner was deselected
-                self.graph.removeCurve(l.curvekey)
+                l.curve.detach()
             else: # learner was selected
                 self.drawLearningCurve(l)
             self.graph.replot()
-        l.isSelected = self.llb.isSelected(i)
+        l.isSelected = i in self.selectedLearners
 </xmp>
 
 <p>The complete code of this widget is available <a

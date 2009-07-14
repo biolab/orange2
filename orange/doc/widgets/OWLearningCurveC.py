@@ -6,11 +6,10 @@
 """
 
 from OWWidget import *
-from OWTools import ColorPixmap
+from OWColorPalette import ColorPixmap
 import OWGUI, orngTest, orngStat
-from qttable import *
-from OWGraph import ColorPaletteHSV
-from qwt import *
+from OWGraph import *
+
 import warnings
 
 class OWLearningCurveC(OWWidget):
@@ -29,6 +28,7 @@ class OWLearningCurveC(OWWidget):
         self.graphPointSize = 5 # size of points in the graphs
         self.graphDrawLines = 1 # draw lines between points in the graph
         self.graphShowGrid = 1  # show gridlines in the graph
+        self.selectedLearners = [] 
         self.loadSettings()
 
         warnings.filterwarnings("ignore", ".*builtin attribute.*", orange.AttributeWarning)
@@ -41,28 +41,26 @@ class OWLearningCurveC(OWWidget):
         self.scores = []   # list of current scores, learnerID:[learner scores]
 
         # GUI
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data on input.', box)
-        self.infob = QLabel('No learners.', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data on input.')
+        self.infob = OWGUI.widgetLabel(box, 'No learners.')
 
         ## class selection (classQLB)
         OWGUI.separator(self.controlArea)
-        self.cbox = QVGroupBox("Learners", self.controlArea)
-        self.llb = QListWidget(self.cbox)
-        self.llb.setSelectionMode(QListWidget.MultiSelection)
+        self.cbox = OWGUI.widgetBox(self.controlArea, "Learners")
+        self.llb = OWGUI.listBox(self.cbox, self, "selectedLearners", selectionMode=QListWidget.MultiSelection, callback=self.learnerSelectionChanged)
+        
         self.llb.setMinimumHeight(50)
-        self.connect(self.llb, SIGNAL("selectionChanged()"),
-                     self.learnerSelectionChanged)
         self.blockSelectionChanges = 0
 
         OWGUI.separator(self.controlArea)
-        box = QVGroupBox("Evaluation Scores", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Evaluation Scores")
         scoringNames = [x[0] for x in self.scoring]
         OWGUI.comboBox(box, self, "scoringF", items=scoringNames,
                        callback=self.computeScores)
 
         OWGUI.separator(self.controlArea)
-        box = QVGroupBox("Options", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Options")
         OWGUI.spin(box, self, 'folds', 2, 100, step=1,
                    label='Cross validation folds:  ',
                    callback=lambda: self.computeCurve(self.commitOnChange))
@@ -74,26 +72,20 @@ class OWLearningCurveC(OWWidget):
         self.commitBtn = OWGUI.button(box, self, "Apply Setting", callback=self.computeCurve, disabled=1)
 
         # start of content (right) area
-        self.layout = QVBoxLayout(self.mainArea)
-        tabs = QTabWidget(self.mainArea, 'tabs')
+        tabs = OWGUI.tabWidget(self.mainArea)
 
         # graph widget
-        tab = QVGroupBox(self)
-        self.graph = QwtPlot(tab, None)
+        tab = OWGUI.createTabPage(tabs, "Graph")
+        self.graph = OWGraph(tab)
         self.graph.setAxisAutoScale(QwtPlot.xBottom)
         self.graph.setAxisAutoScale(QwtPlot.yLeft)
-        tabs.insertTab(tab, "Graph")
+        tab.layout().addWidget(self.graph)
         self.setGraphGrid()
 
         # table widget
-        tab = QVGroupBox(self)
-        self.table = QTable(tab)
-        self.table.setSelectionMode(QTable.NoSelection)
-        self.header = self.table.horizontalHeader()
-        self.vheader = self.table.verticalHeader()
-        tabs.insertTab(tab, "Table")
+        tab = OWGUI.createTabPage(tabs, "Table")
+        self.table = OWGUI.table(tab, selectionMode=QTableWidget.NoSelection)
 
-        self.layout.add(tabs)
         self.resize(550,200)
 
     ##############################################################################
@@ -110,14 +102,14 @@ class OWLearningCurveC(OWWidget):
             self.infoa.setText('No data on input.')
             self.curves = []
             self.scores = []
-            self.graph.removeCurves()
+            self.graph.removeDrawingCurves()
             self.graph.replot()
         self.commitBtn.setEnabled(self.data<>None)
 
     # manage learner signal
     # we use following additional attributes for learner:
     # - isSelected, learner is selected (display the learning curve)
-    # - curvekey, id of the learning curve plot for the learner
+    # - curve, learning curve for the learner
     # - score, evaluation score for the learning
     def learner(self, learner, id=None):
         ids = [x[0] for x in self.learners]
@@ -128,7 +120,7 @@ class OWLearningCurveC(OWWidget):
             for i in range(self.steps):
                 self.curves[i].remove(indx)
             del self.scores[indx]
-            self.graph.removeCurve(self.learners[indx].curvekey)
+            self.learners[indx][1].curve.detach()
             del self.learners[indx]
             self.setTable()
             self.updatellb()
@@ -145,7 +137,7 @@ class OWLearningCurveC(OWWidget):
                     for i in range(self.steps):
                         self.curves[i].add(curve[i], 0, replace=indx)
                     learner.score = score
-                    self.graph.removeCurve(prevLearner.curvekey)
+                    prevLearner.curve.detach()
                     self.drawLearningCurve(learner)
                 self.updatellb()
             else: # add new learner
@@ -201,23 +193,22 @@ class OWLearningCurveC(OWWidget):
         self.curvePoints = [(x+1.)/self.steps for x in range(self.steps)]
 
     def setTable(self):
-        self.table.setNumCols(0)
-        self.table.setNumCols(len(self.learners))
-        self.table.setNumRows(self.steps)
+        self.table.setColumnCount(0)
+        self.table.setColumnCount(len(self.learners))
+        self.table.setRowCount(self.steps)
 
         # set the headers
-        for (i, l) in enumerate(self.learners):
-            self.header.setLabel(i, l[1].name)
-        for (i, p) in enumerate(self.curvePoints):
-            self.vheader.setLabel(i, "%4.2f" % p)
+        self.table.setHorizontalHeaderLabels([l.name for i,l in self.learners])
+        self.table.setVerticalHeaderLabels(["%4.2f" % p for p in self.curvePoints])
 
         # set the table contents
         for l in range(len(self.learners)):
             for p in range(self.steps):
-                self.table.setText(p, l, "%7.5f" % self.scores[l][p])
+                OWGUI.tableItem(self.table, p, l, "%7.5f" % self.scores[l][p])
 
         for i in range(len(self.learners)):
             self.table.setColumnWidth(i, 80)
+
 
     # management of learner selection
 
@@ -228,8 +219,8 @@ class OWLearningCurveC(OWWidget):
         for (i,lt) in enumerate(self.learners):
             l = lt[1]
             item = QListWidgetItem(ColorPixmap(colors[i]), l.name)
-            item.setSelected(l.isSelected)
             self.llb.addItem(item)
+            item.setSelected(l.isSelected)
             l.color = colors[i]
         self.blockSelectionChanges = 0
 
@@ -237,41 +228,41 @@ class OWLearningCurveC(OWWidget):
         if self.blockSelectionChanges: return
         for (i,lt) in enumerate(self.learners):
             l = lt[1]
-            if l.isSelected <> self.llb.isSelected(i):
+            if l.isSelected != (i in self.selectedLearners):
                 if l.isSelected: # learner was deselected
-                    self.graph.removeCurve(l.curvekey)
+                    l.curve.detach()
                 else: # learner was selected
                     self.drawLearningCurve(l)
                 self.graph.replot()
-            l.isSelected = self.llb.isSelected(i)
+            l.isSelected = i in self.selectedLearners
 
     # Graph specific methods
 
     def setGraphGrid(self):
-        self.graph.enableGridY(self.graphShowGrid)
-        self.graph.enableGridX(self.graphShowGrid)
+        self.graph.enableGridYL(self.graphShowGrid)
+        self.graph.enableGridXB(self.graphShowGrid)
 
     def setGraphStyle(self, learner):
-        curvekey = learner.curvekey
+        curve = learner.curve
         if self.graphDrawLines:
-            self.graph.setCurveStyle(curvekey, QwtCurve.Lines)
+            curve.setStyle(QwtPlotCurve.Lines)
         else:
-            self.graph.setCurveStyle(curvekey, QwtCurve.NoCurve)
-        self.graph.setCurveSymbol(curvekey, QwtSymbol(QwtSymbol.Ellipse, \
+            curve.setStyle(QwtPlotCurve.NoCurve)
+        curve.setSymbol(QwtSymbol(QwtSymbol.Ellipse, \
           QBrush(QColor(0,0,0)), QPen(QColor(0,0,0)),
           QSize(self.graphPointSize, self.graphPointSize)))
-        self.graph.setCurvePen(curvekey, QPen(learner.color, 5))
+        curve.setPen(QPen(learner.color, 5))
 
     def drawLearningCurve(self, learner):
         if not self.data: return
-        curvekey = self.graph.insertCurve(learner.name)
-        self.graph.setCurveData(curvekey, self.curvePoints, learner.score)
-        learner.curvekey = curvekey
+        curve = self.graph.addCurve(learner.name, xData=self.curvePoints, yData=learner.score, autoScale=True)
+        
+        learner.curve = curve
         self.setGraphStyle(learner)
         self.graph.replot()
 
     def replotGraph(self):
-        self.graph.removeCurves()   # first remove all curves
+        self.graph.removeDrawingCurves()
         for l in self.learners:
             self.drawLearningCurve(l[1])
 
@@ -281,14 +272,13 @@ class OWLearningCurveC(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWLearningCurveC()
-    appl.setMainWidget(ow)
     ow.show()
 
     l1 = orange.BayesLearner()
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-    data = orange.ExampleTable('iris.tab')
+    data = orange.ExampleTable('../datasets/iris.tab')
     ow.dataset(data)
 
     l2 = orange.BayesLearner()
@@ -307,5 +297,7 @@ if __name__=="__main__":
 #    ow.learner(None, 1)
 #    ow.learner(None, 2)
 #    ow.learner(None, 4)
+    
 
-    appl.exec_loop()
+
+    appl.exec_()
