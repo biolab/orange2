@@ -809,7 +809,7 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
 
 inline const char *checkCtrl(const char *c) {
   for(const char *cc = c; *cc; cc++)
-    if (*cc < 32)
+    if ((const unsigned char)(*cc) < 32)
       raiseErrorWho("write", "string '%s' cannot be written to a file since it contains invalid characters", c);
   return c;
 }
