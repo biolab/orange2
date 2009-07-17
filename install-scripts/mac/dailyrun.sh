@@ -31,8 +31,8 @@ fi
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-[ -e /Volumes/fink/ ] || { open "smb://orange@estelle.fri.uni-lj.si/fink/"; sleep 30; }
-[ -e /Volumes/download/ ] || { open "smb://orange@estelle.fri.uni-lj.si/download/"; sleep 30; }
+[ -e /Volumes/fink/ ] || { open "smb://orange@193.2.72.35/fink/"; sleep 30; }
+[ -e /Volumes/download/ ] || { open "smb://orange@193.2.72.35/download/"; sleep 30; }
 
 /Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?

@@ -5,7 +5,7 @@
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-[ -e /Volumes/download/ ] || { open "smb://orange@estelle.fri.uni-lj.si/download/"; sleep 30; }
+[ -e /Volumes/download/ ] || { open "smb://orange@193.2.72.35/download/"; sleep 30; }
 
 /Users/ailabc/bundle-daily-build.sh &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?
