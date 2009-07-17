@@ -14,6 +14,8 @@ set /r %DOWNLOADDIR\filenames_win.set
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
 
+echo "date: " %daystr
+
 REM # error signalling
 REM set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si"
 set MAIL_TO="tomaz.curk@fri.uni-lj.si"
