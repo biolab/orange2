@@ -27,7 +27,9 @@ cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
 if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
 move /sdz binaries %DOWNLOADDIR\binaries
-except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+
+echo except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+rem except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
 
 rem # remember new filenames
 cdd %SCRIPTDIR
