@@ -10,19 +10,56 @@
 <index name="modules+network">
 
 <p>The orngNetwork module provides the functionality to perform network 
-analises and layout optimization.</p>
+analysis and layout optimization.</p>
 
+<h2>Network</h2>
+
+<p><INDEX name="classes/Network (in orngNetwork)">Network class holds network 
+structure information and supports basic network analysis. Network class is 
+inherited from <a href='../reference/graph.htm'>orange.GraphAsList</a>. Refer to 
+<a href='../reference/graph.htm'>orange.GraphAsList</a> for more graph analysis tools</p>
+
+<p class=section>Attributes</p>
+<DL class =attributes>
+<DT>coors</DT>
+<DD>Coordinates for all vertices. They are initialized to random positions. You can modify them manually or use one of the optimization algorithms. Usage: <code>coors[0][i]</code>, <code>coors[1][i]</code>; 0 for x-axis, 1 for y-axis</DD>
+<DT>items</DT>
+<DD>ExampleTable with information about vertices. Number of rows should match the number of vertices.</DD>
+<DT>links</DT>
+<DD>ExampleTable with information about edges. Number of rows should match the number of edges. Two float attributes named <i>"u"</i> and <i>"v"</i> must be in <i>links</i> table domain to relate the data of an example to an edge. Here, egde is defined by two vertices <i>"u"</i> and <i>"v"</i>.</DD>
+<DT>optimization</DT>
+<DD>Instance of the NetworkOptimization class. Various network layout optimization methods can be applied to the network through this attribute.</DD>
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>Network(nVertices, nEdges, directedGraph=False)</DT>
+<DD>Default constrctor.</DD>
+<!-- <DT>fromSymMatrix(matrix, lower, upper, kNN, andor)</DT>
+<DD></DD> -->
+<DT>fromDistanceMatrix(matrix, lower, upper, kNN=0)</DT>
+<DD>Creates edges between vertices with the distance within given threshold. 
+Matrix should be of orange.SymMatrix type. The number ob objects in a matrix 
+must match the number of vertices in a network. The kNN parameter is used to 
+specify the minimum number of closest vertices to be connected.</DD>
+<DT>save(file)</DT>
+<DD>Saves the network to a file.</DD>
+</DL>
+
+<P class=section>Static Methods</P>
+<DL class=attributes>
+<DT>read(file)</DT>
+<DD>Reads the network from a file. Usage: <code>orngNetwork.Network.read(filename)</code></DD>
+</DL>
 <h2>NetworkOptimization</h2>
 
 <p><INDEX name="classes/NetworkOptimization (in orngNetwork)">NetworkOptimization  
-is the main class for performing network layout optimization. Network structure is defined in orngNetwork.Network class that is inherited from <a href='../reference/graph.htm'>orange.Graph</a>. Coordinates for all vertices are stored in variable <code>coors</coors> and are initialized to random positions. You can modify coordinates manually or use one of the optimization algorithms.</p>
+is the main class for performing network layout optimization. Network structure is defined in orngNetwork.Network class.</p>
 
 <p class=section>Attributes</p>
 <DL class =attributes>
 <DT>graph</DT>
 <DD>Holds the Network object.</DD>
-<DT>graph.coors</DT>
-<DD>Holds coordinates. Usage: <code>coors[0][i]</code>, <code>coors[1][i]</code>; 0 for x-axis, 1 for y-axis.</DD>
 </DL>
 <P class=section>Methods</P>
 <DL class=attributes>
