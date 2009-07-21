@@ -43,13 +43,13 @@ Matrix should be of orange.SymMatrix type. The number ob objects in a matrix
 must match the number of vertices in a network. The kNN parameter is used to 
 specify the minimum number of closest vertices to be connected.</DD>
 <DT>save(file)</DT>
-<DD>Saves the network to a file.</DD>
+<DD>Saves the network to a Pajek (.net) file.</DD>
 </DL>
 
 <P class=section>Static Methods</P>
 <DL class=attributes>
 <DT>read(file)</DT>
-<DD>Reads the network from a file. Usage: <code>orngNetwork.Network.read(filename)</code></DD>
+<DD>Reads the network from a Pajek (.net) file. Usage: <code>orngNetwork.Network.read(filename)</code></DD>
 </DL>
 <h2>NetworkOptimization</h2>
 
@@ -67,10 +67,6 @@ is the main class for performing network layout optimization. Network structure 
 <DD>Default constrctor.</DD>
 <DT>NetworkOptimization(network)</DT>
 <DD>Constructor that takes the Network object.</DD>
-<DT>readNetwork(file)</DT>
-<DD>Reads network from Pajek (.net) file and adds graph structure to NetworkOptimization object. Returns Network object.</DD>
-<DT>saveNetwork(file)</DT>
-<DD>Saves network structure of NetworkOptimization object to Pajek (.net) file.</DD>
 <DT>random()</DT>
 <DD>Random layout optimization.</DD>
 <DT>fruchtermanReingold(steps, temperature, coolFactor=default, hiddenNodes=[], weighted=False)</DT>
@@ -152,8 +148,8 @@ networkOptimization.fruchtermanReingold(100, 1000)
 <p class="header"><a href="network_read.py">network_read.py</a> (uses <a href="K5.net">K5.net</a>)</p>
 
 <xmp class=code># read the network from file
-net = orngNetwork.Network.readNetwork("K5.net")
+net = orngNetwork.Network.read("K5.net")
 
 # save the network to file
-net.saveNetwork("K5.net")
+net.save("K5.net")
 </xmp>
