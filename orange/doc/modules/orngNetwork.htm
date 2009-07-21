@@ -71,9 +71,9 @@ is the main class for performing network layout optimization. Network structure 
 <DD>Constructor that takes the Network object.</DD>
 <DT>random()</DT>
 <DD>Random layout optimization.</DD>
-<DT>fruchtermanReingold(steps, temperature, coolFactor=default, hiddenNodes=[], weighted=False)</DT>
+<DT>fruchtermanReingold(steps=100, temperature=1000, coolFactor=default, hiddenNodes=[], weighted=False)</DT>
 <DD>Fruchterman-Reingold spring layout optimization. Set number of iterations with argument <code>steps</code>, start temperature with <code>temperature</code> (for example: 1000) and set list of hidden nodes with argument <code>hidden_nodes</code>.</DD>
-<DT>radialFruchtermanReingold(center, steps, temperature)</DT>
+<DT>radialFruchtermanReingold(center, steps=100, temperature=1000)</DT>
 <DD>Radial Fruchterman-Reingold spring layout optimization. Set center node with attribute <code>center</code>, number of iterations with argument <code>steps</code> and start temperature with <code>temperature</code> (for example: 1000).</DD>
 <DT>circularOriginal()</DT>
 <DD>Circular layout optimization based on original order.</DD>
