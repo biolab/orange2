@@ -378,7 +378,11 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         w = max(x) - min(x)
         h = max(y) - min(y)
         d = math.sqrt(w**2 + h**2)
-        r = self.mdsScaleRatio / d * e
+        
+        if len(x) == 1:
+            r = 1
+        else:
+            r = self.mdsScaleRatio / d * e
         
         for i in range(len(components)):
             component = components[i]
