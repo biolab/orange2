@@ -588,8 +588,8 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 		return PYNULL;
 
 	TSymMatrix *matrix = &dynamic_cast<TSymMatrix &>(PyOrange_AsOrange(pyMatrix).getReference());
-	cout << "kNN: " << kNN << endl;
-	cout << "andor: " << andor << endl;
+	//cout << "kNN: " << kNN << endl;
+	//cout << "andor: " << andor << endl;
 
 	if (matrix->dim != network->nVertices)
 		PYERROR(PyExc_TypeError, "DistanceMatrix dimension should equal number of vertices.", PYNULL);
@@ -642,7 +642,7 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 				nConnected++;
 		}
 	}
-	cout << "calculating knn, dim: " << matrix->dim << endl;
+	//cout << "calculating knn, dim: " << matrix->dim << endl;
 	vector<coord_t> edges_knn;
 
 	if (kNN > 0) {
@@ -656,10 +656,10 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 		}
 	}
 
-	cout << "n edges: " << edges_interval.size() + edges_knn.size() << endl;
+	//cout << "n edges: " << edges_interval.size() + edges_knn.size() << endl;
 
 	if (andor == 0) {
-		cout << "insert interval" << endl;
+		//cout << "insert interval" << endl;
 		for (i=0; i < edges_interval.size(); i++) {
 			//cout << edges_interval[i].first << ", " << edges_interval[i].second << endl;
 			double* w = network->getOrCreateEdge(edges_interval[i].first, edges_interval[i].second);
@@ -667,7 +667,7 @@ PyObject *Network_fromDistanceMatrix(PyObject *self, PyObject *args) PYARGS(METH
 			*w = value;
 			//cout << edges_interval[i].first << "," << edges_interval[i].second << "," << *w << endl;
 		}
-		cout << "insert knn" << endl;
+		//cout << "insert knn" << endl;
 		for (i = 0; i < edges_knn.size(); i++) {
 			//cout << edges_knn[i].first << ", " << edges_knn[i].second << endl;
 			double* w = network->getOrCreateEdge(edges_knn[i].first, edges_knn[i].second);
