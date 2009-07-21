@@ -155,3 +155,19 @@ net = orngNetwork.Network.read("K5.net")
 # save the network to file
 net.save("K5.net")
 </xmp>
+
+<h3>Visualize a network in NetExplorer widget</h3>
+
+<p>This example demonstrates how to display a network in NetExplorer. </p>
+
+<p class="header">part of <a href="network_widget.py">network_widget.py</a></p>
+<xmp class=code>net = orngNetwork.Network.read('musicians.net')
+net.items = orange.ExampleTable('musicians_items.tab')
+
+ow = OWNetExplorer.OWNetExplorer()
+ow.setNetwork(net)
+
+ow.show()
+</xmp>
+
+<img width="800px" src="netexplorer.png">
