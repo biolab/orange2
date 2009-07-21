@@ -102,6 +102,7 @@ class ORANGEOM_API TNetwork : public TGraphAsList
 public:
   __REGISTER_CLASS
 
+  TNetwork(TNetwork *net);
   TNetwork(TGraphAsList *graph);
   TNetwork(const int &nVert, const int &nEdge, const bool dir);
   ~TNetwork();
