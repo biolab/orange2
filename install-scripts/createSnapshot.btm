@@ -23,13 +23,14 @@ call createCommonAddOns__.btm snapshot %ADDON_BIOINFORMATICS_SNAPSHOT %ADDON_TEX
 break_on_error
 
 rem # if no errors then publish on web (everything at the same time)
+rem # remove any old files
+except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+
+rem # publish
 cdd %TMPDIR
 move /z *.exe %DOWNLOADDIR
 if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
 move /sdz binaries %DOWNLOADDIR\binaries
-
-echo except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
-rem except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
 
 rem # remember new filenames
 cdd %SCRIPTDIR
