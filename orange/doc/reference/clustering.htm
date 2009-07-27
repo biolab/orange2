@@ -1,0 +1,302 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<index name="clustering">
+<H1>Clustering</H1>
+
+<P>Core Orange only provides <INDEX>hierarchical clustering</INDEX>, limited to single, complete and average linkage. Other clustering methods and associated utility functions are provided in <a href="../modules/orngClustering.htm">orngClustering</a> module. See also <A href="http://www.ailab.si/~aleks/orng/">Orange extensions</A> by Aleks Jakulin for k-medoid and fuzzy clustering.</P>
+
+<h2>Hierarchical Clustering</h2>
+
+<H3>Classes</H3>
+
+<P>The method for hierarchical clustering, encapsulated in class <CODE><INDEX name="classes/HierarchicalClustering">HierarchicalClustering</CODE> works on a distance matrix stored as <a href="SymMatrix.htm"><CODE>SymMatrix</CODE></A>. The method works in approximately O(n<SUP>2</SUP>) time (with the worst case O(n<SUP>3</SUP>)). For orientation, clustering ten thousand of elements should take roughly 15 seconds on a 2 GHz computer. The algorithm can either make a copy of the distances matrix and work on it, or work on the original distance matrix, destroying it in the process. The latter is useful for clustering larger number of objects. Since the distance matrix stores (n+1)(n+2)/2 floats (cca 2 MB for 1000 objects and 200 MB for 10000, assuming the a float takes 4 bytes), by copying it we would quickly run out of physical memory. Using virtual memory is not an option since the matrix is accessed in a random manner.</P>
+
+<P>The distance should contain no negative elements. This limitation is due to implementation details of the algorithm (it is not absolutely necessary and can be lifted in future versions if often requested; it only helps the algorithm run a bit faster). The elements on the diagonal (representing the element's distance from itself) are ignored.</P>
+
+<P>Distance matrix can have the attribute <CODE>objects</CODE>
+describing the objects we are clustering (this is available only in
+Python). This can be any sequence of the same length as the matrix -
+an <CODE>ExampleTable</CODE>, a list of examples, a list of attributes
+(if you're clustering attributes), or even a string of the correct
+length. This attribute is not used in clustering but is only passed to
+the clusters' attribute <CODE>mapping</CODE> (see below), which will
+hold a reference to it (if you modify the list, the changes will
+affect the clusters as well).</P>
+
+<P class=section>Attributes of <CODE>HierarchicalClustering</CODE></P>
+<DL class=attributes>
+<DT>linkage</DT>
+<DD>Specifies the linkage method, which can be either
+<ol>
+  <li><CODE>HierarchicalClustering.Single</CODE> (default), where
+distance between groups is defined as the distance between the closest
+pair of objects, one from each group,</li>
+  <li><CODE>HierarchicalClustering.Average</CODE></li>, where the
+distance between two clusters is defined as the average of distances
+between all pairs of objects, where each pair is made up of one object
+from each group, or
+  <li><CODE>HierarchicalClustering.Complete</CODE>, where the distance
+between groups is defined as the distance between the most distant
+pair of objects, one from each group. Complete linkage is also called
+farthest neighbor.</li>
+  <li><CODE>HierarchicalClustering.Ward</CODE> uses Ward's distance.</li>
+</ol>
+</DD>
+
+<DT>overwriteMatrix</DT>
+<DD>If true (default is false), the algorithm will work on the original distance matrix, destroying it in the process. The benefit is that it will need much less memory (not much more than what is needed to store the tree of clusters).</DD>
+
+<DT>progressCallback</DT>
+<DD>A callback function (<CODE>None</CODE> by default). It can be any function or callable class in Python, which accepts a single float as an argument. The function only gets called if the number of objects being clustered is at least 1000. It will be called for 101 times, and the argument will give the proportion of the work been done. The time intervals between the function calls won't be equal (sorry about that...) since the clustering proceeds faster as the number of clusters decreases.</DD>
+</DL>
+
+<P>The <CODE>HierarchicalClustering</CODE> is called with a distance matrix as an argument. It returns an instance of <CODE><index name="classes/HierarchicalCluster">
+HierarchicalCluster</CODE> representing the root of the hierarchy.</P>
+
+
+<P class=section>Attributes of <CODE>HierarchicalCluster</CODE></P>
+<DL class=attributes>
+<DT>branches</DT>
+<DD>A list of subclusters; <CODE>None</CODE> if the node is a leaf (a single element). The list can contain more than two subclusters. (<CODE>HierarchicalClustering</CODE> never produces such clusters; this is here for any future extensions.)</DD>
+
+<DT>left, right</DT>
+<DD>Left and right subclusters. defined only if there are up to two branches - that is, always, if <CODE>HierarchicalClustering</CODE> was used for constructing the cluster..</DD>
+
+<DT>height</DT>
+<DD>The distance between the subclusters.</DD>
+</DL>
+
+<DT>mapping, first, last</DT>
+<DD><CODE>mapping</CODE> is a list of indices to the distance matrix. It is the same for all clusters in the hierarchy - it simply represents the indices ordered according to the clustering. <CODE>first</CODE> and <CODE>last</CODE> are indices into the elements of <CODE>mapping</CODE> that belong to that cluster. (Seems weird, but is trivial - wait for the examples. On the other hand, you probably won't need to understand this anyway.)</P>
+
+<P>If the distance matrix had an attribute <CODE>objects</CODE> defined, it is copied to <CODE>mapping</CODE>.</P>
+</DD>
+</DL>
+
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__len__</DT>
+<DD>Asking for the length of the cluster gives the number of the objects belonging to it. This equals <CODE>last-first</CODE>.</DD>
+
+<DT>&lt;indexing&gt;</DT>
+<DD>By indexing the cluster we address its elements; these are either indices or objects (you'll understand this after seeing the examples). For instance <CODE>cluster[2]</CODE> gives the third element of the cluster, and <CODE>list(cluster)</CODE> will return the cluster elements as a list. The cluster elements are read-only. To actually modify them, you'll have to go through <CODE>mapping</CODE>, as described below. This is intentionally complicated to discourage a naive user from doing what he does not understand.</DD>
+
+<DT>swap()</DT>
+<DD>Swaps the left and the right subcluster; obviously this will report an error when the cluster has more than two subclusters. This function changes the <CODE>mapping</CODE> and <CODE>first</CODE> and <CODE>last</CODE> of all clusters below this one and thus needs O(len(cluster)) time.</DD>
+
+<DT>permute(permutation)</DT>
+<DD>Permutes the subclusters. Permutation gives the order in which the subclusters will be arranged. As for <CODE>swap</CODE>, this function changes the <CODE>mapping</CODE> and <CODE>first</CODE> and <CODE>last</CODE> of all clusters below this one.</DD>
+</DL>
+
+<H3>Example 1: Toy matrix</H3>
+
+<P>Let us construct a simple distance matrix run clustering on it.</P>
+
+<P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>import orange
+
+m = [[],
+     [ 3],
+     [ 2,  4],
+     [17,  5,  4],
+     [ 2,  8,  3,  8],
+     [ 7,  5, 10, 11, 2],
+     [ 8,  4,  1,  5, 11, 13],
+     [ 4,  7, 12,  8, 10,  1,  5],
+     [13,  9, 14, 15,  7,  8,  4,  6],
+     [12, 10, 11, 15,  2,  5,  7,  3,  1]]
+
+matrix = orange.SymMatrix(m)
+root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClustering.Average)
+</XMP>
+
+<P>Root is a root of the cluster hierarchy. We can print using a simple recursive function.</P>
+
+<P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>def printClustering(cluster):
+    if cluster.branches:
+        return "(%s%s)" % (printClustering(cluster.left), printClustering(cluster.right))
+    else:
+        return `cluster[0]`
+</XMP>
+
+<P>The output is not exactly nice, but it will have to do. Our clustering, printed by calling <CODE>printClustering(root)</CODE> looks like this: <CODE>(((04)((57)(89)))((1(26))3))</CODE>. The elements are separated into two groups, the first containing elements 0, 4, 5, 7, 8, 9, and the second 1, 2, 6, 3. The difference between them equals <CODE>root.height</CODE>, 9.0 in our case. The first cluster is further divided onto 0 and 4 in one, and 5, 7, 8, 9 in the other subcluster...</P>
+
+<P>It is easy to print out the cluster's objects. Here's what's in the left subcluster of <CODE>root</CODE>.</P>
+<XMP class=code>>>> for el in root.left:
+...    print el,
+0 4 5 7 8 9
+</XMP>
+
+
+<P>Everything that can be iterated over, can as well be cast into a list or tuple. Let us demonstrate this by writing a better function for printing out the clustering (which will also come handy for something else in a while). The one above supposed that each leaf contains a single object. This is not necessarily so; instead of printing out the first (and supposedly the only) element of cluster, <CODE>cluster[0]</CODE>, we shall print it out as a tuple.</P>
+
+<P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>def printClustering2(cluster):
+    if cluster.branches:
+        return "(%s%s)" % (printClustering2(cluster.left), printClustering2(cluster.right))
+    else:
+        return str(tuple(cluster))
+</XMP>
+
+<P>The distance matrix could have been given a list of objects. We could, for instance, put</P>
+<XMP CLASS=CODE>matrix.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"]
+</XMP>
+<P>above calling the <CODE>HierarchicalClustering</CODE>. (This code will actually trigger a warning; to avoid it, use <CODE>matrix.setattr("objects", ["Ann", "Bob"...</CODE>. Why this is needed is explained in the page on <A href="peculiarities.htm">Orange peculiarities</A>.) If we've forgotten to store the <CODE>objects</CODE> into <CODE>matrix</CODE> prior to clustering, nothing is lost. We can add it into clustering later, by</P>
+<XMP CLASS=CODE>root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"])
+</XMP>
+
+<P>So, what do these "objects" do? Call <CODE>printClustering(root)</CODE> again and you'll see. Or, let us print out the elements of the first left cluster, as we did before.</P>
+<XMP class=code>>>> for el in root.left:
+...    print el,
+Ann Eve Fred Hue Ivy Jon
+</XMP>
+
+<P>If objects are given, the cluster's elements, as got by indexing (eg <CODE>root.left[2]</CODE>) or by iteration, as in the above case, won't be indices but the elements we clustered. If we put an <CODE>ExampleTable</CODE> into <CODE>objects</CODE>, <CODE>root.left[-1]</CODE> will be the last example of the first left cluster.</P>
+
+
+<P>Now for swapping and permutations.</P>
+<XMP class=code>>>> printClustering(root)
+((('Ann''Eve')(('Fred''Hue')('Ivy''Jon')))(('Bob'('Curt''Greg'))'Danny'))
+>>> root.left.swap()
+>>> printClustering(root)
+(((('Fred''Hue')('Ivy''Jon'))('Ann''Eve'))(('Bob'('Curt''Greg'))'Danny'))
+>>> root.permute([1, 0])
+>>> printClustering(root)
+((('Bob'('Curt''Greg'))'Danny')((('Fred''Hue')('Ivy''Jon'))('Ann''Eve')))
+</XMP>
+
+<P>Calling <CODE>root.left.swap</CODE> reversed the order of subclusters of <CODE>root.left</CODE> and <CODE>root.permute([1, 0])</CODE> (which is equivalent to <CODE>root.swap</CODE> - there aren't many possible permutations of two elements) reverses the order of <CODE>root.left</CODE> and <CODE>root.right</CODE>.
+
+<P>Let us write function for cluster pruning.</P>
+
+<P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>def prune(cluster, togo):
+    if cluster.branches:
+        if togo<0:
+            cluster.branches = None
+        else:
+            for branch in cluster.branches:
+                prune(branch, togo-cluster.height)
+
+</XMP>
+
+<P>We shall use <CODE>printClustering2</CODE> here, since we can have multiple elements in a leaf of the clustering hierarchy.</P>
+<XMP class=code>>>> prune(root, 9)
+>>> print printClustering2(root)
+((('Bob', 'Curt', 'Greg')('Danny',))(('Fred', 'Hue', 'Ivy', 'Jon')('Ann', 'Eve')))
+</XMP>
+
+<P>We've ended up with four clusters. Need a list of clusters? Here's the function.</P>
+
+<P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>def listOfClusters0(cluster, alist):
+    if not cluster.branches:
+        alist.append(list(cluster))
+    else:
+        for branch in cluster.branches:
+            listOfClusters0(branch, alist)
+
+def listOfClusters(root):
+    l = []
+    listOfClusters0(root, l)
+    return l
+
+</XMP>
+
+<P>The function returns a list of lists, in our case <CODE>[['Bob', 'Curt', 'Greg'], ['Danny'], ['Fred', 'Hue', 'Ivy', 'Jon'], ['Ann', 'Eve']]</CODE>. If there were no <CODE>objects</CODE> the list would contains indices instead of names.
+
+
+<H3>Example 2: Clustering of examples</H3>
+
+<P>The most common things to cluster are certainly examples. To show how to this is done, we shall now load the Iris data set, initialize a distance matrix with the distances measure by <A href="examplesdistance.htm"><CODE>ExamplesDistance_Euclidean</CODE></A> and cluster it with average linkage. Since we don't need the matrix, we shall let the clustering overwrite it (not that it's needed for such a small data set as Iris).</P>
+
+<P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
+<XMP class=code>import orange
+
+data = orange.ExampleTable("iris")
+
+matrix = orange.SymMatrix(len(data))
+matrix.setattr("objects", data)
+distance = orange.ExamplesDistanceConstructor_Euclidean(data)
+for i1, ex1 in enumerate(data):
+    for i2 in range(i1+1, len(data)):
+        matrix[i1, i2] = distance(ex1, data[i2])
+
+clustering = orange.HierarchicalClustering()
+clustering.linkage = clustering.Average
+clustering.overwriteMatrix = 1
+root = clustering(matrix)
+</XMP>
+
+<P>Note that we haven't forgotten to set the <CODE>matrix.objects</CODE>. We did it through <CODE>matrix.setattr</CODE> to avoid the warning. Let us now prune the clustering using the function we've written above, and print out the clusters.</P>
+<P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
+<XMP class=code>prune(root, 1.4)
+
+for n, cluster in enumerate(listOfClusters(root)):
+    print "\n\n*** Cluster %i ***\n" % n
+    for ex in cluster:
+        print ex
+</XMP>
+
+<P>Since the printout is pretty long, it might be more informative to just print out the class distributions for each cluster.</P>
+
+<P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
+<XMP class=code>for cluster in listOfClusters(root):
+    dist = orange.getClassDistribution(cluster)
+    for e, d in enumerate(dist):
+        print "%s: %3.0f   " % (data.domain.classVar.values[e], d),
+    print
+</XMP>
+
+<P>Here's what it shows.</P>
+<XMP class=code>Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0
+Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0
+Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17
+Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33
+</XMP>
+
+<P>Note something else: <CODE>listOfClusters</CODE> does not return a list of <CODE>ExampleTable</CODE>s, but a list of lists of examples. Therefore, in the above script, <CODE>cluster</CODE> is a list of examples, not an <CODE>ExampleTable</CODE>, but it gets converted to it automatically when the function is called. Most Orange functions will do this for you automatically. You can, for instance, call a learning algorithms, passing a cluster as an argument. It won't mind. If you, however, want to have a list of table, you can easily convert the list by</P>
+<XMP class=code>tables = [orange.ExampleTable(cluster) for cluster in listOfClusters(root)]
+</XMP>
+</P>
+
+<P>Finally, if you are dealing with examples, you may want to take the function <CODE>listOfClusters</CODE> and replace <CODE>alist.append(list(cluster))</CODE> by <CODE>alist.append(orange.ExampleTable(cluster))</CODE>. This function is less general, it will fail if <CODE>objects</CODE> are not of type <CODE>Example</CODE>. However, instead of list of lists, it will return a list of example tables.</P>
+
+
+<H3>How the data in HierarchyCluster is really stored?</H3>
+
+<P>To demonstrate how the data in clusters is stored, we shall continue with the clustering we got in the first example.</P>
+
+<XMP class=code>>>> del root.mapping.objects
+>>> print printClustering(root)
+(((1(26))3)(((57)(89))(04)))
+>>> print root.mapping
+<1, 2, 6, 3, 5, 7, 8, 9, 0, 4>
+>>> print root.left.first
+0
+>>> print root.left.last
+4
+>>> print root.left.mapping[root.left.first:root.left.last]
+<1, 2, 6, 3>
+>>> print root.left.left.first
+0
+>>> print root.left.left.last
+3
+</XMP>
+
+<P>We removed <CODE>objects</CODE> to just to see more clearly what is going on. <CODE>mapping</CODE> is an ordered list of indices to the rows/columns of distance matrix (and, at the same time, indices into <CODE>objects</CODE>, if they exist). Each cluster's fields <CODE>first</CODE> and <CODE>last</CODE> are indices into mapping, so the clusters elements are actually <CODE>cluster.mapping[cluster.first:cluster.last]</CODE>. <CODE>cluster[i]</CODE> therefore returns <CODE>cluster.mapping[cluster.first+i]</CODE> or, if <CODE>objects</CODE> are specified, <CODE>cluster.objects[cluster.mapping[cluster.first+i]]</CODE>. Space consumption is minimal since all clusters share the same objects <CODE>mapping</CODE> and <CODE>objects</CODE>.</P>
+
+<P>Subclusters are ordered so that <CODE>cluster.left.last</CODE> always equals <CODE>cluster.right.first</CODE> or, in general, <CODE>cluster.branches[i].last</CODE> equals <CODE>cluster.branches[i+1].first</CODE>.</P>
+
+<P>Swapping and permutation do three things: change the order of elements in <CODE>branches</CODE>, permute the corresponding regions in <CODE>mapping</CODE> and adjust the <CODE>first</CODE> and <CODE>last</CODE> for all the clusters below. For the latter, when subclusters of <CODE>cluster</CODE> are permuted, the entire subtree starting at <CODE>cluster.branches[i]</CODE> is moved by the same offset.</P>
+
+<P>The hierarchy of objects that represent a clustering is open, everything is accessible from Python. You can write your own clustering algorithms that build this same structure, or you can use Orange's clustering and then do we the structure anything you want. For instance prune it, as we have shown earlier. However, it is easy to do things wrong: shuffle the <CODE>mapping</CODE>, for instance, and forget to adjust the <CODE>first</CODE> and <CODE>last</CODE> pointers. Orange does some checking for the internal consistency, but you are surely smarter and can find a way to crash it. For instance, just create a cycle in the structure, call <CODE>swap</CODE> for some cluster above the cycle and you're there. But don't blame it on me then.</P>
+
