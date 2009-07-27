@@ -1,0 +1,76 @@
+<html>
+<head>
+<title>SVM</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>SVM Learner</h1>
+
+<img class="screenshot" src="../icons/SVM.png">
+<p>Support vector machine learner (classification)</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+
+<DT>Learner</DT>
+<DD>The support vector machine learning algorithm with settings as specified in the dialog.</DD>
+
+<DT>Classifier</DT>
+<DD>Trained SVM classifier</DD>
+
+<DT>Support Vectors</DT>
+<DD>A subset of data instances from the training set that were used as support vectors in the trained classifier</DD>
+
+</dl>
+
+<h2>Description</h2>
+
+<p>Support vector machines (SVM) is a popular classification technique that will construct a separating hyperplane in the attribute space which maximizes the margin between the instances of different classes. The technique often yields supreme predictive performance results. Orange embeds a popular implementation of SVM in <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvm/">LIBSVM</a> package, and this widget provides for a graphical user interface to its functionality. It also behaves like a typical Orange learner widget: on its output, it presents an object that can learn and is initialized with the setting specified in the widget, or, given the input data set, also a classifier that can be used to predict classes and class probabilities given a set of new examples.</p>
+
+<table><tr>
+<td valign="top">
+<img class="screenshot" src="SVM.png" alt="Support vector machines widget" border=0></td>
+
+<td valign="top">
+<P>Learner can be given a name under which it will appear in other widgets that use its output, say, in <a href="../Evaluate/TestLearners.htm">Test Learners</a>. The default name is simply "SVM".</P>
+
+<p>The next block of options deals with kernel, that is, a function that transforms attribute space to a new feature space to fit the maximum-margin hyperplane, thus allowing the algorithm to create non-linear classifiers. The first kernel in the list, however, is a <span class="option">Linear</span> kernel that does not require this trick, but all the others (<span class="option">Polynomial</span>, <span class="option">RBF</span> and <span class="option">Sigmoid</span>) do. Specific functions that specify the kernel are presented besides their names, and the constants involved: 
+
+<span class="option">g</span> for the gamma constant in kernel function (the recommended value is 1/k, where k is the number of the attributes, but since there may be no training set given to the widget the default is 0 and the user has to set this option manually), <span class="option">d</span>) for the degree of the kernel (default 3), and <span class="option">c</span> for the constant c0 in the kernel function (default 0).</p>
+
+<p><span class="option">Options</span> control other aspects of the SVM learner. <span class="option">Model complexity (C)</span> (penalty parameter), <span class="option">Tolerance (p)</span> and <span class="option">Numeric precision (eps)</span> are options that define the optimization function; see <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvm/">LIBSVM</a> for further details. The other three options are used to instruct the learner to prepare the classifier such that it would estimate the class probability values (<span class="option">Estimate class probabilities</span>), constrain the number of the support vectors which define the maximum-margin hyperplane (<span class="option">Limit the number of support vectors</span>) and normalize the training and later the test data (<span class="option">Normalize data</span>). The later somehow slows down the learner, but may be essential in achieving better classification performance.</p>
+
+<p>The last button in the SVM dialog is <span class="option">Automatic parameter search</span>. This is enabled when the widget is given a data set, and uses <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvm/">LIBSVM</a>'s procedures to search for the optimal value of learning parameters. Upon completion, the values of the parameters in the SVM dialog box are set to the parameters found by the procedure.</p>
+</td></tr></table>
+
+<h2>Examples</h2>
+
+<P>There are two typical uses of this widget, one that uses it as a classifier and the other one that uses it to construct an object for learning. For the first one, we have split the data set to two data sets (<span class="option">Sample</span> and <span class="option">Remaining Examples</span>). The sample was sent to <span class="option">SVM</span> which produced a <span class="option">Classifier</span>, that was then used in <span class="option">Predictions</span> widget to classify the data in <span class="option">Remaning Examples</span>. A similar schema can be used if the data would be already separated in two different files; in this case, two <span class="option">File</span> widgets would be used instead of the <span class="option">File</span>-<span class="option">Data Sampler</span> combination.</p>
+
+<img class="screenshot" src="SVM-Predictions.png" alt="SVM - a schema with a classifier" border=0>
+
+<p>The second schema shows how to use the <span class="option">SVM</span> widget to construct the learner and compare it in cross-validation with <span class="option">Majority</span> and <span class="option">k Nearest Neighbors</span> learners.</p>
+
+<img class="screenshot" src="SVM-Evaluation.png" alt="SVM and other learners compared by cross-validation" border=0>
+
+<p>The following schema observes a set of support vectors in a <span class="option">Scatterplot</span> visualization.</p>
+
+<img class="screenshot" src="SVM-SupportVectors.png" alt="Visualization of support vectors" border=0>
+
+<p>For the above schema to work correctly, the channel between <span class="option">SVM</span> and <span class="option">Scatterplot</span> widget has to be set appropriately. Set the channel between these two widgets by double-clinking on the green edge between the widgets, and use the settings as displayed in the dialog below.</p>
+
+<img class="screenshot" src="SVM-SupportVectorsOutput.png" alt="Channel setting for communication of support vectors" border=0>
+</body>
+</html>
