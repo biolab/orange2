@@ -289,7 +289,7 @@ for i in range(10):
 
 <P>Note: <code>select</code> used to have many other functions, which are now deprecated and only kept for compatibility. We shall not document them, except for one that may cause unexpected behaviour. Say we have a data set which does not contain three examples (can have more of less). Calling <code>select([0, 1, 5])</code> will return a table containing only the first, second and sixth attribute. In other words, if you use <code>select</code> like described above (and below), but give it a list of a wrong size, the call will be interpreted as if you want to change the domain. Don't purposely call <code>select</code> to change the domain.</P>
 
-<P>The most natural use of this method is for division of examples into folds. For this, we first prepare a list of fold indices using an appropriate descendant of <CODE>MakeRandomIndices</CODE>; <CODE>MakeRandomIndicesCV</CODE>, for instance, will prepare indices for cross-validation (see documentation on <a href="randomindices.htm">random indices</a>). Then we feed the indices to <CODE>select</CODE>, as shown in example below.</P>
+<P>The most natural use of this method is for division of examples into folds. For this, we first prepare a list of fold indices using an appropriate descendant of <CODE>MakeRandomIndices</CODE>; <CODE>MakeRandomIndicesCV</CODE>, for instance, will prepare indices for cross-validation (see documentation on <a href="RandomIndices.htm">random indices</a>). Then we feed the indices to <CODE>select</CODE>, as shown in example below.</P>
 
 <p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
 <XMP class=code>cv_indices = orange.MakeRandomIndicesCV(data, 4)
