@@ -20,13 +20,13 @@ data set from UCI ML Repository. The prediction task related to this
 data set is to determine whether a person characterized by 14
 attributes like education, race, occupation, etc., makes over
 $50K/year. Because of the original set <a
-href="/orange/datasets/adult.tab">adult.tab</a> is rather big (32561 data
+href="../datasets/adult.tab">adult.tab</a> is rather big (32561 data
 instances, about 4 MBytes), we will first create a smaller sample of
 about 3% of instances and use it in our examples. If you are curious
 how we do this, here is the code:</p>
 
 <p class="header"><a href="sample_adult.py">sample_adult.py</a> (uses <a
-href="/orange/datasets/adult.tab">adult.tab</a> and generates <a href=
+href="../datasets/adult.tab">adult.tab</a> and generates <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
 
 <xmp class="code">import orange
@@ -289,7 +289,7 @@ determine if for specific instances and attribute the value is not
 defined. Let us use this function to compute the proportion of missing
 values per each attribute:</p>
 
-<p class="header"><a href="../report_missing.py">report_missing.py</a> (uses <a
+<p class="header"><a href="report_missing.py">report_missing.py</a> (uses <a
 href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
 <xmp class="code">import orange
 data = orange.ExampleTable("adult_sample")
