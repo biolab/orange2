@@ -37,7 +37,7 @@
 
 <li>If <code>randomGenerator</code> is not given, but <code>randseed</code> is (positive values denote a defined <code>randseed</code>), the value is used to initiate a new, temporary local random generator. This way, the indices generator will always give same indices for the same data.</li>
 
-<li>If none of the two is defined, a new random generator is constructed each time the object is called (note that this is unlike some other classes, such as <a href="Variable.htm"><CODE>Variable</CODE></A>, <A href="distributions.htm"><CODE>Distribution</CODE></A> and <A href="exampletable.htm"><CODE>ExampleTable</CODE></A>, that store such generators for future use; the generator constructed by <CODE>MakeRandomIndices</CODE> is disposed after use) and initialized with random seed 0. This thus has the same effect as setting <CODE>randseed</CODE> to 0.</li>
+<li>If none of the two is defined, a new random generator is constructed each time the object is called (note that this is unlike some other classes, such as <a href="Variable.htm"><CODE>Variable</CODE></A>, <A href="distributions.htm"><CODE>Distribution</CODE></A> and <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A>, that store such generators for future use; the generator constructed by <CODE>MakeRandomIndices</CODE> is disposed after use) and initialized with random seed 0. This thus has the same effect as setting <CODE>randseed</CODE> to 0.</li>
 </ul>
 The example for <code>MakeRandomIndices2</code> shows the difference between those options.
 </dd>

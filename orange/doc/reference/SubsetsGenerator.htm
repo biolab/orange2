@@ -71,7 +71,7 @@ for attrs in sgen(data.domain.attributes):
 <P>Here is an example</P>
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
-(uses <a href="monks-1.tab">monks-1.tab</a>)</p>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
 <XMP class="code">gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
 for attrs in gen1:
   print attrs
@@ -96,7 +96,7 @@ for attrs in gen1:
 <P>More often, however, the generator will be constructed in advance and then used to construct subsets of some given attribute set.</P>
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
-(uses <a href="monks-1.tab">monks-1.tab</a>)</p>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
 <XMP class="code">def f(gen, data):
   for attrs in gen(data.domain.attributes):
     print attrs
@@ -117,7 +117,7 @@ f(gen, data)
 
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
-(uses <a href="monks-1.tab">monks-1.tab</a>)</p>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
 <XMP class="code">gen4 = orange.SubsetsGenerator_minMaxSize(min=1, max=3)
 for attrs in gen4(data.domain.attributes):
   print attrs
@@ -148,7 +148,7 @@ for attrs in gen4(data.domain.attributes):
 <P>The code below will always return a subset containing the first three attributes.</p>
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
-(uses <a href="monks-1.tab">monks-1.tab</a>)</p>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
 <xmp class="code">gen5 = orange.SubsetsGenerator_constant()
 gen5.constant = data.domain[:3]
 for attrs in gen5(data.domain.attributes):
