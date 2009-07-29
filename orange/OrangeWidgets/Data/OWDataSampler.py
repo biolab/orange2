@@ -13,6 +13,8 @@ class OWDataSampler(OWWidget):
     settingsList=["Stratified", "Repeat", "UseSpecificSeed", "RandomSeed",
     "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases", "selPercentage", "LOO",
     "CVFolds", "CVFoldsInternal", "nGroups", "pGroups", "GroupText"]
+    
+    contextHandlers = {"":DomainContextHandler("", ["nCases","selPercentage"])}
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleData', wantMainArea = 0)
 
@@ -43,12 +45,19 @@ class OWDataSampler(OWWidget):
         self.pGroups = [0.1,0.25,0.5]           # sizes of groups
         self.GroupText = '0.1,0.25,0.5'         # assigned to Groups Control (for internal use)
 
+        self.loadSettings()
         # GUI
+        
+        # Info Box
+        box1 = OWGUI.widgetBox(self.controlArea, "Information")
+        self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
+        self.infob = OWGUI.widgetLabel(box1, ' ')
+        self.infoc = OWGUI.widgetLabel(box1, ' ')
         
         # Options Box
         box2 = OWGUI.widgetBox(self.controlArea, 'Options')
-        OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)')
-        OWGUI.checkWithSpin(box2, self, 'Set random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed')
+        OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)', callback=self.settingsChanged)
+        OWGUI.checkWithSpin(box2, self, 'Set random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed', checkCallback=self.settingsChanged, spinCallback=self.settingsChanged)
         OWGUI.separator(self.controlArea)
 
         # Sampling Type Box
@@ -60,23 +69,24 @@ class OWDataSampler(OWWidget):
         self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Random sampling')
         # repeat checkbox
         self.h1Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
-        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'With replacement')
+        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'With replacement', callback=self.settingsChanged)
 
         # specified number of elements checkbox
         self.h2Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
-        OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=self.uCases)
+        OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=[self.uCases, self.settingsChanged], spinCallback=self.settingsChanged)
         OWGUI.rubber(self.h2Box)
         
         # percentage slider
         self.h3Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
         OWGUI.widgetLabel(self.h3Box, "Sample size:")
         self.slidebox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
-        OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
+        OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%", callback=self.settingsChanged)
 
         # Cross Validation
         self.s[1] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Cross validation')
+        
         box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
-        OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=self.changeCombo)
+        OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=[self.changeCombo, self.settingsChanged])
         OWGUI.rubber(box)
 
         # Leave-One-Out
@@ -94,16 +104,9 @@ class OWDataSampler(OWWidget):
 
         # Select Data Button
         OWGUI.separator(self.controlArea)
-        OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
+        self.sampleButton = OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
         self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
         OWGUI.separator(self.controlArea)
-        
-        # Info Box
-        box1 = OWGUI.widgetBox(self.controlArea, "Information")
-        self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
-        self.infob = OWGUI.widgetLabel(box1, ' ')
-        self.infoc = OWGUI.widgetLabel(box1, ' ')
-        
 
         # CONNECTIONS
         # set connections for RadioButton (SelectType)
@@ -129,6 +132,7 @@ class OWDataSampler(OWWidget):
         except:
             self.error("Invalid specification for sizes of subsets.", 1)
         self.changeCombo()
+        self.settingsChanged()
 
     # reflect user's actions that change combobox contents
     def changeCombo(self):
@@ -165,9 +169,11 @@ class OWDataSampler(OWWidget):
     # I/O STREAM ROUTINES
     # handles changes of input stream
     def setData(self, dataset):
+        self.closeContext()
         if dataset:
             self.infoa.setText('%d instances in input data set.' % len(dataset))
             self.data = dataset
+            self.openContext("", dataset)
             self.process()
         else:
             self.infoa.setText('No data on input.')
@@ -210,6 +216,8 @@ class OWDataSampler(OWWidget):
         self.nRemainder = len(remainder)
         self.send("Sample", sample)
         self.send("Remaining Examples", remainder)
+        
+        self.sampleButton.setEnabled(False)
 
     # MAIN SWITCH
     # processes data after the user requests it
@@ -293,6 +301,9 @@ class OWDataSampler(OWWidget):
 
         # call data output routine
         self.sdata()
+        
+    def settingsChanged(self):
+        self.sampleButton.setEnabled(True)
 
     def sendReport(self):
         if self.SelectType == 0:
