@@ -187,7 +187,6 @@ def stepwise(data, weight, add_sig = 0.05, remove_sig = 0.2):
 
     changed_model = True
     while changed_model:
-        print inc_atts
         changed_model = False
         # remove all unsignificant conditions (learn several models, where each time 
         # one attribute is removed and check significance)
