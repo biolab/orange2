@@ -7,6 +7,7 @@ set WIN_SNAPSHOT=orange-win-snapshot-%daystr
 set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-%daystr
 set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-%daystr
 set ADDON_TEXT_SNAPSHOT=orangeAddOn-text-snapshot-%daystr
+set SOURCE_SNAPSHOT=orange-source-snapshot-%daystr.zip
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
@@ -25,6 +26,17 @@ break_on_error
 rem # if no errors then publish on web (everything at the same time)
 rem # remove any old files
 except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+
+rem # pack sources
+cdd %TMPDIR
+del /syeqtx sourcestopack
+mkdir sourcestopack
+cd sourcestopack
+svn export http://www.ailab.si/svn/orange/trunk/orange
+cd orange
+svn export http://www.ailab.si/svn/orange/trunk/source
+del %DOWNLOADDIR\orange-source-snapshot-????-??-??-*.zip
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\%SOURCE_SNAPSHOT.zip *
 
 rem # publish
 cdd %TMPDIR
