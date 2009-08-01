@@ -35,8 +35,8 @@ cd sourcestopack
 svn export -q http://www.ailab.si/svn/orange/trunk/orange
 cd orange
 svn export -q http://www.ailab.si/svn/orange/trunk/source
-del %DOWNLOADDIR\orange-source-snapshot-????-??-??-*.zip
-"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\%SOURCE_SNAPSHOT.zip *
+del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\%SOURCE_SNAPSHOT *
 
 rem # publish
 cdd %TMPDIR
