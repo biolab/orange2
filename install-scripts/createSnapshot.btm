@@ -32,9 +32,9 @@ cdd %TMPDIR
 del /syeqtx sourcestopack
 mkdir sourcestopack
 cd sourcestopack
-svn export http://www.ailab.si/svn/orange/trunk/orange
+svn export -q http://www.ailab.si/svn/orange/trunk/orange
 cd orange
-svn export http://www.ailab.si/svn/orange/trunk/source
+svn export -q http://www.ailab.si/svn/orange/trunk/source
 del %DOWNLOADDIR\orange-source-snapshot-????-??-??-*.zip
 "c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\%SOURCE_SNAPSHOT.zip *
 
