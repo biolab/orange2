@@ -214,9 +214,9 @@ def spin(widget, master, value, min, max, step=1,
 class DoubleSpinBoxWFocusOut(QDoubleSpinBox):
     def __init__(self, min, max, step, bi):
         QDoubleSpinBox.__init__(self, bi)
+        self.setDecimals(math.ceil(-math.log10(step)))
         self.setRange(min, max)
         self.setSingleStep(step)
-        self.setDecimals(math.ceil(-math.log10(step)))
         self.inSetValue = False
         self.enterButton = None
 
