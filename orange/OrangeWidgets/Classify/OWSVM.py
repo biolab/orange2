@@ -48,14 +48,14 @@ class OWSVM(OWWidget):
         OWGUI.separator(self.controlArea)
 
         self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace = True)
-        OWGUI.doubleSpin(b,self, "C", 0.0, 512.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
+        OWGUI.doubleSpin(b,self, "C", 0.5, 512.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 120, orientation="horizontal")
-        OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
+        eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
 
         OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         cb = OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors")
-        self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
+        self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.1, 1.0, 0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
         cb.disables.append(self.nuBox)
         cb.makeConsistent()
 ##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
