@@ -15,6 +15,7 @@ from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
 import OWQCanvasFuncts
 from orngDataCaching import *
+import random
 
 class OWAttributeStatistics(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"])}
@@ -192,16 +193,16 @@ class DisplayStatistics (QGraphicsScene):
                 self.q1 = quartiles_list[qlen/4]
                 self.q3 = quartiles_list[3*qlen/4]
             if self.bar_height_pixels==None: self.bar_height_pixels = 300
-            if self.bar_width_pixels==None: self.bar_width_pixels = 20
+            if self.bar_width_pixels==None: self.bar_width_pixels = 40
             self.mini = quartiles_list[0]
             self.maxi = quartiles_list[-1]
             self.total_values = len(quartiles_list)
             self.distinct_values = len(dist[ind])
             self.mean = dist[ind].average()
             self.stddev = dist[ind].dev()
-            self.drawCStat()
+            self.drawCStat(dist[ind])
 
-    def drawCStat(self):
+    def drawCStat(self, dist):
         # draw the main rectangle
         bar_height = self.maxi-self.mini
         #all = QCanvasRectangle (self.hbias, self.vbias, self.bar_width_pixels, self.bar_height_pixels, self)
@@ -229,7 +230,7 @@ class DisplayStatistics (QGraphicsScene):
 
         # draw a rectangle from the 3rd quartile to max; add line and text
         quartile3 =  int(self.bar_height_pixels*(self.maxi-self.q3)/(bar_height or 1))
-        crq3 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, self.bar_width_pixels, quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(0,175,0))
+        crq3 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias, self.bar_width_pixels, quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(207, 255, 207))
 
         q3line = self.vbias + quartile3
         line2 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q3line, self.hbias+self.bar_width_pixels+5, q3line, z = 1)
@@ -241,7 +242,7 @@ class DisplayStatistics (QGraphicsScene):
 
         # draw a rectangle from the median to the 3rd quartile; add line and text
         med = int(self.bar_height_pixels*(self.maxi-self.median)/(bar_height or 1))
-        crm = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile3, self.bar_width_pixels, med-quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(0,134,0))
+        crm = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile3, self.bar_width_pixels, med-quartile3, pen = QPen(Qt.NoPen), brushColor = QColor(164, 239, 164))
 
         mline = self.vbias + med
         line3 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, mline, self.hbias+self.bar_width_pixels+5, mline, z = 1)
@@ -253,7 +254,7 @@ class DisplayStatistics (QGraphicsScene):
 
         # draw a rectangle from the 1st quartile to the median; add line and text
         quartile1 = int(self.bar_height_pixels*(self.maxi-self.q1)/(bar_height or 1))
-        crq1 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+med, self.bar_width_pixels, quartile1-med, pen = QPen(Qt.NoPen), brushColor = QColor(0,92,0))
+        crq1 = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+med, self.bar_width_pixels, quartile1-med, pen = QPen(Qt.NoPen), brushColor = QColor(126,233,126))
         q1line = self.vbias + quartile1
         line4 = OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q1line, self.hbias+self.bar_width_pixels+5, q1line, z = 1)
 
@@ -263,7 +264,7 @@ class DisplayStatistics (QGraphicsScene):
         crq1tL = OWQCanvasFuncts.OWCanvasText(self, "%5.2f" % self.q1, self.hbias-textoffset, q1vTextPos, Qt.AlignRight)
 
         # draw a rectangle from min to the 1st quartile
-        cr = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile1, self.bar_width_pixels, self.bar_height_pixels-quartile1, pen = QPen(Qt.NoPen), brushColor = QColor(0,51,0))
+        cr = OWQCanvasFuncts.OWCanvasRectangle(self, self.hbias, self.vbias+quartile1, self.bar_width_pixels, self.bar_height_pixels-quartile1, pen = QPen(Qt.NoPen), brushColor = QColor(91,207,91))
 
         # draw a horizontal mean line; add text
         self.meanpos = int(self.bar_height_pixels*(self.maxi-self.mean)/(bar_height or 1))
@@ -402,6 +403,26 @@ class DisplayStatistics (QGraphicsScene):
                     OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
                     OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q3line, self.hbias-10, val+self.textHeight*0.5)
                     OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
+            if dist.cases <= 1000:
+                pen = QPen(Qt.black)
+                pen.setWidth(2)
+                pen.setStyle(Qt.SolidLine)
+                maxs = max(dist.values())
+                cent = self.hbias + self.bar_width_pixels/2.
+                fact = self.bar_width_pixels * 0.8 / maxs
+                for val, occ in dist.items():
+                    val = self.vbias+int(self.bar_height_pixels*(self.maxi-val)/(bar_height or 1))
+                    if occ > self.bar_width_pixels:
+                        r = QGraphicsLineItem(cent-fact*occ, val, cent+fact*occ, val, None, self)
+                        r.setPen(pen)
+                        r.setZValue(1)
+                    else:
+                        hocc = (occ-1)/2.
+                        for e in range(int(occ)):
+                            x = cent + (e - hocc) * fact
+                            r = QGraphicsLineItem(x, val, x, val, None, self)
+                            r.setPen(pen)
+                            r.setZValue(1)
         #print
 
 
