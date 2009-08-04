@@ -6,7 +6,6 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 from OWWidget import *
-from OWGraph import *
 import OWGUI, OWGUIEx
 
 class OWDataDomain(OWWidget):
