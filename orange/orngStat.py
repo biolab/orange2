@@ -1309,8 +1309,7 @@ def AUC_single(res, classIndex = -1, useWeights = True):
     if res.numberOfIterations > 1:
         return AUC_iterations(AUC_i, splitByIterations(res), (classIndex, useWeights, res, res.numberOfIterations))
     else:
-        return AUC_i([res], classIndex, useWeights)
-
+        return AUC_i( res, classIndex, useWeights)[0]
 
 # Computes AUC for a pair of classes (as if there were no other classes)
 # Results over folds are averages; if some folds have examples from one class only, the folds are merged
