@@ -92,6 +92,7 @@ class TuneMParameters(TuneParameters):
         compare = getattr(self, "compare", cmp)
         verbose = verbose or getattr(self, "verbose", 0)
         returnWhat = getattr(self, "returnWhat", Tune1Parameter.returnClassifier)
+        progressCallback = getattr(self, "progressCallback", lambda i: None)
         
         to_set = []
         parnames = []
@@ -107,7 +108,9 @@ class TuneMParameters(TuneParameters):
         cvind = orange.MakeRandomIndicesCV(table, folds)
         findBest = orngMisc.BestOnTheFly(seed = table.checksum(), callCompareOn1st = True)
         tableAndWeight = weight and (table, weight) or table
-        for valueindices in orngMisc.LimitedCounter([len(x[1]) for x in self.parameters]):
+        numOfTests = sum([len(x[1]) for x in self.parameters])
+        milestones = set(range(0, numOfTests, max(numOfTests / 100, 1)))
+        for itercount, valueindices in enumerate(orngMisc.LimitedCounter([len(x[1]) for x in self.parameters])):
             values = [self.parameters[i][1][x] for i,x in enumerate(valueindices)]
             for pi, value in enumerate(values):
                 for i, par in enumerate(to_set[pi]):
@@ -116,6 +119,9 @@ class TuneMParameters(TuneParameters):
                         print "%s: %s" % (parnames[pi][i], value)
                         
             res = evaluate(orngTest.testWithIndices([self.object], tableAndWeight, cvind))
+            if itercount in milestones:
+                progressCallback(100.0 * itercount / numOfTests)
+            
             findBest.candidate((res, values))
             if verbose==2:
                 print "===> Result: %s\n" % res

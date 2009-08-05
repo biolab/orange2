@@ -92,7 +92,7 @@ class SVMLearner(orange.SVMLearner):
             return SVMClassifier(self.learner(examples), examples.domain)
         return self.learner(examples)
 
-    def tuneParameters(self, examples, parameters=None, folds=5, verbose=0):
+    def tuneParameters(self, examples, parameters=None, folds=5, verbose=0, progressCallback=None):
         parameters = ["nu", "C", "gamma"] if parameters == None else parameters
         searchParams = []
         normalization = self.normalization
@@ -107,7 +107,9 @@ class SVMLearner(orange.SVMLearner):
             searchParams.append(("C", [2**a for a in  range(-5,15,2)]))
         if self.kernel_type==2 and "gamma" in parameters:
             searchParams.append(("gamma", [2**a for a in range(-5,5,2)]+[0]))
-        tunedLearner = orngWrap.TuneMParameters(object=self, parameters=searchParams, folds=folds, returnWhat=orngWrap.TuneMParameters.returnLearner)
+        tunedLearner = orngWrap.TuneMParameters(object=self, parameters=searchParams, folds=folds, 
+                                                returnWhat=orngWrap.TuneMParameters.returnLearner, 
+                                                progressCallback=progressCallback if progressCallback else lambda i:None)
         tunedLearner(examples, verbose=verbose)
         if normalization:
             self.normalization = normalization
