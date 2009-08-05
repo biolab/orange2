@@ -177,18 +177,13 @@ class OWSVM(OWWidget):
             self.searching=True
             self.search_()
 
-    def progres(self, f, best):
+    def progres(self, f, best=None):
         qApp.processEvents()
-        self.best=best
-        self.progressBarSet(int(f*100))
+        self.progressBarSet(f)
         if not self.searching:
             raise UnhandledException()
 
     def finishSearch(self):
-        if self.best.has_key("error"):
-            del self.best["error"]
-        for key in self.best.keys():
-            self.__setattr__(key, self.best[key])
         self.progressBarFinished()
         self.kernelBox.setDisabled(0)
         self.optionsBox.setDisabled(0)
@@ -207,20 +202,22 @@ class OWSVM(OWWidget):
 
         if self.useNu:
             learner.svm_type=1
-        params={}
+        params=[]
         if self.useNu:
-            params["nu"]=[0.25, 0.5, 0.75]
+            params.append("nu")
         else:
-            params["C"]=map(lambda g:2**g, range(-5,10,2))
+            params.append("C")
         if self.kernel_type in [1,2]:
-            params["gamma"]=map(lambda g:2**g, range(-3,10,2))+[0]
+            params.append("gamma")
         if self.kernel_type==1:
-            params["degree"]=[1,2,3]
-        best={}
+            params.append("degree")
         try:
-            best=orngSVM.parameter_selection(learner, self.data, 4, params, best, callback=self.progres)
-        except :
+            learner.tuneParameters(self.data, params, 4, verbose=0, progressCallback=self.progres)
+        except UnhandledException:
             pass
+        for param in params:
+            setattr(self, param, getattr(learner, param))
+            
         self.finishSearch()
 
 from exceptions import Exception
