@@ -1,0 +1,63 @@
+This document explains how to compile and install Orange on a Linux system. The following commands were tested on Ubuntu 9.04 and should be modified accordingly for other distributions. 
+
+1. OBTAINING SOURCES
+
+You can download the Orange's nightly packed sources from  http://www.ailab.si/orange/nightly_builds.html and extract the archive.
+
+An alternative is to check out the newest revision directly from SVN repository. In latter case, the following should do the job:
+
+sudo apt-get install subversion # install the SVN client
+
+svn co http://www.ailab.si/svn/orange/trunk/orange
+cd orange
+svn co http://www.ailab.si/svn/orange/trunk/source
+
+2. DEPENDENCIES
+
+2.1 For Python scripting 
+
+If you only need the scripting interface, accessible through python, the dependencies are easier to fulfil. Only the common building tools and python extensions for imaging, graphs and computation with matrices are needed.
+
+sudo apt-get install make g++ python-dev python-numarray-ext python-numpy-ext python-numeric-ext python-matplotlib python-imaging
+
+This suffices for Orange scripting version to work.
+
+2.2 Orange Canvas (widgets)
+
+If you would like to use Orange Canvas, you will need to install PyQWT 5.1. To fulfil its compilation dependencies on Ubuntu 9.04 use:
+
+sudo apt-get install python-qt4-dev libqwt5-qt4-dev pyqt4-dev-tools sip4
+
+Download PyQWT version 5.1.0 (.tar.gz package) from:
+http://sourceforge.net/projects/pyqwt/files/
+
+Extract it and move inside the extracted folder. Next, use the following. For other systems, substitute the install path with your python package directory.
+
+cd configure
+python configure.py -Q ../qwt-5.1 --module-install-path=/usr/lib/python2.6/dist-packages/PyQt4/Qwt5
+make
+sudo make install
+
+3. COMPILING AND INSTALLING ORANGE
+
+Move to the directory containing the downloaded Orange's sources. Compile the C++ sources:
+
+cd source
+make
+cd .. #to move to main orange directory
+
+Transfer files. Tar is used instead of cp because it can exclude unnecessary files and keeps symbolic links. For other systems, substitute the install path with your python package directory.
+
+sudo mkdir /usr/lib/python2.6/dist-packages/orange
+tar -cf - --exclude='.svn' * | sudo tar --no-same-owner -xf - -C /usr/lib/python2.6/dist-packages/orange
+
+sudo sh -c "echo '/usr/lib/python2.6/dist-packages/orange' > /usr/lib/python2.6/dist-packages/orange.pth"
+sudo ln -s /usr/lib/python2.6/dist-packages/orange/liborange.so /usr/lib/liborange.so
+
+4. RUNNING
+
+To use Orange in python scripts, try importing "orange" and "orngStat" in python interpreter. It should work flawlessly.
+
+You can run the Orange Canvas (widgets) with:
+python /usr/lib/python2.6/dist-packages/orange/OrangeCanvas/orngCanvas.pyw
+
