@@ -551,7 +551,7 @@ lr        24.092   4.908   3.425   0.285   0.534   0.515   0.715
 <H2>Plotting Functions</H2>
 
 <DL>
-<DT><B>graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False)</B></DT>
+<DT><B>graph_ranks(filename, avranks, names, cd=None, lowv=None, highv=None, width=6, textspace=1, reverse=False, cdmethod=None)</B></DT>
 <DD>
 Draws a CD graph, which is used to display  the differences in methods' 
 performance. See Janez Demsar, Statistical Comparisons of Classifiers over 
@@ -560,15 +560,17 @@ Multiple Data Sets, 7(Jan):1--30, 2006.
 <p>Needs matplotlib to work.</p>
 
 <dl>
-<dt>filename</dt><dd>Output file name (with extension). Formats supported by matplotlib can be used.</dd></dt>
-<dt>avranks</dt><dd>List of average methods' ranks.</dd></dt>
-<dt>names</dt><dd>List of methods' names.</dd></dt>
-<dt>cd</dt><dd>Critical difference. Used for marking methods that whose difference is not statistically significant.</dd></dt>
-<dt>lowv</dt><dd>The lowest shown rank, if None, use 1.</dd></dt>
-<dt>highv</dt><dd>he highest shown rank, if None, use len(avranks).</dd></dt>
-<dt>width</dt><dd>Width of the drawn figure in inches, default 6 inches.</dd></dt>
-<dt>textspace</dt><dd>Space on figure sides left for the description of methods, default 1 inch.</dd></dt>
+<dt>filename</dt><dd>Output file name (with extension). Formats supported by matplotlib can be used.</dd>
+<dt>avranks</dt><dd>List of average methods' ranks.</dd>
+<dt>names</dt><dd>List of methods' names.</dd>
+<dt>cd</dt><dd>Critical difference. Used for marking methods that whose difference is not statistically significant.</dd>
+<dt>lowv</dt><dd>The lowest shown rank, if None, use 1.</dd>
+<dt>highv</dt><dd>he highest shown rank, if None, use len(avranks).</dd>
+<dt>width</dt><dd>Width of the drawn figure in inches, default 6 inches.</dd>
+<dt>textspace</dt><dd>Space on figure sides left for the description of methods, default 1 inch.</dd>
 <dt>reverse</dt><dd>If True, the lowest rank is on the right. Default: False.</dd></dt>
+<dt>cdmethod</dt><dd>None by default. It can be an index of element in avranks or or names which specifies the method which should be marked with an interval. If specified, the interval is marked only around that method. This option is ment to be used with Bonferonni-Dunn test.</dd>
+
 </dl>
 
 <p class="header"><a href="statExamples-graph_ranks.py">statExamples-graph_ranks.py</a></p>
@@ -589,8 +591,15 @@ orngStat.graph_ranks("statExamples-graph_ranks1.png", avranks, names, \
 </DL>
 
 <DL>
-<DT><B>compute_CD(avranks, N)</B></DT>
-<DD> Returns critical difference for Nemenyi two tailed test with p=0.05 given a average ranks and number of tested datasets N.
+<DT><B>compute_CD(avranks, N, alpha=&quot;0.05&quot;, type=&quot;nemenyi&quot;)</B></DT>
+<DD> Returns critical difference for Nemenyi or Bonferroni-Dunn test according to given alpha (either alpha=&quot;0.05&quot; or alpha=&quot;0.1&quot;) for average ranks and number of tested data sets N. Type can be either &quot;nemenyi&quot; for for Nemenyi two tailed test or &quot;bonferroni-dunn&quot; for Bonferroni-Dunn test.
+</DD>
+</DL>
+
+<DL>
+<DT><B>compute_friedman(avranks, N)</B></DT>
+<DD> Returns a tuple composed of (friedman statistic, degrees of freedom)
+and (Iman statistic - F-distribution, degrees of freedoma) given average ranks and a number of tested data sets N.
 </DD>
 </DL>
 
