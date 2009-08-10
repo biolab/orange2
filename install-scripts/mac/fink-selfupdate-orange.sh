@@ -106,6 +106,6 @@ elif [ $MAC_VERSION -ge "5" ] && [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.O
 		         ailab packages depend will fail to run or compile. In this case
 		         please install a newer version from:
 		         
-		             http://xquartz.macosforge.org/trac/
+		             http://xquartz.macosforge.org/trac/wiki
 	EOMSG
 fi
