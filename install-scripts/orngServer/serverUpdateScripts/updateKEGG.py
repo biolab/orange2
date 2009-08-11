@@ -41,25 +41,28 @@ realPath = os.path.realpath(os.curdir)
 os.chdir(path)
 
 for func, args in u.GetDownloadable() + u.GetUpdatable():
-#for func, args in [(obiKEGG.Update.UpdateOrganism, ("xla",))]:
+#for func, args in [(obiKEGG.Update.UpdateOrganism, (org,)) for org in commonOrgs[8:9]]:
     if func == obiKEGG.Update.UpdateOrganism and args[0] in commonOrgs:
         org = args[0]
-##        if len(org) > 3 and (org.startswith("d") or org.startswith("e")):
-##            continue
+        
         orgName = keggOrgNames.get(org, org)
         try:
+            print func, org
             func(u, org)
             organism = obiKEGG.KEGGOrganism(org, genematcher=obiGene.GMDirect(), local_database_path=path)
             genes = list(organism.genes) ## test to see if the _genes.pickle was created
+            
+            print os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"), "exists:", os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"))
+            assert(os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle")))
             print genes[:5]
             print path
         except Exception, ex:
-            print ex
+            print "Error:", ex
             continue
         filename = "kegg_organism_" + org + ".tar.gz"
         rel_path = u.api._rel_org_dir(org)
         files = [os.path.normpath("pathway//"+rel_path),
-                 os.path.normpath("genes//"+rel_path),
+                 os.path.normpath("genes//"+rel_path+"//"+"_genes.pickle"),
                  os.path.normpath(org+"_genenames.pickle")]
         title = "KEGG Pathways and Genes for " + orgName
         tags = ["KEGG", "gene", "pathway", orgName, "#organism:"+orgName, "#version:%i" % obiKEGG.KEGGOrganism.version] +(["essential"] if org in essentialOrgs else [])
