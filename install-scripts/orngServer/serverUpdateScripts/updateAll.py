@@ -29,7 +29,7 @@ for filename in files:
             print content
             toaddr = options.get("contact", "ales.erjavec@fri.uni-lj.si")
             fromaddr = "orange@fri.uni-lj.si"
-            msg = "From: %s\r\nTo: %s\r\nSubject: Exception in server update script - %s script\r\n\r\n" % (fromaddr, toaddr, filename) + content
+            msg = "From: %s\r\nTo: %s\r\nSubject: Exception in server update script - %s\r\n\r\n" % (fromaddr, toaddr, filename) + content
             try:
                 import smtplib
                 s = smtplib.SMTP('212.235.188.18', 25)
