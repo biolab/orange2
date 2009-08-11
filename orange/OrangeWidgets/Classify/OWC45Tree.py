@@ -102,6 +102,9 @@ class OWC45Tree(OWWidget):
                                              convertToOrange = 1, #self.convertToOrange,
                                              storeExamples = 1)
         except:
+            import orngDebugging
+            if orngDebugging.orngDebuggingEnabled: # raise error with no user input
+                raise
             QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
             return
 
