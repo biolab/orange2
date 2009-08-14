@@ -445,8 +445,10 @@ class OWDistanceMap(OWWidget):
 
         self.errorText.hide()
 
-        lo = self.CutEnabled and self.CutLow   or self.lowerBound
-        hi = round(self.CutEnabled and self.CutHigh  or self.upperBound, 1)
+        lo = self.CutEnabled and self.CutLow or round(self.lowerBound, 1) + \
+            (-0.1 if round(self.lowerBound, 1) > self.lowerBound else 0)
+        hi = self.CutEnabled and self.CutHigh or round(self.upperBound, 1) + \
+            (0.1 if round(self.upperBound, 1) < self.upperBound else 0)
 
         self.offsetX = 5
 
