@@ -54,6 +54,7 @@ import os
 import shutil
 import glob
 import datetime
+import tempfile
 
 #defserver = "localhost/"
 defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
@@ -200,7 +201,7 @@ class ServerFiles(object):
         fdown = self.downloadFH(domain, filename)
         size = int(fdown.headers.getheader('content-length'))
 
-        f = os.tmpfile() #open(target + '.tmp', 'wb')
+        f = tempfile.TemporaryFile(mode='wb')
  
         chunksize = 1024*8
         lastchunkreport= 0.0001
@@ -219,14 +220,9 @@ class ServerFiles(object):
                 break
             f.write(buf)
 
-        #retired to enable tracin
-        #shutil.copyfileobj(fdown, f, 1024*8) 
-
         fdown.close()
-##        f.close()
         f.seek(0)
 
-##        os.rename(target + '.tmp', target)
         shutil.copyfileobj(f, open(target, "wb"))
 
         if callback:
