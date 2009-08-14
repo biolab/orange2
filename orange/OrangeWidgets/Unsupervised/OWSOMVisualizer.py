@@ -1,7 +1,7 @@
 """
 <name>SOM Visualizer</name>
 <description>Visualizes a trained self organising maps.</description>
-<icon>SOMVisualizer.png</icon>
+<icon>icons/SOMVisualizer.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>5020</priority>
 """

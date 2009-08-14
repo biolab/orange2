@@ -2,7 +2,7 @@
 <name>Lift Curve</name>
 <description>Displays a lift curve based on evaluation of classifiers.</description>
 <contact>Tomaz Curk</contact>
-<icon>LiftCurve.png</icon>
+<icon>icons/LiftCurve.png</icon>
 <priority>1020</priority>
 """
 from OWColorPalette import ColorPixmap

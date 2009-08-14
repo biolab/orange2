@@ -2,7 +2,7 @@
 <name>ROC Analysis</name>
 <description>Displays Receiver Operating Characteristics curve based on evaluation of classifiers.</description>
 <contact>Tomaz Curk</contact>
-<icon>ROCAnalysis.png</icon>
+<icon>icons/ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
 from OWColorPalette import ColorPixmap

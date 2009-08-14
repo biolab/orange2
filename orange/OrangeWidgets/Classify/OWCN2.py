@@ -1,7 +1,7 @@
 """
 <name>CN2</name>
 <description>Rule-based (CN2) learner/classifier.</description>
-<icon>CN2.png</icon>
+<icon>icons/CN2.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """

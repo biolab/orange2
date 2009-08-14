@@ -1,4 +1,4 @@
-"""<name>Data Info</name>
+"""<name>Info</name>
 <description>Shows data information.</description>
 <icon>icons/DataInfo.png</icon>
 <priority>11</priority>
@@ -11,7 +11,7 @@ import orange
 import sys, os
 
 class OWDataInfo(OWWidget):
-    def __init__(self, parent=None, signalManager=None, name="Data Info"):
+    def __init__(self, parent=None, signalManager=None, name="Info"):
         OWWidget.__init__(self, parent, signalManager, name)
         
         self.inputs = [("Data Table", ExampleTable, self.data)]

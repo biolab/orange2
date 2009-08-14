@@ -1,7 +1,7 @@
 """
 <name>MDS</name>
 <description>Multi dimensional scaling</description>
-<icon>MDS.png</icon>
+<icon>icons/MDS.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2500</priority>
 """
