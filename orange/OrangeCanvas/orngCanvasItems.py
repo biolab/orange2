@@ -396,7 +396,7 @@ class CanvasWidget(QGraphicsRectItem):
             painter.drawRect(-3, -3, self.widgetSize.width()+6, self.widgetSize.height()+6)
 
 
-        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
+#        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
         #painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
 
