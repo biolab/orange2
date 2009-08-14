@@ -683,7 +683,7 @@ class WidgetShortcutDlg(QDialog):
                 mainBox.setLayout(hlayout)
                 layout.addWidget(mainBox, y, x, Qt.AlignTop | Qt.AlignLeft)
                 label = QLabel(wtab)
-                label.setPixmap(QPixmap(canvasDlg.getFullWidgetIconName(widgetInfo)))
+                label.setPixmap(canvasDlg.getWidgetIcon(widgetInfo).pixmap(40))
                 hlayout.addWidget(label)
 
                 optionsw = QWidget(self)

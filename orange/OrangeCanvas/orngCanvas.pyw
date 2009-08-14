@@ -23,6 +23,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.__dict__.update(orngEnviron.directoryNames)
                
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
+        self.defaultBackground = os.path.join(self.picsDir, "frame.png")
         canvasPicsDir  = os.path.join(self.canvasDir, "icons")
         self.file_new  = os.path.join(canvasPicsDir, "doc.png")
         self.outputPix = os.path.join(canvasPicsDir, "output.png")
@@ -643,9 +644,17 @@ class OrangeCanvasDlg(QMainWindow):
             return self.iconNameToIcon[widgetInfo.icon]
         
         iconNames = self.getFullWidgetIconName(widgetInfo)
+        iconBackgrounds = self.getFullIconBackgroundName(widgetInfo)
         icon = QIcon()
-        for name in iconNames:
-            icon.addPixmap(QPixmap(name))
+        if len(iconNames) == 1:
+            iconSize = QPixmap(iconNames[0]).width()
+            iconBackgrounds = [name for name in iconBackgrounds if QPixmap(name).width() == iconSize]
+        for name, back in zip(iconNames, iconBackgrounds):
+            image = QPixmap(back).toImage()
+            painter = QPainter(image)
+            painter.drawPixmap(0, 0, QPixmap(name))
+            painter.end()
+            icon.addPixmap(QPixmap.fromImage(image))
         self.iconNameToIcon[widgetInfo.icon] = icon
         return icon
             
@@ -654,12 +663,13 @@ class OrangeCanvasDlg(QMainWindow):
         iconName = widgetInfo.icon
         names = []
         name, ext = os.path.splitext(iconName)
-        for num in [16, 32, 42, 60]:
+        for num in [16, 32, 40, 48, 60]:
             names.append("%s_%d%s" % (name, num, ext))
             
         widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)  #os.path.split(self.getFileName())[0]
+        print widgetDir
         fullPaths = []
-        for paths in [(self.picsDir,), (self.widgetDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
+        for paths in [(self.widgetDir, widgetInfo.category), (self.widgetDir,), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in names + [iconName]:
                 fname = os.path.join(*paths + (name,))
                 if os.path.exists(fname):
@@ -669,8 +679,20 @@ class OrangeCanvasDlg(QMainWindow):
             if fullPaths != []:
                 return fullPaths    
         return [self.defaultPic]
-
-
+    
+    def getFullIconBackgroundName(self, widgetInfo):
+        widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)
+        fullPaths = []
+        for paths in [(widgetDir, "icons"), (self.widgetDir, widgetInfo.category, "icons"), (self.widgetDir, "icons"), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
+            for name in ["background_%d.png" % num for num in [16, 32, 40, 48, 60]]:
+                fname = os.path.join(*paths + (name,))
+#                print fname
+                if os.path.exists(fname):
+                    fullPaths.append(fname)
+            if fullPaths != []:
+                return fullPaths    
+        return [self.defaultBackground]
+    
 class MyStatusBar(QStatusBar):
     def __init__(self, parent):
         QStatusBar.__init__(self, parent)
