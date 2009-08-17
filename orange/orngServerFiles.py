@@ -201,7 +201,7 @@ class ServerFiles(object):
         fdown = self.downloadFH(domain, filename)
         size = int(fdown.headers.getheader('content-length'))
 
-        f = tempfile.TemporaryFile(mode='wb')
+        f = tempfile.TemporaryFile()
  
         chunksize = 1024*8
         lastchunkreport= 0.0001
