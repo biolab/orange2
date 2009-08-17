@@ -12,7 +12,7 @@ import sys, os
 
 class OWDataInfo(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Info"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0)
         
         self.inputs = [("Data Table", ExampleTable, self.data)]
         self.rowcount = 0
@@ -24,13 +24,20 @@ class OWDataInfo(OWWidget):
         self.classattr = "no"
         
         box = OWGUI.widgetBox(self.controlArea, "Data Set Size")
-        OWGUI.label(box, self, "Samples (rows): %(rowcount)i\nAttributes (columns): %(columncount)i")
+        OWGUI.label(box, self, '<table><tr><td width="100">Samples (rows):</td><td align="right" width="50">%(rowcount)7i</td></tr>\
+                                <tr><td>Attributes (columns):</td><td align="right">%(columncount)7i</td></tr></table>')
         
         box = OWGUI.widgetBox(self.controlArea, "Attributes")
-        OWGUI.label(box, self, "Discrete attributes: %(discattrcount)i\nContinuous attributes: %(contattrcount)i\nString attributes: %(stringattrcount)i")
-        OWGUI.separator(box)
-        OWGUI.label(box, self, "Meta attributes: %(metaattrcount)i\nClass attribute: %(classattr)s")
-        
+        OWGUI.label(box, self, '<table><tr><td width="100">Discrete attributes:</td><td align="right" width="50">%(discattrcount)7i</td></tr>\
+                                <tr><td>Continuous attributes:</td><td align="right">%(contattrcount)7i</td></tr>\
+                                <tr><td>String attributes:</td><td align="right">%(stringattrcount)7i</td></tr>\
+                                <tr><td> </td></tr>\
+                                <tr><td>Meta attributes:</td><td align="right">%(metaattrcount)7i</td></tr>\
+                                <tr><td>Class attribute:</td><td align="right">%(classattr)7s</td></tr></table>')
+#        OWGUI.separator(box)
+#        OWGUI.label(box, self, '<table><tr><td width="100">Meta attributes:</td><td align="right" width="50">%(metaattrcount)7i</td></tr>\
+#                                <tr><td>Class attribute:</td><td align="right">%(classattr)7s</td></tr></table>')
+#        
         OWGUI.rubber(self.controlArea)
         
         
