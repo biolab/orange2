@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="Orange"
 	ProjectGUID="{93B854DA-EC3F-4314-B801-58411F9713FD}"
 	RootNamespace="Orange"
@@ -550,14 +550,6 @@
 				>
 			</File>
 			<File
-				RelativePath="jit_linker.cpp"
-				>
-			</File>
-			<File
-				RelativePath="jit_linker.hpp"
-				>
-			</File>
-			<File
 				RelativePath="knn.cpp"
 				>
 			</File>
@@ -610,14 +602,6 @@
 				>
 			</File>
 			<File
-				RelativePath="linreg.cpp"
-				>
-			</File>
-			<File
-				RelativePath="linreg.hpp"
-				>
-			</File>
-			<File
 				RelativePath="logfit.cpp"
 				>
 			</File>
@@ -647,14 +631,6 @@
 			</File>
 			<File
 				RelativePath="lsq.cpp"
-				>
-			</File>
-			<File
-				RelativePath="lwr.cpp"
-				>
-			</File>
-			<File
-				RelativePath="lwr.hpp"
 				>
 			</File>
 			<File
@@ -779,10 +755,6 @@
 			</File>
 			<File
 				RelativePath="pyxtract_macros.hpp"
-				>
-			</File>
-			<File
-				RelativePath="r_imports.cpp"
 				>
 			</File>
 			<File
