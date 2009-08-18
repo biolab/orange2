@@ -89,7 +89,7 @@ class SVMLearner(orange.SVMLearner):
     def learnClassifier(self, examples):
         if self.normalization:
             examples = self._normalize(examples)
-            return SVMClassifier(self.learner(examples), examples.domain)
+            return SVMClassifierWrapper(self.learner(examples), examples.domain)
         return self.learner(examples)
 
     def tuneParameters(self, examples, parameters=None, folds=5, verbose=0, progressCallback=None):
@@ -122,15 +122,15 @@ class SVMLearner(orange.SVMLearner):
         newdomain = dc(examples)
         return examples.translate(newdomain)
 
-class SVMClassifier(object):
+class SVMClassifierWrapper(object):
     def __init__(self, classifier, domain):
         self.classifier = classifier
         self.domain = domain
-
+        
     def __getattr__(self, name):
-        try:
-            return getattr(self.classifier, name)
-        except AttributeError:
+        if name in ["supportVectors", "nSV", "coef", "rho", "examples", "kernelFunc"]:
+            return getattr(self.__dict__["classifier"], name)
+        else:
             raise AttributeError(name)
 
     def __call__(self, example, what=orange.GetValue):
