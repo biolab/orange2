@@ -667,7 +667,6 @@ class OrangeCanvasDlg(QMainWindow):
             names.append("%s_%d%s" % (name, num, ext))
             
         widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)  #os.path.split(self.getFileName())[0]
-        print widgetDir
         fullPaths = []
         for paths in [(self.widgetDir, widgetInfo.category), (self.widgetDir,), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in names + [iconName]:
