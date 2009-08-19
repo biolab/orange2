@@ -623,7 +623,7 @@ class FreeVizClassifier(orange.Classifier):
         self.classifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, graph.unscaled_x_positions), numpy.compress(validData, graph.unscaled_y_positions), classData])), graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=1)        
 
     # for a given example run argumentation and find out to which class it most often fall
-    def __call__(self, example, returnType):
+    def __call__(self, example, returnType=orange.Classifier.GetValue):
         #example.setclass(0)
         return self.classifier(example, returnType)
 
