@@ -210,13 +210,13 @@ class OWCN2(OWWidget):
         self.QualityButton = id
         for i in range(len(self.ruleQualityBG.buttons)):
             self.ruleQualityBG.buttons[i].setChecked(id == i)
-        self.mSpin.setEnabled(id == 1)
+        self.mSpin.control.setEnabled(id == 1)
 
     def coveringAlgButtonPressed(self,id=0):
         self.CoveringButton = id
         for i in range(len(self.coveringAlgBG.buttons)):
             self.coveringAlgBG.buttons[i].setChecked(id == i)
-        self.weightSpin.setEnabled(id == 1)
+        self.weightSpin.control.setEnabled(id == 1)
 
     def applySettings(self):
         self.setLearner()
