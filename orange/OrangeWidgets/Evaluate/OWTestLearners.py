@@ -51,7 +51,8 @@ class OWTestLearners(OWWidget):
         ('F-measure', 'F1', 'F1(cm)', False, True),
         ('Precision', 'Prec', 'precision(cm)', False, True),
         ('Recall', 'Recall', 'recall(cm)', False, True),
-        ('Brier score', 'Brier', 'BrierScore(res)', True)]]
+        ('Brier score', 'Brier', 'BrierScore(res)', True),
+        ('Matthews correlation coefficient', 'MCC', 'MCC(cm)', False, True)]]
 
     rStatistics = [Score(*s) for s in [\
         ("Mean squared error", "MSE", "MSE(res)", False),
@@ -492,12 +493,11 @@ if __name__=="__main__":
     ow.show()
     a.exec_()
 
-
-    data1 = orange.ExampleTable('voting')
-    data2 = orange.ExampleTable('golf')
-    datar = orange.ExampleTable("auto-mpg")
-    data3 = orange.ExampleTable("sailing-big")
-    data4 = orange.ExampleTable("sailing-test")
+    data1 = orange.ExampleTable(r'../../doc/datasets/voting')
+    data2 = orange.ExampleTable(r'../../golf')
+    datar = orange.ExampleTable(r'../../auto-mpg')
+    data3 = orange.ExampleTable(r'../../sailing-big')
+    data4 = orange.ExampleTable(r'../../sailing-test')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 

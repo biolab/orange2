@@ -637,6 +637,7 @@ def confusionChiSquare(confusionMatrix):
         
     
 def sens(confm):
+    """Return sensitivity (recall rate) over the given confusion matrix."""
     if type(confm) == list:
         return [sens(cm) for cm in confm]
     else:
@@ -649,10 +650,12 @@ def sens(confm):
         return confm.TP/tot
 
 def recall(confm):
+    """Return recall rate (sensitivity) over the given confusion matrix."""
     return sens(confm)
 
 
 def spec(confm):
+    """Return specificity over the given confusion matrix."""
     if type(confm) == list:
         return [spec(cm) for cm in confm]
     else:
@@ -665,6 +668,7 @@ def spec(confm):
   
 
 def PPV(confm):
+    """Return positive predictive value (precision rate) over the given confusion matrix."""
     if type(confm) == list:
         return [PPV(cm) for cm in confm]
     else:
@@ -677,10 +681,12 @@ def PPV(confm):
 
 
 def precision(confm):
+    """Return precision rate (positive predictive value) over the given confusion matrix."""
     return PPV(confm)
 
 
 def NPV(confm):
+    """Return negative predictive value over the given confusion matrix."""
     if type(confm) == list:
         return [NPV(cm) for cm in confm]
     else:
@@ -692,6 +698,7 @@ def NPV(confm):
         return confm.TP/tot
 
 def F1(confm):
+    """Return F1 score (harmonic mean of precision and recall) over the given confusion matrix."""
     if type(confm) == list:
         return [F1(cm) for cm in confm]
     else:
@@ -700,12 +707,48 @@ def F1(confm):
         return 2. * p * r / (p + r)
 
 def Falpha(confm, alpha=1.0):
+    """Return the alpha-mean of precision and recall over the given confusion matrix."""
     if type(confm) == list:
         return [Falpha(cm, alpha=alpha) for cm in confm]
     else:
         p = precision(confm)
         r = recall(confm)
         return (1. + alpha) * p * r / (alpha * p + r)
+    
+def MCC(confm):
+    '''
+    Return Mattew correlation coefficient over the given confusion matrix.
+
+    MCC is calculated as follows:
+    MCC = (TP*TN - FP*FN) / sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) )
+    
+    [1] Matthews, B.W., Comparison of the predicted and observed secondary 
+    structure of T4 phage lysozyme. Biochim. Biophys. Acta 1975, 405, 442-451
+
+    code by Boris Gorelik
+    '''
+    if type(confm) == list:
+        return [MCC(cm) for cm in confm]
+    else:
+        truePositive = confm.TP
+        trueNegative = confm.TN
+        falsePositive = confm.FP
+        falseNegative = confm.FN 
+          
+        try:   
+            r = (((truePositive * trueNegative) - (falsePositive * falseNegative))/ 
+                math.sqrt(  (truePositive + falsePositive)  * 
+                ( truePositive + falseNegative ) * 
+                ( trueNegative + falsePositive ) * 
+                ( trueNegative + falseNegative ) )
+                )
+        except ZeroDivisionError:
+            # Zero difision occurs when there is either no true positives 
+            # or no true negatives i.e. the problem contains only one 
+            # type of classes. 
+            r = None
+
+    return r
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn

@@ -248,13 +248,14 @@ vans.</P>
 
 </DD>
 
-<dt>sens(confm), spec(confm), PPV(confm), NPV(confm), precision(confm), recall(confm), F2(conf), Falpha(conf, alpha=2.0)
+<dt>sens(confm), spec(confm), PPV(confm), NPV(confm), precision(confm), recall(confm), F2(confm), Falpha(confm, alpha=2.0), MCC(conf)
 <index name="performance scores+sensitivity">
 <index name="performance scores+specificity">
 <index name="performance scores+positive prediction value">
 <index name="performance scores+negative prediction value">
 <index name="performance scores+precision">
 <index name="performance scores+recall">
+<index name="performance scores+">
 <index name="performance scores+F-measure">
 <index name="performance scores+F1">
 <index name="performance scores+Falpha"></dt>
@@ -276,18 +277,23 @@ href="http://en.wikipedia.org/wiki/Information_retrieval">recall</a>
 (the ratio of the number of relevant records retrieved to the total
 number of relevant records in the database). The <a
 href="http://en.wikipedia.org/wiki/Harmonic_mean">harmonic mean</a> of
-precision and recall [] is called an <a
-href="http://en.wikipedia.org/wiki/Sensitivity_(tests)">F-measure</a>,
-where, depending on the ratio of the weight between precision and
-recall is implemented as <code>F1</code> or, for a general case,
-<code>Falpha</code>.</p>
-
-<br>
+precision and recall is called an <a
+href="http://en.wikipedia.org/wiki/F-measure">F-measure</a>, where,
+depending on the ratio of the weight between precision and recall is
+implemented as <code>F1</code> [2*precision*recall/(precision+recall)]
+or, for a general case, <code>Falpha</code>
+[(1+alpha)*precision*recall / (alpha*precision + recall)].  The
+[http://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+Matthews correlation coefficient] in essence a correlation coefficient
+between the observed and predicted binary classifications; it returns
+a value between -1 and +1. A coefficient of +1 represents a perfect
+prediction, 0 an average random prediction and -1 an inverse
+prediction.</p> <br>
 
 <p>If the argument <code>confm</code> is a single confusion matrix, a
 single result (a number) is returned. If <code>confm</code> is a list
-of confusion matrices, a list with sensitivities (specificities, ...)
-for all the classifiers is returned.</p>
+of confusion matrices, a list of scores is returned, one for each
+confusion matrix.</p>
 
 <br>
 
