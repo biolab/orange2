@@ -433,7 +433,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWScatterPlot()
     ow.show()
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
+    data = orange.ExampleTable(r"../../doc/datasets/zoo.tab")
     ow.setData(data)
     #ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
     ow.handleNewSignals()
