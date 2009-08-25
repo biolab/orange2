@@ -290,6 +290,10 @@ if [ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] || [ -e /privat
 	[ -e /private/tmp/orange-bundle-1.0b.$STABLE_REVISION.dmg ] && mv /private/tmp/orange-bundle-1.0b.$STABLE_REVISION.dmg /Volumes/download/
 	[ -e /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ] && mv /private/tmp/orange-bundle-svn-0.0.$DAILY_REVISION.dmg /Volumes/download/
 	
+	echo "Setting permissions."
+	chmod +r /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg
+	chmod +r /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg
+	
 	echo "Registering new bundles."
 	egrep -v '^(MAC_STABLE|MAC_DAILY)=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
 	echo "MAC_STABLE=orange-bundle-1.0b.$STABLE_REVISION.dmg" >> /Volumes/download/filenames_mac.set.new

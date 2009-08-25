@@ -124,7 +124,7 @@ if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
 fi
 
 if [ $PACKAGE_SOURCE ]; then
-	mkdir -p /Volumes/fink/dists/10.5/main/source/
+	mkdir -m 755 -p /Volumes/fink/dists/10.5/main/source/
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
 		echo "Making source archive orange-1.0b.$STABLE_REVISION."
@@ -145,6 +145,7 @@ if [ $PACKAGE_SOURCE ]; then
 		MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
 		
 		mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
+		chmod -R +r /Volumes/fink/dists/10.5/main/source/
 		
 		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
 		
@@ -152,6 +153,7 @@ if [ $PACKAGE_SOURCE ]; then
 		egrep -v '^SOURCE_STABLE=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
 		echo "SOURCE_STABLE=orange-1.0b.$STABLE_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+		chmod +r /Volumes/download/filenames_mac.set
 	else
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 	fi
@@ -177,6 +179,7 @@ if [ $PACKAGE_SOURCE ]; then
 		MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
 		
 		mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
+		chmod -R +r /Volumes/fink/dists/10.5/main/source/
 		
 		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
 		
@@ -184,6 +187,7 @@ if [ $PACKAGE_SOURCE ]; then
 		egrep -v '^SOURCE_DAILY=' /Volumes/download/filenames_mac.set > /Volumes/download/filenames_mac.set.new
 		echo "SOURCE_DAILY=orange-svn-0.0.$DAILY_REVISION.tgz" >> /Volumes/download/filenames_mac.set.new
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
+		chmod +r /Volumes/download/filenames_mac.set
 	else
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 	fi
@@ -337,8 +341,8 @@ echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
-mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
+mkdir -m 755 -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+mkdir -m 755 -p /Volumes/fink/dists/10.5/main/finkinfo/
 
 echo "Copying to repository all binary packages."
 cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
@@ -379,6 +383,9 @@ Component: main
 Architecture: darwin-$ARCH
 Label: Fink" > dists/10.5/main/binary-darwin-$ARCH/Release
 
+echo "Setting permissions."
+chmod -R +r /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+
 echo "Copying to repository all info files."
 rm -f /Volumes/fink/dists/10.5/main/finkinfo/*
 cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/finkinfo/
@@ -386,6 +393,9 @@ cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/fin
 echo "Making an archive of all info files."
 cd /Volumes/fink/dists/10.5/main/finkinfo/
 tar -czf all.tgz *.info
+
+echo "Setting permissions."
+chmod -R +r /Volumes/fink/dists/10.5/main/finkinfo/
 
 echo "Removing unnecessary source archives."
 perl -e "
