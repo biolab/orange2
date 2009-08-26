@@ -27,7 +27,7 @@ keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").re
 
 essentialOrgs = [obiKEGG.from_taxid(id) for id in obiTaxonomy.essential_taxids()] #["hsa", "ddi", "sce", "mmu"]
 
-orgMap = {"562":"511145", "2104":"272634", "5833":"36329", "4896":"284812", "11103":None, "4754":None}
+orgMap = {"562":"511145", "2104":"272634", "5833":"36329", "4896":"284812", "11103":None, "4754":None, "4577":None}
 
 commonOrgs = [obiKEGG.from_taxid(orgMap.get(id, id)) for id in obiTaxonomy.common_taxids() if orgMap.get(id, id) != None]
 
@@ -41,7 +41,7 @@ realPath = os.path.realpath(os.curdir)
 os.chdir(path)
 
 for func, args in u.GetDownloadable() + u.GetUpdatable():
-#for func, args in [(obiKEGG.Update.UpdateOrganism, (org,)) for org in commonOrgs[8:9]]:
+#for func, args in [(obiKEGG.Update.UpdateOrganism, (org,)) for org in commonOrgs[5:9]]:
     if func == obiKEGG.Update.UpdateOrganism and args[0] in commonOrgs:
         org = args[0]
         
@@ -53,7 +53,7 @@ for func, args in u.GetDownloadable() + u.GetUpdatable():
             genes = list(organism.genes) ## test to see if the _genes.pickle was created
             
             print os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"), "exists:", os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"))
-            assert(os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle")))
+#            assert(os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle")))
             print genes[:5]
             print path
         except Exception, ex:
