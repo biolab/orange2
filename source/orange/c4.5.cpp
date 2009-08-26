@@ -126,7 +126,7 @@ void *getsym(void *handle, const char *name)
 
 void dynloadC45(char pathname[])
 { 
-  void *handle = dlopen(pathname, 0 /*dlopenflags*/);
+  void *handle = dlopen(pathname, RTLD_NOW /*dlopenflags*/);
   if (handle == NULL)
     raiseErrorWho("C45Loader", dlerror());
   
