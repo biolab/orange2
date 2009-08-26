@@ -575,7 +575,7 @@ PyObject *%(wholename)s__reduce__(PyObject *self);
 PyMethodDef %(wholename)s_methods[] = { {"__reduce__", (binaryfunc)%(wholename)s__reduce__, METH_NOARGS, "reduce"}, {NULL, NULL}};
 PyTypeObject Py%(wholename)s_Type = {PyObject_HEAD_INIT(&PyType_Type) 0, "%(classname)s.%(constname)s", sizeof(PyIntObject), 0, 0, 0, 0, 0, 0, (reprfunc)%(wholename)s_repr, 0, 0, 0, 0, 0, (reprfunc)%(wholename)s_repr, 0, 0, 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES, 0, 0, 0, 0, 0, 0, 0, %(wholename)s_methods, 0, 0, &PyInt_Type, 0, 0, 0, 0, 0, 0, 0, PyObject_Del};
 PyObject *Py%(wholename)s_FromLong(long ok) { PyIntObject *r = PyObject_New(PyIntObject, &Py%(wholename)s_Type); r->ob_ival = ok; return (PyObject *)r; }
-void *PT%(wholename)s(void *l) { return Py%(wholename)s_FromLong(*(long *)l); }
+void *PT%(wholename)s(void *l) { return Py%(wholename)s_FromLong(*(int *)l); }
 PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(s(i))", getExportedFunction("__pickleLoaderNamedConstants"), "%(wholename)s", ((PyIntObject *)(self))->ob_ival); }
 
 """ % {"wholename": type+"_"+constname, "classname": type, "constname": constname, "valueslist": ", ".join('{"%s", %s}' % k for k in constvalues)})
@@ -1067,18 +1067,18 @@ def make():
 
 def listOfExports():
   for name, c in classdefs.items():
-    print "Class '%s', derived from %s" % (name, c.get("basetype", "none (or unknown)"))
-    if c.has_key("constructor"):
-      print "\tConstructor visible from Python: %s" % c["constructor"].arguments
-    if c.has_key("call"):
-      print "\tCallable from Python: %s" % c["call"].arguments
-    properties = c.get("builtinproperties", []) + string.split(c.get("properties", ""))
-    if c.has_key("getattr"):
-      if c.has_key("setattr"):
+    print "Class '%s', derived from %s" % (name, getattr(c, "basetype", "none (or unknown)"))
+    if getattr(c, "constructor", None):
+      print "\tConstructor visible from Python: %s" % c.constructor.arguments
+    if getattr(c, "call", None):
+      print "\tCallable from Python: %s" % c.call.arguments
+    properties = ", ".join(getattr(c, "builtinproperties", {}).keys()) + ", ".join(getattr(c, "properties", {}).keys())
+    if hasattr(c, "getattr"):
+      if hasattr(c, "setattr"):
         print "\tSpecialized getattr and setattr"
       else:
         print "\tSpecialized getattr"
-    elif c.has_key("setattr"):
+    elif hasattr(c, "setattr"):
         print "\tSpecialized setattr"
     if len(properties):
       print "\tProperties: %s" % reduce(lambda x, y: x+", "+y, properties)
@@ -1092,7 +1092,28 @@ def listOfExports():
   for cons in constants:
     print "%s" % cons[0]
 
+
+def listNode(name, hier, level):
+  print "     "*level + name
+  for child in sorted(hier.get(name, [])):
+    listNode(child, hier, level+1)
+    
+def listOfClasses():
+  hier = {}
+  for name, c in classdefs.items():
+    base = getattr(c, "basetype", None)
+    if base:
+      if not base in hier:
+        hier[base] = []
+      hier[base].append(name)
+  listNode("Orange", hier, 0)
+  for name, c in classdefs.items():
+    if not getattr(c, "basetype", None) or c.basetype=="ROOT":
+      listNode(name, hier, 0)
+      
+    
   
+
 def saferemove(fname):
   if os.path.isfile(fname):
     os.remove(fname)
@@ -1134,6 +1155,8 @@ def readArguments(args):
         action.append("make")
       elif opt=="i":
         action.append("list")
+      elif opt=="e":
+        action.append("hierarchy")
       elif opt=="l":
         i=i+1
         libraries.append(args[i])
@@ -1197,6 +1220,8 @@ if len(action):
     
   if action.count("list"):
     listOfExports()
+  if action.count("hierarchy"):
+    listOfClasses()
   if action.count("make"):
     make()
 
