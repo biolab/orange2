@@ -332,7 +332,8 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
         serverfiles = ServerFiles()
 
     info = serverfiles.info(domain, filename)
-    extract = extract and any(tag.startswith("#uncompressed:") for tag in info["tags"])
+    specialtags = dict([tag.split(":") for tag in info["tags"] if tag.startswith("#") and ":" in tag])
+    extract = extract and ("#uncompressed" in specialtags or "#compression" in specialtags)
     target = localpath(domain, filename)
     callback = DownloadProgress(filename, int(info["size"])) if verbose and not callback else callback    
     serverfiles.download(domain, filename, target + "tmp" if extract else target, callback=callback)
@@ -342,13 +343,17 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
     saveFileInfo(target + '.info', info)
     
     if extract:
-        import tarfile
-        f = tarfile.open(target + "tmp")
-        try:
-            os.mkdir(target)
-        except Exception:
-            pass
-        f.extractall(target)
+        import tarfile, gzip, shutil
+        if filename.endswith(".tar.gz"):
+            f = tarfile.open(target + "tmp")
+            try:
+                os.mkdir(target)
+            except Exception:
+                pass
+            f.extractall(target)
+        elif specialtags.get("#compression") == "gz":
+            f = gzip.open(target + "tmp")
+            shutil.copyfileobj(f, open(target, "wb"))
         f.close()
         os.remove(target + "tmp")
 
