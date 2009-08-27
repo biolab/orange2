@@ -45,12 +45,12 @@ public:
     TRandomGenerator(const int &aninitseed=0)
       : initseed(aninitseed),
         uses(0),
-        mt(long(aninitseed))
+        mt((unsigned long)aninitseed << 1)  // multiply by 2 since the generator sets the 0th bit
       {}
 
     virtual void reset()      
       { uses=0; 
-        mt.Init(initseed); }
+        mt.Init((unsigned long)initseed << 1); }   // multiply by 2 since the generator sets the 0th bit
 
     inline unsigned long operator()() 
       { uses++;
