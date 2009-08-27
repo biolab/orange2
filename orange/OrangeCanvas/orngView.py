@@ -197,6 +197,8 @@ class SchemaView(QGraphicsView):
         if not activeItem:
             self.tempWidget = None
             self.widgetSelectionRect = QGraphicsRectItem(QRectF(self.mouseDownPosition, self.mouseDownPosition), None, self.scene())
+            self.widgetSelectionRect.setPen(QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap))
+            self.widgetSelectionRect.setBrush(QBrush(QColor(168, 202, 236, 192)))
             self.widgetSelectionRect.setZValue(-100)
             self.widgetSelectionRect.show()
             self.unselectAllWidgets()

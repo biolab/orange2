@@ -65,13 +65,16 @@ class SignalCanvasView(QGraphicsView):
         width = max(maxLeft, maxRight) + 70 # we add 70 to show icons beside signal names
 
         # show boxes
-        brush = QBrush(QColor(60,150,255))
+        pen = QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap)
+        brush = QBrush(QColor(217, 232, 252, 192))
         self.outWidget = QGraphicsRectItem(xWidgetOff, yWidgetOffTop, width, height, None, self.dlg.canvas)
         self.outWidget.setBrush(brush)
+        self.outWidget.setPen(pen)
         self.outWidget.setZValue(-100)
 
         self.inWidget = QGraphicsRectItem(xWidgetOff + width + xSpaceBetweenWidgets, yWidgetOffTop, width, height, None, self.dlg.canvas)
         self.inWidget.setBrush(brush)
+        self.inWidget.setPen(pen)
         self.inWidget.setZValue(-100)
         
         canvasPicsDir  = os.path.join(self.canvasDlg.canvasDir, "icons")
@@ -82,16 +85,18 @@ class SignalCanvasView(QGraphicsView):
 
         # if icons -> show them
         if outIcon:
-            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
-            frame.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
+#            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
+#            frame.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.outWidgetIcon = QGraphicsPixmapItem(outIcon.pixmap(iconSize, iconSize), None, self.dlg.canvas)
-            self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
+#            self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
+            self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + xIconOff)
         
         if inIcon:
-            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
-            frame.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - frame.pixmap().width(), yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
+#            frame = QGraphicsPixmapItem(widgetBack, None, self.dlg.canvas)
+#            frame.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - frame.pixmap().width(), yWidgetOffTop + height/2.0 - frame.pixmap().width()/2.0)
             self.inWidgetIcon = QGraphicsPixmapItem(inIcon.pixmap(iconSize, iconSize), None, self.dlg.canvas)
-            self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
+#            self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
+            self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + xIconOff)
 
         # show signal boxes and text labels
         #signalSpace = (count)*ySignalSpace
@@ -103,8 +108,8 @@ class SignalCanvasView(QGraphicsView):
             box.setZValue(200)
             self.outBoxes.append((outputs[i].name, box))
 
-            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight | Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight | Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 8, y - 7, Qt.AlignRight | Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 8, y + 7, Qt.AlignRight | Qt.AlignVCenter, bold =0, show=1))
 
         for i in range(len(inputs)):
             y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(inputs)+1)
@@ -113,8 +118,8 @@ class SignalCanvasView(QGraphicsView):
             box.setZValue(200)
             self.inBoxes.append((inputs[i].name, box))
 
-            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft | Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft | Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 8, y - 7, Qt.AlignLeft | Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 8, y + 7, Qt.AlignLeft | Qt.AlignVCenter, bold =0, show=1))
 
         self.texts.append(MyCanvasText(self.dlg.canvas, outWidget.caption, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
         self.texts.append(MyCanvasText(self.dlg.canvas, inWidget.caption, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
@@ -139,7 +144,7 @@ class SignalCanvasView(QGraphicsView):
         if type(activeItem) == QGraphicsRectItem and activeItem not in [self.outWidget, self.inWidget]:
             self.tempLine = QGraphicsLineItem(None, self.dlg.canvas)
             self.tempLine.setLine(point.x(), point.y(), point.x(), point.y())
-            self.tempLine.setPen(QPen(QColor(0,255,0), 1))
+            self.tempLine.setPen(QPen(QColor(200, 200, 200), 1))
             self.tempLine.setZValue(-300)
             
         elif type(activeItem) == QGraphicsLineItem:
@@ -192,7 +197,7 @@ class SignalCanvasView(QGraphicsView):
         outRect = outBox.rect()
         inRect = inBox.rect()
         line.setLine(outRect.x() + outRect.width()-2, outRect.y() + outRect.height()/2.0, inRect.x()+2, inRect.y() + inRect.height()/2.0)
-        line.setPen(QPen(QColor(0,255,0), 6))
+        line.setPen(QPen(QColor(160, 160, 160), 5))
         line.setZValue(100)
         self.scene().update()
         self.lines.append((line, outName, inName, outBox, inBox))
@@ -447,7 +452,7 @@ class CanvasOptionsDlg(QDialog):
         hbox1 = OWGUI.widgetBox(GeneralTab, orientation = "horizontal")
         hbox2 = OWGUI.widgetBox(GeneralTab, orientation = "horizontal")
         canvasDlgSettings = OWGUI.widgetBox(hbox1, "Canvas Dialog Settings")
-        schemeSettings = OWGUI.widgetBox(hbox1, "Scheme Settings") 
+#        schemeSettings = OWGUI.widgetBox(hbox1, "Scheme Settings") 
          
         self.widthSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasWidth", minValue = 300, maxValue = 1200, label = "Canvas width:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
         self.heightSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasHeight", minValue = 300, maxValue = 1200, label = "Canvas height:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
@@ -458,26 +463,26 @@ class CanvasOptionsDlg(QDialog):
         OWGUI.comboBox(canvasDlgSettings, self.settings, "style", label = "Window style:", orientation = "horizontal", items = [str(n) for n in QStyleFactory.keys()], sendSelectedValue = 1, debuggingEnabled = 0)
         OWGUI.checkBox(canvasDlgSettings, self.settings, "useDefaultPalette", "Use style's standard palette", debuggingEnabled = 0)
         
-        if canvasDlg:
-            selectedWidgetBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
-            self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
-            selectedWidgetBox.layout().addWidget(self.selectedWidgetIcon)
-            selectedWidgetLabel = OWGUI.widgetLabel(selectedWidgetBox, " Selected widget")
-
-            activeWidgetBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
-            self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
-            activeWidgetBox.layout().addWidget(self.activeWidgetIcon)
-            selectedWidgetLabel = OWGUI.widgetLabel(activeWidgetBox, " Active widget")
-
-            lineBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
-            self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-            lineBox.layout().addWidget(self.lineIcon)
-            selectedWidgetLabel = OWGUI.widgetLabel(lineBox, " Lines")
-            
-        OWGUI.separator(schemeSettings)
-        items = ["%d x %d" % (v,v) for v in self.canvasDlg.schemeIconSizeList]
-        val = min(len(items)-1, self.settings['schemeIconSize'])
-        self.schemeIconSizeCombo = OWGUI.comboBoxWithCaption(schemeSettings, self.settings, 'schemeIconSize', "Scheme icon size:", items = items, tooltip = "Set the size of the widget icons on the scheme", debuggingEnabled = 0)
+#        if canvasDlg:
+#            selectedWidgetBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
+#            self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
+#            selectedWidgetBox.layout().addWidget(self.selectedWidgetIcon)
+#            selectedWidgetLabel = OWGUI.widgetLabel(selectedWidgetBox, " Selected widget")
+# 
+#            activeWidgetBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
+#            self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
+#            activeWidgetBox.layout().addWidget(self.activeWidgetIcon)
+#            selectedWidgetLabel = OWGUI.widgetLabel(activeWidgetBox, " Active widget")
+# 
+#            lineBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
+#            self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
+#            lineBox.layout().addWidget(self.lineIcon)
+#            selectedWidgetLabel = OWGUI.widgetLabel(lineBox, " Lines")
+#            
+#        OWGUI.separator(schemeSettings)
+#        items = ["%d x %d" % (v,v) for v in self.canvasDlg.schemeIconSizeList]
+#        val = min(len(items)-1, self.settings['schemeIconSize'])
+#        self.schemeIconSizeCombo = OWGUI.comboBoxWithCaption(schemeSettings, self.settings, 'schemeIconSize', "Scheme icon size:", items = items, tooltip = "Set the size of the widget icons on the scheme", debuggingEnabled = 0)
         
         GeneralTab.layout().addStretch(1)
 

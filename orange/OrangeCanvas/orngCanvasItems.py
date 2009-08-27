@@ -13,7 +13,7 @@ class TempCanvasLine(QGraphicsLineItem):
         QGraphicsLineItem.__init__(self, None, canvas)
         self.setZValue(-10)
         self.canvasDlg = canvasDlg
-        self.setPen(QPen(canvasDlg.lineColor, 1, Qt.SolidLine, Qt.RoundCap))
+        self.setPen(QPen(QColor(200, 200, 200), 1, Qt.SolidLine, Qt.RoundCap))
         self.startWidget = None
         self.endWidget = None
         self.widget = None
@@ -60,13 +60,14 @@ class TempCanvasLine(QGraphicsLineItem):
         self.hide()
 
     # draw the line
-    def drawShape(self, painter):
-        (startX, startY) = (self.startPoint().x(), self.startPoint().y())
-        (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
+    def paint(self, painter, option, widget):
+        start = self.line().p1()
+        end = self.line().p2()
 
-        painter.setPen(QPen(self.canvasDlg.lineColor, 1, Qt.SolidLine))
-        painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
-
+        painter.setPen(QPen(QColor(200, 200, 200), 4, Qt.SolidLine, Qt.RoundCap))
+        painter.drawLine(start, end)
+        painter.setPen(QPen(QColor(160, 160, 160), 2, Qt.SolidLine, Qt.RoundCap))
+        painter.drawLine(start, end)
 
     # we don't print temp lines
     def printShape(self, painter):
@@ -96,7 +97,7 @@ class CanvasLine(QGraphicsLineItem):
         self.updateTooltip()
         
         # this might seem unnecessary, but the pen size 20 is used for collision detection, when we want to see whether to to show the line menu or not 
-        self.setPen(QPen(self.canvasDlg.lineColor, 20, Qt.SolidLine))        
+        self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))        
 
     def remove(self):
         self.hide()
@@ -120,7 +121,9 @@ class CanvasLine(QGraphicsLineItem):
         p2 = self.inWidget.getLeftEdgePoint()
         self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
         
-        painter.setPen(QPen(self.canvasDlg.lineColor, 5 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.setPen(QPen(QColor(200, 200, 200), 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.drawLine(p1, p2)
+        painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
         painter.drawLine(p1, p2)
 
         if self.canvasDlg.settings["showSignalNames"]:
@@ -392,8 +395,9 @@ class CanvasWidget(QGraphicsRectItem):
             else:                    color = self.canvasDlg.widgetSelectedColor
 
         if self.isProcessing or self.selected:
-            painter.setPen(QPen(color))
-            painter.drawRect(-3, -3, self.widgetSize.width()+6, self.widgetSize.height()+6)
+            painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
+            painter.setBrush(QBrush(QColor(217, 232, 252, 192)))
+            painter.drawRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10)
 
 
 #        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
