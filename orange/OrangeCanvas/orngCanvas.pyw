@@ -1,9 +1,15 @@
 # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
 #    main file, that creates the MDI environment
+
+# This module has to be imported first because it takes care of the system PATH variable
+# Namely, it throws out the MikTeX directories which contain an incompatible Qt .dll's
+import orngEnviron
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import sys, os, cPickle, orngRegistry, orngEnviron, OWGUI
+    
+import sys, os, cPickle, orngRegistry, OWGUI
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
 import orange, user, orngMisc
 

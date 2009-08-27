@@ -1,5 +1,10 @@
 import os, sys, user
 
+if os.name == "nt":
+    paths = os.environ["PATH"].split(";")
+    paths.sort(lambda x,y: -1 if "PyQt4" in x else (1 if "miktex" in y and os.path.exists(os.path.join(x, "QtCore4.dll")) else 0))
+    os.environ["PATH"] = ";".join(paths)
+
 def __getDirectoryNames():
     """Return a dictionary with Orange directories."""
     try:
