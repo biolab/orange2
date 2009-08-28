@@ -128,9 +128,9 @@ class SVMClassifierWrapper(object):
         self.domain = domain
         
     def __getattr__(self, name):
-        if name in ["supportVectors", "nSV", "coef", "rho", "examples", "kernelFunc"]:
+        try:
             return getattr(self.__dict__["classifier"], name)
-        else:
+        except (KeyError, AttributeError):
             raise AttributeError(name)
 
     def __call__(self, example, what=orange.GetValue):
