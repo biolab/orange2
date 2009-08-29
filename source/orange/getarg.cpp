@@ -28,13 +28,15 @@
 #include <stdio.h>
 
 
-TProgArguments::TProgArguments() {}
+TProgArguments::TProgArguments() :
+allowSpaces(false)
+{}
 
 /*  A constructor which is given a list of possible options and standard C-like fields with
     number of arguments and an array of char * pointers to arguments. If rupUnrec=true, unrecognized
     options are reported. */
-TProgArguments::TProgArguments(const string &poss_options, int argc, char *argv[], bool repUnrec, bool parenth)
-  : possibleOptions(), options(), unrecognized(), direct()
+TProgArguments::TProgArguments(const string &poss_options, int argc, char *argv[], bool repUnrec, bool parenth, bool anallowSpaces)
+  : possibleOptions(), options(), unrecognized(), direct(), allowSpaces(anallowSpaces)
 { findPossibleOptions(poss_options);
   vector<string> optionsList;
 
@@ -60,8 +62,8 @@ TProgArguments::TProgArguments(const string &poss_options, int argc, char *argv[
 
 /*  A constructor which is given a list of possible options. Arguments are given in as a string which
     is processed (divided into atoms) by constructor. If rupUnrec=true, unrecognized options are reported. */
-TProgArguments::TProgArguments(const string &poss_options, const string &line, bool repUnrec)
- : possibleOptions(), options(), unrecognized(), direct()
+TProgArguments::TProgArguments(const string &poss_options, const string &line, bool repUnrec, bool anallowSpaces)
+ : possibleOptions(), options(), unrecognized(), direct(), allowSpaces(anallowSpaces)
 { findPossibleOptions(poss_options);
   vector<string> optionsList;
   string2atoms(line, optionsList);
@@ -103,7 +105,7 @@ void TProgArguments::findPossibleOptions(const string &poss_options)
 
 /* Processes the list of options (as rewritten from argv or line parameter to the constructor). */
 void TProgArguments::process(const vector<string> &optionsList)
-{ for(vector<string>::const_iterator si(optionsList.begin()); si!=optionsList.end(); )
+{ for(vector<string>::const_iterator si(optionsList.begin()), se(optionsList.end()); si!=se; )
     if ((*si)[0]=='-') {
       string option((*(si++)).c_str()+1);
       if (possibleOptions.find(option)==possibleOptions.end())
@@ -121,12 +123,19 @@ void TProgArguments::process(const vector<string> &optionsList)
       if (ei==ee) direct.push_back(*(si++));
       else {
         string option((*si).begin(), ei), par(ei+1, (*si).end());
+		if (allowSpaces) {
+			while((++si != se) && (si->find("=") == string::npos)) {
+				par += " "+*si;
+			}
+		}
+		else {
+			si++;
+		}
         if (possibleOptions.find(option)==possibleOptions.end())
           unrecognized.insert(pair<string, string>(option, par));
         else if (possibleOptions[option]) options.insert(pair<string, string>(option, par));
         else 
           raiseError("option '%s' expects no arguments", option.c_str());
-        si++;
       }
     }
 }

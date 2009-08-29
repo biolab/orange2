@@ -48,10 +48,11 @@ public:
   TMultiStringParameters unrecognized;
   // A list of parameters which were given without leading -.
   vector<string> direct;
+  bool allowSpaces;
 
   TProgArguments();
-  TProgArguments(const string &, int argc, char *argv[], bool repUnrec=true, bool parenth=true);
-  TProgArguments(const string &poss_options, const string &line, bool repUnrec=true);
+  TProgArguments(const string &, int argc, char *argv[], bool repUnrec=true, bool parenth=true, bool allowSpaces=false);
+  TProgArguments(const string &poss_options, const string &line, bool repUnrec=true, bool allowSpaces=false);
 
   void findPossibleOptions(const string &poss_options);
   void process(const vector<string> &optionsList);

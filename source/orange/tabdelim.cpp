@@ -260,7 +260,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
 
   // Check flags
   for(vi = varNames.begin(), ai = atoms.begin(), ei = atoms.end(); ai != ei; ai++, vi++) {
-    TProgArguments args("dc: ordered", *ai, false);
+    TProgArguments args("dc: ordered", *ai, false, true);
 
 /*  Not any more: now they go into the Variable's dictionary
 
@@ -609,7 +609,7 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
     bool ordered = false;
 
     if (fi!=fe) {
-      TProgArguments args("dc: ordered", *fi, false);
+      TProgArguments args("dc: ordered", *fi, false, true);
 
       if (args.direct.size()) {
       
