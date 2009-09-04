@@ -124,7 +124,8 @@ if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
 fi
 
 if [ $PACKAGE_SOURCE ]; then
-	mkdir -m 755 -p /Volumes/fink/dists/10.5/main/source/
+	mkdir -p /Volumes/fink/dists/10.5/main/source/
+	chmod +rx /Volumes/fink/dists/10.5/main/source/
 	
 	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
 		echo "Making source archive orange-1.0b.$STABLE_REVISION."
@@ -341,8 +342,10 @@ echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
-mkdir -m 755 -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-mkdir -m 755 -p /Volumes/fink/dists/10.5/main/finkinfo/
+mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+chmod +rx /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
+chmod +rx /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
 
 echo "Copying to repository all binary packages."
 cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
