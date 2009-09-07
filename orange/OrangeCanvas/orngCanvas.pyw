@@ -661,7 +661,8 @@ class OrangeCanvasDlg(QMainWindow):
             painter.drawPixmap(0, 0, QPixmap(name))
             painter.end()
             icon.addPixmap(QPixmap.fromImage(image))
-        self.iconNameToIcon[widgetInfo.icon] = icon
+        if iconNames != [self.defaultPic]:
+            self.iconNameToIcon[widgetInfo.icon] = icon
         return icon
             
     
@@ -682,7 +683,7 @@ class OrangeCanvasDlg(QMainWindow):
             if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
                 fullPaths.pop()     # if we have the new icons we can remove the default icon
             if fullPaths != []:
-                return fullPaths    
+                return fullPaths
         return [self.defaultPic]
     
     def getFullIconBackgroundName(self, widgetInfo):
