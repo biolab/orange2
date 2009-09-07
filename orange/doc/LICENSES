@@ -8,11 +8,9 @@ Orange Widgets and Canvas are based on Qt. If you intend to use them, you should
 
 Orange contains orngCRS module written by Aleks Jakulin (http://www.stat.columbia.edu/~jakulin/).
 
-Orange also contains SOM_PAK (SOM Programming Team of the Helsinki University of Technology, Laboratory of Computer and Information Science, Rakentajanaukio 2 C, SF-02150 Espoo, FINLAND)
+Random numbers in Orange are computed with Shaw Cookus' implementation of Mersenne twister. CRC 32 is computed by the code published at http://www.createwindow.com/programming/crc32/ by Richard A. Ellingson.
 
 Orange contains libsvm and qhull, which are distributed under the following copyright notices:
-
-Random numbers in Orange are computed with Shaw Cookus' implementation of Mersenne twister. CRC 32 is computed by the code published at http://www.createwindow.com/programming/crc32/ by Richard A. Ellingson.
 
 ---- (libsvm copyright) ----------
 
@@ -88,44 +86,3 @@ and redistributed under the following conditions:
    they desire.
 
 ---- (end qhull copyright) -----
-
-
----- (SOM_PAK copyright) ----------
-
-
-************************************************************************
-*                                                                      *
-*                              SOM_PAK                                 *
-*                                                                      *
-*                                The                                   *
-*                                                                      *
-*                        Self-Organizing Map                           *
-*                                                                      *
-*                          Program  Package                            *
-*                                                                      *
-*                   Version 3.1 (April 7, 1995)                        *
-*                                                                      *
-*                          Prepared by the                             *
-*                    SOM Programming Team of the                       *
-*                 Helsinki University of Technology                    *
-*           Laboratory of Computer and Information Science             *
-*                Rakentajanaukio 2 C, SF-02150 Espoo                   *
-*                              FINLAND                                 *
-*                                                                      *
-*                     Copyright (c) 1992-1995                          *
-*                                                                      *
-************************************************************************
-*                                                                      *
-*  NOTE: This program package is copyrighted in the sense that it      *
-*  may be used for scientific purposes. The package as a whole, or     *
-*  parts thereof, cannot be included or used in any commercial         *
-*  application without written permission granted by its producents.   *
-*  No programs contained in this package may be copied for commercial  *
-*  distribution.                                                       *
-*                                                                      *
-*  All comments concerning this program package may be sent to the     *
-*  e-mail address 'som@nucleus.hut.fi'.                                *
-*                                                                      *
-************************************************************************
-
----- (end SOM_PAK copyright) ----------
