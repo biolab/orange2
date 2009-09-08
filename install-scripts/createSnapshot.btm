@@ -35,6 +35,10 @@ cd sourcestopack
 svn export -q http://www.ailab.si/svn/orange/trunk/orange
 cd orange
 svn export -q http://www.ailab.si/svn/orange/trunk/source
+copy doc/LICENSES .
+copy doc/COPYING .
+copy doc/LICENSES source
+copy doc/COPYING source
 del %DOWNLOADDIR\orange-source-snapshot-????-??-??.zip
 "c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\%SOURCE_SNAPSHOT *
 
