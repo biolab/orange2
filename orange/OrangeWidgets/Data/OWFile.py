@@ -67,11 +67,11 @@ class OWFile(OWWidget):
         smallWidget = OWGUI.collapsableWidgetBox(self.controlArea, "Advanced settings", self, "showAdvanced", callback=self.adjustSize0)
         
         box = OWGUI.widgetBox(smallWidget, "Missing Value Symbols", addSpace = True, orientation=1)
-        OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
+#        OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
         
         hbox = OWGUI.indentedBox(box)
-        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=80, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=80, orientation="horizontal", tooltip="Default values: '~' or '*'")
 
         OWGUI.radioButtonsInBox(smallWidget, self, "createNewOn", box="New Attributes",
                        label = "Create a new attribute when existing attribute(s) ...",
@@ -80,7 +80,10 @@ class OWFile(OWWidget):
                                     "Miss some values of the new attribute",
                                     "... Always create a new attribute"
                                ])
-
+        
+        smallWidget.updateControls()
+        OWGUI.rubber(self.controlArea)
+        
         # remove missing data set names
         self.recentFiles=filter(os.path.exists, self.recentFiles)
         self.setFileList()
@@ -90,10 +93,11 @@ class OWFile(OWWidget):
 
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
         
+        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
     def adjustSize0(self):
         qApp.processEvents()
-        QTimer.singleShot(0, self.adjustSize)
+        QTimer.singleShot(50, self.adjustSize)
 
     def setFileList(self):
         self.filecombo.clear()

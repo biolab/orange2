@@ -1118,8 +1118,13 @@ class collapsableWidgetBox(QGroupBox):
 
     def updateControls(self):
         val = self.master.getdeepattr(self.value)
+        width = self.width()
         self.setChecked(val)
         self.setFlat(not val)
+        if not val:
+            self.setMinimumSize(QSize(width, 0))
+        else:
+            self.setMinimumSize(QSize(0, 0))
 
         for c in self.children():
             if isinstance(c, QLayout): continue
@@ -1127,7 +1132,6 @@ class collapsableWidgetBox(QGroupBox):
                 c.show()
             else:
                 c.hide()
-
 
 # creates an icon that allows you to show/hide the widgets in the widgets list
 class widgetHider(QWidget):
