@@ -12,4 +12,6 @@ export PATH=/usr/local/bin${PATH:+:$PATH}
 
 export MANPATH=/usr/local/man${MANPATH:+:$MANPATH}
 
+export LANG="en_GB.UTF-8"
+
 w
