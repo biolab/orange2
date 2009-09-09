@@ -44,7 +44,7 @@ PValueList TValueListMethods::P_FromArguments(PyObject *arg, PVariable var)
   }
 
   PValueList aList = mlnew TValueList(var);
-  for(int i=0, e=PySequence_Size(arg); i!=e; i++) {
+  for(Py_ssize_t i=0, e=PySequence_Size(arg); i!=e; i++) {
     PyObject *pyobj=PySequence_GetItem(arg, i);
     TValue item;
     bool ok = convertFromPython(pyobj, item, var);
@@ -81,7 +81,7 @@ PyObject *TValueListMethods::_new(PyTypeObject *type, PyObject *args, PyObject *
 }
 
 
-PyObject *TValueListMethods::_getitem(TPyOrange *self, int index)
+PyObject *TValueListMethods::_getitem(TPyOrange *self, Py_ssize_t index)
 { PyTRY
     CAST_TO(TValueList, aList)
     return checkIndex(index, aList->size()) ? Value_FromVariableValue(aList->variable, aList->operator[](index)) : PYNULL;
@@ -89,7 +89,7 @@ PyObject *TValueListMethods::_getitem(TPyOrange *self, int index)
 }
 
 
-int TValueListMethods::_setitem(TPyOrange *self, int index, PyObject *item)
+int TValueListMethods::_setitem(TPyOrange *self, Py_ssize_t index, PyObject *item)
 { PyTRY
     CAST_TO_err(TValueList, aList, -1)
     if (!checkIndex(index, aList->size()))
@@ -166,7 +166,7 @@ int TValueListMethods::_cmp(TPyOrange *self, PyObject *other)
 
 
 PyObject *TValueListMethods::_str(TPyOrange *self)
-{ 
+{
   PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
   if (result)
     return result;
@@ -235,7 +235,7 @@ int TValueListMethods::_contains(TPyOrange *self, PyObject *item)
 
 
 PyObject *TValueListMethods::_filter(TPyOrange *self, PyObject *args)
-{ 
+{
   PyTRY
     PyObject *filtfunc=NULL;
     if (!PyArg_ParseTuple(args, "|O:filter", &filtfunc))
@@ -244,7 +244,7 @@ PyObject *TValueListMethods::_filter(TPyOrange *self, PyObject *args)
     PyObject *emtuple = PyTuple_New(0);
     PyObject *emdict = PyDict_New();
     PyObject *newList = self->ob_type->tp_new(self->ob_type, emtuple, emdict);
-    Py_DECREF(emtuple); 
+    Py_DECREF(emtuple);
     Py_DECREF(emdict);
     emtuple = NULL;
     emdict = NULL;
@@ -296,12 +296,15 @@ PyObject *TValueListMethods::_insert(TPyOrange *self, PyObject *args)
     int index;
     TValue item;
 
-    if (   !PyArg_ParseTuple(args, "iO", &index, &obj)
-        || !checkIndex(index, aList->size())
-        || !(convertFromPython(obj, item, aList->variable)))
+    if (!PyArg_ParseTuple(args, "iO", &index, &obj))
+    	return PYNULL;
+
+    Py_ssize_t sindex = index;
+    if (   !checkIndex(sindex, aList->size())
+        || !convertFromPython(obj, item, aList->variable))
       return PYNULL;
-    
-    aList->insert(aList->begin()+index, item);
+
+    aList->insert(aList->begin()+sindex, item);
     RETURN_NONE;
   PyCATCH
 }
@@ -313,7 +316,7 @@ PyObject *TValueListMethods::_native(TPyOrange *self)
 
     PyObject *newList = PyList_New(aList->size());
 
-    int i=0;
+    Py_ssize_t i=0;
     for(const_iterator li = aList->begin(), le = aList->end(); li!=le; li++)
       PyList_SetItem(newList, i++, Value_FromVariableValue(aList->variable, *li));
 
@@ -371,7 +374,7 @@ TValueListMethods::TCmpByCallback::TCmpByCallback(const TCmpByCallback &other)
 { Py_INCREF(cmpfunc); }
 
 TValueListMethods::TCmpByCallback::~TCmpByCallback()
-{ Py_DECREF(cmpfunc); 
+{ Py_DECREF(cmpfunc);
 }
 
 bool TValueListMethods::TCmpByCallback::operator()(const TValue &x, const TValue &y) const
@@ -394,7 +397,7 @@ bool TValueListMethods::TCmpByCallback::operator()(const TValue &x, const TValue
 }
 
 PyObject *TValueListMethods::_sort(TPyOrange *self, PyObject *args)
-{ 
+{
   PyTRY
     PyObject *cmpfunc=NULL;
     if (!PyArg_ParseTuple(args, "|O:sort", &cmpfunc))
