@@ -1089,13 +1089,13 @@ PyObject *ValueList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED
 { return TValueListMethods::_new(type, arg, kwds); }
 
 
-PyObject *ValueList_getitem_sq(TPyOrange *self, int index) { return TValueListMethods::_getitem(self, index); }
-int       ValueList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return TValueListMethods::_setitem(self, index, item); }
-PyObject *ValueList_getslice(TPyOrange *self, int start, int stop) { return TValueListMethods::_getslice(self, start, stop); }
-int       ValueList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return TValueListMethods::_setslice(self, start, stop, item); }
-int       ValueList_len_sq(TPyOrange *self) { return TValueListMethods::_len(self); }
+PyObject *ValueList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return TValueListMethods::_getitem(self, index); }
+int       ValueList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return TValueListMethods::_setitem(self, index, item); }
+PyObject *ValueList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return TValueListMethods::_getslice(self, start, stop); }
+int       ValueList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return TValueListMethods::_setslice(self, start, stop, item); }
+Py_ssize_t ValueList_len_sq(TPyOrange *self) { return TValueListMethods::_len(self); }
 PyObject *ValueList_concat(TPyOrange *self, PyObject *obj) { return TValueListMethods::_concat(self, obj); }
-PyObject *ValueList_repeat(TPyOrange *self, int times) { return TValueListMethods::_repeat(self, times); }
+PyObject *ValueList_repeat(TPyOrange *self, Py_ssize_t times) { return TValueListMethods::_repeat(self, times); }
 PyObject *ValueList_str(TPyOrange *self) { return TValueListMethods::_str(self); }
 PyObject *ValueList_repr(TPyOrange *self) { return TValueListMethods::_str(self); }
 int       ValueList_contains(TPyOrange *self, PyObject *obj) { return TValueListMethods::_contains(self, obj); }

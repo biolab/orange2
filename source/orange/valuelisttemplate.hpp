@@ -29,8 +29,8 @@ public:
   static PValueList P_FromArguments(PyObject *arg, PVariable var = PVariable());
   static PyObject *_FromArguments(PyTypeObject *type, PyObject *arg, PVariable var = PVariable());
   static PyObject *_new(PyTypeObject *type, PyObject *args, PyObject *);
-  static PyObject *_getitem(TPyOrange *self, int index);
-  static int _setitem(TPyOrange *self, int index, PyObject *item);
+  static PyObject *_getitem(TPyOrange *self, Py_ssize_t index);
+  static int _setitem(TPyOrange *self, Py_ssize_t, PyObject *item);
   static int _cmp(TPyOrange *self, PyObject *other);
   static PyObject *_str(TPyOrange *self);
   static PyObject *_append(TPyOrange *self, PyObject *item);

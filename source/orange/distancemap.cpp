@@ -61,7 +61,7 @@
 /* This function was originally stolen from heatmap.cpp, but modified to
    handle triangular matrices */
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size,
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, long &size,
                              float *intensity, const int &width, const int &height,
                              const float &absLow, const float &absHigh, const float &gamma,
                              bool grid, const int &matrixType)
@@ -164,7 +164,7 @@ TDistanceMap::~TDistanceMap()
 }
 
 
-unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, int &size) const
+unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, long &size) const
 {
   return bitmap2string(cellWidth, cellHeight, size, cells, dim, dim, absLow, absHigh, gamma, grid, matrixType);
 }
@@ -395,7 +395,7 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
 }
 
 
-unsigned char *TDistanceMapConstructor::getLegend(const int &width, const int &height, const float &gamma, int &size) const
+unsigned char *TDistanceMapConstructor::getLegend(const int &width, const int &height, const float &gamma, long &size) const
 {
   float *fmp = new float[width], *fmpi = fmp;
 

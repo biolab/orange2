@@ -867,7 +867,7 @@ PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
     
     Py_INCREF(self);
     PyTuple_SetItem(margs, 0, self);
-    for(int i = 0, e = PyTuple_Size(args); i<e; i++) {
+    for(Py_ssize_t i = 0, e = PyTuple_Size(args); i<e; i++) {
       PyObject *t = PyTuple_GetItem(args, i);
       Py_INCREF(t);
       PyTuple_SetItem(margs, i+1, t);
@@ -905,9 +905,9 @@ char const *getName(TPyOrange *self)
     pyname = pystr;
   }
 
-  const int sze = PyString_Size(pyname);
+  const Py_ssize_t sze = PyString_Size(pyname);
   if (sze) {
-    namebuf = mlnew char[PyString_Size(pyname)+1];
+    namebuf = mlnew char[sze+1];
     strcpy(namebuf, PyString_AsString(pyname));
   }
   Py_DECREF(pyname);
@@ -1008,7 +1008,7 @@ PyObject *Orange_dump(PyObject *self, PyObject *args, PyObject *kwd) PYARGS(METH
     char *formatname = PyString_AsString(stype);
     
     PyObject *margs = PyTuple_New(PyTuple_Size(args)-1);
-    for (int i = 1, e = PyTuple_Size(args); i<e; i++) {
+    for (Py_ssize_t i = 1, e = PyTuple_Size(args); i<e; i++) {
       PyObject *t = PyTuple_GetItem(args, i);
       Py_INCREF(t);
       PyTuple_SetItem(margs, i-1, t);
@@ -1039,7 +1039,7 @@ PyObject *Orange_write(PyObject *self, PyObject *args, PyObject *kwd) PYARGS(MET
     char *formatname = PyString_AsString(stype);
     
     PyObject *margs = PyTuple_New(PyTuple_Size(args)-2);
-    for (int i = 2, e = PyTuple_Size(args); i<e; i++) {
+    for (Py_ssize_t i = 2, e = PyTuple_Size(args); i<e; i++) {
       PyObject *t = PyTuple_GetItem(args, i);
       Py_INCREF(t);
       PyTuple_SetItem(margs, i-2, t);

@@ -241,7 +241,7 @@ TestedExample::TestedExample(PyObject *obj)
         throw CornException("error in 'probabilities' attribute");
       
       probabilities.push_back(vector<float>());
-      for(int ii = 0, ee = PyList_Size(slist); ii<ee; ii++) {
+      for(Py_ssize_t ii = 0, ee = PyList_Size(slist); ii<ee; ii++) {
         PyObject *fe = PyList_GetItem(slist, ii);
         if (!fe || !PyFloat_Check(fe))
           throw CornException("error in 'probabilities' attribute");
@@ -296,7 +296,7 @@ ExperimentResults::ExperimentResults(PyObject *obj)
     throw CornException("'results' is no a list");
   }
 
-  for(int i = 0, e = PyList_Size(pyresults); i<e; i++) {
+  for(Py_ssize_t i = 0, e = PyList_Size(pyresults); i<e; i++) {
     PyObject *testedExample = PyList_GetItem(pyresults, i);
     results.push_back(TestedExample(testedExample));
   }

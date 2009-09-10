@@ -104,7 +104,7 @@ PyObject *EquiDistDiscretizer_get_points(PyObject *self)
    CAST_TO(TEquiDistDiscretizer, edd);
     int nint = edd->numberOfIntervals - 1;
     PyObject *res = PyList_New(nint);
-    for(int i = 0; i < nint; i++)
+    for(Py_ssize_t i = 0; i < nint; i++)
       PyList_SetItem(res, i, PyFloat_FromDouble(edd->firstCut + i*edd->step));
     return res;
   PyCATCH
@@ -499,7 +499,7 @@ PyObject *VariableFilterMap_str(TPyOrange *self) { return TMM_VariableFilterMap:
 PyObject *VariableFilterMap_repr(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
 PyObject *VariableFilterMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_getitem(self, key); }
 int       VariableFilterMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFilterMap::_setitem(self, key, value); }
-int       VariableFilterMap_len(TPyOrange *self) { return TMM_VariableFilterMap::_len(self); }
+Py_ssize_t       VariableFilterMap_len(TPyOrange *self) { return TMM_VariableFilterMap::_len(self); }
 int       VariableFilterMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_contains(self, key); }
 
 PyObject *VariableFilterMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFilterMap::_has_key(self, key); }
@@ -523,7 +523,7 @@ PyObject *VariableFloatMap_str(TPyOrange *self) { return TMM_VariableFloatMap::_
 PyObject *VariableFloatMap_repr(TPyOrange *self) { return TMM_VariableFloatMap::_str(self); }
 PyObject *VariableFloatMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFloatMap::_getitem(self, key); }
 int       VariableFloatMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFloatMap::_setitem(self, key, value); }
-int       VariableFloatMap_len(TPyOrange *self) { return TMM_VariableFloatMap::_len(self); }
+Py_ssize_t       VariableFloatMap_len(TPyOrange *self) { return TMM_VariableFloatMap::_len(self); }
 int       VariableFloatMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFloatMap::_contains(self, key); }
 
 PyObject *VariableFloatMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFloatMap::_has_key(self, key); }
@@ -656,7 +656,7 @@ PyObject *SubsetsGenerator_iterator_iternext(PyObject *self)
       return PYNULL;
 
     PyObject *list=PyTuple_New(vl.size());
-    int i=0;
+    Py_ssize_t i=0;
     ITERATE(TVarList, vi, vl)
       PyTuple_SetItem(list, i++, WrapOrange(*vi));
     return list;
@@ -890,7 +890,7 @@ bool convertFromPython(PyObject *args, PIG &ig)
     PYERROR(PyExc_AttributeError, "invalid arguments (list expected)", false);
 
   ig=PIG(mlnew TIG());
-  for(int i=0; i<PyList_Size(args); i++) {
+  for(Py_ssize_t i=0; i<PyList_Size(args); i++) {
     ig->nodes.push_back(TIGNode());
     if (!convertFromPython(PyList_GetItem(args, i), ig->nodes.back())) {
       ig=PIG();
@@ -916,7 +916,7 @@ PyObject *IG_native(PyObject *self) PYARGS(0, "() -> [(Example, [incompatibility
     CAST_TO(TIG, graph);
   
     PyObject *result=PyList_New(graph->nodes.size());
-    int i=0;
+    Py_ssize_t i=0;
     ITERATE(vector<TIGNode>, ni, graph->nodes)
       PyList_SetItem(result, i++, Py_BuildValue("NNN", 
         Example_FromWrappedExample((*ni).example),
@@ -1152,7 +1152,7 @@ PyObject *IMByRowsPreprocessor_call(PyObject *self, PyObject *args, PyObject *ke
 PyObject *Float2List(float *f, int size)
 { PyObject *dlist = PyList_New(size);
   for(int i = 0; i < size; i++)
-    PyList_SetItem(dlist, i, PyFloat_FromDouble((double)*(f++)));
+    PyList_SetItem(dlist, Py_ssize_t(i), PyFloat_FromDouble((double)*(f++)));
   return dlist;
 }
 
@@ -1223,7 +1223,7 @@ bool convertFromPython(PyObject *args, T_ExampleIMColumnNode &eicn)
   eicn.column = NULL;
   TIMColumnNode **nodeptr = &eicn.column;
 
-  for(int i=0; i<PyList_Size(column); i++) {
+  for(Py_ssize_t i=0; i<PyList_Size(column); i++) {
     PyObject *item=PyList_GetItem(column, i);
     if (discrete) {
       *nodeptr=mlnew TDIMColumnNode(0, 0);
@@ -1280,7 +1280,7 @@ bool convertFromPython(PyObject *args, PIM &im)
 
   im=PIM(mlnew TIM(varType));
   im->columns=vector<T_ExampleIMColumnNode>();
-  for(int i=0; i<PyList_Size(args); i++) {
+  for(Py_ssize_t i=0; i<PyList_Size(args); i++) {
     PyObject *item=PyList_GetItem(args, i);
     im->columns.push_back(T_ExampleIMColumnNode());
     if (!convertFromPython(item, im->columns.back())) {
@@ -1327,7 +1327,7 @@ PyObject *IM__reduce__(PyObject *self)
 
 PyObject *convertToPython(const TDIMRow &row)
 { PyObject *pyrow=PyList_New(row.nodes.size());
-  int i = 0;
+  Py_ssize_t i = 0;
   const int &noval = row.noOfValues;
   const_ITERATE(vector<float *>, ii, row.nodes)
     PyList_SetItem(pyrow, i++, Float2List(*ii, noval));
@@ -1338,7 +1338,7 @@ PyObject *convertToPython(const TDIMRow &row)
 
 PyObject *convertToPython(const PIMByRows &im)
 { PyObject *result=PyList_New(im->rows.size());
-  int i=0;
+  Py_ssize_t i=0;
   const_ITERATE(vector<TDIMRow>, ri, im->rows)
     PyList_SetItem(result, i++, convertToPython(*ri));
   return result;  
@@ -1354,7 +1354,7 @@ PyObject *IMByRows_get_columnExamples(PyObject *self) PYDOC("Values of bound att
 { PyTRY
     CAST_TO(TIMByRows, pimr);
     PyObject *result=PyList_New(pimr->columnExamples.size());
-    int i=0;
+    Py_ssize_t i=0;
     ITERATE(vector<PExample>, ei, pimr->columnExamples)
       PyList_SetItem(result, i++, Example_FromWrappedExample(*ei));
     return result;
@@ -1469,7 +1469,7 @@ PyObject *ExampleDistVector__reduce__(PyObject *self)
     vector<T_ExampleDist> &values = SELF_AS(TExampleDistVector).values;
 
     PyObject *pyvalues = PyList_New(values.size() * 2);
-    int i = 0;
+    Py_ssize_t i = 0;
     ITERATE(vector<T_ExampleDist>, edi, values) {
       PyList_SetItem(pyvalues, i++, Example_FromWrappedExample(edi->example));
       PyList_SetItem(pyvalues, i++, WrapOrange(edi->distribution));
@@ -1495,7 +1495,7 @@ PyObject *__pickleLoaderExampleDistVector(PyObject *, PyObject *args) PYARGS(MET
     TExampleDistVector *ed = new TExampleDistVector();
 
     try {
-      int i = 0, e = PyList_Size(pyvalues);
+      Py_ssize_t i = 0, e = PyList_Size(pyvalues);
       ed->values.reserve(e>>1);
       while(i < e) {
         PExample ex = PyExample_AS_Example(PyList_GetItem(pyvalues, i++));

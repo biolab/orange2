@@ -108,7 +108,7 @@ PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(ME
     if (!PyArg_ParseTuple(args, "iif:HeatmapConstructor.getLegend", &width, &height, &gamma))
       return NULL;
 
-    int size;
+    long size;
     unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
     PyObject *res = PyString_FromStringAndSize((const char *)bitmap, (Py_ssize_t)size);
     delete bitmap;
@@ -182,9 +182,9 @@ PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) 
       nRows = hm->height;
     }
 
-    int size;
+    long size;
     unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, firstRow, nRows, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, cellWidth * hm->width, cellHeight * nRows);
+    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, (Py_ssize_t)size, cellWidth * hm->width, cellHeight * nRows);
     delete bitmap;
     return res;
   PyCATCH
@@ -211,9 +211,9 @@ PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords
       nRows = hm->height;
     }
 
-    int size;
+    long size;
     unsigned char *bitmap = hm->averages2string(width, height, firstRow, nRows, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, width, height * hm->height);
+    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, (Py_ssize_t)size, width, height * hm->height);
     delete bitmap;
     return res;
   PyCATCH
@@ -271,14 +271,14 @@ extern ORANGENE_API TOrangeType PyOrHeatmap_Type;
 PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::P_FromArguments(arg); }
 PyObject *HeatmapList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_FromArguments(type, arg); }
 PyObject *HeatmapList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Heatmap>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_new(type, arg, kwds); }
-PyObject *HeatmapList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getitem(self, index); }
-int       HeatmapList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setitem(self, index, item); }
-PyObject *HeatmapList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getslice(self, start, stop); }
-int       HeatmapList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setslice(self, start, stop, item); }
-int       HeatmapList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_len(self); }
+PyObject *HeatmapList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getitem(self, index); }
+int       HeatmapList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setitem(self, index, item); }
+PyObject *HeatmapList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getslice(self, start, stop); }
+int       HeatmapList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       HeatmapList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_len(self); }
 PyObject *HeatmapList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_richcmp(self, object, op); }
 PyObject *HeatmapList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_concat(self, obj); }
-PyObject *HeatmapList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_repeat(self, times); }
+PyObject *HeatmapList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_repeat(self, times); }
 PyObject *HeatmapList_str(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_str(self); }
 PyObject *HeatmapList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_str(self); }
 int       HeatmapList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_contains(self, obj); }

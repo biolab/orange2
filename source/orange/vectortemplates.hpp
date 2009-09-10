@@ -76,7 +76,7 @@ This file includes constructors and specialized methods for Orange vectors
 #include "c2py.hpp"
 
 
-inline bool checkIndex(int &index, int max)
+inline bool checkIndex(Py_ssize_t &index, Py_ssize_t max)
 { if (index<0)
     index += max;
   if ((index<0) || (index>=max)) {
@@ -87,7 +87,7 @@ inline bool checkIndex(int &index, int max)
 }
 
 
-inline bool checkIndices(int &start, int &stop, int max)
+inline bool checkIndices(Py_ssize_t &start, Py_ssize_t &stop, Py_ssize_t max)
 { if (stop>max)
     stop=max;
 
@@ -110,14 +110,14 @@ public:
   { return WrapNewOrange(mlnew _ListType(), type);
   }
 
-  static int _len(TPyOrange *self)
+  static Py_ssize_t _len(TPyOrange *self)
   { PyTRY
       CAST_TO_err(_ListType, aList, -1);
       return aList->size();
     PyCATCH_1
   }  
 
-  static PyObject *_repeat(TPyOrange *self, int times)
+  static PyObject *_repeat(TPyOrange *self, Py_ssize_t times)
   { PyObject *emtuple = NULL, *emdict = NULL, *newList = NULL;
     try {
       emtuple = PyTuple_New(0);
@@ -147,7 +147,7 @@ public:
       }
   }
 
-  static PyObject *_getslice(TPyOrange *self, int start, int stop)
+  static PyObject *_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop)
   { PyObject *emtuple = NULL, *emdict = NULL, *newList = NULL;
     try {
       CAST_TO(_ListType, aList)
@@ -290,14 +290,14 @@ public:
     return _FromArguments(type, args);
   }
 
-  static PyObject *_getitem(TPyOrange *self, int index)
+  static PyObject *_getitem(TPyOrange *self, Py_ssize_t index)
   { PyTRY
       CAST_TO(_ListType, aList)
       return checkIndex(index, aList->size()) ? WrapOrange(aList->operator[](index)) : PYNULL;
     PyCATCH
   }
 
-  static int _setitem(TPyOrange *self, int index, PyObject *item)
+  static int _setitem(TPyOrange *self, Py_ssize_t index, PyObject *item)
   { PyTRY
       CAST_TO_err(_ListType, aList, -1)
       if (!checkIndex(index, aList->size()))
@@ -316,7 +316,7 @@ public:
     PyCATCH_1
   }
 
-  static int _setslice(TPyOrange *self, int start, int stop, PyObject *args)
+  static int _setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *args)
   { PyTRY
       CAST_TO_err(_ListType, aList, -1)
       if (!checkIndices(start, stop, aList->size()))
@@ -363,7 +363,7 @@ public:
 
         CAST_TO(_ListType, aList)
         int myLen = aList->size();
-        int hisLen = PySequence_Size(other);
+        Py_ssize_t hisLen = PySequence_Size(other);
 
         if (myLen != hisLen) {
           if (op == Py_EQ) {
@@ -376,10 +376,10 @@ public:
           }
         }
 
-        int len = myLen < hisLen ? myLen : hisLen;
+        Py_ssize_t len = myLen < hisLen ? myLen : hisLen;
         int k = 0;
         iterator ii(aList->begin());
-        for (int pos=0; !k && (pos<len); pos++) {
+        for (Py_ssize_t pos=0; !k && (pos<len); pos++) {
           myItem = WrapOrange(*(ii++));
           hisItem = PySequence_GetItem(other, pos);
           k = PyObject_RichCompareBool(myItem, hisItem, Py_NE);
@@ -556,11 +556,14 @@ public:
       CAST_TO(_ListType, aList);
 
       PyObject *obj;
-      int index;
+      int iindex;
       _WrappedElement item;
 
-      if (   !PyArg_ParseTuple(args, "iO", &index, &obj)
-          || !checkIndex(index, aList->size())
+      if (!PyArg_ParseTuple(args, "iO", &iindex, &obj))
+		  return NULL;
+
+	  Py_ssize_t index = iindex;
+      if (   !checkIndex(index, aList->size())
           || !_fromPython(obj, item))
         return PYNULL;
       
@@ -569,13 +572,12 @@ public:
     PyCATCH
   }
 
-
   static PyObject *_native(TPyOrange *self)
   { PyTRY
       CAST_TO(_ListType, aList);
       PyObject *newList = PyList_New(aList->size());
 
-      int i=0;
+      Py_ssize_t i=0;
       for(iterator li = aList->begin(), le = aList->end(); li!=le; li++)
         PyList_SetItem(newList, i++, WrapOrange(*li));
 
@@ -708,7 +710,7 @@ public:
     }
 
     _WrappedListType aList = mlnew _ListType();
-    for(int i=0, e=PySequence_Size(arg); i!=e; i++) {
+    for(Py_ssize_t i=0, e=PySequence_Size(arg); i!=e; i++) {
       PyObject *pyobj=PySequence_GetItem(arg, i);
       _Element item;
       bool ok = convertFromPython(pyobj, item);
@@ -744,14 +746,14 @@ public:
     return _FromArguments(type, args);
   }
 
-  static PyObject *_getitem(TPyOrange *self, int index)
+  static PyObject *_getitem(TPyOrange *self, Py_ssize_t index)
   { PyTRY
       CAST_TO(_ListType, aList)
       return checkIndex(index, aList->size()) ? convertToPython(aList->operator[](index)) : PYNULL;
     PyCATCH
   }
 
-  static int _setitem(TPyOrange *self, int index, PyObject *item)
+  static int _setitem(TPyOrange *self, Py_ssize_t index, PyObject *item)
   { PyTRY
       CAST_TO_err(_ListType, aList, -1)
       if (!checkIndex(index, aList->size()))
@@ -770,7 +772,7 @@ public:
     PyCATCH_1
   }
 
-  static int _setslice(TPyOrange *self, int start, int stop, PyObject *args)
+  static int _setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *args)
   { PyTRY
       CAST_TO_err(_ListType, aList, -1)
       if (!checkIndices(start, stop, aList->size()))
@@ -818,7 +820,7 @@ public:
 
         CAST_TO(_ListType, aList)
         int myLen = aList->size();
-        int hisLen = PySequence_Size(other);
+        Py_ssize_t hisLen = PySequence_Size(other);
 
         if (myLen != hisLen) {
           if (op == Py_EQ) {
@@ -831,10 +833,10 @@ public:
           }
         }
 
-        int len = myLen < hisLen ? myLen : hisLen;
+        Py_ssize_t len = myLen < hisLen ? myLen : hisLen;
         int k = 0;
         iterator ii(aList->begin());
-        for (int pos=0; !k && (pos<len); pos++) {
+        for (Py_ssize_t pos=0; !k && (pos<len); pos++) {
           myItem = convertToPython(*(ii++));
           hisItem = PySequence_GetItem(other, pos);
           k = PyObject_RichCompareBool(myItem, hisItem, Py_NE);
@@ -1007,11 +1009,14 @@ public:
       CAST_TO(_ListType, aList);
 
       PyObject *obj;
-      int index;
+      int iindex;
       _Element item;
 
-      if (   !PyArg_ParseTuple(args, "iO", &index, &obj)
-          || !checkIndex(index, aList->size())
+      if (!PyArg_ParseTuple(args, "iO", &iindex, &obj))
+		  return NULL;
+
+	  Py_ssize_t index = iindex;
+	  if (   !checkIndex(index, aList->size())
           || !(convertFromPython(obj, item)))
         return PYNULL;
       
@@ -1026,7 +1031,7 @@ public:
       CAST_TO(_ListType, aList);
       PyObject *newList = PyList_New(aList->size());
 
-      int i=0;
+      Py_ssize_t i=0;
       for(const_iterator li = aList->begin(), le = aList->end(); li!=le; li++)
         PyList_SetItem(newList, i++, convertToPython(*li));
 

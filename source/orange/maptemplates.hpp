@@ -155,7 +155,7 @@ public:
 			  return false;
 		  }
 
-      const int n = PySequence_Fast_GET_SIZE(fast);
+      const Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
 		  if (n != 2) {
         PyErr_Format(PyExc_ValueError, "dictionary update sequence element #%d has length %d; 2 is required", i, n);
         Py_DECREF(fast);
@@ -285,7 +285,7 @@ public:
     return PyString_FromString(res.c_str());
   }
 
-  static int _len(TPyOrange *self)
+  static Py_ssize_t _len(TPyOrange *self)
   { PyTRY
       CAST_TO_err(_MapType, aMap, -1);
       return aMap->size();
@@ -365,7 +365,7 @@ public:
   { CAST_TO(_MapType, aMap)
     
     PyObject *res = PyList_New(aMap->size());
-    int i = 0;
+    Py_ssize_t i = 0;
     for(const_iterator ii(aMap->begin()), ie(aMap->end()); ii!=ie; ii++, i++) {
       PyObject *item = convertKeyToPython((*ii).first);
       if (!item) {
@@ -403,7 +403,7 @@ public:
   { CAST_TO(_MapType, aMap)
     
     PyObject *res = PyList_New(aMap->size());
-    int i = 0;
+    Py_ssize_t i = 0;
     for(const_iterator ii(aMap->begin()), ie(aMap->end()); ii!=ie; ii++, i++) {
       PyObject *key = convertKeyToPython((*ii).first);
       PyObject *value = key ? convertValueToPython((*ii).second) : NULL;

@@ -248,9 +248,9 @@ void TMeasureAttribute_Python::thresholdFunction(TFloatFloatList &res,
     }
 
     res.clear();
-    const int lsize = PyList_Size(pyres);
+	const Py_ssize_t lsize = PyList_Size(pyres);
     res.reserve(lsize);
-    for (int i = 0; i < lsize; i++) {
+    for (Py_ssize_t i = 0; i < lsize; i++) {
         PyObject *litem = PyList_GetItem(pyres, i);
         PyObject *n1 = NULL, *n2 = NULL;
         if (!(PyTuple_Check(litem) && (PyTuple_Size(litem) == 2)
@@ -502,10 +502,10 @@ PExampleGeneratorList TTreeExampleSplitter_Python::operator()(PTreeNode node, PE
     }
 
     if (pyweights && (pyweights!=Py_None)) {
-        if (!PyList_Check(pyweights) || (PyList_Size(pyweights)!=(int)node->branches->size())) {
+        if (!PyList_Check(pyweights) || (PyList_Size(pyweights)!=(Py_ssize_t)node->branches->size())) {
             raiseError("invalid result from __call__ (length of weight list should equal the number of branches)");
         }
-        for (int sz = 0, se = PyList_Size(pyweights); sz<se; sz++) {
+        for (Py_ssize_t sz = 0, se = PyList_Size(pyweights); sz<se; sz++) {
             PyObject *li = PyList_GetItem(pyweights, sz);
             if (!PyInt_Check(li)) {
                 raiseError("invalid weight list (int's expected).");

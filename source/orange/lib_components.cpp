@@ -353,14 +353,14 @@ PyCATCH
 
 PDomainBasicAttrStat PDomainBasicAttrStat_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::P_FromArguments(arg); }
 PyObject *DomainBasicAttrStat_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_FromArguments(type, arg); }
-PyObject *DomainBasicAttrStat_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_getitem(self, index); }
-int       DomainBasicAttrStat_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_setitem(self, index, item); }
-PyObject *DomainBasicAttrStat_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_getslice(self, start, stop); }
-int       DomainBasicAttrStat_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_setslice(self, start, stop, item); }
-int       DomainBasicAttrStat_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_len(self); }
+PyObject *DomainBasicAttrStat_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_getitem(self, index); }
+int       DomainBasicAttrStat_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_setitem(self, index, item); }
+PyObject *DomainBasicAttrStat_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_getslice(self, start, stop); }
+int       DomainBasicAttrStat_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       DomainBasicAttrStat_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_len(self); }
 PyObject *DomainBasicAttrStat_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_richcmp(self, object, op); }
 PyObject *DomainBasicAttrStat_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_concat(self, obj); }
-PyObject *DomainBasicAttrStat_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_repeat(self, times); }
+PyObject *DomainBasicAttrStat_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_repeat(self, times); }
 PyObject *DomainBasicAttrStat_str(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_str(self); }
 PyObject *DomainBasicAttrStat_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_str(self); }
 int       DomainBasicAttrStat_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_contains(self, obj); }
@@ -618,7 +618,7 @@ PyObject *__pickleLoaderContingencyCommon(TContingency *cont, PyObject *args)
 		cont->continuous = new TDistributionMap();
 		TDistributionMap &dmap = *cont->continuous;
 
-		for(int i = 0, e = PyList_Size(dvect); i < e; i++) {
+		for(Py_ssize_t i = 0, e = PyList_Size(dvect); i < e; i++) {
 			PyObject *dist = PyList_GetItem(dvect, i);
 			if (!PyOrDistribution_Check(dist)) {
 				delete cont;
@@ -635,7 +635,7 @@ PyObject *__pickleLoaderContingencyCommon(TContingency *cont, PyObject *args)
 		cont->discrete = new TDistributionVector();
 		TDistributionVector &dvec = *cont->discrete;
 
-		for(int i = 0, e = PyList_Size(dvect); i < e; i++) {
+		for(Py_ssize_t i = 0, e = PyList_Size(dvect); i < e; i++) {
 			PyObject *dist = PyList_GetItem(dvect, i);
 			if (!PyOrDistribution_Check(dist)) {
 				delete cont;
@@ -948,14 +948,14 @@ PyCATCH
 }
 
 
-PyObject *Contingency_getitem_sq(PyObject *self, int ind)
+PyObject *Contingency_getitem_sq(PyObject *self, Py_ssize_t ind)
 { PyTRY
 CAST_TO(TContingency, cont)
 
 if (cont->outerVariable->varType!=TValue::INTVAR)
 PYERROR(PyExc_TypeError, "cannot iterate through contingency of continuous attribute", PYNULL);
 
-if ((ind<0) || (ind>=int(cont->discrete->size())))
+if ((ind<0) || (ind>=Py_ssize_t(cont->discrete->size())))
 PYERROR(PyExc_IndexError, "index out of range", PYNULL);
 
 return WrapOrange(POrange(cont->discrete->at(ind)));
@@ -977,7 +977,7 @@ return 0;
 PyCATCH_1
 }
 
-int Contingency_len(PyObject *self)
+Py_ssize_t Contingency_len(PyObject *self)
 { PyTRY
 CAST_TO_err(TContingency, cont, -1);
 if (cont->outerVariable)
@@ -1068,14 +1068,14 @@ CAST_TO(TContingency, cont);
 if (cont->outerVariable)
 if (cont->outerVariable->varType==TValue::FLOATVAR) {
 	PyObject *nl=PyList_New(cont->continuous->size());
-	int i=0;
+	Py_ssize_t i=0;
 	PITERATE(TDistributionMap, ci, cont->continuous)
 		PyList_SetItem(nl, i++, PyFloat_FromDouble((double)(*ci).first));
 	return nl;
 }
 else if (cont->outerVariable->varType==TValue::INTVAR) {
 	PyObject *nl=PyList_New(cont->outerVariable->noOfValues());
-	int i=0;
+	Py_ssize_t i=0;
 	PStringList vals=cont->outerVariable.AS(TEnumVariable)->values;
 	PITERATE(TStringList, ii, vals)
 		PyList_SetItem(nl, i++, PyString_FromString((*ii).c_str()));
@@ -1093,14 +1093,14 @@ CAST_TO(TContingency, cont);
 if (cont->outerVariable)
 if (cont->outerVariable->varType==TValue::FLOATVAR) {
 	PyObject *nl=PyList_New(cont->continuous->size());
-	int i=0;
+	Py_ssize_t i=0;
 	PITERATE(TDistributionMap, ci, cont->continuous)
 		PyList_SetItem(nl, i++, WrapOrange((*ci).second));
 	return nl;
 }
 else if (cont->outerVariable->varType==TValue::INTVAR) {
 	PyObject *nl=PyList_New(cont->discrete->size());
-	int i=0;
+	Py_ssize_t i=0;
 	PITERATE(TDistributionVector, ci, cont->discrete)
 		PyList_SetItem(nl, i++, WrapOrange(*ci));
 	return nl;
@@ -1116,7 +1116,7 @@ CAST_TO(TContingency, cont);
 if (cont->outerVariable)
 if (cont->outerVariable->varType==TValue::FLOATVAR) {
 	PyObject *nl=PyList_New(cont->continuous->size());
-	int i=0;
+	Py_ssize_t i=0;
 	PITERATE(TDistributionMap, ci, cont->continuous)
 		PyList_SetItem(nl, i++,
 		Py_BuildValue("fN", (double)(*ci).first, WrapOrange((*ci).second)));
@@ -1124,7 +1124,7 @@ if (cont->outerVariable->varType==TValue::FLOATVAR) {
 }
 else if (cont->outerVariable->varType==TValue::INTVAR) {
 	PyObject *nl=PyList_New(cont->outerVariable->noOfValues());
-	int i=0;
+	Py_ssize_t i=0;
 	TStringList::const_iterator ii(cont->outerVariable.AS(TEnumVariable)->values->begin());
 	PITERATE(TDistributionVector, ci, cont->discrete)
 		PyList_SetItem(nl, i++,
@@ -1143,14 +1143,14 @@ PyCATCH
 
 PDomainContingency PDomainContingency_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::P_FromArguments(arg); }
 PyObject *DomainContingency_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_FromArguments(type, arg); }
-PyObject *DomainContingency_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_getitem(self, index); }
-int       DomainContingency_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_setitem(self, index, item); }
-PyObject *DomainContingency_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_getslice(self, start, stop); }
-int       DomainContingency_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_setslice(self, start, stop, item); }
-int       DomainContingency_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_len(self); }
+PyObject *DomainContingency_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_getitem(self, index); }
+int       DomainContingency_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_setitem(self, index, item); }
+PyObject *DomainContingency_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_getslice(self, start, stop); }
+int       DomainContingency_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       DomainContingency_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_len(self); }
 PyObject *DomainContingency_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_richcmp(self, object, op); }
 PyObject *DomainContingency_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_concat(self, obj); }
-PyObject *DomainContingency_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_repeat(self, times); }
+PyObject *DomainContingency_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_repeat(self, times); }
 PyObject *DomainContingency_str(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_str(self); }
 PyObject *DomainContingency_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_str(self); }
 int       DomainContingency_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_contains(self, obj); }
@@ -1594,14 +1594,14 @@ C_CALL(Filter_values, Filter, "([examples], [negate=..., domain=..., values=<see
 PValueFilterList PValueFilterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::P_FromArguments(arg); }
 PyObject *ValueFilterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_FromArguments(type, arg); }
 PyObject *ValueFilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ValueFilter>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_new(type, arg, kwds); }
-PyObject *ValueFilterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getitem(self, index); }
-int       ValueFilterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_setitem(self, index, item); }
-PyObject *ValueFilterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getslice(self, start, stop); }
-int       ValueFilterList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_setslice(self, start, stop, item); }
-int       ValueFilterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_len(self); }
+PyObject *ValueFilterList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getitem(self, index); }
+int       ValueFilterList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_setitem(self, index, item); }
+PyObject *ValueFilterList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getslice(self, start, stop); }
+int       ValueFilterList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       ValueFilterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_len(self); }
 PyObject *ValueFilterList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_richcmp(self, object, op); }
 PyObject *ValueFilterList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_concat(self, obj); }
-PyObject *ValueFilterList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_repeat(self, times); }
+PyObject *ValueFilterList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_repeat(self, times); }
 PyObject *ValueFilterList_str(TPyOrange *self) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_str(self); }
 PyObject *ValueFilterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_str(self); }
 int       ValueFilterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_contains(self, obj); }
@@ -1664,7 +1664,7 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 
 		try {
 			if (!((TPyOrange *)self)->call_constructed && keywords) {
-				const int sze = PyDict_Size(keywords);
+				const Py_ssize_t sze = PyDict_Size(keywords);
 				PyObject *neg = sze >= 1 ? PyDict_GetItemString(keywords, "negate") : NULL;
 				if ((sze > 1) || !neg)
 					NO_KEYWORDS;
@@ -1939,14 +1939,14 @@ PyObject *Filter_values_getitem(PyObject *self, PyObject *args)
 PFilterList PFilterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::P_FromArguments(arg); }
 PyObject *FilterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_FromArguments(type, arg); }
 PyObject *FilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Filter>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_new(type, arg, kwds); }
-PyObject *FilterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getitem(self, index); }
-int       FilterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_setitem(self, index, item); }
-PyObject *FilterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getslice(self, start, stop); }
-int       FilterList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_setslice(self, start, stop, item); }
-int       FilterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_len(self); }
+PyObject *FilterList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getitem(self, index); }
+int       FilterList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_setitem(self, index, item); }
+PyObject *FilterList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getslice(self, start, stop); }
+int       FilterList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       FilterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_len(self); }
 PyObject *FilterList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_richcmp(self, object, op); }
 PyObject *FilterList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_concat(self, obj); }
-PyObject *FilterList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_repeat(self, times); }
+PyObject *FilterList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_repeat(self, times); }
 PyObject *FilterList_str(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_str(self); }
 PyObject *FilterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_str(self); }
 int       FilterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_contains(self, obj); }
@@ -2092,7 +2092,7 @@ PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keyw
 
 	try {
 		if (!((TPyOrange *)self)->call_constructed && keywords) {
-			const int sze = PyDict_Size(keywords);
+			const Py_ssize_t sze = PyDict_Size(keywords);
 			PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p0") : NULL;
 			if ((sze > 1) || !neg)
 				NO_KEYWORDS;
@@ -2158,7 +2158,7 @@ PyObject *MakeRandomIndicesMultiple_call(PyObject *self, PyObject *args, PyObjec
 
 	try {
 		if (!((TPyOrange *)self)->call_constructed && keywords) {
-			const int sze = PyDict_Size(keywords);
+			const Py_ssize_t sze = PyDict_Size(keywords);
 			PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p0") : NULL;
 			if ((sze > 1) || !neg)
 				NO_KEYWORDS;
@@ -2228,7 +2228,7 @@ PyObject *MakeRandomIndicesN_call(PyObject *self, PyObject *args, PyObject *keyw
 
 	try {
 		if (!((TPyOrange *)self)->call_constructed && keywords) {
-			const int sze = PyDict_Size(keywords);
+			const Py_ssize_t sze = PyDict_Size(keywords);
 			PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p") : NULL;
 			if ((sze > 1) || !neg)
 				NO_KEYWORDS;
@@ -2297,7 +2297,7 @@ PyObject *MakeRandomIndicesCV_call(PyObject *self, PyObject *args, PyObject *key
 
 	try {
 		if (!((TPyOrange *)self)->call_constructed && keywords) {
-			const int sze = PyDict_Size(keywords);
+			const Py_ssize_t sze = PyDict_Size(keywords);
 			PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "folds") : NULL;
 			if ((sze > 1) || !neg)
 				NO_KEYWORDS;
@@ -2379,14 +2379,14 @@ extern PyTypeObject PyOrProbabilityEstimator_Type_inh;
 PProbabilityEstimatorList PProbabilityEstimatorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::P_FromArguments(arg); }
 PyObject *ProbabilityEstimatorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_FromArguments(type, arg); }
 PyObject *ProbabilityEstimatorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ProbabilityEstimator>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_new(type, arg, kwds); }
-PyObject *ProbabilityEstimatorList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getitem(self, index); }
-int       ProbabilityEstimatorList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setitem(self, index, item); }
-PyObject *ProbabilityEstimatorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getslice(self, start, stop); }
-int       ProbabilityEstimatorList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
-int       ProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_len(self); }
+PyObject *ProbabilityEstimatorList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getitem(self, index); }
+int       ProbabilityEstimatorList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setitem(self, index, item); }
+PyObject *ProbabilityEstimatorList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_getslice(self, start, stop); }
+int       ProbabilityEstimatorList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       ProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_len(self); }
 PyObject *ProbabilityEstimatorList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_richcmp(self, object, op); }
 PyObject *ProbabilityEstimatorList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_concat(self, obj); }
-PyObject *ProbabilityEstimatorList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_repeat(self, times); }
+PyObject *ProbabilityEstimatorList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_repeat(self, times); }
 PyObject *ProbabilityEstimatorList_str(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_str(self); }
 PyObject *ProbabilityEstimatorList_repr(TPyOrange *self) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_str(self); }
 int       ProbabilityEstimatorList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PProbabilityEstimatorList, TProbabilityEstimatorList, PProbabilityEstimator, &PyOrProbabilityEstimator_Type>::_contains(self, obj); }
@@ -2408,14 +2408,14 @@ PyObject *ProbabilityEstimatorList__reduce__(TPyOrange *self, PyObject *) { retu
 PConditionalProbabilityEstimatorList PConditionalProbabilityEstimatorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::P_FromArguments(arg); }
 PyObject *ConditionalProbabilityEstimatorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_FromArguments(type, arg); }
 PyObject *ConditionalProbabilityEstimatorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ConditionalProbabilityEstimator>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_new(type, arg, kwds); }
-PyObject *ConditionalProbabilityEstimatorList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getitem(self, index); }
-int       ConditionalProbabilityEstimatorList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setitem(self, index, item); }
-PyObject *ConditionalProbabilityEstimatorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getslice(self, start, stop); }
-int       ConditionalProbabilityEstimatorList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
-int       ConditionalProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_len(self); }
+PyObject *ConditionalProbabilityEstimatorList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getitem(self, index); }
+int       ConditionalProbabilityEstimatorList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setitem(self, index, item); }
+PyObject *ConditionalProbabilityEstimatorList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_getslice(self, start, stop); }
+int       ConditionalProbabilityEstimatorList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       ConditionalProbabilityEstimatorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_len(self); }
 PyObject *ConditionalProbabilityEstimatorList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_richcmp(self, object, op); }
 PyObject *ConditionalProbabilityEstimatorList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_concat(self, obj); }
-PyObject *ConditionalProbabilityEstimatorList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_repeat(self, times); }
+PyObject *ConditionalProbabilityEstimatorList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_repeat(self, times); }
 PyObject *ConditionalProbabilityEstimatorList_str(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_str(self); }
 PyObject *ConditionalProbabilityEstimatorList_repr(TPyOrange *self) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_str(self); }
 int       ConditionalProbabilityEstimatorList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PConditionalProbabilityEstimatorList, TConditionalProbabilityEstimatorList, PConditionalProbabilityEstimator, &PyOrConditionalProbabilityEstimator_Type>::_contains(self, obj); }
@@ -2790,7 +2790,7 @@ PyObject *MeasureAttribute_thresholdFunction(PyObject *self, PyObject *args, PyO
 	}
 
 	PyObject *res = PyList_New(thresholds.size());
-	int li = 0;
+	Py_ssize_t li = 0;
 	for(TFloatFloatList::const_iterator ti(thresholds.begin()), te(thresholds.end()); ti != te; ti++)
 		PyList_SetItem(res, li++, Py_BuildValue("ff", ti->first, ti->second));
 	return res;
@@ -2816,7 +2816,7 @@ PyObject *MeasureAttribute_relief_pairGains(PyObject *self, PyObject *args, PyOb
 	SELF_AS(TMeasureAttribute_relief).pairGains(pairGains, var, gen, weightID);
 
 	PyObject *res = PyList_New(pairGains.size());
-	int li = 0;
+	Py_ssize_t li = 0;
 	for(TPairGainAdder::const_iterator ti(pairGains.begin()), te(pairGains.end()); ti != te; ti++)
 		PyList_SetItem(res, li++, Py_BuildValue("(ff)f", ti->e1, ti->e2, ti->gain));
 	return res;
@@ -2951,7 +2951,7 @@ PyObject *ThresholdCA_call(PyObject *self, PyObject *args, PyObject *keywords) P
 	optThresh = SELF_AS(TThresholdCA).call(classifier, egen, weightID, optCA, targetVal, ffl);
 
 	PyObject *pyCAs = PyList_New(ffl->size());
-	int i = 0;
+	Py_ssize_t i = 0;
 	PITERATE(TFloatFloatList, ffi, ffl)
 		PyList_SetItem(pyCAs, i++, Py_BuildValue("ff", (*ffi).first, (*ffi).second));
 
@@ -3327,7 +3327,7 @@ PyObject *SymMatrix_getitems(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
 	PyCATCH
 }
 
-PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
+PyObject *SymMatrix_getitem_sq(PyObject *self, Py_ssize_t i)
 {
 	PyTRY
 		CAST_TO(TSymMatrix, matrix)
@@ -3338,7 +3338,7 @@ PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
 		return PYNULL;
 	}
 
-	int j;
+	Py_ssize_t j;
 	PyObject *row;
 	switch (matrix->matrixType) {
 			case TSymMatrix::Lower:
@@ -3355,7 +3355,7 @@ PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
 
 			default:
 				row = PyTuple_New(matrix->dim);
-				for(int j = 0; j<dim; j++)
+				for(j = 0; j<dim; j++)
 					PyTuple_SetItem(row, j, PyFloat_FromDouble((double)matrix->getitem(i, j)));
 				return row;
 	}
@@ -3423,7 +3423,7 @@ int SymMatrix_setitem(PyObject *self, PyObject *args, PyObject *obj)
 }
 
 
-PyObject *SymMatrix_getslice(PyObject *self, int start, int stop)
+PyObject *SymMatrix_getslice(PyObject *self, Py_ssize_t start, Py_ssize_t stop)
 {
 	PyTRY
 		CAST_TO(TSymMatrix, matrix)
@@ -3539,14 +3539,14 @@ PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *
 }
 
 
-int HierarchicalCluster_len_sq(PyObject *self)
+Py_ssize_t HierarchicalCluster_len_sq(PyObject *self)
 {
 	CAST_TO_err(THierarchicalCluster, cluster, -1);
 	return cluster->last - cluster->first;
 }
 
 
-PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
+PyObject *HierarchicalCluster_getitem_sq(PyObject *self, Py_ssize_t i)
 {
 	PyTRY
 		CAST_TO(THierarchicalCluster, cluster);
@@ -3667,14 +3667,14 @@ PyObject *HierarchicalCluster_permute(PyObject *self, PyObject *arg, PyObject *k
 PHierarchicalClusterList PHierarchicalClusterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::P_FromArguments(arg); }
 PyObject *HierarchicalClusterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_FromArguments(type, arg); }
 PyObject *HierarchicalClusterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of HierarchicalCluster>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_new(type, arg, kwds); }
-PyObject *HierarchicalClusterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getitem(self, index); }
-int       HierarchicalClusterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_setitem(self, index, item); }
-PyObject *HierarchicalClusterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getslice(self, start, stop); }
-int       HierarchicalClusterList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_setslice(self, start, stop, item); }
-int       HierarchicalClusterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_len(self); }
+PyObject *HierarchicalClusterList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getitem(self, index); }
+int       HierarchicalClusterList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_setitem(self, index, item); }
+PyObject *HierarchicalClusterList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getslice(self, start, stop); }
+int       HierarchicalClusterList_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_setslice(self, start, stop, item); }
+Py_ssize_t       HierarchicalClusterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_len(self); }
 PyObject *HierarchicalClusterList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_richcmp(self, object, op); }
 PyObject *HierarchicalClusterList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_concat(self, obj); }
-PyObject *HierarchicalClusterList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_repeat(self, times); }
+PyObject *HierarchicalClusterList_repeat(TPyOrange *self, Py_ssize_t times) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_repeat(self, times); }
 PyObject *HierarchicalClusterList_str(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_str(self); }
 PyObject *HierarchicalClusterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_str(self); }
 int       HierarchicalClusterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_contains(self, obj); }
@@ -3724,7 +3724,7 @@ PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARG
 	if (!PyArg_ParseTuple(args, "iif:DistanceMapConstructor.getLegend", &width, &height, &gamma))
 		return NULL;
 
-	int size;
+	long size;
 	unsigned char *bitmap = SELF_AS(TDistanceMapConstructor).getLegend(width, height, gamma, size);
 	PyObject *res = PyString_FromStringAndSize((const char *)bitmap, (Py_ssize_t)size);
 	delete bitmap;
@@ -3780,7 +3780,7 @@ PyObject *DistanceMap_getBitmap(PyObject *self, PyObject *args, PyObject *keywor
 
 	CAST_TO(TDistanceMap, dm)
 
-		int size;
+		long size;
 	unsigned char *bitmap = dm->distanceMap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid!=0, matrixType, size);
 	PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, cellWidth * dm->dim, cellHeight * dm->dim);
 	delete bitmap;
@@ -3848,7 +3848,7 @@ public:
 
 
 #define DOUBLE_AS_PYOBJECT(x) (*(PyObject **)(void *)(&(x)))
-PyObject *PyEdge_Getitem(TPyEdge *self, int ind)
+PyObject *PyEdge_Getitem(TPyEdge *self, Py_ssize_t ind)
 {
 	PyTRY
 		if ((ind >= self->graph->nEdgeTypes) || (ind < 0)) {
@@ -3893,7 +3893,7 @@ int PyEdge_Contains(TPyEdge *self, PyObject *pyind)
 }
 
 
-int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
+int PyEdge_Setitem(TPyEdge *self, Py_ssize_t ind, PyObject *item)
 {
 	PyTRY
 		if ((ind >= self->graph->nEdgeTypes) || (ind < 0)) {
@@ -4065,7 +4065,7 @@ PyObject *PyEdge_Str(TPyEdge *self)
 	PyCATCH
 }
 
-int PyEdge_Len(TPyEdge *self)
+Py_ssize_t PyEdge_Len(TPyEdge *self)
 { return self->graph->nEdgeTypes; }
 
 
@@ -4372,7 +4372,7 @@ PyObject *Graph_nodesToObjects(TGraph *graph, const vector<int> &neighbours)
 						}
 				}
 				else {
-					int el = 0;
+					Py_ssize_t el = 0;
 					for(vector<int>::const_iterator ni(neighbours.begin()), ne(neighbours.end()); ni!=ne; ni++, el++) {
 						PyObject *pyel = PySequence_GetItem(objs, *ni);
 						if (!pyel) {
@@ -4633,7 +4633,7 @@ PyObject *Graph_addCluster(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 	if (!PyArg_ParseTuple(args, "O:Graph.addCluster", &pyv))
 		return PYNULL;
 
-	int size = PyList_Size(pyv);
+	Py_ssize_t size = PyList_Size(pyv);
 	int i,j;
 	for (i = 0; i < size-1; i++)
 	{
@@ -4785,13 +4785,13 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 	if (!PyArg_ParseTuple(args, "O:Graph.getSubGraph", &vertices))
 		return PYNULL;
 
-	int size = PyList_Size(vertices);
+	Py_ssize_t size = PyList_Size(vertices);
 	PyList_Sort(vertices);
 
 	TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
 	PGraph wsubgraph = subgraph;
 
-	int i;
+	Py_ssize_t i;
 	vector<int> neighbours;
 	for (i = 0; i < size; i++)
 	{
@@ -4863,7 +4863,7 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
     }
 
 		// create new graph without cluster
-		int size = PyList_Size(vertices);
+		Py_ssize_t size = PyList_Size(vertices);
 		PyList_Sort(vertices);
 
 		TGraph *subgraph = new TGraphAsList(size + 1, graph->nEdgeTypes, graph->directed);
@@ -4946,12 +4946,12 @@ PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObjec
 			return PYNULL;
 
 		// create an array of vertices to remove from the graph
-		int sizeFullGraphs = PyList_Size(fullGraphs);
+		Py_ssize_t sizeFullGraphs = PyList_Size(fullGraphs);
 		int i;
 		for (i = 0; i < sizeFullGraphs; i++)
 		{
 			PyObject *fullGraph = PyList_GetItem(fullGraphs, i);
-			int sizeFullGraph = PyList_Size(fullGraph);
+			Py_ssize_t sizeFullGraph = PyList_Size(fullGraph);
 
 			int j;
 			for (j = 0; j < sizeFullGraph; j++)
@@ -4975,7 +4975,7 @@ PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObjec
     }
 
 		// create new graph without cluster
-		int size = PyList_Size(vertices);
+		Py_ssize_t size = PyList_Size(vertices);
 		PyList_Sort(vertices);
 
 		TGraph *subgraph = new TGraphAsList(size + sizeFullGraphs, graph->nEdgeTypes, graph->directed);
@@ -5004,7 +5004,7 @@ PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObjec
 		for (i = 0; i < sizeFullGraphs; i++)
 		{
 			PyObject *fullGraph = PyList_GetItem(fullGraphs, i);
-			int sizeFullGraph = PyList_Size(fullGraph);
+			Py_ssize_t sizeFullGraph = PyList_Size(fullGraph);
 			int j;
 			for (j = 0; j < sizeFullGraph; j++)
 			{
@@ -5096,7 +5096,7 @@ PyObject *Graph_getSubGraphWithout(PyObject *self, PyObject *args, PyObject *) P
       }
     }
 
-		int size = PyList_Size(vertices);
+		Py_ssize_t size = PyList_Size(vertices);
 		PyList_Sort(vertices);
 
 		TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);

@@ -41,7 +41,7 @@ public:
   TDistanceMap(const int &);
   ~TDistanceMap();
 
-  unsigned char *distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, int &size) const;
+  unsigned char *distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, long &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max);
@@ -63,7 +63,7 @@ public:
   TDistanceMapConstructor(PSymMatrix = PSymMatrix());
 
   PDistanceMap operator ()(const float &squeeze, float &absLow, float &absHigh);
-  unsigned char *getLegend(const int &width, const int &height, const float &gamma, int &size) const;
+  unsigned char *getLegend(const int &width, const int &height, const float &gamma, long &size) const;
 };
 
 #endif

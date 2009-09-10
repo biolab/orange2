@@ -55,13 +55,13 @@ public:
                                 const int &firstRow, const int &nRows,
                                 const float &absLow, const float &absHigh,
                                 const float &gamma, bool grid,
-                                int &size) const;
+                                long &size) const;
 
   unsigned char *averages2string(const int &cellWidth, const int &cellHeight,
                                  const int &firstRow, const int &nRows,
                                  const float &absLow, const float &absHigh,
                                  const float &gamma, bool grid,
-                                 int &size) const;
+                                 long &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   float getRowIntensity(const int &y) const;
@@ -99,7 +99,7 @@ public:
 
   PHeatmapList operator ()(const float &squeeze, float &absLow, float &absHigh);
 
-  unsigned char *getLegend(const int &width, const int &height, const float &gamma, int &size) const;
+  unsigned char *getLegend(const int &width, const int &height, const float &gamma, long &size) const;
 };
 
 #endif

@@ -60,12 +60,12 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
     return false;
   }
 
-  if (int(dom->variables->size()) != PyList_Size(lst)) {
+  if (Py_ssize_t(dom->variables->size()) != PyList_Size(lst)) {
     PyErr_Format(PyExc_IndexError, "invalid list size (%i items expected)", dom->variables->size());
     return false;
   }
 
-  int pos=0;
+  Py_ssize_t pos = 0;
   TExample::iterator ei(example.begin());
   PITERATE(TVarList, vi, dom->variables) {
     PyObject *li=PyList_GetItem(lst, pos++);

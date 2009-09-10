@@ -50,7 +50,7 @@ DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList", true, ORANGENE_A
 
 unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight,
                              const int &firstRow, const int &nRows,
-                             int &size,
+                             long &size,
                              float *intensity, const int &width, const int &height,
                              const float &absLow, const float &absHigh, const float &gamma,
                              bool grid)
@@ -217,12 +217,12 @@ THeatmap::~THeatmap()
 }
 
 
-unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
+unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, long &size) const
 {
   return bitmap2string(cellWidth, cellHeight, firstRow, nRows, size, cells, width, height, absLow, absHigh, gamma, grid);
 }
 
-unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
+unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, long &size) const
 {
   return bitmap2string(cellWidth, cellHeight, firstRow, nRows, size, averages, 1, height, absLow, absHigh, gamma, grid);
 }
@@ -514,7 +514,7 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, fl
 }
 
 
-unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, const float &gamma, int &size) const
+unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, const float &gamma, long &size) const
 {
   float *fmp = new float[width], *fmpi = fmp;
 

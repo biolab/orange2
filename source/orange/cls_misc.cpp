@@ -84,7 +84,7 @@ bool decodeDescriptors(PyObject *pynames,
   hasClass = false;
   TDomainDepot::TAttributeDescription classDescription("", -1);
 
-  for(int i = 0, e = PyList_Size(pynames); i<e; i++) {
+  for(Py_ssize_t i = 0, e = PyList_Size(pynames); i<e; i++) {
     PyObject *name = PyList_GetItem(pynames, i);
     if (!PyString_Check(name)) {
       PyErr_Format(PyExc_TypeError, "name at index %i is not a string", i);

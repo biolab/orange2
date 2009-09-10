@@ -94,9 +94,9 @@ PyObject *PyOrange_DictProxy_repr(TPyOrange_DictProxy *mp)
 }
 
 
-int PyOrange_DictProxy_length(TPyOrange_DictProxy *mp)
+Py_ssize_t PyOrange_DictProxy_length(TPyOrange_DictProxy *mp)
 {
-  int inlen = PyDict_Size((PyObject *)mp);
+  Py_ssize_t inlen = PyDict_Size((PyObject *)mp);
   if (mp->backlink) {
     const TPropertyDescription *ppd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties, *pd = ppd;
     while(pd->name)

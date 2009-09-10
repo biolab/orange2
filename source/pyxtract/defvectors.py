@@ -7,14 +7,14 @@ definition ="""
 $wrappedlistname$ P$pyname$_FromArguments(PyObject *arg) { return $classname$::P_FromArguments(arg); }
 PyObject *$pyname$_FromArguments(PyTypeObject *type, PyObject *arg) { return $classname$::_FromArguments(type, arg); }
 PyObject *$pyname$_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of $pyelement$>)") ALLOWS_EMPTY { return $classname$::_new(type, arg, kwds); }
-PyObject *$pyname$_getitem_sq(TPyOrange *self, int index) { return $classname$::_getitem(self, index); }
-int       $pyname$_setitem_sq(TPyOrange *self, int index, PyObject *item) { return $classname$::_setitem(self, index, item); }
-PyObject *$pyname$_getslice(TPyOrange *self, int start, int stop) { return $classname$::_getslice(self, start, stop); }
-int       $pyname$_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return $classname$::_setslice(self, start, stop, item); }
-int       $pyname$_len_sq(TPyOrange *self) { return $classname$::_len(self); }
+PyObject *$pyname$_getitem_sq(TPyOrange *self, Py_ssize_t index) { return $classname$::_getitem(self, index); }
+int       $pyname$_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return $classname$::_setitem(self, index, item); }
+PyObject *$pyname$_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return $classname$::_getslice(self, start, stop); }
+int       $pyname$_setslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop, PyObject *item) { return $classname$::_setslice(self, start, stop, item); }
+Py_ssize_t       $pyname$_len_sq(TPyOrange *self) { return $classname$::_len(self); }
 PyObject *$pyname$_richcmp(TPyOrange *self, PyObject *object, int op) { return $classname$::_richcmp(self, object, op); }
 PyObject *$pyname$_concat(TPyOrange *self, PyObject *obj) { return $classname$::_concat(self, obj); }
-PyObject *$pyname$_repeat(TPyOrange *self, int times) { return $classname$::_repeat(self, times); }
+PyObject *$pyname$_repeat(TPyOrange *self, Py_ssize_t times) { return $classname$::_repeat(self, times); }
 PyObject *$pyname$_str(TPyOrange *self) { return $classname$::_str(self); }
 PyObject *$pyname$_repr(TPyOrange *self) { return $classname$::_str(self); }
 int       $pyname$_contains(TPyOrange *self, PyObject *obj) { return $classname$::_contains(self, obj); }

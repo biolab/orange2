@@ -27,7 +27,7 @@ PyObject *dist(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(p, t)")
   PyObject *l1 = PyTuple_GET_ITEM(args, 0);
   PyObject *l2 = PyTuple_GET_ITEM(args, 1);
   double dist = 0;
-  for(int i = 0, e = PyList_Size(l1); i != e; i++) {
+  for(Py_ssize_t i = 0, e = PyList_Size(l1); i != e; i++) {
     const double d = PyFloat_AsDouble(PyList_GET_ITEM(l1, i)) - PyFloat_AsDouble(PyList_GET_ITEM(l2, i));
     dist += d*d;
   }
@@ -42,9 +42,9 @@ PyObject *star(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(t, tri)")
   PyArg_ParseTuple(args, "iO", &t, &tri);
 
   PyObject *res = PyList_New(0);
-  for(int i = 0, e = PyList_GET_SIZE(tri); i != e; i++) {
+  for(Py_ssize_t i = 0, e = PyList_GET_SIZE(tri); i != e; i++) {
     const PyObject *lel = PyList_GET_ITEM(tri, i);
-    int j, je;
+    Py_ssize_t j, je;
     for (j = 0, je = PyList_GET_SIZE(lel);
          (j != je) && (PyInt_AS_LONG(PyList_GET_ITEM(lel, j)) != t);
          j++);
