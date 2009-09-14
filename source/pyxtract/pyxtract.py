@@ -115,7 +115,7 @@ if 1: ### Definitions of regular expressions
   allspecial=['('+m[0]+')' for m in specialmethods+specialnumericmethods+specialsequencemethods+specialmappingmethods]
   allspecial=filter(lambda x:x!='()', allspecial)
   allspecial=reduce(lambda x,y:x+'|'+y, allspecial)
-  specialmethoddef=re.compile(r'((PyObject\s*\*)|(int)|(void))\s*(?P<typename>\w*)_(?P<methodname>'+allspecial+r')\s*\(')
+  specialmethoddef=re.compile(r'((PyObject\s*\*)|(int)|(void)|(Py_ssize_t))\s*(?P<typename>\w*)_(?P<methodname>'+allspecial+r')\s*\(')
 
   calldocdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_call\s*\([^)]*\)\s*PYDOC\s*\(\s*"(?P<doc>[^"]*)"\s*\)')
   getdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_(?P<method>get)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
