@@ -57,8 +57,9 @@ class OWHist(OWGraph):
         self.upperBoundary = upper
         maxy = max(self.yData)
         
-        self.lowerBoundaryKey.setData([self.lowerBoundary, self.lowerBoundary], [0, maxy])
-        self.upperBoundaryKey.setData([self.upperBoundary, self.upperBoundary], [0, maxy])
+        self.lowerBoundaryKey.setData([float(self.lowerBoundary), float(self.lowerBoundary)], [0., float(maxy)])
+        self.upperBoundaryKey.setData([float(self.upperBoundary), float(self.upperBoundary)], [0., float(maxy)])
+        self.updateData()
         self.replot()
             
     def updateData(self):
@@ -67,8 +68,8 @@ class OWHist(OWGraph):
         self.key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Steps, xData = self.xData, yData = self.yData)
         
         maxy = self.maxy
-        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy])
-        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy])
+        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [float(self.lowerBoundary), float(self.lowerBoundary)], yData = [0., float(maxy)])
+        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, symbol = QwtSymbol.NoSymbol, style = QwtPlotCurve.Lines, xData = [float(self.upperBoundary), float(self.upperBoundary)], yData = [0., float(maxy)])
 
         minx = self.minx
         maxx = self.maxx
@@ -119,6 +120,7 @@ class OWInteractiveHist(OWHist):
     def setBoundary(self, low, hi):
         OWHist.setBoundary(self, low, hi)
         self.shadeTails()
+        self.updateData()
         self.replot()
     
     def _setBoundary(self, boundary, cut):
