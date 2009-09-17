@@ -475,10 +475,10 @@ class OWGraph(QwtPlot):
         return 0
 
     def setNewZoom(self, newXMin, newXMax, newYMin, newYMax):
-        oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
-        oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
-        oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
-        oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
+        oldXMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
+        oldXMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
+        oldYMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
+        oldYMax = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
         stepX, stepY = self.axisStepSize(QwtPlot.xBottom), self.axisStepSize(QwtPlot.yLeft)
 
         steps = 10
@@ -560,8 +560,8 @@ class OWGraph(QwtPlot):
         # PANNING
         elif e.button() == Qt.LeftButton and self.state == PANNING:
             self.panPosition = e.globalX(), e.globalY()
-            self.paniniX = self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound()
-            self.paniniY = self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()
+            self.paniniX = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue(), self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
+            self.paniniY = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
 
         elif e.button() == Qt.LeftButton and 1 in onEdgeRects and self.tempSelectionCurve == None:
             self.resizingCurve = self.selectionCurveList[onEdgeRects.index(1)]
@@ -717,21 +717,21 @@ class OWGraph(QwtPlot):
                 if staticClick or xmax-xmin < 4 or ymax-ymin < 4:
                     x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
                     y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
-                    diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
-                    diffY = (self.axisScaleDiv(QwtPlot.yLeft).hBound() -  self.axisScaleDiv(QwtPlot.yLeft).lBound()) / 2.
+                    diffX = (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() -  self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / 2.
+                    diffY = (self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue() -  self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()) / 2.
 
                     # use this to zoom to the place where the mouse cursor is
                     if diffX:
-                        xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
-                        xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
+                        xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / diffX
+                        xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() - x) / diffX
                     if diffY:
-                        ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).hBound() - y) / diffY
-                        ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).lBound()) / diffY
+                        ymin = y + (diffY/2.) * (self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue() - y) / diffY
+                        ymax = y - (diffY/2.) * (y - self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()) / diffY
                 else:
                     xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
                     ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
 
-                self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound(), self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()))
+                self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).interval().minValue(), self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().minValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()))
                 self.setNewZoom(xmin, xmax, ymax, ymin)
 
             elif self.state == SELECT_RECTANGLE:
@@ -772,13 +772,13 @@ class OWGraph(QwtPlot):
 
         if getattr(self, "controlPressed", False):
             ys = self.axisScaleDiv(QwtPlot.yLeft)
-            yoff = d * (ys.hBound() - ys.lBound()) / 100.
-            self.setAxisScale(QwtPlot.yLeft, ys.lBound() + yoff, ys.hBound() + yoff, self.axisStepSize(QwtPlot.yLeft))
+            yoff = d * (ys.interval().maxValue() - ys.interval().minValue()) / 100.
+            self.setAxisScale(QwtPlot.yLeft, ys.interval().maxValue() + yoff, ys.interval().maxValue() + yoff, self.axisStepSize(QwtPlot.yLeft))
 
         elif getattr(self, "altPressed", False):
             xs = self.axisScaleDiv(QwtPlot.xBottom)
-            xoff = d * (xs.hBound() - xs.lBound()) / 100.
-            self.setAxisScale(QwtPlot.xBottom, xs.lBound() - xoff, xs.hBound() - xoff, self.axisStepSize(QwtPlot.xBottom))
+            xoff = d * (xs.interval().maxValue() - xs.interval().minValue()) / 100.
+            self.setAxisScale(QwtPlot.xBottom, xs.interval().minValue() - xoff, xs.interval().maxValue() - xoff, self.axisStepSize(QwtPlot.xBottom))
 
         else:
             ro, rn = .9**d, 1-.9**d
@@ -788,11 +788,11 @@ class OWGraph(QwtPlot):
 
             xs = self.axisScaleDiv(QwtPlot.xBottom)
             x = self.invTransform(QwtPlot.xBottom, ex)
-            self.setAxisScale(QwtPlot.xBottom, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x, self.axisStepSize(QwtPlot.xBottom))
+            self.setAxisScale(QwtPlot.xBottom, ro*xs.interval().minValue() + rn*x, ro*xs.interval().maxValue() + rn*x, self.axisStepSize(QwtPlot.xBottom))
 
             ys = self.axisScaleDiv(QwtPlot.yLeft)
             y = self.invTransform(QwtPlot.yLeft, ey)
-            self.setAxisScale(QwtPlot.yLeft, ro*ys.lBound() + rn*y, ro*ys.hBound() + rn*y, self.axisStepSize(QwtPlot.yLeft))
+            self.setAxisScale(QwtPlot.yLeft, ro*ys.interval().minValue() + rn*y, ro*ys.interval().maxValue() + rn*y, self.axisStepSize(QwtPlot.yLeft))
 
         self.replot()
 
@@ -817,8 +817,8 @@ class OWGraph(QwtPlot):
     def saveToMatplotlib(self, fileName, size = QSize(400,400)):
         f = open(fileName, "wt")
 
-        x1 = self.axisScaleDiv(QwtPlot.xBottom).lBound(); x2 = self.axisScaleDiv(QwtPlot.xBottom).hBound()
-        y1 = self.axisScaleDiv(QwtPlot.yLeft).lBound();   y2 = self.axisScaleDiv(QwtPlot.yLeft).hBound()
+        x1 = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue(); x2 = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
+        y1 = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue();   y2 = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
 
         if self.showAxisScale == 0: edgeOffset = 0.01
         else: edgeOffset = 0.08
