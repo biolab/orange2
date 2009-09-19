@@ -4,8 +4,6 @@ Version: 4.5.4
 Revision: 1
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6440c56d3c293d02e6fa67720614ebcb
-PatchFile: %{ni}.patch
-PatchFile-MD5: f1cb865d2c742eb4ad26a2a812371062
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://www.riverbankcomputing.co.uk/software/pyqt/intro
 License: GPL
