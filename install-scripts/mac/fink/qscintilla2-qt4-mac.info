@@ -1,13 +1,13 @@
 Package: qscintilla2-qt4-mac
-Version: 2.3.2
+Version: 2.4
 Revision: 1
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/QScintilla2/QScintilla-gpl-%v.tar.gz
-Source-MD5: 2e112d01988f2e044c43a1e7f5e1dd87
+Source-MD5: dd69520ec91f1acb97a4eb74ddde37c9
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://www.riverbankcomputing.co.uk/software/qscintilla
 License: GPL
 BuildDepends: <<
-	freetype2,
+	freetype219,
 	glib2-dev,
 	libgettext3-dev,
 	libiconv-dev,
@@ -22,7 +22,7 @@ DocFiles: LICENSE* NEWS README ChangeLog GPL_EXCEPTION* OPENSOURCE-NOTICE.TXT
 SplitOff: <<
 	Package: %N-shlibs
 	Depends: <<
-		freetype2-shlibs,
+		freetype219-shlibs,
 		glib2-shlibs,
 		libgettext3-shlibs,
 		libiconv,
@@ -30,7 +30,7 @@ SplitOff: <<
 		qt4-mac-core-shlibs,
 		qt4-mac-gui-shlibs
 	<<
-	Shlibs: %p/lib/qt4-mac/lib/libqscintilla2.3.dylib 3.0.0 %n (>= 2.2-1)
+	Shlibs: %p/lib/qt4-mac/lib/libqscintilla2.5.dylib 5.1.0 %n (>= 2.4-1)
 	DocFiles: LICENSE* NEWS README ChangeLog GPL_EXCEPTION* OPENSOURCE-NOTICE.TXT
 	Files: lib/qt4-mac/lib/libqscintilla2.5*dylib
 <<
