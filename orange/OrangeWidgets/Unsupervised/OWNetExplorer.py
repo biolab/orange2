@@ -11,6 +11,7 @@ import OWColorPalette
 import orngNetwork
 import OWToolbars
 import math
+import operator
 
 from OWWidget import *
 from OWNetworkCanvas import *
@@ -561,9 +562,14 @@ class OWNetExplorer(OWWidget):
         annotations = obiGO.Annotations.Load(self.organism, ontology=ontology, progressCallback=self.progressBarSet)
 
         allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.visualize.graph.items])
+        foundGenesets = False
         if len(annotations.geneNames & allGenes) < 1:
-            self.warning('no genes found')
-            return
+            allGenes = set(reduce(operator.add, [e[str(self.nameComponentCombo.currentText())].value.split(', ') for e in self.visualize.graph.items]))
+            if len(annotations.geneNames & allGenes) < 1:            
+                self.warning('no genes found')
+                return
+            else:
+                foundGenesets = True
             
         def rank(a, j, reverse=False):                    
             if len(a) <= 0: return
@@ -622,7 +628,12 @@ class OWNetExplorer(OWWidget):
             component = components[i]
             if len(component) <= 1:
                 continue
-            genes = [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
+            
+            if foundGenesets:
+                genes = reduce(operator.add, [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value.split(', ') for v in component])
+            else:
+                genes = [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
+                    
             res1 = annotations.GetEnrichedTerms(genes, aspect="P")
             res2 = annotations.GetEnrichedTerms(genes, aspect="F")
             res = res1.items() + res2.items()
