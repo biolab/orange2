@@ -1,23 +1,42 @@
 Name "Orange"
 Icon OrangeInstall.ico
 UninstallIcon OrangeInstall.ico
-
-!define PYFILENAME python-${NPYVER}.msi
-!define PYWINFILENAME pywin32-212.win32-py${NPYVER}.exe
+licensedata license.txt
+licensetext "Acknowledgments and License Agreement"
 
 OutFile ${OUTFILENAME}
 
 !include "LogicLib.nsh"
 
-licensedata license.txt
-licensetext "Acknowledgments and License Agreement"
+!ifdef COMPLETE
+	!macro installmodule modulename installfile checkfile
+		${Unless} ${FileExists} ${checkfile}
+			File ${PARTY}\${installfile}
+			ExecWait $DESKTOP\${installfile}
+			Delete $DESKTOP\${installfile}
+		${EndUnless}
+	!macroend
+!else
+	Var MissingModules
+	!macro installmodule modulename installfile checkfile
+		${Unless} ${FileExists} ${checkfile}
+		${AndUnless} modulename == ""
+			${If} $MissingModules == ""
+				StrCpy $MissingModules ${MODULE}
+			${Else}
+				StrCpy $MissingModules "$MissingModules, ${MODULE}"
+			${EndIf}
+		${EndUnless}
+	!macroend
+!endif
+
+!include "{$PARTY}\names.inc"
 
 AutoCloseWindow true
 ShowInstDetails nevershow
 
 Var PythonDir
 Var AdminInstall
-Var MissingModules
 
 Page license
 Page instfiles
@@ -61,16 +80,6 @@ Section Uninstall
 SectionEnd
 
 
-!macro WarnMissingModule FILE MODULE
-	${Unless} ${FileExists} ${FILE}
-		${If} $MissingModules == ""
-			StrCpy $MissingModules ${MODULE}
-		${Else}
-			StrCpy $MissingModules "$MissingModules, ${MODULE}"
-		${EndIf}
-	${EndUnless}
-!macroend
-
 !macro GetPythonDir
     ${If} $AdminInstall == 0
 	    ReadRegStr $PythonDir HKCU Software\Python\PythonCore\${NPYVER}\InstallPath ""
@@ -98,130 +107,51 @@ SectionEnd
 	return:
 !macroend
 		
-
-
 !ifdef COMPLETE
-
-!if ${PYVER} == 23
-	!define MFC mfc42.dll
-!else
-	!define MFC mfc71.dll
-!endif
 
 Section ""
 		StrCmp $PythonDir "" 0 have_python
 
 		SetOutPath $DESKTOP
-		!if ${PYVER} == 23
-			askpython23:
-				MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython23
-					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython23
-						Quit
-			installpython23:
-				File ${PARTY}\Python-2.3.5.exe
-				ExecWait "$DESKTOP\Python-2.3.5.exe"
-				Delete "$DESKTOP\Python-2.3.5.exe"
+		StrCpy $0 ""
+		askpython:
+			MessageBox MB_YESNOCANCEL "Orange installer will first launch installation of Python ${NPYVER}.$\r$\nWould you like it to install automatically?$\r$\n(Press No for Custom installation of Python, Cancel to cancel installation of Orange." /SD IDYES IDYES installsilently IDNO installpython
+				MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
+					Quit
+		installsilently:
+			StrCpy $0 "/Qb-"
+		installpython:
+			File ${PARTY}\${NAME_PYTHON}
+			${If} $AdminInstall == 1
+				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 $0' $0
+			${Else}
+				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" ADDLOCAL=Extensions,Documentation,TclTk $0' $0
+			${EndIf}
+			Delete "$DESKTOP\${NAME_PYTHON}"
+		
+			!insertMacro GetPythonDir
+			StrCmp $PythonDir "" 0 have_python
+				MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
+				Quit
 
-		!else
-		    StrCpy $0 ""
-			askpython:
-				MessageBox MB_YESNOCANCEL "Orange installer will first launch installation of Python ${NPYVER}.$\r$\nWould you like it to install automatically?$\r$\n(Press No for Custom installation of Python, Cancel to cancel installation of Orange." /SD IDYES IDYES installsilently IDNO installpython
-					MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
-						Quit
-			installsilently:
-				StrCpy $0 "/Qb-"
-			installpython:
-				File ${PARTY}\${PYFILENAME}
-				${If} $AdminInstall == 1
-					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 $0' $0
-				${Else}
-					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation,TclTk $0' $0
-				${EndIf}
-				Delete "$DESKTOP\${PYFILENAME}"
-			!endif
-
-		!insertMacro GetPythonDir
-		StrCmp $PythonDir "" 0 have_python
-			MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
-			Quit
-	have_python:
-
+		have_python:
 
 		IfFileExists $PythonDir\lib\site-packages\PythonWin have_pythonwin
 			MessageBox MB_YESNO "Do you want to install PythonWin (recommended)?$\r$\n(Orange installation will continue afterwards.)" /SD IDYES IDNO have_pythonwin
-			IfFileExists "$SysDir\${MFC}" have_mfc
+			IfFileExists "$SysDir\${NAME_MFC}" have_mfc
 				SetOutPath $SysDir
-				File ${PARTY}\${MFC}
+				File ${PARTY}\${NAME_MFC}
 			have_mfc:
 			SetOutPath $DESKTOP
-			File ${PARTY}\${PYWINFILENAME}
-			ExecWait "$DESKTOP\${PYWINFILENAME}"
-			Delete "$DESKTOP\${PYWINFILENAME}"
-	have_pythonwin:
-
-		!if ${QTVER} == 23
-				SetOutPath $PythonDir\lib\site-packages
-				IfFileExists $PythonDir\lib\site-packages\qt.py have_pyqt
-					File /r ${PARTY}\pyqt\*.*
-			have_pyqt:
-
-
-				IfFileExists $PythonDir\lib\site-packages\qwt\*.* have_pyqwt
-					File /r ${PARTY}\qwt
-			have_pyqwt:
-
-
-				IfFileExists $PythonDir\lib\site-packages\Numeric\*.* have_numeric
-					File /r ${PARTY}\numeric
-					File ${PARTY}\..\Numeric.pth
-			have_numeric:
-
-
-				IfFileExists $PythonDir\lib\site-packages\numpy\*.* have_numpy
-					File /r ${PARTY}\numpy
-			have_numpy:
-
-
-				IfFileExists "$PythonDir\lib\site-packages\qt-mt230nc.dll" have_qt
-				IfFileExists "$SysDir\qt-mt230nc.dll" have_qt
-					File ${PARTY}\..\qt-mt230nc.dll
-					SetOutPath $INSTDIR
-					File ${PARTY}\..\QT-LICENSE.txt
-			have_qt:
-		!else
-			MessageBox MB_OK "Installation will check for various needed libraries$\r$\nand launch their installers if needed."
-			SetOutPath $DESKTOP
+			File ${PARTY}\${NAME_PYTHONWIN}
+			ExecWait "$DESKTOP\${NAME_PYTHONWIN}"
+			Delete "$DESKTOP\${NAME_PYTHONWIN}"
 			
-				IfFileExists $PythonDir\lib\site-packages\numpy-1.1.0-py2.5.egg-info have_numpy
-				    File ${PARTY}\numpy-1.1.0-win32-superpack-python2.5.exe
-					ExecWait $DESKTOP\numpy-1.1.0-win32-superpack-python2.5.exe
-					Delete $DESKTOP\numpy-1.1.0-win32-superpack-python2.5.exe
-					
-			have_numpy:
-				IfFileExists $PythonDir\lib\site-packages\PyQt4\*.* have_pyqt
-				    File ${PARTY}\PyQt-Py2.5-gpl-4.4.2-1.exe
-					ExecWait $DESKTOP\PyQt-Py2.5-gpl-4.4.2-1.exe
-					Delete $DESKTOP\PyQt-Py2.5-gpl-4.4.2-1.exe
-					
-			have_pyqt:
-				IfFileExists $PythonDir\lib\site-packages\PyQt4\Qwt5\*.* have_pyqwt
-					File ${PARTY}\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
-					ExecWait $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
-					Delete $DESKTOP\PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe
-					
-			have_pyqwt:
-				IfFileExists $PythonDir\lib\site-packages\PIL\*.* have_pil
-					File ${PARTY}\PIL-1.1.6.win32-py2.5.exe
-					ExecWait $DESKTOP\PIL-1.1.6.win32-py2.5.exe
-					Delete $DESKTOP\PIL-1.1.6.win32-py2.5.exe
-					
-			have_pil:
-		!endif
-					
-					
-					
-					
-          
+		have_pythonwin:
+
+		MessageBox MB_OK "Installation will check for various needed libraries$\r$\nand launch their installers if needed."
+		SetOutPath $DESKTOP
+		!insertMacro modules
 SectionEnd
 !endif
 
@@ -293,23 +223,11 @@ Function .onInit
 			Quit
 		have_python:
 
-	!if ${QTVER} == 23
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\numpy\*.*" "numpy"
-		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
-			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
-        have_qt:
-	!else
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PyQt4\*.*" "PyQt"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\numpy-1.1.0-py2.5.egg-info" "numpy"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PyQt4\Qwt5\*.*" "PyQwt"
-	!endif
-
+		!insertMacro modules
 		StrCmp $MissingModules "" continueinst
-		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nWithout these modules you can still scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain the Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
-		Quit
+			MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nWithout these modules you can still scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain the Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
+			Quit
+
 		continueinst:
 	!endif
 FunctionEnd
