@@ -3720,12 +3720,14 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, sv
 	int nr_class=svm_get_nr_class(model);
 	int i=0;
 	supportVectors=mlnew TExampleTable(examples->domain);
-	for(i=0;i<model->l;i++){
-		svm_node *node=model->SV[i];
-        if(model->param.kernel_type!=CUSTOM)
-			while(node->index!=-1)
-				node++;
-		supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
+	if(_x_space){
+		for(i=0;i<model->l;i++){
+			svm_node *node=model->SV[i];
+			if(model->param.kernel_type!=CUSTOM)
+				while(node->index!=-1)
+					node++;
+			supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
+		}
 	}
     int svm_type=model->param.svm_type;
     if (svm_type==C_SVC || svm_type==NU_SVC){
