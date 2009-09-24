@@ -40,6 +40,9 @@ class OWHist(OWGraph):
             nBins = len(values)
 
         (self.yData, self.xData) = numpy.histogram(values, bins=100)
+        #if numpy version greater than 1.3
+        if len(self.xData) == len(self.yData) + 1:
+            self.xData = [(self.xData[i] + self.xData[i+1]) / 2. for i in range(len(self.xData) - 1)]
         
         self.minx = min(self.xData)
         self.maxx = max(self.xData)
@@ -98,17 +101,23 @@ class OWInteractiveHist(OWHist):
             index = max(min(int(math.ceil(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx))), 100), 0)
             x = [self.upperBoundary] + list(self.xData[index:])
             y = [self.yData[min(index, 99)]] + list(self.yData[index:])
+            x = [float(a) for a  in x]
+            y = [float(a) for a  in y]
             self.upperTailShadeKey.setData(x, y)
         if self.type in ["lowTail", "twoTail"]:
             index = max(min(int(math.ceil(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx))),100), 0)
             x = list(self.xData[:index]) + [self.lowerBoundary]
             y = list(self.yData[:index]) + [self.yData[min(index,99)]]
+            x = [float(a) for a  in x]
+            y = [float(a) for a  in y]
             self.lowerTailShadeKey.setData(x, y)
         if self.type in ["middle"]:
             indexLow = max(min(int(100*(self.lowerBoundary-self.minx)/(self.maxx-self.minx)),99), 0)
             indexHi = max(min(int(100*(self.upperBoundary-self.minx)/(self.maxx-self.minx)), 100)-1, 0)
             x = [self.lowerBoundary] + list(self.xData[indexLow: indexHi]) +[self.upperBoundary]
             y = [self.yData[max(index,0)]] + list(self.yData[indexLow: indexHi]) +[self.yData[max(indexHi, 99)]]
+            x = [float(a) for a  in x]
+            y = [float(a) for a  in y]
             self.middleShadeKey.setData(x, y)
         if self.type in ["hiTail", "middle"]:
             self.lowerTailShadeKey.setData([], [])
