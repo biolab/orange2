@@ -257,6 +257,8 @@ class PLSRegressionLearner(object):
         if x == None:
             x = [v for v in data.domain.variables if v not in y]
 
+        Ncomp = nc if nc is not None else len(x)
+            
         dataX = data.select(x)
         dataY = data.select(y)
         print y, dataY
