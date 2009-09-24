@@ -71,6 +71,9 @@ class __DummyQuirkFix:
 class __MySQLQuirkFix(__DummyQuirkFix):
     def __init__(self, dbmod):
         self.dbmod = dbmod
+        self.BOOLEAN = None
+        self.STRING = dbmod.STRING
+        self.DATETIME = dbmod.DATETIME
         self.typeDict = {
             orange.VarTypes.Continuous:'DOUBLE', 
             orange.VarTypes.Discrete:'VARCHAR(250)', orange.VarTypes.String:'VARCHAR(250)'}
@@ -83,6 +86,9 @@ class __MySQLQuirkFix(__DummyQuirkFix):
 class __PostgresQuirkFix(__DummyQuirkFix):
     def __init__(self, dbmod):
         self.dbmod = dbmod
+        self.BOOLEAN = 16
+        self.STRING = dbmod.STRING
+        self.DATETIME = dbmod.DATETIME
         self.typeDict = {
             orange.VarTypes.Continuous:'FLOAT', 
             orange.VarTypes.Discrete:'VARCHAR', orange.VarTypes.String:'VARCHAR'}
@@ -233,11 +239,11 @@ class SQLReader(object):
         for i in self.desc:
             name = i[0]
             typ = i[1]
-            if name in discreteNames:
+            if name in discreteNames or typ == self.quirks.BOOLEAN:
                 attrName = 'D#' + name
-            elif typ == self.quirks.dbmod.STRING:
+            elif typ == self.quirks.STRING:
                     attrName = 'S#' + name
-            elif typ == self.quirks.dbmod.DATETIME:
+            elif typ == self.quirks.DATETIME:
                 attrName = 'S#' + name
             else:
                 attrName = 'C#' + name

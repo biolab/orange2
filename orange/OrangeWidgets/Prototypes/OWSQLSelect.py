@@ -18,7 +18,7 @@ import OWGUI, os.path
 
 class OWSubSQLSelect(OWWidget):
     allSQLSelectWidgets = []
-    settingsList=["recentQueries", "recentConnections"]
+    settingsList=["recentConnections", "lastQuery"]
     def __init__(self, parent=None, signalManager = None, name = "SQLSelect"):
         OWWidget.__init__(self, parent, signalManager, name)
         OWSubSQLSelect.allSQLSelectWidgets.append(self)
@@ -29,7 +29,7 @@ class OWSubSQLSelect(OWWidget):
 
     def activateLoadedSettings(self):
         # print "activating", self.recentQueries, ", ",self.recentConnections
-        self.setQueryList()
+        self.query = self.lastQuery
         self.setConnectionList()
 
     def selectConnection(self, n):
@@ -40,15 +40,6 @@ class OWSubSQLSelect(OWWidget):
         if len(self.recentConnections) > 0:
             self.setConnectionList()
             self.connectDB(self.recentConnections[0])
-
-    def selectQuery(self, n):
-        if n < len(self.recentQueries):
-            name = self.recentQueries[n]
-            self.recentQueries.remove(name)
-            self.recentQueries.insert(0, name)
-        if len(self.recentQueries) > 0:
-            self.setQueryList()
-            # self.executeQuery(self.recentQueries[0])
 
     def setInfo(self, info):
         for (i, s) in enumerate(info):
@@ -74,8 +65,6 @@ class OWSubSQLSelect(OWWidget):
     def executeQuery(self, query = None, throughReload = 0, DK=None, DC=None):
         if query is None:
             query = str(self.queryTextEdit.toPlainText())
-        if query in self.recentQueries: self.recentQueries.remove(query)
-        self.recentQueries.insert(0, query)
         try:
             self.sqlReader.execute(query)
         except Exception, e:
@@ -84,6 +73,7 @@ class OWSubSQLSelect(OWWidget):
         self.setInfo(('Query returned', 'Read ' + str(len(self.sqlReader.data())) + ' examples!'))
         self.send("Attribute Definitions", self.sqlReader.domain)
         self.setMeta()
+        self.lastQuery = query
     
     def connectDB(self, connectString = None):
         if connectString is None:
@@ -103,32 +93,34 @@ class OWSQLSelect(OWSubSQLSelect):
         #set default settings
         self.domain = None
         self.recentConnections=["(none)"]
-        self.recentQueries=["(none)"]
-        
+        self.queryFile = None
+        self.query = ''
+
         self.loadSettings()
+        if self.lastQuery is not None:
+            self.query = self.lastQuery
         self.connectString = self.recentConnections[0]
-        self.query = self.recentQueries[0]
         self.connectBox = OWGUI.widgetBox(self.controlArea, "Database")
 
         self.connectLineEdit = OWGUI.lineEdit(self.connectBox, self, 'connectString', callback = self.connectDB)
-        self.connectCombo = OWGUI.comboBox(self.connectBox, self, 'connectString', callback = self.selectConnection)
+        self.connectCombo = OWGUI.comboBox(self.connectBox, self, 'connectString', items = self.recentConnections, callback = self.selectConnection)
         button = OWGUI.button(self.connectBox, self, 'connect', callback = self.connectDB, disabled = 0)
         #query
         self.splitCanvas = QSplitter(Qt.Vertical, self.mainArea)
         self.mainArea.layout().addWidget(self.splitCanvas)
-        self.selectBox = OWGUI.widgetBox(self.controlArea, "Select statement")
-        # self.selectSubmitBox = QHGroupBox("", self.selectBox)
+
         self.textBox = OWGUI.widgetBox(self, 'SQL select')
         self.splitCanvas.addWidget(self.textBox)
-        self.queryTextEdit = QPlainTextEdit(self)
+        self.queryTextEdit = QPlainTextEdit(self.query, self)
         self.textBox.layout().addWidget(self.queryTextEdit)
+
+        self.selectBox = OWGUI.widgetBox(self.controlArea, "Select statement")
+        # self.selectSubmitBox = QHGroupBox("", self.selectBox)
         # self.queryTextEdit.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
         # self.queryTextEdit.setMinimumWidth(300)
         # self.connect(self.queryTextEdit, SIGNAL('returnPressed()'), self.executeQuery)
-        self.queryCombo = OWGUI.comboBox(self.selectBox, self, 'query', callback = self.selectQuery)
-        #self.queryCombo.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        #self.queryCombo.setMaximumWidth(400)
-        self.connect(self.queryCombo, SIGNAL('activated(int)'), self.selectQuery)
+        OWGUI.button(self.selectBox, self, "Open...", callback=self.openScript)
+        OWGUI.button(self.selectBox, self, "Save...", callback=self.saveScript)
         self.selectBox.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         button = OWGUI.button(self.selectBox, self, 'execute!', callback = self.executeQuery, disabled=0)
         self.domainBox = OWGUI.widgetBox(self.controlArea, "Domain")
@@ -141,16 +133,6 @@ class OWSQLSelect(OWSubSQLSelect):
         self.resize(300,300)
 
     # set the query combo box
-    def setQueryList(self):
-        self.queryCombo.clear()
-        if not self.recentQueries:
-            self.queryCombo.insertItem("(none)")
-        else:
-            self.queryTextEdit.setText(self.recentQueries[0])
-        for query in self.recentQueries:
-            self.queryCombo.insertItem(query)
-        #self.filecombo.adjustSize() #doesn't work properly :(
-        self.queryCombo.updateGeometry()
     def setConnectionList(self):
         self.connectCombo.clear()
         if not self.recentConnections:
@@ -160,6 +142,36 @@ class OWSQLSelect(OWSubSQLSelect):
         for connection in self.recentConnections:
             self.connectCombo.insertItem(connection)
         self.connectCombo.updateGeometry()
+    
+    def openScript(self, filename=None):
+        if self.queryFile is None:
+            self.queryFile = ''
+        if filename == None:
+            self.queryFile = str(QFileDialog.getOpenFileName(self, 'Open SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)'))    
+        else:
+            self.queryFile = filename
+            
+        if self.queryFile == "": return
+            
+        f = open(self.queryFile, 'r')
+        self.queryTextEdit.setPlainText(f.read())
+        f.close()
+    
+    def saveScript(self):
+        if self.queryFile is None:
+            self.queryFile = ''
+        self.queryFile = QFileDialog.getSaveFileName(self, 'Save SQL file', self.queryFile, 'SQL files (*.sql)\nAll files(*.*)')
+        
+        if self.queryFile:
+            fn = ""
+            head, tail = os.path.splitext(str(self.queryFile))
+            if not tail:
+                fn = head + ".sql"
+            else:
+                fn = str(self.queryFile)
+            f = open(fn, 'w')
+            f.write(self.queryTextEdit.toPlainText())
+            f.close()
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
