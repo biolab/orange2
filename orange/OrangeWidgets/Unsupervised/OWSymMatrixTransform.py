@@ -90,8 +90,11 @@ class OWSymMatrixTransform(OWWidget):
                 except:
                     self.error("Division by zero")
                     matrix = None
-                        
+        
         if matrix != None:
+            if hasattr(self.matrix, "items"):
+                matrix.items = self.matrix.items
+                
             self.send("Matrix", matrix)
         else:
             self.send("Matrix", self.matrix)

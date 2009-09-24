@@ -279,7 +279,7 @@ class OWNetExplorer(OWWidget):
         
         #ib = OWGUI.widgetBox(ibProto, "Distance Matrix")
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
-        self.btnMDS = OWGUI.button(ibs, self, "MDS components", callback=self.mdsComponents, toggleButton=1)
+        self.btnMDS = OWGUI.button(ibs, self, "Fragviz", callback=self.mdsComponents, toggleButton=1)
         self.btnESIM = OWGUI.button(ibs, self, "eSim", callback=self.exactSimulation, toggleButton=1)
         self.btnMDSv = OWGUI.button(ibs, self, "MDS", callback=self.mdsVertices, toggleButton=1)
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
