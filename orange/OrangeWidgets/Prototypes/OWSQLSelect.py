@@ -1,7 +1,7 @@
 """
 <name>SQL Select</name>
 <description>Reads data from an SQL select statement.</description>
-<icon>icons/SqlSelect.png</icon>
+<icon>icons/SQLSelect.png</icon>
 <contact>Gasper Fele-Zorz (polz(@at@)fri.uni-lj.si)</contact>
 <priority>10</priority>
 """
