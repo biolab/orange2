@@ -1,3 +1,4 @@
+# coding=utf-8
 import os, sys, user
 
 if os.name == "nt":
