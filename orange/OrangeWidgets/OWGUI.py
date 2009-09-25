@@ -155,7 +155,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
 def spin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
-         checked = "", checkCallback = None, posttext = None):
+         checked = "", checkCallback = None, posttext = None, alignment = Qt.AlignLeft):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -175,6 +175,7 @@ def spin(widget, master, value, min, max, step=1,
 
 
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
+    wa.setAlignment(alignment)
     if bi.layout(): bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
@@ -248,7 +249,7 @@ class DoubleSpinBoxWFocusOut(QDoubleSpinBox):
 def doubleSpin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
-         checked = "", checkCallback = None, posttext = None): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
+         checked = "", checkCallback = None, posttext = None, addToLayout=True, alignment = Qt.AlignLeft): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -268,7 +269,8 @@ def doubleSpin(widget, master, value, min, max, step=1,
 
 
     wa = bi.control = DoubleSpinBoxWFocusOut(min, max, step, bi)
-    if bi.layout(): bi.layout().addWidget(wa)
+    wa.setAlignment(alignment)
+    if addToLayout and bi.layout(): bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -301,7 +303,7 @@ def doubleSpin(widget, master, value, min, max, step=1,
     if checked:
         return wb, wa
     else:
-        return b
+        return wa if b==widget else b
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation=None)
@@ -558,7 +560,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     return bg
 
 
-def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None, callback = None):
+def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None, callback = None, addToLayout=True):
     dest = insertInto or bg
 
     if not hasattr(bg, "buttons"):
@@ -571,7 +573,7 @@ def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = Non
         w = QRadioButton(unicode(i))
         w.setIcon(QIcon(label))
     #w.ogValue = value
-    if dest.layout(): dest.layout().addWidget(w)
+    if addToLayout and dest.layout(): dest.layout().addWidget(w)
     if not hasattr(bg, "group"):
         bg.group = QButtonGroup(bg)
     bg.group.addButton(w)
