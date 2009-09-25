@@ -353,6 +353,16 @@ class OWBaseWidget(QDialog):
             for contextHandler in contextHandlers.values():
                 contextHandler.mergeBack(self)
                 settings[contextHandler.localContextName] = contextHandler.globalContexts
+# Instead of the above line, I found this; as far as I recall this was a fix
+# for some bugs related to, say, Select Attributes not handling the context
+# attributes properly, but I dare not add it without understanding what it does.
+# Here it is, if these contexts give us any further trouble.
+#                if contextHandler.syncWithGlobal:
+#                    settings[contextHandler.localContextName] = contextHandler.globalContexts 
+#                else:
+#                    contexts = getattr(self, contextHandler.localContextName, None)
+#                    if contexts:
+#                        settings[contextHandler.localContextName] = contexts
                 settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
             
         return settings
