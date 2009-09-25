@@ -427,7 +427,7 @@ void computeForcesMDS(TPoint *pts, const TPoint *ptse, TSymMatrix *distances,
 {
   TPoint *Fi, *Fi2, *ptsi, *ptsi2;
   float *edistances = distances->elements;
- 
+
   for(ptsi = pts, Fi = F; ptsi != ptse; ptsi++, Fi++, edistances++ /* skip diagonal */) {
     Fi->x = Fi-> y = 0.0;
     for(ptsi2 = pts, Fi2 = F; ptsi2 != ptsi; ptsi2++, edistances++, Fi2++) {
@@ -440,7 +440,7 @@ void computeForcesMDS(TPoint *pts, const TPoint *ptse, TSymMatrix *distances,
 
       double fct;
       const double r = sqrt(r2);
-      fct = (*edistances - r) /* / (*edistances > 1e-3 ? *edistances : 1e-3) */;
+      fct = (*edistances - r) / (*edistances > 1e-3 ? sqr(*edistances) : 1e-3);
 
       const double druvx = dx * fct;
       Fi->x  += druvx;
