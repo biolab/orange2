@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 <name>SVM</name>
 <description>Support Vector Machines learner/classifier.</description>
@@ -36,28 +37,34 @@ class OWSVM(OWWidget):
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        self.kernelBox=b = OWGUI.widgetBox(self.controlArea, "Kernel")
-        self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d",
-                    "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
+        b = OWGUI.radioButtonsInBox(self.controlArea, self, "useNu", [], box="SVM Type", orientation = QGridLayout(), addSpace=True)
+        b.layout().addWidget(OWGUI.appendRadioButton(b, self, "useNu", "C-SVM", addToLayout=False),
+                             0, 0, Qt.AlignLeft)
+        b.layout().addWidget(QLabel("Model complexity (C)", b), 0, 1, Qt.AlignRight)
+        b.layout().addWidget(OWGUI.doubleSpin(b, self, "C", 0.5, 512.0, 0.5, addToLayout=False, callback=lambda *x: self.setType(0), alignment=Qt.AlignRight),
+                             0, 2)
+        b.layout().addWidget(OWGUI.appendRadioButton(b, self, "useNu", u"ν-SVM", addToLayout=False),
+                             1, 0, Qt.AlignLeft)
+        b.layout().addWidget(QLabel(u"Complexity bound (\u03bd)", b), 1, 1, Qt.AlignRight)
+        b.layout().addWidget(OWGUI.doubleSpin(b, self, "nu", 0.1, 1.0, 0.1, tooltip="Upper bound on the ratio of support vectors", addToLayout=False, callback=lambda *x: self.setType(1), alignment=Qt.AlignRight),
+                             1, 2)
+        
+        self.kernelBox=b = OWGUI.widgetBox(self.controlArea, "Kernel", addSpace=True)
+        self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=[u"Linear,   x∙y", u"Polynomial,   (g x∙y + c)^d",
+                    u"RBF,   exp(-g|x-y|²)", u"Sigmoid,   tanh(g x∙y + c)"], callback=self.changeKernel)
 
+        OWGUI.separator(b)
         self.gcd = OWGUI.widgetBox(b, orientation="horizontal")
-        self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.0001, label="g: ", orientation="horizontal", callback=self.changeKernel)
-        self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.0001, label="  c: ", orientation="horizontal", callback=self.changeKernel)
-        self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel)
+        self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.0001, label="  g: ", orientation="horizontal", callback=self.changeKernel, alignment=Qt.AlignRight)
+        self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.0001, label="  c: ", orientation="horizontal", callback=self.changeKernel, alignment=Qt.AlignRight)
+        self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel, alignment=Qt.AlignRight)
 
-        OWGUI.separator(self.controlArea)
-
-        self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace = True)
-        OWGUI.doubleSpin(b,self, "C", 0.5, 512.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
-        OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 120, orientation="horizontal")
-        eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
+        self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace=True)
+        OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
+        eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label=u"Numeric precision (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
 
         OWGUI.checkBox(b,self, "probability", label="Estimate class probabilities", tooltip="Create classifiers that support class probability estimation")
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
-        cb = OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors")
-        self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.1, 1.0, 0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
-        cb.disables.append(self.nuBox)
-        cb.makeConsistent()
 ##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
         OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
 
@@ -68,7 +75,6 @@ class OWSVM(OWWidget):
         self.paramButton.setDisabled(True)
 
         OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
-        self.nuBox.setDisabled(not self.useNu)
         #self.adjustSize()
         self.loadSettings()
         self.changeKernel()
@@ -93,6 +99,10 @@ class OWSVM(OWWidget):
                              ("Estimate class probabilities", OWGUI.YesNo[self.probability]),
                              ("Normalize data", OWGUI.YesNo[self.normalization])])
         self.reportData(self.data)
+        
+    def setType(self, type):
+        print self.useNu
+        self.useNu = type
         
     def changeKernel(self):
         if self.kernel_type==0:
