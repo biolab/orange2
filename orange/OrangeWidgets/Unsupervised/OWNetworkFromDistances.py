@@ -170,7 +170,7 @@ class OWNetworkFromDistances(OWWidget):
             self.infob.setText("")
             return
         
-        print len(self.histogram.yData), len(self.histogram.xData)
+        #print len(self.histogram.yData), len(self.histogram.xData)
         nEdgesEstimate = 2 * sum([self.histogram.yData[i] for i,e in enumerate(self.histogram.xData) if self.spinLowerThreshold <= e <= self.spinUpperThreshold])
         
         if nEdgesEstimate > 200000:
@@ -264,7 +264,7 @@ class OWNetworkFromDistances(OWWidget):
                                         vertices.extend(component)
                                         
                         if len(vertices) > 0:
-                            print "n vertices:", len(vertices), "n set vertices:", len(set(vertices))
+                            #print "n vertices:", len(vertices), "n set vertices:", len(set(vertices))
                             vertices = list(set(vertices))
                             self.graph = orngNetwork.Network(graph.getSubGraph(vertices))
                             matrix = self.data.getitems(vertices)

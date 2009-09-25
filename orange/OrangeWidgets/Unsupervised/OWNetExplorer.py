@@ -552,10 +552,10 @@ class OWNetExplorer(OWWidget):
         
         self.progressBarInit()
         components = [c for c in self.visualize.graph.getConnectedComponents() if len(c) > 1]
-        if 'keyword' in self.visualize.graph.items.domain:
+        if 'component name' in self.visualize.graph.items.domain:
             keyword_table = self.visualize.graph.items
         else:
-            keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
+            keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.visualize.graph.items))]) 
         
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
@@ -666,7 +666,7 @@ class OWNetExplorer(OWWidget):
                 info = ''
                 if self.showTextMiningInfo:
                     info = "\n" + attrs + "\n" + str(namingScore[0][0])
-                keyword_table[v]['keyword'] = name + info
+                keyword_table[v]['component name'] = name + info
             
             self.progressBarSet(i*100.0/len(components))
                 
@@ -684,7 +684,7 @@ class OWNetExplorer(OWWidget):
             return
         
         components = self.visualize.graph.getConnectedComponents()
-        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('keyword')), [[''] for i in range(len(self.visualize.graph.items))]) 
+        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.visualize.graph.items))]) 
         
         excludeWord = ["AND", "OF", "KEGG", "ST", "IN", "SIG"]
         excludePart = ["HSA"]
@@ -783,14 +783,14 @@ class OWNetExplorer(OWWidget):
             keyword = keyword.strip()
             
             for vertex in component:
-                keyword_table[vertex]['keyword'] = keyword
+                keyword_table[vertex]['component name'] = keyword
                 
             if keyword in keywords:
                 sameKeywords.add(keyword)
             else:
                 keywords.add(keyword)
         #print "sameKeywords:", sameKeywords       
-        sameComponents = [component for component in components if str(keyword_table[component[0]]['keyword']) in sameKeywords]
+        sameComponents = [component for component in components if str(keyword_table[component[0]]['component name']) in sameKeywords]
         #print "same components:", sameComponents
         
         for component in sameComponents:
@@ -879,7 +879,7 @@ class OWNetExplorer(OWWidget):
                  
             keyword = keyword.strip()
             for vertex in component:
-                keyword_table[vertex]['keyword'] = keyword
+                keyword_table[vertex]['component name'] = keyword
         
         self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
         #print "self.lastNameComponentAttribute:", self.lastNameComponentAttribute
