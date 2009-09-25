@@ -30,6 +30,7 @@
 #include <queue>
 #include <list>
 #include <float.h>
+#include <locale>
 
 #ifdef DARWIN
 #include <strings.h>
@@ -716,10 +717,12 @@ int TFloatVariable::str2val_low(const string &valname, TValue &valu)
   const char *vals;
   char *tmp = NULL;
 
-  int cp = valname.find(',');
+  const char radix = *localeconv()->decimal_point;
+  const char notGood = radix=='.' ? ',' : '.';
+  int cp = valname.find(notGood);
   if (cp!=string::npos) {
     vals = tmp = strcpy(new char[valname.size()+1], valname.c_str());
-    tmp[cp] = '.';
+    tmp[cp] = radix;
   }
   else
     vals = valname.c_str();
