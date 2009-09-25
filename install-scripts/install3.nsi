@@ -22,15 +22,15 @@ OutFile ${OUTFILENAME}
 		${Unless} ${FileExists} ${checkfile}
 		${AndUnless} modulename == ""
 			${If} $MissingModules == ""
-				StrCpy $MissingModules ${MODULE}
+				StrCpy $MissingModules ${modulename}
 			${Else}
-				StrCpy $MissingModules "$MissingModules, ${MODULE}"
+				StrCpy $MissingModules "$MissingModules, ${modulename}"
 			${EndIf}
 		${EndUnless}
 	!macroend
 !endif
 
-!include "{$PARTY}\names.inc"
+!include "${PARTY}\names.inc"
 
 AutoCloseWindow true
 ShowInstDetails nevershow
@@ -123,9 +123,9 @@ Section ""
 		installpython:
 			File ${PARTY}\${NAME_PYTHON}
 			${If} $AdminInstall == 1
-				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" ADDLOCAL=Extensions,Documentation,TclTk ALLUSERS=1 $0' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" ALLUSERS=1 $0' $0
 			${Else}
-				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" ADDLOCAL=Extensions,Documentation,TclTk $0' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${NAME_PYTHON}" $0' $0
 			${EndIf}
 			Delete "$DESKTOP\${NAME_PYTHON}"
 		

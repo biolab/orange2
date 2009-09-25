@@ -61,10 +61,12 @@ for %pyver in (%PYTHONVERSIONS) do (
 	REM # pack
     cdd %SCRIPTDIR
     set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
+    echo nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
     nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
-    break_on_error
+	break_on_error
+    echo nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
     nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
-    break_on_error
+	break_on_error
   ) else (
     echo installation file was not built because no 3rd-party software available
   )
