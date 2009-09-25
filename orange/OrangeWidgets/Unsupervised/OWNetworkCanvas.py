@@ -1155,10 +1155,10 @@ class OWNetworkCanvas(OWGraph):
           x = [self.visualizer.network.coors[0][v] for v in selection]
           y = [self.visualizer.network.coors[1][v] for v in selection]
 
-          oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
-          oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
-          oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
-          oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
+          oldXMin = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
+          oldXMax = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
+          oldYMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
+          oldYMax = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
           newXMin = min(x)
           newXMax = max(x)
           newYMin = min(y)

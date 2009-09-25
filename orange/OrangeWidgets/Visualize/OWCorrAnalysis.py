@@ -564,7 +564,7 @@ class OWCorrAnalysis(OWWidget):
         return c
 
     def calcRadius(self):
-        self.graph.radius =  (self.graph.axisScale(QwtPlot.xBottom).hBound() - self.graph.axisScale(QwtPlot.xBottom).lBound()) * self.percRadius / 100.0;
+        self.graph.radius =  (self.graph.axisScale(QwtPlot.xBottom).interval().maxValue() - self.graph.axisScale(QwtPlot.xBottom).interval().minValue()) * self.percRadius / 100.0;
 
 class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
     def __init__(self, widget, parent, graph, autoSend = 0):

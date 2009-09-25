@@ -141,16 +141,16 @@ class OWParallelCoordinates(OWVisWidget):
 
 
     def increaseAxesDistance(self):
-        m = self.graph.axisScaleDiv(QwtPlot.xBottom).lBound()
-        M = self.graph.axisScaleDiv(QwtPlot.xBottom).hBound()
+        m = self.graph.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
+        M = self.graph.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
         if (M-m) == 0:
             return      # we have not yet updated the axes (self.graph.updateAxes())
         self.graph.setAxisScale(QwtPlot.xBottom, m, M - (M-m)/10., 1)
         self.graph.replot()
 
     def decreaseAxesDistance(self):
-        m = self.graph.axisScaleDiv(QwtPlot.xBottom).lBound()
-        M = self.graph.axisScaleDiv(QwtPlot.xBottom).hBound()
+        m = self.graph.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
+        M = self.graph.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
         if (M-m) == 0:
             return      # we have not yet updated the axes (self.graph.updateAxes())
 

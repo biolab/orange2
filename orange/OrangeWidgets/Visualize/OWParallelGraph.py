@@ -80,8 +80,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
             if self.autoUpdateAxes:
                 self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)
             else:
-                m = self.axisScaleDiv(QwtPlot.xBottom).lBound()
-                M = self.axisScaleDiv(QwtPlot.xBottom).hBound()
+                m = self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()
+                M = self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue()
                 if m < 0 or M > len(attributes) - 2:
                     self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)
 
@@ -490,14 +490,14 @@ class OWParallelGraph(OWGraph, orngScaleData):
             canvasPos = self.canvas().mapFrom(self, e.pos())
             x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
             y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
-            diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
+            diffX = (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() -  self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / 2.
 
-            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
-            xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
-            ymin = self.axisScaleDiv(QwtPlot.yLeft).hBound()
-            ymax = self.axisScaleDiv(QwtPlot.yLeft).lBound()
+            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()) / diffX
+            xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue() - x) / diffX
+            ymin = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
+            ymax = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
 
-            self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound(), self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()))
+            self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).interval().minValue(), self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().minValue(), self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()))
             self.setNewZoom(xmin, xmax, ymax, ymin)
             return 1
 
@@ -517,7 +517,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     # draw the curves and the selection conditions
     def drawCanvas(self, painter):
         OWGraph.drawCanvas(self, painter)
-        for i in range(int(max(0, math.floor(self.axisScaleDiv(QwtPlot.xBottom).lBound()))), int(min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(QwtPlot.xBottom).hBound())+1))):
+        for i in range(int(max(0, math.floor(self.axisScaleDiv(QwtPlot.xBottom).interval().minValue()))), int(min(len(self.visualizedAttributes), math.ceil(self.axisScaleDiv(QwtPlot.xBottom).interval().maxValue())+1))):
             bottom, top = self.selectionConditions.get(self.visualizedAttributes[i], (0, 1))
             painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.bottomPixmap.width()/2, self.transform(QwtPlot.yLeft, bottom), self.bottomPixmap)
             painter.drawPixmap(self.transform(QwtPlot.xBottom, i)-self.topPixmap.width()/2, self.transform(QwtPlot.yLeft, top)-self.topPixmap.height(), self.topPixmap)

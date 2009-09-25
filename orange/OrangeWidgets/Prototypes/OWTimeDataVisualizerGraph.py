@@ -305,14 +305,18 @@ class OWTimeDataVisualizerGraph(OWGraph, orngScaleScatterPlotData):
             canvasPos = self.canvas().mapFrom(self, e.pos())
             x = self.invTransform(QwtPlot.xBottom, canvasPos.x())
             y = self.invTransform(QwtPlot.yLeft, canvasPos.y())
-            diffX = (self.axisScaleDiv(QwtPlot.xBottom).hBound() -  self.axisScaleDiv(QwtPlot.xBottom).lBound()) / 2.
+            
+            intv = self.axisScaleDiv(QwtPlot.xBottom).interval()
+            low, high = intv.minValue(), intv.maxValue()
+            diffX = (high-low) /2.
 
-            xmin = x - (diffX/2.) * (x - self.axisScaleDiv(QwtPlot.xBottom).lBound()) / diffX
-            xmax = x + (diffX/2.) * (self.axisScaleDiv(QwtPlot.xBottom).hBound() - x) / diffX
-            ymin = self.axisScaleDiv(QwtPlot.yLeft).hBound() 
-            ymax = self.axisScaleDiv(QwtPlot.yLeft).lBound()
+            xmin = x - (diffX/2.) * (x - low) / diffX
+            xmax = x + (diffX/2.) * (high - x) / diffX
+            
+            intv = self.axisScaleDiv(QwtPlot.yLeft).interval() 
+            ymin, ymax = invt.minValue(), intv.maxValue() 
 
-            self.zoomStack.append((self.axisScaleDiv(QwtPlot.xBottom).lBound(), self.axisScaleDiv(QwtPlot.xBottom).hBound(), self.axisScaleDiv(QwtPlot.yLeft).lBound(), self.axisScaleDiv(QwtPlot.yLeft).hBound()))
+            self.zoomStack.append((low, high, ymin, ymax))
             self.setNewZoom(xmin, xmax, ymax, ymin)
 
             return 1

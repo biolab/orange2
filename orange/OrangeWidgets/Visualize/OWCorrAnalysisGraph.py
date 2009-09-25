@@ -80,10 +80,10 @@ class OWCorrAnalysisGraph(OWGraph):
         self.replot()        
         
     def __fixAxes(self):
-        self.setAxisScale(QwtPlot.xBottom, self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound())
-        self.setAxisScale(QwtPlot.xTop, self.axisScale(QwtPlot.xTop).lBound(), self.axisScale(QwtPlot.xTop).hBound())
-        self.setAxisScale(QwtPlot.yLeft, self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound())
-        self.setAxisScale(QwtPlot.yRight, self.axisScale(QwtPlot.yRight).lBound(), self.axisScale(QwtPlot.yRight).hBound())         
+        self.setAxisScale(QwtPlot.xBottom, self.axisScale(QwtPlot.xBottom).interval().minValue(), self.axisScale(QwtPlot.xBottom).interval().maxValue())
+        self.setAxisScale(QwtPlot.xTop, self.axisScale(QwtPlot.xTop).interval().minValue(), self.axisScale(QwtPlot.xTop).interval().maxValue())
+        self.setAxisScale(QwtPlot.yLeft, self.axisScale(QwtPlot.yLeft).interval().minValue(), self.axisScale(QwtPlot.yLeft).interval().maxValue())
+        self.setAxisScale(QwtPlot.yRight, self.axisScale(QwtPlot.yRight).interval().minValue(), self.axisScale(QwtPlot.yRight).interval().maxValue())         
             
     def removeBrowsingCurve(self):
         if self.browseKey: self.removeCurve(self.browseKey)
@@ -91,8 +91,8 @@ class OWCorrAnalysisGraph(OWGraph):
         self.browseKey = None
      
     def onMouseMoved(self, e):
-        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
-        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
+        yrange = self.axisScale(QwtPlot.yLeft).interval().maxValue() - self.axisScale(QwtPlot.yLeft).interval().minValue()
         aspectRatio = yrange / xrange
         if self.state == BROWSE_RECTANGLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
@@ -133,8 +133,8 @@ class OWCorrAnalysisGraph(OWGraph):
             OWGraph.onMouseMoved(self, e)
             
     def onMousePressed(self, e):
-        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
-        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
+        yrange = self.axisScale(QwtPlot.yLeft).interval().maxValue() - self.axisScale(QwtPlot.yLeft).interval().minValue()
         aspectRatio = yrange / xrange
         if self.state == BROWSE_RECTANGLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
@@ -161,8 +161,8 @@ class OWCorrAnalysisGraph(OWGraph):
             OWGraph.onMouseReleased(self, e)
             
     def createCurve(self, x, y, circle = 0):
-        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
-        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
+        yrange = self.axisScale(QwtPlot.yLeft).interval().maxValue() - self.axisScale(QwtPlot.yLeft).interval().minValue()
         aspectRatio = yrange / xrange
         if not circle:
             self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2)])
@@ -399,25 +399,25 @@ class OWCorrAnalysisGraph(OWGraph):
 
 ##    def checkPerc(self, x, textLen):
 ##        div = self.axisScale(QwtPlot.xBottom)
-##        if x - textLen < div.lBound():
+##        if x - textLen < div.interval().minValue():
 ##            return -1
-##        elif x + textLen > div.hBound():
+##        elif x + textLen > div.interval().maxValue():
 ##            return 101
 ##        else:
-##            return (x - div.lBound()) / (div.hBound() - div.lBound())
+##            return (x - div.interval().minValue()) / (div.interval().maxValue() - div.interval().minValue())
 
     def place(self, x, textLen, prefered):
         """Tries to determine where to place the label. Returns True or False."""
         div = self.axisScale(QwtPlot.xBottom)
-        aspectRatio = 6. / (div.hBound() - div.lBound())
+        aspectRatio = 6. / (div.interval().maxValue() - div.interval().minValue())
         #on a scale where x in [-2, 4], we have to divide by 14
         textLen = textLen / (14. * aspectRatio)
         if prefered == 'left':
-            if x - textLen < div.lBound():
+            if x - textLen < div.interval().minValue():
                 return False
             return True
         else:
-            if x + textLen > div.hBound():
+            if x + textLen > div.interval().maxValue():
                 return False
             return True
         
