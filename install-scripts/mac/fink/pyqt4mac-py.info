@@ -29,7 +29,7 @@ Depends: <<
 	python%type_pkg[python],
 	qscintilla2-qt4-mac-shlibs,
 	qt4-mac-core-shlibs,
-	qt4-x11-designer-shlibs,	
+	qt4-mac-designer-shlibs,	
 	qt4-mac-gui-shlibs,
 	sip-py%type_pkg[python] (>= 4.8.2-1)
 <<
