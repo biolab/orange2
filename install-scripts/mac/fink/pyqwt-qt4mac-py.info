@@ -1,7 +1,7 @@
 Info3: <<
 Package: pyqwt-qt4mac-py%type_pkg[python]
 Version: 5.2.0
-Revision: 1
+Revision: 2
 Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
 Source-MD5: fcd6c6029090d473dcc9df497516eae7
 Maintainer: Mitar <mitar@tnode.com>
@@ -29,7 +29,7 @@ DescDetail: <<
 	to plot data points in two dimensions and various widgets to
 	display and control bounded or unbounded floating point values.
 <<
-DocFiles: ANNOUNCEMENT-* COPYING* README Doc
+DocFiles: ANNOUNCEMENT-* COPYING* README
 CompileScript: <<
 	#!/bin/bash -ev
 	cd configure 
