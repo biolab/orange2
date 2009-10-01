@@ -1,7 +1,7 @@
 Info2: <<
 Package: pyqt4mac-py%type_pkg[python]
 Version: 4.5.4
-Revision: 2
+Revision: 3
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 6440c56d3c293d02e6fa67720614ebcb
 Maintainer: Mitar <mitar@tnode.com>
@@ -69,5 +69,6 @@ CompileScript: <<
 InstallScript: <<
 	make install
 	perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4
+	rm -f %i/lib/python%type_raw[python]/site-packages/PyQt4/uic/widget-plugins/qwt.py*
 <<
 <<
