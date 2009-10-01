@@ -462,8 +462,10 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     else
       raiseError("continuous attribute expected for condition");
 
-  if (frequencies->continuous->size() < 2)
-    raiseError("distribution (of attribute values, probably) is empty or has only a single value");
+    if (!frequencies->continuous->size())
+      // This is ugly, but: if you change this, you should also change the code which catches it in
+      // Bayesian learner
+      raiseError("distribution (of attribute values, probably) is empty or has only a single value");
 
   PContingency cont = CLONE(TContingency, frequencies);
   const TDistributionMap &points = *frequencies->continuous;
@@ -482,6 +484,15 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
 
   if (!xpoints.size())
     raiseError("no points for the curve (check 'nPoints')");
+    
+  if (frequencies->continuous->size() == 1) {
+    TDiscDistribution *f = (TDiscDistribution *)(points.begin()->second.getUnwrappedPtr());
+    f->normalize();
+    f->variances = mlnew TFloatList(f->size(), 0.0);
+    const_ITERATE(vector<float>, pi, xpoints)
+      (*cont->continuous)[*pi] = f;
+    return mlnew TConditionalProbabilityEstimator_FromDistribution(cont);
+  }    
 
   TDistributionMap::const_iterator lowedge = points.begin();
   TDistributionMap::const_iterator highedge = points.end();

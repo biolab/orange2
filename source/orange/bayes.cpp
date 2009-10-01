@@ -87,8 +87,16 @@ PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
   PConditionalProbabilityEstimatorList condProbEstList = mlnew TConditionalProbabilityEstimatorList();
 
   PITERATE(TDomainContingency, di, stat) {
-    PConditionalProbabilityEstimator condEst = (((*di)->varType==TValue::FLOATVAR) ? condEstConstCont : condEstConst) ->call(*di, stat->classes, gen, weight, i++);
-    PContingency condProp = condEst->call();
+    PConditionalProbabilityEstimator condEst;
+    PContingency condProp;
+    try {
+      condEst = (((*di)->varType==TValue::FLOATVAR) ? condEstConstCont : condEstConst) ->call(*di, stat->classes, gen, weight, i++);
+      condProp = condEst->call();
+	}
+	catch (mlexception err) {
+      if (strcmp(err.what(), "'orange.ConditionalProbabilityEstimatorConstructor_loess': distribution (of attribute values, probably) is empty or has only a single value"))
+        throw;
+    }
 
     condProbs->push_back(condProp);
     if (condProbs) {
@@ -101,7 +109,7 @@ PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
     }
   }
 
-  // Remove the list of contingency or estimators, if the have no elements
+  // Remove the list of contingency or estimators, if they have no elements
   if (!haveContingencies && !haveEstimators)
     raiseWarning("invalid conditional probability or no attributes (the classifier will use apriori probabilities)");
 
