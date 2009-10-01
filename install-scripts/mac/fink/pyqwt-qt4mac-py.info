@@ -1,9 +1,9 @@
 Info3: <<
 Package: pyqwt-qt4mac-py%type_pkg[python]
-Version: 5.1.0
-Revision: 5
+Version: 5.2.0
+Revision: 1
 Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
-Source-MD5: c9d662a0d4fc95cec75d3c526e4e748a
+Source-MD5: fcd6c6029090d473dcc9df497516eae7
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://pyqwt.sourceforge.net/
 License: GPL
@@ -33,7 +33,7 @@ DocFiles: ANNOUNCEMENT-* COPYING* README Doc
 CompileScript: <<
 	#!/bin/bash -ev
 	cd configure 
-	%p/bin/python%type_raw[python] configure.py -Q ../qwt-5.1
+	%p/bin/python%type_raw[python] configure.py -Q ../qwt-5.2
 	make
 <<
 InstallScript: <<
