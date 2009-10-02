@@ -21,8 +21,8 @@ class WidgetCategory(dict):
         self.update(widgets)
         self.directory = directory
    
-def readCategories():
-    global widgetsWithError 
+def readCategories(silent=False):
+    global widgetsWithError, widgetsWithErrorPrototypes
     widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
     canvasSettingsDir = os.path.realpath(orngEnviron.directoryNames["canvasSettingsDir"])
     cacheFilename = os.path.join(canvasSettingsDir, "cachedWidgetDescriptions.pickle")
@@ -34,32 +34,37 @@ def readCategories():
     except:
         cachedWidgetDescriptions = {} 
 
-    directories = []
+    directories = [] # tuples (catName, dirName, plugin, isPrototype)
     for dirName in os.listdir(widgetDirName):
         directory = os.path.join(widgetDirName, dirName)
         if os.path.isdir(directory):
-            directories.append((dirName, directory, ""))
+            directories.append((dirName, directory, "", "prototypes" in dirName.lower()))
 
     # read list of add-ons (in orange/add-ons as well as those additionally registered by the user)
     for (name, dirName) in orngEnviron.addOns:
         addOnWidgetsDir = os.path.join(dirName, "widgets")
         if os.path.isdir(addOnWidgetsDir):
-            directories.append((name, addOnWidgetsDir, addOnWidgetsDir))
+            directories.append((name, addOnWidgetsDir, addOnWidgetsDir, False))
         addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
         if os.path.isdir(addOnWidgetsDir):
-            directories.append(("Prototypes", addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir))
+            directories.append(("Prototypes", addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir, True))
 
     categories = {}     
-    for catName, dirName, plugin in directories:
-        widgets = readWidgets(dirName, catName, cachedWidgetDescriptions)
+    for catName, dirName, plugin, isPrototype in directories:
+        widgets = readWidgets(dirName, catName, cachedWidgetDescriptions, isPrototype, silent=silent)
         if widgets:
             categories[catName] = WidgetCategory(plugin and dirName or "", widgets)
 
     cPickle.dump(categories, file(cacheFilename, "wb"))
     if splashWindow:
         splashWindow.hide()
-    if widgetsWithError != []:
-        print "The following widgets could not be imported and will not be available: " + ", ".join(set(widgetsWithError))
+
+    if not silent:
+        if widgetsWithError != []:
+            print "The following widgets could not be imported and will not be available: " + ", ".join(set(widgetsWithError)) + "."
+        if widgetsWithErrorPrototypes != []:
+            print "The following prototype widgets could not be imported and will not be available: " + ", ".join(set(widgetsWithErrorPrototypes)) + "."
+
     return categories
 
 
@@ -69,11 +74,11 @@ re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.D
 hasErrors = False
 splashWindow = None
 widgetsWithError = []
+widgetsWithErrorPrototypes = []
 
-def readWidgets(directory, category, cachedWidgetDescriptions):
+def readWidgets(directory, category, cachedWidgetDescriptions, prototype=False, silent=False):
     import sys, imp
-    global hasErrors, splashWindow, widgetsWithError
-    
+    global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
     for filename in glob.iglob(os.path.join(directory, "*.py")):
@@ -156,11 +161,16 @@ def readWidgets(directory, category, cachedWidgetDescriptions):
             widgetInfo.tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, widgetInfo.description, formatedInList[:-4], formatedOutList[:-4]) 
             widgets.append((name, widgetInfo))
         except Exception, msg:
-            if not hasErrors:
+            if not hasErrors and not silent:
                 print "There were problems importing the following widgets:"
                 hasErrors = True
-            print "   %s: %s" % (widgname, msg)
-            widgetsWithError.append(widgname)
+            if not silent:
+                print "   %s: %s" % (widgname, msg)
+
+            if not prototype:
+                widgetsWithError.append(widgname)
+            else:
+                widgetsWithErrorPrototypes.append(widgname)
        
     return widgets
 
