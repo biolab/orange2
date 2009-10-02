@@ -59,7 +59,7 @@ def readCategories():
     if splashWindow:
         splashWindow.hide()
     if widgetsWithError != []:
-        print "The following widgets could not be imported and will not be available: " + ", ".join(widgetsWithError)
+        print "The following widgets could not be imported and will not be available: " + ", ".join(set(widgetsWithError))
     return categories
 
 
