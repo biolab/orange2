@@ -957,7 +957,7 @@ class DendrogramPlotEps(object):
     def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, spacing=2, cluster_colors=None, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None):
         self.tree = tree
         self.attr_tree = attr_tree
-        self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or range(len(tree)))
+        self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or [])
 #        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
         self.data = data
         self.width, self.height = float(width) if width else None, float(height) if height else None
@@ -1058,12 +1058,13 @@ class DendrogramPlotEps(object):
         
         labelpos = [(0, j * self.heatmap_cell_height) for j in range(len(self.labels))]
         heatmap = []
-        colorSchema = self.color_shema()
-        for i, ii in enumerate((self.tree if self.data else [])):
-            ex = self.data[ii]
-            for j, jj in enumerate((self.attr_tree if self.attr_tree else range(len(self.data.domain.attributes)))):
-                r, g, b = colorSchema(ex[jj])
-                heatmap.append("[%f %f %f %f %f]" % (j * self.heatmap_cell_width, i * self.heatmap_cell_height, r / 255.0, g/255.0, b/255.0))
+        if self.data:
+            colorSchema = self.color_shema()
+            for i, ii in enumerate(self.tree):
+                ex = self.data[ii]
+                for j, jj in enumerate((self.attr_tree if self.attr_tree else range(len(self.data.domain.attributes)))):
+                    r, g, b = colorSchema(ex[jj])
+                    heatmap.append("[%f %f %f %f %f]" % (j * self.heatmap_cell_width, i * self.heatmap_cell_height, r / 255.0, g/255.0, b/255.0))
         heatmapdata = "[" + " ".join(heatmap) + "]"
         labeldata = "[" + " ".join("[(%s) %f %f]" % (s, i, j) for (i,j), s in zip(labelpos, self.labels)) + "]" 
         psdata = """
@@ -1100,6 +1101,7 @@ class DendrogramPlotEps(object):
         translate
         90 rotate
         /drawline {aload == moveto lineto} def  % [xstart ystart xend yend] ==> draw line from start to end
+        2 setlinecap
         newpath
         sample_dendrogram {drawline} forall
         stroke
@@ -1108,6 +1110,8 @@ class DendrogramPlotEps(object):
         vertical_margin samples_tree_height spacing heatmap_cell_width 2 div add add add
         horizontal_margin samples_tree_width  spacing add add
         translate
+        2 setlinecap
+        newpath
         attr_dendrogram {drawline} forall
         stroke
         grestore
@@ -1162,6 +1166,6 @@ if __name__=="__main__":
 #    d.plot(show=True, filename="graph.png")
 ##    d = DendrogramPlotEps(root)
 #    d.plot()
-    d = DendrogramPlotEps(root, attr_tree= attr_root, data=data, width=500, height=500,color_palette=ColorPalette([(255, 0, 0), (0,0,0), (0, 255,0)], gamma=0.5, overflow=(255, 255, 255), underflow=(255, 255, 255)), minv=-0.5, maxv=0.5)
+    d = DendrogramPlotEps(root, attr_tree = attr_root, data=data, width=500, height=500,color_palette=ColorPalette([(255, 0, 0), (0,0,0), (0, 255,0)], gamma=0.5, overflow=(255, 255, 255), underflow=(255, 255, 255)), minv=-0.5, maxv=0.5)
 #    d.set_matrix_colors_schema(color_palette="Yellow - Blue")
     d.plot()
