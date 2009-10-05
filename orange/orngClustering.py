@@ -333,7 +333,7 @@ def hierarchicalClustering_attributes(data, distance=None, linkage=orange.Hierar
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
-            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, self.data, 0).p
+            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, data, 0).p
     root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
     if order:
         orderLeaves(root, matrix, progressCallback=progressCallback)
@@ -480,7 +480,7 @@ class DendrogramPlot(object):
     defaultTreeColor = (0, 0, 0)
     defaultTextColor = (100, 100, 100)
     defaultMatrixOutlineColor = (240, 240, 240)
-    def __init__(self, tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, lineWidth=2, painter=None, clusterColors={}):
+    def __init__(self, tree, data=None, labels=None, attrTree=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, lineWidth=2, painter=None, clusterColors={}):
         if not _hasPIL:
             raise ImportError("Could not import PIL (Python Imaging Library). Please make sure PIL is installed on your system.")
         self.tree = tree
@@ -920,11 +920,248 @@ class DendrogramPlotPylab(object):
             canvas.print_figure(filename)
         if show:
             self.plt.show()
+        
+        
+class ColorPalette(object):
+    def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
+        self.colors = colors
+        self.gammaFunc = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
+        self.gamma = gamma
+        self.overflow = overflow
+        self.underflow = underflow
+        self.unknown = unknown
 
+    def getRGB(self, val, gamma=None):
+        if val is None:
+            return self.unknown
+        gamma = self.gamma if gamma is None else gamma
+        index = int(val * (len(self.colors) - 1))
+        if val < 0.0:
+            return self.underflow
+        elif val > 1.0:
+            return self.overflow
+        elif index == len(self.colors) - 1:
+            return tuple(self.colors[-1][i] for i in range(3)) # self.colors[-1].green(), self.colors[-1].blue())
+        else:
+            red1, green1, blue1 = [self.colors[index][i] for i in range(3)] #, self.colors[index].green(), self.colors[index].blue()
+            red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)] #, self.colors[index + 1].green(), self.colors[index + 1].blue()
+            x = val * (len(self.colors) - 1) - index
+            if gamma is not None:
+                x = self.gammaFunc(x, gamma)
+            return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
+        
+    def __call__(self, val, gamma=None):
+        return self.getRGB(val, gamma)
+        
+class DendrogramPlotEps(object):
+    def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, spacing=2, cluster_colors=None, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None):
+        self.tree = tree
+        self.attr_tree = attr_tree
+        self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or range(len(tree)))
+#        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
+        self.data = data
+        self.width, self.height = float(width) if width else None, float(height) if height else None
+        self.font_size = 10.0
+        self.linespacing = 0.0
+        self.cluster_colors = cluster_colors
+        self.color_palette = color_palette
+        self.horizontal_margin = 10.0
+        self.vertical_margin = 10.0
+        self.spacing = float(spacing) if spacing else None
+        self.minv = minv
+        self.maxv = maxv
+        
+    def set_matrix_colors_schema(self, color_palette, minv, maxv):
+        """ Set the matrix color scheme.
+        """
+        self.color_palete = color_palette
+        self.minv = minv
+        self.maxv = maxv
+        
+    def color_shema(self):
+        vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType==orange.VarTypes.Continuous] or [0]
+        avg = sum(vals)/len(vals)
+        
+        maxVal = self.maxv if self.maxv else max(vals)
+        minVal = self.minv if self.minv else min(vals)
+        
+        def _colorSchema(val):
+            if val.isSpecial():
+                return self.color_palette(None)
+            elif val.variable.varType==orange.VarTypes.Continuous:
+                r, g, b = self.color_palette((float(val) - minVal) / abs(maxVal - minVal))
+            elif val.variable.varType==orange.VarTypes.Discrete:
+                r = g = b = int(255.0*float(val)/len(val.variable.values))
+            return (r, g, b)
+        return _colorSchema
+    
+    def layout(self):
+        self.attr_tree_height = 100.0 if self.attr_tree else 0.0 #and not self.attr_tree_height else 0
+        self.samples_tree_height = 100.0
+        if self.height: 
+            self.text_area_height = self.height - 2 * self.horizontal_margin - (self.attr_tree_height + self.spacing if self.attr_tree else 0)
+            self.font_size = self.text_area_height / len(self.tree) - self.linespacing
+            self.text_area_width = max([len(label) for label in self.labels] + [0]) * self.font_size
+            self.heatmap_cell_height = self.text_area_height / len(self.tree)
+            if self.width:
+                self.heatmap_width = self.width - self.samples_tree_height - self.spacing * 2 - self.text_area_width - 2 * self.vertical_margin
+                self.heatmap_cell_width = self.heatmap_width / len(self.data.domain.attributes) if self.data else 0
+            else:
+                self.heatmap_cell_width = self.heatmap_cell_height
+                self.heatmap_width = self.heatmap_cell_width * len(self.data.domain.attributes)
+                self.width = 2 * self.vertical_margin + (3 if self.data else 1) * self.spacing + self.heatmap_width + self.text_area_width + self.samples_tree_height
+        else:
+            self.text_area_height = (self.font_size + self.linespacing) * len(self.tree)
+            self.heatmap_cell_height = self.text_area_height / len(self.tree)
+            self.height = 2 * self.horizontal_margin + self.text_area_height + (self.spacing + self.attr_tree_height if self.attr_tree else 0)
+            if self.width:
+                self.text_area_width = max([len(label) for label in self.labels] + [0]) * self.font_size
+                self.heatmap_width = self.width - self.samples_tree_height - self.spacing * 2 - self.text_area_width - 2 * self.vertical_margin
+                self.heatmap_cell_width = self.heatmap_width / len(self.data.domain.attributes)
+            else:
+                self.heatmap_cell_width = self.heatmap_cell_height
+                self.heatmap_width = self.heatmap_cell_width * len(self.data.domain.attributes)
+                self.text_area_width = max([len(label) for label in self.labels] + [0]) * self.font_size
+                self.width = 2 * self.vertical_margin + (3 if self.data else 1) * self.spacing + self.heatmap_width + self.text_area_width + self.samples_tree_height
+            
+#        self.heatmap_cell_height = float(self.text_area_height) / len(self.tree) #self.font_size + self.linespacing
+#        self.text_area_width = max([len(label) for label in self.labels] + [0]) * self.font_size
+#        
+#        if self.width:
+#            self.heatmap_width = self.width - self.samples_tree_height - self.spacing * 2 - self.text_area_width - 2 * self.vertical_margin
+#            self.heatmap_cell_width = float(self.heatmap_width) / len(self.data.domain.attributes) if self.data else 0 
+#        else:
+#            self.heatmap_cell_width = self.heatmap_cell_height
+#            self.heatmap_width = self.heatmap_cell_width * len(self.data.domain.attributes)
+#            self.width = 2 * self.vertical_margin + (3 if self.data else 1) * self.spacing + self.heatmap_width + self.text_area_width + self.samples_tree_height
+#        self.heatmap_width = (self.heatmap_cell_size * len(self.data.domain.attributes)) if self.data else 0    
+        
+        self.samples_tree_width = self.heatmap_height = self.text_area_height
+        self.attr_tree_width = self.heatmap_width 
+    
+    def plot(self, filename="graph.eps"):
+        self.layout()
+        def tree_lines(cluster, root, treeheight, treewidth, lines):
+            height = treeheight * cluster.height / root.height
+            if cluster.branches:
+                centers = [tree_lines(branch, root, treeheight, treewidth, lines) for branch in cluster.branches]
+                lines.extend([list(center + (center[0], height)) for center in centers])
+                lines.extend([[centers[0][0], height, centers[-1][0], height]])
+                return (centers[0][0] + centers[-1][0]) / 2.0, height
+            else:
+                return float(treewidth) * cluster.first / len(root), 0.0
+        samplelines = []
+        attrlines = []
+        tree_lines(self.tree, self.tree, self.samples_tree_height, self.samples_tree_width, samplelines)
+        if self.attr_tree:
+            tree_lines(self.attr_tree, self.attr_tree, self.attr_tree_height, self.attr_tree_width, attrlines)
+        
+        labelpos = [(0, j * self.heatmap_cell_height) for j in range(len(self.labels))]
+        heatmap = []
+        colorSchema = self.color_shema()
+        for i, ii in enumerate((self.tree if self.data else [])):
+            ex = self.data[ii]
+            for j, jj in enumerate((self.attr_tree if self.attr_tree else range(len(self.data.domain.attributes)))):
+                r, g, b = colorSchema(ex[jj])
+                heatmap.append("[%f %f %f %f %f]" % (j * self.heatmap_cell_width, i * self.heatmap_cell_height, r / 255.0, g/255.0, b/255.0))
+        heatmapdata = "[" + " ".join(heatmap) + "]"
+        labeldata = "[" + " ".join("[(%s) %f %f]" % (s, i, j) for (i,j), s in zip(labelpos, self.labels)) + "]" 
+        psdata = """
+        /sample_dendrogram %s def
+        /attr_dendrogram %s def 
+        /labels %s def
+        /heatmap %s def
+        
+        """ % (str(samplelines).replace(",", ""), str(attrlines).replace(",", ""), labeldata, heatmapdata)
+        
+        psinit = """
+        /width %(width)f def
+        /height %(height)f def
+        /horizontal_margin %(horizontal_margin)f def
+        /vertical_margin %(vertical_margin)f def
+        /spacing %(spacing)f def
+        /linespacing %(linespacing)f def
+        /attr_tree_height %(attr_tree_height)f def
+        /attr_tree_width %(attr_tree_width)f def
+        /samples_tree_height %(samples_tree_height)f def
+        /samples_tree_width %(samples_tree_width)f def
+        /heatmap_width %(heatmap_width)f def
+        /heatmap_height %(heatmap_height)f def
+        /heatmap_cell_width %(heatmap_cell_width)f def
+        /heatmap_cell_height %(heatmap_cell_height)f def
+        /font_size %(font_size)f def
+        
+        """ % self.__dict__
+        
+        pslinedraw = """
+        gsave
+        samples_tree_height vertical_margin add
+        horizontal_margin heatmap_cell_height 2 div add
+        translate
+        90 rotate
+        /drawline {aload == moveto lineto} def  % [xstart ystart xend yend] ==> draw line from start to end
+        newpath
+        sample_dendrogram {drawline} forall
+        stroke
+        grestore
+        gsave
+        vertical_margin samples_tree_height spacing heatmap_cell_width 2 div add add add
+        horizontal_margin samples_tree_width  spacing add add
+        translate
+        attr_dendrogram {drawline} forall
+        stroke
+        grestore
+        
+        """
+        psheatmapdraw = """
+        /square % [x y r g b] ==> draw rgb square at xy 
+        {gsave
+         aload ==
+         setrgbcolor
+         translate
+         newpath
+         0 0 moveto
+         heatmap_cell_width 0 lineto
+         heatmap_cell_width heatmap_cell_height lineto
+         0 heatmap_cell_height lineto
+         closepath fill
+         grestore
+        } def
+        gsave
+        samples_tree_height vertical_margin spacing add add
+        horizontal_margin
+        translate
+        heatmap {square} forall
+        grestore
+        """
+        pstextdraw = """
+        /Times-Roman findfont
+        font_size scalefont
+        setfont
+        vertical_margin samples_tree_height heatmap_width spacing 2 mul add add add 
+        horizontal_margin translate
+        labels {aload == moveto show} forall
+        
+        """
+        
+        file = open(filename, "wb")
+        file.write("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: 0 0 %(width)i %(height)i" % self.__dict__)
+        file.write(psinit + psdata + pslinedraw + psheatmapdraw + pstextdraw)
+        file.write("showpage")
+#        file.writelines(lines)
+#        file.write("stroke\nshow\n")
+        file.close()
+        
 if __name__=="__main__":
     data = orange.ExampleTable("doc//datasets//brown-selected.tab")
+#    data = orange.ExampleTable("doc//datasets//iris.tab")
     root = hierarchicalClustering(data, order=True) #, linkage=orange.HierarchicalClustering.Single)
-    print root
-    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
-    d.plot(show=True, filename="graph.png")
-    
+    attr_root = hierarchicalClustering_attributes(data, order=True)
+#    print root
+#    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
+#    d.plot(show=True, filename="graph.png")
+##    d = DendrogramPlotEps(root)
+#    d.plot()
+    d = DendrogramPlotEps(root, attr_tree= attr_root, data=data, width=500, height=500,color_palette=ColorPalette([(255, 0, 0), (0,0,0), (0, 255,0)], gamma=0.5, overflow=(255, 255, 255), underflow=(255, 255, 255)), minv=-0.5, maxv=0.5)
+#    d.set_matrix_colors_schema(color_palette="Yellow - Blue")
+    d.plot()
