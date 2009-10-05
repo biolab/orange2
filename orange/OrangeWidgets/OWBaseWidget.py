@@ -100,6 +100,8 @@ class AttributeList(list):
 class ExampleList(list):
     pass
 
+widgetId = 0
+
 class OWBaseWidget(QDialog):
     def __new__(cls, *arg, **args):
         self = QDialog.__new__(cls)
@@ -160,6 +162,10 @@ class OWBaseWidget(QDialog):
         if hasattr(self, "contextHandlers"):
             for contextHandler in self.contextHandlers.values():
                 contextHandler.initLocalContext(self)
+                
+        global widgetId
+        widgetId += 1
+        self.widgetId = widgetId
 
 
     # uncomment this when you need to see which events occured

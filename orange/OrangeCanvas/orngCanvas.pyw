@@ -138,6 +138,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.helpWindow = orngHelp.HelpWindow(self)
         self.reportWindow = OWReport.ReportWindow()
+        self.reportWindow.widgets = self.schema.widgets
         
         self.show()
 
