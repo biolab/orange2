@@ -23,9 +23,11 @@ class MyTreeWidget(QTreeWidget):
 
     def mousePressEvent(self, ev):
         QTreeWidget.mousePressEvent(self, ev)
-        if ev.button() == Qt.RightButton:
+        node = self.currentItem() 
+        if ev.button() == Qt.RightButton and node and self.indexOfTopLevelItem(node) > -1:
             self.widget.nodePopup.popup(ev.globalPos())
-        
+
+    
 class ReportWindow(OWWidget):
     def __init__(self):
         OWWidget.__init__(self, None, None, "Report")
@@ -58,11 +60,11 @@ class ReportWindow(OWWidget):
         saveButton = OWGUI.button(self.controlArea, self, "&Save", self.saveReport)
         saveButton.setAutoDefault(0)
         
-        self.nodePopup = QMenu("Widget", self)
+        self.nodePopup = QMenu("Widget")
         self.nodePopup.addAction( "Show widget",  self.showActiveNodeWidget)
         self.nodePopup.addSeparator()
-        rename = self.nodePopup.addAction( "&Rename", self.renameActiveNode, Qt.Key_F2)
-        delete = self.nodePopup.addAction("Remove", self.removeActiveNode, Qt.Key_Delete)
+        self.renameAction = self.nodePopup.addAction( "&Rename", self.renameActiveNode, Qt.Key_F2)
+        self.deleteAction = self.nodePopup.addAction("Remove", self.removeActiveNode, Qt.Key_Delete)
         self.nodePopup.setEnabled(1)
 
         self.resize(900, 850)
@@ -122,7 +124,7 @@ class ReportWindow(OWWidget):
         self.counter += 1
         elid = "N%03i" % self.counter
 
-        widnode = QTreeWidgetItem([name])
+        widnode = QTreeWidgetItem(self.tree, [name])
         widnode.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled)
         widnode.elementId = elid
         widnode.widgetId = widgetId
@@ -144,15 +146,17 @@ class ReportWindow(OWWidget):
         
     def itemChanged(self, current, previous):
         if current:
-            if self.dontScroll:
-                self.javascript("document.getElementById('%s').className = 'selected';" % current.elementId)
-            else:
-                self.javascript("""
-                    var newsel = document.getElementById('%s');
-                    newsel.className = 'selected';
-                    newsel.scrollIntoView();""" % current.elementId)
-        if previous:
-            self.javascript("document.getElementById('%s').className = '';" % previous.elementId)
+#            if self.dontScroll:
+#                self.javascript("document.getElementById('%s').className = 'selected';" % current.elementId)
+#            else:
+#                self.javascript("""
+#                    var newsel = document.getElementById('%s');
+#                    newsel.className = 'selected';
+#                    newsel.scrollIntoView();""" % current.elementId)
+            if not self.dontScroll:
+                self.javascript("newsel.scrollIntoView(document.getElementById('%s'));" % current.elementId)
+#        if previous:
+#            self.javascript("document.getElementById('%s').className = '';" % previous.elementId)
         
     def rebuildHtml(self):
         tt = "\n".join(self.tree.topLevelItem(i).data for i in range(self.tree.topLevelItemCount()))
@@ -207,14 +211,21 @@ class ReportWindow(OWWidget):
             
     def renameActiveNode(self):
         node = self.tree.currentItem()
-        if node:
-            self.editItem(node)
+        if not node:
+            return
+        node.setFlags(node.flags() | Qt.ItemIsEditable)
+        self.tree.editItem(node, 0)
+        node.setFlags(node.flags() ^ ~Qt.ItemIsEditable)
 
     def removeActiveNode(self):
         node = self.tree.currentItem()
-        while node.parent():
+        while node:
+            itop = self.tree.indexOfTopLevelItem(node)
+            print itop
+            if itop > -1:
+                self.tree.takeTopLevelItem(itop)
+                break
             node = node.parent()
-        self.tree.removeItemWidget(node)
         self.rebuildHtml()
 
         
