@@ -176,11 +176,10 @@ class ReportWindow(OWWidget):
             
     re_h1 = re.compile(r'<h1>(?P<name>.*?)<span class="timestamp">')
     def itemChanged(self, node):
-        print node
-        print type(node.content)
-        be, en = self.re_h1.search(node.content).span("name")
-        node.content = node.content[:be] + str(node.text()) + node.content[en:]
-        self.rebuildHtml()
+        pass
+#        be, en = self.re_h1.search(node.content).span("name")
+#        node.content = node.content[:be] + str(node.text()) + node.content[en:]
+#        self.rebuildHtml()
 
     def removeActiveNode(self):
         node = self.tree.currentItem()
