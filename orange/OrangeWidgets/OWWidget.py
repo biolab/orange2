@@ -6,7 +6,6 @@
 
 from OWBaseWidget import *
 # remove the try-except after reporting is ready for deployment
-import OWReport
 
 class OWWidget(OWBaseWidget):
     def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, **args):
@@ -250,6 +249,8 @@ class OWWidget(OWBaseWidget):
         if self.__reportData is not None:
             OWReport.report(self.reportName, self.__reportData or "", self.widgetId)#, self.getSettings(False))
             self.__reportData = None
+
+import OWReport
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
