@@ -303,7 +303,11 @@ def doubleSpin(widget, master, value, min, max, step=1,
     if checked:
         return wb, wa
     else:
-        return wa if b==widget else b
+        if b==widget:
+            wa.control = b.control # Backward compatibility
+            return wa
+        else:
+            return b
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation=None)
