@@ -705,7 +705,7 @@ class DendrogramPlotPylab(object):
         
         
 from orngMisc import ColorPalette, EPSRenderer
-class _DendrogramPlot(object):
+class DendrogramPlot(object):
     """ A class for drawing dendrograms
     Example:
     >>> 
@@ -844,7 +844,7 @@ def dendrogram_draw(filename, *args, **kwargs):
     name, ext = os.path.splitext(filename)
     kwargs["renderer"] = {".eps":EPSRenderer, ".svg":SVGRenderer, ".png":PILRenderer}.get(ext.lower(), PILRenderer)
 #    print kwargs["renderer"], ext
-    d = _DendrogramPlot(*args, **kwargs)
+    d = DendrogramPlot(*args, **kwargs)
     d.plot(filename)
     
 if __name__=="__main__":
@@ -852,9 +852,9 @@ if __name__=="__main__":
 #    data = orange.ExampleTable("doc//datasets//iris.tab")
     root = hierarchicalClustering(data, order=True) #, linkage=orange.HierarchicalClustering.Single)
     attr_root = hierarchicalClustering_attributes(data, order=True)
-    print root
-    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
-    d.plot(show=True, filename="graph.png")
+#    print root
+#    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
+#    d.plot(show=True, filename="graph.png")
 
     dendrogram_draw("graph.svg", root, attr_tree=attr_root, data=data, labels=[str(e.getclass()) for e in data], tree_height=50, #width=500, height=500,
                           cluster_colors={root.right:(255,0,0), root.right.right:(0,255,0)}, 

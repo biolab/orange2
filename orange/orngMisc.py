@@ -408,6 +408,8 @@ def with_state(func):
         return r
     return wrap
 
+import numpy
+
 class Renderer(object):
     render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform"]
       
