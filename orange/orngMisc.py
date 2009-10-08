@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import random, types
 
 def getobjectname(x, default=""):
@@ -324,4 +325,407 @@ class ConsoleProgressBar(object):
     def finish(self):
         self.__call__(100)
         self.output.write("\n")
+        
+import math
+
+class ColorPalette(object):
+    def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
+        self.colors = colors
+        self.gammaFunc = lambda x, gamma:((math.exp(gamma*math.log(2*x-1)) if x > 0.5 else -math.exp(gamma*math.log(-2*x+1)) if x!=0.5 else 0.0)+1)/2.0
+        self.gamma = gamma
+        self.overflow = overflow
+        self.underflow = underflow
+        self.unknown = unknown
+
+    def get_rgb(self, val, gamma=None):
+        if val is None:
+            return self.unknown
+        gamma = self.gamma if gamma is None else gamma
+        index = int(val * (len(self.colors) - 1))
+        if val < 0.0:
+            return self.underflow
+        elif val > 1.0:
+            return self.overflow
+        elif index == len(self.colors) - 1:
+            return tuple(self.colors[-1][i] for i in range(3)) # self.colors[-1].green(), self.colors[-1].blue())
+        else:
+            red1, green1, blue1 = [self.colors[index][i] for i in range(3)] #, self.colors[index].green(), self.colors[index].blue()
+            red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)] #, self.colors[index + 1].green(), self.colors[index + 1].blue()
+            x = val * (len(self.colors) - 1) - index
+            if gamma is not None:
+                x = self.gammaFunc(x, gamma)
+            return [(c2 - c1) * x + c1 for c1, c2 in [(red1, red2), (green1, green2), (blue1, blue2)]]
+        
+    def __call__(self, val, gamma=None):
+        return self.get_rgb(val, gamma)
+    
+    
+class GeneratorContextManager(object):
+   def __init__(self, gen):
+       self.gen = gen
+   def __enter__(self):
+       try:
+           return self.gen.next()
+       except StopIteration:
+           raise RuntimeError("generator didn't yield")
+   def __exit__(self, type, value, traceback):
+       if type is None:
+           try:
+               self.gen.next()
+           except StopIteration:
+               return
+           else:
+               raise RuntimeError("generator didn't stop")
+       else:
+           try:
+               self.gen.throw(type, value, traceback)
+               raise RuntimeError("generator didn't stop after throw()")
+           except StopIteration:
+               return True
+           except:
+               # only re-raise if it's *not* the exception that was
+               # passed to throw(), because __exit__() must not raise
+               # an exception unless __exit__() itself failed.  But
+               # throw() has to raise the exception to signal
+               # propagation, so this fixes the impedance mismatch 
+               # between the throw() protocol and the __exit__()
+               # protocol.
+               #
+               if sys.exc_info()[1] is not value:
+                   raise
+
+def contextmanager(func):
+    def helper(*args, **kwds):
+        return GeneratorContextManager(func(*args, **kwds))
+    return helper
+
+def with_state(func):
+    from functools import wraps
+    @wraps(func)
+    def wrap(self, *args, **kwargs):
+        with self.state(**kwargs):
+            r = func(self, *args)
+        return r
+    return wrap
+
+class Renderer(object):
+    render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform"]
+      
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.render_state = {}
+        self.render_state["font"] = ("Times-Roman", 10)
+        self.render_state["fill_color"] = (0, 0, 0)
+        self.render_state["stroke_color"] = (0, 0, 0)
+        self.render_state["stroke_width"] = 1
+        self.render_state["transform"] = numpy.matrix(numpy.eye(3))
+        self.render_state["view_transform"] = numpy.matrix(numpy.eye(3))
+        self.render_state["render_hints"] = {}
+        self.render_state_stack = []
+        
+    def font(self):
+        return self.render_state["font"]
+    
+    def set_font(self, family, size):
+        self.render_state["font"] = family, size
+
+    def fill_color(self):
+        return self.render_state["fill_color"]
+    
+    def set_fill_color(self, color):
+        self.render_state["fill_color"] = color
+        
+    def stroke_color(self):
+        return self.render_state["stroke_color"]
+    
+    def set_stroke_color(self, color):
+        self.render_state["stroke_color"] = color
+    
+    def stroke_width(self):
+        return self.render_state["stroke_width"]
+    
+    def set_stroke_width(self, width):
+        self.render_state["stroke_width"] = width
+        
+    def transform(self):
+        return self.render_state["transform"]
+    
+    def set_transform(self, transform):
+        self.render_state["transform"] = transform
+        
+    def render_hints(self):
+        return self.render_state["render_hints"]
+    
+    def set_render_hints(self, hints):
+        self.render_state["render_hints"].update(hints)
+    
+    def save_render_state(self):
+        import copy
+        self.render_state_stack.append(copy.deepcopy(self.render_state))
+    
+    def restore_render_state(self):
+        self.render_state = self.render_state_stack.pop(-1)
+        
+    def apply_transform(self, transform):
+        self.render_state["transform"] = self.render_state["transform"] * transform
+         
+    def translate(self, x, y):
+        transform = numpy.eye(3)
+        transform[:, 2] = x, y, 1
+        self.apply_transform(transform)
+    
+    def rotate(self, angle):
+        angle *= 2 * math.pi / 360.0
+        transform = numpy.eye(3)
+        transform[:2, :2] = [[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]]
+        self.apply_transform(transform)
+    
+    def scale(self, sx, sy):
+        transform = numpy.eye(3)
+        transform[(0, 1), (0, 1)] = sx, sy 
+        self.apply_transform(transform)
+        
+    def skew(self, sx, sy):
+        transform = numpy.eye(3)
+        transform[(1, 0), (0, 1)] = numpy.array([sx, sy]) * 2 * math.pi / 360.0
+        self.apply_transform(transform)
+    
+    def draw_line(self, sx, sy, ex, ey, **kwargs):
+        raise NotImplemented
+    
+    def draw_lines(self, points, **kwargs):
+        raise NotImplemented
+    
+    def draw_rect(self, x, y, w, h, **kwargs):
+        raise NotImplemented
+    
+    def draw_polygon(self, vertices, **kwargs):
+        raise NotImplemented
+
+    def draw_arch(self, something, **kwargs):
+        raise NotImplemented
+    
+    def draw_text(self, x, y, text, **kwargs):
+        raise NotImplemented
+    
+    def string_size_hint(self, text, **kwargs):
+        raise NotImpemented
+    
+    @contextmanager
+    def state(self, **kwargs):
+        self.save_render_state()
+        for key, value in kwargs.items():
+            if key in ["translate", "rotate", "scale", "skew"]:
+                getattr(self, key)(*value)
+            else:
+                getattr(self, "set_" + key)(value)
+        try:
+            yield
+        finally:
+            self.restore_render_state()
+            
+    def save(self):
+        raise NotImplemented
+    
+    def close(self, file):
+        pass
+    
+class EPSRenderer(Renderer):
+    EPS_DRAW_RECT = """/draw_rect 
+    {/h exch def /w exch def
+     /y exch def /x exch def
+     newpath
+     x y moveto
+     w 0 rlineto
+     0 h neg rlineto
+     w neg 0 rlineto
+     closepath
+    } def"""
+    def __init__(self, width, height):
+        Renderer.__init__(self, width, height)
+        from StringIO import StringIO
+        self._eps = StringIO()
+        self._eps.write("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: 0 0 %i %i\n" % (width, height))
+        self._eps.write("%f %f translate\n" % (0, self.height))
+        self.set_font(*self.render_state["font"])
+        self._inline_func = dict(stroke_color=lambda color: "%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
+                                 fill_color=lambda color:"%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
+                                 stroke_width=lambda w: "%f setlinewidth" % w)
+        
+    def set_font(self, family, size):
+        Renderer.set_font(self, family, size)
+        self._eps.write("/%s findfont %f scalefont setfont\n" % self.font())
+        
+    def set_fill_color(self, color):
+        Renderer.set_fill_color(self, color)
+        self._eps.write("%f %f %f setrgbcolor\n" % tuple(c/255.0 for c in color))
+        
+    def set_stroke_color(self, color):
+        Renderer.set_stroke_color(self, color)
+        self._eps.write("%f %f %f setrgbcolor\n" % tuple(c/255.0 for c in color))
+        
+    def set_stroke_width(self, width):
+        Renderer.set_stroke_width(self, width)
+        self._eps.write("%f setlinewidth" % width)
+        
+    def set_render_hints(self, hints):
+        Renderer.set_render_hints(self, hints)
+       
+    @with_state 
+    def draw_line(self, sx, sy, ex, ey, **kwargs):
+        self._eps.write("newpath\n%f %f moveto %f %f lineto\nstroke\n" % (sx, -sy, ex, -ey))
+        
+    @with_state
+    def draw_rect(self, x, y, w, h, **kwargs):
+        self._eps.write("newpath\n%(x)f %(y)f moveto %(w)f 0 rlineto\n0 %(h)f rlineto %(w)f neg 0 rlineto\nclosepath\n" % dict(x=x,y=-y, w=w, h=-h))
+        self._eps.write("gsave\n")
+        self.set_fill_color(self.fill_color())
+        self._eps.write("fill\ngrestore\n")
+        self.set_stroke_color(self.stroke_color())
+        self._eps.write("stroke\n")
+        
+    @with_state
+    def draw_text(self, x, y, text, **kwargs):
+        self._eps.write("%f %f moveto (%s) show\n" % (x, -y, text))
+        
+    def save_render_state(self):
+        Renderer.save_render_state(self)
+        self._eps.write("gsave\n")
+        
+    def restore_render_state(self):
+        Renderer.restore_render_state(self)
+        self._eps.write("grestore\n")
+        
+    def translate(self, dx, dy):
+        Renderer.translate(self, dx, dy)
+        self._eps.write("%f %f translate\n" % (dx, -dy))
+        
+    def rotate(self, angle):
+        Renderer.rotate(self, angle)
+        self._eps.write("%f rotate\n" % -angle)
+        
+    def scale(self, sx, sy):
+        Renderer.scale(self, sx, sy)
+        self._eps.write("%f %f scale\n" % (sx, sy))
+    
+    def skew(self, sx, sy):
+        Renderer.skew(self, sx, sy)
+        self._eps.write("%f %f skew\n" % (sx, sy))
+        
+    def save(self, filename):
+#        self._eps.close()
+        open(filename, "wb").write(self._eps.getvalue())
+        
+    def string_size_hint(self, text, **kwargs):
+        import warnings
+        warnings.warn("EpsRenderer class does not suport exact string width estimation", stacklevel=2)
+        return len(text) * self.font()[1]
+        
+        
+class PILRenderer(Renderer):
+    def __init__(self, width, height):
+        Renderer.__init__(self, width, height)
+        import Image, ImageDraw, ImageFont
+        self._pil_image = Image.new("RGB", (width, height), (255, 255, 255))
+        self._draw =  ImageDraw.Draw(self._pil_image, "RGB")
+        self._pil_font = ImageFont.load_default()
+
+    def _transform(self, x, y):
+        p = self.transform() * [[x], [y], [1]]
+        return p[0, 0], p[1, 0]
+    
+    def set_font(self, family, size):
+        Renderer.set_font(self, family, size)
+        import ImageFont
+        try:
+            self._pil_font = ImageFont.load(family + ".ttf", size)
+        except Exception:
+            import warnings
+            warnings.warn("Could not load %s.ttf font!", stacklevel=2)
+            try:
+                self._pil_font = ImageFont.load("cour.ttf", size)
+            except Exception:
+                warnings.warn("Could not load the cour.ttf font!! Loading the default", stacklevel=2)
+                self._pil_font = ImageFont.load_default()
+        
+    @with_state
+    def draw_line(self, sx, sy, ex, ey, **kwargs):
+        sx, sy = self._transform(sx, sy)
+        ex, ey = self._transform(ex, ey)
+        self._draw.line((sx, sy, ex, ey), fill=self.stroke_color(), width=int(self.stroke_width()))
+
+    @with_state
+    def draw_rect(self, x, y, w, h, **kwargs):
+        x1, y1 = self._transform(x, y)
+        x2, y2 = self._transform(x + w, y + h)
+        self._draw.rectangle((x1, y1, x2 ,y2), fill=self.fill_color(), outline=self.stroke_color())
+        
+    @with_state
+    def draw_text(self, x, y, text, **kwargs):
+        x, y = self._transform(x, y - self.font()[1])
+        self._draw.text((x, y), text, font=self._pil_font, fill=self.stroke_color())
+        
+    def save(self, file):
+        self._pil_image.save(file)
+        
+    def string_size_hint(self, text, **kwargs):
+        return self._pil_font.getsize(text)[1]
+
+class SVGRenderer(Renderer):
+    SVG_HEADER = """<?xml version="1.0" ?>
+<svg height="%f" version="1.0" width="%f" xmlns="http://www.w3.org/2000/svg">
+    %s
+</svg>
+"""
+    def __init__(self, width, height):
+        Renderer.__init__(self, width, height)
+        self.transform_count_stack = [0]
+        import StringIO
+        self._svg = StringIO.StringIO()
+        
+    @with_state
+    def draw_line(self, sx, sy, ex, ey):
+        self._svg.write('<line x1="%f" y1="%f" x2="%f" y2="%f" stroke-width="%f" stroke="rgb(%i, %i, %i)"/>\n' % ((sx, sy, ex, ey, self.stroke_width()) + self.stroke_color()))
+        
+    @with_state
+    def draw_rect(self, x, y, w, h):
+        self._svg.write('<rect x="%f" y="%f" width="%f" height="%f" fill="rgb(%i, %i, %i)" stroke="rgb(%i, %i, %i)"/>\n' % ((x, y, w, h) + self.fill_color() + self.stroke_color()))
+        
+    @with_state
+    def draw_text(self, x, y, text):
+        self._svg.write('<text x="%f" y="%f" font-family="%s" font-size="%f">%s</text>\n' % ((x, y) + self.font() +(text,)))
+        
+    def translate(self, x, y):
+        self._svg.write('<g transform="translate(%f,%f)">\n' % (x, y))
+        self.transform_count_stack[-1] = self.transform_count_stack[-1] + 1
+        
+    def rotate(self, angle):
+        self._svg.write('<g transform="rotate(%f)">\n' % angle)
+        self.transform_count_stack[-1] = self.transform_count_stack[-1] + 1
+        
+    def scale(self, sx, sy):
+        self._svg.write('<g transform="scale(%f,%f)">\n' % (sx, sy))
+        self.transform_count_stack[-1] = self.transform_count_stack[-1] + 1
+        
+    def skew(self, sx, sy):
+        self._svg.write('<g transform="skewX(%f)">' % sx)
+        self._svg.write('<g transform="skewY(%f)">' % sy)
+        self.transform_count_stack[-1] = self.transform_count_stack[-1] + 2
+
+    def save_render_state(self):
+        Renderer.save_render_state(self)
+        self.transform_count_stack.append(0)
+        
+    def restore_render_state(self):
+        Renderer.restore_render_state(self)
+        count = self.transform_count_stack.pop(-1)
+        self._svg.write('</g>\n' * count)
+        
+    def save(self, filename):
+        open(filename, "wb").write(self.SVG_HEADER % (self.height, self.width, self._svg.getvalue()))
+        
+class CairoRenderer(Renderer):
+    def __init__(self, width, height):
+        Renderer.__init__(self, width, height)
         
