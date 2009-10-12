@@ -3,6 +3,10 @@
 #
 #	Reference: Numerical Recipes in C
 
+# Although lacking the proper copyright notice, the author of this module
+# states on his site (http://www.margaretmorgan.com/wesley/python/)
+# that the code is released under GNU GPL
+
 from operator import *
 from Numeric import *
 
