@@ -710,12 +710,12 @@ class DendrogramPlot(object):
     Example:
     >>> 
     """
-    def __init__(self, tree, attr_tree = None, labels=None, attr_labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None, 
-                 spacing=2, cluster_colors=None, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, renderer=EPSRenderer):
+    def __init__(self, tree, attr_tree = None, labels=None, data=None, width=None, height=None, tree_height=None, heatmap_width=None, text_width=None, 
+                 spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, gamma=None, renderer=EPSRenderer):
         self.tree = tree
         self.attr_tree = attr_tree
         self.labels = [str(ex.getclass()) for ex in data] if not labels and data and data.domain.classVar else (labels or [])
-        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
+#        self.attr_labels = [str(attr.name) for attr in data.domain.attributes] if not attr_labels and data else attr_labels or []
         self.data = data
         self.width, self.height = float(width) if width else None, float(height) if height else None
         self.tree_height = tree_height
@@ -724,24 +724,26 @@ class DendrogramPlot(object):
         self.font_size = 10.0
         self.linespacing = 0.0
         self.cluster_colors = cluster_colors
-        self.color_palette = color_palette
         self.horizontal_margin = 10.0
         self.vertical_margin = 10.0
         self.spacing = float(spacing) if spacing else None
-        self.minv = minv
-        self.maxv = maxv
-        self.renderer = renderer
-        
-    def set_matrix_color_schema(self, color_palette, minv, maxv, gamma=1.0):
-        """ Set the matrix color scheme.
-        """
-        if isinstance(color_palette, ColorPalette):
-            self.color_palette = color_palete
-        else:
-            self.color_palette = ColorPalette(color_palette, gamma=gamma)
         self.color_palette = color_palette
         self.minv = minv
         self.maxv = maxv
+        self.gamma = gamma
+        self.set_matrix_color_schema(color_palette, minv, maxv, gamma)
+        self.renderer = renderer
+        
+    def set_matrix_color_schema(self, color_palette, minv, maxv, gamma=None):
+        """ Set the matrix color scheme.
+        """
+        if isinstance(color_palette, ColorPalette):
+            self.color_palette = color_palette
+        else:
+            self.color_palette = ColorPalette(color_palette)
+        self.minv = minv
+        self.maxv = maxv
+        self.gamma = gamma
         
     def color_shema(self):
         vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType==orange.VarTypes.Continuous] or [0]
@@ -754,7 +756,7 @@ class DendrogramPlot(object):
             if val.isSpecial():
                 return self.color_palette(None)
             elif val.variable.varType==orange.VarTypes.Continuous:
-                r, g, b = self.color_palette((float(val) - minVal) / abs(maxVal - minVal))
+                r, g, b = self.color_palette((float(val) - minVal) / abs(maxVal - minVal), gamma=self.gamma)
             elif val.variable.varType==orange.VarTypes.Discrete:
                 r = g = b = int(255.0*float(val)/len(val.variable.values))
             return (r, g, b)
@@ -805,7 +807,7 @@ class DendrogramPlot(object):
             else:
                 return float(treewidth) * cluster.first / len(root), 0.0
         self.renderer.save_render_state()
-        self.renderer.translate(self.vertical_margin + tree_height, self.horizontal_margin + tree_height + self.spacing + heatmap_cell_height / 2.0)
+        self.renderer.translate(self.vertical_margin + tree_height, self.horizontal_margin + (tree_height + self.spacing if self.attr_tree else 0) + heatmap_cell_height / 2.0)
         self.renderer.rotate(90)
 #        print self.renderer.transform()
         draw_tree(self.tree, self.tree, tree_height, heatmap_height, self.cluster_colors.get(self.tree, (0,0,0)))
@@ -819,7 +821,7 @@ class DendrogramPlot(object):
             self.renderer.restore_render_state()
         
         self.renderer.save_render_state()
-        self.renderer.translate(self.vertical_margin + tree_height + self.spacing, self.horizontal_margin + tree_height + self.spacing)
+        self.renderer.translate(self.vertical_margin + tree_height + self.spacing, self.horizontal_margin + (tree_height + self.spacing if self.attr_tree else 0))
 #        print self.renderer.transform()
         if self.data:
             colorSchema = self.color_shema()
@@ -827,7 +829,7 @@ class DendrogramPlot(object):
                 ex = self.data[ii]
                 for j, jj in enumerate((self.attr_tree if self.attr_tree else range(len(self.data.domain.attributes)))):
                     r, g, b = colorSchema(ex[jj])
-                    self.renderer.draw_rect(j * heatmap_cell_width, i * heatmap_cell_height, heatmap_cell_width, heatmap_cell_height, fill_color=(r, g, b))
+                    self.renderer.draw_rect(j * heatmap_cell_width, i * heatmap_cell_height, heatmap_cell_width, heatmap_cell_height, fill_color=(r, g, b), stroke_color=(255, 255, 255))
         
         self.renderer.translate(heatmap_width + self.spacing, heatmap_cell_height)
 #        print self.renderer.transform()
@@ -856,7 +858,7 @@ if __name__=="__main__":
 #    d = DendrogramPlotPylab(root, data=data, labels=[str(ex.getclass()) for ex in data], dendrogram_width=0.4, heatmap_width=0.3,  params={}, cmap=None)
 #    d.plot(show=True, filename="graph.png")
 
-    dendrogram_draw("graph.svg", root, attr_tree=attr_root, data=data, labels=[str(e.getclass()) for e in data], tree_height=50, #width=500, height=500,
+    dendrogram_draw("graph.eps", root, attr_tree=attr_root, data=data, labels=[str(e.getclass()) for e in data], tree_height=50, #width=500, height=500,
                           cluster_colors={root.right:(255,0,0), root.right.right:(0,255,0)}, 
                           color_palette=ColorPalette([(255, 0, 0), (0,0,0), (0, 255,0)], gamma=0.5, 
                                                      overflow=(255, 255, 255), underflow=(255, 255, 255))) #, minv=-0.5, maxv=0.5)
