@@ -240,13 +240,20 @@ plot_scatter(data, cls, "sepal width", "sepal length", title="Hiearchical cluste
 
 <p class=section>Methods</p>
 <dl class=attributes>
-<dt>__init__(tree, data=None, labels=None, width=None, height=None, treeAreaWidth=None, textAreaWidth=None, matrixAreaWidth=None, fontSize=None, lineWidth=2, clusterColors={})</DT>
-<dd><code>tree</code> is an Orange's hierarhical clustering tree object (root node). If <code>data</code> (Orange's ExampleTable) is given than the dendrogram will include a heat map with color-based presentation of attribute's values. The length of the data set should match the number of leaves in the hierarchical clustering tree. Following are arguments that define the height and width of the plot areas, font size for the labels, and width of lines that indicate branches of the tree. Branches are plotted in black, but may be color to visually expose various clusters. The coloring is specified with <code>clusterColors</code>, a dictionary with cluster instances as keys and (r, g, b) tuples as items.</dd>
-
-<dt>plot(filename="graph.png")</dt>
+<dt>__init__(tree, attr_tree=None, labels=None, data=None, width=None, height=None, tree_height=None, text_width=None, heatmap_width=None, spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None, renderer=EPSRenderer)</DT>
+<dd><code>tree</code> is an Orange's hierarhical clustering tree object (root node), <code>attr_tree</code> an optional attribute clustering root node. If <code>data</code> (Orange's ExampleTable) is given than the dendrogram will include a heat map with color-based presentation of attribute's values. The length of the data set should match the number of leaves in the hierarchical clustering tree. Following are arguments that define the height and width of the plot areas. Branches are plotted in black, but may be colored to visually expose various clusters. The coloring is specified with <code>cluster_colors</code>, a dictionary with cluster instances as keys and (r, g, b) tuples as items.
+<code>color_palette<code> specifies the palette to use for the heatmap and <code>minv</code> and <code>maxv</code> maximum and minimum data value to plot.</dd>
+<dt>set_matrix_color_schema(color_palette, minv, maxv)</dt>
+<dd>Set the heatmap color schema. <code>color_palette<code> can be an instance of ColorPalette class or an list of (r, g, b) tuples. <code>minv</code> and <code>maxv</code>
+specify the cutoff values for the heatmap (values below and above the interval will be painted with <code>color_palette.underflow</code> and <code>color_palette.overflow</code> respectively)
+<dt>plot(filename="graph.eps")</dt>
 <dd>Plots the dendrogram and save is to the output file.</dd>
 </dl>
 
+<p>Additionaly a module level convenience function <code>dendrogram_draw</code> is provided to streamline the drawing process.</p>
+<dl class="attributes">
+<dt>dendrogram_draw(filename, tree, attr_tree=None, labels=None, data=None, width=None, height=None, tree_height=None, text_width=None, heatmap_width=None, spacing=2, cluster_colors={}, color_palette=ColorPalette([(255, 0, 0), (0, 255, 0)]), maxv=None, minv=None)</dt>
+<dd>Draw the dendrogram to filename (supported formats: PNG, EPS, SVG)</dd> 
 
 <p>To illustrate the use of the dendrogram plotting class, the following scripts uses it on a subset of 20 instances from the Iris data set. Values of the class variables is used for labeling the leaves (and, of course, it is not used for the clustering - only the non-class attributes are used to compute instance distance matrix).</p>
 
@@ -255,18 +262,17 @@ plot_scatter(data, cls, "sepal width", "sepal length", title="Hiearchical cluste
 <xmp class=code>data = orange.ExampleTable("iris")
 sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
 root = orngClustering.hierarchicalClustering(sample)
-dendrogram = orngClustering.DendrogramPlot(root, sample, labels=[str(d.getclass()) for d in sample])
-dendrogram.plot("hclust-dendrogram.png")
+dendrogram = orngClustering.dendrogram_draw("hclust-dendrogram.png", root, sample, labels=[str(d.getclass()) for d in sample])
 </xmp>
 
 <p>The resulting dendrogram is shown below.</p>
 
 <img src="hclust-dendrogram.png">
 
-<p>Following is a similar script to above one, but this time we have 1) distinctively colored the three topmost dendrogram branches, 2) used a color schema for representation of attribute values (default, as above, are shades of gray, in the following script the colors would span between green and red), and 3) included only two attributes in the heat map presentation (note: clustering is still done on all of the data set's attributes).</p>
+<p>Following is a similar script to above one, but this time we have 1) distinctively colored the three topmost dendrogram branches, 2) used a custom color schema for representation of attribute values (spanning red - black - green with custom <code>gamma</code> <code>minv</code> and <code>maxv</code> set ), and 3) included only two attributes in the heat map presentation (note: clustering is still done on all of the data set's attributes).</p>
 
 <p class="header">part of <a href="hclust-colored-dendrogram.py">hclust-colored-dendrogram.py</a> (uses <a href=
-"iris.tab">iris.tab</a></p>
+"iris.tab">iris.tab)</a></p>
 <xmp class=code>data = orange.ExampleTable("iris")
 sample = data.selectref(orange.MakeRandomIndices2(data, 20), 0)
 root = orngClustering.hierarchicalClustering(sample)
@@ -276,15 +282,14 @@ my_colors = [(255,0,0), (0,255,0), (0,0,255)]
 cls = orngClustering.hierarchicalClustering_topClusters(root, 3)
 colors = dict([(cl, col) for cl, col in zip(cls, my_colors)])
 
-dendrogram = orngClustering.DendrogramPlot(root, reduced, labels=[str(d.getclass()) for d in sample],
-    clusterColors=colors)
-dendrogram.setMatrixColorScheme((0, 255, 0), (255, 0, 0))
-dendrogram.plot("hclust-colored-dendrogram.png")
+orngClustering.dendrogram_draw("hclust-colored-dendrogram.png", root, data = reduced, labels=[str(d.getclass()) for d in sample],
+    cluster_colors=colors, color_palette=[(0, 255, 0), (0, 0, 0), (255, 0, 0)], gamma=0.5, minv=2.0, maxv=7.0)
 </xmp>
 
 <p>Our "colored" dendrogram is now saved as shown in the figure below:</p>
 
 <img src="hclust-colored-dendrogram.png">
+
 
 <h2>References</h2>
 
