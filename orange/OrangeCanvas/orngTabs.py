@@ -334,7 +334,7 @@ class WidgetListBase:
 class WidgetTabs(WidgetListBase, QTabWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
-        apply(QTabWidget.__init__, (self,) + args)
+        QTabWidget.__init__(self, *args)
 
     def insertWidgetTab(self, name, show = 1):
         if self.tabDict.has_key(name):
