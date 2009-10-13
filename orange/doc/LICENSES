@@ -1,10 +1,10 @@
 Orange is a component based machine learning library for Python developed at Laboratory of Artificial Intelligence, Faculty of Computer and Information Science, University of Ljubljana, Slovenia.
 
-Orange is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+Orange is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3.0 of the License, or (at your option) any later version.
 
 Orange is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Orange Widgets and Canvas are based on Qt. If you intend to use them, you should also read and agree with Trolltech's Q Public License (see http://www.qtsoftware.com/products/licensing).
+Orange Widgets and Canvas are based on Qt, which is distributed under GPL 3.0 (as well as LGPL 2.1, see http://qt.nokia.com/products/licensing).
 
 Orange contains orngCRS module written by Aleks Jakulin (http://www.stat.columbia.edu/~jakulin/).
 
