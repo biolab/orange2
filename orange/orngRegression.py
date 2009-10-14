@@ -318,7 +318,7 @@ class PLSRegressionLearner(object):
         BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)    
         return PLSRegression(domain=data.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
 
-class PLSRegression:
+class PLSRegression(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
