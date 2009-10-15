@@ -304,6 +304,9 @@ class PLSRegressionLearner(object):
                 t0 = normalize(dot(E,w))
                 dif = t - t0
                 t = t0
+
+            #print "T", T
+            #print "X*W", numpy.dot(X,W)
     
             T[:,i] = t.T
             U[:,i] = u.T
@@ -338,7 +341,7 @@ class PLSRegression(orange.Classifier):
 
     def __call__(self, example):
        ex = orange.Example(self.domain, example)
-       ex = numpy.array(ex.native())
+       ex = numpy.array(ex.native()) #FIXME wrong -> no X and Y separation!
        ex = (ex - self.XMean) / self.XStd
        yhat = dot(ex, self.BPls) * self.YStd + self.YMean        
        return yhat
