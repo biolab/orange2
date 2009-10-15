@@ -229,44 +229,40 @@ def stepwise(data, weight, add_sig = 0.05, remove_sig = 0.2):
 # Partial Least-Squares Regression (PLS)
 
 # Function is used in PLSRegression
-def standardize(matrix):
-    mean = numpy.mean(matrix, axis = 0)
-    one = numpy.ones(numpy.shape(matrix))
-    std = numpy.std(matrix, axis = 0)
-    return (matrix - numpy.multiply(mean, one))/std
-
-# Function is used in PLSRegression
 def normalize(vector):
     return vector / numpy.linalg.norm(vector)
 
 class PLSRegressionLearner(object):
     """PLSRegressionLearner(data, y, x=None, nc=None)"""
-    def __new__(self, data=None, name='PLS regression', **kwds):
+    def __new__(self, data=None, **kwds):
         learner = object.__new__(self, **kwds)
         if data:
-            learner.__init__(name) # force init
-            return learner(data)
+            learner.__init__(**kwds) # force init
+            return learner(data, **kwds)
         else:
             return learner  # invokes the __init__
 
-    def __init__(self, name='PLS regression', nc = None):
+    def __init__(self, name='PLS regression', nc = None, save_partial=False, **kwds):
         self.name = name
         self.nc = nc
+        self.save_partial = save_partial #whether to save partial results
 
-    def __call__(self, data, y, x=None, nc=None, weight=None):
+    def __call__(self, data, y=None, x=None, nc=None, weight=None, **kwds):
+
+        if y == None:
+            y = [ data.domain.classVar ]
         if x == None:
             x = [v for v in data.domain.variables if v not in y]
 
         Ncomp = nc if nc is not None else len(x)
             
-        dataX = data.select(x)
-        dataY = data.select(y)
-        print y, dataY
-        
+        dataX = orange.ExampleTable(orange.Domain(x, False), data)
+        dataY = orange.ExampleTable(orange.Domain(y, False), data)
+       
         # transformation to numpy arrays
         X = dataX.toNumpy()[0]
         Y = dataY.toNumpy()[0]
-    
+
         # data dimensions
         n, mx = numpy.shape(X)
         my = numpy.shape(Y)[1]
@@ -275,8 +271,15 @@ class PLSRegressionLearner(object):
         YMean = numpy.mean(Y, axis = 0)
         YStd = numpy.std(Y, axis = 0)
         XMean = numpy.mean(X, axis = 0)
-        XStd = numpy.std(X, axis = 0) 
-        X,Y = standardize(X), standardize(Y)
+        XStd = numpy.std(X, axis = 0)
+        
+        #FIXME: standard deviation should never be 0. Ask Lan, if the following
+        #fix is ok.
+        XStd = numpy.maximum(XStd, 10e-16)
+        YStd = numpy.maximum(YStd, 10e-16)
+
+        X = (X-XMean)/XStd
+        Y = (Y-YMean)/YStd
 
         P = numpy.empty((mx,Ncomp))
         C = numpy.empty((my,Ncomp))
@@ -288,10 +291,11 @@ class PLSRegressionLearner(object):
     
         # main algorithm
         for i in range(Ncomp):
-            u = numpy.random.random_sample((n,1))
+            u = numpy.random.random_sample((n,1)) #FIXME random seed?
             w = normalize(dot(E.T,u))
             t = normalize(dot(E,w))
-            dif = t    
+            dif = t
+
             # iterations for loading vector t
             while numpy.linalg.norm(dif) > 10e-16:
                 c = normalize(dot(F.T,t))
@@ -315,12 +319,22 @@ class PLSRegressionLearner(object):
         # esimated Y
         YE = dot(dot(T,B),C.T)*YStd + YMean
         Y = Y*numpy.std(Y, axis = 0)+ YMean
-        BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)    
-        return PLSRegression(domain=data.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
+        BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)
+
+        partial = {}
+        if self.save_partial:
+            partial["T"] = T
+            partial["U"] = U
+            partial["C"] = C
+            partial["W"] = W
+            partial["P"] = P
+
+        return PLSRegression(domain=data.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name, **partial)
 
 class PLSRegression(orange.Classifier):
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
+    def __init__(self, **kwargs):
+        for a,b in kwargs.items():
+            setattr(self, a, b)
 
     def __call__(self, example):
        ex = orange.Example(self.domain, example)
