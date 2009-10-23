@@ -34,6 +34,7 @@ mkdir sourcestopack
 cd sourcestopack
 svn export -q http://www.ailab.si/svn/orange/trunk/orange
 cd orange
+del *.pyd *.dll *.bat
 svn export -q http://www.ailab.si/svn/orange/trunk/source
 copy doc\LICENSES .
 copy doc\COPYING .
