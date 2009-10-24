@@ -12,6 +12,7 @@ curl --silent --output dailyrun-bundleonly.sh http://www.ailab.si/svn/orange/tru
 curl --silent --output fink-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink-daily-build.sh
 curl --silent --output fink-restore-selections.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink-restore-selections.sh
 curl --silent --output fink-selfupdate-orange.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink-selfupdate-orange.sh
+curl --silent --output force-fink-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/force-fink-daily-build.sh
 
 chmod +x *.sh
 
