@@ -2,6 +2,42 @@ import orange
 from warnings import warn
 
 class TreeLearner(orange.Learner):
+    """TreeLearner(**kwargs)
+    
+    Keyword arguments:
+    split -- Object of type TreeSplitConstructor. Default value, provided by TreeLearner, is SplitConstructor_Combined 
+        with separate constructors for discrete and continuous attributes. Discrete attributes are used as are, while 
+        continuous attributes are binarized. Gain ratio is used to select attributes. 
+        A minimum of two examples in a leaf is required for discrete and five examples in a leaf for continuous attributes.
+    binarization -- can be one of:
+        1: orange.TreeSplitConstructor_ExhaustiveBinary()
+        2: orange.TreeSplitConstructor_OneAgainstOthers()
+        else: learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_Attribute()
+    measure -- can be either a measure or a string, in which case one of the following is used:
+        "infoGain": orange.MeasureAttribute_info,
+        "gainRatio": orange.MeasureAttribute_gainRatio,
+        "gini": orange.MeasureAttribute_gini,
+        "relief": orange.MeasureAttribute_relief,
+        "retis": orange.MeasureAttribute_MSE
+    worstAcceptable -- 
+    minSubset --
+    stop -- Object of type TreeStopCriteria. The default stopping criterion stops induction when all examples in a node belong to the same class.
+    maxMajority --
+    minExamples --
+    nodeLearner --
+    maxDepth -- Gives maximal tree depth; 
+        0 means that only root is generated. The default is 100 to prevent any infinite tree induction due to missettings in stop criteria. 
+        If you are sure you need larger trees, increase it. If you, on the other hand, want to lower this hard limit, you can do so as well.
+    sameMajorityPruning --
+    mForPruning -- 
+    reliefM -- 
+    reliefK --
+    storeDistributions --
+    storeContingencies --
+    storeExamples --
+    storeNodeClassifier --
+    nodeLearner --
+    """
     def __new__(cls, examples = None, weightID = 0, **argkw):
         self = orange.Learner.__new__(cls, **argkw)
         if examples:
