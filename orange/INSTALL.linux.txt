@@ -1,6 +1,6 @@
 This document explains how to compile and install Orange on a Linux system. 
-The following commands were tested on Ubuntu 9.04 and should be modified 
-accordingly for other distributions. 
+The following commands were tested on Ubuntu 9.04 and Ubuntu 9.10 and should
+be modified accordingly for other distributions. 
 
 1. OBTAINING SOURCES
 
@@ -31,16 +31,21 @@ This suffices for Orange scripting version to work.
 2.2 Orange Canvas (widgets)
 
 If you would like to use Orange Canvas, you will need to install PyQWT 5.1.
- To fulfil its compilation dependencies on Ubuntu 9.04 use:
+On Ubuntu 9.10 use:
+
+sudo apt-get install python-qwt5-qt4
+
+On Ubuntu 9.04 it needs to be compiled from source. To fulfill its compilation
+dependencies use:
 
 sudo apt-get install python-qt4-dev libqwt5-qt4-dev pyqt4-dev-tools sip4
 
-Download PyQWT version 5.1.0 (.tar.gz package) from:
+Then download PyQWT version 5.1.0 (.tar.gz package) from:
 http://sourceforge.net/projects/pyqwt/files/
 
 Extract it and move inside the extracted folder. Next, use the following. 
-For other systems, substitute the install path with your python package
-directory.
+(For other systems, substitute the install path with your python package
+directory.)
 
 cd configure
 python configure.py -Q ../qwt-5.1 --module-install-path=/usr/lib/python2.6/dist-packages/PyQt4/Qwt5
@@ -73,4 +78,3 @@ in python interpreter. It should work flawlessly.
 
 You can run the Orange Canvas (widgets) with:
 python /usr/lib/python2.6/dist-packages/orange/OrangeCanvas/orngCanvas.pyw
-
