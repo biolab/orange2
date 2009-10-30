@@ -834,13 +834,10 @@ int getWords(string const& s, vector<string> &container)
 	bool quotation = false;
 	container.clear();
     string::const_iterator it = s.begin(), end = s.end(), first;
-    for (first = it; it != end; ++it)
-    {
+    for (first = it; it != end; ++it) {
         // Examine each character and if it matches the delimiter
-        if (((!quotation) && ((' ' == *it) || ('\t' == *it) || ('\r' == *it) || ('\f' == *it) || ('\v' == *it))) || ('\n' == *it))
-        {
-            if (first != it)
-            {
+        if ((!quotation && (' ' == *it || '\t' == *it || '\r' == *it || '\f' == *it || '\v' == *it || ',' == *it)) || ('\n' == *it)) {
+            if (first != it) {
                 // extract the current field from the string and
                 // append the current field to the given container
                 container.push_back(string(first, it));
@@ -848,16 +845,12 @@ int getWords(string const& s, vector<string> &container)
 
                 // skip the delimiter
                 first = it + 1;
-            }
-            else
-            {
+            } else {
                 ++first;
             }
         }
-		else if (('\"' == *it) || ('\'' == *it))
-		{
-			if (quotation)
-			{
+		else if (('\"' == *it) || ('\'' == *it) || ('(' == *it) || (')' == *it)) {
+			if (quotation) {
 				quotation = false;
 
 				// extract the current field from the string and
@@ -867,9 +860,7 @@ int getWords(string const& s, vector<string> &container)
 
                 // skip the delimiter
                 first = it + 1;
-			}
-			else
-			{
+			} else {
 				quotation = true;
 
 				// skip the quotation
@@ -877,8 +868,7 @@ int getWords(string const& s, vector<string> &container)
 			}
 		}
     }
-    if (first != it)
-    {
+    if (first != it) {
         // extract the last field from the string and
         // append the last field to the given container
         container.push_back(string(first, it));
@@ -888,12 +878,11 @@ int getWords(string const& s, vector<string> &container)
 }
 
 WRAPPER(ExampleTable)
-PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
+PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
   PyTRY
 
 	TNetwork *graph;
-	PNetwork wgraph;
 	TDomain *domain = new TDomain();
 	PDomain wdomain = domain;
 	TExampleTable *table;
@@ -911,6 +900,7 @@ PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "
 	ifstream file(fn);
 	string graphName = "";
 	int nVertices = 0;
+	int nEdges = 0;
 
 	if (file.is_open())
 	{
@@ -937,29 +927,25 @@ PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "
 						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 				}
-				else if (stricmp(words[0].c_str(), "*vertices") == 0)
-				{
+				else if (stricmp(words[0].c_str(), "*vertices") == 0) {
 					//cout << "Vertices" << endl;
-					if (n > 1)
-					{
+					if (n > 1) {
 						istringstream strVertices(words[1]);
 						strVertices >> nVertices;
-						if (nVertices == 0)
-						{
+						if (nVertices == 0) {
 							file.close();
 							PYERROR(PyExc_SystemError, "invalid file format", NULL);
 						}
-
-						//cout << "nVertices: " << nVertices << endl;
-					}
-					else
-					{
+					} else {
 						file.close();
 						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
+					if (n > 2) {
+						istringstream strEdges(words[2]);
+						strEdges >> nEdges;
+					}
 				}
-				else if (stricmp(words[0].c_str(), "*arcs") == 0)
-				{
+				else if (stricmp(words[0].c_str(), "*arcs") == 0) {
 					directed = 1;
 					break;
 				}
@@ -1011,8 +997,7 @@ PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "
 			PYERROR(PyExc_SystemError, "invalid file1 format; invalid number of vertices (less than 1)", NULL);
 		}
 
-		graph = new TNetwork(nVertices, 0, directed == 1);
-		wgraph = graph;
+		graph = mlnew TNetwork(nVertices, nEdges, directed == 1);
 
 		TFloatVariable *indexVar = new TFloatVariable("index");
 		indexVar->numberOfDecimals = 0;
@@ -1148,7 +1133,6 @@ PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "
 					getline (file1, line);
 					vector<string> words;
 					int n = getWords(line, words);
-					//cout << line << "  -  " << n << endl;
 					if (n > 0)
 					{
 						if (stricmp(words[0].c_str(), "*edges") == 0)
@@ -1158,88 +1142,89 @@ PyObject *Network_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "
 						{
 							int i1 = -1;
 							int i2 = -1;
-							double i3 = -1;
 							istringstream strI1(words[0]);
 							istringstream strI2(words[1]);
-							istringstream strI3(words[2]);
 							strI1 >> i1;
 							strI2 >> i2;
-							strI3 >> i3;
-
+							
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
 								file1.close();
 								PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 							}
 
-							if (i1 == i2)
-								continue;
+							if (i1 == i2) continue;
 
-							//cout << "i1: " << i1 << " i2: " << i2 << endl;
-							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
+							if (n > 2) {
+								vector<string> weights;
+								int m = getWords(words[2], weights);
+								int i;
+								for (i=0; i < m; i++) {
+									double i3 = 0;
+									istringstream strI3(weights[i]);
+  									strI3 >> i3;
+									/**(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
+
+									if (directed == 1) {
+										*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
+									}*/
+								}
+							}
 						}
 					}
 				}
 			}
 		}
-
 		// read edges
 		n = getWords(line, words);
-		if (n > 0)
-		{
-			if (stricmp(words[0].c_str(), "*edges") == 0)
-			{
-				while (!file1.eof())
-				{
+		if (n > 0) {
+			if (stricmp(words[0].c_str(), "*edges") == 0) {
+				while (!file1.eof()) {
 					getline (file1, line);
 					vector<string> words;
 					int n = getWords(line, words);
-
-					//cout << line << "  -  " << n << endl;
-					if (n > 1)
-					{
+					if (n > 1) {
 						int i1 = -1;
 						int i2 = -1;
 						istringstream strI1(words[0]);
 						istringstream strI2(words[1]);
 						strI1 >> i1;
 						strI2 >> i2;
-
-						double i3 = 1;
-						if (n > 2) {
-  							istringstream strI3(words[2]);
-	  						strI3 >> i3;
-	  					}
-
-						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
-						{
+						
+						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) {
 							file1.close();
 							PYERROR(PyExc_SystemError, "invalid file1 format", NULL);
 						}
 
-						if (i1 == i2)
-							continue;
-
-						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = i3;
-
-						if (directed == 1) {
-							*graph->getOrCreateEdge(i2 - 1, i1 - 1) = i3;
+						if (i1 == i2) continue;
+						
+						if (n > 2) {
+							vector<string> weights;
+							int m = getWords(words[2], weights);
+							int i;
+							for (i=0; i < m; i++) {
+								double i3 = 0;
+								istringstream strI3(weights[i]);
+								strI3 >> i3;
+								*(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
+								if (directed == 1) {
+									*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
+								}
+								
+							}
 						}
 					}
 				}
 			}
 		}
-
 		file1.close();
-	}
-	else
-	{
+	} else {
 	  PyErr_Format(PyExc_SystemError, "unable to open file1 '%s'", fn);
 	  return NULL;
 	}
 
-  graph->items = wtable;
-	return WrapOrange(wgraph);
+	graph->items = wtable;
+	return WrapNewOrange(graph, self->ob_type); // WrapOrange(graph);
 
   PyCATCH
 }

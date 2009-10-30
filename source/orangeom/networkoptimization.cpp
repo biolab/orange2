@@ -362,8 +362,6 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 		{
 			for (j = 0; j < nLinks; j++)
 			{
-				//int v = links[j][0];
-				//int u = links[j][1];
 				int v = links[0][j];
 				int u = links[1][j];
 
@@ -373,10 +371,14 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				double dif = sqrt(difX * difX + difY * difY);
 
 				double *w = network->getEdge(v,u);
-				*w = fabs(*w);
+				double wsum = 0;
+				int k;
+				for (k=0; k < network->nEdgeTypes; k++) {
+					wsum += w[k];
+				}
 
-				double dX = difX * dif / k * (*w);
-				double dY = difY * dif / k * (*w);
+				double dX = difX * dif / k * wsum;
+				double dY = difY * dif / k * wsum;
 
 				disp[v][0] = disp[v][0] - dX;
 				disp[v][1] = disp[v][1] - dY;
@@ -389,8 +391,6 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 		{
 			for (j = 0; j < nLinks; j++)
 			{
-				//int v = links[j][0];
-				//int u = links[j][1];
 				int v = links[0][j];
 				int u = links[1][j];
 
@@ -398,8 +398,6 @@ int TNetworkOptimization::fruchtermanReingold(int steps, bool weighted)
 				double difY = network->pos[1][v] - network->pos[1][u];
 
 				double dif = sqrt(difX * difX + difY * difY);
-
-
 
 				double dX = difX * dif / k;
 				double dY = difY * dif / k;
