@@ -4503,8 +4503,9 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
 
 			DOUBLE_AS_PYOBJECT(weights[type]) = item;
 		}
-		else
+		else {
 			weights[type] = w;
+		}
 
 		if (noConnection) {
 			double *we, *wee;
@@ -4775,7 +4776,7 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 
 PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference);
 
-PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
+PyObject *Graph_getSubGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
 {
 	PyTRY
 	CAST_TO(TGraph, graph);
@@ -4789,45 +4790,42 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 	PyList_Sort(vertices);
 
 	TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
-	PGraph wsubgraph = subgraph;
+	//PGraph wsubgraph = subgraph;
 
 	Py_ssize_t i;
 	vector<int> neighbours;
-	for (i = 0; i < size; i++)
-	{
+	for (i = 0; i < size; i++) {
 		int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
 
 		graph->getNeighboursFrom_Single(vertex, neighbours);
-		ITERATE(vector<int>, ni, neighbours)
-		{
-			if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
-			{
+		ITERATE(vector<int>, ni, neighbours) {
+			if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1) {
 				int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
 
-				if (index != -1)
-				{
+				if (index != -1) {
 					double* w = subgraph->getOrCreateEdge(i, index);
 					double* oldw = graph->getOrCreateEdge(vertex, *ni);
-					*w = *oldw;
+					int j;
+					for (j=0; j < subgraph->nEdgeTypes; j++) {
+						w[j] = oldw[j];
+					}
 				}
 			}
 		}
 	}
 
-	PyObject *pysubgraph = WrapOrange(wsubgraph);
+	PyObject *pysubgraph = WrapNewOrange(subgraph, self->ob_type); //WrapOrange(wsubgraph);
 
 	// set graphs attribut items of type ExampleTable to subgraph
 	PyObject *strItems = PyString_FromString("items");
-	if (PyObject_HasAttr(self, strItems) == 1)
-	{
+	if (PyObject_HasAttr(self, strItems) == 1) {
 		PyObject* items = PyObject_GetAttr(self, strItems);
 		/*
 		cout << PyObject_IsTrue(items) << endl;
 		cout << PyObject_Size(items) << endl;
 		cout << graph->nVertices << endl;
 		*/
-		if (PyObject_IsTrue(items) && PyObject_Size(items) == graph->nVertices)
-		{
+		if (PyObject_IsTrue(items) && PyObject_Size(items) == graph->nVertices) {
 			PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 			Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
 		}
