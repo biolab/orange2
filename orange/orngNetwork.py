@@ -41,7 +41,7 @@ class Network(orangeom.Network):
             graphFile.write('*Network ' + str(name) + ' \n\n')
 
         # print node descriptions
-        graphFile.write('*Vertices% 8d\n' % self.nVertices)
+        graphFile.write('*Vertices %8d %8d\n' % (self.nVertices, self.nEdgeTypes))
         for v in range(self.nVertices):
             graphFile.write('% 8d ' % (v + 1))
             try:
@@ -50,10 +50,11 @@ class Network(orangeom.Network):
             except:
                 graphFile.write(str('"' + str(v) + '"') + ' \t')
             
-            x = self.coors[0][v]
-            y = self.coors[1][v]
-            z = 0.5000
-            graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
+            if hasattr(self, 'coors'):
+                x = self.coors[0][v]
+                y = self.coors[1][v]
+                z = 0.5000
+                graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
             graphFile.write('\n')
 
         # print edge descriptions
@@ -62,7 +63,11 @@ class Network(orangeom.Network):
             graphFile.write('*Arcs \n')
             for (i, j) in self.getEdges():
                 if len(self[i, j]) > 0:
-                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self[i, j]))))
+                    if self.nEdgeTypes > 1:
+                        edge_str = str(self[i, j])
+                    else:
+                        edge_str = "%f" % float(str(self[i, j]))
+                    graphFile.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
                     graphFile.write('\n')
         # directed edges
         else:
@@ -76,8 +81,12 @@ class Network(orangeom.Network):
                         writtenEdges[(i,j)] = 1
                     else:
                         continue
-                    
-                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self[i, j]))))
+
+                    if self.nEdgeTypes > 1:
+                        edge_str = str(self[i, j])
+                    else:
+                        edge_str = "%f" % float(str(self[i, j]))
+                    graphFile.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
                     graphFile.write('\n')
 
         graphFile.write('\n')
@@ -87,21 +96,21 @@ class Network(orangeom.Network):
             (name, ext) = os.path.splitext(fileName)
             self.items.save(name + "_items.tab")
             
-        if self.links != None and len(self.links) > 0:
+        if hasattr(self, 'links') and self.links != None and len(self.links) > 0:
             (name, ext) = os.path.splitext(fileName)
             self.links.save(name + "_links.tab")
 
         return 0
         
-    @staticmethod
-    def readNetwork(fileName, directed=0):
-        """Reads network from Pajek (.net) file."""
-        return Network(orangeom.Network().readNetwork(fileName, directed))
+    #@staticmethod
+    #def readNetwork(fileName, directed=0):
+    #    """Reads network from Pajek (.net) file."""
+    #    return Network(orangeom.Network().readNetwork(fileName, directed))
     
     @staticmethod
     def read(fileName, directed=0):
         """Reads network from Pajek (.net) file."""
-        return Network(orangeom.Network().readNetwork(fileName, directed))
+        return Network(2,0).readNetwork(fileName, directed)
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     """main class for performing network layout optimization. Network structure is defined in orangeom.Network class."""
@@ -458,8 +467,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             matrix = self.vertexDistance
         
-        if self.mds == None: 
-            self.mds = orngMDS.MDS(matrix)
+        #if self.mds == None: 
+        self.mds = orngMDS.MDS(matrix)
             
         # set min stress difference between 0.01 and 0.00001
         self.minStressDelta = minStressDelta
@@ -511,7 +520,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
 
         #izpis opisov vozlisc
-        graphFile.write('*Vertices% 8d\n' % self.graph.nVertices)
+        print "e", self.graph.nEdgeTypes
+        graphFile.write('*Vertices %8d %8d\n' % (self.graph.nVertices, self.graph.nEdgeTypes))
         for v in range(self.graph.nVertices):
             graphFile.write('% 8d ' % (v + 1))
 #            if verticesParms[v].label!='':
