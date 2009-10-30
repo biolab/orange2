@@ -26,7 +26,7 @@ with examples that uses these two modules.</p>
 <p>You may as well perform testing and scoring on your own, so we
 further provide several example scripts to compute classification
 accuracy, measure it on a list of classifiers, do cross-validation,
-leave-on-out and random sampling. While all of this functionality is
+leave-one-out and random sampling. While all of this functionality is
 available in <a href="../modules/orngTest.htm">orngTest</a> and <a
 href="../modules/orngStat.htm">orngStat</a> modules, these example
 scripts may still be useful for those that want to learn more about
@@ -74,7 +74,7 @@ tree     0.961  0.845  0.075  0.956
 </xmp>
 
 
-<p>The call to <code>orngEval.CrossValidation</code> does the hard
+<p>The call to <code>orngTest.CrossValidation</code> does the hard
 work.  Function <code>crossValidation</code> returns the object stored
 in <code>results</code>, which essentially stores the probabilities
 and class values of the instances that were used as test cases. Based
