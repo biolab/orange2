@@ -129,7 +129,14 @@ public:
   public:
     TEdge *next;
     int vertex;
+	int nEdges;
     double weights;
+/*
+	TEdge(const TEdge &other) :
+	  vertex(other.vertex),
+	  nEdges(other.nEdges) {
+		memcpy(weight, other.weights, nEdges*sizeof(double));
+	}*/
   };
 
 
