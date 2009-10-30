@@ -82,7 +82,7 @@ class OWMDS(OWWidget):
         OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh During Optimization", callback=lambda :1)
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
-        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Min. stress change", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
+        OWGUI.qwtHSlider(self.stopping, self, "minStressDelta", label="Min. stress change", minValue=0, maxValue=1e-2, step=1e-5, precision=6)
         OWGUI.qwtHSlider(self.stopping, self, "maxIterations", label="Max. number of steps", minValue=10, maxValue=5000, step=10, precision=0)
 
         ##Graph Tab        

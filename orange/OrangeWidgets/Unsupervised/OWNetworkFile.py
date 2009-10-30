@@ -243,9 +243,8 @@ class OWNetworkFile(OWWidget):
     def addDataFile(self, fn):
         if fn == "(none)" or self.graph == None:
             self.infoc.setText("No vertices data file specified")
-            self.graph.setattr("items", None)
-            self.send("Network", self.graph)
-            self.send("Items", self.graph.items)
+            self.send("Network", None)
+            self.send("Items", None)
             return
          
         self.readDataFile(fn)
@@ -378,7 +377,7 @@ class OWNetworkFile(OWWidget):
 
     def readNetFile(self, fn):
         try:
-            net = orngNetwork.Network.readNetwork(fn)
+            net = orngNetwork.Network.read(fn)
             self.infoc.setText("Vertices data generated and added automatically")
         except:
             self.infoa.setText("Could not read file")

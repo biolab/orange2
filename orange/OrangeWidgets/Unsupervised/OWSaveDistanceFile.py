@@ -55,13 +55,26 @@ class OWSaveDistanceFile(OWWidget):
         else:
             lastPath = "."
             
-        fn = str(QFileDialog.getSaveFileName(self, "Save Distance Matrix File", lastPath, "SymMatrix files (*.sym)\nAll files (*.*)"))
+        fn = str(QFileDialog.getSaveFileName(self, "Save Distance Matrix File", lastPath, "Distance files (*.dst)\nSymMatrix files (*.sym)\nAll files (*.*)"))
         
         if not fn or not os.path.split(fn)[1]:
             return
         
         self.addFileToList(fn)
         self.saveFile()
+        
+    def saveSymMatrix(self, matrix, file):
+        fn = open(file, 'w')
+        fn.write("%d labeled\n" % matrix.dim)
+        
+        for i in range(matrix.dim):
+            fn.write("%s" % matrix.items[i][0])
+            for j in range(i+1):
+                fn.write("\t%.6f" % matrix[i,j])
+            fn.write("\n")
+            
+        fn.close()
+        matrix.items.save(file + ".tab")
         
     def saveFile(self):
         self.error()
@@ -71,15 +84,20 @@ class OWSaveDistanceFile(OWWidget):
                 QMessageBox.information( None, "Error saving data", "Unable to save data. Select first a file name by clicking the '...' button.", QMessageBox.Ok + QMessageBox.Default)
                 return
             filename = self.recentFiles[self.filecombo.currentIndex()]
+            name, ext = os.path.splitext(filename)
+
             try:
-                fp = open(filename, 'wb')
-                pickle.dump(self.data, fp, -1)
-                fp.close()
+                if ext == ".dst":
+                    self.saveSymMatrix(self.data, filename)
+                else:
+                    fp = open(filename, 'wb')
+                    pickle.dump(self.data, fp, -1)
+                    fp.close()
             except Exception, (errValue):
                 self.error(str(errValue))
                 return
             self.error()    
-            
+
     def addFileToList(self, fn):
         if fn in self.recentFiles:
             self.recentFiles.remove(fn)

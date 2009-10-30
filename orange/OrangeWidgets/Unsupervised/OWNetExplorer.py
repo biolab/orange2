@@ -126,6 +126,7 @@ class OWNetExplorer(OWWidget):
         self.edgesTab = OWGUI.createTabPage(self.tabs, "Edges")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
         self.infoTab = OWGUI.createTabPage(self.tabs, "Info")
+        self.editTab = OWGUI.createTabPage(self.tabs, "Edit")
         
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.verticesTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
@@ -153,7 +154,7 @@ class OWNetExplorer(OWWidget):
         self.vertexSizeCombo = OWGUI.comboBox(self.verticesTab, self, "vertexSize", box = "Vertex size attribute", callback=self.setVertexSize)
         self.vertexSizeCombo.addItem("(none)")
         
-        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 50, 1, label="Max vertex size:", callback = self.setVertexSize)
+        OWGUI.spin(self.vertexSizeCombo.box, self, "maxVertexSize", 5, 200, 1, label="Max vertex size:", callback = self.setVertexSize)
         OWGUI.checkBox(self.vertexSizeCombo.box, self, "invertSize", "Invert vertex size", callback = self.setVertexSize)
         
         colorBox = OWGUI.widgetBox(self.edgesTab, "Edge color attribute", orientation="horizontal", addSpace = False)
@@ -287,8 +288,8 @@ class OWNetExplorer(OWWidget):
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
         
         OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
-        OWGUI.spin(ib, self, "mdsSteps", 1, 10000, 1, label="MDS steps: ")
-        OWGUI.spin(ib, self, "mdsRefresh", 1, 10000, 1, label="MDS refresh steps: ")
+        OWGUI.spin(ib, self, "mdsSteps", 1, 100000, 1, label="MDS steps: ")
+        OWGUI.spin(ib, self, "mdsRefresh", 1, 100000, 1, label="MDS refresh steps: ")
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
         OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
@@ -302,10 +303,18 @@ class OWNetExplorer(OWWidget):
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
         
+        self.editAttribute = 0
+        self.editCombo = OWGUI.comboBox(self.editTab, self, "editAttribute", label="Edit attribute:", orientation="horizontal")
+        self.editCombo.addItem("Select attribute")
+        self.editValue = ''
+        OWGUI.lineEdit(self.editTab, self, "editValue", "Value:", orientation='horizontal')
+        OWGUI.button(self.editTab, self, "Edit", callback=self.edit)
+        
         self.verticesTab.layout().addStretch(1)
         self.edgesTab.layout().addStretch(1)
         self.markTab.layout().addStretch(1)
         self.infoTab.layout().addStretch(1)
+        self.editTab.layout().addStretch(1)
         
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
@@ -321,7 +330,26 @@ class OWNetExplorer(OWWidget):
         self.resize(1000, 600)
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
-    
+        
+    def edit(self):
+        vars = [x.name for x in self.visualize.getVars()]
+        if not self.editCombo.currentText() in vars:
+            return
+        att = str(self.editCombo.currentText())
+        vertices = self.graph.networkCurve.getSelectedVertices()
+        
+        if len(vertices) == 0:
+            return
+        
+        if self.visualize.graph.items.domain[att].varType == orange.VarTypes.Continuous:
+            for v in vertices:
+                self.visualize.graph.items[v][att] = float(self.editValue)
+        else:
+            for v in vertices:
+                self.visualize.graph.items[v][att] = str(self.editValue)
+        
+        self.setItems(self.visualize.graph.items)
+        
     def rotateProgress(self, curr, max):
         self.progressBarSet(int(curr * 100 / max))
         qApp.processEvents()
@@ -1074,6 +1102,7 @@ class OWNetExplorer(OWWidget):
                 
             self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
+            self.editCombo.addItem(self.icons[var.varType], unicode(var.name))
         
         for var in edgeVars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
@@ -1109,12 +1138,14 @@ class OWNetExplorer(OWWidget):
         self.nameComponentCombo.clear()
         self.showComponentCombo.clear()
         self.edgeColorCombo.clear()
+        self.editCombo.clear()
         
         self.colorCombo.addItem("(same color)")
         self.edgeColorCombo.addItem("(same color)")
         self.vertexSizeCombo.addItem("(same size)")
         self.nameComponentCombo.addItem("Select attribute")
         self.showComponentCombo.addItem("Select attribute")
+        self.editCombo.addItem("Select attribute")
       
     def setGraph(self, graph):      
         if graph == None:
