@@ -704,7 +704,12 @@ def F1(confm):
     else:
         p = precision(confm)
         r = recall(confm)
-        return 2. * p * r / (p + r)
+        if p + r > 0:
+            return 2. * p * r / (p + r)
+        else:
+            import warnings
+            warnings.warn("Can't compute F1: P + R is zero or not defined")
+            return -1
 
 def Falpha(confm, alpha=1.0):
     """Return the alpha-mean of precision and recall over the given confusion matrix."""
