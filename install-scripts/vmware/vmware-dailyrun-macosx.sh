@@ -28,10 +28,12 @@ start_vmware() {
 	fi
 	
 	# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | true
+	set +e
+	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
+	ps=("${PIPESTATUS[@]}")
+	set -e
 	# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-	# (which would be otherwise checked because of the -e switch, with true at the end of the pipe we ignore it)
-	if ((${PIPESTATUS[0]})); then false; fi
+	if ((${ps[0]})); then false; fi
 	
 	# Wait for VMware and OS to start
 	sleep $WAIT_TIME
@@ -50,10 +52,12 @@ stop_vmware() {
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
 		echo "[$NAME] Had to force shutdown."
 		# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
+		set +e
 		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | true
+		ps=("${PIPESTATUS[@]}")
+		set -e
 		# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-		# (which would be otherwise checked because of the -e switch, with true at the end of the pipe we ignore it)
-		if ((${PIPESTATUS[0]})); then false; fi
+		if ((${ps[0]})); then false; fi
 	fi
 	
 	return 0
