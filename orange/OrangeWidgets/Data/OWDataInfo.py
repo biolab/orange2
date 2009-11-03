@@ -24,11 +24,11 @@ class OWDataInfo(OWWidget):
         self.classattr = "no"
         
         box = OWGUI.widgetBox(self.controlArea, "Data Set Size")
-        OWGUI.label(box, self, '<table><tr><td width="100">Samples (rows):</td><td align="right" width="50">%(rowcount)7i</td></tr>\
+        OWGUI.label(box, self, '<table><tr><td width="150">Samples (rows):</td><td align="right" width="60">%(rowcount)7i</td></tr>\
                                 <tr><td>Attributes (columns):</td><td align="right">%(columncount)7i</td></tr></table>')
         
         box = OWGUI.widgetBox(self.controlArea, "Attributes")
-        OWGUI.label(box, self, '<table><tr><td width="100">Discrete attributes:</td><td align="right" width="50">%(discattrcount)7i</td></tr>\
+        OWGUI.label(box, self, '<table><tr><td width="150">Discrete attributes:</td><td align="right" width="60">%(discattrcount)7i</td></tr>\
                                 <tr><td>Continuous attributes:</td><td align="right">%(contattrcount)7i</td></tr>\
                                 <tr><td>String attributes:</td><td align="right">%(stringattrcount)7i</td></tr>\
                                 <tr><td> </td></tr>\
