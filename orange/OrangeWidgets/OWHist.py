@@ -62,7 +62,7 @@ class OWHist(OWGraph):
         
         self.lowerBoundaryKey.setData([float(self.lowerBoundary), float(self.lowerBoundary)], [0., float(maxy)])
         self.upperBoundaryKey.setData([float(self.upperBoundary), float(self.upperBoundary)], [0., float(maxy)])
-        self.updateData()
+#        self.updateData()
         self.replot()
             
     def updateData(self):
@@ -129,7 +129,7 @@ class OWInteractiveHist(OWHist):
     def setBoundary(self, low, hi):
         OWHist.setBoundary(self, low, hi)
         self.shadeTails()
-        self.updateData()
+#        self.updateData()
         self.replot()
     
     def _setBoundary(self, boundary, cut):
