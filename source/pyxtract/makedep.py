@@ -32,7 +32,14 @@ def finddeps(filename):
     if (depname[-4:]==".ppp"):
       ppp_timestamp_dep.append(depname[:-4]+".hpp")
       mydeps.append(depname[:-4]+".hpp")
+      mydeps.append("ppp/stamp")
+      if "../pyxtract/pyprops.py" not in mydeps:
+        mydeps.append("../pyxtract/pyprops.py")
     else:
+      if (depname[-3:]==".px") or (os.path.split(found.group("filename"))[0]=="px"):
+        mydeps.append("px/stamp")
+        if "../pyxtract/pyxtract.py" not in mydeps:
+          mydeps.append("../pyxtract/pyxtract.py")
       if depname[-3:]==".px" and filename[-4:]!=".hpp":
         if depname not in px_files:
           px_files.append( depname)
@@ -123,8 +130,11 @@ makedepsfile.write("\n\n")
 for (file, filedeps) in deplist:
   if file[-4:]==".cpp":
     dl = filedeps.keys()
+    stamps = [dep for dep in dl if "stamp" in dep]
+    dl = [dep for dep in dl if "stamp" not in dep]
     dl.sort()
-    makedepsfile.write("obj/%s.o : %s.cpp %s\n" % (file[:-4], file[:-4], dl and reduce(lambda a, b: a+" "+b, dl) or ""))
+    stamps.sort()
+    makedepsfile.write("obj/%s.o : %s.cpp %s%s\n" % (file[:-4], file[:-4], " ".join(dl), "" if not stamps else " | "+" ".join(stamps)))
 makedepsfile.write("\n\n")
 
 if ppp_timestamp_dep:
@@ -132,14 +142,14 @@ if ppp_timestamp_dep:
   makedepsfile.write("\tpython ../pyxtract/defvectors.py\n")
   if modulename != "ORANGE":
     ppp_timestamp_dep.extend(["../orange/ppp/lists", "../orange/ppp/stamp"])
-  makedepsfile.write("ppp/stamp: %s\n" % " ".join(ppp_timestamp_dep))
+  makedepsfile.write("ppp/stamp: ../pyxtract/pyprops.py %s\n" % " ".join(ppp_timestamp_dep))
   makedepsfile.write("\tpython ../pyxtract/pyprops.py -q -n %s" % modulename)
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/ppp/stamp -l ../orange/ppp/lists")
   makedepsfile.write("\n\n")
 
 if px_timestamp_dep:
-  makedepsfile.write("px/stamp: %s\n" % " ".join(px_timestamp_dep))
+  makedepsfile.write("px/stamp: ../pyxtract/pyxtract.py %s | ppp/stamp\n" % " ".join(px_timestamp_dep))
   short = {"ORANGEOM": "-w OM", "ORANGENE": "-w OG"}.get(modulename, "")
   makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -q -n %s %s %s" % (modulename, short, " ".join(px_timestamp_dep)))
   if modulename != "ORANGE":
