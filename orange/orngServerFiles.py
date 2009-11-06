@@ -530,7 +530,7 @@ class DownloadProgress(ConsoleProgressBar):
     
     @classmethod
     def setredirect(cls, redirect):
-        cls.redirect = redirect
+        cls.redirect = staticmethod(redirect)
         return cls
     
     @classmethod
