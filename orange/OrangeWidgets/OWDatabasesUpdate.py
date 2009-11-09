@@ -14,21 +14,22 @@ def sizeof_fmt(num):
         num /= 1024.0
 
 class UpdateThread(QThread):
-    semaphore = QSemaphore(5)
+    semaphore = QSemaphore(3)
     def __init__(self, item, *args):
-        self.semaphore.acquire()
         QThread.__init__(self)
         self.item = item
         self.args = args
         
     def run(self):
+        self.semaphore.acquire()
         try:
             orngServerFiles.download(*(self.args + (self.advance,)))
-        except Exception:
-            self.emit(SIGNAL("finish(int)"), 1)
+        except Exception, ex:
+            self.emit(SIGNAL("finish(QString)"), QString(str(ex)))
+            self.semaphore.release()
             self.quit()
             return
-        self.emit(SIGNAL("finish(int)"), 0)
+        self.emit(SIGNAL("finish(QString)"), QString("Ok"))
         self.semaphore.release()
         self.quit()
 
@@ -42,14 +43,19 @@ class UpdateOptionsWidget(QWidget):
         self.updateCallback = updateCallback
         self.removeCallback = removeCallback
         layout = QHBoxLayout()
+        layout.setSpacing(1)
+        layout.setContentsMargins(1, 1, 1, 1)
         self.updateButton = QToolButton(self)
         self.updateButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "update.png")))
         self.updateButton.setToolTip("Download")
+#        self.updateButton.setIconSize(QSize(10, 10))
         self.removeButton = QToolButton(self)
         self.removeButton.setIcon(QIcon(os.path.join(orngEnviron.canvasDir, "icons", "delete.png")))
         self.removeButton.setToolTip("Remove from system")
+#        self.removeButton.setIconSize(QSize(10, 10))
         self.connect(self.updateButton, SIGNAL("released()"), self.updateCallback)
         self.connect(self.removeButton, SIGNAL("released()"), self.removeCallback)
+        self.setMaximumHeight(30)
         layout.addWidget(self.updateButton)
         layout.addWidget(self.removeButton)
         self.setLayout(layout)
@@ -95,10 +101,11 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         specialTags = dict([tuple(tag.split(":")) for tag in tags if tag.startswith("#") and ":" in tag])
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
         self.size = infoServer["size"] if infoServer else infoLocal["size"]
-        if self.state == 2 or self.state == 1:
-            size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
-        else:
-            size = sizeof_fmt(float(specialTags.get("#uncompressed", self.size)))
+#        if self.state == 2 or self.state == 1:
+#            size = sizeof_fmt(float(self.size)) + (" (%s uncompressed)" % sizeof_fmt(float(specialTags["#uncompressed"])) if "#uncompressed" in specialTags else "")
+#        else:
+#            size = sizeof_fmt(float(specialTags.get("#uncompressed", self.size)))
+        size = sizeof_fmt(float(self.size))
         state = self.stateDict[self.state] + (dateServer.strftime(" (%Y, %b, %d)") if self.state == 1 else "")
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, size])
         self.updateWidget = UpdateOptionsWidget(self.StartDownload, self.Remove, self.state, treeWidget)
@@ -115,7 +122,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.UpdateToolTip()
 
     def UpdateToolTip(self):
-        tooltip = "Tags: %s\nState: %s" % (", ".join(self.tags), self.stateDict[self.state])
+        state = {0:"local, updataed", 1:"local, needs update", 2:"on server, download for local use", 3:"obsolete"}
+        tooltip = "State: %s\nTags: %s" % (state[self.state], ", ".join(self.tags))
         if self.state != 2:
             tooltip += "\nFile: %s" % orngServerFiles.localpath(self.domain, self.filename)
         for i in range(1, 5):
@@ -130,15 +138,21 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         pb = QProgressBar(self.treeWidget())
         pb.setRange(0, 100)
         pb.setTextVisible(False)
-        QObject.connect(self.thread, SIGNAL("advance()"), lambda :pb.setValue(pb.value()+1))
-        QObject.connect(self.thread, SIGNAL("finish(int)"), self.EndDownload)
+        if not getattr(self.master, "_sum_progressBar", None):
+            self.master._sum_progressBar = OWGUI.ProgressBar(self.master,0)
+            self.master._sum_progressBar.in_progress = 0
+        master_pb = self.master._sum_progressBar
+        master_pb.iter += 100
+        master_pb.in_progress += 1
+        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
+        QObject.connect(self.thread, SIGNAL("finish(QString)"), self.EndDownload)
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
         self.thread.start()
 
     def EndDownload(self, exitCode=0):
         self.treeWidget().removeItemWidget(self, 2)
-        if exitCode == 0:
+        if str(exitCode) == "Ok":
             self.state = 0
             self.updateWidget.SetState(self.state)
             self.setData(2, Qt.DisplayRole, QVariant(sizeof_fmt(float(self.size))))
@@ -146,7 +160,15 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             self.UpdateToolTip()
         else:
             self.updateWidget.SetState(1)
-            self.setData(2, Qt.DisplayRole, QVariant("Error occured while downloading"))
+            self.setData(2, Qt.DisplayRole, QVariant("Error occured while downloading:" + str(exitCode)))
+            
+        master_pb = self.master._sum_progressBar
+#        print master_pb.in_progress
+        if master_pb and master_pb.in_progress == 1:
+            master_pb.finish()
+            self.master._sum_progressBar = None
+        elif master_pb:
+            master_pb.in_progress -= 1
             
     def Remove(self):
         name = os.path.join(orngServerFiles.localpath(self.domain), self.filename)
@@ -172,7 +194,7 @@ class UpdateItemDelegate(QItemDelegate):
         item = parent.itemFromIndex(index)
         widget = parent.itemWidget(item, 0)
         if widget:
-            size = QSize(size.width(), widget.sizeHint().height())
+            size = QSize(size.width(), widget.sizeHint().height()/2)
         return size
     
 class OWDatabasesUpdate(OWWidget):
@@ -186,7 +208,8 @@ class OWDatabasesUpdate(OWWidget):
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         import OWGUIEx
         self.lineEditFilter = OWGUIEx.lineEditHint(box, self, "searchString", "Filter", caseSensitive=False, delimiters=" ", matchAnywhere=True, listUpdateCallback=self.SearchUpdate, callbackOnType=True, callback=self.SearchUpdate)
-        self.connect(self.lineEditFilter, SIGNAL("textEdited(const QString &)"), self.SearchUpdate)
+#        self.connect(self.lineEditFilter, SIGNAL("textEdited(const QString &)"), self.SearchUpdate)
+
 #        OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
 #        box = OWGUI.widgetBox(self.mainArea, "Tags")
 #        self.tagsWidget = QTextEdit(self.mainArea)
@@ -204,6 +227,7 @@ class OWDatabasesUpdate(OWWidget):
 
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.button(box, self, "Update all local files", callback=self.UpdateAll, tooltip="Update all updatable files")
+        OWGUI.button(box, self, "Download filtered", callback=self.DownloadFiltered, tooltip="Download all filtered files shown")
         OWGUI.rubber(box)
         OWGUI.lineEdit(box, self, "accessCode", "Access Code", orientation="horizontal", callback=self.UpdateFilesList)
         self.retryButton = OWGUI.button(box, self, "Retry", callback=self.UpdateFilesList)
@@ -235,19 +259,20 @@ class OWDatabasesUpdate(OWWidget):
         self.allTags = set()
         allTitles = set()
         self.updateItems = []
-        if self.domains == None:
-            domains = orngServerFiles.listdomains()
-        else:
-            domains = self.domains
         if self.accessCode:
             self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
+        if self.domains == None:
+            domains = set(self.serverFiles.listdomains()) - set(["test"])
+        else:
+            domains = self.domains
         items = []
         try:
             self.error(0)
             for i, domain in enumerate(domains):
                 local = orngServerFiles.listfiles(domain) or []
-                files = self.serverFiles.listfiles(domain)
+#                files = self.serverFiles.listfiles(domain)
                 allInfo = self.serverFiles.allinfo(domain)
+                files = sorted(allInfo.keys())
                 for j, file in enumerate(files):
                     infoServer = None
                     if file in local:
@@ -267,6 +292,7 @@ class OWDatabasesUpdate(OWWidget):
             
         for i, item in enumerate(items):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
+        self.filesView.resizeColumnToContents(0)
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
         self.lineEditFilter.setItems([hint for hint in sorted(self.allTags) if not hint.startswith("#")])
@@ -288,12 +314,17 @@ class OWDatabasesUpdate(OWWidget):
         for item in self.updateItems:
             if item.state == 1:
                 item.StartDownload()
+                
+    def DownloadFiltered(self):
+        for item in self.updateItems:
+            if not item.isHidden() and item.state != 0:
+                item.StartDownload()
 
     def SearchUpdate(self, searchString=None):
-        strings = self.searchString.split() if searchString is None else unicode(searchString).split()
+        strings = unicode(self.lineEditFilter.text()).split() #self.searchString.split() if searchString is None else unicode(searchString).split()
         tags = set()
         for item in self.updateItems:
-            hide = not all(str(string) in item for string in strings)
+            hide = not all(str(string) in item for string in strings)   
             item.setHidden(hide)
             if not hide:
                 tags.update(item.tags)
