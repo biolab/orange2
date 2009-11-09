@@ -1336,14 +1336,14 @@ class OWNetExplorer(OWWidget):
             #print "cp"
         elif e.key() == Qt.Key_Alt:
             self.graph.altPressed = True
-        QWidget.keyPressEvent(self, e)
+        OWWidget.keyPressEvent(self, e)
                
     def keyReleaseEvent(self, e):
         if e.key() == Qt.Key_Control:
             self.graph.controlPressed = False
         elif e.key() == Qt.Key_Alt:
             self.graph.altPressed = False
-        QWidget.keyReleaseEvent(self, e)
+        OWWidget.keyReleaseEvent(self, e)
         
 #    def keyPressEvent(self, e):
 #        if e.text() == "f":
