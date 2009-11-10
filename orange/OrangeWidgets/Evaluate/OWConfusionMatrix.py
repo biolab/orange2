@@ -234,7 +234,8 @@ class OWConfusionMatrix(OWWidget):
             data = orange.ExampleTable(domain, data)
         
             if self.appendPredictions:
-                predVar = type(domain.classVar)("%s(%s)" % (domain.classVar.name, self.learnerNames[learnerI]))
+                cname = self.learnerNames[learnerI]
+                predVar = type(domain.classVar)("%s(%s)" % (domain.classVar.name, cname.encode("utf-8") if isinstance(cname, unicode) else cname))
                 if hasattr(domain.classVar, "values"):
                     predVar.values = domain.classVar.values
                 predictionsId = orange.newmetaid()
