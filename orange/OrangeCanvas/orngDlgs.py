@@ -553,9 +553,9 @@ class CanvasOptionsDlg(QDialog):
 
 
     def accept(self):
-        self.settings["widgetSelectedColor"] = self.selectedWidgetIcon.color.getRgb()
-        self.settings["widgetActiveColor"]   = self.activeWidgetIcon.color.getRgb()
-        self.settings["lineColor"]           = self.lineIcon.color.getRgb()
+#        self.settings["widgetSelectedColor"] = self.selectedWidgetIcon.color.getRgb()
+#        self.settings["widgetActiveColor"]   = self.activeWidgetIcon.color.getRgb()
+#        self.settings["lineColor"]           = self.lineIcon.color.getRgb()
         QDialog.accept(self)
         
         

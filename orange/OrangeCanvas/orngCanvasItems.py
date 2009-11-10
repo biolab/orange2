@@ -387,12 +387,12 @@ class CanvasWidget(QGraphicsRectItem):
 
     # draw the widget
     def paint(self, painter, option, widget = None):
-        if self.isProcessing:
-            color = self.canvasDlg.widgetActiveColor
-        elif self.selected:
-            if (self.view.findItemTypeCount(self.canvas.collidingItems(self), CanvasWidget) > 0):       # the position is invalid if it is already occupied by a widget 
-                color = Qt.red
-            else:                    color = self.canvasDlg.widgetSelectedColor
+#        if self.isProcessing:
+#            color = self.canvasDlg.widgetActiveColor
+#        elif self.selected:
+#            if (self.view.findItemTypeCount(self.canvas.collidingItems(self), CanvasWidget) > 0):       # the position is invalid if it is already occupied by a widget 
+#                color = Qt.red
+#            else:                    color = self.canvasDlg.widgetSelectedColor
 
         if self.isProcessing or self.selected:
             painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
