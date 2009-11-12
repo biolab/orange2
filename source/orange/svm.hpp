@@ -241,6 +241,8 @@ public:
 	PIntList nSV; //PR nSV
 	PFloatList rho;	//PR rho
 	PFloatListList coef; //PR coef
+	PFloatList probA; //PR probA - pairwise probability information
+	PFloatList probB; //PR probB - pairwise probability information
 	PExampleTable supportVectors; //PR support vectors
 	PExampleTable examples;	//P examples used to train the classifier
 	PKernelFunc kernelFunc;	//PR custom kernel function

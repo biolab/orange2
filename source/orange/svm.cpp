@@ -434,15 +434,10 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 			return x[(int)(y->value)].value;
 		case CUSTOM:
 		{
-			/*while(y->index!=-1)	// the value in the last svm_node is the index of the training example
-				++y;
-			while(x->index!=-1)
-				++x;*/
 			if(!param.classifier)
 				return param.learner->kernelFunc->operator()(param.learner->tempExamples->at((int)x->value),
 			param.learner->tempExamples->at((int)y->value));
-			//TExample *ex;
-			//memcpy((void *)&ex, (void*)&x->value, sizeof(TExample *));
+
 			return param.classifier->kernelFunc->operator()(*param.classifier->currentExample,
 				param.classifier->examples->at((int)y->value));
 		}
@@ -3615,8 +3610,8 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	if(param.kernel_type==CUSTOM && !kernelFunc)
 		raiseError("Custom kernel function not supplied");
 
-	if(param.kernel_type==CUSTOM) // using the custom kernel with non-probabilistic model does not work (for some unknown reason)
-		param.probability=1;
+//	if(param.kernel_type==CUSTOM) // using the custom kernel with non-probabilistic model does not work (for some unknown reason)
+//		param.probability=1;
 
 	int numElements=getNumOfElements(examples);
 	prob.l=examples->numberOfExamples();
@@ -3746,6 +3741,14 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, sv
 	rho=mlnew TFloatList(nr_class*(nr_class-1)/2);
 	for(i=0;i<nr_class*(nr_class-1)/2;i++)
 		rho->at(i)=model->rho[i];
+	if(model->param.probability){
+		probA = mlnew TFloatList(nr_class*(nr_class-1)/2);
+		probB = mlnew TFloatList(nr_class*(nr_class-1)/2);
+		for(i=0;i<nr_class*(nr_class-1)/2;i++){
+			probA->at(i) = model->probA[i];
+			probB->at(i) = model->probB[i];
+		}
+	}
 }
 
 TSVMClassifier::~TSVMClassifier(){
@@ -3755,6 +3758,8 @@ TSVMClassifier::~TSVMClassifier(){
 }
 
 PDistribution TSVMClassifier::classDistribution(const TExample & example){
+	if(!computesProbabilities)
+		return TClassifierFD::classDistribution(example);
 	if(!model)
 		raiseError("No Model");
 	currentExample=&example;
