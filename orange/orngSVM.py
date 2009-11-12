@@ -67,8 +67,8 @@ class SVMLearner(orange.SVMLearner):
         if self.kernel_type==4 and not self.kernelFunc:
             raise AttributeError, "Custom kernel function not supplied"
         ##################################################
-        if self.kernel_type==4:     #There is a bug in svm. For some unknown reason only the probability model works with custom kernels
-            self.probability=True
+#        if self.kernel_type==4:     #There is a bug in svm. For some unknown reason only the probability model works with custom kernels
+#            self.probability=True
         ##################################################
         nu = self.nu
         if self.svm_type == orange.SVMLearner.Nu_SVC: #check nu feasibility
