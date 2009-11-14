@@ -8,31 +8,37 @@ import os, sys, math
 ERROR = 0
 WARNING = 1
 
-class TempCanvasLine(QGraphicsLineItem):
+class TempCanvasLine(QGraphicsPathItem):
     def __init__(self, canvasDlg, canvas):
         QGraphicsLineItem.__init__(self, None, canvas)
         self.setZValue(-10)
         self.canvasDlg = canvasDlg
-        self.setPen(QPen(QColor(200, 200, 200), 1, Qt.SolidLine, Qt.RoundCap))
         self.startWidget = None
         self.endWidget = None
         self.widget = None
+
+        self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))        
         
     def setStartWidget(self, widget):
         self.startWidget = widget
         pos = widget.getRightEdgePoint()
-        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
+        endX, endY = startX, startY = pos.x(), pos.y()
+#        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
         
     def setEndWidget(self, widget):
         self.endWidget = widget
         pos = widget.getLeftEdgePoint()
-        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
+        endX, endY = startX, startY = pos.x(), pos.y()
+#        self.setLine(pos.x(), pos.y(), pos.x(), pos.y())
         
     def updateLinePos(self, newPos):
-        if self.startWidget == None and self.endWidget == None: return
+        if self.startWidget == None and self.endWidget == None:
+            return
         
-        if self.startWidget != None:   func = "getDistToLeftEdgePoint"
-        else:                          func = "getDistToRightEdgePoint"
+        if self.startWidget != None:
+            func = "getDistToLeftEdgePoint"
+        else:
+            func = "getDistToRightEdgePoint"
         
         schema = self.canvasDlg.schema
         view = schema.canvasView
@@ -47,27 +53,40 @@ class TempCanvasLine(QGraphicsLineItem):
             if dists and dists[0][0] < 20:
                 self.widget = dists[0][1]
         
-        if self.startWidget: pos = self.startWidget.getRightEdgePoint()
-        else:                pos = self.endWidget.getLeftEdgePoint()
+        if self.startWidget:
+            pos = self.startWidget.getRightEdgePoint()
+        else:
+            pos = self.endWidget.getLeftEdgePoint()
 
         if self.widget not in [self.startWidget, self.endWidget]: 
-            if self.startWidget == None and self.widget.widgetInfo.outputs: newPos = self.widget.getRightEdgePoint()
-            elif self.endWidget == None and self.widget.widgetInfo.inputs:  newPos = self.widget.getLeftEdgePoint()
+            if self.startWidget == None and self.widget.widgetInfo.outputs:
+                newPos = self.widget.getRightEdgePoint()
+            elif self.endWidget == None and self.widget.widgetInfo.inputs:
+                newPos = self.widget.getLeftEdgePoint()
         
-        self.setLine(pos.x(), pos.y(), newPos.x(), newPos.y())
+        path = QPainterPath(pos)
+        path.cubicTo(pos.x()+60, pos.y(), newPos.x()-60, newPos.y(), newPos.x(),newPos.y())
+        self.setPath(path)
+#        self.setLine(pos.x(), pos.y(), newPos.x(), newPos.y())
         
     def remove(self):
         self.hide()
 
     # draw the line
-    def paint(self, painter, option, widget):
-        start = self.line().p1()
-        end = self.line().p2()
+#    def paint(self, painter, option, widget):
+#        print "P"
+#        start = self.line().p1()
+#        end = self.line().p2()
 
-        painter.setPen(QPen(QColor(200, 200, 200), 4, Qt.SolidLine, Qt.RoundCap))
-        painter.drawLine(start, end)
-        painter.setPen(QPen(QColor(160, 160, 160), 2, Qt.SolidLine, Qt.RoundCap))
-        painter.drawLine(start, end)
+#        path = QPainterPath(p1)
+#        path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
+
+#        painter.setPen(QPen(QColor(200, 200, 200), 4, Qt.SolidLine, Qt.RoundCap))
+#        painter.drawLine(start, end)
+#        painter.drawPath(path)
+#        painter.setPen(QPen(QColor(160, 160, 160), 2, Qt.SolidLine, Qt.RoundCap))
+#        painter.drawLine(start, end)
+#        painter.drawPath(path)
 
     # we don't print temp lines
     def printShape(self, painter):
@@ -121,13 +140,17 @@ class CanvasLine(QGraphicsLineItem):
         p2 = self.inWidget.getLeftEdgePoint()
         self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
         
+        path = QPainterPath(p1)
+        path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
         painter.setPen(QPen(QColor(200, 200, 200), 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
-        painter.drawLine(p1, p2)
+#        painter.drawLine(p1, p2)
+        painter.drawPath(path)
         painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
-        painter.drawLine(p1, p2)
+#        painter.drawLine(p1, p2)
+        painter.drawPath(path)
 
         if self.canvasDlg.settings["showSignalNames"]:
-            painter.setPen(QColor(80, 80, 80))
+            painter.setPen(QColor(80, 80, 192))
             mid = (p1+p2-QPointF(200, 30))/2 
             painter.drawText(mid.x(), mid.y(), 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
