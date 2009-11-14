@@ -393,10 +393,10 @@ class CanvasWidget(QGraphicsRectItem):
             return self.getRightEdgePoint()
 
     def getLeftEdgePoint(self):
-        return QPointF(self.x()- self.edgeSize.width(), self.y() + self.widgetSize.height()/2)
+        return QPointF(self.x()+2- self.edgeSize.width(), self.y() + self.widgetSize.height()/2)
 
     def getRightEdgePoint(self):
-        return QPointF(self.x()+ self.widgetSize.width() + self.edgeSize.width(), self.y() + self.widgetSize.height()/2)
+        return QPointF(self.x()-2+ self.widgetSize.width() + self.edgeSize.width(), self.y() + self.widgetSize.height()/2)
 
     def getDistToLeftEdgePoint(self, point):
         p = self.getLeftEdgePoint()
@@ -424,12 +424,14 @@ class CanvasWidget(QGraphicsRectItem):
             painter.drawRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10)
 
 
+        if self.widgetInfo.inputs != []:
+            painter.drawPixmap(-self.edgeSize.width()+1, (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
+        if self.widgetInfo.outputs != []:
+            painter.drawPixmap(self.widgetSize.width()-2, (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)
+
 #        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
         #painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
-
-        if self.widgetInfo.inputs != []:    painter.drawPixmap(-self.edgeSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
-        if self.widgetInfo.outputs != []:   painter.drawPixmap(self.widgetSize.width(), (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)
 
         # draw the label
         painter.setPen(QPen(QColor(0,0,0)))
