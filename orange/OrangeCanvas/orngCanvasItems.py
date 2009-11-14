@@ -103,7 +103,7 @@ class TempCanvasLine(QGraphicsPathItem):
 # #######################################
 # # CANVAS LINE
 # #######################################
-class CanvasLine(QGraphicsLineItem):
+class CanvasLine(QGraphicsPathItem):
     def __init__(self, signalManager, canvasDlg, view, outWidget, inWidget, canvas, *args):
         QGraphicsLineItem.__init__(self, None, canvas)
         self.signalManager = signalManager
@@ -138,10 +138,11 @@ class CanvasLine(QGraphicsLineItem):
     def paint(self, painter, option, widget = None):
         p1 = self.outWidget.getRightEdgePoint()
         p2 = self.inWidget.getLeftEdgePoint()
-        self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
+#        self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
         
         path = QPainterPath(p1)
         path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
+        self.setPath(path)
         painter.setPen(QPen(QColor(200, 200, 200), 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
 #        painter.drawLine(p1, p2)
         painter.drawPath(path)
