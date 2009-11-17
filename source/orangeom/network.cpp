@@ -28,7 +28,7 @@ TNetwork::TNetwork(TNetwork *net)
 	optimize.clear();
 	vector<int> vertices;
 	vector<int> neighbours;
-
+	
 	for(int v1 = 0; v1 < net->nVertices; v1++) {
 		net->getNeighboursFrom_Single(v1, neighbours);
 
@@ -40,7 +40,7 @@ TNetwork::TNetwork(TNetwork *net)
 		vertices.push_back(v1);
 		optimize.insert(v1);
 	}
-
+	
 	hierarchy.setTop(vertices);
 
 	int dims[2];
@@ -48,13 +48,20 @@ TNetwork::TNetwork(TNetwork *net)
 	dims[1] = net->nVertices;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
-
-	srand(time(NULL));
+	
 	int i;
-	for (i = 0; i < net->nVertices; i++)
-	{
-		pos[0][i] = net->pos[0][i];
-		pos[1][i] = net->pos[1][i];
+	if (net->pos == NULL) {
+		srand(time(NULL));
+		for (i = 0; i < net->nVertices; i++)
+		{
+			pos[0][i] = rand() % 10000;
+			pos[1][i] = rand() % 10000;
+		}
+	} else {
+		for (i = 0; i < net->nVertices; i++) {
+			pos[0][i] = net->pos[0][i];
+			pos[1][i] = net->pos[1][i];
+		}
 	}
 }
 
@@ -440,18 +447,14 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 	PyTRY
 		int nVertices = 1, directed = 0, nEdgeTypes = 1;
     PyObject *pygraph;
-
     if (PyArg_ParseTuple(args, "O:Network", &pygraph))
     {
     	if (PyOrNetwork_Check(pygraph))
 			{
     		TNetwork *net = PyOrange_AsNetwork(pygraph).getUnwrappedPtr();
-
 				TNetwork *network = mlnew TNetwork(net);
-
 				// set graphs attribut items of type ExampleTable to subgraph
 				PyObject *strItems = PyString_FromString("items");
-
 				if (PyObject_HasAttr(pygraph, strItems) == 1)
 				{
 					PyObject* items = PyObject_GetAttr(pygraph, strItems);
@@ -460,22 +463,20 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 				Py_DECREF(strItems);
 				return WrapNewOrange(network, type);
 			}
-    	else if (PyOrGraphAsList_Check(pygraph))
-      {
+		else if (PyOrGraphAsList_Check(pygraph))
+		{
     		TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
-
-				TNetwork *network = mlnew TNetwork(graph);
-
-				// set graphs attribut items of type ExampleTable to subgraph
-				PyObject *strItems = PyString_FromString("items");
-
-				if (PyObject_HasAttr(pygraph, strItems) == 1)
-				{
-					PyObject* items = PyObject_GetAttr(pygraph, strItems);
-					network->items = &dynamic_cast<TExampleTable &>(PyOrange_AsOrange(items).getReference());
-				}
-				Py_DECREF(strItems);
-				return WrapNewOrange(network, type);
+			TNetwork *network = mlnew TNetwork(graph);
+			
+			// set graphs attribut items of type ExampleTable to subgraph
+			PyObject *strItems = PyString_FromString("items");
+			if (PyObject_HasAttr(pygraph, strItems) == 1)
+			{
+				PyObject* items = PyObject_GetAttr(pygraph, strItems);
+				network->items = &dynamic_cast<TExampleTable &>(PyOrange_AsOrange(items).getReference());
+			}
+			Py_DECREF(strItems);
+			return WrapNewOrange(network, type);
       }
     	else
     	{
