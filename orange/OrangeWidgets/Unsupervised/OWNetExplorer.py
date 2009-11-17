@@ -47,7 +47,8 @@ class OWNetExplorer(OWWidget):
                        ("Items Subset", orange.ExampleTable, self.setExampleSubset), 
                        ("Vertex Distance", orange.SymMatrix, self.setVertexDistance)]
         
-        self.outputs = [("Selected Network", orngNetwork.Network), 
+        self.outputs = [("Selected Network", orngNetwork.Network),
+                        ("Selected Distance Matrix", orange.SymMatrix),
                         ("Selected Examples", ExampleTable), 
                         ("Unselected Examples", ExampleTable), 
                         ("Marked Examples", ExampleTable)]
@@ -1048,7 +1049,8 @@ class OWNetExplorer(OWWidget):
                     
     def sendData(self):
         graph = self.graph.getSelectedGraph()
-        
+        vertices = self.graph.getSelectedVertices()
+            
         if graph != None:
             if graph.items != None:
                 self.send("Selected Examples", graph.items)
@@ -1066,6 +1068,12 @@ class OWNetExplorer(OWWidget):
             items = self.graph.getUnselectedExamples()
             if items != None:
                 self.send("Unselected Examples", items)
+        
+        matrix = None
+        if self.vertexDistance != None:
+            matrix = self.vertexDistance.getitems(vertices)
+
+        self.send("Selected Distance Matrix", matrix)
                 
     def setCombos(self):
         vars = self.visualize.getVars()

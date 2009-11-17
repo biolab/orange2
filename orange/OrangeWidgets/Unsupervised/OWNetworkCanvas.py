@@ -1043,7 +1043,10 @@ class OWNetworkCanvas(OWGraph):
           if visualizer.graph.directed:
               edge.arrowu = 0
               edge.arrowv = 1
-              
+          
+          if not hasattr(visualizer.graph, 'links'):
+            visualizer.graph.links = None
+            
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
               row = visualizer.graph.links.filter(u=(i + 1, i + 1), v=(j + 1, j + 1))
               
