@@ -87,7 +87,7 @@ class Map(object):
         """ Initialize the map nodes vectors randomly, by supplying
         either training data or dimension of the data
         """
-        if data != None:
+        if data is not None:
             min, max = ma.min(data, 0), ma.max(data, 0);
             dimension = data.shape[1]
         else:
