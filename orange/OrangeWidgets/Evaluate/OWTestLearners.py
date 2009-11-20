@@ -253,6 +253,7 @@ class OWTestLearners(OWWidget):
         n = len(self.data.domain.attributes)*2
         new = self.data.selectref([1]*min(n, len(self.data)) +
                                   [0]*(len(self.data) - min(n, len(self.data))))
+        self.warning(0)
         for l in [self.learners[id] for id in ids]:
             try:
                 predictor = l.learner(new)
@@ -260,7 +261,8 @@ class OWTestLearners(OWWidget):
                     learners.append(l.learner)
                 else:
                     l.scores = []
-            except:
+            except Exception, ex:
+                self.warning(0, "Learner %s ends with exception: %s" % (l.name, str(ex)))
                 l.scores = []
 
         if not learners:
