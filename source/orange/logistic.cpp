@@ -33,37 +33,37 @@ TLogRegLearner::TLogRegLearner()
 // compute waldZ statistic from beta and beta_se
 PAttributedFloatList TLogRegLearner::computeWaldZ(PAttributedFloatList &beta, PAttributedFloatList &beta_se) 
 {
-	PAttributedFloatList waldZ=PAttributedFloatList(mlnew TAttributedFloatList(beta->attributes));
-	TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
-	TAttributedFloatList::const_iterator s(beta_se->begin()), se(beta_se->end());
-	for (; (b!=be) && (s!=se); b++, s++) 
-		waldZ->push_back((*b)/(*s));
-	return waldZ;
+  PAttributedFloatList waldZ=PAttributedFloatList(mlnew TAttributedFloatList(beta->attributes));
+  TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
+  TAttributedFloatList::const_iterator s(beta_se->begin()), se(beta_se->end());
+  for (; (b!=be) && (s!=se); b++, s++) 
+    waldZ->push_back((*b)/(*s));
+   return waldZ;
 }
 
 // compute P from waldZ statistic
 PAttributedFloatList TLogRegLearner::computeP(PAttributedFloatList &waldZ) 
 {
-	PAttributedFloatList Pstat=PAttributedFloatList(mlnew TAttributedFloatList(waldZ->attributes));
-	TAttributedFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
-	for (; (z!=ze); z++) {
-		double zt = (*z)*(*z);
-		if(zt>1000) {
-			Pstat->push_back(0.0);
-			continue;
-		}
-		double p = exp(-0.5*zt);
-		// TODO: PI, kje najdes to konstano
-		p *= sqrt(2*zt/3.141592);
+  PAttributedFloatList Pstat=PAttributedFloatList(mlnew TAttributedFloatList(waldZ->attributes));
+  TAttributedFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
+  for (; (z!=ze); z++) {
+    double zt = (*z)*(*z);
+    if(zt>1000) {
+      Pstat->push_back(0.0);
+      continue;
+    }
+    double p = exp(-0.5*zt);
+    // TODO: PI, kje najdes to konstano
+    p *= sqrt(2*zt/3.141592);
 
-		double t=p;
-		int a=3;
-		// TODO: poglej kaj je to 0.0000...1 ?
-		for (; t>0.0000000001*p; a=a+2) {
-			t*=zt/a; 
-			p+=t;
-		}
-		Pstat->push_back(1-p);
+    double t=p;
+    int a=3;
+    // TODO: poglej kaj je to 0.0000...1 ?
+    for (; t>0.0000000001*p; a=a+2) {
+      t*=zt/a; 
+      p+=t;
+    }
+    Pstat->push_back(1-p);
     }
 	return Pstat;
 }
@@ -106,10 +106,10 @@ PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, i
   PClassifier cl = lrc;
   lrc->imputer = imputer;
 
-  if (imputed->domain->hasDiscreteAttributes(false)) {
+  //if (imputed->domain->hasDiscreteAttributes(false)) {
     lrc->continuizedDomain = domainContinuizer ? domainContinuizer->call(imputed, weight) : (*logisticRegressionDomainContinuizer)(imputed, weight);
     imputed = mlnew TExampleTable(lrc->continuizedDomain, imputed);
-  }
+  //}
 
     // copy class value
 
@@ -127,12 +127,12 @@ PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, i
   enum_attributes->push_back(imputed->domain->classVar);
   PITERATE(TVarList, vl, imputed->domain->attributes) 
     enum_attributes->push_back(*vl);
-	// tranfsorm *beta into a PFloatList
-	lrc->beta=mlnew TAttributedFloatList(enum_attributes);
+  // tranfsorm *beta into a PFloatList
+  lrc->beta=mlnew TAttributedFloatList(enum_attributes);
   lrc->beta_se=mlnew TAttributedFloatList(enum_attributes);
 
   PITERATE(TAttributedFloatList, fi, temp_beta)
-		lrc->beta->push_back(*fi);
+    lrc->beta->push_back(*fi);
 
   PITERATE(TAttributedFloatList, fi_se, temp_beta_se)
     lrc->beta_se->push_back(*fi_se);
@@ -179,22 +179,22 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
 
   float prob1;
   try {
-	  // multiply example with beta
-	  TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
+    // multiply example with beta
+    TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
 
-	  // get beta 0
-	  prob1 = *b;
-	  b++;
-	  // multiply beta with example
+    // get beta 0
+    prob1 = *b;
+    b++;
+    // multiply beta with example
     TVarList::const_iterator vi(example->domain->attributes->begin());
     TExample::const_iterator ei(example->begin()), ee(example->end());
-	  for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
+    for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
       if ((*ei).isSpecial())
-		    raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
-		  prob1 += (*ei).floatV * (*b); 
+        raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
+      prob1 += (*ei).floatV * (*b); 
     }
 
-	  prob1 = exp(prob1)/(1+exp(prob1));
+    prob1 = exp(prob1)/(1+exp(prob1));
   }
   catch (...) {
     if (imputer)
@@ -209,9 +209,17 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
   if (continuizedDomain)
     mldelete example;
 
-  TDiscDistribution *dist = mlnew TDiscDistribution(classVar);
-  PDistribution res = dist;
-  dist->addint(0, 1-prob1);
-  dist->addint(1, prob1);
-  return res;
+  if (classVar->varType == TValue::INTVAR) {
+      TDiscDistribution *dist = mlnew TDiscDistribution(classVar);
+      PDistribution res = dist;
+      dist->addint(0, 1-prob1);
+      dist->addint(1, prob1);
+      return res;
+  }
+  else {
+      TContDistribution *dist = mlnew TContDistribution(classVar);
+      PDistribution res = dist;
+      dist->addfloat(prob1, 1.0);
+      return res;
+  }
 }

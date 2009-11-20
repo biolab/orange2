@@ -33,55 +33,56 @@ WRAPPER(LogRegFitter)
 // New fitters should be derived from this one
 class ORANGE_API TLogRegFitter : public TOrange {
 public:
-	__REGISTER_ABSTRACT_CLASS
+  __REGISTER_ABSTRACT_CLASS
 
   // Don't change the order (<= Divergence means that model is fitted, > means error)
-	CLASSCONSTANTS(ErrorCode) enum {OK, Infinity, Divergence, Constant, Singularity};
+  CLASSCONSTANTS(ErrorCode) enum {OK, Infinity, Divergence, Constant, Singularity};
 
-	// main function call, fits LR, returns coefficients and their 
-	// corres. standard errors
-	virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &)=0;
+  // main function call, fits LR, returns coefficients and their 
+  // corres. standard errors
+  virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &)=0;
 
-	// transforms orange PExampleGenerator attributes in a classic C double 2D array
-	// returns number of examples and number of attributes as well
-	virtual double** generateDoubleXMatrix(PExampleGenerator, long &nexamples, long &nattr);
+  // transforms orange PExampleGenerator attributes in a classic C double 2D array
+  // returns number of examples and number of attributes as well
+  virtual double** generateDoubleXMatrix(PExampleGenerator, long &nexamples, long &nattr);
 
-	// transforms orange PExampleGenerator class in a classic C double array 
-	virtual double* generateDoubleYVector(PExampleGenerator, const int &);
-	virtual double* generateDoubleTrialsVector(PExampleGenerator, const int &);
+  // transforms orange PExampleGenerator class in a classic C double array 
+  virtual double* generateDoubleYVector(PExampleGenerator, const int &);
+  virtual double* generateDoubleYVector_cont(PExampleGenerator, const int &);
+  virtual double* generateDoubleTrialsVector(PExampleGenerator, const int &);
 };
 
 
 // output values computed in logistic fitter
 class ORANGE_API LRInfo {
 public:
-	LRInfo();	
-	~LRInfo();
+  LRInfo();
+  ~LRInfo();
 
    int nn, k;
-   double chisq;			// chi-squared
-   double devnce;			// deviance
-   int    ndf;				// degrees of freedom
-   double *beta;			// fitted beta coefficients
-   double *se_beta;			// beta std.devs
-   double *fit;				// fitted probabilities for groups
-   double **cov_beta;		// approx covariance matrix
-   double *stdres;   		// residuals
-   int    *dependent;		// dependent/redundant variables
+   double chisq;      // chi-squared
+   double devnce;     // deviance
+   int    ndf;        // degrees of freedom
+   double *beta;      // fitted beta coefficients
+   double *se_beta;   // beta std.devs
+   double *fit;       // fitted probabilities for groups
+   double **cov_beta; // approx covariance matrix
+   double *stdres;    // residuals
+   int    *dependent; // dependent/redundant variables
    int	  error;
 };
 
 // input values for logistic fitter
 class ORANGE_API LRInput {
 public:
-	LRInput();
-	~LRInput();
+  LRInput();
+  ~LRInput();
 
-	long nn;
-	long k;
-	double **data;    //nn*k
-	double *success;     //nn
-	double *trials;
+  long nn;
+  long k;
+  double **data;    //nn*k
+  double *success;     //nn
+  double *trials;
 };
 
 
@@ -90,25 +91,25 @@ public:
 // based on Alan Miller's(1992) F90 logistic regression code
 class ORANGE_API TLogRegFitter_Cholesky : public TLogRegFitter {
 public:
-	__REGISTER_CLASS
+  __REGISTER_CLASS
 
-/*	int maxit; //maximum no. iterations
-	double offset; //offset on the logit scale
-	double tol; //  tolerance for matrix singularity
-	double eps; //difference in `-2  log' likelihood for declaring convergence.
-	double penalty; //penalty (scalar), substract from ML beta'×penalty×beta. Set if 
-				    //model doesnt converge */
+/*  int maxit; //maximum no. iterations
+  double offset; //offset on the logit scale
+  double tol; //  tolerance for matrix singularity
+  double eps; //difference in `-2  log' likelihood for declaring convergence.
+  double penalty; //penalty (scalar), substract from ML beta'×penalty×beta. Set if 
+     //model doesnt converge */
 
-	// constructor
-	TLogRegFitter_Cholesky();
-	TLogRegFitter_Cholesky(bool showErrors);
+  // constructor
+  TLogRegFitter_Cholesky();
+  TLogRegFitter_Cholesky(bool showErrors);
 
-	// Public main function, use it for fitting LR
-	virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &);
+  // Public main function, use it for fitting LR
+  virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &);
 
 
 private:
-	static const char *errors[];
+  static const char *errors[];
 };
 
 #endif
