@@ -51,6 +51,7 @@ public:
   PClassifier classifier; //P classifies an example
   PLearner learner; //P learns a classifier from data
   PRule parentRule; //P
+  PDistribution baseDist; //P initial distribution
 
   PDistribution classDistribution; //P distribution of classes covered by the rule
 
@@ -60,6 +61,7 @@ public:
   int complexity; //P
   float chi; //P 
   float estRF;
+  float distP;
   int requiredConditions; //P conditions that are mandatory in rule - rule attribute significance avoids these
 
   int *coveredExamples;
@@ -199,7 +201,7 @@ class LRInv: public DiffFunc {
 public:
   float n,P,N,chiCorrected;
 
-  LRInv(PRule, PRule, const int & targetClass, float chiCorrected);
+  LRInv(float &, float &, float &, float chiCorrected);
   double operator()(float p);
 };
 
@@ -243,6 +245,7 @@ public:
   bool ruleAttSignificant(PRule, PExampleTable, const int &, const int &targetClass, PDistribution, float &);
   float chiAsimetryCorrector(const float &);
   float evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
+  float evaluateRuleEVC_Step(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float evaluateRulePessimistic(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float evaluateRuleM(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution );
@@ -503,6 +506,8 @@ public:
   void copyTo(PLogitClassifierState &);
   void newBeta(int, float);
   void newPriorBeta(int, float);
+  float getAUC();
+  float getBrierScore();
 };
 
 class ORANGE_API TRuleClassifier_logit : public TRuleClassifier {
@@ -516,6 +521,7 @@ public:
   float minSignificance; //P minimum requested significance for betas. 
   float minBeta; //P minimum beta by rule to be included in the model. 
   bool setPrefixRules; // P should we order prefix rules ? 
+  bool optimizeBetasFlag; // P should we assign betas to rules ? 
 
   PClassifier priorClassifier; //P prior classifier used if provided
   PLogitClassifierState currentState;
@@ -524,11 +530,12 @@ public:
   PRuleList prefixRules; //P rules that trigger before logit sum.
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, bool setPrefixRules = false);
+  TRuleClassifier_logit(PRuleList rules, const float &minSignificance, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, bool setPrefixRules = false, bool optimizeBetasFlag = true);
 
   void initialize(const PDistributionList &);
-  void updateRuleBetas(float & step);
+  void updateRuleBetas(float step);
   void optimizeBetas();
+  void updateRuleBetas_old(float step_);
   bool setBestPrefixRule();
   void correctPriorBetas(float & step);
   void stabilizeAndEvaluate(float & step, int rule_index);
