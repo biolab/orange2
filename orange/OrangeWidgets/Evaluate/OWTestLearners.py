@@ -251,8 +251,10 @@ class OWTestLearners(OWWidget):
         # e.g., regressions can't deal with classification data
         learners = []
         n = len(self.data.domain.attributes)*2
-        new = self.data.selectref([1]*min(n, len(self.data)) +
-                                  [0]*(len(self.data) - min(n, len(self.data))))
+        indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
+        new = self.data.selectref(indices(self.data))
+#        new = self.data.selectref([1]*min(n, len(self.data)) +
+#                                  [0]*(len(self.data) - min(n, len(self.data))))
         self.warning(0)
         for l in [self.learners[id] for id in ids]:
             try:
