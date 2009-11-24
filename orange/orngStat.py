@@ -1787,7 +1787,7 @@ def compute_CD(avranks, N, alpha="0.05", type="nemenyi"):
     return cd
  
 
-def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, highv=None, width=6, textspace=1, reverse=False):
+def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, highv=None, width=6, textspace=1, reverse=False, **kwargs):
     """
     Draws a CD graph, which is used to display  the differences in methods' 
     performance.
@@ -2030,7 +2030,7 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
         line([(begin, cline + bigtick/2), (begin, cline - bigtick/2)], linewidth=2.5)
         line([(end, cline + bigtick/2), (end, cline - bigtick/2)], linewidth=2.5)
  
-    printFigure(fig, filename)
+    printFigure(fig, filename, **kwargs)
 
 if __name__ == "__main__":
     avranks =  [3.143, 2.000, 2.893, 1.964]
