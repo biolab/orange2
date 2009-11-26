@@ -250,10 +250,11 @@ class OWBaseWidget(QDialog):
     def restoreWidgetPosition(self):
         if self.savePosition:
             if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
-                #print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition
-                self.move(self.widgetXPosition, self.widgetYPosition)
+#                print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition, "to", max(self.widgetXPosition, 0), max(self.widgetYPosition, 0)
+                self.move(max(self.widgetXPosition, 0), max(self.widgetYPosition, 0))
             if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
-                self.resize(self.widgetWidth, self.widgetHeight)
+                screenGeometry = qApp.desktop().screenGeometry(self)
+                self.resize(min(self.widgetWidth, screenGeometry.width()), min(self.widgetHeight, screenGeometry.height()))
 
     # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
     def restoreWidgetStatus(self):
@@ -305,10 +306,11 @@ class OWBaseWidget(QDialog):
 
     # put this widget on top of all windows
     def reshow(self):
-        x,y = getattr(self, "widgetXPosition", None), getattr(self, "widgetYPosition", None)
+#        x,y = getattr(self, "widgetXPosition", None), getattr(self, "widgetYPosition", None)
         self.hide()
-        if x != None and y != None:
-            self.move(x,y)
+#        if x != None and y != None:
+#            self.move(x,y)
+        self.restoreWidgetPosition()
         self.show()
         #self.raise_()
 
