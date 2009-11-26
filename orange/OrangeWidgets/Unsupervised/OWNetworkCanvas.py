@@ -662,13 +662,13 @@ class OWNetworkCanvas(OWGraph):
       self.tips.removeAll()
       self.networkCurve.setData(self.visualizer.network.coors[0], self.visualizer.network.coors[1])
       
-      selection = self.networkCurve.getSelectedVertices()
-      
-      if self.insideview == 1 and len(selection) >= 1:
-          visible = set()
-          visible |= set(selection)
-          visible |= self.getNeighboursUpTo(selection[0], self.insideviewNeighbours)
-          self.networkCurve.setHiddenVertices(set(range(self.nVertices)) - visible)
+      if self.insideview == 1:
+          selection = self.networkCurve.getSelectedVertices()
+          if len(selection) >= 1:
+              visible = set()
+              visible |= set(selection)
+              visible |= self.getNeighboursUpTo(selection[0], self.insideviewNeighbours)
+              self.networkCurve.setHiddenVertices(set(range(self.nVertices)) - visible)
 
       edgesCount = 0
       
@@ -1018,8 +1018,19 @@ class OWNetworkCanvas(OWGraph):
           vertex.index = v
           self.vertices.append(vertex)
       
-      #print "addVisualizer"
-      
+      #build edge index
+      row_ind = {}
+      if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
+        for i, r in enumerate(visualizer.graph.links):
+            u = int(r['u'].value)
+            v = int(r['v'].value)
+            u_dict = row_ind.get(u, {})
+            v_dict = row_ind.get(v, {})
+            u_dict[v] = i
+            v_dict[u] = i
+            row_ind[u] = u_dict
+            row_ind[v] = v_dict
+            
       #add edges
       for (i, j) in visualizer.graph.getEdges():
           self.edges_old[self.nEdges] = (None, i, j)
@@ -1048,23 +1059,18 @@ class OWNetworkCanvas(OWGraph):
             visualizer.graph.links = None
             
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
-              row = visualizer.graph.links.filter(u=(i + 1, i + 1), v=(j + 1, j + 1))
+              ndx = row_ind[i+1][j+1]
+              row = visualizer.graph.links[ndx]
+              edge.label =[str(row[r].value) for r in range(2, len(row))]
               
-              if len(row) == 0:
-                  row = visualizer.graph.links.filter(u=(j + 1, j + 1), v=(i + 1, i + 1))
-                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j + 1) and str(int(x[1])) == str(int(i + 1)))]
-              else:
-                  indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(i + 1) and str(int(x[1])) == str(int(j + 1)))]
-                  
-              if len(row) == 1:
-                  edge.label = []
-                  for k in range(2, len(row[0])):
-                      edge.label.append(str(row[0][k]))
-              else:
-                  print i, j, "not found"
+              #indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j + 1) and str(int(x[1])) == str(int(i + 1)))]
+              #for k in range(2, len(row[0])):
+              #    edge.label.append(str(row[0][k]))
+              #else:
+              #    print i, j, "not found"
               
-              if len(indexes) == 1:
-                  edge.links_index = indexes[0]
+              #if len(indexes) == 1:
+              #    edge.links_index = indexes[0]
                         
       if self.maxEdgeWeight < 10:
           self.maxEdgeSize = self.maxEdgeWeight
