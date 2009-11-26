@@ -1059,10 +1059,10 @@ class OWNetworkCanvas(OWGraph):
             visualizer.graph.links = None
             
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
-              ndx = row_ind[i+1][j+1]
-              row = visualizer.graph.links[ndx]
-              edge.label =[str(row[r].value) for r in range(2, len(row))]
-              
+              edge.links_index = row_ind[i+1][j+1]
+              row = visualizer.graph.links[edge.links_index]
+              edge.label = [str(row[r].value) for r in range(2, len(row))]
+
               #indexes = [k for k, x in enumerate(visualizer.graph.links) if (str(int(x[0])) == str(j + 1) and str(int(x[1])) == str(int(i + 1)))]
               #for k in range(2, len(row[0])):
               #    edge.label.append(str(row[0][k]))
