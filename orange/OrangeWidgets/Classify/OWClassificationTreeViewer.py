@@ -89,6 +89,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.v.setAllColumnsShowFocus(1)
         self.v.setHeaderLabels(['Classification Tree'] + [label[1] for label in self.dataLabels])
         self.v.setColumnWidth(0, 250)
+        self.connect(self.v, SIGNAL("itemSelectionChanged()"), self.viewSelectionChanged)
 
         # rule
         self.rule = QTextEdit(self.splitter)
@@ -261,10 +262,13 @@ class OWClassificationTreeViewer(OWWidget):
 
     # signal processing
     
-    def viewSelectionChanged(self, item):
+    def viewSelectionChanged(self):
         """handles click on the tree"""
+        selected = self.v.selectedItems()
+        item = selected.pop() if selected else None 
+        print selected
         self.handleSelectionChanged(item)
-        if self.tree:
+        if self.tree and item:
             data = self.nodeClassDict[item].examples
             self.send("Examples", data)
 

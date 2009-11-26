@@ -74,6 +74,8 @@ class OWITree(OWClassificationTreeViewer):
     def updateTree(self):
         self.setTreeView()
         self.learner = FixedTreeLearner(self.tree, self.captionTitle)
+        self.infoa.setText("Number of nodes: %i" % orngTree.countNodes(self.tree))
+        self.infob.setText("Number of leaves: %i" % orngTree.countLeaves(self.tree))
 #        self.send("Examples", self.tree)
         self.send("Classifier", self.tree)
         self.send("Tree Learner", self.learner)
@@ -96,7 +98,7 @@ class OWITree(OWClassificationTreeViewer):
         sitems = self.v.selectedItems()
         sitem = sitems != [] and sitems[0] or None
         if not sitem and (1 or exhaustively):
-            sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.invisibleRootItem().child(0))
+            sitem = self.v.currentItem() or (self.v.invisibleRootItem().childCount() == 1 and self.v.invisibleRootItem().child(0))
             if not sitem or sitem.childCount():
                 return
         return sitem and self.nodeClassDict.get(sitem, None)
@@ -180,6 +182,8 @@ class OWITree(OWClassificationTreeViewer):
             self.openContext("", self.tree.domain)
         else:
             self.tree = None
+            self.infoa.setText("No tree.")
+            self.infob.setText("")
             self.send("Classifier", self.tree)
             self.send("Tree Learner", self.learner)
             self.openContext("", None)
