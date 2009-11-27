@@ -518,6 +518,8 @@ class TreeGraphicsScene(QGraphicsScene):
             obj=filter(lambda a:a.zValue()==-20, obj)
             if obj and isinstance(obj[0], QGraphicsRectItem):
                 self.updateSelection(obj[0])
+            else:
+                self.updateSelection(None)
         self.update()
 
     def updateDropplet(self, dropplet=None):
