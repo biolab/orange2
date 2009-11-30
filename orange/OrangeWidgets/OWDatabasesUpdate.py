@@ -1,6 +1,8 @@
+from __future__ import with_statement 
 import sys, os
 import orngServerFiles
 import orngEnviron
+import threading
 from OWWidget import *
 from functools import partial
 from datetime import datetime
@@ -13,29 +15,57 @@ def sizeof_fmt(num):
             return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
         num /= 1024.0
 
+class SemaphoreContext(QSemaphore):
+    def __enter__(self):
+        self.acquire()
+    def __exit__(self, *args):
+        self.release()
+#        print args
+        
+class ItemProgressBar(QProgressBar):
+#    @pyqtSlot()
+    def advance(self):
+#        print self.value()
+        self.setValue(self.value() + 1)
+        
+class ProgressBarRedirect(QObject):
+    def __init__(self, parent, redirect):
+        self.redirect = redirect
+#    @pyqtSlot()
+    def advance(self):
+#        print "advance"
+#        with self.lock:
+        self.redirect.advance()
+        
 class UpdateThread(QThread):
-    semaphore = QSemaphore(3)
+    semaphore = SemaphoreContext(1)
     def __init__(self, item, *args):
         QThread.__init__(self)
         self.item = item
         self.args = args
         
     def run(self):
-        self.semaphore.acquire()
+        import thread, functools        
+#        QTimer.singleShot(100, functools.partial(thread.start_new_thread, self.download, ()))
+        QTimer.singleShot(100, self.download)
+        with self.semaphore:
+            ret = self.exec_()
+#        print "Update thread", self.args[:2], "exited with:", ret
+        
+    def download(self):
+#        print "downloading", self.args
         try:
             orngServerFiles.download(*(self.args + (self.advance,)))
         except Exception, ex:
             self.emit(SIGNAL("finish(QString)"), QString(str(ex)))
-            self.semaphore.release()
-            self.quit()
+            self.exit(1)
             return
         self.emit(SIGNAL("finish(QString)"), QString("Ok"))
-        self.semaphore.release()
         self.quit()
 
     def advance(self):
         self.emit(SIGNAL("advance()"))
-
+        qApp.processEvents()
         
 class UpdateOptionsWidget(QWidget):
     def __init__(self, updateCallback, removeCallback, state, *args):
@@ -133,9 +163,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.removeButton.setEnabled(False)
         self.updateWidget.updateButton.setEnabled(False)
         self.setData(2, Qt.DisplayRole, QVariant(""))
-        self.thread = tt = UpdateThread(self, self.domain, self.filename, self.master.serverFiles)
+        serverFiles = orngServerFiles.ServerFiles(access_code=self.master.accessCode if self.master.accessCode else None) 
+        self.thread = tt = UpdateThread(self, self.domain, self.filename, serverFiles)
         
-        pb = QProgressBar(self.treeWidget())
+        pb = ItemProgressBar(self.treeWidget())
         pb.setRange(0, 100)
         pb.setTextVisible(False)
         if not getattr(self.master, "_sum_progressBar", None):
@@ -144,7 +175,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         master_pb = self.master._sum_progressBar
         master_pb.iter += 100
         master_pb.in_progress += 1
-        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
+        self._progressBarRedirect = ProgressBarRedirect(self.master, master_pb)
+#        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
+        QObject.connect(self.thread, SIGNAL("advance()"), pb.advance)#, Qt.DirectConnection)
+        QObject.connect(self.thread, SIGNAL("advance()"), self._progressBarRedirect.advance) #, Qt.DirectConnection)
         QObject.connect(self.thread, SIGNAL("finish(QString)"), self.EndDownload)
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
@@ -171,13 +205,14 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             master_pb.in_progress -= 1
             
     def Remove(self):
-        name = os.path.join(orngServerFiles.localpath(self.domain), self.filename)
-        if os.path.isdir(name):
-            import shutil
-            shutil.rmtree(name)
-        elif os.path.isfile(name):
-            os.remove(name)
-        os.remove(name + ".info")
+        orngServerFiles.remove(self.domain, self.filename)
+#        name = os.path.join(orngServerFiles.localpath(self.domain), self.filename)
+#        if os.path.isdir(name):
+#            import shutil
+#            shutil.rmtree(name)
+#        elif os.path.isfile(name):
+#            os.remove(name)
+#        os.remove(name + ".info")
         self.state = 2
         self.updateWidget.SetState(self.state)
 #        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
@@ -324,7 +359,7 @@ class OWDatabasesUpdate(OWWidget):
         strings = unicode(self.lineEditFilter.text()).split() #self.searchString.split() if searchString is None else unicode(searchString).split()
         tags = set()
         for item in self.updateItems:
-            hide = not all(str(string) in item for string in strings)   
+            hide = not all(str(string) in item for string in strings)
             item.setHidden(hide)
             if not hide:
                 tags.update(item.tags)
