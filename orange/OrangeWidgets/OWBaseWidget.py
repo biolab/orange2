@@ -696,14 +696,14 @@ class OWBaseWidget(QDialog):
             return
             try:
                 import webbrowser
-                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:]), 0, 1)
+                webbrowser.open("file://%s/doc/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:]), 0, 1)
                 return
             except:
                 pass
 
         try:
             import webbrowser
-            webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog/%s/%s.htm" % (self._category, self.__class__.__name__[2:]))
+            webbrowser.open("http://www.ailab.si/orange/doc/catalog/%s/%s.htm" % (self._category, self.__class__.__name__[2:]))
             return
         except:
             pass

@@ -30,7 +30,7 @@ class HelpWindow(QDialog):
         self.layout().addWidget(self.helpBrowser)
         
     def showHelpFor(self, widget, bringToFront=False):
-        self.helpBrowser.load(QUrl("file:///%s/doc/widgets/catalog/%s/%s.htm" % (widget.orangeDir, widget._category, widget.__class__.__name__[2:])))
+        self.helpBrowser.load(QUrl("file:///%s/doc/catalog/%s/%s.htm" % (widget.orangeDir, widget._category, widget.__class__.__name__[2:])))
         self.show()
         if bringToFront:
             self.raise_()

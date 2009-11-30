@@ -75,6 +75,13 @@ class SchemaView(QGraphicsView):
         if widget.instance.isMinimized():  # if widget is minimized, show its normal size
             widget.instance.showNormal()
 
+    def helpOnActiveWidget(self):
+        #if not self.tempWidget or self.tempWidget.instance == None: return
+        widgets = self.getSelectedWidgets()
+        if len(widgets) != 1: return
+        widget = widgets[0]
+        widget.instance.openWidgetHelp()
+
     # popMenuAction - user selected to rename active widget
     def renameActiveWidget(self):
         widgets = self.getSelectedWidgets()

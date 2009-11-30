@@ -254,11 +254,11 @@ class OrangeCanvasDlg(QMainWindow):
 
         localHelp = 0
         self.menuHelp = QMenu("&Help", self)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
-            if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.addAction("Orange Help", self.menuOpenLocalOrangeHelp)
-            if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
+        if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.addAction("Orange Help", self.menuOpenLocalOrangeHelp)
+        if os.path.exists(os.path.join(self.orangeDir, r"doc/catalog/index.html")): self.menuHelp.addAction("Orange Widget Catalog", self.menuOpenLocalWidgetCatalog)
+        if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
 
-        self.menuHelp.addAction("Orange Online Help", self.menuOpenOnlineOrangeHelp)
+        self.menuHelp.addAction("Orange Online Widget Catalog", self.menuOpenOnlineOrangeHelp)
         #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
 
         if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
@@ -274,6 +274,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetPopup.addSeparator()
         rename = self.widgetPopup.addAction("&Rename", self.schema.canvasView.renameActiveWidget, Qt.Key_F2)
         delete = self.widgetPopup.addAction("Remove", self.schema.canvasView.removeActiveWidget, Qt.Key_Delete)
+        self.widgetPopup.addSeparator()
+        self.widgetPopup.addAction("Help", self.schema.canvasView.helpOnActiveWidget, Qt.Key_F1)
         self.widgetPopup.setEnabled(0)
 
         self.menuBar = QMenuBar(self)
@@ -440,6 +442,10 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenLocalOrangeHelp(self):
         import webbrowser
+        webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/reference/default.htm"))
+
+    def menuOpenLocalWidgetCatalog(self):
+        import webbrowser
         webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/catalog/index.html"))
 
     def menuOpenLocalCanvasHelp(self):
@@ -448,7 +454,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog")
+        webbrowser.open("http://www.ailab.si/orange/doc/catalog")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser
