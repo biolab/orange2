@@ -301,6 +301,15 @@ class SOMLearner(orange.Learner):
         >>> som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
         >>> map = som(orange.ExampleTable("iris.tab"))
     """
+    
+    def __new__(cls, examples=None, weightId=0, **kwargs):
+        self = orange.Learner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightId)
+        else:
+            return self
+        
     def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, topology=HexagonalTopology, neighbourhood=NeighbourhoodGaussian,
                  batch_train=True, learning_rate=0.05, radius_ini=3.0, radius_fin=1.0, epochs=1000, **kwargs):
         self.map_shape = map_shape
