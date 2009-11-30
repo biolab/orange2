@@ -353,7 +353,7 @@ class SOMSupervisedLearner(SOMLearner):
         return SOMMap(map, examples)
 
 class SOMMap(orange.Classifier):
-    def __init__(self, map, examples):
+    def __init__(self, map=[], examples=[]):
         self.map = map
         self.examples = examples
         for node in map:
@@ -366,7 +366,7 @@ class SOMMap(orange.Classifier):
             node = self.getBestMatchingNode(ex)
             node.examples.append(ex)
 
-        if examples.domain.classVar:
+        if examples and examples.domain.classVar:
             for node in self.map:
                 node.classifier = orange.MajorityLearner(node.examples)
 
@@ -385,8 +385,8 @@ class SOMMap(orange.Classifier):
 
     def __getattr__(self, name):
         try:
-            return getattr(self.map, name)
-        except AttributeError:
+            return getattr(self.__dict__["map"], name)
+        except (KeyError, AttributeError):
             raise AttributeError(name)
 
     def __iter__(self):
