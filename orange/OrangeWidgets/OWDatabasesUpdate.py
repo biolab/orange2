@@ -20,45 +20,50 @@ class SemaphoreContext(QSemaphore):
         self.acquire()
     def __exit__(self, *args):
         self.release()
-#        print args
         
 class ItemProgressBar(QProgressBar):
-#    @pyqtSlot()
+    @pyqtSignature("advance()")
     def advance(self):
-#        print self.value()
         self.setValue(self.value() + 1)
         
 class ProgressBarRedirect(QObject):
     def __init__(self, parent, redirect):
+        QObject.__init__(self, parent)
         self.redirect = redirect
-#    @pyqtSlot()
+        
+    @pyqtSignature("advance()")
     def advance(self):
-#        print "advance"
-#        with self.lock:
         self.redirect.advance()
         
+class CallWrapper(QObject):
+    def __init__(self, call):
+        QObject.__init__(self)
+        self.call = call
+    def __call__(self, *args, **kwargs):
+        return self.call(*args, **kwargs)
+    
 class UpdateThread(QThread):
-    semaphore = SemaphoreContext(1)
+    semaphore = SemaphoreContext(3)
     def __init__(self, item, *args):
         QThread.__init__(self)
         self.item = item
         self.args = args
         
     def run(self):
-        import thread, functools        
-#        QTimer.singleShot(100, functools.partial(thread.start_new_thread, self.download, ()))
-        QTimer.singleShot(100, self.download)
+        call = CallWrapper(self.download)
+
+        QTimer.singleShot(100, call.__call__)
         with self.semaphore:
             ret = self.exec_()
-#        print "Update thread", self.args[:2], "exited with:", ret
         
+    @pyqtSignature("download()")
     def download(self):
-#        print "downloading", self.args
         try:
             orngServerFiles.download(*(self.args + (self.advance,)))
         except Exception, ex:
             self.emit(SIGNAL("finish(QString)"), QString(str(ex)))
             self.exit(1)
+            print >> sys.stderr, "error: ", ex
             return
         self.emit(SIGNAL("finish(QString)"), QString("Ok"))
         self.quit()
@@ -164,7 +169,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.updateButton.setEnabled(False)
         self.setData(2, Qt.DisplayRole, QVariant(""))
         serverFiles = orngServerFiles.ServerFiles(access_code=self.master.accessCode if self.master.accessCode else None) 
-        self.thread = tt = UpdateThread(self, self.domain, self.filename, serverFiles)
+        self.thread = tt = UpdateThread(None, self.domain, self.filename, serverFiles)
         
         pb = ItemProgressBar(self.treeWidget())
         pb.setRange(0, 100)
@@ -175,11 +180,11 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         master_pb = self.master._sum_progressBar
         master_pb.iter += 100
         master_pb.in_progress += 1
-        self._progressBarRedirect = ProgressBarRedirect(self.master, master_pb)
+        self._progressBarRedirect = ProgressBarRedirect(QThread.currentThread(), master_pb)
 #        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
-        QObject.connect(self.thread, SIGNAL("advance()"), pb.advance)#, Qt.DirectConnection)
-        QObject.connect(self.thread, SIGNAL("advance()"), self._progressBarRedirect.advance) #, Qt.DirectConnection)
-        QObject.connect(self.thread, SIGNAL("finish(QString)"), self.EndDownload)
+        QObject.connect(self.thread, SIGNAL("advance()"), pb.advance, Qt.QueuedConnection)
+        QObject.connect(self.thread, SIGNAL("advance()"), self._progressBarRedirect.advance, Qt.QueuedConnection)
+        QObject.connect(self.thread, SIGNAL("finish(QString)"), self.EndDownload, Qt.QueuedConnection)
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
         self.thread.start()
