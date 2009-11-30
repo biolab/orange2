@@ -8,10 +8,12 @@
 
 from OWWidget import *
 import OWGUI, orange
+from orngWrap import Preprocessor
 from exceptions import Exception
 
 import warnings
 warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
+
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
@@ -19,7 +21,7 @@ class OWNaiveBayes(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", Preprocessor, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
 
         self.m_estimator = orange.ProbabilityEstimatorConstructor_m()
@@ -40,6 +42,7 @@ class OWNaiveBayes(OWWidget):
         self.windowProportion = 0.5
         self.loessPoints = 100
 
+        self.preprocessor = None
         self.data = None
         self.loadSettings()
 
@@ -118,9 +121,13 @@ class OWNaiveBayes(OWWidget):
                 self.learner.conditionalEstimatorConstructorContinuous = orange.ConditionalProbabilityEstimatorConstructor_loess(
                    windowProportion = self.windowProportion, nPoints = self.loessPoints)
 
-            self.send("Learner", self.learner)
-            self.applyData()
-            self.changed = False
+            if self.preprocessor:
+                self.learner = self.preprocessor.wrapLearner(self.learner)
+            print self.learner
+
+        self.send("Learner", self.learner)
+        self.applyData()
+        self.changed = False
 
 
     def applyData(self):
@@ -135,10 +142,14 @@ class OWNaiveBayes(OWWidget):
                 self.error(1, "Naive Bayes error: " + str(errValue))
         else:
             classifier = None
-
+            
         self.send("Naive Bayesian Classifier", classifier)
 
 
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.applyLearner()
+        
     def setData(self,data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.applyData()

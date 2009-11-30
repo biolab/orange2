@@ -212,3 +212,23 @@ class ThresholdLearner_fixed(orange.Learner):
             raise "ThresholdLearner handles binary classes only"
         
         return ThresholdClassifier(self.learner(examples, weightID), self.threshold)
+
+
+class Preprocessor(object):
+    def processData(self, data, weightId = None):
+        import orange
+        if weightId is not None:
+            data = orange.Preprocessor_addClassNoise(data, weightId, proportion=0.8)
+            return data, weightId
+        else:
+            data = orange.Preprocessor_addClassNoise(data, proportion=0.8)
+            return data
+
+    def wrapLearner(self, learner):
+        class WrappedLearner(learner.__class__):
+            preprocessor = self
+            name = getattr(learner, "name", "")
+            def __call__(self, data, weightId=0):
+                processed, procW = self.preprocessor.processData(data, weightId)
+                return super(learner.__class__, self).__call__(processed, procW)
+        return WrappedLearner()
