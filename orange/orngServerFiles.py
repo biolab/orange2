@@ -336,7 +336,7 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
     extract = extract and ("#uncompressed" in specialtags or "#compression" in specialtags)
     target = localpath(domain, filename)
     callback = DownloadProgress(filename, int(info["size"])) if verbose and not callback else callback    
-    serverfiles.download(domain, filename, target + "tmp" if extract else target, callback=callback)
+    serverfiles.download(domain, filename, target + ".tmp" if extract else target, callback=callback)
     
     #file saved, now save info file
 
@@ -344,18 +344,22 @@ def download(domain, filename, serverfiles=None, callback=None, extract=True, ve
     
     if extract:
         import tarfile, gzip, shutil
+        if specialtags.get("#compression") == "tar.gz" and specialtags.get("#files"):
+            f = tarfile.open(target + ".tmp")
+            f.extractall(localpath(domain))
+            shutil.copyfile(target + ".tmp", target)
         if filename.endswith(".tar.gz"):
-            f = tarfile.open(target + "tmp")
+            f = tarfile.open(target + ".tmp")
             try:
                 os.mkdir(target)
             except Exception:
                 pass
             f.extractall(target)
         elif specialtags.get("#compression") == "gz":
-            f = gzip.open(target + "tmp")
+            f = gzip.open(target + ".tmp")
             shutil.copyfileobj(f, open(target, "wb"))
         f.close()
-        os.remove(target + "tmp")
+        os.remove(target + ".tmp")
 
     if type(callback) == DownloadProgress:
         callback.finish()        
@@ -393,8 +397,21 @@ def listfiles(domain):
 def remove(domain, filename):
     """Remove a file from a local repository."""
     filename = localpath(domain, filename)
-    os.remove(filename)
-    os.remove(filename + ".info")
+    import shutil
+    
+    specialtags = dict([tag.split(":") for tag in info(domain, filename)["tags"] if tag.startswith("#") and ":" in tag])
+    todelete = [filename, filename + ".info"] 
+    if "#files" in specialtags:
+        todelete.extend([os.path.join(localpath(domain), path) for path in specialtags.get("#files").split("!@")])
+#    print todelete
+    for path in todelete:
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            elif os.path.isfile(path):
+                os.remove(path)
+        except OSError, ex:
+            print "Failed to delete", path, "due to:", ex
     
 def remove_domain(domain, force=False):
     """Remove a domain (directory) from the local repository."""
