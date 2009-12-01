@@ -171,7 +171,7 @@ def spin(widget, master, value, min, max, step=1,
     if checked:
         wb = checkBox(bi, master, checked, label, labelWidth = labelWidth, callback=checkCallback, debuggingEnabled = debuggingEnabled)
     elif label:
-        widgetLabel(b, label, labelWidth)
+        b.label = widgetLabel(b, label, labelWidth)
 
 
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
