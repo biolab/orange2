@@ -147,8 +147,10 @@ km = orngClustering.KMeans(data, 3, maxiters=10, inner_callback=in_callback)</xm
 <dd class="ddfun">Returns an average distance of data instances to their associated centroids. <code>kmeans</code> is a k-means clustering object.</dd>
 <dt>score_silhouette(kmeans, index=None)</dt>
 <dd class="ddfun">Returns an average silhouette score of data instances. If <code>index</code> is specified it instead returns just the silhouette score of that particular data instance. <code>kmeans</code> is a k-means clustering object.</dd>
-<dt>plot_silhouette(kmeans, filename='tmp.png')</dt>
-<dd class="ddfun">Saves a silhuette plot to <code>filename</code>, showing the distributions of silhouette scores in clusters. <code>kmeans</code> is a k-means clustering object.</dd>
+<dt>score_fastsilhouette(kmeans, index=None)</dt>
+<dd class="ddfun">Same as score_silhouette, but computes an approximation and is faster.</dd>
+<dt>plot_silhouette(kmeans, filename='tmp.png', fast=False)</dt>
+<dd class="ddfun">Saves a silhuette plot to <code>filename</code>, showing the distributions of silhouette scores in clusters. <code>kmeans</code> is a k-means clustering object. If <code>fast</code> is True use <code>score_fastsilhouette</code> to compute scores instead of <code>score_silhouette</code>.</dd>
 </dl>
 
 <p>Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge:</p>
