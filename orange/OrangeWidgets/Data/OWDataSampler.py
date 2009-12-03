@@ -213,7 +213,7 @@ class OWDataSampler(OWWidget):
             remainder.name = self.data.name
         # send data
         self.nSample = len(sample)
-        self.nRemainder = len(remainder)
+        self.nRemainder = len(remainder) if remainder is not None else 0
         self.send("Sample", sample)
         self.send("Remaining Examples", remainder)
         
