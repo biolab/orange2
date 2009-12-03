@@ -103,16 +103,18 @@ class OWDataTable(OWWidget):
 
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
-        for col in range(table.columnCount()):
-            w = table.columnWidth(col)
-            table.setColumnWidth(col, w + 10)
+        if table:
+            for col in range(table.columnCount()):
+                w = table.columnWidth(col)
+                table.setColumnWidth(col, w + 10)
 
     def decreaseColWidth(self):
         table = self.tabs.currentWidget()
-        for col in range(table.columnCount()):
-            w = table.columnWidth(col)
-            minW = table.sizeHintForColumn(col)
-            table.setColumnWidth(col, max(w - 10, minW))
+        if table:
+            for col in range(table.columnCount()):
+                w = table.columnWidth(col)
+                minW = table.sizeHintForColumn(col)
+                table.setColumnWidth(col, max(w - 10, minW))
 
 
     def dataset(self, data, id=None):
@@ -304,16 +306,18 @@ class OWDataTable(OWWidget):
 
     def cbShowDistributions(self):
         table = self.tabs.currentWidget()
-        table.reset()
+        if table:
+            table.reset()
 
     # show data in the default order
     def btnResetSortClicked(self):
         table = self.tabs.currentWidget()
-        id = self.table2id[table]
-        data = self.data[id]
-        self.progressBarInit()
-        self.setTable(table, data)
-        self.progressBarFinished()
+        if table:
+            id = self.table2id[table]
+            data = self.data[id]
+            self.progressBarInit()
+            self.setTable(table, data)
+            self.progressBarFinished()
 
     def setInfo(self, data):
         """Updates data info.
