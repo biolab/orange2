@@ -71,7 +71,7 @@ class OWSVM(OWWidget):
         OWGUI.separator(self.controlArea)
 
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
-                                      tooltip="Automaticaly searches for parameters that optimize classifier acuracy")
+                                      tooltip="Automaticaly searches for parameters that optimize classifier acuracy", debuggingEnabled=0)
         self.paramButton.setDisabled(True)
 
         OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
