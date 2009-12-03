@@ -136,47 +136,48 @@ def score_fastsilhouette(km, index=None):
     b = min(km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind)
     return float(b - a) / max(a, b)
 
-    def compute_bic(km):
-        """Compute bayesian information criteria score for given clustering"""
-        """NEEDS REWRITING!!!"""
-        data = km.data
-        medoids = km.centroids
+def compute_bic(km):
+	"""Compute bayesian information criteria score for given clustering"""
+	"""NEEDS REWRITING!!!"""
+	data = km.data
+	medoids = km.centroids
 
-        M = len(data.domain.attributes)
-        R = float(len(data))
-        Ri = [km.clusters.count(i) for i in range(km.k)]
-        numFreePar = (len(km.data.domain.attributes) + 1.) * km.k * math.log(R, 2.) / 2.
-        # sigma**2
-        s2 = 0.
-        cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
-        for x, midx in izip(data, mapping):
-            medoid = medoids[midx] # medoids has a dummy element at the beginning, so we don't need -1 
-            s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
-        s2 /= (R - K)
-        if s2 < 1e-20:
-            return None, [None]*K
-        # log-lokehood of clusters: l(Dn)
-        # log-likehood of clustering: l(D)
-        ld = 0
-        bicc = []
-        for k in range(1, 1+K):
-            ldn = -1. * Ri[k] * ((math.log(2. * math.pi, 2) / -2.) - (M * math.log(s2, 2) / 2.) + (K / 2.) + math.log(Ri[k], 2) - math.log(R, 2))
-            ld += ldn
-            bicc.append(ldn - numFreePar)
-        return ld - numFreePar, bicc
+	M = len(data.domain.attributes)
+	R = float(len(data))
+	Ri = [km.clusters.count(i) for i in range(km.k)]
+	numFreePar = (len(km.data.domain.attributes) + 1.) * km.k * math.log(R, 2.) / 2.
+	# sigma**2
+	s2 = 0.
+	cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+	for x, midx in izip(data, mapping):
+		medoid = medoids[midx] # medoids has a dummy element at the beginning, so we don't need -1 
+		s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
+	s2 /= (R - K)
+	if s2 < 1e-20:
+		return None, [None]*K
+	# log-lokehood of clusters: l(Dn)
+	# log-likehood of clustering: l(D)
+	ld = 0
+	bicc = []
+	for k in range(1, 1+K):
+		ldn = -1. * Ri[k] * ((math.log(2. * math.pi, 2) / -2.) - (M * math.log(s2, 2) / 2.) + (K / 2.) + math.log(Ri[k], 2) - math.log(R, 2))
+		ld += ldn
+		bicc.append(ldn - numFreePar)
+	return ld - numFreePar, bicc
 
 
 #
 # silhouette plot
 #
 
-def plot_silhouette(km, filename='tmp.png'):
+def plot_silhouette(km, filename='tmp.png', fast=False):
     """According to clustering results, plots silhouette score for each instance in data set."""
     import matplotlib.pyplot as plt
     plt.figure()
+    scoring = score_fastsilhouette if fast else score_silhouette
     scores = [[] for i in range(km.k)]
     for i, c in enumerate(km.clusters):
-        scores[c].append(score_silhouette(km, i))
+        scores[c].append(scoring(km, i))
     csizes = map(len, scores)
     cpositions = [sum(csizes[:i]) + (i+1)*3 + csizes[i]/2 for i in range(km.k)]
     scores = reduce(lambda x,y: x + [0]*3 + sorted(y), scores, [])
