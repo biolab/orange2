@@ -29,4 +29,4 @@ def in_callback(km):
     
 data = orange.ExampleTable("iris")
 random.seed(42)
-km = orngClustering.KMeans(data, 3, maxiters=10, inner_callback=in_callback)
+km = orngClustering.KMeans(data, 3, minscorechange=0, maxiters=10, inner_callback=in_callback)
