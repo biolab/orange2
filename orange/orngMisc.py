@@ -326,8 +326,6 @@ class ConsoleProgressBar(object):
         self.__call__(100)
         self.output.write("\n")
         
-import math
-
 class ColorPalette(object):
     def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
         self.colors = colors
@@ -359,6 +357,9 @@ class ColorPalette(object):
     def __call__(self, val, gamma=None):
         return self.get_rgb(val, gamma)
     
+import math
+
+#from ColorPalette import ColorPalette
     
 class GeneratorContextManager(object):
    def __init__(self, gen):
@@ -399,14 +400,28 @@ def contextmanager(func):
         return GeneratorContextManager(func(*args, **kwds))
     return helper
 
+from functools import wraps
 def with_state(func):
-    from functools import wraps
     @wraps(func)
     def wrap(self, *args, **kwargs):
         with self.state(**kwargs):
             r = func(self, *args)
         return r
     return wrap
+
+def with_gc_disabled(func):
+    import gc
+    def disabler():
+        gc.disable()
+        try:
+            yield
+        finally:
+            gc.enable()
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with contextmanager(disabler)():
+            return func(*args, **kwargs)
+    return wrapper  
 
 import numpy
 
