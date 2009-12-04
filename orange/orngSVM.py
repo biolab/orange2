@@ -16,6 +16,8 @@ except:
     pass
 
 def maxNu(examples):
+    """ Given example table compute the maximum nu parameter for Nu_SVC
+    """
     nu = 1.0
     dist = list(orange.Distribution(examples.domain.classVar, examples))
     def pairs(seq):
@@ -53,11 +55,9 @@ class SVMLearner(orange.SVMLearner):
         self.learner=orange.SVMLearner(**kwargs)
         self.weight = []
 
-    @staticmethod
-    def maxNu(examples):
-        return maxNu(examples)
+    maxNu = staticmethod(maxNu)
 
-    def __call__(self, examples, weight=0):            
+    def __call__(self, examples, weight=0):
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
             self.svm_type+=3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
@@ -93,6 +93,20 @@ class SVMLearner(orange.SVMLearner):
         return self.learner(examples)
 
     def tuneParameters(self, examples, parameters=None, folds=5, verbose=0, progressCallback=None):
+        """ Tune the parameters of the SVMLearner on given examples using cross validation.
+        Parameters:
+            * *examples* ExampleTable on which to tune the parameters 
+            * *parameters* if not set defaults to ["nu", "C", "gamma"]
+            * *folds* number of folds used for cross validation
+            * *verbose* 
+            * *progressCallback* a callback function to report progress
+            
+        Example::
+            >>> svm = orngSVM.SVMLearner()
+            >>> svm.tuneParameters(examples, parameters=["gamma"], folds=3)
+        This code tunes the *gamma* parameter on *examples* using 3-fold cross validation  
+        
+        """
         parameters = ["nu", "C", "gamma"] if parameters == None else parameters
         searchParams = []
         normalization = self.normalization
@@ -202,7 +216,10 @@ class SVMClassifierClassEasyWrapper:
         self.domain=transformer(self.oldexamples)
 
 def getLinearSVMWeights(classifier):
-    """returns list of weights for linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ..."""
+    """ Returns a list of weights for linear class vs. class classifiers for the linear svm classifier.
+    The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ... e.g. a return value for a classifier trained
+    on the iris dataset would contain three weights lists [Iris-setosa vs Iris-versicolor, Iris-setosa vs Iris-virginica, 
+    Iris-versicolor vs Iris-virginica]"""
     def updateWeights(w, key, val, mul):
         if key in w:
             w[key]+=mul*val
@@ -299,10 +316,21 @@ class BagOfWords(object):
         return sum
 
 class RFE(object):
+    """ Recursive feature elimination using linear svm derived attribute weights.
+    Example::
+        >>> rfe = RFE(SVMLearner(kernel_type=SVMLearner.Linear))
+        >>> rfe.getAttrScores(data) #returns a dictionary of attribute scores
+        {...}
+        >>> data_with_removed_features = rfe(data, 5) # retruns an example table with only 5 best attributes
+    """
     def __init__(self, learner=None):
         self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.Linear)
 
     def getAttrScores(self, data, stopAt=0):
+        """ Return a dict mapping attributes to scores (scores are not scores in a general
+        meaning they represent the step number at which they were removed from the recursive
+        evaluation).  
+        """
         iter = 1
         attrs = data.domain.attributese
         attrScores = {}
@@ -325,6 +353,8 @@ class RFE(object):
         return attrScores
         
     def __call__(self, data, numSelected=20):
+        """ Return a new dataset with only *numSelected* best scoring attributes. 
+        """
         scores = self.getAttrScores(data)
         scores = scores.items()
         scores.sort(lambda a,b:cmp(a[1],b[1]))
@@ -334,6 +364,8 @@ class RFE(object):
         return data
 
 def exampleTableToSVMFormat(examples, file):
+    """ Save an example table in .svm format used by libSVM
+    """
     attrs = examples.domain.attributes + examples.domain.getmetas().values()
     attrs = [attr for attr in attrs if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
     cv = examples.domain.classVar
