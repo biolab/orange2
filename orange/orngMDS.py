@@ -37,6 +37,56 @@ def _mycompare((a,aa),(b,bb)):
     else:
         return 1
             
+class PivotMDS(object):
+    def __init__(self, distances=None, pivots=50, dim=2, **kwargs):
+        self.dst = array([m for m in distances])
+        self.n = len(self.dst)
+
+        if type(pivots) == type(1):
+            self.k = pivots
+            self.pivots = random.permutation(len(self.dst))[:pivots]
+            #self.pivots.sort()
+        elif type(pivots) == type([]):
+            self.pivots = pivots
+            #self.pivots.sort()
+            self.k = len(self.pivots)
+        else:
+            raise AttributeError('pivots')
+        
+    def optimize(self):
+#        # Classical MDS (Torgerson)
+#        J = identity(self.n) - (1/float(self.n))
+#        B = -1/2. * dot(dot(J, self.dst**2), J)
+#        w,v = linalg.eig(B)
+#        tmp = zip([float(val) for val in w], range(self.n))
+#        tmp.sort()
+#        w1, w2 = tmp[-1][0], tmp[-2][0]
+#        v1, v2 = v[:, tmp[-1][1]], v[:, tmp[-2][1]]
+#        return v1 * sqrt(w1), v2 * sqrt(w2) 
+        
+        # Pivot MDS
+        d = self.dst[[self.pivots]].T
+        C = d**2
+        # double-center d
+        cavg = sum(d, axis=0)/(self.k+0.0)      # column sum
+        ravg = sum(d, axis=1)/(self.n+0.0)    # row sum
+        tavg = sum(cavg)/(self.n+0.0)   # total sum
+        # TODO: optimize
+        for i in xrange(self.n):
+            for j in xrange(self.k):
+                C[i,j] += -ravg[i] - cavg[j]
+        
+        C = -0.5 * (C + tavg)
+        w,v = linalg.eig(dot(C.T, C))
+        tmp = zip([float(val) for val in w], range(self.n))
+        tmp.sort()
+        w1, w2 = tmp[-1][0], tmp[-2][0]
+        v1, v2 = v[:, tmp[-1][1]], v[:, tmp[-2][1]]
+        x = dot(C, v1)
+        y = dot(C, v2)
+        return x, y
+        
+        
 class MDS(object):
     def __init__(self, distances=None, dim=2, **kwargs):
         self.mds=orangemds.MDS(distances, dim, **kwargs)
@@ -83,20 +133,25 @@ class MDS(object):
 
     def Torgerson(self):
         # Torgerson's initial approximation
-        O=array([m for m in self.distances])
-        #B = matrixmultiply(O,O)
-        B = dot(O,O)
+        O = array([m for m in self.distances])
         
-        # double-center B
-        cavg = sum(B, axis=0)/(self.n+0.0)      # column sum
-        ravg = sum(B, axis=1)/(self.n+0.0)    # row sum
-        tavg = sum(cavg)/(self.n+0.0)   # total sum
-        # B[row][column]
-        for i in xrange(self.n):
-            for j in xrange(self.n):
-                B[i,j] += -cavg[j]-ravg[i]
-        B = -0.5*(B+tavg)
+##        #B = matrixmultiply(O,O)
+##        # bug!? B = O**2
+##        B = dot(O,O)
+##        # double-center B
+##        cavg = sum(B, axis=0)/(self.n+0.0)      # column sum
+##        ravg = sum(B, axis=1)/(self.n+0.0)    # row sum
+##        tavg = sum(cavg)/(self.n+0.0)   # total sum
+##        # B[row][column]
+##        for i in xrange(self.n):
+##            for j in xrange(self.n):
+##                B[i,j] += -cavg[j]-ravg[i]
+##        B = -0.5*(B+tavg)
 
+        # B = double-center O**2 !!!
+        J = identity(self.n) - (1/float(self.n))
+        B = -0.5 * dot(dot(J, O**2), J)
+        
         # SVD-solve B = ULU'
         #(U,L,V) = singular_value_decomposition(B)
         (U,L,V)=svd(B)
