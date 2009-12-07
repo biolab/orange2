@@ -1,106 +1,175 @@
 ##!interval=7
 ##!contact=ales.erjavec@fri.uni-lj.si
 
-import obiKEGG, obiGenomicsUpdate, obiGene, obiTaxonomy
+import obiKEGG, obiGene, obiTaxonomy
 import orngServerFiles, orngEnviron
-import os, sys, tarfile, urllib2
+import os, sys, tarfile, urllib2, shutil
 from getopt import getopt
+
+import obiData
+obiKEGG.borg_class(obiData.FtpDownloader) #To limit the number of connections
+
 
 opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
 
 username = opt.get("-u", opt.get("--user", "username"))
 password = opt.get("-p", opt.get("--password", "password"))
 
-path = os.path.join(orngEnviron.bufferDir, "tmp_kegg/")
+tmp_path = os.path.join(orngEnviron.bufferDir, "tmp_KEGG/")
 
-u = obiKEGG.Update(local_database_path=path)
+#u = obiKEGG.Update(local_database_path=path)
 serverFiles=orngServerFiles.ServerFiles(username, password)
 
-for i in range(3):
-    try:
-        lines = [line.split("\t") for line in urllib2.urlopen("ftp://ftp.genome.jp/pub/kegg/genes/taxonomy").readlines() if not line.startswith("#")]
-        break
-    except Exception, ex:
-        print ex
+#def output(self, *args, **kwargs):
+#    print args, kwargs
+    
+#serverFiles = type("bla", (object,), dict(upload=output, unprotect=output))()
+
+
+try:
+    shutil.rmtree(tmp_path)
+except Exception, ex:
+    pass
+
+try:
+    os.mkdir("tmpKEGG")
+except Exception, ex:
+    pass
+
+realPath = os.path.realpath(os.curdir)
+os.chdir(tmp_path)
+
+obiKEGG.DEFAULT_DATABASE_PATH = tmp_path
+
+obiKEGG.KEGGGenome.download()
+
+genome = obiKEGG.KEGGGenome()
         
-keggOrgNames = dict([(line[1].strip(), line[-1][:-5].strip().replace("(", "").replace(")", "") if line[-1].endswith("(EST)\n") else line[-1].strip()) for line in lines if len(line)>1])
-
-essentialOrgs = [obiKEGG.from_taxid(id) for id in obiTaxonomy.essential_taxids()] #["hsa", "ddi", "sce", "mmu"]
-
-orgMap = {"562":"511145", "2104":"272634", "5833":"36329", "4896":"284812", "11103":None, "4754":None, "4577":None}
-
-commonOrgs = [obiKEGG.from_taxid(orgMap.get(id, id)) for id in obiTaxonomy.common_taxids() if orgMap.get(id, id) != None]
-
-fix = {"eath":"ath", "ecre":"cre", "eosa":"osa"}
-
-commonOrgs = [fix.get(code, code) for code in commonOrgs]
+essential_organisms = genome.essential_organisms()
+common_organisms = genome.common_organisms()
 
 uncompressedSize = lambda filename: sum(info.size for info in tarfile.open(filename).getmembers())
 
-realPath = os.path.realpath(os.curdir)
-os.chdir(path)
+def tar(filename, mode="w:gz", add=[]):
+    f = tarfile.open(filename, mode)
+    for path in add:
+        f.add(path)
+    f.close()
+    return uncompressedSize(filename)
 
-for func, args in u.GetDownloadable() + u.GetUpdatable():
-#for func, args in [(obiKEGG.Update.UpdateOrganism, (org,)) for org in commonOrgs[5:9]]:
-    if func == obiKEGG.Update.UpdateOrganism and args[0] in commonOrgs:
-        org = args[0]
-        
-        orgName = keggOrgNames.get(org, org)
-        try:
-            print func, org
-            func(u, org)
-            organism = obiKEGG.KEGGOrganism(org, genematcher=obiGene.GMDirect(), local_database_path=path)
-            genes = list(organism.genes) ## test to see if the _genes.pickle was created
-            
-            print os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"), "exists:", os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle"))
-#            assert(os.path.exists(os.path.join(path, "genes", u.api._rel_org_dir(org), "_genes.pickle")))
-            print genes[:5]
-            print path
-        except Exception, ex:
-            print "Error:", ex
-            continue
-        filename = "kegg_organism_" + org + ".tar.gz"
-        rel_path = u.api._rel_org_dir(org)
-        files = [os.path.normpath("pathway//"+rel_path),
-                 os.path.normpath("genes//"+rel_path+"//"+"_genes.pickle"),
-                 os.path.normpath(org+"_genenames.pickle")]
-        title = "KEGG Pathways and Genes for " + orgName
-        tags = ["KEGG", "gene", "pathway", orgName, "#organism:"+orgName, "#version:%i" % obiKEGG.KEGGOrganism.version] +(["essential"] if org in essentialOrgs else [])
-    elif func == obiKEGG.Update.UpdateReference:
-        func(u)
-        filename = "kegg_reference.tar.gz"
-        files = [os.path.normpath("pathway//map"),
-                 os.path.normpath("pathway//map_title.tab")]
-        title = "KEGG Reference Pathways"
-        tags = ["KEGG", "reference", "pathway", "essential", "#version:%i" % obiKEGG.KEGGOrganism.version]
-    elif func == obiKEGG.Update.UpdateEnzymeAndCompounds:
-        func(u)
-        filename = "kegg_enzyme_and_compounds.tar.gz"
-        files = [os.path.normpath("ligand//compound//"),
-                 os.path.normpath("ligand//enzyme//")]
-        title = "KEGG Enzymes and Compounds"
-        tags = ["KEGG", "enzyme", "compound"]
-    elif func == obiKEGG.Update.UpdateTaxonomy:
-        func(u)
-        filename = "kegg_taxonomy.tar.gz"
-        title = "KEGG Taxonomy"
-        files = [os.path.normpath("genes//taxonomy"),
-                 os.path.normpath("genes//genome")]
-        tags = ["KEGG", "taxonomy", "organism", "essential"]
-    elif func == obiKEGG.Update.UpdateOrthology:
-        func(u)
-        filename = "kegg_orthology.tar.gz"
-        files = [os.path.normpath("brite//ko//ko00001.keg")]
-        title = "KEGG Orthology"
-        tags = ["KEGG", "orthology", "essential"]
-    else:
-        continue
-    filepath = os.path.join(path, filename)
-    tFile = tarfile.open(filepath, "w:gz")
-    for file in files:
-        tFile.add(file)
-    tFile.close()
-    print "Uploading", filename
-    serverFiles.upload("KEGG", filename, filepath, title=title, tags=tags+["#uncompressed:%i" % uncompressedSize(filepath)])
+files=["genes/genome"]
+size = tar("kegg_genome.tar.gz", add=files)
+serverFiles.upload("KEGG", "kegg_genome.tar.gz", "kegg_genome.tar.gz", title="KEGG Genome",
+                   tags=["kegg", "genome", "taxonomy", "essential", "#uncompressed:%i" % size, "#compression:tar.gz", 
+                         "#version:%s" % obiKEGG.KEGGGenome.VERSION, "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_genome.tar.gz")
+
+obiKEGG.KEGGEnzymes.download()
+enzymes = obiKEGG.KEGGEnzymes()
+
+obiKEGG.KEGGCompounds.download()
+compounds = obiKEGG.KEGGCompounds()
+
+obiKEGG.KEGGReactions.download()
+reactions = obiKEGG.KEGGReactions()
+
+files = ["ligand/enzyme/", "ligand/reaction/", "ligand/compound/"]
+size = tar("kegg_ligand.tar.gz", add=files)
+serverFiles.upload("KEGG", "kegg_ligand.tar.gz", "kegg_ligand.tar.gz", title="KEGG Ligand",
+                   tags=["kegg", "enzymes", "compunds", "reactions", "essential", "#uncompressed:%i" % size,
+                         "#compression:tar.gz", "#version:v1.0", "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_ligand.tar.gz")
+
+
+### KEGG Reference Pathways
+############################
+
+obiKEGG.KEGGPathway.download_pathways("map")
+
+files = ["pathway/map/"]
+
+size = tar("kegg_pathways_map.tar.gz", add=files)
+
+serverFiles.upload("KEGG", "kegg_pathways_map.tar.gz", "kegg_pathways_map.tar.gz", title="KEGG Reference pathways (map)",
+                   tags=["kegg", "map", "pathways", "reference", "essential", "#uncompressed:%i" % size,
+                         "#compression:tar.gz", "#version:%s" % obiKEGG.KEGGPathway.VERSION, "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_pathways_map.tar.gz")
+
+
+obiKEGG.KEGGPathway.download_pathways("ec")
+
+files = ["pathway/ec/", "xml/kgml/metabolic/ec/"]
+
+size = tar("kegg_pathways_ec.tar.gz", add=files)
+
+serverFiles.upload("KEGG", "kegg_pathways_ec.tar.gz", "kegg_pathways_ec.tar.gz", title="KEGG Reference pathways (ec)",
+                   tags=["kegg", "ec", "pathways", "reference", "essential", "#uncompressed:%i" % size,
+                         "#compression:tar.gz", "#version:%s" % obiKEGG.KEGGPathway.VERSION, "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_pathways_ec.tar.gz")
+
+
+obiKEGG.KEGGPathway.download_pathways("ko")
+
+files = ["pathway/ko/", "xml/kgml/metabolic/ko/", "xml/kgml/non-metabolic/ko/"]
+
+size = tar("kegg_pathways_ko.tar.gz", add=files)
+
+serverFiles.upload("KEGG", "kegg_pathways_ko.tar.gz", "kegg_pathways_ko.tar.gz", title="KEGG Reference pathways (ko)",
+                   tags=["kegg", "ko", "pathways", "reference", "essential", "#uncompressed:%i" % size,
+                         "#compression:tar.gz", "#version:%s" % obiKEGG.KEGGPathway.VERSION, "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_pathways_ko.tar.gz")
+
+
+for org_code in common_organisms:
+    org_name = genome[org_code].definition
+    
+    ### KEGG Genes
+    ##############
+    
+    obiKEGG.KEGGGenes.download(org_code)
+
+    genes = obiKEGG.KEGGGenes(org_code)
+    
+    filename = "kegg_genes_%s.tar.gz" % org_code
+    files = [os.path.split(obiKEGG.KEGGGenes.filename(org_code))[0]]
+    
+    size = tar(filename, add=files)
+    
+    serverFiles.upload("KEGG", filename, filename, title="KEGG Genes for " + org_name,
+                       tags=["kegg", "genes", org_name, "#uncompressed:%i" % size, "#compression:tar.gz",
+                             "#version:%s" % obiKEGG.KEGGGenes.VERSION, "#files:%s" % "!@".join(files)] + (["essential"] if org_code in essential_organisms else []))
     serverFiles.unprotect("KEGG", filename)
-        
+    
+    ### KEGG Pathways
+    #################
+    
+    obiKEGG.KEGGPathway.download_pathways(org_code)
+    
+    filename = "kegg_pathways_%s.tar.gz" % org_code
+    files = [obiKEGG.KEGGPathway.directory_png(org_code, path="").lstrip("/"), 
+             obiKEGG.KEGGPathway.directory_kgml(org_code, path="").lstrip("/"),
+             obiKEGG.KEGGPathway.directory_kgml(org_code, path="").lstrip("/").replace("metabolic", "non-metabolic")]
+    
+    size = tar(filename, add=files)
+    
+    serverFiles.upload("KEGG", filename, filename, title="KEGG Pathways for " + org_name,
+                       tags=["kegg", "genes", org_name, "#uncompressed:%i" % size, "#compression:tar.gz",
+                             "#version:%s" % obiKEGG.KEGGPathway.VERSION, "#files:%s" % "!@".join(files)] + (["essential"] if org_code in essential_organisms else []))
+    serverFiles.unprotect("KEGG", filename)
+    
+    
+brite_ids = [line.split()[-1] for line in urllib2.urlopen("ftp://ftp.genome.jp/pub/kegg/brite/br/").read().splitlines() if line.split()[-1].endswith(".keg")]
+ko_brite_ids = [line.split()[-1] for line in urllib2.urlopen("ftp://ftp.genome.jp/pub/kegg/brite/ko/").read().splitlines() if line.split()[-1].endswith(".keg")]
+
+for id in brite_ids + ko_brite_ids:
+    obiKEGG.KEGGBrite.download(id.split(".")[0])
+    
+files = ["brite/ko/", "brite/br/"]
+size = tar("kegg_brite.tar.gz", add=files)
+
+serverFiles.upload("KEGG", "kegg_brite.tar.gz", "kegg_brite.tar.gz", title="KEGG Brite",
+                   tags=["kegg", "brite", "essential", "#uncompressed:%i" % size,
+                         "#compression:tar.gz", "#version:%s" % obiKEGG.KEGGBrite.VERSION, "#files:%s" % "!@".join(files)])
+serverFiles.unprotect("KEGG", "kegg_brite.tar.gz")
+
+os.chdir(realPath)
