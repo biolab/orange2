@@ -52,7 +52,7 @@ class OrangeCanvasDlg(QMainWindow):
 #        self.lineColor = QColor(*self.settings["lineColor"])
 
         if not self.settings.has_key("WidgetTabs") or self.settings["WidgetTabs"] == []:
-            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics", "Prototypes"]]
+            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics"]] + [("Prototypes", Qt.Unchecked)] 
         
         # output window
         self.output = orngOutput.OutputWindow(self)
