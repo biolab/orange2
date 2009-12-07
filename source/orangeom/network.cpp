@@ -28,8 +28,8 @@ TNetwork::TNetwork(TNetwork *net)
 	optimize.clear();
 	vector<int> vertices;
 	vector<int> neighbours;
-	
-	for(int v1 = 0; v1 < net->nVertices; v1++) {
+	int v1;
+	for(v1 = 0; v1 < net->nVertices; v1++) {
 		net->getNeighboursFrom_Single(v1, neighbours);
 
 		ITERATE(vector<int>, ni, neighbours) {
@@ -50,19 +50,31 @@ TNetwork::TNetwork(TNetwork *net)
 	pos = pymatrix_to_Carrayptrs(coors);
 	
 	int i;
-	if (net->pos == NULL) {
+	/*
+	srand(time(NULL));
+	for (i = 0; i < net->nVertices; i++)
+	{
+		pos[0][i] = rand() % 10000;
+		pos[1][i] = rand() % 10000;
+	}
+	/**/
+	//*
+	if (net->pos == NULL || net->pos[0] == NULL || net->pos[1] == NULL) {
 		srand(time(NULL));
+		//cout << "null" << endl;
 		for (i = 0; i < net->nVertices; i++)
 		{
 			pos[0][i] = rand() % 10000;
 			pos[1][i] = rand() % 10000;
 		}
 	} else {
+		//cout << "not null" << endl;
 		for (i = 0; i < net->nVertices; i++) {
 			pos[0][i] = net->pos[0][i];
 			pos[1][i] = net->pos[1][i];
 		}
 	}
+	/**/
 }
 
 TNetwork::TNetwork(TGraphAsList *graph)
@@ -450,21 +462,25 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
     if (PyArg_ParseTuple(args, "O:Network", &pygraph))
     {
     	if (PyOrNetwork_Check(pygraph))
+		{
+			//cout << "1" << endl;
+			TNetwork *net = PyOrange_AsNetwork(pygraph).getUnwrappedPtr();
+			TNetwork *network = mlnew TNetwork(net);
+			// set graphs attribut items of type ExampleTable to subgraph
+			//*
+			PyObject *strItems = PyString_FromString("items");
+			if (PyObject_HasAttr(pygraph, strItems) == 1)
 			{
-    		TNetwork *net = PyOrange_AsNetwork(pygraph).getUnwrappedPtr();
-				TNetwork *network = mlnew TNetwork(net);
-				// set graphs attribut items of type ExampleTable to subgraph
-				PyObject *strItems = PyString_FromString("items");
-				if (PyObject_HasAttr(pygraph, strItems) == 1)
-				{
-					PyObject* items = PyObject_GetAttr(pygraph, strItems);
-					network->items = &dynamic_cast<TExampleTable &>(PyOrange_AsOrange(items).getReference());
-				}
-				Py_DECREF(strItems);
-				return WrapNewOrange(network, type);
+				PyObject* items = PyObject_GetAttr(pygraph, strItems);
+				network->items = &dynamic_cast<TExampleTable &>(PyOrange_AsOrange(items).getReference());
 			}
+			Py_DECREF(strItems);
+			/**/
+			return WrapNewOrange(network, type);
+		}
 		else if (PyOrGraphAsList_Check(pygraph))
 		{
+			//cout << "2" << endl;
     		TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
 			TNetwork *network = mlnew TNetwork(graph);
 			
@@ -480,6 +496,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
       }
     	else
     	{
+			//cout << "3" << endl;
     		PyErr_Format(PyExc_TypeError, "Network.__new__: an instance of GraphAsList expected got '%s'", pygraph->ob_type->tp_name);
     		return PYNULL;
     	}
