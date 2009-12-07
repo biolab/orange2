@@ -359,11 +359,10 @@ class OWNetworkCanvas(OWGraph):
     if len(selection) == 0:
         return None
     
-    print self.visualizer.graph.items.domain
-    subgraph = Network(self.visualizer.graph.getSubGraph(selection))
-    print subgraph.items.domain
-    return None
-    return subgraph
+    print self.visualizer.graph
+    subgraph = self.visualizer.graph.getSubGraph(selection)
+    subnet = Network(subgraph)
+    return subnet
  
   def getSelectedVertices(self):
     return self.networkCurve.getSelectedVertices()

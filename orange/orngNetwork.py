@@ -17,6 +17,7 @@ class Network(orangeom.Network):
     """Orange data structure for representing directed and undirected networks with various types of weighted connections and other data."""
     
     def __init__(self, *args):
+        #print "orngNetwork.Network"
         self.optimization = NetworkOptimization(self)
         
     def save(self, fileName):

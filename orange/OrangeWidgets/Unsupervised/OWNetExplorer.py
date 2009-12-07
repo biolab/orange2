@@ -1052,7 +1052,7 @@ class OWNetExplorer(OWWidget):
     def sendData(self):
         graph = self.graph.getSelectedGraph()
         vertices = self.graph.getSelectedVertices()
-            
+        
         if graph != None:
             if graph.items != None:
                 self.send("Selected Examples", graph.items)
@@ -1064,12 +1064,10 @@ class OWNetExplorer(OWWidget):
             self.send("Selected Network", graph)
         else:
             items = self.graph.getSelectedExamples()
-            if items != None:
-                self.send("Selected Examples", items)
+            self.send("Selected Examples", items)
                 
             items = self.graph.getUnselectedExamples()
-            if items != None:
-                self.send("Unselected Examples", items)
+            self.send("Unselected Examples", items)
         
         matrix = None
         if self.vertexDistance != None:
