@@ -1494,6 +1494,14 @@ PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObje
 PyCATCH
 }
 
+PyObject *SVMClassifier_getModel(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "() -> string")
+{PyTRY
+	string buf;
+	svm_save_model_alt(buf, SELF_AS(TSVMClassifier).getModel());
+	return Py_BuildValue("s", buf.c_str());
+PyCATCH
+}
+
 
 /************* BAYES ************/
 
