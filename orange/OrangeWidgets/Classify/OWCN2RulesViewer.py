@@ -40,7 +40,6 @@ class MyCanvasView(QGraphicsView):
     def mousePressEvent(self,e):
         self.buttonPressed=True
         self.lastIndex=-1
-        print self.sizeHint().height(), self.height()
         if not self.parent.ctrlPressed:
             self.parent.selRect=[]
             for r in self.parent.rectObj:

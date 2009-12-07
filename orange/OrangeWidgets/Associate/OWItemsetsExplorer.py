@@ -165,7 +165,6 @@ class OWItemsetsExplorer(OWWidget):
     def sendData(self):
         self.dataChanged = False
         self.send("Itemsets", (self.dataset, self.selectedItemsets))
-        print len(self.selectedItemsets)
         if self.selectedItemsets:
             examples = self.dataset.getitemsref(self.exampleids)
             if self.purgeAttributes or self.purgeClasses:

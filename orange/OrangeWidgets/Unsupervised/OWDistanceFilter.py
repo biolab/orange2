@@ -65,18 +65,14 @@ class OWDistanceFilter(OWWidget):
         
     def filter(self):
         if self.subsetAttr > 0:
-            print self.subsetAttrCombo.currentText()
             col = str(self.subsetAttrCombo.currentText())
-            print self.subset.domain
             
             filter = [str(x[col]) for x in self.subset]
             filter = set(filter)
             
             nodes = [x for x in range(len(self.matrix.items)) if str(self.matrix.items[x][col]) in filter]
-            print nodes
             
             nNodes = len(nodes)
-            print "nNodes:", nNodes
             matrix = orange.SymMatrix(nNodes)
             
             for i in range(nNodes):

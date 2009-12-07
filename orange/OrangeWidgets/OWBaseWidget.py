@@ -105,7 +105,7 @@ widgetId = 0
 class OWBaseWidget(QDialog):
     def __new__(cls, *arg, **args):
         self = QDialog.__new__(cls)
-
+        
         #print "arg", arg
         #print "args: ", args
         self.currentContexts = {}   # the "currentContexts" MUST be the first thing assigned to a widget

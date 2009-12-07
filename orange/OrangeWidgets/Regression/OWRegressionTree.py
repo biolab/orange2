@@ -95,7 +95,6 @@ class OWRegressionTree(OWWidget):
             self.send("Regression Tree", classifier)
         except orange.KernelException, (errValue):
             self.error(str(errValue))
-            print errValue
             self.send("Regressor",None)
             self.send("Regression Tree", None)
         #orngTree.printTxt(classifier)

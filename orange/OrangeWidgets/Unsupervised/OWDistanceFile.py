@@ -177,7 +177,6 @@ class OWDistanceFile(OWWidget):
         #print 'relabel'
         self.error()
         matrix = self.matrix
-        print 1
         if matrix and self.data:
             if self.takeAttributeNames:
                 domain = self.data.domain

@@ -101,7 +101,6 @@ class OWSVM(OWWidget):
         self.reportData(self.data)
         
     def setType(self, type):
-        print self.useNu
         self.useNu = type
         
     def changeKernel(self):
