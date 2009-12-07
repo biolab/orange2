@@ -1,5 +1,7 @@
 net use o: \\estelle.fri.uni-lj.si\download
 cdd e:\orange\scripts
 svn update -N
+svn export http://www.ailab.si/svn/orange/trunk/orange/doc/LICENSES license.txt
+svn 
 call callCreateSnapshot.btm
 shutdown -s
