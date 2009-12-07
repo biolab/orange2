@@ -12,6 +12,7 @@ import orngNetwork
 import OWToolbars
 import math
 import operator
+import orngMDS
 
 from OWWidget import *
 from OWNetworkCanvas import *
@@ -141,6 +142,7 @@ class OWNetExplorer(OWWidget):
         self.optCombo.addItem("Circular Crossing Reduction")
         self.optCombo.addItem("Circular Original")
         self.optCombo.addItem("Circular Random")
+        self.optCombo.addItem("Pivot MDS")
         self.optCombo.setCurrentIndex(self.optMethod)
         self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 20000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
@@ -1435,11 +1437,15 @@ class OWNetExplorer(OWWidget):
             self.circularOriginal()
         elif self.optMethod == 7:
             self.circularRandom()
+        elif self.optMethod == 8:
+            self.pivotMDS()
             
         self.optButton.setChecked(False)
         qApp.processEvents()
         
     def setOptMethod(self, method=None):
+        self.stepsSpin.label.setText('Iterations: ')
+        
         if method != None:
             self.optMethod = method
             
@@ -1449,6 +1455,9 @@ class OWNetExplorer(OWWidget):
             self.optButton.setEnabled(True)
             
         if str(self.optMethod) in ['2', '3', '4']:
+            self.stepsSpin.setEnabled(True)
+        elif str(self.optMethod) == '8':
+            self.stepsSpin.label.setText('Pivots: ')
             self.stepsSpin.setEnabled(True)
         else:
             self.stepsSpin.setEnabled(False)
@@ -1577,6 +1586,28 @@ class OWNetExplorer(OWWidget):
         if self.visualize != None:
             self.visualize.circularCrossingReduction()
             self.updateCanvas()
+            
+    def pivotMDS(self):
+        if self.vertexDistance == None:
+            self.information('Set distance matrix to input signal')
+            return
+        
+        if self.visualize == None:
+            self.information('No network found')
+            return
+        
+        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+            self.error('Distance matrix dimensionality must equal number of vertices')
+            return
+        
+        self.frSteps = min(self.frSteps, self.vertexDistance.dim)
+        qApp.processEvents()
+        mds = orngMDS.PivotMDS(self.vertexDistance, self.frSteps)
+        x,y = mds.optimize()
+        self.visualize.graph.coors[0] = x
+        self.visualize.graph.coors[1] = y
+        self.updateCanvas()
+    
       
     """
     Network Visualization
