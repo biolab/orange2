@@ -156,8 +156,9 @@ class OWNomogram(OWWidget):
                              ("Sorting", self.sortOptions[self.sort_type] if self.sort_type else "None")])
         
         canvases = header, graph, footer = self.header.scene(), self.graph.scene(), self.footer.scene()
+        painter = QPainter()
         buffer = QPixmap(max(c.width() for c in canvases), sum(c.height() for c in canvases))
-        painter = QPainter(buffer)
+        painter.begin(buffer)
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
         header.render(painter, QRectF(0, 0, header.width(), header.height()), QRectF(0, 0, header.width(), header.height()))
         graph.render(painter, QRectF(0, header.height(), graph.width(), graph.height()), QRectF(0, 0, graph.width(), graph.height()))
