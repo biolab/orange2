@@ -166,6 +166,16 @@ class OWDataTable(OWWidget):
         if len(self.data) == 0:
             self.cbShowMeta.setEnabled(False)
 
+    def sendReport(self):
+        qTableInstance = self.tabs.currentWidget()
+        id = self.table2id.get(qTableInstance, None)
+        data = self.data.get(id, None)
+        self.reportData(data)
+        table = self.id2table[id]
+        import OWReport
+        self.reportRaw(OWReport.reportTable(table))
+        
+        
     # Writes data into table, adjusts the column width.
     def setTable(self, table, data):
         if data==None:
