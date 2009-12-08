@@ -4790,7 +4790,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 	PyList_Sort(vertices);
 
 	TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
-	//PGraph wsubgraph = subgraph;
+	PGraph wsubgraph = subgraph;
 
 	Py_ssize_t i;
 	vector<int> neighbours;
@@ -4814,7 +4814,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 		}
 	}
 
-	PyObject *pysubgraph = WrapNewOrange(subgraph, self->ob_type); //WrapOrange(wsubgraph);
+	PyObject *pysubgraph = WrapOrange(wsubgraph); //WrapNewOrange(subgraph, self->ob_type);
 
 	// set graphs attribut items of type ExampleTable to subgraph
 	PyObject *strItems = PyString_FromString("items");
