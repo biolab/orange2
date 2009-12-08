@@ -24,9 +24,6 @@ from PyQt4.QtWebKit import *
 
 import os, time, tempfile, shutil, re, shutil, pickle
 
-import orngEnviron
-from orngEnviron import reportsDir
-
 report = None
 def escape(s):
     return s.replace("\\", "\\\\").replace("\n", "\\n").replace("'", "\\'")
@@ -203,12 +200,13 @@ class ReportWindow(OWWidget):
     img_re = re.compile(r'<IMG.*?\ssrc="(?P<imgname>[^"]*)"', re.DOTALL+re.IGNORECASE)
     browser_re = re.compile(r'<!--browsercode(.*?)-->')
     def saveReport(self):
-        filename = QFileDialog.getSaveFileName(self, "Save Report", reportsDir, "Web page (*.html *.htm)")
+        filename = QFileDialog.getSaveFileName(self, "Save Report", self.saveDir, "Web page (*.html *.htm)")
         if not filename:
             return
 
         filename = str(filename)
         path, fname = os.path.split(filename)
+        self.saveDir = path
         if not os.path.exists(path):
             try:
                 os.makedirs(path)

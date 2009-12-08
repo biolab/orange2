@@ -139,6 +139,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.helpWindow = orngHelp.HelpWindow(self)
         self.reportWindow = OWReport.ReportWindow()
         self.reportWindow.widgets = self.schema.widgets
+        self.reportWindow.saveDir = self.settings["reportsDir"]
         
         self.show()
 
@@ -552,63 +553,27 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Loads settings from the widget's .ini file
     def loadSettings(self):
-        filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
-        self.settings = {}
-        if os.path.exists(filename):
-            try:
-                self.settings = cPickle.load(open(filename, "rb"))
-            except:
-                pass
-
-        self.settings.setdefault("widgetListType", 3)
-        self.settings.setdefault("iconSize", "40 x 40")
-        self.settings.setdefault("toolbarIconSize", 2)
-        self.settings.setdefault("toolboxWidth", 200)
-        self.settings.setdefault('schemeIconSize', 1)
-        self.settings.setdefault("snapToGrid", 1)
-        self.settings.setdefault("writeLogFile", 1)
-        self.settings.setdefault("dontAskBeforeClose", 1)
-        #self.settings.setdefault("autoSaveSchemasOnClose", 0)
-        self.settings.setdefault("saveWidgetsPosition", 1)
-##        self.settings.setdefault("autoLoadSchemasOnStart", 0)
-
-#        self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
-#        self.settings.setdefault("widgetActiveColor", (0, 0, 255))
-#        self.settings.setdefault("lineColor", (0, 255, 0))
-
-        #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
-        #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
-
-        self.settings.setdefault("saveSchemaDir", self.canvasSettingsDir)
-        self.settings.setdefault("saveApplicationDir", self.canvasSettingsDir)
-        self.settings.setdefault("showSignalNames", 1)
-        self.settings.setdefault("useContexts", 1)
-
-        self.settings.setdefault("canvasWidth", 700)
-        self.settings.setdefault("canvasHeight", 600)
+        self.settings = {"widgetListType": 3, "iconSize": "40 x 40", "toolbarIconSize": 2, "toolboxWidth": 200, 'schemeIconSize': 1,
+                       "snapToGrid": 1, "writeLogFile": 1, "dontAskBeforeClose": 1, "saveWidgetsPosition": 1,
+#                       "widgetSelectedColor": (0, 255, 0), "widgetActiveColor": (0, 0, 255), "lineColor": (0, 255, 0),
+                       "reportsDir": self.defaultReportsDir, "saveSchemaDir": self.canvasSettingsDir, "saveApplicationDir": self.canvasSettingsDir,
+                       "showSignalNames": 1, "useContexts": 1,
+                       "canvasWidth": 700, "canvasHeight": 600, "useDefaultPalette": 0,
+                       "focusOnCatchException": 1, "focusOnCatchOutput": 0, "printOutputInStatusBar": 1, "printExceptionInStatusBar": 1,
+                       "outputVerbosity": 0, "synchronizeHelp": 1,
+                       "ocShow": 1, "owShow": 0, "ocInfo": 1, "owInfo": 1, "ocWarning": 1, "owWarning": 1, "ocError": 1, "owError": 1,
+                      }
+        try:
+            filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
+            self.settings.update(cPickle.load(open(filename, "rb")))
+        except:
+            pass
 
         if not self.settings.has_key("style"):
             items = [str(n) for n in QStyleFactory.keys()]
             lowerItems = [str(n).lower() for n in QStyleFactory.keys()]
             currStyle = str(qApp.style().objectName()).lower()
             self.settings.setdefault("style", items[lowerItems.index(currStyle)])
-        self.settings.setdefault("useDefaultPalette", 0)
-
-        self.settings.setdefault("focusOnCatchException", 1)
-        self.settings.setdefault("focusOnCatchOutput" , 0)
-        self.settings.setdefault("printOutputInStatusBar", 1)
-        self.settings.setdefault("printExceptionInStatusBar", 1)
-        self.settings.setdefault("outputVerbosity", 0)
-        self.settings.setdefault("ocShow", 1)
-        self.settings.setdefault("owShow", 0)
-        self.settings.setdefault("ocInfo", 1)
-        self.settings.setdefault("owInfo", 1)
-        self.settings.setdefault("ocWarning", 1)
-        self.settings.setdefault("owWarning", 1)
-        self.settings.setdefault("ocError", 1)
-        self.settings.setdefault("owError", 1)
-        
-        self.settings.setdefault("synchronizeHelp", 1)
 
 
     # Saves settings to this widget's .ini file
@@ -626,6 +591,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["toolboxWidth"] = self.widgetsToolBar.toolbox.width()
         self.settings["showWidgetToolbar"] = self.widgetsToolBar.isVisible()
         self.settings["showToolbar"] = self.toolbar.isVisible()
+        self.settings["reportsDir"] = self.reportWindow.saveDir
 
         closed = self.schema.close()
         if closed:
