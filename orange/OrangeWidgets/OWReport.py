@@ -284,3 +284,18 @@ def reportTree(tree, expanded=True):
     res += "</table>\n"
     return res
  
+def reportTable(table):
+    ncols = table.columnCount() 
+    res = '<table style="border-bottom: thin solid black">\n'
+    vheadVisible = table.verticalHeader().isVisible()
+    if table.horizontalHeader().isVisible():
+        res += "<tr>"+'<th></th>'*vheadVisible + "".join('<th style="padding-left: 4px; padding-right: 4px;">%s</th>' % str(table.horizontalHeaderItem(i).text()) for i in range(ncols)) + "</tr>\n"
+        res += '<tr style="height: 2px">'+'<th colspan="%i"  style="border-bottom: thin solid black; height: 2px;"></th>' % (ncols+vheadVisible)
+    for j in range(table.rowCount()):
+        res += "<tr>"
+        if vheadVisible:
+            vhi = table.verticalHeaderItem(j)
+            res += "<th>%s</th>" % (str(vhi.text()) if vhi else "")
+        res += "".join('<td align="center">%s</td>' % str(table.item(j, i).text()) for i in range(ncols)) + "</tr>\n"
+    res += "</table>\n"
+    return res
