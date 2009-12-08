@@ -166,8 +166,8 @@ class OWWidget(OWBaseWidget):
     def getUniqueFileName(self, patt):
         return OWReport.report.getUniqueFileName(patt)
 
-    def getUniqueImageName(self, nm="img"):
-        return OWReport.report.getUniqueFileName(nm + "%06i" + ".png")
+    def getUniqueImageName(self, nm="img", ext=".png"):
+        return OWReport.report.getUniqueFileName(nm + "%06i" + ext)
 
     def reportImage(self, filenameOrFunc, *args):
         if self.__reportData is None:
@@ -180,6 +180,11 @@ class OWWidget(OWBaseWidget):
             filenameOrFunc(ffn, *args)
             self.reportImage(sfn)
 
+    svg_type = "image/svg+xml"
+    def reportObject(self, type, data, **attrs):
+        if self.__reportData is None:
+            self.startReport()
+        self.__reportData += '<object type="%s" data="%s" %s></object>' % (type, data, " ".join('%s="%s"' % attr for attr in attrs.items()))
 
     def startReportList(self):
         if self.__reportData is None:

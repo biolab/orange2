@@ -474,7 +474,7 @@ class TreeGraphicsScene(QGraphicsScene):
             node=self.nodeList[0]
         if not x or not y: x, y= self.HSpacing, self.VSpacing
         self._fixPos(node,x,y)
-        self.setSceneRect(0,0,self.gx+ExpectedBubbleWidth, self.gy+ExpectedBubbleHeight)
+#        self.setSceneRect(0,0,self.gx+ExpectedBubbleWidth, self.gy+ExpectedBubbleHeight)
         
     def _fixPos(self, node, x, y):
         ox=x
@@ -663,8 +663,8 @@ class TreeNavigator(TreeGraphicsView):
         self.scene().update()
 
     def updateRatio(self):
-        self.rx=float(self.scene().width())/float(self.masterView.scene().width())
-        self.ry=float(self.scene().height())/float(self.masterView.scene().height())
+        self.rx=float(self.scene().width())/max(1, float(self.masterView.scene().width()))
+        self.ry=float(self.scene().height())/max(1, float(self.masterView.scene().height()))
         #print "Ratio: ", self.rx, self.ry
 
     def updateView(self):
@@ -784,8 +784,29 @@ class OWTreeViewer2D(OWWidget):
         self.resize(800, 500)
 
     def sendReport(self):
+        from PyQt4.QtSvg import QSvgGenerator
         self.reportSection("Tree")
-        self.reportImage(self.saveGraph)
+        urlfn, filefn = self.getUniqueImageName(ext=".svg")
+        svg = QSvgGenerator()
+        svg.setFileName(filefn)
+        ssize = self.scene.sceneRect().size()
+        w, h = ssize.width(), ssize.height()
+        fact = 600/w
+        svg.setSize(QSize(600, h*fact))
+        painter = QPainter()
+        painter.begin(svg)
+        self.scene.render(painter)
+        painter.end()
+        
+        buffer = QPixmap(QSize(600, h*fact))
+        painter.begin(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        self.scene.render(painter)
+        painter.end()
+        self.reportImage(lambda filename: buffer.save(filename, os.path.splitext(filename)[1][1:]))
+        self.reportRaw('<!--browsercode<br/>(Click <a href="%s">here</a> to view or download this image in a scalable vector format)-->' % urlfn)
+        #self.reportObject(self.svg_type, urlfn, width="600", height=str(h*fact))
+        
         
     def scaleSizes(self):
         pass
@@ -955,7 +976,7 @@ class OWDefTreeViewer2D(OWTreeViewer2D):
         self.scene = TreeGraphicsScene(self)
         self.sceneView = TreeGraphicsView(self, self.scene, self.mainArea)
         self.mainArea.layout().addWidget(self.sceneView)
-        self.scene.setSceneRect(0,0,800,800)
+#        self.scene.setSceneRect(0,0,800,800)
         self.navWidget = QWidget(None)
         self.navWidget.setLayout(QVBoxLayout(self.navWidget))
         scene = TreeGraphicsScene(self.navWidget)

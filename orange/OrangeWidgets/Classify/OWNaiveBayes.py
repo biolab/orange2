@@ -20,7 +20,6 @@ class OWNaiveBayes(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
-
         self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", Preprocessor, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
 
@@ -123,7 +122,6 @@ class OWNaiveBayes(OWWidget):
 
             if self.preprocessor:
                 self.learner = self.preprocessor.wrapLearner(self.learner)
-            print self.learner
 
         self.send("Learner", self.learner)
         self.applyData()
@@ -134,8 +132,12 @@ class OWNaiveBayes(OWWidget):
         self.error(1)
         if self.data and self.learner:
             try:
-                classifier = self.learner(self.data)
-                classifier.setattr("data", self.data)
+                if self.preprocessor:
+                    classifier, data = self.learner(self.data, getData = True)
+                    classifier.setattr("data", data)
+                else:
+                    classifier = self.learner(self.data)
+                    classifier.setattr("data", self.data)
                 classifier.name = self.name
             except Exception, (errValue):
                 classifier = None

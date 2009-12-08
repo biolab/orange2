@@ -100,6 +100,7 @@ class ReportWindow(OWWidget):
 
     entry = """
     <div id="%s" onClick="myself.changeItem(this.id);">
+        <a name="%s" />
         <h1>%s<span class="timestamp">%s</span></h1>
         <div class="insideh1">
             %s
@@ -122,7 +123,7 @@ class ReportWindow(OWWidget):
         self.tree.addItem(widnode)
         self.treeItems[elid] = widnode
         
-        newreport = self.entry % (elid, name, time.strftime("%a %b %d %y, %H:%M:%S"), data)
+        newreport = self.entry % (elid, elid, name, time.strftime("%a %b %d %y, %H:%M:%S"), data)
         widnode.content = newreport
         self.javascript("""
             document.body.innerHTML += '%s';
@@ -176,10 +177,10 @@ class ReportWindow(OWWidget):
             
     re_h1 = re.compile(r'<h1>(?P<name>.*?)<span class="timestamp">')
     def itemChanged(self, node):
-        pass
-#        be, en = self.re_h1.search(node.content).span("name")
-#        node.content = node.content[:be] + str(node.text()) + node.content[en:]
-#        self.rebuildHtml()
+        if hasattr(node, "content"):
+            be, en = self.re_h1.search(node.content).span("name")
+            node.content = node.content[:be] + str(node.text()) + node.content[en:]
+            self.rebuildHtml()
 
     def removeActiveNode(self):
         node = self.tree.currentItem()
@@ -200,6 +201,7 @@ class ReportWindow(OWWidget):
                 return "file:///"+fn, fn
 
     img_re = re.compile(r'<IMG.*?\ssrc="(?P<imgname>[^"]*)"', re.DOTALL+re.IGNORECASE)
+    browser_re = re.compile(r'<!--browsercode(.*?)-->')
     def saveReport(self):
         filename = QFileDialog.getSaveFileName(self, "Save Report", reportsDir, "Web page (*.html *.htm)")
         if not filename:
@@ -215,12 +217,13 @@ class ReportWindow(OWWidget):
 
         tt = file(self.indexfile, "rt").read()
         
-        index = "<ul>%s</ul>" % \
-            "".join("<li>%s</li>" % self.re_h1.search(self.tree.item(i).content).group("name") for i in range(self.tree.count()))
+        index = "<br/>".join('<a href="%s">%s</a>' % (self.tree.item(i).elementId, self.re_h1.search(self.tree.item(i).content).group("name"))
+                             for i in range(self.tree.count()))
             
         data = "\n".join(self.tree.item(i).content for i in range(self.tree.count()))
         
-        tt = tt.replace("<body>", '<body><table width="100%"><tr><td valign="top"><p>Index</p>%s</td><td>%s</td></tr></table>' % (index, data))
+        tt = tt.replace("<body>", '<body><table width="100%%"><tr><td valign="top"><p style="padding-top:25px;">Index</p>%s</td><td>%s</td></tr></table>' % (index, data))
+        tt = self.browser_re.sub("\\1", tt)
         
         filepref = "file:///"+self.tempdir
         if filepref[-1] != os.sep:

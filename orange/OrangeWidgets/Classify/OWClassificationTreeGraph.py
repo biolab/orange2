@@ -209,7 +209,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.scene=TreeGraphicsScene(self)
         self.sceneView=TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
-        self.scene.setSceneRect(0,0,800,800)
+#        self.scene.setSceneRect(0,0,800,800)
 
         self.scene.bubbleConstructor=self.classificationBubbleConstructor
 
