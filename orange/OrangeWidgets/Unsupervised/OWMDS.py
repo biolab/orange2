@@ -13,7 +13,6 @@ import numpy, sys, math, time, os
 import OWColorPalette
 import OWToolbars
 from OWGraph import *
-from sets import Set
 from PyQt4.Qwt5 import *
 from random import random
 
@@ -26,7 +25,7 @@ except:
 class OWMDS(OWWidget):
     settingsList=["graph.PointSize", "graph.proportionGraphed", "graph.ColorAttr", "graph.SizeAttr",
                   "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines",
-                  "graph.ShowName", "graph.differentWidths", "graph.stressByTransparency",
+                  "graph.ShowName", "graph.differentWidths", "graph.stressByTransparency", "graph.useAntialiasing"
                   "StressFunc", "applyLSMT", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress",
                   "RefreshMode"]
     contextHandlers={"":DomainContextHandler("", [ContextField("graph.ColorAttr", DomainContextHandler.Optional),
@@ -102,6 +101,8 @@ class OWMDS(OWWidget):
         OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateLinesRepaint)
         OWGUI.checkBox(box, self, "graph.stressBySize", "Show stress by symbol size", callback = self.updateStressBySize)
         self.updateStressBySize(True)
+        
+        OWGUI.checkBox(graph, self, "graph.useAntialiasing", label="Use antialiasing", box="Antialiasing", tooltip="Use antialiasing for beter quality graphics", callback=self.graph.updateData)
 
         self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
         self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
@@ -263,7 +264,7 @@ class OWMDS(OWWidget):
         else:
             self.names=[[""]*4 for i in range(len(data))]
             try:
-                strains=list(Set([d.strain for d in data]))
+                strains=list(set([d.strain for d in data]))
                 c=OWColorPalette.ColorPaletteHSV(len(strains))
                 for i, d in enumerate(data):
                     self.colors[i][1]=c[strains.index(d.strain)]
@@ -514,7 +515,7 @@ class OWMDS(OWWidget):
             self.send("Structured Data Files", None)
         else:
             datasets=[self.data[i] for i in selectedInd]
-            names=list(Set([d.dirname for d in datasets]))
+            names=list(set([d.dirname for d in datasets]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
             self.send("Structured Data Files",data)
 
