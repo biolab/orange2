@@ -36,18 +36,28 @@ class OWKMeans(OWWidget):
         ("Diversity", orngClustering.kmeans_init_diversity),
         ("Agglomerative clustering", orngClustering.KMeans_init_hierarchicalClustering(n=100)),
         ]
+    
+    scoringMethods = [
+        ("Silhouette (heuristic)", orngClustering.score_fastsilhouette),
+        ("Silhouette", orngClustering.score_silhouette),
+        ("Distance to centroids", orngClustering.score_distance_to_centroids)
+        ] 
 
     def __init__(self, parent=None, signalManager = None):
-        self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering')
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Examples", ExampleTable), ("Centroids", ExampleTable)]
 
         #set default settings
-        self.K = 3
+        self.K = 2
+        self.optimized = True
+        self.optimizationFrom = 2
+        self.optimizationTo = 5
+        self.scoring = 0
         self.distanceMeasure = 0
         self.initializationType = 0
+        self.restarts = 1
         self.classifySelected = 1
         self.addIdAs = 0
         self.runAnyChange = 1
@@ -59,22 +69,44 @@ class OWKMeans(OWWidget):
 
         # GUI definition
         # settings
+        box = OWGUI.widgetBox(self.controlArea, "Clusters (k)")
+        bg = OWGUI.radioButtonsInBox(box, self, "optimized", [], callback=self.setOptimization)
+        fixedBox = OWGUI.widgetBox(box, orientation="horizontal")
+        button = OWGUI.appendRadioButton(bg, self, "optimized", "Fixed", 
+                                         insertInto=fixedBox, tooltip="Fixed number of clusters")
+        self.fixedSpinBox = OWGUI.spin(OWGUI.widgetBox(fixedBox), self, "K", min=1, max=30, tooltip="Fixed number of clusters",
+                                       callback=self.update, callbackOnReturn=True)
+        OWGUI.rubber(fixedBox)
+        
+        optimizedBox = OWGUI.widgetBox(box)
+        button = OWGUI.appendRadioButton(bg, self, "optimized", "Optimized", insertInto=optimizedBox)
+        option = QStyleOptionButton()
+        option.initFrom(button)
+        box = OWGUI.indentedBox(optimizedBox, qApp.style().subElementRect(QStyle.SE_CheckBoxIndicator,
+                                                                           option, button).width() - 3)
+        self.optimizationBox = box
+        OWGUI.spin(box, self, "optimizationFrom", label="From", min=2, max=99,
+                   tooltip="Minimum number of clusters to try", callback=self.updateOptimizationFrom, callbackOnReturn=True)
+        OWGUI.spin(box, self, "optimizationTo", label="To", min=3, max=100,
+                   tooltip="Maximum number of clusters to try", callback=self.updateOptimizationTo, callbackOnReturn=True)
+        OWGUI.comboBox(box, self, "scoring", label="Scoring", orientation="horizontal",
+                       items=[m[0] for m in self.scoringMethods], callback=self.update)
+        
+        
+        
         box = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
-        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1,
-                   callback = self.initializeClustering)
+#        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1,
+#                   callback = self.initializeClustering)
         OWGUI.comboBox(box, self, "distanceMeasure", label="Distance measures",
                        items=[name for name, _ in self.distanceMeasures],
                        tooltip=None,
-                       callback = self.initializeClustering)
+                       callback = self.update)
         OWGUI.comboBox(box, self, "initializationType", label="Initialization",
                        items=[name for name, _ in self.initializations],
                        tooltip=None,
-                       callback = self.initializeClustering)
-
-        box = OWGUI.widgetBox(self.controlArea, "Run", addSpace=True)
-        OWGUI.checkBox(box, self, "runAnyChange", "Run after any change")
-        OWGUI.button(box, self, "Run Clustering", callback = self.cluster)
-        OWGUI.rubber(box)
+                       callback = self.update)
+        OWGUI.spin(box, self, "restarts", label="Restarts", orientation="horizontal",
+                   min=1, max=100, callback=self.update, callbackOnReturn=True)
 
         box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
         cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
@@ -88,21 +120,112 @@ class OWKMeans(OWWidget):
         cb.disables.append(cc)
         cb.makeConsistent()
         OWGUI.separator(box)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Run", addSpace=True)
+        cb = OWGUI.checkBox(box, self, "runAnyChange", "Run after any change")
+        b= OWGUI.button(box, self, "Run Clustering", callback = self.run)
+        OWGUI.setStopper(self, b, cb, "settingsChanged", callback=self.run)
 
+        OWGUI.rubber(self.controlArea)
         # display of clustering results
-        self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
+        
+        
+        self.table = OWGUI.table(self.mainArea, selectionMode=QTableWidget.SingleSelection)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setHorizontalHeaderLabels(["K", "Best", "Score"])
+        self.table.setItemDelegateForColumn(2, OWGUI.TableBarItem(self, self.table))
         self.table.hide()
+        
+        print self.table.layout()
+        
+        self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.tableItemSelected)
+        
+        self.settingsChanged = False
+        
+        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.mainArea.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        
+        
+        OWGUI.rubber(self.topWidgetPart)
+        
+        self.updateOptimizationGui()
 
         self.resize(100,100)
-
+        
+    def updateOptimizationGui(self):
+        state = [True, False, False] if self.optimized else [False, True, True]
+        for s, func in zip(state, [self.fixedSpinBox.setDisabled,
+                                self.optimizationBox.setDisabled,
+                                self.mainArea.setHidden]):
+            func(s)
+        
+        if not self.optimized:
+            self.mainArea.resize(0, self.height())
+            self.resize(self.controlArea.width(), self.height())
+#        self.topWidgetPart.layout().invalidate()
+        
+            
+    def updateOptimizationFrom(self):
+#        self.optimizationFrom = min([self.optimizationFrom, self.optimizationTo - 1])
+        self.optimizationTo = max([self.optimizationFrom + 1, self.optimizationTo])
+        self.update()
+        
+    def updateOptimizationTo(self):
+        self.optimizationFrom = min([self.optimizationFrom, self.optimizationTo - 1])
+#        self.optimizationTo = max([self.optimizationFrom + 1, self.optimizationTo])
+        self.update()
+        
+    def setOptimization(self):
+        self.updateOptimizationGui()
+        if self.optimized:
+            self.runOptimization()
+        else:
+            self.table.hide()
+            self.cluster()
+            
+    def runOptimization(self):
+        if self.K > len(self.data):
+            self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
+                       (len(self.data), self.K))
+            return
+        
+        self.progressBarInit()
+        Ks = range(self.optimizationFrom, self.optimizationTo + 1)
+        self.optimizationRun =[(k, orngClustering.KMeans(
+                self.data,
+                centroids = k,
+                minscorechange=0,
+                nstart = self.restarts,
+                initialization = self.initializations[self.initializationType][1],
+                distance = self.distanceMeasures[self.distanceMeasure][1],
+                scoring = self.scoringMethods[self.scoring][1],
+                inner_callback = lambda val: self.progressBarSet(val.iteration/len(Ks) + k * 100.0 / len(Ks)),
+                )) for k in Ks]
+        self.progressBarFinished()
+        self.bestRun = max(self.optimizationRun, key=lambda (k, run): run.score)
+        self.showResults()
+        self.sendData()
+        
     def cluster(self):
         if self.K > len(self.data):
             self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
                        (len(self.data), self.K))
             return
+        
+        self.km = orngClustering.KMeans(
+            self.data,
+            centroids = self.K,
+            nstart = self.restarts,
+            initialization = self.initializations[self.initializationType][1],
+            distance = self.distanceMeasures[self.distanceMeasure][1],
+            scoring = self.scoringMethods[self.scoring][1],
+            initialize_only = True,
+            inner_callback = self.clusterCallback,
+            )
         self.progressBarInit()
         self.km.run()
-        # self.showResults()
         self.sendData()
         self.progressBarFinished()
 
@@ -114,47 +237,54 @@ class OWKMeans(OWWidget):
             self.progressBarSet(80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration)))
         
     def showResults(self):
-        self.table.clear() # clears the table
-        return
-        if not self.mc:
-            return
-        
-        actualK = self.K
-        self.table.setColumnCount(4)
-        self.table.setRowCount(actualK+1)
-
-        self.header = self.table.horizontalHeader()
-        header = ["ID", "Items", "Fitness", "BIC"]
-        for (i, h) in enumerate(header):
-            self.table.setHorizontalHeaderItem(i, QTableWidgetItem(h))
-
-        dist = [0] * actualK
-        for m in self.mc.mapping:
-            dist[m-1] += 1
-
-        bic, cbic = self.compute_bic()
-        for k in range(actualK):
-            self.table.setItem(k, 0, QTableWidgetItem(str(k+1)))
-            self.table.setItem(k, 1, QTableWidgetItem(str(dist[k])))
-            self.table.setItem(k, 2, QTableWidgetItem("%5.3f" % self.mc.cdisp[k]))
-            self.table.setItem(k, 3, QTableWidgetItem(bic is None and u"\u221E" or ("%6.2f" % cbic[k])))
-
-        colorItem(self.table, actualK, 0, "Total")
-        colorItem(self.table, actualK, 1, str(len(self.data)))
-        colorItem(self.table, actualK, 2, "%5.3f" % self.mc.disp)
-        colorItem(self.table, actualK, 3, bic is None and u"\u221E" or ("%6.2f" % bic))
-
-        for i in range(4):
-            self.table.resizeColumnToContents(i)
+        self.table.setHorizontalHeaderLabels(["K", "Best", "Score"])
+        self.table.setColumnCount(3)
+        self.table.setRowCount(len(self.optimizationRun))
+        bestScore = self.bestRun[1].score
+        worstScore = min([km.score for k, km in self.optimizationRun])
+        for i, (k, run) in enumerate(self.optimizationRun):
+            OWGUI.tableItem(self.table, i, 0, k)
+            OWGUI.tableItem(self.table, i, 1, "*" if (k, run) == self.bestRun else "")
+            item = OWGUI.tableItem(self.table, i, 2, run.score)
+            item.setData(OWGUI.TableBarItem.BarRole, QVariant(1 - (run.score - worstScore) / (bestScore - worstScore)))
+            item.setSelected((k, run) == self.bestRun)
+            
+        self.table.resizeColumnsToContents()
         self.table.show()
+        self.table.verticalHeader().hide()
+        tablewidth = sum(self.table.columnWidth(i) + 2 for i in range(3))
+#        self.table.viewport().resize(tablewidth, self.table.viewport().height())
+        self.mainArea.resize(tablewidth, self.mainArea.height())
+        self.resize(self.controlArea.width() + self.mainArea.width(), self.height())
+#        self.updateGeometry()
 
-    def sendData(self):
-        if not self.data or not self.km:
+    def run(self):
+        if self.optimized:
+            self.runOptimization()
+        else:
+            self.cluster()
+
+    def update(self):
+        if self.runAnyChange:
+            self.run()
+        else:
+            self.settingsChanged = True
+            
+    def tableItemSelected(self):
+        selectedItems = self.table.selectedItems()
+        rows = set([item.row() for item in selectedItems])
+        if len(rows) == 1:
+            row = rows.pop()
+            self.sendData(self.optimizationRun[row][1])
+
+    def sendData(self, km=None):
+        if km is None:
+            km = self.bestRun[1] if self.optimized else self.km 
+        if not self.data or not km:
             self.send("Examples", None)
             self.send("Centroids", None)
             return
-
-        clustVar = orange.EnumVariable(self.classifyName, values = ["C%d" % (x+1) for x in range(self.K)])
+        clustVar = orange.EnumVariable(self.classifyName, values = ["C%d" % (x+1) for x in range(km.k)])
 
         origDomain = self.data.domain
         if self.addIdAs == 0:
@@ -174,11 +304,11 @@ class OWKMeans(OWWidget):
 
         # construct a new data set, with a class as assigned by k-means clustering
         new = orange.ExampleTable(domain, self.data)
-        for ex, midx in izip(new, self.km.clusters):
+        for ex, midx in izip(new, km.clusters):
             ex[aid] = midx
 
         self.send("Examples", new)
-        self.send("Centroids", orange.ExampleTable(self.km.centroids))
+        self.send("Centroids", orange.ExampleTable(km.centroids))
         
     def setData(self, data):
         """Handle data from the input signal."""
@@ -186,19 +316,7 @@ class OWKMeans(OWWidget):
             self.data = None
         else:
             self.data = data
-            self.initializeClustering()
-
-    def initializeClustering(self):
-        self.km = orngClustering.KMeans(
-            self.data,
-            centroids = self.K,
-            initialization = self.initializations[self.initializationType][1],
-            distance = self.distanceMeasures[self.distanceMeasure][1],
-            initialize_only = True,
-            inner_callback = self.clusterCallback,
-            )
-        if self.runAnyChange:
-            self.cluster()
+            self.update()
 
     def sendReport(self):
         self.reportSettings("Settings", [("Distance measure", self.distanceMeasures[self.distanceMeasure]),
