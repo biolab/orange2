@@ -251,7 +251,25 @@ def toR(filename,t):
         if (i < len(labels)-1):
             f.write(',\n')
     f.write(')\n')
+    
+def toLibSVM(filename, example):
+    import orngSVM
+    orngSVM.exampleTableToSVMFormat(example, open(filename, "wb"))
+    
+def loadLibSVM(filename):
+    data = [line.split() for line in open(filename, "rb").read().splitlines() if line.strip()]
+    vars = type("attr", (dict,), {"__missing__": lambda self, key: self.setdefault(key, orange.FloatVariable(key))})()
+    item = lambda i, v: (vars[i], vars[i](v))
+    values = [dict([item(*val.split(":"))  for val in ex[1:]]) for ex in data]
+    classes = [ex[0] for ex in data]
+    disc = all(["." not in c for c in classes])
+    attributes = sorted(vars.values(), key=lambda var: int(var.name))
+    classVar = orange.EnumVariable("class", values=sorted(set(classes))) if disc else orange.FloatVariable("target")
+    domain = orange.Domain(attributes, classVar)
+    return orange.ExampleTable([orange.Example(domain, [ex.get(attr, attr("?")) for attr in attributes] + [c]) for ex, c in zip(values, classes)])
+
 
 orange.registerFileType("R", None, toR, ".R")
 orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
 orange.registerFileType("C50", None, toC50, [".names", ".data", ".test"])
+orange.registerFileType("libSVM", loadLibSVM, toLibSVM, ".svm")
