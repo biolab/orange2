@@ -20,14 +20,14 @@ complex widgets in this section.</p>
 
 <h2>Multi-Input Channels</h2>
 
-<p>First, I do not like the name, but can't remember anything better. In
+<p>First, I do not like the name, but can't make up anything better. In
 essence, the basic idea about "multi-input" channels is that they can
 be used to connect them with several output channels. That is, if a
 widget supports such a channel, several widgets can feed their input
 to that widget simultaneously.</p>
 
 <p>Say we want to build a widget that takes a data set and test
-various predictive modelling techniques on it. A widget has to have a
+various predictive modelling techniques on it. A widget has to have an
 input data channel, and this we know how to deal with from our <a
 href="settings.htm">previous</a> lesson. But, somehow differently, we
 want to connect any number of widgets which define learners to our
@@ -36,10 +36,10 @@ learners are used:</p>
 
 <img src="learningcurve.png">
 
-<p>We will here take a look how we define the channels for a learning
+<p>We will here take a look at how we define the channels for a learning
 curve widget, and how we manage its input tokens. But before we do it,
 just in brief: learning curve is something that you can use to test
-some machine learning algorithm in trying to see how it's performance
+some machine learning algorithm in trying to see how its performance
 depends on the size of the training set size. For this, one can draw a
 smaller subset of data, learn the classifier, and test it on remaining
 data set. To do this in a just way (by Salzberg, 1997), we perform
@@ -62,7 +62,7 @@ channel. This "0" says that this is a multi-input channel. If it would
 be "1" (default), it would mean that the widget can receive the input
 only from one widget.</p>
 
-<p>How does the widget know from which widget did the token came from?
+<p>How does the widget know from which widget did the token come from?
 In Orange, tokens are sent around with an id of a widget that is
 sending the token (essentially, with a pointer to the corresponding
 widget object), and having a multi-input channel only tells Orange to
@@ -131,8 +131,8 @@ essentially means that the link with the sending widget was removed,
 hance we need to remove such learner from our list. If a non-empty
 learner was sent, then it is either a new learner (say, from a widget
 we have just linked to our learning curve widget), or an update
-version of the previously sent learner. If the later is the case, than
-there is an ID which we already have in the learner's list, and we
+version of the previously sent learner. If the later is the case, then
+there is an ID which we already have in the learners list, and we
 need to replace previous information on that learner. If a new learner
 was sent, the case is somehow simpler, and we just add this learner
 and its learning curve to the corresponding variables that hold this
