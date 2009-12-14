@@ -8,7 +8,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from OWContexts import *
-import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
+import sys, time, random, user, os, os.path, platform, cPickle, copy, orngMisc
 import orange
 import orngDebugging
 from string import *
@@ -719,6 +719,8 @@ class OWBaseWidget(QDialog):
         if e.key() in (Qt.Key_Help, Qt.Key_F1):
             self.openWidgetHelp()
 #            e.ignore()
+        elif (int(e.modifiers()), e.key()) in OWBaseWidget.defaultKeyActions:
+            OWBaseWidget.defaultKeyActions[int(e.modifiers()), e.key()](self)
         else:
             QDialog.keyPressEvent(self, e)
 
@@ -807,6 +809,13 @@ class OWBaseWidget(QDialog):
 
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
+    
+    defaultKeyActions = {}
+    
+    if platform.system() == "Darwin":
+        defaultKeyActions = {
+            (Qt.ControlModifier, Qt.Key_M): lambda self: self.showMaximized if self.isMinimized() else self.showMinimized(),
+            (Qt.ControlModifier, Qt.Key_W): lambda self: self.setVisible(not self.isVisible())}
 
 
 
