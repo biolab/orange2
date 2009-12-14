@@ -8,6 +8,13 @@ groupBoxMargin = 7
 
 import os.path
 
+def id_generator(id):
+    while True:
+        id += 1
+        yield id
+        
+OrangeUserRole = id_generator(Qt.UserRole)
+
 enter_icon = None
 
 def getdeepattr(obj, attr, **argkw):
@@ -1638,6 +1645,7 @@ class tableItem(QTableWidgetItem):
 
 
 class TableBarItem(QItemDelegate):
+    BarRole = OrangeUserRole.next() #Qt.UserRole + 1
     def __init__(self, widget, table = None, color = QColor(255, 170, 127)):
         QItemDelegate.__init__(self, widget)
         self.color = color
@@ -1647,12 +1655,18 @@ class TableBarItem(QItemDelegate):
     def paint(self, painter, option, index):
         painter.save()
         self.drawBackground(painter, option, index)
-        value, ok = index.data(Qt.DisplayRole).toDouble()
-        if ok and self.widget.showBars:
-            col = index.column()
-            if col < len(self.table.normalizers):
-                max, span = self.table.normalizers[col]
-                painter.fillRect(option.rect.adjusted(0, 1, -option.rect.width()*(max - value) / span, -1), self.color)
+        ratio = None
+        ratio, ok = index.data(TableBarItem.BarRole).toDouble()
+        if not ok:
+            ratio = None
+            value, ok = index.data(Qt.DisplayRole).toDouble()
+            if ok and self.widget.showBars:
+                col = index.column()
+                if col < len(self.table.normalizers):
+                    max, span = self.table.normalizers[col]
+                    ratio = (max - value) / span
+        if ratio is not None:
+            painter.fillRect(option.rect.adjusted(0, 1, -option.rect.width() * (ratio), -1), self.color)
 #                painter.fillRect(option.rect.adjusted(0, option.rect.height()-4, -option.rect.width()*(max - value) / span, 0), self.color)
         text = index.data(Qt.DisplayRole).toString()
 
@@ -1703,5 +1717,6 @@ def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     if widget and addToLayout and widget.layout():
         widget.layout().addWidget(w)
     if selectionMode != -1:
-        w.setSelectionMode(selectionMode)
+        w.setSelectionMode(selectionMode)   
+    w.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
     return w
