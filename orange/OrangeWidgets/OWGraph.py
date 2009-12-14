@@ -59,7 +59,7 @@ class OWGraph(QwtPlot):
         self.XaxisTitle = None
         self.YLaxisTitle = None
         self.YRaxisTitle = None
-        self.useAntialiasing = 0
+        self.useAntialiasing = 1
 
         self.state = ZOOMING
         self.tempSelectionCurve = None
@@ -933,5 +933,3 @@ drawLegend(items)\n""" % (str(legendItems)))
         col = [obj.color().red(), obj.color().green(), obj.color().blue()];
         col = tuple([v/float(255) for v in col])
         return col, obj.color().alpha()/float(255)
-
-

@@ -82,6 +82,7 @@ class OWDistributionGraph(OWGraph):
         curve.setXAxis(xAxis)
         curve.setYAxis(yAxis)
         curve.setItemAttribute(QwtPlotItem.Legend, 0)
+        curve.setRenderHint(QwtPlotItem.RenderAntialiased, self.useAntialiasing)
         return curve
 
 
@@ -233,6 +234,7 @@ class OWDistributionGraph(OWGraph):
         for key in keys:
             ckey = PolygonCurve(pen=QPen(Qt.black), brush=QBrush(Qt.gray))
             ckey.attach(self)
+            ckey.setRenderHints(QwtPlotItem.RenderAntialiased, self.useAntialiasing)
             if self.variableContinuous:
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
                 ff="%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
