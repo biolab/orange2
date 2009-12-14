@@ -11,6 +11,7 @@ import OWGUI
 import orange
 import orngClustering
 import math
+import random
 import statc
 from PyQt4.Qwt5 import *
 from itertools import izip
@@ -40,6 +41,7 @@ class OWKMeans(OWWidget):
     scoringMethods = [
         ("Silhouette (heuristic)", orngClustering.score_fastsilhouette),
         ("Silhouette", orngClustering.score_silhouette),
+        ("Between cluster distance", orngClustering.score_betweenClusterDistance),
         ("Distance to centroids", orngClustering.score_distance_to_centroids)
         ] 
 
@@ -117,8 +119,8 @@ class OWKMeans(OWWidget):
         OWGUI.separator(box, height = 4)
         cc = OWGUI.comboBox(box, self, "addIdAs", label = "Place" + "  ",
                             orientation="horizontal", items = ["Class attribute", "Attribute", "Meta attribute"])
-        cb.disables.append(le)
-        cb.disables.append(cc)
+        cb.disables.append(le.box)
+        cb.disables.append(cc.box)
         cb.makeConsistent()
         OWGUI.separator(box)
         
@@ -204,6 +206,8 @@ class OWKMeans(OWWidget):
                        (len(self.data), self.K))
             return
         
+        random.seed(0)
+        
         self.progressBarInit()
         Ks = range(self.optimizationFrom, self.optimizationTo + 1)
         self.optimizationRun =[(k, orngClustering.KMeans(
@@ -214,10 +218,10 @@ class OWKMeans(OWWidget):
                 initialization = self.initializations[self.initializationType][1],
                 distance = self.distanceMeasures[self.distanceMeasure][1],
                 scoring = self.scoringMethods[self.scoring][1],
-                inner_callback = lambda val: self.progressBarSet(val.iteration/len(Ks) + k * 100.0 / len(Ks)),
+                inner_callback = lambda val: self.progressBarSet(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks)),
                 )) for k in Ks]
         self.progressBarFinished()
-        self.bestRun = max(self.optimizationRun, key=lambda (k, run): run.score)
+        self.bestRun = (min if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else max)(self.optimizationRun, key=lambda (k, run): run.score)
         self.showResults()
         self.sendData()
         
@@ -226,6 +230,7 @@ class OWKMeans(OWWidget):
             self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
                        (len(self.data), self.K))
             return
+        random.seed(0)
         
         self.km = orngClustering.KMeans(
             self.data,
@@ -248,11 +253,18 @@ class OWKMeans(OWWidget):
             self.progressBarSet(80.0 * km.iteration / norm)
         else:
             self.progressBarSet(80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration)))
+            
+    def progressEstimate(self, km):
+        norm = math.log(len(self.data), 10)
+        if km.iteration < norm:
+            return 80.0 * km.iteration / norm
+        else:
+            return 80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration))
         
     def showResults(self):
         self.table.setRowCount(len(self.optimizationRun))
         bestScore = self.bestRun[1].score
-        worstScore = min([km.score for k, km in self.optimizationRun])
+        worstScore = (max if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else min)([km.score for k, km in self.optimizationRun])
         for i, (k, run) in enumerate(self.optimizationRun):
             item = OWGUI.tableItem(self.table, i, 0, k)
             item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
@@ -333,17 +345,26 @@ class OWKMeans(OWWidget):
             self.update()
 
     def sendReport(self):
-        self.reportSettings("Settings", [("Distance measure", self.distanceMeasures[self.distanceMeasure]),
-                                         ("Number of clusters", self.K)])
+        settings = [("Distance measure", self.distanceMeasures[self.distanceMeasure][0]),
+                    ("Initialization", self.initializations[self.initializationType][0]),
+                    ("Restarts", self.restarts)]
+        if self.optimized:
+            self.reportSettings("Settings", settings)
+            self.reportSettings("Optimization", [("Minimum num. of clusters", self.optimizationFrom),
+                                                 ("Maximum num. of clusters", self.optimizationTo),
+                                                 ("Scoring method", self.scoringMethods[self.scoring][0])])
+        else:
+            self.reportSettings("Settings", settings + [("Number of clusters (K)", self.K)])
         self.reportData(self.data)
-        self.reportSection("Cluster data")
+        if self.optimized:
+            self.reportSection("Cluster size optimization report")
 #        res = "<table><tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % n for n in ("K", "Best", "Score")) + "</tr>\n"
 #        for i in range(self.K):
 #            res += "<tr>"+"".join('<td align="right">&nbsp;&nbsp;%s&nbsp;&nbsp;</td>' % str(self.table.item(i, j).text()) for j in range(4)) + "</tr>\n"
 #        res += "<tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % str(self.table.item(self.K, j).text()) for j in range(4)) + "</tr>\n"
 #        res += "</table>"
-        import OWReport 
-        self.reportRaw(OWReport.reportTable(self.table))
+            import OWReport 
+            self.reportRaw(OWReport.reportTable(self.table))
 
 
 ##############################################################################
