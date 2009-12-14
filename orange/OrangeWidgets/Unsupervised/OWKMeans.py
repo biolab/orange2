@@ -69,6 +69,7 @@ class OWKMeans(OWWidget):
 
         # GUI definition
         # settings
+        
         box = OWGUI.widgetBox(self.controlArea, "Clusters (k)")
         bg = OWGUI.radioButtonsInBox(box, self, "optimized", [], callback=self.setOptimization)
         fixedBox = OWGUI.widgetBox(box, orientation="horizontal")
@@ -101,11 +102,11 @@ class OWKMeans(OWWidget):
                        items=[name for name, _ in self.distanceMeasures],
                        tooltip=None,
                        callback = self.update)
-        OWGUI.comboBox(box, self, "initializationType", label="Initialization",
+        cb = OWGUI.comboBox(box, self, "initializationType", label="Initialization",
                        items=[name for name, _ in self.initializations],
                        tooltip=None,
                        callback = self.update)
-        OWGUI.spin(box, self, "restarts", label="Restarts", orientation="horizontal",
+        OWGUI.spin(cb.box, self, "restarts", label="Restarts", orientation="horizontal",
                    min=1, max=100, callback=self.update, callbackOnReturn=True)
 
         box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
@@ -130,15 +131,19 @@ class OWKMeans(OWWidget):
         # display of clustering results
         
         
-        self.table = OWGUI.table(self.mainArea, selectionMode=QTableWidget.SingleSelection)
+        self.optimizationReportBox = OWGUI.widgetBox(self.mainArea)
+        tableBox = OWGUI.widgetBox(self.optimizationReportBox, "Optimization Report")
+        self.table = OWGUI.table(tableBox, selectionMode=QTableWidget.SingleSelection)
         self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
         self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["K", "Best", "Score"])
+        self.table.verticalHeader().hide()
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setItemDelegateForColumn(2, OWGUI.TableBarItem(self, self.table))
+        self.table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.table.hide()
-        
-        print self.table.layout()
         
         self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.tableItemSelected)
         
@@ -152,7 +157,19 @@ class OWKMeans(OWWidget):
         
         self.updateOptimizationGui()
 
-        self.resize(100,100)
+#        self.resize(100,100)
+
+    def adjustSize(self):
+        self.ensurePolished()
+        s = self.sizeHint()
+        self.resize(s)
+        
+    def sizeHint(self):
+        s = self.leftWidgetPart.sizeHint()
+        if self.optimized and not self.mainArea.isHidden():
+            s.setWidth(s.width() + self.mainArea.sizeHint().width())
+        return s
+            
         
     def updateOptimizationGui(self):
         state = [True, False, False] if self.optimized else [False, True, True]
@@ -160,12 +177,9 @@ class OWKMeans(OWWidget):
                                 self.optimizationBox.setDisabled,
                                 self.mainArea.setHidden]):
             func(s)
-        
-        if not self.optimized:
-            self.mainArea.resize(0, self.height())
-            self.resize(self.controlArea.width(), self.height())
-#        self.topWidgetPart.layout().invalidate()
-        
+            
+        qApp.processEvents()
+        self.adjustSize()
             
     def updateOptimizationFrom(self):
 #        self.optimizationFrom = min([self.optimizationFrom, self.optimizationTo - 1])
@@ -182,7 +196,6 @@ class OWKMeans(OWWidget):
         if self.optimized:
             self.runOptimization()
         else:
-            self.table.hide()
             self.cluster()
             
     def runOptimization(self):
@@ -237,26 +250,27 @@ class OWKMeans(OWWidget):
             self.progressBarSet(80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration)))
         
     def showResults(self):
-        self.table.setHorizontalHeaderLabels(["K", "Best", "Score"])
-        self.table.setColumnCount(3)
         self.table.setRowCount(len(self.optimizationRun))
         bestScore = self.bestRun[1].score
         worstScore = min([km.score for k, km in self.optimizationRun])
         for i, (k, run) in enumerate(self.optimizationRun):
-            OWGUI.tableItem(self.table, i, 0, k)
-            OWGUI.tableItem(self.table, i, 1, "*" if (k, run) == self.bestRun else "")
+            item = OWGUI.tableItem(self.table, i, 0, k)
+            item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
+            
+            item = OWGUI.tableItem(self.table, i, 1, " * " if (k, run) == self.bestRun else "")
+            item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
+            
             item = OWGUI.tableItem(self.table, i, 2, run.score)
             item.setData(OWGUI.TableBarItem.BarRole, QVariant(1 - (run.score - worstScore) / (bestScore - worstScore)))
-            item.setSelected((k, run) == self.bestRun)
+            if (k, run) == self.bestRun:
+                self.table.selectRow(i)
             
-        self.table.resizeColumnsToContents()
+        for i in range(2):
+            self.table.resizeColumnToContents(i)
         self.table.show()
-        self.table.verticalHeader().hide()
         tablewidth = sum(self.table.columnWidth(i) + 2 for i in range(3))
-#        self.table.viewport().resize(tablewidth, self.table.viewport().height())
-        self.mainArea.resize(tablewidth, self.mainArea.height())
-        self.resize(self.controlArea.width() + self.mainArea.width(), self.height())
-#        self.updateGeometry()
+        qApp.processEvents()
+        self.adjustSize()
 
     def run(self):
         if self.optimized:
@@ -323,12 +337,13 @@ class OWKMeans(OWWidget):
                                          ("Number of clusters", self.K)])
         self.reportData(self.data)
         self.reportSection("Cluster data")
-        res = "<table><tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % n for n in ("ID", "Items", "Fitness", "BIC")) + "</tr>\n"
-        for i in range(self.K):
-            res += "<tr>"+"".join('<td align="right">&nbsp;&nbsp;%s&nbsp;&nbsp;</td>' % str(self.table.item(i, j).text()) for j in range(4)) + "</tr>\n"
-        res += "<tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % str(self.table.item(self.K, j).text()) for j in range(4)) + "</tr>\n"
-        res += "</table>"
-        self.reportRaw(res)
+#        res = "<table><tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % n for n in ("K", "Best", "Score")) + "</tr>\n"
+#        for i in range(self.K):
+#            res += "<tr>"+"".join('<td align="right">&nbsp;&nbsp;%s&nbsp;&nbsp;</td>' % str(self.table.item(i, j).text()) for j in range(4)) + "</tr>\n"
+#        res += "<tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % str(self.table.item(self.K, j).text()) for j in range(4)) + "</tr>\n"
+#        res += "</table>"
+        import OWReport 
+        self.reportRaw(OWReport.reportTable(self.table))
 
 
 ##############################################################################
