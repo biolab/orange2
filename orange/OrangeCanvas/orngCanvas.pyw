@@ -275,15 +275,26 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetPopup.addSeparator()
         rename = self.widgetPopup.addAction("&Rename", self.schema.canvasView.renameActiveWidget, Qt.Key_F2)
         delete = self.widgetPopup.addAction("Remove", self.schema.canvasView.removeActiveWidget, Qt.Key_Delete)
+        delete.setShortcuts([Qt.Key_Delete, Qt.CTRL + Qt.Key_Backspace, Qt.CTRL + Qt.Key_Delete])
         self.widgetPopup.addSeparator()
         self.widgetPopup.addAction("Help", self.schema.canvasView.helpOnActiveWidget, Qt.Key_F1)
         self.widgetPopup.setEnabled(0)
+        
+        if sys.platform == "darwin":
+            self.windowPopup = QMenu("Window", self)
+            self.windowPopup.addAction("Minimize", self.showMinimized, Qt.CTRL + Qt.Key_M)
+            self.windowPopup.addAction("Zoom", self.showMaximized, 0)
 
         self.menuBar = QMenuBar(self)
         self.menuBar.addMenu(self.menuFile)
         self.menuBar.addMenu(self.menuOptions)
         self.menuBar.addMenu(self.widgetPopup)
+        
+        if hasattr(self, "windowPopup"):
+            self.menuBar.addMenu(self.windowPopup)
+            
         self.menuBar.addMenu(self.menuHelp)
+        
         self.setMenuBar(self.menuBar)
 
     def menuItemOpen(self):
