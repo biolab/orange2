@@ -268,7 +268,7 @@ class OWKMeans(OWWidget):
         for i in range(2):
             self.table.resizeColumnToContents(i)
         self.table.show()
-        tablewidth = sum(self.table.columnWidth(i) + 2 for i in range(3))
+#        tablewidth = sum(self.table.columnWidth(i) + 2 for i in range(3))
         qApp.processEvents()
         self.adjustSize()
 
