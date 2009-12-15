@@ -77,7 +77,7 @@ class OWKMeans(OWWidget):
         fixedBox = OWGUI.widgetBox(box, orientation="horizontal")
         button = OWGUI.appendRadioButton(bg, self, "optimized", "Fixed", 
                                          insertInto=fixedBox, tooltip="Fixed number of clusters")
-        self.fixedSpinBox = OWGUI.spin(OWGUI.widgetBox(fixedBox), self, "K", min=1, max=30, tooltip="Fixed number of clusters",
+        self.fixedSpinBox = OWGUI.spin(OWGUI.widgetBox(fixedBox), self, "K", min=2, max=30, tooltip="Fixed number of clusters",
                                        callback=self.update, callbackOnReturn=True)
         OWGUI.rubber(fixedBox)
         
@@ -208,23 +208,26 @@ class OWKMeans(OWWidget):
             return
         
         random.seed(0)
-        
-        self.progressBarInit()
-        Ks = range(self.optimizationFrom, self.optimizationTo + 1)
-        self.optimizationRun =[(k, orngClustering.KMeans(
-                self.data,
-                centroids = k,
-                minscorechange=0,
-                nstart = self.restarts,
-                initialization = self.initializations[self.initializationType][1],
-                distance = self.distanceMeasures[self.distanceMeasure][1],
-                scoring = self.scoringMethods[self.scoring][1],
-                inner_callback = lambda val: self.progressBarSet(min(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks), 100.0))
-                )) for k in Ks]
-        self.progressBarFinished()
-        self.bestRun = (min if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else max)(self.optimizationRun, key=lambda (k, run): run.score)
-        self.showResults()
-        self.sendData()
+        try:
+            self.progressBarInit()
+            Ks = range(self.optimizationFrom, self.optimizationTo + 1)
+            self.optimizationRun =[(k, orngClustering.KMeans(
+                    self.data,
+                    centroids = k,
+                    minscorechange=0,
+                    nstart = self.restarts,
+                    initialization = self.initializations[self.initializationType][1],
+                    distance = self.distanceMeasures[self.distanceMeasure][1],
+                    scoring = self.scoringMethods[self.scoring][1],
+                    inner_callback = lambda val: self.progressBarSet(min(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks), 100.0))
+                    )) for k in Ks]
+            self.progressBarFinished()
+            self.bestRun = (min if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else max)(self.optimizationRun, key=lambda (k, run): run.score)
+            self.showResults()
+            self.sendData()
+        except Exception, ex:
+            self.error(0, "An error occured while running optimization")
+            raise
         
     def cluster(self):
         if self.K > len(self.data):
@@ -286,6 +289,7 @@ class OWKMeans(OWWidget):
         self.adjustSize()
 
     def run(self):
+        self.error(0)
         if not self.data:
             return
         if self.optimized:
