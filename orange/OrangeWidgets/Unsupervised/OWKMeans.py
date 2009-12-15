@@ -169,7 +169,7 @@ class OWKMeans(OWWidget):
     def sizeHint(self):
         s = self.leftWidgetPart.sizeHint()
         if self.optimized and not self.mainArea.isHidden():
-            s.setWidth(s.width() + self.mainArea.sizeHint().width())
+            s.setWidth(s.width() + self.mainArea.sizeHint().width() + self.childrenRect().x() * 4)
         return s
             
         
@@ -201,9 +201,9 @@ class OWKMeans(OWWidget):
             self.cluster()
             
     def runOptimization(self):
-        if self.K > len(self.data):
+        if self.optimizationTo > len(self.data):
             self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
-                       (len(self.data), self.K))
+                       (len(self.data), self.optimizationTo))
             return
         
         random.seed(0)
@@ -218,7 +218,7 @@ class OWKMeans(OWWidget):
                 initialization = self.initializations[self.initializationType][1],
                 distance = self.distanceMeasures[self.distanceMeasure][1],
                 scoring = self.scoringMethods[self.scoring][1],
-                inner_callback = lambda val: self.progressBarSet(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks)),
+                inner_callback = lambda val: self.progressBarSet(min(self.progressEstimate(val)/len(Ks) + k * 100.0 / len(Ks), 100.0))
                 )) for k in Ks]
         self.progressBarFinished()
         self.bestRun = (min if getattr(self.scoringMethods[self.scoring][1], "minimize", False) else max)(self.optimizationRun, key=lambda (k, run): run.score)
@@ -257,9 +257,9 @@ class OWKMeans(OWWidget):
     def progressEstimate(self, km):
         norm = math.log(len(self.data), 10)
         if km.iteration < norm:
-            return 80.0 * km.iteration / norm
+            return min(80.0 * km.iteration / norm, 90.0)
         else:
-            return 80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration))
+            return min(80.0 + 0.15 * (1.0 - math.exp(norm - km.iteration)), 90.0)
         
     def showResults(self):
         self.table.setRowCount(len(self.optimizationRun))
@@ -285,6 +285,8 @@ class OWKMeans(OWWidget):
         self.adjustSize()
 
     def run(self):
+        if not self.data:
+            return
         if self.optimized:
             self.runOptimization()
         else:
@@ -342,7 +344,7 @@ class OWKMeans(OWWidget):
             self.data = None
         else:
             self.data = data
-            self.update()
+            self.run()
 
     def sendReport(self):
         settings = [("Distance measure", self.distanceMeasures[self.distanceMeasure][0]),
