@@ -36,20 +36,35 @@ class OWITree(OWClassificationTreeViewer):
         self.treeLearner = None
         self.tree = None
         self.learner = None
+        
+        new_controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=4, addToLayout=False)
+        self.leftWidgetPart.layout().insertWidget(0, new_controlArea)
+        self.leftWidgetPart.layout().removeWidget(self.controlArea)
 
-        OWGUI.separator(self.controlArea, height=40)
-        box = OWGUI.widgetBox(self.controlArea, "Split selection")
+        tabWidget = OWGUI.tabWidget(new_controlArea)
+        buildTab = OWGUI.createTabPage(tabWidget, "Build")
+#        new_controlArea.layout().addWidget(self.controlArea)
+
+        self.old_controlArea = self.controlArea
+        displayTab = OWGUI.createTabPage(tabWidget, "Display", self.controlArea)
+        self.controlArea = new_controlArea
+
+        self.old_controlArea.layout().removeWidget(self.infBox)
+        buildTab.layout().insertWidget(0, self.infBox)
+        
+        OWGUI.separator(buildTab)
+        box = OWGUI.widgetBox(buildTab, "Split selection")
 #        OWGUI.widgetLabel(box, "Split By:")
         self.attrsCombo = OWGUI.comboBox(box, self, 'attridx', orientation="horizontal", callback=self.cbAttributeSelected)
         self.cutoffEdit = OWGUI.lineEdit(box, self, 'cutoffPoint', label = 'Cut off point: ', orientation='horizontal', validator=QDoubleValidator(self))
         OWGUI.button(box, self, "Split", callback=self.btnSplitClicked)
 
-        OWGUI.separator(self.controlArea)
-        box = OWGUI.widgetBox(self.controlArea, "Prune or grow tree")
+        OWGUI.separator(buildTab)
+        box = OWGUI.widgetBox(buildTab, "Prune or grow tree")
         self.btnPrune = OWGUI.button(box, self, "Cut", callback = self.btnPruneClicked, disabled = 1)
         self.btnBuild = OWGUI.button(box, self, "Build", callback = self.btnBuildClicked)
 
-        OWGUI.rubber(self.controlArea)
+        OWGUI.rubber(buildTab)
 
         self.activateLoadedSettings()
         #self.space.updateGeometry()
@@ -205,7 +220,7 @@ class OWITree(OWClassificationTreeViewer):
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owi=OWITree()
-    a.setMainWidget(owi)
+#    a.setMainWidget(owi)
     d = orange.ExampleTable(r'../../doc/datasets/iris')
     owi.setData(d)
     owi.show()
