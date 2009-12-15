@@ -195,10 +195,11 @@ class OWKMeans(OWWidget):
         
     def setOptimization(self):
         self.updateOptimizationGui()
-        if self.optimized:
-            self.runOptimization()
-        else:
-            self.cluster()
+        self.update()
+#        if self.optimized:
+#            self.runOptimization()
+#        else:
+#            self.cluster()
             
     def runOptimization(self):
         if self.optimizationTo > len(self.data):
