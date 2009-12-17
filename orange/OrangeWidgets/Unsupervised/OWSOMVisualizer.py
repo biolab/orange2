@@ -472,6 +472,7 @@ class OWSOMVisualizer(OWWidget):
 
         self.somMap = None
         self.examples = None
+        self.selectionChanged = False
         
         
 ##        layout = QVBoxLayout(self.mainArea) #,QVBoxLayout.TopToBottom,0)
@@ -535,8 +536,9 @@ class OWSOMVisualizer(OWWidget):
  
         b = OWGUI.widgetBox(self.controlArea, "Selection")
         OWGUI.button(b, self, "&Invert selection", callback=self.scene.invertSelection)
-        OWGUI.button(b, self, "&Commit", callback=self.commit)
-        OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
+        button = OWGUI.button(b, self, "&Commit", callback=self.commit)
+        check = OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
+        OWGUI.setStopper(self, button, check, "selectionChanged", self.commit)
 
         OWGUI.separator(self.controlArea)
         OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
@@ -627,8 +629,13 @@ class OWSOMVisualizer(OWWidget):
         
     def updateSelection(self, nodeList):
         self.selectionList = nodeList
+        self.commitIf()
+        
+    def commitIf(self):
         if self.commitOnChange:
             self.commit()
+        else:
+            self.selectionChanged = True
             
     def commit(self):
         if not self.somMap:
@@ -643,6 +650,8 @@ class OWSOMVisualizer(OWWidget):
             self.send("Examples",ex)
         else:
             self.send("Examples",None)
+            
+        self.selectionChanged = False
 
     def saveGraph(self):
         sizeDlg = OWChooseImageSizeDlg(self.scene)
