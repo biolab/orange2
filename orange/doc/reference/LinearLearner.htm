@@ -4,7 +4,7 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD>
 <body>
-<index name="classifiers+logistic regresssion+linear">
+<index name="classifiers+logistic regresssion+linear+svm">
 <h1>Linear Learner</h1>
 <p><code>orange.LinearLearner</code> is a learner that uses the <a href="http://www.csie.ntu.edu.tw/~cjlin/liblinear/">LIBLINEAR library</a> backend that is very fast on large datasets.</p>
 <index name="classifiers+logistic regresssion+linear learner">
@@ -34,3 +34,35 @@
   <dt>weights</dt>
   <dd>A list of computed weight vectors for all one class vs. rest classifiers</dd>
 <dl>
+
+<h2>Examples</h2>
+<p>Part of <a href="linear-learner.py">linear-learner.py</a>
+<xmp class=code>data = orange.ExampleTable("iris")
+classifier = orange.LinearLearner(data)
+
+for i, cls_name in enumerate(data.domain.classVar.values):
+    print "Attribute weights for %s vs. rest classification:\n\t" % cls_name,
+    for attr, w in  zip(data.domain.attributes, classifier.weights[i]):
+        print "%s: %.3f " % (attr.name, w),
+    print
+</xmp>
+
+<p>Produces the output:</p>
+<xmp class=code>
+Attribute weights for Iris-setosa vs. rest classification:
+	sepal length: 0.463  sepal width: 1.464  petal length: -2.251  petal width: -1.025 
+Attribute weights for Iris-versicolor vs. rest classification:
+	sepal length: 0.566  sepal width: -1.482  petal length: 0.548  petal width: -1.415 
+Attribute weights for Iris-virginica vs. rest classification:
+	sepal length: -1.862  sepal width: -1.640  petal length: 2.474  petal width: 2.587 
+...
+</xmp>
+
+<hr>
+
+<H2>References</H2>
+
+<p>R.-E. Fan, K.-W. Chang, C.-J. Hsieh, X.-R. Wang, and C.-J. Lin. LIBLINEAR: A Library for Large Linear Classification, Journal of Machine Learning Research 9(2008), 1871-1874. Software available at <a
+href=http://www.csie.ntu.edu.tw/~cjlin/liblinear>http://www.csie.ntu.edu.tw/~cjlin/liblinear</a></p>
+
+</body></html>
