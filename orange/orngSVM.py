@@ -377,3 +377,22 @@ def exampleTableToSVMFormat(examples, file):
                 file.write(" "+str(i+1)+":"+str(ex[attr]))
         file.write("\n")
             
+class LinearLearner(orange.LinearLearner):
+    """ A wrapper around orange.LinearLearner with a default
+    solver_type == L2Loss_SVM_Dual (the default in orange.LinearLearner
+    is L2_LR)
+    """
+    def __new__(cls, data=None, weightId=0, **kwargs):
+        self = orange.LinearLearner.__new__(cls, **kwargs)
+        if data:
+            self.__init__(**kwargs)
+            return self.__call__(data, weightId)
+        else:
+            return self
+        
+    def __init__(self, **kwargs):
+        if kwargs.get("solver_type", None) in [orange.LinearLearner.L2_LR, None]:
+            kwargs = dict(kwargs)
+            kwargs["solver_type"] = orange.LinearLearner.L2Loss_SVM_Dual
+        for name, val in kwargs.items():
+            setattr(self, name, val)
