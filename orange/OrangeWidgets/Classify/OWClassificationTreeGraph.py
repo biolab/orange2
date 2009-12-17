@@ -213,12 +213,12 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 
         self.scene.bubbleConstructor=self.classificationBubbleConstructor
 
-        self.navWidget=QWidget()
+        self.navWidget= OWBaseWidget(self) #QWidget()
         self.navWidget.lay=QVBoxLayout(self.navWidget)
 
         scene=TreeGraphicsScene(self.navWidget)
-        self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
-        self.treeNav.setScene(scene)
+        self.treeNav = TreeNavigator(self.sceneView)
+#        self.treeNav.setScene(scene)
         self.navWidget.lay.addWidget(self.treeNav)
         self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
@@ -326,7 +326,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                     light = 100
                 node.setBrush(QBrush(self.scene.colorPalette[self.TargetClassIndex].light(light)))
         self.scene.update()
-        self.treeNav.leech()
+#        self.treeNav.leech()
 
     def toggleTargetClass(self):
         if self.NodeColorMethod in [3,4]:

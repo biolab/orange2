@@ -350,8 +350,8 @@ class TreeGraphicsView(QGraphicsView):
 
     def setNavigator(self, nav):
         self.navigator=nav
-        self.master.connect(self.scene(),SIGNAL("resized()"),self.navigator.resizeScene)
-        self.master.connect(self, SIGNAL("contentsMoving(int,int)"),self.navigator.moveView)
+#        self.master.connect(self.scene(),SIGNAL("resized()"),self.navigator.resizeScene)
+#        self.master.connect(self, SIGNAL("contentsMoving(int,int)"),self.navigator.moveView)
 
     def resizeEvent(self, event):
         QGraphicsView.resizeEvent(self, event)
@@ -562,119 +562,55 @@ class TreeGraphicsScene(QGraphicsScene):
             self.selectedNode.setSelectionBox()
             self.master.updateSelection(self.selectedNode)        
 
-class TreeNavigator(TreeGraphicsView):
-    class NavigatorNode(GraphicsNode):
-        def __init__(self,masterNode,*args):
-            GraphicsNode.__init__(self, *args)
-            self.masterNode=masterNode
-        def leech(self):
-            self.isOpen=self.masterNode.isOpen
-            self.setBrush(self.masterNode.brush())
+class TreeNavigator(QGraphicsView):
 
     def __init__(self, masterView, *args):
-        apply(TreeGraphicsView.__init__,(self,)+args)
-        self.myScene = self.scene()
-        self.masterView=masterView
-        self.scene().setSceneRect(0,0,self.width(),self.height())
-        self.rootNode=None
-        self.updateRatio()
-        self.viewRect=QGraphicsRectItem(None, self.scene())
-        self.viewRect.setRect(0,0, self.rx*self.masterView.width(), self.ry*self.masterView.height())
-        self.viewRect.show()
-        self.viewRect.setBrush(QBrush(Qt.lightGray))
-        self.viewRect.setZValue(-10)
-        self.buttonPressed=False
-        self.bubbleConstructor=self.myBubbleConstructor
-        self.isShown=False
-
-    def leech(self):
-        if not self.isShown or getattr(self.masterView.scene(), "nodeList", []) == []:
-            return
-        self.updateRatio()
-        if self.rootNode!=self.masterView.scene().nodeList[0]: #display a new tree
-            for item in self.scene().items():
-                self.scene().removeItem(item)
-            self.rootNode=self.walkcreate(self.masterView.scene().nodeList[0], None)
-            self.walkupdate(self.rootNode)
-        else:
-            self.walkupdate(self.rootNode)
-        self.scene().update()
-
-
-    def walkcreate(self, masterNode, parent):
-        node=self.NavigatorNode(masterNode, masterNode.tree, parent, self.scene())
-        node.setZValue(0)
-        for n in masterNode.nodeList:
-            self.walkcreate(n,node)
-        return node
-
-    def walkupdate(self, node):
-        node.leech()
-        if node.masterNode.isShown:
-            node.show()
-            node.setPos(self.rx*node.masterNode.x(), self.ry*node.masterNode.y())
-            node.setRect(0, 0, self.rx*node.masterNode.rect().width(), self.ry*node.masterNode.rect().height())
-            for n in node.nodeList:
-                self.walkupdate(n)
-                n.updateEdge()
-        else:
-            node.hideSubtree()
+        QGraphicsView.__init__(self)
+        self.masterView = masterView
+        self.setScene(self.masterView.scene())
+        self.setRenderHint(QPainter.Antialiasing)
+#        self.setInteractive(False)
 
     def mousePressEvent(self, event):
 ##        if self.scene().sceneRect().contains(event.pos()):
-        self.masterView.centerOn(event.pos().x()/self.rx, event.pos().y()/self.ry)
-        self.buttonPressed=True
+        if event.buttons() & Qt.LeftButton:
+            self.masterView.centerOn(self.mapToScene(event.pos()))
+        return QGraphicsView.mousePressEvent(self, event)
 
-    def mouseReleaseEvent(self, event):
-        self.buttonPressed=False
+#    def mouseReleaseEvent(self, event):
+#        return QGraphicsView.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        if self.buttonPressed:
-            self.masterView.centerOn(event.pos().x()/self.rx, event.pos().y()/self.ry)
-            self.updateBubble(None)
-        else:
-            obj=self.scene().items(self.mapToScene(event.pos()))        # to do
-            if obj and obj[0].__class__==self.NavigatorNode:
-                self.updateBubble(obj[0], self.mapToScene(event.pos()))
-            else:
-                self.updateBubble()
+        if event.buttons() & Qt.LeftButton:
+            self.masterView.centerOn(self.mapToScene(event.pos()))
+        return QGraphicsView.mouseMoveEvent(self, event)
 
     def resizeEvent(self, event):
-        self.scene().setSceneRect(0,0,event.size().width(), event.size().height())
-        self.leech()
+        QGraphicsView.resizeEvent(self, event)
         self.updateView()
-        self.scene().update()
-
+#
     def resizeView(self):
-        self.updateRatio()
         self.updateView()
-        self.scene().update()
-
-    def resizeScene(self):
-        self.updateRatio()
-        if self.rootNode:
-            self.leech()
-            self.updateView()
-            self.scene().update()
-
-    def moveView(self, x,y):
-        self.updateRatio()
-        self.viewRect.setRect(x*self.rx, y*self.ry, self.masterView.width()*self.rx, self.masterView.height()*self.ry)
-        self.scene().update()
-
-    def updateRatio(self):
-        self.rx=float(self.scene().width())/max(1, float(self.masterView.scene().width()))
-        self.ry=float(self.scene().height())/max(1, float(self.masterView.scene().height()))
-        #print "Ratio: ", self.rx, self.ry
-
+#
+#    def resizeScene(self):
+#        self.updateRatio()
+#
+#    def updateRatio(self):
+#        self.updateView()
+#
     def updateView(self):
-        pos=self.masterView.mapFromScene(0, 0)
-##        self.viewRect.setRect(self.masterView.sceneRect().x()*self.rx, self.masterView.sceneRect().y()*self.ry, self.masterView.sceneRect().width()*self.rx, self.masterView.sceneRect().height()*self.ry)
-        self.viewRect.setRect(-pos.x()*self.rx, -pos.y()*self.ry, self.masterView.width()*self.rx, self.masterView.height()*self.ry)
-        #print "UpdateView:", -pos.x()*self.rx, -pos.y()*self.ry
+        if self.scene():
+            self.fitInView(self.scene().sceneRect())
 
-    def myBubbleConstructor(self, node, pos, scene):
-        return self.masterView.scene().bubbleConstructor(node.masterNode, pos, scene)
+    def paintEvent(self, event):
+        QGraphicsView.paintEvent(self, event)
+        painter = QPainter(self.viewport())
+        painter.setBrush(QColor(100, 100, 100, 100))
+        painter.setRenderHints(self.renderHints())
+        painter.drawPolygon(self.viewPolygon())
+        
+    def viewPolygon(self):
+        return self.mapFromScene(self.masterView.mapToScene(self.masterView.viewport().rect()))
 
 
 class OWTreeViewer2D(OWWidget):
@@ -852,13 +788,15 @@ class OWTreeViewer2D(OWWidget):
         pass
 
     def toggleNavigator(self):
-        if self.navWidget.isVisible():
-            self.navWidget.hide()
-            self.treeNav.isShown=False
-        else:
-            self.navWidget.show()
-            self.treeNav.isShown=True    # just so it knows it is shown
-            self.treeNav.leech()
+        self.navWidget.setHidden(not self.navWidget.isHidden())
+        
+#        if self.navWidget.isVisible():
+#            self.navWidget.hide()
+#            self.treeNav.isShown=False
+#        else:
+#            self.navWidget.show()
+#            self.treeNav.isShown=True    # just so it knows it is shown
+#            self.treeNav.leech()
 
     def activateLoadedSettings(self):
         if not self.tree:
@@ -870,7 +808,7 @@ class OWTreeViewer2D(OWWidget):
         self.toggleTreeDepth()
         self.toggleLineWidth()
         self.toggleNodeSize()
-        self.treeNav.leech()
+#        self.treeNav.leech()
         #self.toggleNavigator()
 
     def ctree(self, tree=None):
@@ -918,7 +856,7 @@ class OWTreeViewer2D(OWWidget):
     def clear(self):
         self.tree=None
         self.scene.clear()
-        self.treeNav.scene().clear()
+#        self.treeNav.scene().clear()
 
     def rescaleTree(self):
         k = 0.0028 * (self.Zoom ** 2) + 0.2583 * self.Zoom + 1.1389
@@ -980,8 +918,8 @@ class OWDefTreeViewer2D(OWTreeViewer2D):
         self.navWidget = QWidget(None)
         self.navWidget.setLayout(QVBoxLayout(self.navWidget))
         scene = TreeGraphicsScene(self.navWidget)
-        self.treeNav = TreeNavigator(self.sceneView, self, scene, self.navWidget)
-        self.treeNav.setScene(scene)
+        self.treeNav = TreeNavigator(self.sceneView)
+#        self.treeNav.setScene(scene)
         self.navWidget.layout().addWidget(self.treeNav)
         self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)

@@ -151,17 +151,17 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.scene = TreeGraphicsScene(self)
         self.sceneView = TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
-        self.scene.setSceneRect(0,0,800,800)
+#        self.scene.setSceneRect(0,0,800,800)
 
         self.scene.bubbleConstructor=self.regressionBubbleConstructor
 
-        self.navWidget = QWidget(None)
+        self.navWidget = OWBaseWidget(self) #QWidget(None)
         self.navWidget.lay=QVBoxLayout(self.navWidget)
 ##        self.navWidget.setLayout(QVBoxLayout())
 
         scene = TreeGraphicsScene(self.navWidget)
-        self.treeNav=TreeNavigator(self.sceneView,self,scene,self.navWidget)
-        self.treeNav.setScene(scene)
+        self.treeNav = TreeNavigator(self.sceneView) #,self,scene,self.navWidget)
+#        self.treeNav.setScene(scene)
         self.navWidget.layout().addWidget(self.treeNav)
         self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
@@ -232,7 +232,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                 light = 400 - 300*node.error
                 node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
         self.scene.update()
-        self.treeNav.leech()
+#        self.treeNav.leech()
 
     def ctree(self, tree=None):
         self.send("Examples", None)
