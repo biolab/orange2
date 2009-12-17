@@ -20,7 +20,7 @@ from itertools import izip
 # main class
 
 class OWKMeans(OWWidget):
-    settingsList = ["K", "distanceMeasure", "classifySelected", "addIdAs", "classifyName",
+    settingsList = ["K", "optimized", "optimizationFrom", "optimizationTo", "scoring", "distanceMeasure", "classifySelected", "addIdAs", "classifyName",
                     "initializationType", "runAnyChange"]
     
     distanceMeasures = [
@@ -64,6 +64,9 @@ class OWKMeans(OWWidget):
         self.addIdAs = 0
         self.runAnyChange = 1
         self.classifyName = "Cluster"
+        
+        self.settingsChanged = False
+        
         self.loadSettings()
 
         self.data = None # holds input data
@@ -126,7 +129,7 @@ class OWKMeans(OWWidget):
         
         box = OWGUI.widgetBox(self.controlArea, "Run", addSpace=True)
         cb = OWGUI.checkBox(box, self, "runAnyChange", "Run after any change")
-        b= OWGUI.button(box, self, "Run Clustering", callback = self.run)
+        self.runButton = b = OWGUI.button(box, self, "Run Clustering", callback = self.run)
         OWGUI.setStopper(self, b, cb, "settingsChanged", callback=self.run)
 
         OWGUI.rubber(self.controlArea)
@@ -148,8 +151,6 @@ class OWKMeans(OWWidget):
         self.table.hide()
         
         self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.tableItemSelected)
-        
-        self.settingsChanged = False
         
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.mainArea.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -226,7 +227,7 @@ class OWKMeans(OWWidget):
             self.showResults()
             self.sendData()
         except Exception, ex:
-            self.error(0, "An error occured while running optimization")
+            self.error(0, "An error occured while running optimization. Reason: " + str(ex))
             raise
         
     def cluster(self):
@@ -345,8 +346,10 @@ class OWKMeans(OWWidget):
         
     def setData(self, data):
         """Handle data from the input signal."""
+        self.runButton.setEnabled(bool(data))
         if not data:
             self.data = None
+            self.table.setRowCount(0)
         else:
             self.data = data
             self.run()
