@@ -257,9 +257,7 @@ class VizRank:
             self.graph.setData(self.graph.rawData, subData)
         self.clearArguments()
 
-    def getEvaluatedAttributes(self):
-        if self.evaluatedAttributes: return self.evaluatedAttributes
-        
+    def getEvaluatedAttributes(self):        
         if self.graph.dataHasDiscreteClass:
             return orngVisFuncts.evaluateAttributesDiscClass(self.graph.rawData, contMeasuresDiscClass[self.attrCont][1], discMeasuresDiscClass[self.attrDisc][1])
         elif self.graph.dataHasContinuousClass:
