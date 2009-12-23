@@ -21,7 +21,7 @@ from itertools import izip
 
 class OWKMeans(OWWidget):
     settingsList = ["K", "optimized", "optimizationFrom", "optimizationTo", "scoring", "distanceMeasure", "classifySelected", "addIdAs", "classifyName",
-                    "initializationType", "runAnyChange"]
+                    "initializationType", "restarts", "runAnyChange"]
     
     distanceMeasures = [
         ("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
@@ -93,8 +93,10 @@ class OWKMeans(OWWidget):
         self.optimizationBox = box
         OWGUI.spin(box, self, "optimizationFrom", label="From", min=2, max=99,
                    tooltip="Minimum number of clusters to try", callback=self.updateOptimizationFrom, callbackOnReturn=True)
-        OWGUI.spin(box, self, "optimizationTo", label="To", min=3, max=100,
+        b = OWGUI.spin(box, self, "optimizationTo", label="To", min=3, max=100,
                    tooltip="Maximum number of clusters to try", callback=self.updateOptimizationTo, callbackOnReturn=True)
+        print b.control
+#        b.control.setLineEdit(OWGUI.LineEditWFocusOut(b))
         OWGUI.comboBox(box, self, "scoring", label="Scoring", orientation="horizontal",
                        items=[m[0] for m in self.scoringMethods], callback=self.update)
         
@@ -105,27 +107,43 @@ class OWKMeans(OWWidget):
 #                   callback = self.initializeClustering)
         OWGUI.comboBox(box, self, "distanceMeasure", label="Distance measures",
                        items=[name for name, _ in self.distanceMeasures],
-                       tooltip=None,
+                       tooltip=None, indent=20,
                        callback = self.update)
         cb = OWGUI.comboBox(box, self, "initializationType", label="Initialization",
                        items=[name for name, _ in self.initializations],
-                       tooltip=None,
+                       tooltip=None, indent=20,
                        callback = self.update)
         OWGUI.spin(cb.box, self, "restarts", label="Restarts", orientation="horizontal",
                    min=1, max=100, callback=self.update, callbackOnReturn=True)
 
         box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
         cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
-        le = OWGUI.lineEdit(box, self, "classifyName", "Name" + "  ",
-                            orientation="horizontal", controlWidth=60,
-                            valueType=str, callback=self.sendData)
-        OWGUI.separator(box, height = 4)
-        cc = OWGUI.comboBox(box, self, "addIdAs", label = "Place" + "  ",
-                            orientation="horizontal", items = ["Class attribute", "Attribute", "Meta attribute"])
-        cb.disables.append(le.box)
-        cb.disables.append(cc.box)
+        box = OWGUI.indentedBox(box)
+        form = QWidget()
+        le = OWGUI.lineEdit(form, self, "classifyName", None, #"Name" + "  ",
+                            orientation="horizontal", #controlWidth=100, 
+                            valueType=str,
+#                            callback=self.sendData,
+#                            callbackOnReturn=True
+                            )
+        
+        cc = OWGUI.comboBox(form, self, "addIdAs", label = " ", #"Place" + "  ",
+                            orientation="horizontal", items = ["Class attribute", "Attribute", "Meta attribute"],
+                            )
+        
+        layout = QFormLayout()
+        layout.setSpacing(8)
+        layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        layout.setLabelAlignment(Qt.AlignLeft | Qt.AlignJustify)
+        layout.addRow("Name  ", le)
+        layout.addRow("Place  ", cc)
+#        le.setFixedWidth(cc.sizeHint().width())
+        form.setLayout(layout)
+        box.layout().addWidget(form)
+        cb.disables.append(box)
+#        cb.disables.append(cc.box)
         cb.makeConsistent()
-        OWGUI.separator(box)
+#        OWGUI.separator(box)
         
         box = OWGUI.widgetBox(self.controlArea, "Run", addSpace=True)
         cb = OWGUI.checkBox(box, self, "runAnyChange", "Run after any change")
@@ -143,10 +161,11 @@ class OWKMeans(OWWidget):
         self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["K", "Best", "Score"])
+        self.table.setHorizontalHeaderLabels(["k", "Best", "Score"])
         self.table.verticalHeader().hide()
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setItemDelegateForColumn(2, OWGUI.TableBarItem(self, self.table))
+        self.table.setItemDelegateForColumn(1, OWGUI.IndicatorItemDelegate(self))
         self.table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.table.hide()
         
@@ -197,10 +216,6 @@ class OWKMeans(OWWidget):
     def setOptimization(self):
         self.updateOptimizationGui()
         self.update()
-#        if self.optimized:
-#            self.runOptimization()
-#        else:
-#            self.cluster()
             
     def runOptimization(self):
         if self.optimizationTo > len(self.data):
@@ -274,11 +289,13 @@ class OWKMeans(OWWidget):
             item = OWGUI.tableItem(self.table, i, 0, k)
             item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
             
-            item = OWGUI.tableItem(self.table, i, 1, " * " if (k, run) == self.bestRun else "")
+            item = OWGUI.tableItem(self.table, i, 1, None)#" " if (k, run) == self.bestRun else "")
+            item.setData(OWGUI.IndicatorItemDelegate.IndicatorRole, QVariant((k, run) == self.bestRun))
+#            item.setData(Qt.DecorationRole, QVariant(QIcon(os.path.join(os.path.dirname(OWGUI.__file__), "icons", "circle.png"))))
             item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
             
-            item = OWGUI.tableItem(self.table, i, 2, run.score)
-            item.setData(OWGUI.TableBarItem.BarRole, QVariant(1 - (run.score - worstScore) / (bestScore - worstScore)))
+            item = OWGUI.tableItem(self.table, i, 2, ("%%.%if" % (int(- math.log(run.score, 10)) + 2)) % run.score)
+            item.setData(OWGUI.TableBarItem.BarRole, QVariant((1 - (run.score - worstScore) / (bestScore - worstScore) * 0.95)))
             if (k, run) == self.bestRun:
                 self.table.selectRow(i)
             
