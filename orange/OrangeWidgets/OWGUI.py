@@ -1047,7 +1047,7 @@ class Searcher:
 
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, editable = 0, searchAttr = False, indent = 0, addSpace = False, debuggingEnabled = 1):
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, editable = 0, searchAttr = False, indent = 0, addToLayout = 1, addSpace = False, debuggingEnabled = 1):
     hb = widgetBox(widget, box, orientation)
     widgetLabel(hb, label, labelWidth)
     if tooltip:
@@ -1065,7 +1065,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     if indent:
         hb = widgetBox(hb, orientation = "horizontal")
         hb.layout().addSpacing(indent)
-    if hb.layout(): hb.layout().addWidget(combo)
+    if hb.layout() and addToLayout: hb.layout().addWidget(combo)
 
     if items:
         combo.addItems([unicode(i) for i in items])
@@ -1666,12 +1666,31 @@ class TableBarItem(QItemDelegate):
                     max, span = self.table.normalizers[col]
                     ratio = (max - value) / span
         if ratio is not None:
-            painter.fillRect(option.rect.adjusted(0, 1, -option.rect.width() * (ratio), -1), self.color)
+            painter.fillRect(option.rect.adjusted(1, 1, -option.rect.width() * (ratio), -1), self.color)
 #                painter.fillRect(option.rect.adjusted(0, option.rect.height()-4, -option.rect.width()*(max - value) / span, 0), self.color)
         text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)
         painter.restore()
+        
+class IndicatorItemDelegate(QStyledItemDelegate):
+    IndicatorRole = OrangeUserRole.next()
+    def __init__(self, parent, role=IndicatorRole, indicatorSize=2):
+        QStyledItemDelegate.__init__(self, parent)
+        self.role = role
+        self.indicatorSize = indicatorSize
+        
+    def paint(self, painter, option, index):
+        QStyledItemDelegate.paint(self, painter, option, index)
+        rect = option.rect
+        indicator, valid = index.data(self.role).toString(), True
+        indicator = False if indicator == "false" else indicator
+        if valid and indicator:
+            painter.save()
+            painter.setRenderHints(QPainter.Antialiasing)
+            painter.setBrush(QBrush(Qt.black))
+            painter.drawEllipse(rect.center(), self.indicatorSize, self.indicatorSize) #rect.adjusted(rect.width() / 2 - 5, rect.height() - 5, -rect.width() /2 + 5, -rect.height()/2 + 5))
+            painter.restore()
 
 ##############################################################################
 # progress bar management
