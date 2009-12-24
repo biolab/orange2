@@ -34,7 +34,6 @@ class PieChart(QGraphicsRectItem):
         painter.setBrush(QBrush())
         painter.drawEllipse(-self.r, -self.r, 2*self.r, 2*self.r)
         
-            
 
 class ClassificationNode(GraphicsNode):
     def __init__(self,attrVal, tree, parent, scene):
@@ -211,8 +210,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.mainArea.layout().addWidget(self.sceneView)
 #        self.scene.setSceneRect(0,0,800,800)
 
-        self.scene.bubbleConstructor=self.classificationBubbleConstructor
-
         self.navWidget= OWBaseWidget(self) #QWidget()
         self.navWidget.lay=QVBoxLayout(self.navWidget)
 
@@ -364,30 +361,25 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                 if tree.branches[i]:
                     self.walkcreate(tree.branches[i],node,level+1,tree.branchDescriptions[i])
         return node
-
-    def classificationBubbleConstructor(self, node, pos, scene):
-        b=GraphicsBubbleInfo(node, pos, scene)
-        rule=list(node.rule)
+    
+    def nodeToolTip(self, node):
+        rule = list(node.rule)
+        fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
         if rule:
             try:
                 rule=parseRules(list(rule))
             except:
                 pass
-            text="IF "+" AND\n  ".join([a[0].name+" = "+a[1] for a in rule])+"\nTHEN "+node.majClassName
+            text="<b>IF</b> "+" <b>AND</b><br>  ".join([fix(a[0].name+" = "+a[1]) for a in rule])+"\n<br><b>THEN</b> "+fix(node.majClassName) + "<hr>"
         else:
-            text="THEN "+node.majClassName
-        b.addTextLine(text)
-        b.addTextLine()
-        text="Instances: %(ninst)s (%(prop).1f%%)" % {"ninst": str(node.numInst), "prop": node.numInst/self.tree.distribution.cases*100}
-        b.addTextLine(text)
-        b.addTextLine()
-        for i,d in enumerate(node.dist.items()):
-            if d[1]!=0:
-                b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)", self.scene.colorPalette[i])
-        b.addTextLine()
-        b.addTextLine((node.tree.branches and "Partition on: %(nodename)s" % {"nodename": node.name}) or "(leaf)")
-        b.show()
-        return b
+            text="<b>THEN</b> "+fix(node.majClassName) + "<hr>"
+        text += "Instances: %(ninst)s (%(prop).1f%%)<hr>" % {"ninst": str(node.numInst), "prop": node.numInst/self.tree.distribution.cases*100}
+        
+        text += "<br>".join(["<font color=%(color)s>%(name)s: %(num)i (%(ratio).1f% %)</font>" % \
+                             {"name":fix(d[0]), "num":int(d[1]), "ratio":d[1]/sum(node.dist)*100, "color":self.scene.colorPalette[i].name()}\
+                             for i,d in enumerate(node.dist.items()) if d[1]!=0])
+        text += "<hr>Partition on: %(nodename)s" % {"nodename": node.name} if node.tree.branches else ""
+        return text
 
 
 #    def sendReport(self):

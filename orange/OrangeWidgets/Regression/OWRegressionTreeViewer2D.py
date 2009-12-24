@@ -55,14 +55,6 @@ class RegressionNode(GraphicsNode):
         self.setFont(QFont("",self.textAdvance*0.7), False)
         self.reArangeText(False, -self.textAdvance-self.lineSpacing)
 
-
-##    def reArangeText(self, fitSquare=True, startOffset=0):
-##        self.textOffset=startOffset
-##        x,y=self.x(),self.y()
-##        for i in range(4):
-##            self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
-##        self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
-
     def reArangeText(self, fitSquare=True, startOffset=0):
         self.textOffset=startOffset
         x,y=self.x(),self.y()
@@ -152,8 +144,6 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.sceneView = TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
 #        self.scene.setSceneRect(0,0,800,800)
-
-        self.scene.bubbleConstructor=self.regressionBubbleConstructor
 
         self.navWidget = OWBaseWidget(self) #QWidget(None)
         self.navWidget.lay=QVBoxLayout(self.navWidget)
@@ -245,32 +235,22 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                 if tree.branches[i]:
                     self.walkcreate(tree.branches[i],node,level+1,tree.branchDescriptions[i])
         return node
-
-    def regressionBubbleConstructor(self, node, pos, scene):
-        b=GraphicsBubbleInfo(node, pos, scene)
+    
+    def nodeToolTip(self, node):
         rule=list(node.rule)
-        #print node.rule, rule
-        #rule.sort(lambda:a,b:a[0]<b[0])
-        # merge
+        fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
         if rule:
             try:
                 rule=parseRules(list(rule))
             except:
                 pass
-            text="IF "+" AND\n  ".join([a[0].name+" "+a[1] for a in rule])+"\nTHEN "+str(node.defVal)
+            text="<b>IF</b> "+" <b>AND</b><br>\n  ".join([fix(a[0].name+" "+a[1]) for a in rule])+"\n<br><b>THEN</b> "+fix(str(node.defVal))
         else:
-            text="THEN "+str(node.defVal)
-        b.addTextLine(text)
-        b.addTextLine()
-        text="#instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
-        b.addTextLine(text)
-        b.addTextLine()
-        b.addTextLine((node.tree.branches and "Partition on %s" % node.name) or "(leaf)")
-        b.addTextLine()
-        b.addTextLine(node.tree.nodeClassifier.classVar.name+" = "+str(node.defVal))
-        b.show()
-        return b
-
+            text="<b>THEN</b> "+fix(str(node.defVal))
+        text += "<hr>#instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        text += "<hr>Partition on %s<hr>" % node.name if node.tree.branches else "<hr>"
+        text += fix(node.tree.nodeClassifier.classVar.name + " = " + str(node.defVal))
+        return text
 
 if __name__=="__main__":
     a = QApplication(sys.argv)
