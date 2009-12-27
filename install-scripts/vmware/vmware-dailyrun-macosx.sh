@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 #
 # Should be run as: ./wmvare-dailyrun-macosx.sh [bundle only]
 #
@@ -16,9 +16,6 @@ if [ "$1" ]; then
 	BUNDLE_ONLY=1
 fi
 
-# Sets error handler
-trap "echo \"Script failed\"" ERR
-
 # We use public/private keys SSH authentication so no need for a password
 
 start_vmware() {
@@ -28,12 +25,13 @@ start_vmware() {
 	fi
 	
 	# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-	set +e
 	"$VMRUN" start "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer'
 	ps=("${PIPESTATUS[@]}")
-	set -e
 	# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-	if ((${ps[0]})); then false; fi
+	if ((${ps[0]})); then
+		echo "[$NAME] Could not start VMware."
+		exit 2
+	fi
 	
 	# Wait for VMware and OS to start
 	sleep $WAIT_TIME
@@ -50,14 +48,15 @@ stop_vmware() {
 	sleep $WAIT_TIME
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
-		echo "[$NAME] Had to force shutdown."
+		echo "[$NAME] Have to force shutdown."
 		# We hide some Mac OS X warnings which happen if nobody is logged into a host Mac OS X
-		set +e
 		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | true
 		ps=("${PIPESTATUS[@]}")
-		set -e
 		# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-		if ((${ps[0]})); then false; fi
+		if ((${ps[0]})); then then
+			echo "[$NAME] Could not stop VMware."
+			exit 3
+		fi
 	fi
 	
 	return 0
@@ -84,10 +83,10 @@ if ! ssh ailabc@$IP_ADDRESS "who | grep -q console"; then
 	# Autologin was not successful after few retries, give up
 	echo "[$NAME] Could not autologin."
 	stop_vmware
-	exit 2
+	exit 4
 fi
 
-# We run it twice so that we als use maybe updated "update-all-scripts.sh" script
+# We run it twice so that we also use maybe updated "update-all-scripts.sh" script
 ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 
