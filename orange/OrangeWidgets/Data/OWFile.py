@@ -56,8 +56,13 @@ class OWFile(OWWidget):
         self.filecombo = QComboBox(box)
         self.filecombo.setMinimumWidth(150)
         box.layout().addWidget(self.filecombo)
-        button = OWGUI.button(box, self, '...', callback = self.browseFile, width = 25, disabled=0)
-        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload, width = 50)
+        button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        
+        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
+        self.reloadBtn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        self.reloadBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         
         box = OWGUI.widgetBox(self.controlArea, "Info", addSpace = True)
         self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
