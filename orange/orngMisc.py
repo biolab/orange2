@@ -326,6 +326,9 @@ class ConsoleProgressBar(object):
         self.__call__(100)
         self.output.write("\n")
         
+def progressBarMilestones(count, iterations=100):
+    return set([int(i*count/float(iterations)) for i in range(iterations)])
+        
 class ColorPalette(object):
     def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
         self.colors = colors
