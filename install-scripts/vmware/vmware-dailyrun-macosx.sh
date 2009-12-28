@@ -53,7 +53,7 @@ stop_vmware() {
 		"$VMRUN" stop "$VMIMAGE" nogui 2>&1 | grep -i -v 'Untrusted apps are not allowed to connect to or launch Window Server before login' | grep -i -v 'FAILED TO establish the default connection to the WindowServer' | true
 		ps=("${PIPESTATUS[@]}")
 		# PIPESTATUS check is needed so that we test return value of the VMRUN and not grep
-		if ((${ps[0]})); then then
+		if ((${ps[0]})); then
 			echo "[$NAME] Could not stop VMware."
 			exit 3
 		fi
