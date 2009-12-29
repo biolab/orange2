@@ -215,20 +215,40 @@ class ThresholdLearner_fixed(orange.Learner):
 
 
 class Preprocessor(object):
+    def __init__(self, preprocessor = None):
+        if isinstance(preprocessor, list):
+            self.preprocessors = preprocessor
+        elif preprocessor is not None:
+            self.preprocessors = [preprocessor]
+        else:
+            self.preprocessors = []
+        #self.preprocessors = [orange.Preprocessor_addClassNoise(proportion=0.8)]
+        
     def processData(self, data, weightId = None):
         import orange
-        if weightId is not None:
-            data = orange.Preprocessor_addClassNoise(data, weightId, proportion=0.8)
+        hadWeight = hasWeight = weightId is not None
+        for preprocessor in self.preprocessors:
+            t = preprocessor(data, weightId) if hasWeight else preprocessor(data)
+            if isinstance(t, tuple):
+                data, weightId = t
+                hasWeight = True
+            else:
+                data = t
+        if hadWeight:
             return data, weightId
         else:
-            data = orange.Preprocessor_addClassNoise(data, proportion=0.8)
             return data
 
     def wrapLearner(self, learner):
         class WrappedLearner(learner.__class__):
             preprocessor = self
+            wrappedLearner = learner
             name = getattr(learner, "name", "")
-            def __call__(self, data, weightId=0):
-                processed, procW = self.preprocessor.processData(data, weightId)
-                return super(learner.__class__, self).__call__(processed, procW)
+            def __call__(self, data, weightId=0, getData = False):
+                processed, procW = self.preprocessor.processData(data, weightId or 0)
+                classifier = self.wrappedLearner(processed, procW)
+                if getData:
+                    return classifier, processed
+                else:
+                    return classifier # super(WrappedLearner, self).__call__(processed, procW)
         return WrappedLearner()

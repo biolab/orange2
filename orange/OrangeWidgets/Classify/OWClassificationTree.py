@@ -7,6 +7,7 @@
 """
 from OWWidget import *
 import orngTree, OWGUI
+from orngWrap import Preprocessor
 from exceptions import Exception
 
 import warnings
@@ -29,7 +30,7 @@ class OWClassificationTree(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessor", Preprocessor, self.setPreprocessor)]
         self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]
 
         self.name = 'Classification Tree'
@@ -98,6 +99,10 @@ class OWClassificationTree(OWWidget):
                              ("Pruning with m-estimate", ["No", "m=%i" % self.postM][self.postMPruning])])
         self.reportData(self.data)
 
+    def setPreprocessor(self, preprocessor):
+        self.preprocessor = preprocessor
+        self.setLearner()
+        
     def setLearner(self):
         if hasattr(self, "btnApply"):
             self.btnApply.setFocus()
@@ -116,6 +121,9 @@ class OWClassificationTree(OWWidget):
             storeExamples = 1, **mDepth)
 
         self.learner.name = self.name
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(self.learner)
+        
         self.send("Learner", self.learner)
 
         self.error()

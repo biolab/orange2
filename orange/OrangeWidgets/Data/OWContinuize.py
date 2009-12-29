@@ -11,6 +11,7 @@
 # Turns discrete attributes into continuous
 #
 from OWWidget import *
+from orngWrap import Preprocessor
 import OWGUI
 
 class OWContinuize(OWWidget):
@@ -40,7 +41,7 @@ class OWContinuize(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable), ("Preprocessor", Preprocessor)]
 
         self.multinomialTreatment = 0
         self.targetValue = 0
@@ -78,6 +79,7 @@ class OWContinuize(OWWidget):
         OWGUI.button(snbox, self, "Send data", callback=self.sendData)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto)
         self.data = None
+        self.sendPreprocessor()
         self.resize(150,300)
         #self.adjustSize()
 
@@ -110,27 +112,31 @@ class OWContinuize(OWWidget):
     def sendDataIf(self):
         self.dataChanged = True
         if self.autosend:
+            self.sendPreprocessor()
             self.sendData()
 
     def enableAuto(self):
         if self.dataChanged:
+            self.sendPreprocessor()
             self.sendData()
 
+    def constructContinuizer(self):
+        conzer = orange.DomainContinuizer()
+        conzer.zeroBased = self.zeroBased
+        conzer.continuousTreatment = self.continuousTreatment
+        conzer.multinomialTreatment = self.multinomialTreats[self.multinomialTreatment][1]
+        conzer.classTreatment = self.classTreats[self.classTreatment][1]
+        return conzer
+
+    def sendPreprocessor(self):
+        continuizer = self.constructContinuizer()
+        self.send("Preprocessor", Preprocessor(
+            lambda data, weightId=0, tc=(self.targetValue if self.classTreatment else -1): orange.ExampleTable(continuizer(data, weightId, tc), data)))
+                
     def sendData(self):
+        continuizer = self.constructContinuizer()
         if self.data:
-            conzer = orange.DomainContinuizer()
-            conzer.zeroBased = self.zeroBased
-            conzer.continuousTreatment = self.continuousTreatment
-            conzer.multinomialTreatment = self.multinomialTreats[self.multinomialTreatment][1]
-            classVar = self.data.domain.classVar
-            if self.classTreatment == 3 and classVar and classVar.varType == orange.VarTypes.Discrete and len(classVar.values) >= 2:
-                domain = conzer(self.data, 0, self.targetValue)
-            else:
-                if classVar and (classVar.varType != orange.VarTypes.Discrete or len(classVar.values) >= 2):
-                    conzer.classTreatment = self.classTreats[self.classTreatment][1]
-                else:
-                    conzer.classTreatment = orange.DomainContinuizer.Ignore
-                domain = conzer(self.data)
+            domain = continuizer(self.data, 0, self.targetValue if self.classTreatment else -1)
             self.send("Examples", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
         
