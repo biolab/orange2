@@ -5,7 +5,6 @@
 <priority>3300</priority>
 """
 
-from qttable import *
 from OWWidget import *
 #from OWScatterPlotGraph import *
 from OWCorrAnalysisGraph import *
