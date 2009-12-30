@@ -133,6 +133,10 @@ class OWBaseWidget(QDialog):
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(orngEnviron.directoryNames)
+        try:
+            self.__dict__["thisWidgetDir"] = os.path.dirname(sys.modules[self.__class__.__module__].__file__)
+        except:
+            pass
 
         self.setCaption(title.replace("&","")) # used for widget caption
 
@@ -696,17 +700,29 @@ class OWBaseWidget(QDialog):
             return
             try:
                 import webbrowser
-                webbrowser.open("file://%s/doc/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:]), 0, 1)
+                webbrowser.open("file://%s/%s/%s.htm" % (self.orangeDir, self.docDir(), self.__class__.__name__[2:]), 0, 1)
                 return
             except:
                 pass
 
         try:
             import webbrowser
-            webbrowser.open("http://www.ailab.si/orange/doc/catalog/%s/%s.htm" % (self._category, self.__class__.__name__[2:]))
+            webbrowser.open("http://www.ailab.si/orange/%s/%s.htm" % (self.docDir(), self.__class__.__name__[2:]))
             return
         except:
             pass
+        
+    def docDir(self):
+        if os.path.normpath(self.widgetDir) in os.path.normpath(self.thisWidgetDir):  # A built-in widget
+            subDir = os.path.relpath(self.thisWidgetDir, self.widgetDir)
+            return "doc/catalog/%s" % subDir
+        elif os.path.normpath(self.addOnsDir) in os.path.normpath(self.thisWidgetDir):  # An add-on widget
+            # Two os.path.splits in the following line to remove the trailing "/widgets"
+            subDir = os.path.relpath(os.path.split(self.thisWidgetDir)[0], self.addOnsDir)
+            addOnsSubdir = os.path.relpath(self.addOnsDir, self.orangeDir)
+            return os.path.join(addOnsSubdir, "%s/doc/catalog" % subDir)
+        else:
+            return ""
 
     def focusInEvent(self, *ev):
         #print "focus in"

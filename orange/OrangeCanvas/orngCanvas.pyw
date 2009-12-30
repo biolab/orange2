@@ -11,13 +11,17 @@ from PyQt4.QtGui import *
     
 import sys, os, cPickle, orngRegistry, OWGUI
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
-import orange, user, orngMisc
+import  user, orngMisc
+
+RedR = False
+product = "Red R" if RedR else "Orange"
+
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent=None, flags=0):
         QMainWindow.__init__(self, parent)
         self.debugMode = 1        # print extra output for debuging
-        self.setWindowTitle("Orange Canvas")
+        self.setWindowTitle("%s Canvas" % product)
         self.windows = []    # list of id for windows in Window menu
         self.recentDocs = []
         self.iconNameToIcon = {}
@@ -35,6 +39,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.outputPix = os.path.join(canvasPicsDir, "output.png")
         self.file_open = os.path.join(canvasPicsDir, "open.png")
         self.file_save = os.path.join(canvasPicsDir, "save.png")
+        if RedR:
+            self.reload_pic = os.path.join(canvasPicsDir, "update1.png")
         self.text_icon = os.path.join(canvasPicsDir, "text.png")
         self.file_print = os.path.join(canvasPicsDir, "print.png")
         self.file_exit = os.path.join(canvasPicsDir, "exit.png")
@@ -43,16 +49,28 @@ class OrangeCanvasDlg(QMainWindow):
             self.setWindowIcon(QIcon(canvasIconName))
             
         self.settings = {}
+        if RedR:
+            self.settings['svnSettings'] = {}
+            self.settings['versionNumber'] = 'Version1.0'
         self.menuSaveSettingsID = -1
         self.menuSaveSettings = 1
 
         self.loadSettings()
+        if RedR:
+            import updateRedR
+            self.settings['svnSettings'], self.settings['versionNumber'] = updateRedR.start(self.settings['svnSettings'], self.settings['versionNumber'])
+           
 #        self.widgetSelectedColor = QColor(*self.settings["widgetSelectedColor"])
 #        self.widgetActiveColor = QColor(*self.settings["widgetActiveColor"])
 #        self.lineColor = QColor(*self.settings["lineColor"])
 
         if not self.settings.has_key("WidgetTabs") or self.settings["WidgetTabs"] == []:
-            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Text", "Genomics"]] + [("Prototypes", Qt.Unchecked)] 
+            f = open(os.path.join(self.canvasDir, "WidgetTabs.txt"), "r")
+            defaultTabs = [c for c in [line.split("#")[0].strip() for line in f.readlines()] if c!=""]
+            for i in xrange(len(defaultTabs)-1,0,-1):
+                if defaultTabs[i] in defaultTabs[0:i]:
+                    del defaultTabs[i]
+            self.settings["WidgetTabs"] = [(name, Qt.Checked) for name in defaultTabs] + [("Prototypes", Qt.Unchecked)] 
         
         # output window
         self.output = orngOutput.OutputWindow(self)
@@ -90,13 +108,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.setCentralWidget(self.schema)
         self.schema.setFocus()
 
-        orngTabs.constructCategoriesPopup(self)
-
-        # create menu
-        self.initMenu()
-
         self.toolbar.addAction(QIcon(self.file_open), "Open schema", self.menuItemOpen)
         self.toolSave = self.toolbar.addAction(QIcon(self.file_save), "Save schema", self.menuItemSave)
+        if RedR:
+            self.toolReloadWidgets = self.toolbar.addAction(QIcon(self.reload_pic), "Reload Widgets", self.reloadWidgets)
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
 
@@ -119,8 +134,12 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addWidget(w)
         
         self.addToolBarBreak()
+        orngTabs.constructCategoriesPopup(self)
         self.createWidgetsToolbar()
         self.readShortcuts()
+
+        # create menu
+        self.initMenu()
         self.readRecentFiles()
 
         width, height = self.settings.get("canvasWidth", 700), self.settings.get("canvasHeight", 600)
@@ -144,12 +163,13 @@ class OrangeCanvasDlg(QMainWindow):
         self.show()
 
         # did Orange crash the last time we used it? If yes, you will find a temSchema.tmp file
-        if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
-            mb = QMessageBox('Orange Canvas', "Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
-            mb.setButtonText(QMessageBox.Ok, "Reload")
-            mb.setButtonText(QMessageBox.Cancel, "New schema")
-            if mb.exec_() == QMessageBox.Ok:
-                self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), freeze=1)
+        if not RedR:
+            if os.path.exists(os.path.join(self.canvasSettingsDir, "tempSchema.tmp")):
+                mb = QMessageBox('%s Canvas' % product, "Your previous %s Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links." % product, QMessageBox.Information, QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape, QMessageBox.NoButton)
+                mb.setButtonText(QMessageBox.Ok, "Reload")
+                mb.setButtonText(QMessageBox.Cancel, "New schema")
+                if mb.exec_() == QMessageBox.Ok:
+                    self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), freeze=1)
         
         
         if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.exists(sys.argv[-1]) and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
@@ -160,7 +180,7 @@ class OrangeCanvasDlg(QMainWindow):
         try:
             import numpy
         except:
-            if QMessageBox.warning(self, 'Orange Canvas', 'Several widgets now use numpy module, \nthat is not yet installed on this computer. \nDo you wish to download it?', QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+            if QMessageBox.warning(self, '%s Canvas' % product, 'Several widgets now use numpy module, \nthat is not yet installed on this computer. \nDo you wish to download it?', QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
                 import webbrowser
                 webbrowser.open("http://sourceforge.net/projects/numpy/")
 
@@ -218,14 +238,17 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.addAction("New Scheme", self.menuItemNewScheme, QKeySequence.New)
         self.menuFile.addAction(QIcon(self.file_open), "&Open...", self.menuItemOpen, QKeySequence.Open)
         self.menuFile.addAction(QIcon(self.file_open), "&Open and Freeze...", self.menuItemOpenFreeze)
+        if RedR:
+            self.menuFile.addAction("Import Schema", self.importSchema)
         if os.path.exists(os.path.join(self.canvasSettingsDir, "lastSchema.tmp")):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL + Qt.Key_R)
         #self.menuFile.addAction( "&Clear", self.menuItemClear)
         self.menuFile.addSeparator()
         self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, QKeySequence.Save)
         self.menuSaveAsID = self.menuFile.addAction("Save &As...", self.menuItemSaveAs)
-        self.menuFile.addAction("&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
-        self.menuFile.addAction("&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
+        if not RedR:
+            self.menuFile.addAction("&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
+            self.menuFile.addAction("&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.addSeparator()
         self.menuFile.addAction(QIcon(self.file_print), "&Print Schema / Save image", self.menuItemPrinter, QKeySequence.Print)
         self.menuFile.addSeparator()
@@ -240,7 +263,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction("Show Output Window", self.menuItemShowOutputWindow)
         self.menuOptions.addAction("Clear Output Window", self.menuItemClearOutputWindow)
         self.menuOptions.addAction("Save Output Text...", self.menuItemSaveOutputWindow)
-
+        if RedR:
+            self.menuOptions.addAction("Set to debug mode", self.setDebugMode)
+        
         # uncomment this only for debugging
         #self.menuOptions.addSeparator()
         #self.menuOptions.addAction("Dump widget variables", self.dumpVariables)
@@ -296,6 +321,20 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuBar.addMenu(self.menuHelp)
         
         self.setMenuBar(self.menuBar)
+        
+    def setDebugMode(self):   # RedR specific
+        if self.output.debugMode:
+            self.output.debugMode = 0
+        else:
+            self.output.debugMode = 1
+    def importSchema(self):   # RedR specific
+        name = QFileDialog.getOpenFileName(self, "Import File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
+        if name.isEmpty():
+            return
+        self.schema.clear()
+        self.schema.loadDocument(str(name), freeze = 0, importBlank = 1)
+        self.addToRecentMenu(str(name))
+    
 
     def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
@@ -529,8 +568,16 @@ class OrangeCanvasDlg(QMainWindow):
                     orngEnviron.registerAddOn(name, dir)
             
             if dlg.toRemove != []:
-                for (name, dir) in dlg.toRemove:
-                    orngEnviron.registerAddOn(name, dir, add=False)
+                for (catName, cat) in dlg.toRemove:
+                    addonsToRemove = set()
+                    for widget in cat.values():
+                        addonDir = widget.directory
+                        while os.path.split(addonDir)[1] in ["prototypes", "widgets"]:
+                            addonDir = os.path.split(addonDir)[0]
+                        addonName = os.path.split(addonDir)[1]
+                        addonsToRemove.add( (addonName, addonDir) )
+                    for addonToRemove in addonsToRemove: 
+                        orngEnviron.registerAddOn(add=False, *addonToRemove)
             
             if dlg.toAdd != [] or dlg.toRemove != []:
                 self.widgetRegistry = orngRegistry.readCategories()
@@ -573,7 +620,9 @@ class OrangeCanvasDlg(QMainWindow):
                        "focusOnCatchException": 1, "focusOnCatchOutput": 0, "printOutputInStatusBar": 1, "printExceptionInStatusBar": 1,
                        "outputVerbosity": 0, "synchronizeHelp": 1,
                        "ocShow": 1, "owShow": 0, "ocInfo": 1, "owInfo": 1, "ocWarning": 1, "owWarning": 1, "ocError": 1, "owError": 1,
-                      }
+                       }
+        if RedR:
+            self.setting.update({"svnSettings": None, "versionNumber": "Version0"})
         try:
             filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
             self.settings.update(cPickle.load(open(filename, "rb")))
@@ -625,9 +674,9 @@ class OrangeCanvasDlg(QMainWindow):
     def setCaption(self, caption=""):
         if caption:
             caption = caption.split(".")[0]
-            self.setWindowTitle(caption + " - Orange Canvas")
+            self.setWindowTitle(caption + " - %s Canvas" % product)
         else:
-            self.setWindowTitle("Orange Canvas")
+            self.setWindowTitle("%s Canvas" % product)
     
     def getWidgetIcon(self, widgetInfo):
         if self.iconNameToIcon.has_key(widgetInfo.icon):
@@ -657,7 +706,7 @@ class OrangeCanvasDlg(QMainWindow):
         for num in [16, 32, 40, 48, 60]:
             names.append("%s_%d%s" % (name, num, ext))
             
-        widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)  #os.path.split(self.getFileName())[0]
+        widgetDir = str(widgetInfo.directory)  #os.path.split(self.getFileName())[0]
         fullPaths = []
         for paths in [(self.widgetDir, widgetInfo.category), (self.widgetDir,), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in names + [iconName]:
@@ -671,7 +720,7 @@ class OrangeCanvasDlg(QMainWindow):
         return [self.defaultPic]
     
     def getFullIconBackgroundName(self, widgetInfo):
-        widgetDir = str(self.widgetRegistry[widgetInfo.category].directory)
+        widgetDir = str(widgetInfo.directory)
         fullPaths = []
         for paths in [(widgetDir, "icons"), (self.widgetDir, widgetInfo.category, "icons"), (self.widgetDir, "icons"), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in ["background_%d.png" % num for num in [16, 32, 40, 48, 60]]:

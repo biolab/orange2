@@ -17,11 +17,15 @@ class WidgetDescription:
         self.__dict__.update(attrs)
 
 class WidgetCategory(dict):
-    def __init__(self, directory, widgets):
+    def __init__(self, name, widgets):
         self.update(widgets)
-        self.directory = directory
+        self.name = name
+    def __init__(self, name):
+        self.name = name
    
 def readCategories(silent=False):
+    currentCacheVersion = 1
+    
     global widgetsWithError, widgetsWithErrorPrototypes
     widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
     canvasSettingsDir = os.path.realpath(orngEnviron.directoryNames["canvasSettingsDir"])
@@ -29,8 +33,16 @@ def readCategories(silent=False):
 
     try:
         import cPickle
-        cats = cPickle.load(file(cacheFilename, "rb"))
-        cachedWidgetDescriptions = dict([(w.fullName, w) for cat in cats.values() for w in cat.values()])
+        cacheFile = file(cacheFilename, "rb")
+        cats = cPickle.load(cacheFile)
+        try:
+            version = cPickle.load(cacheFile)
+        except EOFError:
+            version = 0
+        if version == currentCacheVersion:
+            cachedWidgetDescriptions = dict([(w.fullName, w) for cat in cats.values() for w in cat.values()])
+        else:
+            cachedWidgetDescriptions = {}
     except:
         cachedWidgetDescriptions = {} 
 
@@ -38,24 +50,29 @@ def readCategories(silent=False):
     for dirName in os.listdir(widgetDirName):
         directory = os.path.join(widgetDirName, dirName)
         if os.path.isdir(directory):
-            directories.append((dirName, directory, "", "prototypes" in dirName.lower()))
+            directories.append((directory, "", "prototypes" in dirName.lower()))
 
     # read list of add-ons (in orange/add-ons as well as those additionally registered by the user)
     for (name, dirName) in orngEnviron.addOns:
         addOnWidgetsDir = os.path.join(dirName, "widgets")
         if os.path.isdir(addOnWidgetsDir):
-            directories.append((name, addOnWidgetsDir, addOnWidgetsDir, False))
+            directories.append((addOnWidgetsDir, addOnWidgetsDir, False))
         addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
-        if os.path.isdir(addOnWidgetsDir):
-            directories.append(("Prototypes", addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir, True))
+        if os.path.isdir(addOnWidgetsPrototypesDir):
+            directories.append((addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir, True))
 
     categories = {}     
-    for catName, dirName, plugin, isPrototype in directories:
-        widgets = readWidgets(dirName, catName, cachedWidgetDescriptions, isPrototype, silent=silent)
-        if widgets:
-            categories[catName] = WidgetCategory(plugin and dirName or "", widgets)
+    for dirName, plugin, isPrototype in directories:
+        widgets = readWidgets(dirName, cachedWidgetDescriptions, isPrototype, silent=silent)
+        for (wName, wInfo) in widgets:
+            catName = wInfo.category
+            if not catName in categories:
+                categories[catName] = WidgetCategory(catName)
+            categories[catName][wName] = wInfo
 
-    cPickle.dump(categories, file(cacheFilename, "wb"))
+    cacheFile = file(cacheFilename, "wb")
+    cPickle.dump(categories, cacheFile)
+    cPickle.dump(currentCacheVersion, cacheFile)
     if splashWindow:
         splashWindow.hide()
 
@@ -76,11 +93,12 @@ splashWindow = None
 widgetsWithError = []
 widgetsWithErrorPrototypes = []
 
-def readWidgets(directory, category, cachedWidgetDescriptions, prototype=False, silent=False):
+def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False):
     import sys, imp
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
+    widgetdir = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))[1]
     for filename in glob.iglob(os.path.join(directory, "*.py")):
         if os.path.isdir(filename) or os.path.islink(filename):
             continue
@@ -128,15 +146,15 @@ def readWidgets(directory, category, cachedWidgetDescriptions, prototype=False, 
             
             widgetInfo = WidgetDescription(
                              name = data[istart+6:iend],
-                             category = category,
                              time = datetime,
                              fileName = widgname,
                              fullName = filename,
+                             directory = directory,
                              inputList = inputList, outputList = outputList,
                              inputClasses = inputClasses, outputClasses = outputClasses
                              )
     
-            for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", "")):
+            for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", ""), ("category>", widgetdir)):
                 istart, iend = data.find("<"+attr), data.find("</"+attr)
                 setattr(widgetInfo, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
                 

@@ -583,7 +583,9 @@ class CanvasOptionsDlg(QDialog):
         self.downButton.setEnabled(itemIndex < self.tabOrderList.count()-1)
         catName = str(self.tabOrderList.currentItem().text())
         if not self.canvasDlg.widgetRegistry.has_key(catName): return
-        self.removeButton.setEnabled(os.path.normpath(self.canvasDlg.widgetDir) not in os.path.normpath(self.canvasDlg.widgetRegistry[catName].directory))
+        self.removeButton.setEnabled( all([os.path.normpath(self.canvasDlg.widgetDir) not in os.path.normpath(x.directory) and
+                                           os.path.normpath(self.canvasDlg.addOnsDir) not in os.path.normpath(x.directory)
+                                             for x in self.canvasDlg.widgetRegistry[catName].values()]))
         #self.removeButton.setEnabled(1)
 
     def addCategory(self):
@@ -603,7 +605,7 @@ class CanvasOptionsDlg(QDialog):
     def removeCategory(self):
         curCat = str(self.tabOrderList.item(self.tabOrderList.currentRow()).text())
         if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Ok , QMessageBox.Cancel | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Ok:
-            self.toRemove.append((curCat, self.canvasDlg.widgetRegistry[curCat].directory))
+            self.toRemove.append((curCat, self.canvasDlg.widgetRegistry[curCat]))
             item = self.tabOrderList.takeItem(self.tabOrderList.row(self.tabOrderList.currentItem()))
             #if item: item.setHidden(1)
 
@@ -812,4 +814,3 @@ if __name__=="__main__":
     dlg = AboutDlg(None)
     dlg.show()
     app.exec_()
-

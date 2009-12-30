@@ -148,7 +148,7 @@ class LineEditHint(QLineEdit):
             self.translation = string.maketrans(self.delimiters, self.delimiters[0] * len(self.delimiters))
         
     def eventFilter(self, object, ev):
-        if object != self.listWidget:
+        if getattr(self, "listWidget", None) != object:
             return 0
         
         if ev.type() == QEvent.MouseButtonPress:

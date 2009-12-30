@@ -299,13 +299,13 @@ class WidgetListBase:
         
         # find tab names that are not in widgetTabList
         extraTabs = [(name, 1) for name in widgetRegistry.keys() if name not in [tab for (tab, s) in widgetTabList]]
+        extraTabs.sort()
 
         # first insert the default tab names
         for (tabName, show) in widgetTabList + extraTabs:
             if not show or not widgetRegistry.has_key(tabName): continue
             tab = self.insertWidgetTab(tabName, show)
             
-            directory = widgetRegistry[tabName].directory
             widgets = [(int(widgetInfo.priority), name, widgetInfo) for (name, widgetInfo) in widgetRegistry[tabName].items()]
             widgets.sort()
             exIndex = 0
@@ -314,7 +314,6 @@ class WidgetListBase:
                     button = WidgetTreeItem(tab, name, widgetInfo, self, self.canvasDlg)
                 else:
                     button = WidgetButton(tab, name, widgetInfo, self, self.canvasDlg, widgetTypeList, iconSize)
-                    #self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
                     for k in range(priority/1000 - exIndex):
                         tab.layout().addSpacing(10)
                     exIndex = priority / 1000
@@ -366,42 +365,75 @@ class WidgetTabs(WidgetListBase, QTabWidget):
         return widgetSpace
 
 
-
-
 class WidgetTree(WidgetListBase, QDockWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
         QDockWidget.__init__(self, "Widgets")
         self.treeWidget = MyTreeWidget(canvasDlg, self)
+        self.treeWidget.tabDict = self.tabDict
         self.treeWidget.setFocusPolicy(Qt.ClickFocus)    # this is needed otherwise the document window will sometimes strangely lose focus and the output window will be focused
-        self.setWidget(self.treeWidget)
+        self.actions = categoriesPopup.allActions
+
+        # a widget container to hold the search area and the widget tree
+        self.containerWidget = QWidget()
+        containerBoxLayout = QBoxLayout(QBoxLayout.TopToBottom, self.containerWidget)
+        self.widgetSuggestEdit = OWGUIEx.lineEditHint(self, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, autoSizeListWidget = 1, callback = self.widgetSuggestCallback)
+        self.widgetSuggestEdit.setItems([QListWidgetItem(action.icon(), action.widgetInfo.name) for action in self.actions])
+        containerBoxLayout.insertWidget(0, self.widgetSuggestEdit)
+        containerBoxLayout.insertWidget(1, self.treeWidget)
+        
+        self.setWidget(self.containerWidget)
         iconSize = self.canvasDlg.toolbarIconSizeList[self.canvasDlg.settings["toolbarIconSize"]]
         self.treeWidget.setIconSize(QSize(iconSize, iconSize))
 #        self.treeWidget.setRootIsDecorated(0) 
                 
 
     def insertWidgetTab(self, name, show = 1):
-        if self.tabDict.has_key(name):
-            self.tabDict[name].setHidden(not show)
-            return self.tabDict[name]
+        path = name.split("/")
+        parent = self
+        for i in xrange(len(path)):
+            fullName = "/".join(path[:i+1])
+            name = path[i]            
+            if parent.tabDict.has_key(name):
+                parent.tabDict[name].setHidden(not show)
+                parent = parent.tabDict[name]
+                continue
         
-        item = WidgetTreeFolder(self.treeWidget, name)
-        item.widgets = []
-        self.tabDict[name] = item
+            item = WidgetTreeFolder(self.treeWidget if parent==self else parent, name)
+            item.widgets = []
+            parent.tabDict[name] = item
 
-        if not show:
-            item.setHidden(1)
-        if self.canvasDlg.settings.has_key("treeItemsOpenness") and self.canvasDlg.settings["treeItemsOpenness"].has_key(name):
-             item.setExpanded(self.canvasDlg.settings["treeItemsOpenness"][name])
-        elif not self.canvasDlg.settings.has_key("treeItemsOpenness") and self.treeWidget.topLevelItemCount() == 1:
-            item.setExpanded(1)
-        self.tabs.append((name, 2*int(show), item))
+            if not show:
+                item.setHidden(1)
+            if self.canvasDlg.settings.has_key("treeItemsOpenness") and self.canvasDlg.settings["treeItemsOpenness"].has_key(fullName):
+                item.setExpanded(self.canvasDlg.settings["treeItemsOpenness"][fullName])
+            elif not self.canvasDlg.settings.has_key("treeItemsOpenness") and self.treeWidget.topLevelItemCount() == 1:
+                item.setExpanded(1)
+            self.tabs.append((fullName, 2*int(show), item))
 
-        return item
+            parent = item
+        return parent
+    
+    
+    def widgetSuggestCallback(self):
+        text = str(self.widgetSuggestEdit.text())
+        for action in self.actions:
+            if action.widgetInfo.name == text:
+                self.widgetInfo = action.widgetInfo
+                self.canvasDlg.schema.addWidget(action.widgetInfo)
+                self.widgetSuggestEdit.clear()
+                return
+
 
 class WidgetTreeFolder(QTreeWidgetItem):
     def __init__(self, parent, name):
-        QTreeWidgetItem.__init__(self, parent, [name])
+        QTreeWidgetItem.__init__(self, [name])
+        ix = len(parent.tabDict)
+        if hasattr(parent, "insertTopLevelItem"):
+            parent.insertTopLevelItem(ix, self)
+        else:
+            parent.insertChild(ix, self)
+        self.tabDict = {}
 #        item.setChildIndicatorPolicy(item.ShowIndicator)
     
     def mousePressEvent(self, e):
@@ -423,10 +455,20 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
     def __init__(self, canvasDlg, widgetInfo, *args):
         WidgetListBase.__init__(self, canvasDlg, widgetInfo)
         QDockWidget.__init__(self, "Widgets")
+        self.actions = categoriesPopup.allActions
         self.toolbox = MyQToolBox(canvasDlg.settings["toolboxWidth"], self)
         self.toolbox.setFocusPolicy(Qt.ClickFocus)    # this is needed otherwise the document window will sometimes strangely lose focus and the output window will be focused
         self.toolbox.layout().setSpacing(0)
-        self.setWidget(self.toolbox)
+
+        # a widget container to hold the search area and the widget tree
+        self.containerWidget = QWidget()
+        containerBoxLayout = QBoxLayout(QBoxLayout.TopToBottom, self.containerWidget)
+        self.widgetSuggestEdit = OWGUIEx.lineEditHint(self, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, autoSizeListWidget = 1, callback = self.widgetSuggestCallback)
+        self.widgetSuggestEdit.setItems([QListWidgetItem(action.icon(), action.widgetInfo.name) for action in self.actions])
+        containerBoxLayout.insertWidget(0, self.widgetSuggestEdit)
+        containerBoxLayout.insertWidget(1, self.toolbox)
+
+        self.setWidget(self.containerWidget)
 
 
     def insertWidgetTab(self, name, show = 1):
@@ -458,6 +500,15 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
             self.tabs.append((name, 0, tab))
 
         return tab
+
+    def widgetSuggestCallback(self):
+        text = str(self.widgetSuggestEdit.text())
+        for action in self.actions:
+            if action.widgetInfo.name == text:
+                self.widgetInfo = action.widgetInfo
+                self.canvasDlg.schema.addWidget(action.widgetInfo)
+                self.widgetSuggestEdit.clear()
+                return
 
 
 class MyQToolBox(QToolBox):
@@ -497,6 +548,7 @@ class CanvasPopup(QMenu):
         QMenu.__init__(self, canvasDlg)
         self.allActions = []
         self.catActions = []
+        self.allCatActions = []
         self.quickActions = []
         self.candidates = []
         self.canvasDlg = canvasDlg
@@ -525,16 +577,19 @@ class CanvasPopup(QMenu):
             act.setEnabled(True)
             
     def selectActions(self, actClassesAttr, widgetClasses):
-        for cat in self.catActions:
+        for cat in self.allCatActions:
             cat.setEnabled(False)
             
         for act in self.allActions:
             if getattr(act.widgetInfo, actClassesAttr) & widgetClasses:
                 act.setEnabled(True)
-                act.category.setEnabled(True)
+                obj = act
+                while hasattr(obj, "category"):
+                    obj = obj.category
+                    obj.setEnabled(True)
             else: 
                 act.setEnabled(False)
-
+    
     def updateWidgesByOutputs(self, widgetInfo):
         self.selectActions("outputClasses", widgetInfo.inputClasses)
         
@@ -591,19 +646,28 @@ def constructCategoriesPopup(canvasDlg):
     categoriesPopup = CanvasPopup(canvasDlg)
     categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item:disabled { color: #dddddd } QMenu::separator {height: 1px; background: #dddddd; margin-left: 3px; margin-right: 4px;}""")
 
+    catmenuDict = {}
     for category, show in canvasDlg.settings["WidgetTabs"]:
         if not show or not canvasDlg.widgetRegistry.has_key(category):
             continue
-##    widgetTabList = canvasDlg.settings.get("WidgetTabs", None)
-##    if widgetTabList:
-##        widgetTabList = [wt for wt, ch in canvasDlg.settings["WidgetTabs"] if ch]
-##    else:
-##        widgetTabList = ["Data", "Visualize", "Classify", "Regression", "Evaluate", "Unsupervised", "Associate", "Prototypes"]
-##    extraTabs = [name for name in canvasDlg.widgetRegistry if name not in widgetTabList]
-##
-##    for category in widgetTabList + extraTabs:
-        catmenu = categoriesPopup.addMenu(category)
-        categoriesPopup.catActions.append(catmenu)
+        path = category.split("/")
+        catmenu = categoriesPopup
+        catmenu.categoryCount = 0
+        for i in xrange(len(path)):
+            fullName = "/".join(path[:i+1])
+            if fullName in catmenuDict:
+                catmenu = catmenuDict[fullName]
+            else:
+                oldcatmenu = catmenu
+                catmenu = catmenu.addMenu(path[i])  # Would be better to insert categories before widgets, but API is rather hard to use ... 
+                oldcatmenu.categoryCount += 1
+                catmenu.categoryCount = 0
+                catmenuDict[fullName] = catmenu
+                categoriesPopup.allCatActions.append(catmenu)
+                if i==0:
+                    categoriesPopup.catActions.append(catmenu)
+                else:
+                    catmenu.category = oldcatmenu
         for widgetInfo in sorted(canvasDlg.widgetRegistry[category].values(), key=lambda x:x.priority):
             icon = QIcon(canvasDlg.getWidgetIcon(widgetInfo))
             act = catmenu.addAction(icon, widgetInfo.name)

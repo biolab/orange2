@@ -30,11 +30,12 @@ class HelpWindow(QDialog):
         self.layout().addWidget(self.helpBrowser)
         
     def showHelpFor(self, widget, bringToFront=False):
-        if os.path.relpath(widget.thisWidgetDir, widget.addOnsDir).startswith(widget._category):
-            catalogDir = os.path.join(widget.addOnsDir,widget._category,"doc","catalog")
-        else:
-            catalogDir = os.path.join(widget.orangeDir, "doc", "catalog", widget._category)
-        helpFileName = "%s/%s.htm" % (catalogDir, widget.__class__.__name__[2:])
+#        if os.path.relpath(widget.thisWidgetDir, widget.addOnsDir).startswith(widget._category):
+#            catalogDir = os.path.join(widget.addOnsDir,widget._category,"doc","catalog")
+#        else:
+#            catalogDir = os.path.join(widget.orangeDir, "doc", "catalog", widget._category)
+        helpFileName = "%s/%s/%s.htm" % (widget.orangeDir, widget.docDir(), widget.__class__.__name__[2:])
+#        helpFileName = "%s/%s.htm" % (catalogDir, widget.__class__.__name__[2:])
         if not os.path.exists(helpFileName):
             QMessageBox.warning( None, "Not available", "Sorry, there is no documentation available for this widget.", QMessageBox.Ok)
             return
