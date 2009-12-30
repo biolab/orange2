@@ -98,7 +98,9 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
-    widgetdir = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))[1]
+    predir, widgetdir = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))
+    if widgetdir == "widgets":
+        widgetdir = os.path.split(predir.strip(os.path.sep).strip(os.path.altsep))[1]
     for filename in glob.iglob(os.path.join(directory, "*.py")):
         if os.path.isdir(filename) or os.path.islink(filename):
             continue
