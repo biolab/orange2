@@ -5,7 +5,6 @@
 #
 
 from OWBaseWidget import *
-# remove the try-except after reporting is ready for deployment
 
 class OWWidget(OWBaseWidget):
     def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, **args):
