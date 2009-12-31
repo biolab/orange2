@@ -145,24 +145,14 @@ def proportionTest(learners, examples, learnProp, times=10,
     pick = orange.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
     
     examples, weight = demangleExamples(examples)
-    if examples.domain.classVar.varType == orange.VarTypes.Discrete:
-        values = list(examples.domain.classVar.values)
-        basevalue = examples.domain.classVar.baseValue
+    classVar = examples.domain.classVar
+    if classVar.varType == orange.VarTypes.Discrete:
+        values = list(classVar.values)
+        baseValue = classVar.baseValue
     else:
-        basevalue = values = None
-        classVar = examples.domain.classVar
-        if examples.domain.classVar.varType == orange.VarTypes.Discrete:
-            values = classVar.values.native()
-            baseValue = classVar.baseValue
-        else:
-            values = None
-            baseValue = -1
-        testResults = ExperimentResults(times, [l.name for l in learners], values, weight!=0, baseValue)
+        baseValue = values = None
+    testResults = ExperimentResults(times, [l.name for l in learners], values, weight!=0, baseValue)
 
-        # 
-        # testResults = ExperimentResults(times, [l.name for l in learners],
-        #                            values, weight!=0, basevalue)
-        
     for time in range(times):
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
