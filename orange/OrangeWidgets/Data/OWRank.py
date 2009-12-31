@@ -395,6 +395,9 @@ class OWRank(OWWidget):
             self.table.setColumnWidth(col+2, 80)
 
 
+    def sendReport(self):
+        self.reportData(self.data)
+        self.reportRaw(OWReport.reportTable(self.table))
 
 
     def resendAttributes(self):
