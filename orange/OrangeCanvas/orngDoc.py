@@ -382,9 +382,16 @@ class SchemaDoc(QWidget):
                 return widget
         return None
 
+
     # ###########################################
     # SAVING, LOADING, ....
     # ###########################################
+    def reportAll(self):
+        for widget in self.widgets:
+            widget = widget.instance
+            if hasattr(widget, "sendReport"):
+                widget.reportAndFinish()
+            
     def saveDocument(self):
         if self.schemaName == "":
             self.saveDocumentAs()

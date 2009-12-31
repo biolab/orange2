@@ -244,6 +244,8 @@ class OrangeCanvasDlg(QMainWindow):
             self.menuFile.addAction("Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL + Qt.Key_R)
         #self.menuFile.addAction( "&Clear", self.menuItemClear)
         self.menuFile.addSeparator()
+        self.menuReportID = self.menuFile.addAction("&Report", self.menuItemReport, Qt.CTRL + Qt.ALT + Qt.Key_R)
+        self.menuFile.addSeparator()
         self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, QKeySequence.Save)
         self.menuSaveAsID = self.menuFile.addAction("Save &As...", self.menuItemSaveAs)
         if not RedR:
@@ -357,6 +359,9 @@ class OrangeCanvasDlg(QMainWindow):
         if os.path.exists(fullName):
             self.schema.loadDocument(fullName)
 
+    def menuItemReport(self):
+        self.schema.reportAll()
+        
     def menuItemSave(self):
         self.schema.saveDocument()
         
