@@ -232,26 +232,28 @@ class OWAssociationRulesViewer(OWWidget):
         mainRight.layout().addWidget(trules)
         trules.verticalHeader().hide()
         trules.setSelectionMode(QTableWidget.NoSelection)
-        trules.setColumnCount(len(self.measures)+1)
+        trules.setColumnCount(len(self.measures)+3)
 
         header = trules.horizontalHeader()
-        trules.setHorizontalHeaderLabels([m[1] for m in self.measures]+["Rule"])
-        trules.setItemDelegate(OWGUI.TableBarItem(self, trules))
+        trules.setHorizontalHeaderLabels([m[1] for m in self.measures]+["Antecedent", "->", "Consequent"])
+        trules.horizontalHeaderItem(len(self.measures)).setTextAlignment(Qt.AlignRight)
+        trules.horizontalHeaderItem(len(self.measures)+2).setTextAlignment(Qt.AlignLeft)
+        #trules.setItemDelegate(OWGUI.TableBarItem(self, trules))
         trules.normalizers = []
 
         bottomGrid = QGridLayout()
         bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
 
         self.reportButton = OWGUI.button(bottom, self, "&Report", self.reportAndFinish, addToLayout=0)
-        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
+#        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
         commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0)
         autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)], addToLayout=0)
         autoSend.makeConsistent()
 
         bottomGrid.addWidget(self.reportButton, 1, 0)
-        bottomGrid.addWidget(self.saveButton, 1, 1)
-        bottomGrid.addWidget(autoSend, 0, 2)
-        bottomGrid.addWidget(commitButton, 1, 2)
+#        bottomGrid.addWidget(self.saveButton, 1, 1)
+        bottomGrid.addWidget(autoSend, 0, 1)
+        bottomGrid.addWidget(commitButton, 1, 1)
 
         self.controlArea.setFixedSize(0, 0)
         self.resize(1000, 380)
@@ -280,12 +282,7 @@ class OWAssociationRulesViewer(OWWidget):
         self.reportRaw("</center><br/>")
         
         self.reportSection("Selected rules")
-        tab = "<table>\n<tr>" + "".join("<th><b>%s</b></th>" % m[1] for m in self.measures if getattr(self, m[2])) + "</tr>\n"
-        shownmeas = [m[2] for m in self.measures if getattr(self, m[2])]
-        for rule in self.selectedRules:
-            tab += "<tr>"+"".join("<td>&nbsp;&nbsp;%.3f</td>" % getattr(rule, m) for m in shownmeas) + "<td>%s</td></tr>\n" % str(rule).replace(" ", "  ").replace(">", "&gt;")
-        tab += "</table>\n"
-        self.reportRaw(tab)
+        self.reportRaw(OWReport.reportTable(self.trules))
 
 
     def checkScale(self):
@@ -360,7 +357,10 @@ class OWAssociationRulesViewer(OWWidget):
                     self.progressBarAdvance(progressStep)
     
                 for row, rule in enumerate(self.selectedRules):
-                    trules.setItem(row, rulecol, QTableWidgetItem(str(rule).replace(" ", "  ")))
+                    left, right = [QTableWidgetItem(x) for x in str(rule).replace(" ", "  ").replace("=>", ">").replace("=<=", "<=").split(" -> ", 1)]
+                    trules.setItem(row, rulecol, left)
+                    trules.item(row, rulecol).setTextAlignment(Qt.AlignRight)
+                    trules.setItem(row, rulecol+2, right)
             finally:
                 self.progressBarFinished()
 
@@ -378,16 +378,16 @@ class OWAssociationRulesViewer(OWWidget):
             (getattr(self, m[2]) and self.trules.showColumn or self.trules.hideColumn)(i)
 
 
-    def saveRules(self):
-        fileName = QFileDialog.getSaveFileName(self, "Save Rules", "myRules.txt", "Textfiles (*.txt)" );
-        if not fileName.isNull() :
-            f = open(str(fileName), 'w')
-            if self.selectedRules:
-                toWrite = [m for m in self.measures if getattr(self, m[2])]
-                if toWrite:
-                    f.write("\t".join([m[1] for m in toWrite]) + "\n")
-                for rule in self.selectedRules:
-                    f.write("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]) + "\n")
+#    def saveRules(self):
+#        fileName = QFileDialog.getSaveFileName(self, "Save Rules", "myRules.txt", "Textfiles (*.txt)" );
+#        if not fileName.isNull() :
+#            f = open(str(fileName), 'w')
+#            if self.selectedRules:
+#                toWrite = [m for m in self.measures if getattr(self, m[2])]
+#                if toWrite:
+#                    f.write("\t".join([m[1] for m in toWrite]) + "\n")
+#                for rule in self.selectedRules:
+#                    f.write("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]) + "\n")
 
 
     def setIngrid(self):
