@@ -132,7 +132,7 @@ def supervisedClassCheck(examples):
     
 class CN2LearnerClass(orange.RuleLearner):
     def __init__(self, evaluator = orange.RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
@@ -187,7 +187,7 @@ def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
 # Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearnerClass(orange.RuleLearner):
     def __init__(self, evaluator = orange.RuleEvaluator_Laplace(), beamWidth = 5, alpha = 1.0, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator

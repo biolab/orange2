@@ -14,7 +14,7 @@ class Learner(object):
             return learner
 
     def __init__(self, m=0.0, name='std naive bayes', **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.m = m
         self.name = name
 
@@ -60,7 +60,7 @@ class Learner(object):
 
 class Classifier:
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
 
     def __call__(self, example, result_type=orange.GetValue):
         # compute the class probabilities

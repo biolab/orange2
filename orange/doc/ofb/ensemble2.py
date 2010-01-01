@@ -32,7 +32,7 @@ class WinnerLearner_Class:
 
 class WinnerClassifier:
   def __init__(self, **kwds):
-    self.__dict__ = kwds
+    self.__dict__.update(kwds)
 
   def __call__(self, example, resultType = orange.GetValue):
     pmatrix = []

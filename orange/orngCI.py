@@ -28,7 +28,7 @@ class FeatureByMinComplexityClass:
 
   def __init__(self, **keyw):
     """(colorIG=, complete=)"""
-    self.__dict__ = keyw
+    self.__dict__.update(keyw)
     self.instance = None
 
   def __setattr__(self, name, value):
@@ -64,7 +64,7 @@ class FeatureByIMClass:
   CompletionByBayes = orange.FeatureByIM.CompletionByBayes
 
   def __init__(self, **keyw):
-    self.__dict__ = keyw
+    self.__dict__.update(keyw)
     self.instance = None
 
   def __setattr__(self, name, value):
@@ -146,7 +146,7 @@ class FeatureByKramerClass:
   CompletionByBayes = orange.FeatureByIM.CompletionByBayes
 
   def __init__(self, **keyw):
-    self.__dict__ = keyw
+    self.__dict__.update(keyw)
     self.instance = None
 
   def __setattr__(self, name, value):
@@ -223,7 +223,7 @@ def FeatureByRandom(examples=None, bound=None, weightID=0, **argkw):
 
 class FeatureByRandomClass:
   def __init__(self, **keyw):
-    self.__dict__=keyw
+    self.__dict__.update(keyw)
     if not hasattr(self, "n"):
       self.n = 2
     self.instance = self
@@ -251,7 +251,7 @@ def FeatureByCartesianProduct(examples=None, bound=None, weightID=0, **argkw):
 
 class FeatureByCartesianProductClass:
   def __init__(self, **keyw):
-    self.__dict__= keyw
+    self.__dict__.update(keyw)
     if not hasattr(self, "measure"):
       self.measure = None
     self.instance = self
@@ -318,7 +318,7 @@ class FeatureByCartesianProductClass:
 
 class AttributeRedundanciesRemover:
   def __init__(self, **keyw):
-    self.__dict__ = keyw
+    self.__dict__.update(keyw)
 
   def __call__(self, data, weight):
     if hasattr(self, "inducer"):
@@ -360,7 +360,7 @@ def FeatureGenerator(examples = None, weightID = 0, **argkw):
 
 class FeatureGeneratorClass:
   def __init__(self, **keyw):
-    self.__dict__=keyw
+    self.__dict__.update(keyw)
 
   def __call__(self, data, weightID=0):
     if not hasattr(self, "featureInducer"):
@@ -384,7 +384,7 @@ def StructureInducer(examples=None, weightID=0, **argkw):
   
 class StructureInducerClass:
   def __init__(self, **keyw):
-    self.__dict__=keyw
+    self.__dict__.update(keyw)
 
     for i in ["redundancyRemover", "alternativeMeasure", "learnerForUnknown", "subsetsGenerator"]:
       if not hasattr(self, i):
@@ -450,7 +450,7 @@ def HINT(examples=None, weightID=0, **argkw):
 
 class HINTClass:
   def __init__(self, **keyw):
-    self.__dict__=keyw
+    self.__dict__.update(keyw)
 
   def __call__(self, data, weight=0):
     import orngWrap

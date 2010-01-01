@@ -68,7 +68,7 @@ def collect_imports(dir, scriptname):
 class DocScript:
     """Stores info on documentation script."""
     def __init__(self, **karg):
-        self.__dict__ = karg
+        self.__dict__.update(karg)
         self.modules = set()
     def __str__(self):
         return "%s/%s" % (dir, name)

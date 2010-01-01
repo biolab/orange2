@@ -48,7 +48,7 @@ def LogRegLearner(examples = None, weightID=0, **kwds):
 
 class LogRegLearnerClass(orange.Learner):
     def __init__(self, removeSingular=0, fitter = None, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.removeSingular = removeSingular
         self.fitter = None
 
@@ -104,7 +104,7 @@ def Univariate_LogRegLearner(examples=None, **kwds):
 
 class Univariate_LogRegLearner_Class(orange.Learner):
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
 
     def __call__(self, examples):
         examples = createFullNoDiscTable(examples)
@@ -120,7 +120,7 @@ class Univariate_LogRegLearner_Class(orange.Learner):
 
 class Univariate_LogRegClassifier(orange.Classifier):
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
         # classification not implemented yet. For now its use is only to provide regression coefficients and its statistics
@@ -136,7 +136,7 @@ def LogRegLearner_getPriors(examples = None, weightID=0, **kwds):
 
 class LogRegLearnerClass_getPriors(object):
     def __init__(self, removeSingular=0, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.removeSingular = removeSingular
     def __call__(self, examples, weight=0):
         # next function changes data set to a extended with unknown values 
@@ -247,7 +247,7 @@ class LogRegLearnerClass_getPriors(object):
 
 class LogRegLearnerClass_getPriors_OneTable:
     def __init__(self, removeSingular=0, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
         self.removeSingular = removeSingular
     def __call__(self, examples, weight=0):
         # next function changes data set to a extended with unknown values 

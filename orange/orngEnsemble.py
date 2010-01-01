@@ -64,7 +64,7 @@ class BoostedLearnerClass(orange.Learner):
 
 class BoostedClassifier(orange.Classifier):
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
         votes = [0.] * len(self.classvar.values)
@@ -115,7 +115,7 @@ class BaggedLearnerClass(orange.Learner):
 
 class BaggedClassifier(orange.Classifier):
     def __init__(self, **kwds):
-        self.__dict__ = kwds
+        self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
         freq = [0.] * len(self.classvar.values)
