@@ -284,18 +284,27 @@ def reportTree(tree, expanded=True):
     res += "</table>\n"
     return res
  
+
+def reportCell(item, tag, style):
+    if not item:
+        return '<%s style="%s"/>' % (tag, style)
+    alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(item.textAlignment() & Qt.AlignHorizontal_Mask, "left")
+    text = item.text().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
+    
 def reportTable(table):
     ncols = table.columnCount() 
     res = '<table style="border-bottom: thin solid black">\n'
     vheadVisible = table.verticalHeader().isVisible()
+    shownColumns = [i for i in range(ncols) if not table.isColumnHidden(i)]
     if table.horizontalHeader().isVisible():
-        res += "<tr>"+'<th></th>'*vheadVisible + "".join('<th style="padding-left: 4px; padding-right: 4px;">%s</th>' % str(table.horizontalHeaderItem(i).text()) for i in range(ncols)) + "</tr>\n"
+        res += "<tr>"+'<th></th>'*vheadVisible + "".join(reportCell(table.horizontalHeaderItem(i), "th", "padding-left: 4px; padding-right: 4px;") for i in shownColumns) + "</tr>\n"
         res += '<tr style="height: 2px">'+'<th colspan="%i"  style="border-bottom: thin solid black; height: 2px;"></th>' % (ncols+vheadVisible)
     for j in range(table.rowCount()):
         res += "<tr>"
         if vheadVisible:
             vhi = table.verticalHeaderItem(j)
             res += "<th>%s</th>" % (str(vhi.text()) if vhi else "")
-        res += "".join('<td align="center">%s</td>' % str(table.item(j, i).text()) for i in range(ncols)) + "</tr>\n"
+        res += "".join(reportCell(table.item(j, i), "td", "") for i in shownColumns) + "</tr>\n"
     res += "</table>\n"
     return res
