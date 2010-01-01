@@ -389,14 +389,19 @@ PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS,
 {
   PyTRY
     PyObject *pyoptional = NULL;
-    PyTypeObject *keytype = &PyInt_Type;
+    PyTypeObject *keytype = NULL;
     int optional = ILLEGAL_INT;
     if (!PyArg_ParseTuple(args, "|OO:Example.getmetas", &pyoptional, &keytype))
       return NULL;
 
-    if (!keytype && PyType_Check(pyoptional)) {
-      keytype = (PyTypeObject *)pyoptional;
-      pyoptional = NULL;
+    if (!keytype) {
+      if (pyoptional && PyType_Check(pyoptional)) {
+        keytype = (PyTypeObject *)pyoptional;
+        pyoptional = NULL;
+      }
+      else {
+        keytype = &PyInt_Type;
+      }
     }
     
     if (pyoptional) {
