@@ -250,11 +250,8 @@ PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const 
     return newClassVar;
   }
 
-  if (classTreatment == Ignore)
+  if ((classTreatment == Ignore) || (eclass->values->size() < 2))
     return classVar;
-
-  if (eclass->values->size() < 2)
-    raiseError("class has less than two different values");
 
   if (eclass->values->size() == 2)
     return discrete2continuous(eclass, classVar, 1);
@@ -283,7 +280,7 @@ PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) cons
 
   PVariable newClassVar;
   if (dom->classVar) {
-    if (((targetClass>=0) || (classTreatment != Ignore)) && (dom->classVar->varType == TValue::INTVAR))
+    if (((targetClass>=0) || (classTreatment != Ignore)) && (dom->classVar->varType == TValue::INTVAR) && (dom->classVar->noOfValues() >= 1))
       newClassVar = discreteClass2continous(dom->classVar, targetClass);
     else
       newClassVar = dom->classVar;
