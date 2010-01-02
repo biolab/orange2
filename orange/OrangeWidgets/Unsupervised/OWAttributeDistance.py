@@ -48,6 +48,7 @@ class OWAttributeDistance(OWWidget):
         self.reportData(self.data)
 
     def computeMatrix(self):
+        self.error()
         if self.data:
             atts = self.data.domain.attributes
             matrix = orange.SymMatrix(len(atts))
@@ -60,6 +61,17 @@ class OWAttributeDistance(OWWidget):
                     data = self.discretizedData
                 else:
                     data = self.data
+
+                # This is ugly, but: Aleks' code which computes Chi2 requires the class attribute because it prepares
+                # some common stuff for all measures. If we want to use his code, we need the class variable, so we
+                # prepare a fake one
+                if not data.domain.classVar:
+                    if self.classInteractions == 0:
+                        classedDomain = orange.Domain(data.domain.attributes, orange.EnumVariable("foo", values=["0", "1"]))
+                        data = orange.ExampleTable(classedDomain, data)
+                    else:
+                        self.error("The selected distance measure requires a data set with a class attribute")
+                        return None
 
                 im = orngInteract.InteractionMatrix(data, dependencies_too=1)
                 off = 1
@@ -97,7 +109,7 @@ class OWAttributeDistance(OWWidget):
         self.sendData()
 
     def dataset(self, data):
-        self.data = self.isDataWithClass(data) and data or None
+        self.data = data
         self.discretizedData = None
         self.sendData()
 
