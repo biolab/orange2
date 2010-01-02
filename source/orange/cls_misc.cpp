@@ -202,9 +202,7 @@ PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus)
 PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(list-of-names[, knownVars[, knownMetas[, dont-store[, dont-check-stored]]]])")
 {
   PyTRY
-    PyObject *pynames, *pymetaVector = NULL;
-    PVarList knownVars;
-    TMetaVector knownMetas;
+    PyObject *pynames = NULL;
     int createNewOn = TVariable::Incompatible;
 
     TDomainDepot::TAttributeDescriptions attributeDescriptions, metaDescriptions;
@@ -214,13 +212,6 @@ PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) 
         || !decodeDescriptors(pynames, attributeDescriptions, metaDescriptions, hasClass))
       return PYNULL;
 
-    if (pymetaVector && (pymetaVector != Py_None)) {
-      if (!PyDict_Check(pymetaVector))
-        PYERROR(PyExc_TypeError, "known meta attributes must be given as a dictionary", PYNULL);
-      if (!convertMetasFromPython(pymetaVector, knownMetas))
-        return PYNULL;
-    }
-    
     vector<int> status;
     vector<pair<int, int> > metaStatus;
     PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&attributeDescriptions, hasClass, &metaDescriptions, createNewOn, status, metaStatus);
