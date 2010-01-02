@@ -69,6 +69,7 @@ c              c             c              c             d
 <UL>
 <LI>attributes whose values are digits from 0-9 (or some subset of this) are discrete; this is to cover the domains with coded attribute values,</LI>
 <LI>attributes whose values can be parsed as numbers (in .txt) or whose cells contain numbers (in Excel) are continuous,</LI>
+<li>attributes which have more than 20 different values, yet less than half of them appear more than in one example, are strings and are put among meta attributes,</li>
 <LI>other attributes are discrete.</LI>
 Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
 </OL>
