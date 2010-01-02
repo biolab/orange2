@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
 
 #include <math.h>
 #include "stladdon.hpp"
@@ -318,7 +319,7 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
   scanAttributeValues(stem, descriptions);
   
   TIntList::iterator ati(attributeTypes->begin());
-  TDomainDepot::TAttributeDescriptions attributeDescriptions, metaDescriptions;
+  TDomainDepot::TPAttributeDescriptions attributeDescriptions, metaDescriptions;
   int ind = 0, lastRegular = -1;
 
   for(TDomainDepot::TAttributeDescriptions::iterator adi(descriptions.begin()), ade(descriptions.end()); adi != ade; adi++, ati++, ind++) {
@@ -326,28 +327,39 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
       continue;
       
     if (adi->varType == -1) {
-      int autoType = detectAttributeType(*adi, noCodedDiscrete);
-      
-      if (autoType == 3) {
-        raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", adi->name.c_str());
-        *ati = 0;
-        continue;
-      }
+      switch (detectAttributeType(*adi, noCodedDiscrete)) {
+        case 0:
+        case 2:
+          adi->varType = TValue::INTVAR;
+          break;
+          
+        case 1:
+          adi->varType = TValue::FLOATVAR;
+          break;
 
-      adi->varType = autoType == 1 ? TValue::FLOATVAR : TValue::INTVAR;
+        case 4:
+          adi->varType = STRINGVAR;
+          *ati = 1;
+          break;
+
+        default:
+          raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", adi->name.c_str());
+          *ati = 0;
+          continue;
+        }
     }
     
     if (*ati == 1)
-      metaDescriptions.push_back(*adi);
+      metaDescriptions.push_back(&*adi);
       
     else if ((classPos != ind) && (basketPos != ind)) {
-      attributeDescriptions.push_back(*adi);
+      attributeDescriptions.push_back(&*adi);
       lastRegular = ind;
     }
   }
   
   if (classPos > -1)
-    attributeDescriptions.push_back(descriptions[classPos]);
+    attributeDescriptions.push_back(&descriptions[classPos]);
   else if (autoDetect && !noClass)
     classPos = lastRegular;
     
@@ -384,15 +396,19 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
   char numTest[64];
 
   int status = 3;  //  3 - not encountered any values, 2 - can be coded discrete, 1 - can be float, 0 - must be nominal
-  ITERATE(set<string>, vli, desc.values) {
+                   //  4 (set later) - string value
+  typedef map<string, int> msi;
+  ITERATE(msi, vli, desc.values) {
 
-    if (vli->length() > 63)
-      return 0;
+    if (vli->first.length() > 63) {
+      status = 0;
+      break;
+    }
     
-    const char *ceni = vli->c_str();
+    const char *ceni = vli->first.c_str();
     if (   !*ceni
         || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
-        || (*vli == "NA") || (DC && (*vli == DC)) || (DK && (*vli == DK)))
+        || !strcmp(ceni, "NA") || (DC && !strcmp(ceni, DC)) || (DK && !strcmp(ceni, DK)))
       continue;
     
     if (status == 3)
@@ -411,11 +427,26 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
       strtod(numTest, &eptr);
       while (*eptr==32)
         eptr++;
-      if (*eptr)
-        return 0;
+      if (*eptr) {
+        status = 0;
+        break;
+      }
     }
   }
   
+  /* Check whether this is a string attribute:
+     - has more at least 20 values
+     - less than half of the values appear more than once */
+  if ((status==0) && (desc.values.size() > 20)) {
+      int more2 = 0;
+      for(map<string, int>::const_iterator dvi(desc.values.begin()), dve(desc.values.end()); dvi != dve; dvi++) {
+        if (dvi->second > 1)
+          more2++;
+      }
+      if (more2*2 < desc.values.size()) {
+        status = 4;
+      }
+  }
   return status;
 }
 
@@ -479,7 +510,13 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
           || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
          continue;
 
-      di->values.insert(*ai);
+      map<string, int>::iterator vf = di->values.lower_bound(*ai);
+      if ((vf != di->values.end()) && (vf->first == *ai)) {
+        vf->second++;
+      }
+      else {
+        di->values.insert(vf, make_pair(*ai, 1));
+      }
     }
   }
 }

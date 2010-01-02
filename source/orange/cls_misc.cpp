@@ -156,7 +156,6 @@ PyObject *codeMetaIDs(int *&metaIDs, const int &size)
   return pyMetaIDs;
 }
 
-
 PyObject *DomainDepot_checkDomain(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(domain, list-of-names)")
 {
   PyTRY
@@ -169,7 +168,10 @@ PyObject *DomainDepot_checkDomain(PyObject *self, PyObject *args, PyObject *) PY
       return PYNULL;
 
     int *metaIDs = mlnew int[metaDescriptions.size()];
-    bool domainOK = TDomainDepot::checkDomain(domain.getUnwrappedPtr(), &attributeDescriptions, hasClass, &metaDescriptions, metaIDs);
+    TDomainDepot::TPAttributeDescriptions adescs, mdescs;
+    TDomainDepot::pattrFromtAttr(attributeDescriptions, adescs);
+    TDomainDepot::pattrFromtAttr(metaDescriptions, mdescs);
+    bool domainOK = TDomainDepot::checkDomain(domain.getUnwrappedPtr(), &adescs, hasClass, &mdescs, metaIDs);
     return Py_BuildValue("iN", domainOK ? 1: 0, codeMetaIDs(metaIDs, metaDescriptions.size()));
   PyCATCH
 }
@@ -214,7 +216,10 @@ PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) 
 
     vector<int> status;
     vector<pair<int, int> > metaStatus;
-    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&attributeDescriptions, hasClass, &metaDescriptions, createNewOn, status, metaStatus);
+    TDomainDepot::TPAttributeDescriptions adescs, mdescs;
+    TDomainDepot::pattrFromtAttr(attributeDescriptions, adescs);
+    TDomainDepot::pattrFromtAttr(metaDescriptions, mdescs);
+    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&adescs, hasClass, &mdescs, createNewOn, status, metaStatus);
 
     return Py_BuildValue("NNN", WrapOrange(newDomain), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH

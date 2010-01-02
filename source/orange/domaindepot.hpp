@@ -57,7 +57,7 @@ public:
     string typeDeclaration;
     bool ordered;
     TStringList fixedOrderValues; // these have a fixed order
-    set<string> values; // all values, sorted alpabetically
+    map<string, int> values; // frequencies of values
     TMultiStringParameters userFlags;
     
     TAttributeDescription(const string &, const int &, const string &, bool = false);
@@ -70,12 +70,14 @@ public:
   ~TDomainDepot();
 
   typedef vector<TAttributeDescription> TAttributeDescriptions;
+  typedef vector<TAttributeDescription *> TPAttributeDescriptions;
+  static void pattrFromtAttr(TDomainDepot::TAttributeDescriptions, TDomainDepot::TPAttributeDescriptions &);
 
-  static bool checkDomain(const TDomain *, const TAttributeDescriptions *attributes, bool hasClass,
-                          const TAttributeDescriptions *metas, int *metaIDs = NULL);
+  static bool checkDomain(const TDomain *, const TPAttributeDescriptions *attributes, bool hasClass,
+                          const TPAttributeDescriptions *metas, int *metaIDs = NULL);
 
-  PDomain prepareDomain(TAttributeDescriptions *attributes, bool hasClass,
-                        TAttributeDescriptions *metas, const int createNewOn,
+  PDomain prepareDomain(TPAttributeDescriptions *attributes, bool hasClass,
+                        TPAttributeDescriptions *metas, const int createNewOn,
                         vector<int> &status, vector<pair<int, int> > &metaStatus);
 
   static void destroyNotifier(TDomain *domain, void *);

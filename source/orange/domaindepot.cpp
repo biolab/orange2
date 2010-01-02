@@ -181,7 +181,7 @@ TDomainDepot::TAttributeDescription::TAttributeDescription(PVariable pvar)
 void TDomainDepot::TAttributeDescription::addValue(const string &s)
 {
   fixedOrderValues.push_back(s);
-  values.insert(s);
+  values[s] = 1;
 }
 
 TDomainDepot::~TDomainDepot()
@@ -218,15 +218,18 @@ void augmentVariableValues(PVariable var, const TDomainDepot::TAttributeDescript
   const_ITERATE(TStringList, fvi, desc.fixedOrderValues)
     evar.addValue(*fvi);
   vector<string> sorted;
-  TEnumVariable::presortValues(desc.values, sorted);
+  set<string> values;
+  for(map<string, int>::const_iterator dvi(desc.values.begin()), dve(desc.values.end()); dvi != dve; dvi++)
+    values.insert(values.end(), dvi->first);
+  TEnumVariable::presortValues(values, sorted);
   const_ITERATE(vector<string>, ssi, sorted)
     evar.addValue(*ssi);
 }
 
 
 bool TDomainDepot::checkDomain(const TDomain *domain, 
-                               const TAttributeDescriptions *attributes, bool hasClass,
-                               const TAttributeDescriptions *metas,
+                               const TPAttributeDescriptions *attributes, bool hasClass,
+                               const TPAttributeDescriptions *metas,
                                int *metaIDs)
 {
   // check the number of attributes and meta attributes, and the presence of class attribute
@@ -238,51 +241,51 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
 
   // check the names and types of attributes
   TVarList::const_iterator vi(domain->variables->begin());
-  TAttributeDescriptions::const_iterator ai(attributes->begin()), ae(attributes->end());
+  TPAttributeDescriptions::const_iterator ai(attributes->begin()), ae(attributes->end());
   for(; ai != ae; ai++, vi++)
-    if (    ((*ai).name != (*vi)->name)
-         || ((*ai).varType>0) && ((*ai).varType != (*vi)->varType)
-         || (((*ai).varType==PYTHONVAR) && !pythonDeclarationMatches((*ai).typeDeclaration, *vi))
-         || !checkValueOrder(*vi, *ai)
+    if (    ((**ai).name != (*vi)->name)
+         || ((**ai).varType>0) && ((**ai).varType != (*vi)->varType)
+         || (((**ai).varType==PYTHONVAR) && !pythonDeclarationMatches((**ai).typeDeclaration, *vi))
+         || !checkValueOrder(*vi, **ai)
        )
       return false;
 
   // check the meta attributes if they exist
-  TAttributeDescriptions::const_iterator mi, me;
+  TPAttributeDescriptions::const_iterator mi, me;
   if (metas) {
     for(mi = metas->begin(), me = metas->end(); mi != me; mi++) {
-      PVariable var = domain->getMetaVar((*mi).name, false);
+      PVariable var = domain->getMetaVar((**mi).name, false);
       if (    !var
-           || (((*mi).varType > 0) && ((*mi).varType != var->varType))
-           || (((*mi).varType==PYTHONVAR) && !pythonDeclarationMatches((*mi).typeDeclaration, var))
-           || !checkValueOrder(var, *mi)
+           || (((**mi).varType > 0) && ((**mi).varType != var->varType))
+           || (((**mi).varType==PYTHONVAR) && !pythonDeclarationMatches((**mi).typeDeclaration, var))
+           || !checkValueOrder(var, **mi)
          )
         return false;
       if (metaIDs)
-        *(metaIDs++) = domain->getMetaNum((*mi).name, false);
+        *(metaIDs++) = domain->getMetaNum((**mi).name, false);
     }
   }
 
   for(ai = attributes->begin(), vi = domain->variables->begin(); ai != ae; ai++, vi++)
-    augmentVariableValues(*vi, *ai);
+    augmentVariableValues(*vi, **ai);
   for(mi = metas->begin(); mi != me; mi++)
-    if (mi->varType == TValue::INTVAR)
-      augmentVariableValues(domain->getMetaVar((*mi).name), *mi);
+    if ((**mi).varType == TValue::INTVAR)
+      augmentVariableValues(domain->getMetaVar((**mi).name), **mi);
       
   return true;
 }
 
 
-PDomain TDomainDepot::prepareDomain(TAttributeDescriptions *attributes, bool hasClass,
-                                    TAttributeDescriptions *metas, const int createNewOn,
+PDomain TDomainDepot::prepareDomain(TPAttributeDescriptions *attributes, bool hasClass,
+                                    TPAttributeDescriptions *metas, const int createNewOn,
                                     vector<int> &status, vector<pair<int, int> > &metaStatus)
 { 
   int tStatus;
 
   status.clear();
   TVarList attrList;
-  PITERATE(TAttributeDescriptions, ai, attributes) {
-    attrList.push_back(makeVariable(*ai, tStatus, createNewOn));
+  PITERATE(TPAttributeDescriptions, ai, attributes) {
+    attrList.push_back(makeVariable(**ai, tStatus, createNewOn));
     status.push_back(tStatus);
   }
 
@@ -297,8 +300,8 @@ PDomain TDomainDepot::prepareDomain(TAttributeDescriptions *attributes, bool has
 
   metaStatus.clear();
   if (metas)
-    PITERATE(TAttributeDescriptions, mi, metas) {
-      PVariable var = makeVariable(*mi, tStatus, createNewOn);
+    PITERATE(TPAttributeDescriptions, mi, metas) {
+      PVariable var = makeVariable(**mi, tStatus, createNewOn);
       int id = var->defaultMetaId;
       if (!id)
         id = getMetaID();
@@ -368,7 +371,11 @@ int Orange_setattrDictionary(TPyOrange *self, const char *name, PyObject *args, 
 
 PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, const int &createNewOn)
 {
-  PVariable var = TVariable::make(desc.name, desc.varType, &desc.fixedOrderValues, &desc.values, createNewOn, &status);
+  set<string> values;
+  for(map<string, int>::const_iterator dvi(desc.values.begin()), dve(desc.values.end()); dvi != dve; dvi++)
+    values.insert(values.end(), dvi->first);
+    
+  PVariable var = TVariable::make(desc.name, desc.varType, &desc.fixedOrderValues, &values, createNewOn, &status);
   
   if (!var) {
     if (desc.varType == PYTHONVAR) {
@@ -397,6 +404,14 @@ PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, c
   }
   
   return var;
+}
+
+
+void TDomainDepot::pattrFromtAttr(TDomainDepot::TAttributeDescriptions descs, TDomainDepot::TPAttributeDescriptions &pdescs) {
+  pdescs.clear();
+  ITERATE(TDomainDepot::TAttributeDescriptions, adi, descs) {
+    pdescs.push_back(&*adi);
+  }
 }
 
 
