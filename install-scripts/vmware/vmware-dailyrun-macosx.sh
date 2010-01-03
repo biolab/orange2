@@ -7,7 +7,9 @@
 
 VMRUN='/Library/Application Support/VMware Fusion/vmrun'
 VMIMAGE='/Users/ailabc/Documents/Virtual Machines.localized/Mac OS X Server 10.5 64-bit.vmwarevm/Mac OS X Server 10.5 64-bit.vmx'
-WAIT_TIME=300
+WAIT_START_TIME=300
+WAIT_STOP_TIME=600
+WAIT_RESTART_TIME=120
 RETRIES=5
 IP_ADDRESS='172.16.213.100'
 NAME='Mac OS X'
@@ -34,7 +36,7 @@ start_vmware() {
 	fi
 	
 	# Wait for VMware and OS to start
-	sleep $WAIT_TIME
+	sleep $WAIT_START_TIME
 	
 	return 0
 }
@@ -45,7 +47,7 @@ stop_vmware() {
 	ssh ailabc@$IP_ADDRESS "sudo /sbin/shutdown -h now > /dev/null"
 	
 	# Wait for OS to stop
-	sleep $WAIT_TIME
+	sleep $WAIT_STOP_TIME
 	
 	if "$VMRUN" list | grep -q "$VMIMAGE"; then
 		echo "[$NAME] Have to force shutdown."
@@ -74,7 +76,7 @@ for LOGGED_IN in {1..$RETRIES}; do
 	stop_vmware
 	
 	# Wait for VMware to stop
-	sleep $WAIT_TIME
+	sleep $WAIT_RESTART_TIME
 	
 	start_vmware
 done
