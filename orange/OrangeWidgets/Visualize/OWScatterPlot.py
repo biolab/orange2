@@ -401,7 +401,7 @@ class OWScatterPlot(OWWidget):
         box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.layout().addSpacing(5)
-        c.createColorButton(box, "Grid", "Grid color", Qt.black)
+        c.createColorButton(box, "Grid", "Grid color", QColor(215,215,215))
         box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
@@ -433,7 +433,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWScatterPlot()
     ow.show()
-    data = orange.ExampleTable(r"../../doc/datasets/zoo.tab")
+    data = orange.ExampleTable(r"../../doc/datasets/brown-selected.tab")
     ow.setData(data)
     #ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
     ow.handleNewSignals()

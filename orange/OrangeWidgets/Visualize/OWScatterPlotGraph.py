@@ -176,7 +176,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 key = self.addCurve("", fillColor, edgeColor, self.pointWidth, xData = [xData[i]], yData = [yData[i]])
 
                 # we add a tooltip for this point
-                self.addTip(xData[i], yData[i], text = self.getExampleTooltipText(self.rawData[j], attrIndices))
+                text = self.getExampleTooltipText(self.rawData[j], attrIndices)
+                text += "<hr>" + stringData % (100*insideData[i])
+                self.addTip(xData[i], yData[i], text = text.decode("unicode_escape"))
                 j+=1
 
         # ##############################################################
