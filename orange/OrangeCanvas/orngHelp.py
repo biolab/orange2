@@ -35,7 +35,6 @@ class HelpWindow(QDialog):
 #        else:
 #            catalogDir = os.path.join(widget.orangeDir, "doc", "catalog", widget._category)
         helpFileName = ("%s/%s/%s.htm" % (widget.orangeDir, widget.docDir(), widget.__class__.__name__[2:])).replace("\\", "/")
-        print "GG", helpFileName
 #        helpFileName = "%s/%s.htm" % (catalogDir, widget.__class__.__name__[2:])
         if not os.path.exists(helpFileName):
             QMessageBox.warning( None, "Not available", "Sorry, there is no documentation available for this widget.", QMessageBox.Ok)
