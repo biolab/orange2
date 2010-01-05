@@ -131,7 +131,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             dateServer = datetime.strptime(infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
             dateLocal = datetime.strptime(infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
             self.state = 0 if dateLocal >= dateServer else 1
-        title = infoServer["title"] if infoServer else (infoLocal["title"] + " (Obsolete)")
+        title = infoServer["title"] if infoServer else (infoLocal["title"])
         tags = infoServer["tags"] if infoServer else infoLocal["tags"]
         specialTags = dict([tuple(tag.split(":")) for tag in tags if tag.startswith("#") and ":" in tag])
         tags = ", ".join(tag for tag in tags if not tag.startswith("#"))
@@ -248,13 +248,7 @@ class OWDatabasesUpdate(OWWidget):
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         import OWGUIEx
         self.lineEditFilter = OWGUIEx.lineEditHint(box, self, "searchString", "Filter", caseSensitive=False, delimiters=" ", matchAnywhere=True, listUpdateCallback=self.SearchUpdate, callbackOnType=True, callback=self.SearchUpdate)
-#        self.connect(self.lineEditFilter, SIGNAL("textEdited(const QString &)"), self.SearchUpdate)
 
-#        OWGUI.checkBox(box, self, "showAll", "Search in all available data", callback=self.UpdateFilesList)
-#        box = OWGUI.widgetBox(self.mainArea, "Tags")
-#        self.tagsWidget = QTextEdit(self.mainArea)
-#        box.setMaximumHeight(150)
-#        box.layout().addWidget(self.tagsWidget)
         box = OWGUI.widgetBox(self.mainArea, "Files")
         self.filesView = QTreeWidget(self)
         self.filesView.setHeaderLabels(["Options", "Title", "Size"])
@@ -293,7 +287,8 @@ class OWDatabasesUpdate(OWWidget):
 
     def UpdateFilesList(self):
         self.retryButton.hide()
-        self.progressBarInit()
+#        self.progressBarInit()
+        pb = OWGUI.ProgressBar(self, 3)
         self.filesView.clear()
 #        self.tagsWidget.clear()
         self.allTags = set()
@@ -301,37 +296,44 @@ class OWDatabasesUpdate(OWWidget):
         self.updateItems = []
         if self.accessCode:
             self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
-        if self.domains == None:
-            domains = set(self.serverFiles.listdomains()) - set(["test"])
-        else:
-            domains = self.domains
-        items = []
+            
         try:
-            self.error(0)
-            for i, domain in enumerate(domains):
-                local = orngServerFiles.listfiles(domain) or []
-#                files = self.serverFiles.listfiles(domain)
-                allInfo = self.serverFiles.allinfo(domain)
-                files = sorted(allInfo.keys())
-                for j, file in enumerate(files):
-                    infoServer = None
-                    if file in local:
-                        infoLocal = orngServerFiles.info(domain, file)
-                        infoServer = allInfo.get(file, None)
-                        items.append((self.filesView, domain, file, infoLocal, infoServer))
-                    elif self.showAll:
-                        infoServer = allInfo[file]
-                        items.append((self.filesView, domain, file, None, infoServer))
-                    if infoServer:
-                        self.allTags.update(infoServer["tags"])
-                        allTitles.update(infoServer["title"].split())
-                    self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+            domains = self.serverFiles.listdomains() if self.domains is None else self.domains
+            pb.advance()
+            serverInfo = dict([(dom, self.serverFiles.allinfo(dom)) for dom in domains])
+            pb.advance()
         except IOError, ex:
             self.error(0, "Could not connect to server! Press the Retry button to try again.")
             self.retryButton.show()
+            domains =orngServerFiles.listdomains() if self.domains is None else self.domains
+            pb.advance()
+            serverInfo = {}
+            pb.advance()
             
+        localInfo = dict([(dom, orngServerFiles.allinfo(dom)) for dom in domains])
+        items = []
+        
+        self.error(0)
+        for i, domain in enumerate(set(domains) - set(["test", "demo"])):
+            local = localInfo.get(domain, {}) #orngServerFiles.listfiles(domain) or []
+#                files = self.serverFiles.listfiles(domain)
+            server =  serverInfo.get(domain, {}) #self.serverFiles.allinfo(domain)
+            files = sorted(set(server.keys() + local.keys()))
+            for j, file in enumerate(files):
+                infoServer = server.get(file, None)
+                infoLocal = local.get(file, None)
+                
+                items.append((self.filesView, domain, file, infoLocal, infoServer))
+                
+                displayInfo = infoServer if infoServer else infoLocal
+                self.allTags.update(displayInfo["tags"])
+                allTitles.update(displayInfo["title"].split())
+
+#                    self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+        
         for i, item in enumerate(items):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
+        pb.advance()
         self.filesView.resizeColumnToContents(0)
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
