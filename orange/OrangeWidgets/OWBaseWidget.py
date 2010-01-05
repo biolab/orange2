@@ -714,7 +714,7 @@ class OWBaseWidget(QDialog):
         
     def docDir(self):
         if os.path.normpath(self.widgetDir) in os.path.normpath(self.thisWidgetDir):  # A built-in widget
-            subDir = os.sep+os.path.relpath(self.thisWidgetDir, self.widgetDir) if os.path.relpath else self.thisWidgetDir.replace(self.widgetDir, "")
+            subDir = os.sep+os.path.relpath(self.thisWidgetDir, self.widgetDir) if "relpath" in os.path.__dict__ else self.thisWidgetDir.replace(self.widgetDir, "")
             return "doc/catalog%s" % subDir
         elif os.path.normpath(self.addOnsDir) in os.path.normpath(self.thisWidgetDir):  # An add-on widget
             # Two os.path.splits in the following line to remove the trailing "/widgets"
