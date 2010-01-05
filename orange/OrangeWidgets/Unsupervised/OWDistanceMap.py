@@ -34,29 +34,22 @@ class EventfulGraphicsView(QGraphicsView):
         self.master = master
         self.viewport().setMouseTracking(True)
 
-##    def mousePressEvent (self, event):
-##        self.master.mousePress(event.pos().x(), event.pos().y())
-##
-##    def mouseReleaseEvent (self, event):
-##        self.master.mouseRelease(event.pos().x(), event.pos().y())
-##
-##    def mouseMoveEvent (self, event):
-##        self.master.mouseMove(event.pos().x(), event.pos().y())
-
 class EventfulGraphicsScene(QGraphicsScene):
     def __init__(self, master):
         QGraphicsScene.__init__(self)
         self.master = master
-##        self.setMouseTracking(True)
 
     def mousePressEvent (self, event):
-        self.master.mousePress(event.scenePos().x(), event.scenePos().y())
+        if self.master.matrix:
+            self.master.mousePress(event.scenePos().x(), event.scenePos().y())
 
     def mouseReleaseEvent (self, event):
-        self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
+        if self.master.matrix:
+            self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
 
     def mouseMoveEvent (self, event):
-        self.master.mouseMove(event)
+        if self.master.matrix:
+            self.master.mouseMove(event)
 
 #####################################################################
 # main class
@@ -418,6 +411,8 @@ class OWDistanceMap(OWWidget):
 
     def createDistanceMap(self):
         """creates distance map objects"""
+        if not self.matrix:
+            return
         merge = min(self.Merge, float(self.matrix.dim))
         squeeze = 1. / merge
 
@@ -436,8 +431,11 @@ class OWDistanceMap(OWWidget):
 
     def drawDistanceMap(self):
         """renders distance map object on canvas"""
+        
         if not self.matrix:
             return
+        
+        self.clearScene()
 
         if self.matrix.dim * max(int(self.CellWidth), int(self.CellHeight)) > 32767:
             self.errorText.show()
@@ -613,6 +611,7 @@ class OWDistanceMap(OWWidget):
             dummy.setFont(font)
             if dummy.boundingRect().height() <= height:
                 break
+        self.scene.removeItem(dummy)
         return font
 
     def updateSelectionRect(self):
@@ -647,6 +646,37 @@ class OWDistanceMap(OWWidget):
                     self.addSelectionLine(selTuple[0] + 1, selTuple[1], 1)
         self.scene.update()
 
+    def clearScene(self):
+        if self.distanceImage:
+            self.scene.removeItem(self.distanceImage)
+            self.distanceImage = None
+        if self.legendImage:
+            self.scene.removeItem(self.legendImage)
+            self.legendImage = None
+            
+        for tmpText in getattr(self, "annotationText", []):
+            self.scene.removeItem(tmpText)
+            
+        self.annotationText = []
+
+        for cluster in getattr(self, "clusterItems", []):
+            self.scene.removeItem(cluster)
+            
+        self.clusterItems = []
+            
+        for line in self.selectionLines:
+            self.scene.removeItem(line)
+            
+        self.selectionLines = []
+        
+        self.selector.hide()
+        self.errorText.hide()
+        self.legendText1.hide()
+        self.legendText2.hide()
+        
+        
+        self.scene.setSceneRect(QRectF(0, 0, 10, 10))
+        
     def mouseMove(self, event):
         x, y = event.scenePos().x(), event.scenePos().y()
         row = self.rowFromMousePos(x,y)
@@ -782,7 +812,9 @@ class OWDistanceMap(OWWidget):
         self.send("Attribute List", None)
 
         if not matrix:
-            return
+            self.matrix = None
+            self.clearScene()
+        self.sceneView.viewport().setMouseTracking(bool(self.matrix))
 
         # check if the same length
         self.matrix = matrix
@@ -920,7 +952,8 @@ if __name__=="__main__":
         d.name = str(d["sepal length"])
     matrix = distanceMatrix(data)
     ow.setMatrix(matrix)
-
+    ow.setMatrix(None)
+    ow.setMatrix(matrix)
     a.exec_()
 
     ow.saveSettings()
