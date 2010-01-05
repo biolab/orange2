@@ -109,7 +109,7 @@ class l2_lr_fun : public function
 public:
 	l2_lr_fun(const problem *prob, double Cp, double Cn);
 	~l2_lr_fun();
-	
+
 	double fun(double *w);
 	void grad(double *w, double *g);
 	void Hv(double *s, double *Hs);
@@ -264,7 +264,7 @@ class l2loss_svm_fun : public function
 public:
 	l2loss_svm_fun(const problem *prob, double Cp, double Cn);
 	~l2loss_svm_fun();
-	
+
 	double fun(double *w);
 	void grad(double *w, double *g);
 	void Hv(double *s, double *Hs);
@@ -435,14 +435,14 @@ void l2loss_svm_fun::subXTv(double *v, double *XTv)
 	}
 }
 
-// A coordinate descent algorithm for 
+// A coordinate descent algorithm for
 // L1-loss and L2-loss SVM dual problems
 //
 //  min_\alpha  0.5(\alpha^T (Q + D)\alpha) - e^T \alpha,
 //    s.t.      0 <= alpha_i <= upper_bound_i,
-// 
+//
 //  where Qij = yi yj xi^T xj and
-//  D is a diagonal matrix 
+//  D is a diagonal matrix
 //
 // In L1-SVM case:
 // 		upper_bound_i = Cp if y_i = 1
@@ -453,14 +453,14 @@ void l2loss_svm_fun::subXTv(double *v, double *XTv)
 // 		D_ii = 1/(2*Cp)	if y_i = 1
 // 		D_ii = 1/(2*Cn)	if y_i = -1
 //
-// Given: 
+// Given:
 // x, y, Cp, Cn
 // eps is the stopping tolerance
 //
 // solution will be put in w
 
 static void solve_linear_c_svc(
-	const problem *prob, double *w, double eps, 
+	const problem *prob, double *w, double eps,
 	double Cp, double Cn, int solver_type)
 {
 	int l = prob->l;
@@ -488,7 +488,7 @@ static void solve_linear_c_svc(
 		diag_p = 0; diag_n = 0;
 		upper_bound_p = Cp; upper_bound_n = Cn;
 	}
-	
+
 	for(i=0; i<n; i++)
 		w[i] = 0;
 	for(i=0; i<l; i++)
@@ -496,7 +496,7 @@ static void solve_linear_c_svc(
 		alpha[i] = 0;
 		if(prob->y[i] > 0)
 		{
-			y[i] = +1; 
+			y[i] = +1;
 			QD[i] = diag_p;
 		}
 		else
@@ -541,13 +541,13 @@ static void solve_linear_c_svc(
 
 			if(yi == 1)
 			{
-				C = upper_bound_p; 
-				G += alpha[i]*diag_p; 
+				C = upper_bound_p;
+				G += alpha[i]*diag_p;
 			}
-			else 
+			else
 			{
 				C = upper_bound_n;
-				G += alpha[i]*diag_n; 
+				G += alpha[i]*diag_n;
 			}
 
 			PG = 0;
@@ -598,7 +598,7 @@ static void solve_linear_c_svc(
 		iter++;
 		if(iter % 10 == 0)
 		{
-			info("."); 
+			info(".");
 			info_flush();
 		}
 
@@ -636,7 +636,7 @@ static void solve_linear_c_svc(
 	for(i=0; i<l; i++)
 	{
 		if (y[i] == 1)
-			v += alpha[i]*(alpha[i]*diag_p - 2); 
+			v += alpha[i]*(alpha[i]*diag_p - 2);
 		else
 			v += alpha[i]*(alpha[i]*diag_n - 2);
 		if(alpha[i] > 0)
@@ -644,7 +644,7 @@ static void solve_linear_c_svc(
 	}
 	info("Objective value = %lf\n",v/2);
 	info("nSV = %d\n",nSV);
-	
+
 	delete [] QD;
 	delete [] alpha;
 	delete [] y;
@@ -1096,7 +1096,7 @@ int predict_probability(const struct model *model_, const struct feature_node *x
 				prob_estimates[i]=prob_estimates[i]/sum;
 		}
 
-		return label;		
+		return label;
 	}
 	else
 		return 0;
@@ -1468,7 +1468,7 @@ int linear_save_model_alt(string &buffer, struct model *model_)
 			fprintf(fp, "%.16g ", model_->w[i*nr_classifier+j]);
 		fprintf(fp, "\n");
 	}
-	
+
 	fseek(fp, SEEK_SET, 0);
 	char str[512];
 	while(fgets(str, 512, fp)){
@@ -1483,7 +1483,7 @@ struct model *linear_load_model_alt(string &buffer)
 {
 	FILE *fp = tmpfile();
 	if(fp==NULL) return NULL;
-	
+
 	fprintf(fp, buffer.c_str());
 	fseek(fp, SEEK_SET, 0);
 
@@ -1613,7 +1613,7 @@ feature_node *feature_nodeFromExample(const TExample &ex, map<int, int> &indexMa
 	int featureIndex = 1;
 	if (includeRegular){
 		for (TExample::iterator i=ex.begin(); i!=ex.end(); i++){
-			if ((i->varType==TValue::INTVAR || i->varType==TValue::FLOATVAR) && i->isRegular() && i!=&ex.getClass()){
+			if ((i->varType==TValue::INTVAR || (i->varType==TValue::FLOATVAR && (*i==*i))) && i->isRegular() && i!=&ex.getClass()){
 				if (i->varType==TValue::INTVAR)
 					ptr->value = (int) *i;
 				else
