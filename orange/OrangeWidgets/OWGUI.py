@@ -1702,12 +1702,14 @@ class ProgressBar:
         self.count = 0
         self.widget.progressBarInit()
 
-    def advance(self):
-        self.count += 1
+    def advance(self, count=1):
+        self.count += count
         self.widget.progressBarSet(int(self.count*100/self.iter))
 
     def finish(self):
         self.widget.progressBarFinished()
+        
+from orngMisc import progressBarMilestones
 
 ##############################################################################
 
@@ -1738,4 +1740,5 @@ def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     if selectionMode != -1:
         w.setSelectionMode(selectionMode)   
     w.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+    w.horizontalHeader().setMovable(True)
     return w
