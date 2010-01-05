@@ -297,6 +297,7 @@ class OWDatabasesUpdate(OWWidget):
         if self.accessCode:
             self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
             
+        self.error(0)    
         try:
             domains = self.serverFiles.listdomains() if self.domains is None else self.domains
             pb.advance()
@@ -313,7 +314,6 @@ class OWDatabasesUpdate(OWWidget):
         localInfo = dict([(dom, orngServerFiles.allinfo(dom)) for dom in domains])
         items = []
         
-        self.error(0)
         for i, domain in enumerate(set(domains) - set(["test", "demo"])):
             local = localInfo.get(domain, {}) #orngServerFiles.listfiles(domain) or []
 #                files = self.serverFiles.listfiles(domain)
