@@ -117,12 +117,12 @@ class LengthValidator(orange.RuleValidator):
             return len(rule.filter.conditions) <= self.length
         return True    
     
-def CN2Learner(examples = None, weightID=0, **kwds):
-    cn2 = CN2LearnerClass(**kwds)
-    if examples:
-        return cn2(examples, weightID)
-    else:
-        return cn2
+#def CN2Learner(examples = None, weightID=0, **kwds):
+#    cn2 = CN2LearnerClass(**kwds)
+#    if examples:
+#        return cn2(examples, weightID)
+#    else:
+#        return cn2
 
 def supervisedClassCheck(examples):
     if not examples.domain.classVar:
@@ -130,7 +130,15 @@ def supervisedClassCheck(examples):
     if examples.domain.classVar.varType == orange.VarTypes.Continuous:
         raise Exception("CN2 requires a discrete class!")
     
-class CN2LearnerClass(orange.RuleLearner):
+class CN2Learner(orange.RuleLearner):
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        self = orange.RuleLearner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+        
     def __init__(self, evaluator = orange.RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__.update(kwds)
         self.ruleFinder = orange.RuleBeamFinder()
@@ -149,6 +157,7 @@ class CN2Classifier(orange.RuleClassifier):
     def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
+        self.classVar = examples.domain.classVar
         self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
@@ -177,15 +186,23 @@ class CN2Classifier(orange.RuleClassifier):
         return retStr
 
 
-def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
-    cn2 = CN2UnorderedLearnerClass(**kwds)
-    if examples:
-        return cn2(examples, weightID)
-    else:
-        return cn2
+#def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
+#    cn2 = CN2UnorderedLearnerClass(**kwds)
+#    if examples:
+#        return cn2(examples, weightID)
+#    else:
+#        return cn2
 
 # Kako nastavim v c++, da mi ni potrebno dodati imena
-class CN2UnorderedLearnerClass(orange.RuleLearner):
+class CN2UnorderedLearner(orange.RuleLearner):
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        self = orange.RuleLearner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+            
     def __init__(self, evaluator = orange.RuleEvaluator_Laplace(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__.update(kwds)
         self.ruleFinder = orange.RuleBeamFinder()
@@ -225,6 +242,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.weightID = weightID
+        self.classVar = examples.domain.classVar
         self.__dict__.update(argkw)
         if examples:
             self.prior = orange.Distribution(examples.domain.classVar, examples)
@@ -274,6 +292,7 @@ class RuleClassifier_bestRule(orange.RuleClassifier):
     def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
+        self.classVar = examples.domain.classVar
         self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
@@ -396,15 +415,23 @@ class ruleSt_setRules(orange.RuleStoppingCriteria):
         if not ru_st:
             self.validator.rules.append(rule)
         return bool(ru_st)
-
-def CN2SDUnorderedLearner(examples = None, weightID=0, **kwds):
-    cn2 = CN2SDUnorderedLearnerClass(**kwds)
-    if examples:
-        return cn2(examples, weightID)
-    else:
-        return cn2
+#
+#def CN2SDUnorderedLearner(examples = None, weightID=0, **kwds):
+#    cn2 = CN2SDUnorderedLearnerClass(**kwds)
+#    if examples:
+#        return cn2(examples, weightID)
+#    else:
+#        return cn2
     
-class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
+class CN2SDUnorderedLearner(CN2UnorderedLearner):
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        self = CN2UnorderedLearner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+        
     def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
@@ -605,18 +632,26 @@ def add_sub_rules(rules, examples, weight, learner, dists):
         newRules.append(tmpRle)
     return newRules
 
-def CN2EVCUnorderedLearner(examples = None, weightID=0, **kwds):
-    cn2 = CN2EVCUnorderedLearnerClass(**kwds)
-    if examples:
-        return cn2(examples, weightID)
-    else:
-        return cn2
+#def CN2EVCUnorderedLearner(examples = None, weightID=0, **kwds):
+#    cn2 = CN2EVCUnorderedLearnerClass(**kwds)
+#    if examples:
+#        return cn2(examples, weightID)
+#    else:
+#        return cn2
     
-class CN2EVCUnorderedLearnerClass(orange.RuleLearner):
+class CN2EVCUnorderedLearner(orange.RuleLearner):
     """This is implementation of CN2 + EVC as evaluation + LRC classification.
         Main parameters:
           -- ...
     """
+    
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        self = orange.RuleLearner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
     
     def __init__(self, m=2, opt_reduction=2, min_improved=1, min_improved_perc=0.0, nsampling=100, width=5,
                  rule_sig=0.05, att_sig=0.5, max_rule_complexity=5, min_coverage=5, add_sub_rules = True,
