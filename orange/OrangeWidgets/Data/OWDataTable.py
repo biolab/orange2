@@ -17,6 +17,7 @@ from OWWidget import *
 import OWGUI
 import math
 from orngDataCaching import *
+from PyQt4 import *
 
 ##############################################################################
 
@@ -216,17 +217,8 @@ class OWDataTable(OWWidget):
         id = self.table2id.get(table, None)
 
         # set the header (attribute names)
-        table.setHorizontalHeaderLabels(table.variableNames)
-        if self.showAttributeLabels:
-            labelnames = set()
-            for a in data.domain:
-                labelnames.update(a.attributes.keys())
-            labelnames = sorted(list(labelnames))
-            if len(labelnames):
-                table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
-            else:
-                table.setHorizontalHeaderLabels([table.variableNames[i] for (i, a) in enumerate(table.data.domain.attributes)])
-                
+
+        self.drawAttributeLabels(table)
 
         #table.hide()
         clsColor = QColor(160,160,160)
@@ -250,6 +242,7 @@ class OWDataTable(OWWidget):
                 else:
                     item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
 ##                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
+ 
 
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
@@ -261,6 +254,58 @@ class OWDataTable(OWWidget):
         #table.setCurrentCell(-1,-1)
         #table.show()
  
+
+    def setCornerText(self, table, text):
+        """
+        Set table corner text. As this is an ugly hack, do everything in
+        try - except blocks, as it may stop working in newer Qt.
+        """
+
+        if not hasattr(table, "btn") and not hasattr(table, "btnfailed"):
+            try:
+                btn = table.findChild(QAbstractButton)
+
+                class efc(QObject):
+                    def eventFilter(self, o, e):
+                        if (e.type() == QEvent.Paint):
+                            if isinstance(o, QAbstractButton):
+                                btn = o
+                                #paint by hand (borrowed from QTableCornerButton)
+                                opt = QStyleOptionHeader()
+                                opt.init(btn)
+                                state = QStyle.State_None;
+                                if (btn.isEnabled()):
+                                    state |= QStyle.State_Enabled;
+                                if (btn.isActiveWindow()):
+                                    state |= QStyle.State_Active;
+                                if (btn.isDown()):
+                                    state |= QStyle.State_Sunken;
+                                opt.state = state;
+                                opt.rect = btn.rect();
+                                opt.text = btn.text();
+                                opt.position = QStyleOptionHeader.OnlyOneSection;
+                                painter = QStylePainter(btn);
+                                painter.drawControl(QStyle.CE_Header, opt);
+                                return True # eat evebt
+                        return False
+                
+                table.efc = efc()
+                btn.installEventFilter(table.efc)
+                table.btn = btn
+            except:
+                table.btnfailed = True
+
+        if hasattr(table, "btn"):
+            try:
+                btn = table.btn
+                btn.setText(text)
+                opt = QStyleOptionHeader()
+                opt.text = btn.text()
+                s = btn.style().sizeFromContents(QStyle.CT_HeaderSection, opt, QSize(), btn).expandedTo(QApplication.globalStrut())
+                if s.isValid():
+                    table.verticalHeader().setMinimumWidth(s.width())
+            except:
+                pass
 
     def sortByColumn(self, index):
         table = self.tabs.currentWidget()
@@ -299,20 +344,22 @@ class OWDataTable(OWWidget):
                 table.showColumn(c)
                 table.resizeColumnToContents(c)
 
+    def drawAttributeLabels(self, table):
+        table.setHorizontalHeaderLabels(table.variableNames)
+        if self.showAttributeLabels:
+            labelnames = set()
+            for a in table.data.domain:
+                labelnames.update(a.attributes.keys())
+            labelnames = sorted(list(labelnames))
+            if len(labelnames):
+                table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
+                self.setCornerText(table, "\n".join([""] + labelnames))
+        else:
+            self.setCornerText(table, "")
+
     def cbShowAttLabelsClicked(self):
         for table in self.table2id.keys():
-            if self.showAttributeLabels:
-                labelnames = set()
-                for a in table.data.domain:
-                    labelnames.update(a.attributes.keys())
-                labelnames = sorted(list(labelnames))
-                if len(labelnames):
-                    table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
-                else:
-                    table.setHorizontalHeaderLabels([table.variableNames[i] for (i, a) in enumerate(table.data.domain.attributes)])
-            else:
-                table.setHorizontalHeaderLabels(table.variableNames)
-            # h = table.horizontalHeader().adjustSize()
+            self.drawAttributeLabels(table)
 
     def cbShowDistributions(self):
         table = self.tabs.currentWidget()
@@ -405,7 +452,9 @@ if __name__=="__main__":
     #d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
     #d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
     #d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
-    d5 = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
+    #d5 = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
+    d5 = orange.ExampleTable("adult_sample")
+    d5 = orange.ExampleTable("/home/marko/tdw")
     #d5 = orange.ExampleTable(r"e:\Development\Orange Datasets\Cancer\SRBCT.tab")
     ow.show()
     #ow.dataset(d1,"auto-mpg")
