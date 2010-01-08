@@ -429,7 +429,9 @@ def with_gc_disabled(func):
 import numpy
 
 class Renderer(object):
-    render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform"]
+    render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform", "gradient", "text_alignment"]
+    
+    ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER = range(3)
       
     def __init__(self, width, height):
         self.width = width
@@ -437,8 +439,10 @@ class Renderer(object):
         self.render_state = {}
         self.render_state["font"] = ("Times-Roman", 10)
         self.render_state["fill_color"] = (0, 0, 0)
+        self.render_state["gradient"] = {}
         self.render_state["stroke_color"] = (0, 0, 0)
         self.render_state["stroke_width"] = 1
+        self.render_state["text_alignment"] = self.ALIGN_LEFT
         self.render_state["transform"] = numpy.matrix(numpy.eye(3))
         self.render_state["view_transform"] = numpy.matrix(numpy.eye(3))
         self.render_state["render_hints"] = {}
@@ -456,6 +460,12 @@ class Renderer(object):
     def set_fill_color(self, color):
         self.render_state["fill_color"] = color
         
+    def set_gradient(self, gradient):
+        self.render_state["gradient"] = gradient
+        
+    def gradient(self):
+        return self.render_state["gradient"]
+        
     def stroke_color(self):
         return self.render_state["stroke_color"]
     
@@ -467,6 +477,13 @@ class Renderer(object):
     
     def set_stroke_width(self, width):
         self.render_state["stroke_width"] = width
+        
+    def set_text_alignment(self, align):
+        print align
+        self.render_state["text_alignment"] = align
+        
+    def text_alignment(self):
+        return self.render_state["text_alignment"]
         
     def transform(self):
         return self.render_state["transform"]
@@ -553,20 +570,58 @@ class Renderer(object):
     
 class EPSRenderer(Renderer):
     EPS_DRAW_RECT = """/draw_rect 
-    {/h exch def /w exch def
-     /y exch def /x exch def
-     newpath
-     x y moveto
-     w 0 rlineto
-     0 h neg rlineto
-     w neg 0 rlineto
-     closepath
-    } def"""
+{/h exch def /w exch def
+ /y exch def /x exch def
+ newpath
+ x y moveto
+ w 0 rlineto
+ 0 h neg rlineto
+ w neg 0 rlineto
+ closepath
+} def"""
+    
+    EPS_SET_GRADIENT = """<< /PatternType 2
+ /Shading
+   << /ShadingType 2
+      /ColorSpace /DeviceRGB
+      /Coords [%f %f %f %f]
+      /Function
+      << /FunctionType 0
+         /Domain [0 1]
+         /Range [0 1 0 1 0 1]
+         /BitsPerSample 8
+         /Size [%i]
+         /DataSource <%s>
+      >>
+   >>
+>>
+matrix
+makepattern
+/mypattern exch def
+/Pattern setcolorspace
+mypattern setcolor
+
+"""
+
+    EPS_SHOW_FUNCTIONS = """/center_align_show
+{ dup stringwidth pop
+  2 div
+  neg
+  0 rmoveto
+  show } def
+  
+/right_align_show
+{ dup stringwidth pop
+  neg
+  0 rmoveto
+  show } def
+"""
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
         from StringIO import StringIO
         self._eps = StringIO()
         self._eps.write("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: 0 0 %i %i\n" % (width, height))
+        self._eps.write(self.EPS_SHOW_FUNCTIONS)
         self._eps.write("%f %f translate\n" % (0, self.height))
         self.set_font(*self.render_state["font"])
         self._inline_func = dict(stroke_color=lambda color: "%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
@@ -581,16 +636,26 @@ class EPSRenderer(Renderer):
         Renderer.set_fill_color(self, color)
         self._eps.write("%f %f %f setrgbcolor\n" % tuple(c/255.0 for c in color))
         
+    def set_gradient(self, gradient):
+        Renderer.set_gradient(self, gradient)
+        (x1, y1, x2, y2), samples = gradient
+        binary = "".join([chr(c) for p, s in samples for c in s])
+        import binascii
+        self._eps.write(self.EPS_SET_GRADIENT % (x1, y1, x2, y2, len(samples), binascii.hexlify(binary))) 
+        
     def set_stroke_color(self, color):
         Renderer.set_stroke_color(self, color)
         self._eps.write("%f %f %f setrgbcolor\n" % tuple(c/255.0 for c in color))
         
     def set_stroke_width(self, width):
         Renderer.set_stroke_width(self, width)
-        self._eps.write("%f setlinewidth" % width)
+        self._eps.write("%f setlinewidth\n" % width)
         
     def set_render_hints(self, hints):
         Renderer.set_render_hints(self, hints)
+        if hints.get("linecap", None):
+            map = {"butt":0, "round":1, "rect":2}
+            self._eps.write("%i setlinecap\n" % (map.get(hints.get("linecap"), 0)))
        
     @with_state 
     def draw_line(self, sx, sy, ex, ey, **kwargs):
@@ -600,6 +665,21 @@ class EPSRenderer(Renderer):
     def draw_rect(self, x, y, w, h, **kwargs):
         self._eps.write("newpath\n%(x)f %(y)f moveto %(w)f 0 rlineto\n0 %(h)f rlineto %(w)f neg 0 rlineto\nclosepath\n" % dict(x=x,y=-y, w=w, h=-h))
         self._eps.write("gsave\n")
+        if self.gradient():
+            self.set_gradient(self.gradient())
+        else:
+            self.set_fill_color(self.fill_color())
+        self._eps.write("fill\ngrestore\n")
+        self.set_stroke_color(self.stroke_color())
+        self._eps.write("stroke\n")
+        
+    @with_state
+    def draw_polygon(self, vertices, **kwargs):
+        self._eps.write("newpath\n%f %f moveto\n" % vertices[0])
+        for x, y in vertices[1:]:
+            self._eps.write("%f %f lineto\n" % (x, y))
+        self._eps.write("closepath\n")
+        self._eps.write("gsave\n")
         self.set_fill_color(self.fill_color())
         self._eps.write("fill\ngrestore\n")
         self.set_stroke_color(self.stroke_color())
@@ -607,7 +687,8 @@ class EPSRenderer(Renderer):
         
     @with_state
     def draw_text(self, x, y, text, **kwargs):
-        self._eps.write("%f %f moveto (%s) show\n" % (x, -y, text))
+        show = ["show", "right_align_show", "center_align_show"][self.text_alignment()]
+        self._eps.write("%f %f moveto (%s) %s\n" % (x, -y, text, show))
         
     def save_render_state(self):
         Renderer.save_render_state(self)
@@ -695,6 +776,9 @@ class PILRenderer(Renderer):
 class SVGRenderer(Renderer):
     SVG_HEADER = """<?xml version="1.0" ?>
 <svg height="%f" version="1.0" width="%f" xmlns="http://www.w3.org/2000/svg">
+<defs>
+    %s
+</defs>
     %s
 </svg>
 """
@@ -703,18 +787,61 @@ class SVGRenderer(Renderer):
         self.transform_count_stack = [0]
         import StringIO
         self._svg = StringIO.StringIO()
+        self._defs = StringIO.StringIO()
+        self._gradients = {}
+        
+    def set_gradient(self, gradient):
+        Renderer.set_gradient(self, gradient)
+        if gradient not in self._gradients.items():
+            id = "grad%i" % len(self._gradients)
+            self._gradients[id] = gradient
+            (x1, y1, x2, y2), stops = gradient
+            (x1, y1, x2, y2) = (0, 0, 100, 0)
+            
+            self._defs.write('<linearGradient id="%s" x1="%f%%" y1="%f%%" x2="%f%%" y2="%f%%">\n' % (id, x1, y1, x2, y2))
+            for offset, color in stops:
+                self._defs.write('<stop offset="%f" style="stop-color:rgb(%i, %i, %i); stop-opacity:1"/>\n' % ((offset,) + color))
+            self._defs.write('</linearGradient>\n')
+        
+    def get_fill(self):
+        if self.render_state["gradient"]:
+            return 'style="fill:url(#%s)"' % ([key for key, gr in self._gradients.items() if gr == self.render_state["gradient"]][0])
+        else:
+            return 'fill="rgb(%i %i %i)"' % self.fill_color()
+        
+    def get_stroke(self):
+#        if self.render_state["gradient"]:
+#            return ""
+#        else:
+            return 'stroke="rgb(%i, %i, %i)"' % self.stroke_color() + ' stroke-width="%f"' % self.stroke_width()
+        
+    def get_text_alignment(self):
+        return 'text-anchor="%s"' % (["start", "end", "middle"][self.text_alignment()])
+    
+    def get_linecap(self):
+        return 'stroke-linecap="%s"' % self.render_hints().get("linecap", "butt")
         
     @with_state
     def draw_line(self, sx, sy, ex, ey):
-        self._svg.write('<line x1="%f" y1="%f" x2="%f" y2="%f" stroke-width="%f" stroke="rgb(%i, %i, %i)"/>\n' % ((sx, sy, ex, ey, self.stroke_width()) + self.stroke_color()))
+        self._svg.write('<line x1="%f" y1="%f" x2="%f" y2="%f" %s %s/>\n' % ((sx, sy, ex, ey) + (self.get_stroke(), self.get_linecap())))
+        
+#    @with_state
+#    def draw_lines(self):
         
     @with_state
     def draw_rect(self, x, y, w, h):
-        self._svg.write('<rect x="%f" y="%f" width="%f" height="%f" fill="rgb(%i, %i, %i)" stroke="rgb(%i, %i, %i)"/>\n' % ((x, y, w, h) + self.fill_color() + self.stroke_color()))
+        self._svg.write('<rect x="%f" y="%f" width="%f" height="%f" %s %s/>\n' % ((x, y, w, h) + (self.get_fill(),) + (self.get_stroke(),)))
+            
+    @with_state
+    def draw_polygon(self, vertices, **kwargs):
+        path = "M %f %f L " % vertices[0]
+        path += " L ".join("%f %f" % vert for vert in vertices[1:])
+        path += " z"
+        self._svg.write('<path d="%s" %s/>' % ((path,) + (self.get_stroke(),)))
         
     @with_state
     def draw_text(self, x, y, text):
-        self._svg.write('<text x="%f" y="%f" font-family="%s" font-size="%f">%s</text>\n' % ((x, y) + self.font() +(text,)))
+        self._svg.write('<text x="%f" y="%f" font-family="%s" font-size="%f" %s>%s</text>\n' % ((x, y) + self.font() +(self.get_text_alignment(), text)))
         
     def translate(self, x, y):
         self._svg.write('<g transform="translate(%f,%f)">\n' % (x, y))
@@ -743,7 +870,7 @@ class SVGRenderer(Renderer):
         self._svg.write('</g>\n' * count)
         
     def save(self, filename):
-        open(filename, "wb").write(self.SVG_HEADER % (self.height, self.width, self._svg.getvalue()))
+        open(filename, "wb").write(self.SVG_HEADER % (self.height, self.width, self._defs.getvalue(), self._svg.getvalue()))
         
 class CairoRenderer(Renderer):
     def __init__(self, width, height):
