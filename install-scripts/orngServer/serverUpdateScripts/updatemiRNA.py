@@ -1,8 +1,19 @@
 
-import urllib, re, pylab, random, os, math, locale, gzip, StringIO, orngServerFiles, orngEnviron, os, sys
+import urllib
+import re
+import pylab
+import random
+import os
+import math
+import locale
+import gzip
+import StringIO
+import sys
 from getopt import getopt
-import obiTaxonomy as tax
 
+import obiTaxonomy as tax
+import orngServerFiles
+import orngEnviron
 
 def get_intoFiles(self):
     
@@ -12,12 +23,14 @@ def get_intoFiles(self):
         data_webPage = gzip.GzipFile(fileobj=StringIO.StringIO(urllib.urlopen(address).read())).read()
     except IOerror:
         print "get_intoFiles Error: Check the web-address."
-        stop    
-        
+        stop
+   
     sections = data_webPage.split('//\n')
     sections.pop()
     
     files = []
+    os.system('rm %s/*_sections.txt' % self)
+    
     for s in sections:
         org = str(re.findall('ID\s*(\S*)\s*standard;',s.split('\n')[0])[0]).split('-')[0]
         f = open(self+'/%s_sections.txt' % org,'a')
@@ -26,8 +39,12 @@ def get_intoFiles(self):
         
         if not('%s_miRNA.txt' % org) in files:
             files.append('%s_sections.txt' % org)
+    
+    fileList = open('fileList.txt','w')
+    fileList.write('\n'.join(list(set(files))))
+    fileList.close()
             
-    return list(set(files))
+    return 'fileList.txt'
     
             
         
@@ -58,7 +75,7 @@ def miRNA_info(path,object):
         premiRNA.close()
             
         matmiRNA = open(path+'/%s_matmiRNA.txt' % prefix,'w')
-        matmiRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\n')
+        matmiRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
         matmiRNA.close()
         
         dictG = {}
@@ -66,7 +83,7 @@ def miRNA_info(path,object):
             
         for s in sections:
             num_s = num_s+1
-            print 'section: ', num_s,
+            print 'section: ', num_s, '/', str(len(sections)),
                             
             pubIDs = ''
             matIDs = ''
@@ -200,14 +217,33 @@ def miRNA_info(path,object):
                       pre_forms = pre_forms + ',' + p
                         
             #print 'stampa: ', k, v[0], v[1], pre_forms
+            
+            ### targets
+            tar_page = urllib.urlopen('http://www.ebi.ac.uk/enright-srv/microcosm/cgi-bin/targets/v5/hit_list.pl?genome_id=native&mirna_id=%s' % k).read()
+            check_tar_page = re.findall('<h4>Your Search Returned No Results</h4>',tar_page)
+            
+            n_targets = 0
+            tar_webAddr = '0'
+            
+            if check_tar_page == []:
+                n_targets = str(re.findall('<h3>(\d*) hits found.</h3>',tar_page)[0])
+                tar_webAddr = 'http://www.ebi.ac.uk/enright-srv/microcosm/cgi-bin/targets/v5/'+ str(re.findall('(download_formatter.pl\?format=txt&genome_id=\d*&mirna_id=%s)' % k ,tar_page)[0])
+            else:
+                n_targets = 'No targets as result.'
+                tar_webAddr = 'No web address as result.'
+            
+                
+            #print 'tar: ', k, n_targets, tar_webAddr
+            
             matmiRNA = open(path+'/%s_matmiRNA.txt' % prefix,'a')        
-            matmiRNA.write(k+'\t'+v[0]+'\t'+v[1]+'\t'+pre_forms+'\n')
+            matmiRNA.write(k+'\t'+v[0]+'\t'+v[1]+'\t'+pre_forms+'\t'+n_targets+'\t'+tar_webAddr+'\n')
             matmiRNA.close()  
             
         
         #print 'End of miRNA_info'    
         return [path+'/%s_matmiRNA.txt' % prefix, path+'/%s_premiRNA.txt' % prefix]
 
+##############################################################################################################################################################
 
 opt = dict(getopt(sys.argv[1:], "u:p:", ["user=", "password="])[0])
 
@@ -225,8 +261,6 @@ except OSError:
     pass
 
 
-os.system('rm %s/*_sections.txt' % path)
-
 ## automatic
 address = 'ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.dat.gz'
 try:
@@ -243,7 +277,7 @@ miRNA_path = path+'/miRNA.txt'
 premiRNA_path = path+'/premiRNA.txt'
 
 total_miRNA = open(miRNA_path,'w')
-total_miRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\n')
+total_miRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
 total_miRNA.close()
 
 total_premiRNA = open(premiRNA_path,'w')
@@ -251,7 +285,7 @@ total_premiRNA.write('preID'+'\t'+'preACC'+'\t'+'preSQ'+'\t'+'matACCs'+'\t'+'pub
 total_premiRNA.close()
 
 
-for fx in file_org:
+for fx in [l.rstrip() for l in open(file_org).readlines()]:
     if orgs_des[fx.split('_')[0]] in [tax.name(id) for id in tax.common_taxids()]:
         
         end_files = miRNA_info(path, fx)
