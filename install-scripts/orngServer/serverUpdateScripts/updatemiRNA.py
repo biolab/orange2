@@ -15,36 +15,32 @@ import obiTaxonomy as tax
 import orngServerFiles
 import orngEnviron
 
-def get_intoFiles(self):
+def fastprint(filename,mode,what):
     
-    ## automatic
-    address = 'ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.dat.gz'
-    try:
-        data_webPage = gzip.GzipFile(fileobj=StringIO.StringIO(urllib.urlopen(address).read())).read()
-    except IOerror:
-        print "get_intoFiles Error: Check the web-address."
-        stop
-   
+    file = open(filename,mode)
+    file.write(what)
+    file.close()
+    
+
+def get_intoFiles(path, data_webPage):
+    
     sections = data_webPage.split('//\n')
     sections.pop()
     
     files = []
-    os.system('rm %s/*_sections.txt' % self)
+    os.system('rm %s/*_sections.txt' % path)
     
     for s in sections:
         org = str(re.findall('ID\s*(\S*)\s*standard;',s.split('\n')[0])[0]).split('-')[0]
-        f = open(self+'/%s_sections.txt' % org,'a')
-        f.write(s+'//\n')
-        f.close()
+        fastprint(path+'/%s_sections.txt' % org,'a',s+'//\n')
         
-        if not('%s_miRNA.txt' % org) in files:
+        if not('%s_sections.txt' % org) in files:
             files.append('%s_sections.txt' % org)
-    
-    fileList = open('fileList.txt','w')
-    fileList.write('\n'.join(list(set(files))))
-    fileList.close()
             
-    return 'fileList.txt'
+    content = '\n'.join(list(set(files)))    
+    fastprint(path+'/fileList.txt','w',content)
+            
+    return path+'/fileList.txt'
     
             
         
@@ -65,18 +61,12 @@ def miRNA_info(path,object):
         sections = data_webPage.split('//\n')
         sections.pop()
         print 'Sections found: ', str(len(sections))
-        
             
         num_s = 0
         
-        ### files to write  
-        premiRNA = open(path+'/%s_premiRNA.txt' % prefix,'w')
-        premiRNA.write('preID'+'\t'+'preACC'+'\t'+'preSQ'+'\t'+'matACCs'+'\t'+'pubIDs'+'\t'+'clusters'+'\t'+'web_addr'+'\n')
-        premiRNA.close()
-            
-        matmiRNA = open(path+'/%s_matmiRNA.txt' % prefix,'w')
-        matmiRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
-        matmiRNA.close()
+        ### files to write        
+        fastprint(path+'/%s_premiRNA.txt' % prefix,'w','preID'+'\t'+'preACC'+'\t'+'preSQ'+'\t'+'matACCs'+'\t'+'pubIDs'+'\t'+'clusters'+'\t'+'web_addr'+'\n')
+        fastprint(path+'/%s_matmiRNA.txt' % prefix,'w','matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
         
         dictG = {}
         dictP = {}
@@ -85,10 +75,10 @@ def miRNA_info(path,object):
             num_s = num_s+1
             print 'section: ', num_s, '/', str(len(sections)),
                             
-            pubIDs = ''
+            pubIDs = []
             matIDs = ''
             matACCs = ''
-            preSQ=''
+            preSQ=[]
             
             my_ids =[]
             my_accs=[]
@@ -104,25 +94,16 @@ def miRNA_info(path,object):
                         
                 elif r[0:2] == 'AC':
                     preACC = str(re.findall('AC\s*(\S*);',r)[0])
-                    #print preACC
                     web_addr = 'http://www.mirbase.org/cgi-bin/mirna_entry.pl?acc=%s' % preACC
-                    #print web_addr    
-                elif r[0:2] == 'RX' and not(re.findall('RX\s*PUBMED;\s(\d*).',r)==[]):
-                    pmid = str(re.findall('RX\s*PUBMED;\s(\d*).',r)[0])
                         
-                    if pubIDs == '':
-                         pubIDs = pmid
-                    else:
-                         pubIDs = pubIDs + ',' + pmid
-                    
+                elif r[0:2] == 'RX' and not(re.findall('RX\s*PUBMED;\s(\d*).',r)==[]):
+                    pubIDs.append(str(re.findall('RX\s*PUBMED;\s(\d*).',r)[0]))
                             
                 elif r[0:2]=='FT' and not(re.findall('FT\s*miRNA\s*(\d{1,}\.\.\d{1,})',r)==[]):
                     loc_mat = str(re.findall('FT\s*miRNA\s*(\d{1,}\.\.\d{1,})',r)[0])
                         
                     if not(loc_mat==[]):
                          my_locs.append(loc_mat)
-                        
-                    #print my_locs,
                 
                 elif r[0:2]=='FT' and not(re.findall('FT\s*/accession="(MIMAT[0-9]*)"', r)==[]):
                      mat_acc = str(re.findall('FT\s*/accession="(MIMAT[0-9]*)"', r)[0])
@@ -134,9 +115,7 @@ def miRNA_info(path,object):
                             
                      if not(mat_acc == []):
                          my_accs.append(mat_acc)    
-                        
-                     #print my_accs
-                        
+                                
                 elif r[0:2]=='FT' and not(re.findall('FT\s*/product="(\S*)"', r)==[]):
                      mat_id = str(re.findall('FT\s*/product="(\S*)"', r)[0])
                         
@@ -147,23 +126,14 @@ def miRNA_info(path,object):
                         
                      if not(mat_id == []):
                          my_ids.append(mat_id)
-                        
-                     #print my_ids
-                              
+                                          
                 elif r[0:2]=='SQ':
             
                      preSQ_INFO = str(re.findall('SQ\s*(.*other;)', r)[0])
                      seq = 'on'
             
                 elif r[0:2]=='  ' and seq == 'on':
-                     piece_seq= str(re.findall('\s*([a-z\s]*)\s*\d*',r)[0]).replace(' ','')
-                        
-                     if preSQ == '':
-                         preSQ = piece_seq
-                     else:
-                         preSQ = preSQ + piece_seq
-                        
-                     #print preSQ
+                     preSQ.append(str(re.findall('\s*([a-z\s]*)\s*\d*',r)[0]).replace(' ',''))
                      
             ### cluster search
             clusters = ''
@@ -176,23 +146,20 @@ def miRNA_info(path,object):
             clust_check = re.findall('<td class="\S*">(Clustered miRNAs)</td>',mirna_page)
                 
             if clust_check != [] and str(clust_check[0]) == 'Clustered miRNAs':    
-                 club = re.findall('<td><a href="/cgi-bin/mirna_entry.pl\?acc=MI\d*">(\S*?)</a></td>',mirna_page)
-                 clusters = ','.join(club)
-                 
-                 
+                 clusters = ','.join(re.findall('<td><a href="/cgi-bin/mirna_entry.pl\?acc=MI\d*">(\S*?)</a></td>',mirna_page))
+                      
             if clusters == '':
                 clusters = 'None'
-            #print clusters,
-                    
-            if pubIDs == '':
+            
+            ### before printing:       
+            if pubIDs == []:
                  pubIDs = 'None'
-            #print pubIDs
-            #print
-                 
-        
-            premiRNA = open(path+'/%s_premiRNA.txt' % prefix,'a')
-            premiRNA.write(preID+'\t'+preACC+'\t'+preSQ+'\t'+matACCs+'\t'+pubIDs+'\t'+clusters+'\t'+web_addr+'\n')
-            premiRNA.close()
+            else:
+                pubIDs = ','.join(pubIDs)
+            
+            preSQ = ''.join(preSQ)
+            
+            fastprint(path+'/%s_premiRNA.txt' % prefix,'a',preID+'\t'+preACC+'\t'+preSQ+'\t'+matACCs+'\t'+pubIDs+'\t'+clusters+'\t'+web_addr+'\n')
                 
             for tup in zip(my_ids, my_accs, my_locs):
                 
@@ -209,14 +176,7 @@ def miRNA_info(path,object):
                 dictP[tup[0]].append(preID)
                 
         for k,v in dictG.items():                
-            pre_forms = ''
-            for p in dictP[k]:
-                if pre_forms=='':
-                      pre_forms = p
-                else:
-                      pre_forms = pre_forms + ',' + p
-                        
-            #print 'stampa: ', k, v[0], v[1], pre_forms
+            pre_forms = ','.join(dictP[k]) 
             
             ### targets
             tar_page = urllib.urlopen('http://www.ebi.ac.uk/enright-srv/microcosm/cgi-bin/targets/v5/hit_list.pl?genome_id=native&mirna_id=%s' % k).read()
@@ -231,16 +191,10 @@ def miRNA_info(path,object):
             else:
                 n_targets = 'No targets as result.'
                 tar_webAddr = 'No web address as result.'
-            
-                
-            #print 'tar: ', k, n_targets, tar_webAddr
-            
-            matmiRNA = open(path+'/%s_matmiRNA.txt' % prefix,'a')        
-            matmiRNA.write(k+'\t'+v[0]+'\t'+v[1]+'\t'+pre_forms+'\t'+n_targets+'\t'+tar_webAddr+'\n')
-            matmiRNA.close()  
-            
+              
+            fastprint(path+'/%s_matmiRNA.txt' % prefix,'a',k+'\t'+v[0]+'\t'+v[1]+'\t'+pre_forms+'\t'+n_targets+'\t'+tar_webAddr+'\n')
         
-        #print 'End of miRNA_info'    
+            
         return [path+'/%s_matmiRNA.txt' % prefix, path+'/%s_premiRNA.txt' % prefix]
 
 ##############################################################################################################################################################
@@ -260,77 +214,79 @@ try:
 except OSError:
     pass
 
+### manually, with a smaller file
+#address = '/Users/redberry/tesi/eclipse/obi/trial.txt'
 
-## automatic
+### automatic
 address = 'ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.dat.gz'
+flag = 1
 try:
     data_webPage = gzip.GzipFile(fileobj=StringIO.StringIO(urllib.urlopen(address).read())).read()
-except IOerror:
-    print "updatemiRNA Error: Check the web-address."
-    stop 
-
-orgs_des = dict(zip([re.findall('ID\s*(\S{3,4})-\S*\s*standard;',l)[0] for l in data_webPage.split('\n') if l[0:2]=='ID'],[re.findall('DE\s*(.*)\s\S*.*\sstem[\s|-]loop',l)[0] for l in data_webPage.split('\n') if l[0:2]=='DE']))
-
-file_org = get_intoFiles(path)
-
-miRNA_path = path+'/miRNA.txt'
-premiRNA_path = path+'/premiRNA.txt'
-
-total_miRNA = open(miRNA_path,'w')
-total_miRNA.write('matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
-total_miRNA.close()
-
-total_premiRNA = open(premiRNA_path,'w')
-total_premiRNA.write('preID'+'\t'+'preACC'+'\t'+'preSQ'+'\t'+'matACCs'+'\t'+'pubIDs'+'\t'+'clusters'+'\t'+'web_addr'+'\n')
-total_premiRNA.close()
-
-
-for fx in [l.rstrip() for l in open(file_org).readlines()]:
-    if orgs_des[fx.split('_')[0]] in [tax.name(id) for id in tax.common_taxids()]:
+    
+except IOError:
+    flag = 0
+    toaddr = "rsberex@yahoo.it"
+    fromaddr = "orange@fri.uni-lj.si";
+    msg = "From: %s\r\nTo: %s\r\nSubject: Database file of miRNAs not found on: %s" % (fromaddr, toaddr, address)
+    try:
+        import smtplib
+        s = smtplib.SMTP('212.235.188.18', 25)
+        s.sendmail(fromaddr, toaddr, msg)
+        s.quit()
+    except Exception, ex:
+        print "Failed to send error report due to:", ex 
         
-        end_files = miRNA_info(path, fx)
-        
-        for filename in end_files:
+if flag:
+    
+    orgs_des = dict(zip([re.findall('ID\s*(\S{3,4})-\S*\s*standard;',l)[0] for l in data_webPage.split('\n') if l[0:2]=='ID'],[re.findall('DE\s*(.*)\s\S*.*\sstem[\s|-]loop',l)[0] for l in data_webPage.split('\n') if l[0:2]=='DE']))
+    
+    file_org = get_intoFiles(path,data_webPage)
+    
+    miRNA_path = path+'/miRNA.txt'
+    premiRNA_path = path+'/premiRNA.txt'
+    
+    fastprint(miRNA_path,'w','matID'+'\t'+'matACC'+'\t'+'matSQ'+'\t'+'pre_forms'+'\t'+'n_targets'+'\t'+'tar_webAddr'+'\n')
+    fastprint(premiRNA_path,'w','preID'+'\t'+'preACC'+'\t'+'preSQ'+'\t'+'matACCs'+'\t'+'pubIDs'+'\t'+'clusters'+'\t'+'web_addr'+'\n')
+    
+    for fx in [l.rstrip() for l in open(file_org).readlines()]:
+        if orgs_des[fx.split('_')[0]] in [tax.name(id) for id in tax.common_taxids()]:
+            
+            end_files = miRNA_info(path, fx)
+            
+            for filename in end_files:
+                            
+                org = re.findall('/(\S{3,4})_\S{3}miRNA\.txt',filename)[0]
+                type_file = re.findall(org+'_(\S*)miRNA\.txt',filename)[0]
+                label = re.findall('/(\S{3,4}_\S{3}miRNA?)\.txt',filename)[0]
+                
+                if type_file == 'mat':
+                    serverFiles.upload("miRNA", label, filename, title="miRNA: %s mature form" % org, tags=["tag1", "tag2"])
+                    serverFiles.unprotect("miRNA", label)
+                    print 'mat uploaded'
+                    
+                    for file_line in open(filename).readlines()[1:]:
+                        fastprint(miRNA_path,'a',file_line)                 
+                    
+                elif type_file == 'pre':
+                    serverFiles.upload("miRNA", label, filename, title="miRNA: %s pre-form" % org, tags=["tag1", "tag2"])
+                    serverFiles.unprotect("miRNA", label)
+                    print 'pre uploaded'
+                    
+                    for file_line in open(filename).readlines()[1:]:
+                        fastprint(premiRNA_path,'a',file_line)
                         
-            org = re.findall('/(\S{3,4})_\S{3}miRNA\.txt',filename)[0]
-            type_file = re.findall(org+'_(\S*)miRNA\.txt',filename)[0]
-            label = re.findall('/(\S{3,4}_\S{3}miRNA?)\.txt',filename)[0]
-            
-            #print org, type_file, label
-            
-            if type_file == 'mat':
-                serverFiles.upload("miRNA", label, filename, title="mature miRNA for %s" % org, tags=["tag1", "tag2"])
-                serverFiles.unprotect("miRNA", label)
-                print 'mat uploaded'
-                
-                
-                total_miRNA = open(miRNA_path,'a')
-                content_lines = open(filename).readlines()[1:]
-                for file_line in content_lines:
-                    total_miRNA.write(file_line)
-                    #print file_line
-                total_miRNA.close()
-                
-            elif type_file == 'pre':
-                serverFiles.upload("miRNA", label, filename, title="pre-miRNA for %s" % org, tags=["tag1", "tag2"])
-                serverFiles.unprotect("miRNA", label)
-                print 'pre uploaded'
-                
-                total_premiRNA = open(premiRNA_path,'a')
-                content_lines = open(filename).readlines()[1:]
-                for file_line in content_lines:
-                    total_premiRNA.write(file_line)
-                    #print file_line
-                total_premiRNA.close()
-            else:
-                print 'Check the label.'
-
-
-serverFiles.upload("miRNA", "miRNA.txt", miRNA_path)
-serverFiles.unprotect("miRNA", "miRNA.txt")
-
-serverFiles.upload("miRNA", "premiRNA.txt", premiRNA_path)
-serverFiles.unprotect("miRNA", "premiRNA.txt")
+                else:
+                    print 'Check the label.'
+    
+    
+    serverFiles.upload("miRNA", "miRNA.txt", miRNA_path)
+    serverFiles.unprotect("miRNA", "miRNA.txt")
+    
+    serverFiles.upload("miRNA", "premiRNA.txt", premiRNA_path)
+    serverFiles.unprotect("miRNA", "premiRNA.txt")
+    
+else:
+    print "Check the address of miRNA file on %s" % address
 
                 
             
