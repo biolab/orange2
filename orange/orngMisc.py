@@ -479,7 +479,6 @@ class Renderer(object):
         self.render_state["stroke_width"] = width
         
     def set_text_alignment(self, align):
-        print align
         self.render_state["text_alignment"] = align
         
     def text_alignment(self):
@@ -639,7 +638,7 @@ mypattern setcolor
     def set_gradient(self, gradient):
         Renderer.set_gradient(self, gradient)
         (x1, y1, x2, y2), samples = gradient
-        binary = "".join([chr(c) for p, s in samples for c in s])
+        binary = "".join([chr(int(c)) for p, s in samples for c in s])
         import binascii
         self._eps.write(self.EPS_SET_GRADIENT % (x1, y1, x2, y2, len(samples), binascii.hexlify(binary))) 
         
