@@ -21,7 +21,90 @@ from PyQt4 import *
 
 ##############################################################################
 
-OrangeValueRole = Qt.UserRole + 1
+class ExampleTableModel(QAbstractItemModel):
+    def __init__(self, examples, dist, *args):
+        QAbstractItemModel.__init__(self, *args)
+        self.examples = examples
+        self.dist = dist
+        self.attributes = list(self.examples.domain.attributes)
+        self.classVar = self.examples.domain.classVar
+        self.metas = self.examples.domain.getmetas().values()
+        self.all_attrs = self.attributes + ([self.classVar] if self.classVar else []) + self.metas
+        self.clsColor = QColor(160,160,160)
+        self.metaColor = QColor(220,220,200)
+        self.sorted_map = range(len(self.examples))
+#        self.showAttrLabels = True
+        self.attrLabels = sorted(reduce(set.union, [attr.attributes for attr in self.all_attrs], set()))
+        self._other_data = {}
+        
+    showAttrLabels = pyqtProperty("bool", 
+                                  fget=lambda self: getattr(self, "_showAttrLabels", False),
+                                  fset=lambda self, val: (self.emit(SIGNAL("layoutAboutToBeChanged()")),
+                                                          setattr(self, "_showAttrLabels", val),
+                                                          self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"), Qt.Horizontal, 0, len(self.all_attrs)-1),
+                                                          self.emit(SIGNAL("layoutChanged()")),
+                                                          self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0,0),
+                                                                    self.index(len(self.examples) - 1, len(self.all_attrs) - 1))
+                                                          ) or None
+                                  )
+    
+    def data(self, index, role):
+        row, col = self.sorted_map[index.row()], index.column()
+        example, attr = self.examples[row], self.all_attrs[col]
+        val = example[attr]
+        if role == Qt.DisplayRole:
+                return QVariant(str(val))
+        elif role == Qt.BackgroundRole:
+            if attr == self.classVar:
+                return QVariant(self.clsColor)
+            elif attr in self.metas:
+                return QVariant(self.metaColor)
+        elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous and not val.isSpecial():
+            dist = self.dist[col]
+            return QVariant((dist.max - float(val)) / (dist.max - dist.min or 1))
+        
+        return self._other_data.get((index.row(), index.column(), role), QVariant())
+    
+    def setData(self, index, variant, role):
+        self._other_data[index.row(), index.column(), role] = variant
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
+        
+    def index(self, row, col, parent=QModelIndex()):
+        return self.createIndex(row, col, 0)
+    
+    def parent(self, index):
+        return QModelIndex()
+    
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        else:
+            return len(self.examples)
+        
+    def columnCount(self, index):
+        return len(self.all_attrs)
+    
+    def headerData(self, section, orientation, role):
+        if orientation == Qt.Horizontal:
+            attr = self.all_attrs[section]
+            if role ==Qt.DisplayRole:
+                values = [attr.name] + ([attr.attributes.get(label, "") for label in self.attrLabels] if self.showAttrLabels else [])
+                return QVariant("\n".join(values))
+        else:
+            if role == Qt.DisplayRole:
+                return QVariant(section)
+        return QVariant()
+    
+    def sort(self, column, order=Qt.AscendingOrder):
+        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        attr = self.all_attrs[column] 
+        values = [(ex[attr], i) for i, ex in enumerate(self.examples)]
+        values = sorted(values, key=lambda t: t[0] if not t[0].isSpecial() else sys.maxint, reverse=(order!=Qt.AscendingOrder))
+        self.sorted_map = [v[1] for v in values]
+        self.emit(SIGNAL("layoutChanged()"))
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0,0),
+                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1))
+            
 
 class OWDataTable(OWWidget):
     settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels"]
@@ -105,14 +188,14 @@ class OWDataTable(OWWidget):
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
         if table:
-            for col in range(table.columnCount()):
+            for col in range(table.model().columnCount(QModelIndex())):
                 w = table.columnWidth(col)
                 table.setColumnWidth(col, w + 10)
 
     def decreaseColWidth(self):
         table = self.tabs.currentWidget()
         if table:
-            for col in range(table.columnCount()):
+            for col in range(table.model().columnCount(QModelIndex())):
                 w = table.columnWidth(col)
                 minW = table.sizeHintForColumn(col)
                 table.setColumnWidth(col, max(w - 10, minW))
@@ -133,8 +216,11 @@ class OWDataTable(OWWidget):
             self.data[id] = data
             self.showMetas[id] = (True, [])
 
-            table = OWGUI.table(None, 0,0)
+            table = QTableView() #table = OWGUI.table(None, 0,0)
             table.setSelectionBehavior(QAbstractItemView.SelectRows)
+            table.setSortingEnabled(True)
+            table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+            table.horizontalHeader().setMovable(True)
 
             self.id2table[id] = table
             self.table2id[table] = id
@@ -152,7 +238,7 @@ class OWDataTable(OWWidget):
             self.progressBarFinished()
             self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.setInfo(data)
-            self.cbShowMeta.setEnabled(len(self.showMetas[id][1])>0)        # enable showMetas checkbox only if metas exist
+            self.cbShowMeta.setEnabled(len(table.model().metas)>0)        # enable showMetas checkbox only if metas exist
 
         elif self.data.has_key(id):
             table = self.id2table[id]
@@ -192,8 +278,8 @@ class OWDataTable(OWWidget):
         mo = data.domain.getmetas(True).items()
         if mo:
             mo.sort(lambda x,y: cmp(x[1].name.lower(),y[1].name.lower()))
-#            metas.append(None)
-#            metaKeys.append(None)
+            metas.append(None)
+            metaKeys.append(None)
 
         varsMetas = vars + metas
 
@@ -203,17 +289,31 @@ class OWDataTable(OWWidget):
         numEx = len(data)
         numSpaces = int(math.log(max(numEx,1), 10))+1
 
-        table.clear()
+#        table.clear()
         table.oldSortingIndex = -1
         table.oldSortingOrder = 1
-        table.setColumnCount(numVarsMetas)
-        table.setRowCount(numEx)
+#        table.setColumnCount(numVarsMetas)
+#        table.setRowCount(numEx)
 
-        table.dist = getCached(data, orange.DomainBasicAttrStat, (data,))
+        dist = getCached(data, orange.DomainBasicAttrStat, (data,))
         
-        table.setItemDelegate(TableItemDelegate(self, table))
-        table.variableNames = [var.name for var in varsMetas]
-        table.data = data
+        datamodel = ExampleTableModel(data, dist, self)
+        
+#        proxy = QSortFilterProxyModel(self)
+#        proxy.setSourceModel(datamodel)
+        
+        table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions \
+                              else QStyledItemDelegate(self)) #TableItemDelegate(self, table))
+        
+        table.setModel(datamodel)
+        def p():
+            table.updateGeometries()
+            table.viewport().update()
+        
+        self.connect(datamodel, SIGNAL("layoutChanged()"), lambda *args: QTimer.singleShot(50, p))
+        
+#        table.variableNames = [var.name for var in varsMetas]
+#        table.data = data
         id = self.table2id.get(table, None)
 
         # set the header (attribute names)
@@ -221,32 +321,32 @@ class OWDataTable(OWWidget):
         self.drawAttributeLabels(table)
 
         #table.hide()
-        clsColor = QColor(160,160,160)
-        metaColor = QColor(220,220,200)
-        white = QColor(Qt.white)
-        for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
-            self.progressBarSet(j*100.0/numVarsMetas)
-            if attr == data.domain.classVar:
-                bgColor = clsColor
-            elif attr in metas or attr is None:
-                bgColor = metaColor
-                self.showMetas[id][1].append(j) # store indices of meta attributes
-            else:
-                bgColor = white
-
-            for i in range(numEx):
-##                table.setItem(i, j, TableWidgetItem(data[i][key]
-##                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-                if data.domain[key].varType == orange.VarTypes.Continuous and not data[i][key].isSpecial():
-                    item = OWGUI.tableItem(table, i,j, float(str(data[i][key])), backColor = bgColor)
-                else:
-                    item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-##                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
+#        clsColor = QColor(160,160,160)
+#        metaColor = QColor(220,220,200)
+#        white = QColor(Qt.white)
+#        for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
+#            self.progressBarSet(j*100.0/numVarsMetas)
+#            if attr == data.domain.classVar:
+#                bgColor = clsColor
+#            elif attr in metas or attr is None:
+#                bgColor = metaColor
+#                self.showMetas[id][1].append(j) # store indices of meta attributes
+#            else:
+#                bgColor = white
+#
+#            for i in range(numEx):
+###                table.setItem(i, j, TableWidgetItem(data[i][key]
+###                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
+#                if data.domain[key].varType == orange.VarTypes.Continuous and not data[i][key].isSpecial():
+#                    item = OWGUI.tableItem(table, i,j, float(str(data[i][key])), backColor = bgColor)
+#                else:
+#                    item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
+###                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
  
 
-        table.resizeRowsToContents()
-        table.resizeColumnsToContents()
-
+#        table.resizeRowsToContents()
+#        table.resizeColumnsToContents()
+        self.showMetas[id][1].extend([i for i, attr in enumerate(table.model().all_attrs) if attr in table.model().metas])
         self.connect(table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
         #table.verticalHeader().setMovable(False)
 
@@ -304,6 +404,7 @@ class OWDataTable(OWWidget):
                 s = btn.style().sizeFromContents(QStyle.CT_HeaderSection, opt, QSize(), btn).expandedTo(QApplication.globalStrut())
                 if s.isValid():
                     table.verticalHeader().setMinimumWidth(s.width())
+                    
             except:
                 pass
 
@@ -345,17 +446,19 @@ class OWDataTable(OWWidget):
                 table.resizeColumnToContents(c)
 
     def drawAttributeLabels(self, table):
-        table.setHorizontalHeaderLabels(table.variableNames)
+#        table.setHorizontalHeaderLabels(table.variableNames)
+        table.model().showAttrLabels = bool(self.showAttributeLabels)
         if self.showAttributeLabels:
             labelnames = set()
-            for a in table.data.domain:
+            for a in table.model().examples.domain:
                 labelnames.update(a.attributes.keys())
             labelnames = sorted(list(labelnames))
-            if len(labelnames):
-                table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
-                self.setCornerText(table, "\n".join([""] + labelnames))
+#            if len(labelnames):
+#                table.setHorizontalHeaderLabels([table.variableNames[i] + "\n" + "\n".join(["%s" % a.attributes.get(lab, "") for lab in labelnames]) for (i, a) in enumerate(table.data.domain.attributes)])
+            self.setCornerText(table, "\n".join([""] + labelnames))
         else:
             self.setCornerText(table, "")
+        table.repaint()
 
     def cbShowAttLabelsClicked(self):
         for table in self.table2id.keys():
@@ -364,6 +467,8 @@ class OWDataTable(OWWidget):
     def cbShowDistributions(self):
         table = self.tabs.currentWidget()
         if table:
+            table.setItemDelegate(OWGUI.TableBarItem(self, color=self.distColor) if self.showDistributions else \
+                                  QStyledItemDelegate(self))
             table.reset()
 
     # show data in the default order
@@ -412,35 +517,6 @@ class OWDataTable(OWWidget):
                     self.infoClass.setText("Class is neither discrete nor continuous.")
             else:
                 self.infoClass.setText('Classless domain.')
-                
-
-class TableItemDelegate(QItemDelegate):
-    def __init__(self, widget = None, table = None):
-        QItemDelegate.__init__(self, widget)
-        self.table = table
-        self.widget = widget
-
-    def paint(self, painter, option, index):
-        painter.save()
-        self.drawBackground(painter, option, index)
-        value, ok = index.data(Qt.DisplayRole).toDouble()
-
-        if ok:        # in case we get "?" it is not ok
-            if self.widget.showDistributions:
-                col = index.column()
-                if col < len(self.table.dist) and self.table.dist[col]:        # meta attributes and discrete attributes don't have a key
-                    dist = self.table.dist[col]
-                    smallerWidth = option.rect.width() * (dist.max - value) / (dist.max-dist.min or 1)
-                    painter.fillRect(option.rect.adjusted(0,0,-smallerWidth,0), self.widget.distColor)
-##            text = self.widget.locale.toString(value)    # we need this to convert doubles like 1.39999999909909 into 1.4
-##        else:
-        text = index.data(Qt.DisplayRole).toString()
-        ##text = index.data(OrangeValueRole).toString()
-
-        self.drawDisplay(painter, option, option.rect, text)
-        painter.restore()
-
-
 
 
 if __name__=="__main__":
@@ -451,10 +527,10 @@ if __name__=="__main__":
     #d2 = orange.ExampleTable('test-labels')
     #d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
     #d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
-    #d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
+    d5 = orange.ExampleTable('../../doc/datasets/adult_sample.tab')
     #d5 = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
-    d5 = orange.ExampleTable("adult_sample")
-    d5 = orange.ExampleTable("/home/marko/tdw")
+#    d5 = orange.ExampleTable("adult_sample")
+#    d5 = orange.ExampleTable("/home/marko/tdw")
     #d5 = orange.ExampleTable(r"e:\Development\Orange Datasets\Cancer\SRBCT.tab")
     ow.show()
     #ow.dataset(d1,"auto-mpg")

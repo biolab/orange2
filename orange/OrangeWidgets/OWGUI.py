@@ -1660,7 +1660,7 @@ class TableBarItem(QItemDelegate):
         if not ok:
             ratio = None
             value, ok = index.data(Qt.DisplayRole).toDouble()
-            if ok and self.widget.showBars:
+            if ok and getattr(self.widget, "showBars", False):
                 col = index.column()
                 if col < len(self.table.normalizers):
                     max, span = self.table.normalizers[col]
