@@ -22,7 +22,7 @@ try:
 except OSError:
     pass
 filename = os.path.join(path, "morbidmap")
-obiOMIM.OMIM.download_from_NCBI(path)
+obiOMIM.OMIM.download_from_NCBI(filename)
 
 serverFiles.upload("OMIM", "morbidmap", filename, title="Online Mendelian Inheritance in Man (OMIM)",
                    tags=["genes", "diseases", "human", "OMIM" "#version:%i" % obiOMIM.OMIM.VERSION])
