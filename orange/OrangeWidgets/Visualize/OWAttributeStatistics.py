@@ -63,7 +63,7 @@ class OWAttributeStatistics(OWWidget):
 
         self.icons = self.createAttributeIconDict()
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-        self.resize(450, 600)
+        self.resize(700, 600)
 
 
     def resizeEvent(self, event):
