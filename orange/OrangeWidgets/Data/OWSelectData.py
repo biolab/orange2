@@ -621,6 +621,7 @@ class OWSelectData(OWWidget):
 #            self.criteriaTable.clearCellWidget(row,0)
 #            self.criteriaTable.clearCell(row,1)
 
+        currentRow = self.criteriaTable.currentRow()
         self.criteriaTable.clearContents()
         self.criteriaTable.setRowCount(len(self.Conditions))
 
@@ -676,6 +677,7 @@ class OWSelectData(OWWidget):
 
             OWGUI.tableItem(self.criteriaTable, row, 1, txt)
 
+        self.criteriaTable.setCurrentCell(max(currentRow, len(self.Conditions) - 1), 0)
         self.criteriaTable.resizeRowsToContents()
         self.updateFilteredDataLens()
 
@@ -874,8 +876,8 @@ class Operator:
 if __name__=="__main__":
     import sys
     #data = orange.ExampleTable('dicty_800_genes_from_table07.tab')
-    #data = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable('../../doc/datasets/adult_sample.tab')
+#    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     # add meta attribute
     #data.domain.addmeta(orange.newmetaid(), orange.StringVariable("workclass_name"))
 
