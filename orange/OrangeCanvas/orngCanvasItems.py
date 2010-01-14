@@ -430,8 +430,8 @@ class CanvasWidget(QGraphicsRectItem):
 #                color = Qt.red
 #            else:                    color = self.canvasDlg.widgetSelectedColor
 
-        if self.isProcessing or self.selected or self.hoverState:
-            painter.setPen(QPen(QBrush(QColor(125, 162, 206, 255 if self.hoverState else 192)), 1, Qt.SolidLine, Qt.RoundCap))
+        if self.isProcessing or self.selected:
+            painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
             painter.setBrush(QBrush(QColor(217, 232, 252, 192)))
             painter.drawRoundedRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10, 5, 5)
 
@@ -443,6 +443,12 @@ class CanvasWidget(QGraphicsRectItem):
 
 #        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
         #painter.drawPixmap(0, 0, self.image)
+        if self.hoverState:
+            color = QColor(125, 162, 206)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(color)
+            painter.drawRoundedRect(-2, -2, self.widgetSize.width() + 4, self.widgetSize.height() + 4, 5, 5)
+            
         painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
 
         # draw the label
