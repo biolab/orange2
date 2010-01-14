@@ -48,6 +48,7 @@ class EventfulGraphicsScene(QGraphicsScene):
             self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
 
     def mouseMoveEvent (self, event):
+        print "mouse moved"
         if self.master.matrix:
             self.master.mouseMove(event)
 
@@ -814,7 +815,7 @@ class OWDistanceMap(OWWidget):
         if not matrix:
             self.matrix = None
             self.clearScene()
-        self.sceneView.viewport().setMouseTracking(bool(self.matrix))
+        self.sceneView.viewport().setMouseTracking(bool(matrix))
 
         # check if the same length
         self.matrix = matrix
