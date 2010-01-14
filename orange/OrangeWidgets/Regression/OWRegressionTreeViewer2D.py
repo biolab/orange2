@@ -7,64 +7,16 @@
 """
 from OWTreeViewer2D import *
 import re
-import sets
 
-class RegressionNode(GraphicsNode):
-    def __init__(self, attrVal, *args):
-        GraphicsNode.__init__(self, *args)
-        self.attrVal=attrVal
-        self.dist=self.tree.distribution
-        self.numInst=self.dist.cases
-        self.defVal=self.tree.nodeClassifier.defaultValue
-        self.var=self.dist.var()
-        self.dev=self.dist.dev()
-        self.error=self.dist.error()
-        self.texts=["%.4f" % self.defVal,"%.3f" %self.var,"%.3f" %self.dev,"%.3f" % self.error,"%.i" % self.numInst]
-        self.name = (self.tree.branches and self.tree.branchSelector.classVar.name) or str(self.defVal)
-        self.addTextLine(self.attrVal, None, False)
-        self.addTextLine("", None, False)
-        self.addTextLine("", None, False)
-        self.addTextLine(None, None, None)
-        self.addTextLine(self.name, None, False)
-        self.textind=[]
-        self.rule=(isinstance(self.parent, QGraphicsRectItem) and \
-                   self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
-        self.textAdvance=15
-
-    def setRect(self,x,y,w,h):
-        GraphicsNode.setRect(self,x,y,w,h)
-        self.updateText()
-
-##    def setBrush(self, brush):
-##        GraphicsTextContainer.setBrush(self, brush)
-##        if self.textObj:
-##            self.textObj[0].setColor(Qt.black)
-
-    def setText(self, textInd=[]):
-        self.textInd=textInd
-        j=1
-        for i in textInd:
-            GraphicsNode.setText(self, j, self.texts[i], fitSquare=False)
-            j+=1
-        for i in range(len(textInd),2):
-            GraphicsNode.setText(self, i+1, "", fitSquare=False)
-
-    def updateText(self):
-        self.textAdvance=float(self.rect().height())/3
-        self.lineSpacing=0
-        self.setFont(QFont("",self.textAdvance*0.7), False)
-        self.reArangeText(False, -self.textAdvance-self.lineSpacing)
-
-    def reArangeText(self, fitSquare=True, startOffset=0):
-        self.textOffset=startOffset
-        x,y=self.x(),self.y()
-        for i in range(4):
-##            self.textObj[i].setPos(x+1, y+(i-1)*self.textAdvance)
-            self.textObj[i].setPos(1, (i-1)*self.textAdvance)
-##        self.spliterObj[0].setPos(x, y+self.rect().height()-self.textAdvance)
-        self.spliterObj[0].setPos(0, self.rect().height()-self.textAdvance)        
-
-
+        
+class RegressionTreeNode(GraphicsNode):
+    def __init__(self, attr, tree, parent=None, *args):
+        GraphicsNode.__init__(self, tree, parent, *args)
+        self.attr = attr
+        
+    def rule(self):
+        return self.parent.rule() + [(self.parent.tree.branchSelector.classVar, self.attr)] if self.parent else []
+        
 def parseRules(rules):
     def joinCont(rule1, rule2):
         int1, int2=["(",-1e1000,1e1000,")"], ["(",-1e1000,1e1000,")"]
@@ -107,8 +59,8 @@ def parseRules(rules):
         r2=re.sub("^in ","",r2)
         r1=r1.strip("[]=")
         r2=r2.strip("[]=")
-        s1=sets.Set([s.strip(" ") for s in r1.split(",")])
-        s2=sets.Set([s.strip(" ") for s in r2.split(",")])
+        s1=set([s.strip(" ") for s in r1.split(",")])
+        s2=set([s.strip(" ") for s in r2.split(",")])
         s=s1 & s2
         if len(s)==1:
             return (rule1[0], "= "+str(list(s)[0]))
@@ -127,7 +79,8 @@ def parseRules(rules):
             newRules.append(r)
     return newRules
 
-BodyColor_Default = QColor(255, 225, 10)
+#BodyColor_Default = QColor(255, 225, 10)
+BodyColor_Default = QColor(Qt.gray)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWRegressionTreeViewer2D(OWTreeViewer2D):
@@ -143,17 +96,17 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.scene = TreeGraphicsScene(self)
         self.sceneView = TreeGraphicsView(self, self.scene)
         self.mainArea.layout().addWidget(self.sceneView)
-#        self.scene.setSceneRect(0,0,800,800)
+        self.toggleZoomSlider()
+        
+        self.connect(self.scene, SIGNAL("selectionChanged()"), self.updateSelection)
 
-        self.navWidget = OWBaseWidget(self) #QWidget(None)
+        self.navWidget = OWBaseWidget(self) 
         self.navWidget.lay=QVBoxLayout(self.navWidget)
-##        self.navWidget.setLayout(QVBoxLayout())
-
-        scene = TreeGraphicsScene(self.navWidget)
+        
+#        scene = TreeGraphicsScene(self.navWidget)
         self.treeNav = TreeNavigator(self.sceneView) #,self,scene,self.navWidget)
 #        self.treeNav.setScene(scene)
         self.navWidget.layout().addWidget(self.treeNav)
-        self.sceneView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
         self.navWidget.setWindowTitle("Navigator")
         self.setMouseTracking(True)
@@ -170,6 +123,8 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
         
+        OWGUI.rubber(self.NodeTab)
+        
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
@@ -183,19 +138,30 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.sendReport(self)
 
     def setNodeInfo(self, widget=None, id=None):
-        if widget:
-            if widget.isChecked():
-                if len(self.NodeInfo) == 2:
-                    self.NodeInfoW[self.NodeInfo[0]].setChecked(0)
-                self.NodeInfo.append(id)
-            else:
-                self.NodeInfo.remove(id)
-            self.NodeInfoSorted=list(self.NodeInfo)
-            self.NodeInfoSorted.sort()
-            self.NodeInfoMethod=id
-        for n in self.scene.nodeList:
-            n.setText(self.NodeInfoSorted)
+        flags = sum(2**i for i, name in enumerate(['maj', 'majp', 'tarp', 'error', 'inst']) if getattr(self, name)) 
+        for n in self.scene.nodes():
+            self.updateNodeInfo(n, flags)
+        self.scene.fixPos(self.rootNode, 10, 10)
         self.scene.update()
+        
+    def updateNodeInfo(self, node, flags=63):
+        fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
+        text = ""
+        if node.attr:
+            text += "%s<hr width=20000>" % fix(node.attr)
+        lines = []
+        if flags & 1:
+            lines += ["Predicted value: %s" % fix(str(node.tree.nodeClassifier.defaultValue))]
+        if flags & 2:
+            lines += ["Variance: %.1f" % node.tree.distribution.var()]
+        if flags & 4:
+            lines += ["Deviance: %.1f" % node.tree.distribution.dev()]
+        if flags & 8:
+            lines += ["Error: %.1f" % node.tree.distribution.error()]
+        if flags & 16:
+            lines += ["Number of instances: %i" % node.tree.distribution.cases]
+        text += "<br>".join(lines) + "<hr width=20000>Split on: %s" % (fix(node.tree.branchSelector.classVar.name) if node.tree.branchSelector else "Leaf node")
+        node.setHtml(text) 
 
     def activateLoadedSettings(self):
         if not self.tree:
@@ -206,21 +172,24 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 
     def toggleNodeColor(self):
         numInst=self.tree.distribution.cases
-        for node in self.scene.nodeList:
+        for node in self.scene.nodes():
             if self.NodeColorMethod == 0:   # default
-                node.setBrush(QBrush(BodyColor_Default))
+                color = BodyColor_Default
             elif self.NodeColorMethod == 1: # instances in node
                 light = 400 - 300*node.tree.distribution.cases/numInst
-                node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
+                color = BodyCasesColor_Default.light(light)
             elif self.NodeColorMethod == 2:
-                light = 300-min([node.var,100])
-                node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
+                light = 300-min([node.tree.distribution.var(),100])
+                color = BodyCasesColor_Default.light(light)
             elif self.NodeColorMethod == 3:
-                light = 300 - min([node.dev,100])
-                node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
+                light = 300 - min([node.tree.distribution.dev(),100])
+                color = BodyCasesColor_Default.light(light)
             elif self.NodeColorMethod == 4:
-                light = 400 - 300*node.error
-                node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
+                light = 400 - 300*node.tree.distribution.error()
+                color = BodyCasesColor_Default.light(light)
+            gradient = QLinearGradient(0, 0, 0, 100)
+            gradient.setStops([(0, color.lighter(120)), (1, color.lighter())])
+            node.setBackgroundBrush(QBrush(gradient))
         self.scene.update()
 #        self.treeNav.leech()
 
@@ -229,7 +198,9 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.ctree(self, tree)
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
-        node=RegressionNode(attrVal, tree, parent, self.scene)
+        node=RegressionTreeNode(attrVal, tree, parent, None, self.scene)
+        if parent:
+            parent.graph_add_edge(GraphicsEdge(None, self.scene, node1=parent, node2=node))
         if tree.branches:
             for i in range(len(tree.branches)):
                 if tree.branches[i]:
@@ -237,19 +208,19 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         return node
     
     def nodeToolTip(self, node):
-        rule=list(node.rule)
+        rule=list(node.rule())
         fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
         if rule:
             try:
                 rule=parseRules(list(rule))
             except:
                 pass
-            text="<b>IF</b> "+" <b>AND</b><br>\n  ".join([fix(a[0].name+" "+a[1]) for a in rule])+"\n<br><b>THEN</b> "+fix(str(node.defVal))
+            text="<b>IF</b> "+" <b>AND</b><br>\n  ".join([fix(a[0].name+" "+a[1]) for a in rule])+"\n<br><b>THEN</b> "+fix(str(node.tree.nodeClassifier.defaultValue))
         else:
-            text="<b>THEN</b> "+fix(str(node.defVal))
-        text += "<hr>#instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
-        text += "<hr>Partition on %s<hr>" % node.name if node.tree.branches else "<hr>"
-        text += fix(node.tree.nodeClassifier.classVar.name + " = " + str(node.defVal))
+            text="<b>THEN</b> "+fix(str(node.tree.nodeClassifier.defaultValue))
+        text += "<hr>Instances: %i (%.1f%%)" % (node.tree.distribution.cases, node.tree.distribution.cases/self.tree.distribution.cases*100)
+        text += "<hr>Partition on %s<hr>" % node.tree.branchSelector.classVar.name if node.tree.branchSelector else "<hr>"
+        text += fix(node.tree.nodeClassifier.classVar.name + " = " + str(node.tree.nodeClassifier.defaultValue))
         return text
 
 if __name__=="__main__":
