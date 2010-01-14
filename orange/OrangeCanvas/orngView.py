@@ -32,6 +32,7 @@ class SchemaView(QGraphicsView):
         self.linePopup.addAction("Remove", self.deleteSelectedLine)
         self.linePopup.addSeparator()
         self.setAcceptDrops(1)
+        self.viewport().setMouseTracking(True)
 
     # ###########################################
     # drag and drop events. You can open a document by dropping it on the canvas
@@ -247,6 +248,7 @@ class SchemaView(QGraphicsView):
 
         self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
         self.scene().update()
+        return QGraphicsView.mousePressEvent(self, ev)
 
 
     # mouse button was pressed and mouse is moving ######################
@@ -270,6 +272,8 @@ class SchemaView(QGraphicsView):
                 widget.setSelected(widget in widgets)
 
         self.scene().update()
+        
+        return QGraphicsView.mouseMoveEvent(self, ev)
 
 
     # mouse button was released #########################################
@@ -352,6 +356,7 @@ class SchemaView(QGraphicsView):
         self.scene().update()
         self.bWidgetDragging = False
         self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+        return QGraphicsView.mouseReleaseEvent(self, ev)
 
     def mouseDoubleClickEvent(self, ev):
         point = self.mapToScene(ev.pos())
@@ -367,6 +372,8 @@ class SchemaView(QGraphicsView):
             activeItem.inWidget.updateTooltip()
             activeItem.outWidget.updateTooltip()
             activeItem.updateTooltip()
+            
+        return QGraphicsView.mouseDoubleClickEvent(self, ev)
 
     # ###########################################
     # Functions for processing events

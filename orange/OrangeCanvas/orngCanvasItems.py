@@ -116,7 +116,9 @@ class CanvasLine(QGraphicsPathItem):
         self.updateTooltip()
         
         # this might seem unnecessary, but the pen size 20 is used for collision detection, when we want to see whether to to show the line menu or not 
-        self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))        
+        self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))
+        self.setAcceptHoverEvents(True)
+        self.hoverState = False
 
     def remove(self):
         self.hide()
@@ -143,7 +145,7 @@ class CanvasLine(QGraphicsPathItem):
         path = QPainterPath(p1)
         path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
         self.setPath(path)
-        painter.setPen(QPen(QColor(200, 200, 200), 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.setPen(QPen(QColor(200, 200, 200), 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
 #        painter.drawLine(p1, p2)
         painter.drawPath(path)
         painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
@@ -168,6 +170,13 @@ class CanvasLine(QGraphicsPathItem):
 #        l = self.line()
 #        self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
 
+    def hoverEnterEvent(self, event):
+        self.hoverState = True
+        self.update()
+    
+    def hoverLeaveEvent(self, event):
+        self.hoverState = False
+        self.update()
 
 # #######################################
 # # CANVAS WIDGET
@@ -226,6 +235,9 @@ class CanvasWidget(QGraphicsRectItem):
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
             self.instance.restoreWidgetPosition()
+            
+        self.setAcceptHoverEvents(True)
+        self.hoverState = False
 
 
     def resetWidgetSize(self):
@@ -418,10 +430,10 @@ class CanvasWidget(QGraphicsRectItem):
 #                color = Qt.red
 #            else:                    color = self.canvasDlg.widgetSelectedColor
 
-        if self.isProcessing or self.selected:
-            painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
+        if self.isProcessing or self.selected or self.hoverState:
+            painter.setPen(QPen(QBrush(QColor(125, 162, 206, 255 if self.hoverState else 192)), 1, Qt.SolidLine, Qt.RoundCap))
             painter.setBrush(QBrush(QColor(217, 232, 252, 192)))
-            painter.drawRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10)
+            painter.drawRoundedRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10, 5, 5)
 
 
         if self.widgetInfo.inputs != []:
@@ -517,7 +529,13 @@ class CanvasWidget(QGraphicsRectItem):
         qApp.processEvents()
 ##        self.repaintWidget()
 
-
+    def hoverEnterEvent(self, event):
+        self.hoverState = True
+        self.update()
+        
+    def hoverLeaveEvent(self, event):
+        self.hoverState = False
+        self.update()
 
 class MyCanvasText(QGraphicsSimpleTextItem):
     def __init__(self, canvas, text, x, y, flags=Qt.AlignLeft, bold=0, show=1):
