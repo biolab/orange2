@@ -21,6 +21,17 @@ from PyQt4 import *
 
 ##############################################################################
 
+def safe_call(func):
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception, ex:
+            print >> sys.stderr, func.__name__, "call error", ex 
+            return QVariant()
+    return wrapper
+            
 class ExampleTableModel(QAbstractItemModel):
     def __init__(self, examples, dist, *args):
         QAbstractItemModel.__init__(self, *args)
@@ -48,6 +59,7 @@ class ExampleTableModel(QAbstractItemModel):
                                                           ) or None
                                   )
     
+    @safe_call
     def data(self, index, role):
         row, col = self.sorted_map[index.row()], index.column()
         example, attr = self.examples[row], self.all_attrs[col]
@@ -65,6 +77,7 @@ class ExampleTableModel(QAbstractItemModel):
             return QVariant((dist.max - float(val)) / (dist.max - dist.min or 1))
         
         return self._other_data.get((index.row(), index.column(), role), QVariant())
+        
     
     def setData(self, index, variant, role):
         self._other_data[index.row(), index.column(), role] = variant
@@ -85,6 +98,7 @@ class ExampleTableModel(QAbstractItemModel):
     def columnCount(self, index):
         return max([len(self.all_attrs)] + [col for _, col, _ in self._other_data.keys()])
     
+    @safe_call
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
