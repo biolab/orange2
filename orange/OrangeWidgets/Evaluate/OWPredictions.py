@@ -10,6 +10,19 @@ from OWWidget import *
 import OWGUI
 import statc
 
+from OWDataTable import ExampleTableModel
+
+class PredictionTableModel(QAbstractItemModel):
+    def __init__(self, prediction_results, *args, **kwargs):
+        QAbstractItemModel.__init__(self, *args, **kwargs)
+        self.prediction_results = prediction_results
+        
+    def data(self, index, role):
+        col, row = index.column(), index.row()
+        
+            
+        
+
 ##############################################################################
 
 class colorItem(QTableWidgetItem):
@@ -65,7 +78,7 @@ class OWPredictions(OWWidget):
         self.copt.setDisabled(1)
         OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities", callback=self.updateTableOutcomes)
 
-        self.lbClasses = OWGUI.listBox(self.copt, self, selectionMode = QListWidget.MultiSelection, callback = self.updateTableOutcomes)
+#        self.lbClasses = OWGUI.listBox(self.copt, self, selectionMode = QListWidget.MultiSelection, callback = self.updateTableOutcomes)
 
         self.lbcls = OWGUI.listBox(self.copt, self, "selectedClasses", "classes",
                                    callback=[self.updateTableOutcomes, self.checksendpredictions],
@@ -101,11 +114,15 @@ class OWPredictions(OWWidget):
 
         # GUI - Table
         self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
+
+        self.table.setItemDelegate(OWGUI.TableBarItem(self))
+        
         self.header = self.table.horizontalHeader()
         self.vheader = self.table.verticalHeader()
         # manage sorting (not correct, does not handle real values)
-        self.connect(self.header, SIGNAL("pressed(int)"), self.sort)
+        self.connect(self.header, SIGNAL("sectionPressed(int)"), self.sort)
         self.sortby = -1
+        self.resize(800, 600)
 
 
     ##############################################################################
@@ -119,7 +136,7 @@ class OWPredictions(OWWidget):
         classification = self.outvar.varType == orange.VarTypes.Discrete
 
         # sindx is the column where these start
-        sindx = len(self.data.domain.attributes) + 1
+        sindx = len(self.data.domain.variables)
         col = sindx
         showprob = self.showProb and len(self.selectedClasses)
         fmt = "%%1.%df" % self.precision
@@ -136,6 +153,7 @@ class OWPredictions(OWWidget):
                             if self.showClass: s += " -> "
                         if self.showClass: s += "%s" % str(cl)
                         self.table.setItem(self.rindx[i], col, QTableWidgetItem(s))
+                        print s, self.rindx[i], col
                 else:
                     # regression
                     for (i, d) in enumerate(self.data):
@@ -157,6 +175,8 @@ class OWPredictions(OWWidget):
                 self.table.hideColumn(i)
 
     def updateTrueClass(self):
+        return #TODO: ???
+    
         col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
             self.table.showColumn(col)
@@ -166,11 +186,11 @@ class OWPredictions(OWWidget):
 
     def updateAttributes(self):
         if self.ShowAttributeMethod == 0:
-            for i in range(len(self.data.domain.attributes)):
+            for i in range(len(self.data.domain.variables)):
                 self.table.showColumn(i)
 ##                self.table.adjustColumn(i)
         else:
-            for i in range(len(self.data.domain.attributes)):
+            for i in range(len(self.data.domain.variables)):
                 self.table.hideColumn(i)
 
     def setTable(self):
@@ -178,8 +198,10 @@ class OWPredictions(OWWidget):
         if not self.outvar or self.data==None:
             return
 
-        self.table.setColumnCount(len(self.data.domain.attributes) + (self.data.domain.classVar <> None) + len(self.predictors))
+        self.table.setColumnCount(len(self.data.domain.attributes) + (self.data.domain.classVar != None) + len(self.predictors))
         self.table.setRowCount(len(self.data))
+        
+        print self.table.rowCount(), len(self.data.domain.attributes), (self.data.domain.classVar != None), len(self.predictors)
 
         # HEADER: set the header (attribute names)
 ##        for col in range(len(self.data.domain.attributes)):
@@ -349,18 +371,18 @@ class OWPredictions(OWWidget):
             if len(self.selectedClasses):
                 for c in self.predictors.values():
                     m = [orange.FloatVariable(name="%s(%s)" % (c.name, str(self.outvar.values[i])),
-                                              getValueFrom = lambda ex, rw, cindx=i: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
+                                              getValueFrom = lambda ex, rw, cindx=i, c=c: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
                          for i in self.selectedClasses]
                     metas.extend(m)
             if self.showClass:
                 mc = [orange.EnumVariable(name="%s" % c.name, values = self.outvar.values,
-                                         getValueFrom = lambda ex, rw: orange.Value(c(ex)))
+                                         getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
                       for c in self.predictors.values()]
                 metas.extend(mc)
         else:
             # regression
             mc = [orange.FloatVariable(name="%s" % c.name, 
-                                       getValueFrom = lambda ex, rw: orange.Value(c(ex)))
+                                       getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
                   for c in self.predictors.values()]
             metas.extend(mc)
 
