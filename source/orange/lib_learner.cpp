@@ -1502,6 +1502,17 @@ PyObject *SVMClassifier_getModel(PyObject *self, PyObject* args, PyObject *keywo
 PyCATCH
 }
 
+PyObject *SVMClassifier_setModel(PyObject* self, PyObject* args, PyObject* kwargs) PYARGS(METH_VARARGS, "(string) -> None")
+{PyTRY
+	char *model_string;
+	if (!PyArg_ParseTuple(args, "s:setModel", &model_string))
+		return NULL;
+	string buf(model_string);
+	svm_model *model = svm_load_model_alt(buf);
+	SELF_AS(TSVMClassifier).setModel(model);
+	RETURN_NONE;
+PyCATCH
+}
 
 /************* BAYES ************/
 

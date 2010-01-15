@@ -3220,17 +3220,18 @@ int svm_save_model_alt(string& buffer, const svm_model *model){
 	}
 
 	fseek(fp, SEEK_SET, 0);
-	//string tmpbuf;
+
 	char str[512];
 	while(fgets(str, 512, fp)){
 		buffer+=str;
 	}
-	//if(!feof(fp))
-	//	printf("Error saving svm_model");
-	//buffer.writeInt(tmpbuf.size()+1);
-    //printf(tmpbuf.c_str());
-	//buffer.writeBuf((void*)tmpbuf.c_str(), tmpbuf.size()+1);
-	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
+
+	if (ferror (fp) != 0){
+		perror ("") ;
+		fclose (fp);
+		return -1;
+	}
+	fclose(fp);
 	return 0;
 }
 
@@ -3238,13 +3239,9 @@ svm_model *svm_load_model_alt(string& buffer)
 {
 	FILE *fp = tmpfile();
 	if(fp==NULL) return NULL;
-	//int bufflen=buffer.readInt();
-	//char *tmpstr=(char*)malloc(sizeof(char)*bufflen);
-	//buffer.readBuf(tmpstr, bufflen);
-	//fwrite(tmpstr, sizeof(char), bufflen, fp);
+
 	fprintf(fp, buffer.c_str());
 	fseek(fp, SEEK_SET, 0);
-	//free(tmpstr);
 
 	// read parameters
 
@@ -3280,7 +3277,6 @@ svm_model *svm_load_model_alt(string& buffer)
 				free(model->label);
 				free(model->nSV);
 				free(model);
-				fclose(fp);
 				return NULL;
 			}
 		}
@@ -3303,7 +3299,6 @@ svm_model *svm_load_model_alt(string& buffer)
 				free(model->label);
 				free(model->nSV);
 				free(model);
-				fclose(fp);
 				return NULL;
 			}
 		}
@@ -3357,7 +3352,7 @@ svm_model *svm_load_model_alt(string& buffer)
 			while(1)
 			{
 				int c = getc(fp);
-				if(c==(char)EOF || c=='\n') break;
+				if(c==EOF || c=='\n') break;
 			}
 			break;
 		}
@@ -3368,7 +3363,6 @@ svm_model *svm_load_model_alt(string& buffer)
 			free(model->label);
 			free(model->nSV);
 			free(model);
-			fclose(fp);
 			return NULL;
 		}
 	}
@@ -3378,23 +3372,23 @@ svm_model *svm_load_model_alt(string& buffer)
 	int elements = 0;
 	long pos = ftell(fp);
 
-	while(1)
+	max_line_len = 1024;
+	line = Malloc(char,max_line_len);
+	char *p,*endptr,*idx,*val;
+
+	while(readline(fp)!=NULL)
 	{
-		int c = fgetc(fp);
-		switch(c)
+		p = strtok(line,":");
+		while(1)
 		{
-			case '\n':
-				// count the '-1' element
-			case ':':
-				++elements;
+			p = strtok(NULL,":");
+			if(p == NULL)
 				break;
-			case (char)EOF:
-				goto out;
-			default:
-				;
+			++elements;
 		}
 	}
-out:
+	elements += model->l;
+
 	fseek(fp,pos,SEEK_SET);
 
 	int m = model->nr_class - 1;
@@ -3404,34 +3398,48 @@ out:
 	for(i=0;i<m;i++)
 		model->sv_coef[i] = Malloc(double,l);
 	model->SV = Malloc(svm_node*,l);
-	svm_node *x_space=NULL;
+	svm_node *x_space = NULL;
 	if(l>0) x_space = Malloc(svm_node,elements);
 
 	int j=0;
 	for(i=0;i<l;i++)
 	{
+		readline(fp);
 		model->SV[i] = &x_space[j];
-		for(int k=0;k<m;k++)
-			fscanf(fp,"%lf",&model->sv_coef[k][i]);
+
+		p = strtok(line, " \t");
+		model->sv_coef[0][i] = strtod(p,&endptr);
+		for(int k=1;k<m;k++)
+		{
+			p = strtok(NULL, " \t");
+			model->sv_coef[k][i] = strtod(p,&endptr);
+		}
+
 		while(1)
 		{
-			int c;
-			do {
-				c = getc(fp);
-				if(c=='\n') goto out2;
-			} while(isspace(c));
-			ungetc(c,fp);
-			fscanf(fp,"%d:%lf",&(x_space[j].index),&(x_space[j].value));
+			idx = strtok(NULL, ":");
+			val = strtok(NULL, " \t");
+
+			if(val == NULL)
+				break;
+			x_space[j].index = (int) strtol(idx,&endptr,10);
+			x_space[j].value = strtod(val,&endptr);
+
 			++j;
 		}
-out2:
 		x_space[j++].index = -1;
 	}
-	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
+	free(line);
+
+	if (ferror(fp) != 0){
+		perror("SVM Model loading failed");
+		fclose(fp);
+		return NULL;
+	}
+
+	fclose(fp);
 
 	model->free_sv = 1;	// XXX
-
-    //printf("%i\n",model->param.kernel_type);
 	return model;
 }
 

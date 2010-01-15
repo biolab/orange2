@@ -229,7 +229,11 @@ protected:
 class ORANGE_API TSVMClassifier : public TClassifierFD{
 public:
 	__REGISTER_CLASS
-		TSVMClassifier(){};
+	TSVMClassifier(){
+		this->model = NULL;
+		this->x_space = NULL;
+	};
+
 	TSVMClassifier(const PVariable & , PExampleTable, svm_model*, svm_node*);
 	~TSVMClassifier();
 
@@ -238,18 +242,23 @@ public:
 
 	PFloatList getDecisionValues(const TExample &);
 
-	PIntList nSV; //PR nSV
-	PFloatList rho;	//PR rho
-	PFloatListList coef; //PR coef
-	PFloatList probA; //PR probA - pairwise probability information
-	PFloatList probB; //PR probB - pairwise probability information
-	PExampleTable supportVectors; //PR support vectors
+	PIntList nSV; //P nSV
+	PFloatList rho;	//P rho
+	PFloatListList coef; //P coef
+	PFloatList probA; //P probA - pairwise probability information
+	PFloatList probB; //P probB - pairwise probability information
+	PExampleTable supportVectors; //P support vectors
 	PExampleTable examples;	//P examples used to train the classifier
-	PKernelFunc kernelFunc;	//PR custom kernel function
+	PKernelFunc kernelFunc;	//P custom kernel function
 
 	const TExample *currentExample;
 
-    svm_model* getModel(){return model;};
+    svm_model* getModel() {return model;};
+    void setModel(svm_model *model) {
+    	if (this->model != NULL)
+    		svm_destroy_model(this->model);
+    	this->model = model;
+    }
 
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
@@ -267,7 +276,7 @@ public:
 	TSVMClassifierSparse(PVariable var , PExampleTable ex, svm_model* model, svm_node* x_space, bool useNonMeta):TSVMClassifier(var, ex, model, x_space){
 		this->useNonMeta=useNonMeta;
 	}
-	bool useNonMeta; //PR include non meta attributes
+	bool useNonMeta; //P include non meta attributes
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
 	virtual int getNumOfElements(const TExample& example);
