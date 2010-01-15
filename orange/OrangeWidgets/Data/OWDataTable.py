@@ -59,7 +59,8 @@ class ExampleTableModel(QAbstractItemModel):
                 return QVariant(self.clsColor)
             elif attr in self.metas:
                 return QVariant(self.metaColor)
-        elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous and not val.isSpecial():
+        elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous \
+                    and not val.isSpecial() and attr not in self.metas:
             dist = self.dist[col]
             return QVariant((dist.max - float(val)) / (dist.max - dist.min or 1))
         
@@ -79,10 +80,10 @@ class ExampleTableModel(QAbstractItemModel):
         if parent.isValid():
             return 0
         else:
-            return len(self.examples)
+            return max([len(self.examples)] + [row for row, _, _ in self._other_data.keys()])
         
     def columnCount(self, index):
-        return len(self.all_attrs)
+        return max([len(self.all_attrs)] + [col for _, col, _ in self._other_data.keys()])
     
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal:
@@ -216,7 +217,7 @@ class OWDataTable(OWWidget):
             self.data[id] = data
             self.showMetas[id] = (True, [])
 
-            table = QTableView() #table = OWGUI.table(None, 0,0)
+            table = QTableView()
             table.setSelectionBehavior(QAbstractItemView.SelectRows)
             table.setSortingEnabled(True)
             table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
