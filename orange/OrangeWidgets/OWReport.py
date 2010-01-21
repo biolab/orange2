@@ -288,23 +288,44 @@ def reportTree(tree, expanded=True):
 def reportCell(item, tag, style):
     if not item:
         return '<%s style="%s"/>' % (tag, style)
-    alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(item.textAlignment() & Qt.AlignHorizontal_Mask, "left")
-    text = item.text().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
+    if isinstance(item, QTableWidgetItem):
+        alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(item.textAlignment() & Qt.AlignHorizontal_Mask, "left")
+        text = item.text().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
+    elif isinstance(item, QModelIndex):
+        align = item.data(Qt.TextAlignmentRole)
+        align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True 
+        alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
+        text = str(item.data(Qt.DisplayRole).toString()).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
+    elif isinstance(item, tuple): #(QAbstractItemModel, headerIndex)
+        model, ind = item
+        align = model.headerData(index, Qt.Horizontal, Qt.TextAlignmentRole)
+        align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True
+        alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
+        text = str(model.headerData(index, Qt.Horizontal, Qt.DisplayRole).toString()).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
     
 def reportTable(table):
-    ncols = table.columnCount() 
+    ncols = table.model().columnCount()
     res = '<table style="border-bottom: thin solid black">\n'
     vheadVisible = table.verticalHeader().isVisible()
     shownColumns = [i for i in range(ncols) if not table.isColumnHidden(i)]
     if table.horizontalHeader().isVisible():
-        res += "<tr>"+'<th></th>'*vheadVisible + "".join(reportCell(table.horizontalHeaderItem(i), "th", "padding-left: 4px; padding-right: 4px;") for i in shownColumns) + "</tr>\n"
+        res += "<tr>"+'<th></th>'*vheadVisible + "".join(reportCell(table.horizontalHeaderItem(i) if isinstance(table, QTableWidget) else (table.model(), i),
+                                                                    "th", "padding-left: 4px; padding-right: 4px;") for i in shownColumns) + "</tr>\n"
         res += '<tr style="height: 2px">'+'<th colspan="%i"  style="border-bottom: thin solid black; height: 2px;"></th>' % (ncols+vheadVisible)
-    for j in range(table.rowCount()):
+    for j in range(table.model().rowCount()):
         res += "<tr>"
         if vheadVisible:
-            vhi = table.verticalHeaderItem(j)
-            res += "<th>%s</th>" % (str(vhi.text()) if vhi else "")
-        res += "".join(reportCell(table.item(j, i), "td", "") for i in shownColumns) + "</tr>\n"
+            if isinstance(table, QTableWidget):
+                vhi = table.verticalHeaderItem(j)
+                text = vhi.text() if vhi else ""
+            else:
+                text = str(table.model().headerData(j, Qt.Vertical, Qt.DisplayRole).toString())
+                
+            res += "<th>%s</th>" % text
+        res += "".join(reportCell(table.item(j, i) if isinstance(table, QTableWidget) else table.model().index(j, i),
+                                  "td", "") for i in shownColumns) + "</tr>\n"
     res += "</table>\n"
     return res
