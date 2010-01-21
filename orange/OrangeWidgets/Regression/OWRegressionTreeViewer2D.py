@@ -13,9 +13,38 @@ class RegressionTreeNode(GraphicsNode):
     def __init__(self, attr, tree, parent=None, *args):
         GraphicsNode.__init__(self, tree, parent, *args)
         self.attr = attr
+        fm = QFontMetrics(self.document().defaultFont())
+        self.attr_text_w = fm.width(str(self.attr if self.attr else ""))
+        self.attr_text_h = fm.lineSpacing()
+        self.line_descent = fm.descent()
         
     def rule(self):
         return self.parent.rule() + [(self.parent.tree.branchSelector.classVar, self.attr)] if self.parent else []
+    
+    def boundingRect(self):
+        if hasattr(self, "attr"):
+            attr_rect = QRectF(QPointF(0, -self.attr_text_h), QSizeF(self.attr_text_w, self.attr_text_h))
+        else:
+            attr_rect = QRectF(0, 0, 1, 1)
+        rect = self.rect().adjusted(-5, -5, 5, 5)
+        return rect | GraphicsNode.boundingRect(self) | attr_rect
+    
+    def paint(self, painter, option, widget=None):
+        if self.isSelected():
+            option.state = option.state.__xor__(QStyle.State_Selected)
+        if self.isSelected():
+            painter.save()
+            painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
+            painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
+            painter.restore()
+        painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
+        painter.save()
+        painter.setBrush(self.backgroundBrush)
+        rect = self.rect()
+        painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
+        painter.restore()
+        painter.setClipRect(rect | QRectF(QPointF(0, 0), self.document().size()))
+        return QGraphicsTextItem.paint(self, painter, option, widget)
         
 def parseRules(rules):
     def joinCont(rule1, rule2):
@@ -79,8 +108,8 @@ def parseRules(rules):
             newRules.append(r)
     return newRules
 
-#BodyColor_Default = QColor(255, 225, 10)
-BodyColor_Default = QColor(Qt.gray)
+BodyColor_Default = QColor(255, 225, 10)
+#BodyColor_Default = QColor(Qt.gray)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWRegressionTreeViewer2D(OWTreeViewer2D):
@@ -92,6 +121,8 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
+        
+        self.showNodeInfoText = False
         
         self.scene = TreeGraphicsScene(self)
         self.sceneView = TreeGraphicsView(self, self.scene)
@@ -140,27 +171,43 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
     def setNodeInfo(self, widget=None, id=None):
         flags = sum(2**i for i, name in enumerate(['maj', 'majp', 'tarp', 'error', 'inst']) if getattr(self, name)) 
         for n in self.scene.nodes():
+            if hasattr(n, "_rect"):
+                delattr(n, "_rect")
             self.updateNodeInfo(n, flags)
+        if True:
+            w = max([n.rect().width() for n in self.scene.nodes()] + [0])
+            for n in self.scene.nodes():
+                n.setRect(n.rect() | QRectF(0, 0, w, 1))
         self.scene.fixPos(self.rootNode, 10, 10)
         self.scene.update()
         
     def updateNodeInfo(self, node, flags=63):
         fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
         text = ""
-        if node.attr:
-            text += "%s<hr width=20000>" % fix(node.attr)
+#        if node.attr:
+#            text += "%s<hr width=20000>" % fix(node.attr)
         lines = []
         if flags & 1:
-            lines += ["Predicted value: %s" % fix(str(node.tree.nodeClassifier.defaultValue))]
+            start = "Predicted value: " if self.showNodeInfoText else ""
+            lines += [start + fix(str(node.tree.nodeClassifier.defaultValue))]
         if flags & 2:
-            lines += ["Variance: %.1f" % node.tree.distribution.var()]
+            start = "Variance: " if self.showNodeInfoText else ""
+            lines += [start + "%.1f" % node.tree.distribution.var()]
         if flags & 4:
-            lines += ["Deviance: %.1f" % node.tree.distribution.dev()]
+            start = "Deviance: " if self.showNodeInfoText else ""
+            lines += [start + "%.1f" % node.tree.distribution.dev()]
         if flags & 8:
-            lines += ["Error: %.1f" % node.tree.distribution.error()]
+            start = "Error: " if self.showNodeInfoText else ""
+            lines += [start + "%.1f" % node.tree.distribution.error()]
         if flags & 16:
-            lines += ["Number of instances: %i" % node.tree.distribution.cases]
-        text += "<br>".join(lines) + "<hr width=20000>Split on: %s" % (fix(node.tree.branchSelector.classVar.name) if node.tree.branchSelector else "Leaf node")
+            start = "Number of instances: " if self.showNodeInfoText else ""
+            lines += [start + "%i" % node.tree.distribution.cases]
+        text += "<br>".join(lines)
+        if node.tree.branchSelector:
+            text += "<hr>%s" % (fix(node.tree.branchSelector.classVar.name))
+        else:
+            text += "<hr>%s" % (fix(str(node.tree.nodeClassifier.defaultValue)))
+                               
         node.setHtml(text) 
 
     def activateLoadedSettings(self):
@@ -187,9 +234,11 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
             elif self.NodeColorMethod == 4:
                 light = 400 - 300*node.tree.distribution.error()
                 color = BodyCasesColor_Default.light(light)
-            gradient = QLinearGradient(0, 0, 0, 100)
-            gradient.setStops([(0, color.lighter(120)), (1, color.lighter())])
-            node.setBackgroundBrush(QBrush(gradient))
+#            gradient = QLinearGradient(0, 0, 0, 100)
+#            gradient.setStops([(0, color.lighter(120)), (1, color.lighter())])
+#            node.backgroundBrush = QBrush(gradient)
+            node.backgroundBrush = QBrush(color)
+
         self.scene.update()
 #        self.treeNav.leech()
 

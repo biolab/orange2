@@ -60,6 +60,17 @@ class GraphicsDroplet(QGraphicsEllipseItem):
             self.scene().fixPos()
         
 class TextTreeNode(QGraphicsTextItem, graph_node):
+    
+    borderRadius = pyqtProperty("int",
+                lambda self: getattr(self, "_borderRadius", 0),
+                lambda self, val: (setattr(self, "_borderRadius", val), self.update()) and None,
+                doc="Rounded rect's border radius"
+                )
+    backgroundBrush = pyqtProperty("QBrush",
+                lambda self: getattr(self, "_backgroundBrush", getattr(self.scene(), "defaultItemBrush", Qt.NoBrush)),
+                lambda self, brush: (setattr(self, "_backgroundBrush", brush), self.update()) and None,
+                doc="Background brush"
+                )
     def __init__(self, tree, parent, *args, **kwargs):
         QGraphicsTextItem.__init__(self, *args)
         graph_node.__init__(self, **kwargs)
@@ -68,11 +79,7 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         font = self.font()
         font.setPointSize(10)
         self.setFont(font)
-        gradient = QLinearGradient(0, 0, 0, 100)
-        gradient.setStops([(0, QColor(Qt.gray).lighter(120)), (1, QColor(Qt.lightGray).lighter())])
-        self.backgroundBrush = QBrush(gradient)
         self.droplet = GraphicsDroplet(-5, 0, 10, 10, self, self.scene())
-        self.setHtml(kwargs.get("text", "this is a node<hr width=20000><font color=red>next</font>"))
         
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         
@@ -80,15 +87,26 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         self.isOpen = True
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         
+    def setHtml(self, html):
+        return QGraphicsTextItem.setHtml(self, '<body>' + html.replace("<hr>", "<hr width=20000>") + "</body>") #bug in Qt (need width = 20000)
+        
     def updateContents(self):
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
+        self.droplet.setVisible(bool(self.branches))
         
-    def rect(self):
-        return QRectF(QPointF(0,0), self.document().size())
-    
-    def setBackgroundBrush(self, brush):
-        self.backgroundBrush = brush
+    def setRect(self, rect):
+        self.prepareGeometryChange()
+        self._rect = rect
+        self.updateContents()
         self.update()
+        
+    def shape(self):
+        path = QPainterPath()
+        path.addRect(self.boundingRect())
+        return path
+    
+    def rect(self):
+        return QRectF(QPointF(0,0), self.document().size()) | getattr(self, "_rect", QRectF(0, 0, 1, 1))
       
     @property  
     def branches(self):
@@ -98,10 +116,10 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         painter.save()
         painter.setBrush(self.backgroundBrush)
         rect = self.rect()
-        painter.drawRoundedRect(rect, 10, 10)
+        painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
         painter.restore()
+        painter.setClipRect(rect)
         return QGraphicsTextItem.paint(self, painter, option, widget)
-        
         
 def graph_traverse_bf(nodes, level=None, test=None):
     visited = set()
@@ -145,11 +163,17 @@ class GraphicsNode(TextTreeNode):
     def paint(self, painter, option, widget=0):
         if self.isSelected():
             option.state = option.state.__xor__(QStyle.State_Selected)
-        TextTreeNode.paint(self, painter, option, widget)
         if self.isSelected():
-            rect = self.boundingRect()
-            painter.setBrush(QBrush(QColor(100, 0, 0, 100)))
-            painter.drawRoundedRect(rect.adjusted(-1, -1, 1, 1), 10, 10)
+            rect = self.rect()
+            painter.save()
+#            painter.setBrush(QBrush(QColor(100, 0, 255, 100)))
+            painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
+            painter.drawRoundedRect(rect.adjusted(-4, -4, 4, 4), self.borderRadius, self.borderRadius)
+            painter.restore()
+        TextTreeNode.paint(self, painter, option, widget)
+        
+    def boundingRect(self):
+        return TextTreeNode.boundingRect(self).adjusted(-5, -5, 5, 5)
             
     def mousePressEvent(self, event):
         return TextTreeNode.mousePressEvent(self, event)
@@ -161,7 +185,11 @@ class GraphicsEdge(QGraphicsLineItem, graph_edge):
         self.setZValue(-30)
         
     def updateEnds(self):
-        self.setLine(QLineF(self.node1.edgeOutPoint(self), self.node2.edgeInPoint(self)))
+        try:
+            self.prepareGeometryChange()
+            self.setLine(QLineF(self.node1.edgeOutPoint(self), self.node2.edgeInPoint(self)))
+        except RuntimeError: # this gets called through QTimer.singleShot and might already be deleted by Qt 
+            pass 
 
 class TreeGraphicsView(QGraphicsView):
     def __init__(self, master, scene, *args):
@@ -414,8 +442,6 @@ class OWTreeViewer2D(OWWidget):
         #self.reportObject(self.svg_type, urlfn, width="600", height=str(h*fact))
 
     def toggleZoomSlider(self):
-#        self.rescaleTree()
-#        self.scene.fixPos(self.rootNode,10,10)
         k = 0.0028 * (self.Zoom ** 2) + 0.2583 * self.Zoom + 1.1389
         self.sceneView.setTransform(QTransform().scale(k/2, k/2))
         self.scene.update()
@@ -429,11 +455,6 @@ class OWTreeViewer2D(OWWidget):
         self.rescaleTree()
         self.scene.fixPos(self.rootNode,10,10)
         self.scene.update()
-
-#    def toggleTruncateText(self):
-#        for n in self.scene.nodeList:
-#           n.truncateText(self.TruncateText)
-#        self.scene.update()
 
     def toggleTreeDepth(self):
         self.walkupdate(self.rootNode)
@@ -449,11 +470,8 @@ class OWTreeViewer2D(OWWidget):
             elif self.LineWidthMethod == 2:
                 width = (edge.node2.tree.distribution.cases/edge.node1.tree.distribution.cases) * self.LineWidth
 
-            edge.setPen(QPen(Qt.gray, width))
+            edge.setPen(QPen(Qt.gray, width, Qt.SolidLine, Qt.RoundCap))
         self.scene.update()
-
-#    def toggleNodeSize(self):
-#        self.rescaleTree()
 
     def toggleNavigator(self):
         self.navWidget.setHidden(not self.navWidget.isHidden())
@@ -495,7 +513,7 @@ class OWTreeViewer2D(OWWidget):
         self.scene.update()
 
     def walkcreate(self, tree, parent=None, level=0):
-        node = GraphicsNode(tree, parent, self.scene)
+        node = GraphicsNode(tree, parent, None, self.scene)
         if parent:
             parent.graph_add_edge(GraphicsEdge(None, self.scene, node1=parent, node2=node))
         if tree.branches:

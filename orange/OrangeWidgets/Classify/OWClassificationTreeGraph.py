@@ -4,6 +4,7 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """
+
 from OWTreeViewer2D import *
 import OWColorPalette
 
@@ -40,31 +41,49 @@ class ClassificationTreeNode(GraphicsNode):
         self.attr = attr
         self.pie = PieChart(self.tree.distribution, 20, self, scene)
         self.majorityClass, self.majorityCount = max(self.tree.distribution.items(), key=lambda (key, val): val)
-        self.updateHtml()
-        
-    def updateHtml(self):
-        text = ""
-        if self.attr:
-            text += "%s<hr width=20000>" % self.attr
-        text += "Majority class: <font color=%s>%s</font><br>" % (self.scene().colorPalette[self.tree.examples.domain.classVar.values.index(self.majorityClass)].name(), self.majorityClass)
-        text += "Majority class probability: %.1f<br>" % (100.0 * float(self.majorityCount) / self.tree.distribution.abs)
-        text += "Instances: %i" % self.tree.distribution.abs
-        text += "<hr width=2000>" + ("Split on: %s" % self.tree.branchSelector.classVar.name if self.tree.branchSelector else "Leaf node")
-        self.setHtml(text)
-    
+        fm = QFontMetrics(self.document().defaultFont())
+        self.attr_text_w = fm.width(str(self.attr if self.attr else ""))
+        self.attr_text_h = fm.lineSpacing()
+        self.line_descent = fm.descent()
+
     def updateContents(self):
+        self.prepareGeometryChange()
         GraphicsNode.updateContents(self)
+        self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.pie.setPos(self.rect().right(), self.rect().center().y())
         
     def rect(self):
-        rect = GraphicsNode.rect(self)
-        return rect.adjusted(0, 0, self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0, 0)
+        rect = QRectF(QPointF(0,0), self.document().size())
+        return rect.adjusted(0, 0, self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0, 0) | getattr(self, "_rect", QRectF(0,0,1,1))
     
     def boundingRect(self):
-        return self.rect()
-        
+        if hasattr(self, "attr"):
+            attr_rect = QRectF(QPointF(0, -self.attr_text_h), QSizeF(self.attr_text_w, self.attr_text_h))
+        else:
+            attr_rect = QRectF(0, 0, 1, 1)
+        rect = self.rect().adjusted(-5, -5, 5, 5)
+        return rect | GraphicsNode.boundingRect(self) | attr_rect
+
     def rule(self):
         return self.parent.rule() + [(self.parent.tree.branchSelector.classVar, self.attr)] if self.parent else []
+    
+    def paint(self, painter, option, widget=None):
+        if self.isSelected():
+            option.state = option.state.__xor__(QStyle.State_Selected)
+        if self.isSelected():
+            painter.save()
+            painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
+            painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
+            painter.restore()
+        painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
+        painter.save()
+        painter.setBrush(self.backgroundBrush)
+        rect = self.rect()
+        painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
+        painter.restore()
+        painter.setClipRect(rect | QRectF(QPointF(0, 0), self.document().size()))
+        return QGraphicsTextItem.paint(self, painter, option, widget)
+#        TextTreeNode.paint(self, painter, option, widget)
 
 import re
 def parseRules(rules):
@@ -129,7 +148,8 @@ def parseRules(rules):
             newRules.append(r)
     return newRules
 
-BodyColor_Default = QColor(Qt.gray) #QColor(255, 225, 10)
+#BodyColor_Default = QColor(Qt.gray) 
+BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(Qt.blue) #QColor(0, 0, 128)
 
 class OWClassificationTreeGraph(OWTreeViewer2D):
@@ -144,6 +164,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.TargetClassIndex=0
         self.colorSettings = None
         self.selectedColorSettingsIndex = 0
+        self.showNodeInfoText = False
         
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
 
@@ -178,6 +199,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
                                self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
+        OWGUI.checkBox(nodeInfoBox, self, "showNodeInfoText", "Show info text", callback=self.setNodeInfo)
 
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
@@ -225,25 +247,40 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                         'majp', 'tarp', 'inst']) if getattr(self, name))
             
         for n in self.scene.nodes():
+            if hasattr(n, "_rect"):
+                delattr(n, "_rect")
             self.updateNodeInfo(n, flags)
-    
+        if True:
+            w = max([n.rect().width() for n in self.scene.nodes()] + [0])
+            for n in self.scene.nodes():
+                n.setRect(n.rect() | QRectF(0, 0, w, 1))
         self.scene.fixPos(self.rootNode, 10, 10)
         
     def updateNodeInfo(self, node, flags=31):
         fix = lambda str: str.replace(">", "&gt;").replace("<", "&lt;")
         text = ""
-        if node.attr:
-            text += "%s<hr width=20000>" % fix(node.attr)
+        
+#        text += "%s<br>" % fix(node.attr if node.attr else "")
+            
         lines = []
         if flags & 1:
-            lines += ["Majority class: <font color=%s>%s</font>" % (self.scene.colorPalette[node.tree.examples.domain.classVar.values.index(node.majorityClass)].name(), fix(node.majorityClass))]
+            start = "Majority class: " if self.showNodeInfoText else "" 
+#            lines += [start + "<font color=%s>%s</font>" % (self.scene.colorPalette[node.tree.examples.domain.classVar.values.index(node.majorityClass)].name(), fix(node.majorityClass))]
+            lines += [start + fix(node.majorityClass)]
         if flags & 2:
-            lines += ["Majority class probability: %.1f" % (100.0 * float(node.majorityCount) / node.tree.distribution.abs)]
+            start = "Majority class probability: " if self.showNodeInfoText else "" 
+            lines += [start + "%.1f" % (100.0 * float(node.majorityCount) / node.tree.distribution.abs)]
         if flags & 4:
-            lines += ["Target class probability: %.1f" % (100.0 * float(node.tree.distribution[self.TargetClassIndex]) / node.tree.distribution.abs)]
+            start = "Target class probability: "  if self.showNodeInfoText else "" 
+            lines += [start + "%.1f" % (100.0 * float(node.tree.distribution[self.TargetClassIndex]) / node.tree.distribution.abs)]
         if flags & 8:
-            lines += ["Instances: %i" % node.tree.distribution.cases]
-        text += "<br>".join(lines) + "<hr width=2000>" + ("Split on: %s" % fix(node.tree.branchSelector.classVar.name) if node.tree.branchSelector else "Leaf node")
+            start = "Instances: " if self.showNodeInfoText else "" 
+            lines += [start + "%i" % node.tree.distribution.cases]
+        text += "<br>".join(lines)
+        if node.tree.branchSelector:
+            text += "<hr>" + "%s" % fix(node.tree.branchSelector.classVar.name)
+        else:
+            text += "<hr>" + fix(node.majorityClass)
         node.setHtml(text)
 
     def activateLoadedSettings(self):
@@ -281,15 +318,18 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                 else:
                     light = 100
                 color = self.scene.colorPalette[self.TargetClassIndex].light(light)
-            gradient = QLinearGradient(0, 0, 0, 100)
+#            gradient = QLinearGradient(0, 0, 0, 100)
 #                gradient.setStops([(0, QColor(Qt.gray).lighter(120)), (1, QColor(Qt.lightGray).lighter())])
-            gradient.setStops([(0, color), (1, color.lighter())])
-            node.setBackgroundBrush(QBrush(gradient))
+#            gradient.setStops([(0, color), (1, color.lighter())])
+#            node.backgroundBrush = QBrush(gradient)
+            node.backgroundBrush = QBrush(color)
         self.scene.update()
 
     def toggleTargetClass(self):
         if self.NodeColorMethod in [3,4]:
             self.toggleNodeColor()
+        if self.tarp:
+            self.setNodeInfo()
         self.scene.update()
 
     def togglePies(self):
