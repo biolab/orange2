@@ -89,13 +89,13 @@ class ExampleTableModel(QAbstractItemModel):
     def parent(self, index):
         return QModelIndex()
     
-    def rowCount(self, parent):
+    def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
             return 0
         else:
             return max([len(self.examples)] + [row for row, _, _ in self._other_data.keys()])
         
-    def columnCount(self, index):
+    def columnCount(self, index=QModelIndex()):
         return max([len(self.all_attrs)] + [col for _, col, _ in self._other_data.keys()])
     
     @safe_call
@@ -122,13 +122,13 @@ class ExampleTableModel(QAbstractItemModel):
             
 
 class OWDataTable(OWWidget):
-    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels"]
+    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
 
         self.inputs = [("Examples", ExampleTable, self.dataset, Multiple + Default)]
-        self.outputs = []
+        self.outputs = [("Selected Examples", ExampleTable)]
 
         self.data = {}          # key: id, value: ExampleTable
         self.showMetas = {}     # key: id, value: (True/False, columnList)
@@ -138,6 +138,7 @@ class OWDataTable(OWWidget):
         self.distColorRgb = (220,220,220, 255)
         self.distColor = QColor(*self.distColorRgb)
         self.locale = QLocale()
+        self.autoCommit = False
 
         self.loadSettings()
 
@@ -172,6 +173,12 @@ class OWDataTable(OWWidget):
         OWGUI.rubber(resizeColsBox)
 
         self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Order of Examples", callback = self.btnResetSortClicked, tooltip = "Show examples in the same order as they appear in the file")
+        
+        OWGUI.separator(self.controlArea)
+        selectionBox = OWGUI.widgetBox(self.controlArea, "Selection")
+        self.sendButton = OWGUI.button(selectionBox, self, "Send selections", self.commit)
+        cb = OWGUI.checkBox(selectionBox, self, "autoCommit", "Commit on any change", callback=self.commitIf)
+        OWGUI.setStopper(self, self.sendButton, cb, "selectionChangedFlag", self.commit)
 
         OWGUI.rubber(self.controlArea)
 
@@ -179,7 +186,10 @@ class OWDataTable(OWWidget):
         self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
         self.table2id = {}  # key: table, value: widget id
-        self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
+        self.connect(self.tabs, SIGNAL("currentChanged(QWidget*)"), self.tabClicked)
+        
+        self.selectionChangedFlag = False
+        
 
         self.updateColor()
 
@@ -236,6 +246,8 @@ class OWDataTable(OWWidget):
             table.setSortingEnabled(True)
             table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
             table.horizontalHeader().setMovable(True)
+            table.horizontalHeader().setClickable(True)
+            table.horizontalHeader().setSortIndicatorShown(True)
 
             self.id2table[id] = table
             self.table2id[table] = id
@@ -254,6 +266,7 @@ class OWDataTable(OWWidget):
             self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.setInfo(data)
             self.cbShowMeta.setEnabled(len(table.model().metas)>0)        # enable showMetas checkbox only if metas exist
+            self.sendButton.setEnabled(not self.autoCommit)
 
         elif self.data.has_key(id):
             table = self.id2table[id]
@@ -267,6 +280,7 @@ class OWDataTable(OWWidget):
         # disable showMetas checkbox if there is no data on input
         if len(self.data) == 0:
             self.cbShowMeta.setEnabled(False)
+            self.sendButton.setEnabled(False)
 
     def sendReport(self):
         qTableInstance = self.tabs.currentWidget()
@@ -327,48 +341,18 @@ class OWDataTable(OWWidget):
         
         self.connect(datamodel, SIGNAL("layoutChanged()"), lambda *args: QTimer.singleShot(50, p))
         
-#        table.variableNames = [var.name for var in varsMetas]
-#        table.data = data
         id = self.table2id.get(table, None)
 
         # set the header (attribute names)
 
         self.drawAttributeLabels(table)
 
-        #table.hide()
-#        clsColor = QColor(160,160,160)
-#        metaColor = QColor(220,220,200)
-#        white = QColor(Qt.white)
-#        for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
-#            self.progressBarSet(j*100.0/numVarsMetas)
-#            if attr == data.domain.classVar:
-#                bgColor = clsColor
-#            elif attr in metas or attr is None:
-#                bgColor = metaColor
-#                self.showMetas[id][1].append(j) # store indices of meta attributes
-#            else:
-#                bgColor = white
-#
-#            for i in range(numEx):
-###                table.setItem(i, j, TableWidgetItem(data[i][key]
-###                OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-#                if data.domain[key].varType == orange.VarTypes.Continuous and not data[i][key].isSpecial():
-#                    item = OWGUI.tableItem(table, i,j, float(str(data[i][key])), backColor = bgColor)
-#                else:
-#                    item = OWGUI.tableItem(table, i,j, str(data[i][key]), backColor = bgColor)
-###                item.setData(OrangeValueRole, QVariant(str(data[i][key])))
- 
-
-#        table.resizeRowsToContents()
-#        table.resizeColumnsToContents()
         self.showMetas[id][1].extend([i for i, attr in enumerate(table.model().all_attrs) if attr in table.model().metas])
         self.connect(table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
+        self.connect(table.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.updateSelection)
         #table.verticalHeader().setMovable(False)
 
-        qApp.restoreOverrideCursor()
-        #table.setCurrentCell(-1,-1)
-        #table.show()
- 
+        qApp.restoreOverrideCursor() 
 
     def setCornerText(self, table, text):
         """
@@ -445,6 +429,7 @@ class OWDataTable(OWWidget):
         if show_col:
             self.cbShowMeta.setChecked(show_col[0])
             self.cbShowMeta.setEnabled(len(show_col[1])>0)
+        self.updateSelection()
 
     def cbShowMetaClicked(self):
         table = self.tabs.currentWidget()
@@ -533,6 +518,36 @@ class OWDataTable(OWWidget):
             else:
                 self.infoClass.setText('Classless domain.')
 
+    def updateSelection(self, *args):
+        self.sendButton.setEnabled(bool(self.getCurrentSelection()) and not self.autoCommit)
+        self.commitIf()
+            
+    def getCurrentSelection(self):
+        table = self.tabs.currentWidget()
+        if table and table.model():
+            model = table.model()
+            new = table.selectionModel().selectedIndexes()
+            return sorted(set([model.sorted_map[ind.row()] for ind in new]))
+        
+    def commitIf(self):
+        if self.autoCommit:
+            self.commit()
+        else:
+            self.selectionChangedFlag = True
+            
+    def commit(self):
+        table = self.tabs.currentWidget()
+        if table and table.model():
+            model = table.model()
+            selected = self.getCurrentSelection()
+            data = model.examples.select([1 if i in selected else 0 for i in range(len(model.examples))])
+            self.send("Selected Examples", data if len(data) > 0 else None)
+        else:
+            self.send("Selected Examples", None)
+            
+        self.selectionChangedFlag = False
+            
+        
 
 if __name__=="__main__":
     a = QApplication(sys.argv)
