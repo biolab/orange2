@@ -494,6 +494,7 @@ class OWTreeViewer2D(OWWidget):
             self.infoa.setText('No tree.')
             self.infob.setText('')
             self.tree=None
+            self.rootNode = None
         else:
             self.tree=tree.tree
             self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
@@ -502,7 +503,7 @@ class OWTreeViewer2D(OWWidget):
                 self.scene.colorPalette.setNumberOfColors(len(self.tree.distribution))
 #            self.scene.setDataModel(GraphicsTree(self.tree))
             self.rootNode=self.walkcreate(self.tree, None)
-            self.scene.addItem(self.rootNode)
+#            self.scene.addItem(self.rootNode)
             self.scene.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
             self.activateLoadedSettings()
             self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y())
@@ -537,6 +538,7 @@ class OWTreeViewer2D(OWWidget):
         self.scene.clear()
 
     def updateNodeToolTips(self):
+        
         for node in self.scene.nodes():
             node.setToolTip(self.nodeToolTip(node) if self.ToolTipsEnabled else "")
             
