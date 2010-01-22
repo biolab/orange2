@@ -104,6 +104,7 @@ class OWRegressionTree(OWWidget):
         if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
             self.setLearner()
         else:
+            self.data = None
             self.send("Learner",None)
             self.send("Regressor",None)
             self.send("Regression Tree", None)

@@ -224,8 +224,8 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.toggleNodeColor()
 
     def toggleNodeColor(self):
-        numInst=self.tree.distribution.cases
         for node in self.scene.nodes():
+            numInst=self.tree.distribution.cases
             if self.NodeColorMethod == 0:   # default
                 color = BodyColor_Default
             elif self.NodeColorMethod == 1: # instances in node
