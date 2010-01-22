@@ -95,7 +95,6 @@ class OWKMeans(OWWidget):
                    tooltip="Minimum number of clusters to try", callback=self.updateOptimizationFrom, callbackOnReturn=True)
         b = OWGUI.spin(box, self, "optimizationTo", label="To", min=3, max=100,
                    tooltip="Maximum number of clusters to try", callback=self.updateOptimizationTo, callbackOnReturn=True)
-        print b.control
 #        b.control.setLineEdit(OWGUI.LineEditWFocusOut(b))
         OWGUI.comboBox(box, self, "scoring", label="Scoring", orientation="horizontal",
                        items=[m[0] for m in self.scoringMethods], callback=self.update)
@@ -218,9 +217,9 @@ class OWKMeans(OWWidget):
         self.update()
             
     def runOptimization(self):
-        if self.optimizationTo > len(self.data):
-            self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
-                       (len(self.data), self.optimizationTo))
+        if self.optimizationTo > len(set(self.data)):
+            self.error("Not enough unique data instances (%d) for given number of clusters (%d)." % \
+                       (len(set(self.data)), self.optimizationTo))
             return
         
         random.seed(0)
@@ -246,9 +245,9 @@ class OWKMeans(OWWidget):
             raise
         
     def cluster(self):
-        if self.K > len(self.data):
-            self.error("Not enough data instances (%d) for given number of clusters (%d)." % \
-                       (len(self.data), self.K))
+        if self.K > len(set(self.data)):
+            self.error("Not enough unique data instances (%d) for given number of clusters (%d)." % \
+                       (len(set(self.data)), self.K))
             return
         random.seed(0)
         
@@ -294,15 +293,15 @@ class OWKMeans(OWWidget):
 #            item.setData(Qt.DecorationRole, QVariant(QIcon(os.path.join(os.path.dirname(OWGUI.__file__), "icons", "circle.png"))))
             item.setData(Qt.TextAlignmentRole, QVariant(Qt.AlignCenter))
             
-            item = OWGUI.tableItem(self.table, i, 2, ("%%.%if" % (int(- math.log(run.score, 10)) + 2)) % run.score)
-            item.setData(OWGUI.TableBarItem.BarRole, QVariant((1 - (run.score - worstScore) / (bestScore - worstScore) * 0.95)))
+            fmt = lambda score, max_decimals=10: "%%.%if" % min(int(abs(math.log(max(score, 1e-10)))) + 2, max_decimals) if score > 0 and score < 1 else "%.1f"
+            item = OWGUI.tableItem(self.table, i, 2, fmt(run.score) % run.score)
+            item.setData(OWGUI.TableBarItem.BarRole, QVariant((bestScore - run.score) / ((bestScore - worstScore) or 1) * 0.95))
             if (k, run) == self.bestRun:
                 self.table.selectRow(i)
             
         for i in range(2):
             self.table.resizeColumnToContents(i)
         self.table.show()
-#        tablewidth = sum(self.table.columnWidth(i) + 2 for i in range(3))
         qApp.processEvents()
         self.adjustSize()
 
@@ -385,11 +384,6 @@ class OWKMeans(OWWidget):
         self.reportData(self.data)
         if self.optimized:
             self.reportSection("Cluster size optimization report")
-#        res = "<table><tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % n for n in ("K", "Best", "Score")) + "</tr>\n"
-#        for i in range(self.K):
-#            res += "<tr>"+"".join('<td align="right">&nbsp;&nbsp;%s&nbsp;&nbsp;</td>' % str(self.table.item(i, j).text()) for j in range(4)) + "</tr>\n"
-#        res += "<tr>"+"".join('<td align="right"><b>&nbsp;&nbsp;%s&nbsp;&nbsp;</b></td>' % str(self.table.item(self.K, j).text()) for j in range(4)) + "</tr>\n"
-#        res += "</table>"
             import OWReport 
             self.reportRaw(OWReport.reportTable(self.table))
 
