@@ -21,6 +21,11 @@ class RegressionTreeNode(GraphicsNode):
     def rule(self):
         return self.parent.rule() + [(self.parent.tree.branchSelector.classVar, self.attr)] if self.parent else []
     
+    def rect(self):
+        rect = GraphicsNode.rect(self)
+        rect.setRight(max(rect.right(), getattr(self, "attr_text_w", 0)))
+        return rect
+    
     def boundingRect(self):
         if hasattr(self, "attr"):
             attr_rect = QRectF(QPointF(0, -self.attr_text_h), QSizeF(self.attr_text_w, self.attr_text_h))
@@ -37,6 +42,7 @@ class RegressionTreeNode(GraphicsNode):
             painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
             painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
             painter.restore()
+        painter.setFont(self.document().defaultFont())
         painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
         painter.save()
         painter.setBrush(self.backgroundBrush)

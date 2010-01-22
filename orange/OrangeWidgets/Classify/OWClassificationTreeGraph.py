@@ -51,6 +51,10 @@ class ClassificationTreeNode(GraphicsNode):
         GraphicsNode.updateContents(self)
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.pie.setPos(self.rect().right(), self.rect().center().y())
+        fm = QFontMetrics(self.document().defaultFont())
+        self.attr_text_w = fm.width(str(self.attr if self.attr else ""))
+        self.attr_text_h = fm.lineSpacing()
+        self.line_descent = fm.descent()
         
     def rect(self):
         rect = QRectF(QPointF(0,0), self.document().size())
@@ -75,6 +79,7 @@ class ClassificationTreeNode(GraphicsNode):
             painter.setBrush(QBrush(QColor(125, 162, 206, 192)))
             painter.drawRoundedRect(self.boundingRect().adjusted(1, 1, -1, -1), self.borderRadius, self.borderRadius)
             painter.restore()
+        painter.setFont(self.document().defaultFont())
         painter.drawText(QPointF(0, -self.line_descent), str(self.attr) if self.attr else "")
         painter.save()
         painter.setBrush(self.backgroundBrush)
@@ -199,7 +204,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
                                self.nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
-        OWGUI.checkBox(nodeInfoBox, self, "showNodeInfoText", "Show info text", callback=self.setNodeInfo)
+#        OWGUI.checkBox(nodeInfoBox, self, "showNodeInfoText", "Show info text", callback=self.setNodeInfo)
 
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=self.nodeColorOpts, box='Node Color',
                                 callback=self.toggleNodeColor)
