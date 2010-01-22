@@ -122,10 +122,10 @@ def score_silhouette(km, index=None):
     cind = km.clusters[index]
     a = avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
              km.clusters[i] == cind and i != index])
-    b = min(avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
+    b = min([avg([km.distance(km.data[index], ex) for i, ex in enumerate(km.data) if
                  km.clusters[i] == c])
-            for c in range(len(km.centroids)) if c != cind)
-    return float(b - a) / max(a, b)
+            for c in range(len(km.centroids)) if c != cind])
+    return float(b - a) / max(a, b) if max(a, b) > 0 else 0.0
 
 def score_fastsilhouette(km, index=None):
     """Return the silhouette score (of a specific example if index is specified)"""
@@ -133,8 +133,8 @@ def score_fastsilhouette(km, index=None):
         return avg([score_fastsilhouette(km, i) for i in range(len(km.data))])
     cind = km.clusters[index]
     a = km.distance(km.data[index], km.centroids[km.clusters[index]])
-    b = min(km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind)
-    return float(b - a) / max(a, b)
+    b = min([km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind])
+    return float(b - a) / max(a, b) if max(a, b) > 0 else 0.0
 
 def compute_bic(km):
 	"""Compute bayesian information criteria score for given clustering"""
@@ -289,7 +289,7 @@ class KMeans:
                 old_cluster = self.clusters
                 if self.minscorechange != None:
                     self.score = self.scoring(self)
-                    scorechange = (self.score - old_score) / old_score
+                    scorechange = (self.score - old_score) / old_score if old_score > 0 else self.minscorechange
                     if self.minimize_score:
                         scorechange = -scorechange
                     old_score = self.score
@@ -483,7 +483,7 @@ try:
     from matplotlib.text import Text
     from matplotlib.artist import Artist
 ##    import  matplotlib.pyplot as plt
-except ImportError:
+except (ImportError, IOError), ex:
     matplotlib = None
     Text , Artist, Table, Cell = object, object, object, object
 
