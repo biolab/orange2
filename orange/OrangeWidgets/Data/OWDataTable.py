@@ -103,7 +103,7 @@ class ExampleTableModel(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
             if role ==Qt.DisplayRole:
-                values = [attr.name] + ([attr.attributes.get(label, "") for label in self.attrLabels] if self.showAttrLabels else [])
+                values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attrLabels] if self.showAttrLabels else [])
                 return QVariant("\n".join(values))
         else:
             if role == Qt.DisplayRole:
