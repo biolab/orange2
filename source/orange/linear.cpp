@@ -1745,7 +1745,7 @@ PDistribution TLinearClassifier::classDistribution(const TExample &example){
 	double *prob_est = new double [numClass];
 	predict_probability(linmodel, x, prob_est);
 
-	PDistribution dist = TDistribution::create(example.domain->classVar);
+	PDistribution dist = TDistribution::create(classVar);
 	for (int i=0; i<numClass; i++)
 		dist->setint(labels[i], prob_est[i]);
 
