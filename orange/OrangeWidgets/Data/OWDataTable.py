@@ -247,7 +247,7 @@ class OWDataTable(OWWidget):
             table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
             table.horizontalHeader().setMovable(True)
             table.horizontalHeader().setClickable(True)
-            table.horizontalHeader().setSortIndicatorShown(True)
+            table.horizontalHeader().setSortIndicatorShown(False)
 
             self.id2table[id] = table
             self.table2id[table] = id
@@ -477,6 +477,7 @@ class OWDataTable(OWWidget):
         if table:
             id = self.table2id[table]
             data = self.data[id]
+            table.horizontalHeader().setSortIndicatorShown(False)
             self.progressBarInit()
             self.setTable(table, data)
             self.progressBarFinished()
