@@ -105,6 +105,11 @@ class ExampleTableModel(QAbstractItemModel):
             if role ==Qt.DisplayRole:
                 values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attrLabels] if self.showAttrLabels else [])
                 return QVariant("\n".join(values))
+            if role == Qt.ToolTipRole:
+                pairs = [(key, str(attr.attributes[key])) for key in self.attrLabels if key in attr.attributes]
+                tip = "<b>%s</b>" % attr.name
+                tip = "<br>".join([tip] + ["%s = %s" % pair for pair in pairs])
+                return QVariant(tip)  
         else:
             if role == Qt.DisplayRole:
                 return QVariant(section)
