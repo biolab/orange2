@@ -1742,3 +1742,22 @@ def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     w.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
     w.horizontalHeader().setMovable(True)
     return w
+
+class VisibleHeaderSectionContextEventFilter(QObject):
+    def eventFilter(self, view, event):
+        if type(event) == QContextMenuEvent:
+            model = view.model()
+            headers = [(view.isSectionHidden(i), model.headerData(i, view.orientation(), Qt.DisplayRole)) for i in range(view.count())]
+            menu = QMenu("Visible headers", view)
+            for i, (checked, name) in enumerate(headers):
+                action = QAction(name.toString(), menu)
+                action.setCheckable(True)
+                action.setChecked(not checked)
+                menu.addAction(action)
+                
+                self.connect(action, SIGNAL("toggled(bool)"), lambda bool, section=i: view.setSectionHidden(section, not bool))
+            menu.exec_(event.globalPos())
+            return True
+        
+        return False
+                
