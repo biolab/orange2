@@ -131,6 +131,45 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.vertexDistance = None
         self.mds = None
         
+    def computeForces(self):
+        n = self.graph.nVertices
+        vertices = set(range(n))
+        e_avg = 0
+        edges = self.graph.getEdges()
+        for u,v in edges:
+            u_ = numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]])
+            v_ = numpy.array([self.graph.coors[0][v], self.graph.coors[1][v]])
+            e_avg += numpy.linalg.norm(u_ - v_)
+        e_avg /= len(edges)
+        
+        forces = []
+        maxforce = []
+        components = self.graph.getConnectedComponents()
+        for component in components:
+            outer_vertices = vertices - set(component)
+            
+            for u in component:
+                u_ = numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]])
+                force = 0                
+                for v in outer_vertices:
+                    v_ = numpy.array([self.graph.coors[0][v], self.graph.coors[1][v]])
+                    d = self.vertexDistance[u, v]
+                    norm = numpy.linalg.norm(v_ - u_)
+                    force += (d - norm) * (v_ - u_) / norm 
+            
+                forces.append(force)
+                maxforce.append(numpy.linalg.norm(force))
+            
+        maxforce = max(maxforce)
+        rv = []
+        for v in range(n):
+            force = forces[v]
+            v_ = numpy.array([self.graph.coors[0][v], self.graph.coors[1][v]])
+            f = force * e_avg / maxforce
+            rv.append(([v_[0], v_[0] + f[0]],[v_[1], v_[1] + f[1]]))
+
+        return rv
+    
     def collapse(self):
         if len(self.graph.getNodes(1)) > 0:
             nodes = list(set(range(self.graph.nVertices)) - set(self.graph.getNodes(1)))
@@ -377,6 +416,67 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
             component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi))
         
+        w = max(self.graph.coors[0]) - min(self.graph.coors[0])
+        h = max(self.graph.coors[1]) - min(self.graph.coors[1])
+        d = math.sqrt(w**2 + h**2)
+        #d = math.sqrt(w*h)
+        e = [math.sqrt((self.graph.coors[0][u] - self.graph.coors[0][v])**2 + 
+                  (self.graph.coors[1][u] - self.graph.coors[1][v])**2) for 
+                  (u, v) in self.graph.getEdges()]
+        
+        if self.scalingRatio == 0:
+            pass
+        elif self.scalingRatio == 1:
+            self.mdsScaleRatio = d
+        elif self.scalingRatio == 2:
+            self.mdsScaleRatio = d / sum(e) * float(len(e))
+        elif self.scalingRatio == 3:
+            self.mdsScaleRatio = 1 / sum(e) * float(len(e))
+        elif self.scalingRatio == 4:
+            self.mdsScaleRatio = w * h
+        elif self.scalingRatio == 5:
+            self.mdsScaleRatio = math.sqrt(w * h)
+        elif self.scalingRatio == 6:
+            self.mdsScaleRatio = 1
+        elif self.scalingRatio == 7:
+            e_fr = 0
+            e_count = 0
+            for i in range(self.graph.nVertices):
+                for j in range(i + 1, self.graph.nVertices):
+                    x1 = self.graph.coors[0][i]
+                    y1 = self.graph.coors[1][i]
+                    x2 = self.graph.coors[0][j]
+                    y2 = self.graph.coors[1][j]
+                    e_fr += math.sqrt((x1-x2)**2 + (y1-y2)**2)
+                    e_count += 1
+            self.mdsScaleRatio = e_fr / e_count
+        elif self.scalingRatio == 8:
+            e_fr = 0
+            e_count = 0
+            for i in range(len(components)):
+                for j in range(i + 1, len(components)):
+                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, phi_i = component_props[i]
+                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, phi_j = component_props[j]
+                    e_fr += math.sqrt((x_avg_graph_i-x_avg_graph_j)**2 + (y_avg_graph_i-y_avg_graph_j)**2)
+                    e_count += 1
+            self.mdsScaleRatio = e_fr / e_count       
+        elif self.scalingRatio == 9:
+            e_fr = 0
+            e_count = 0
+            for i in range(len(components)):    
+                component = components[i]
+                x = self.graph.coors[0][component]
+                y = self.graph.coors[1][component]
+                for i in range(len(x)):
+                    for j in range(i + 1, len(y)):
+                        x1 = x[i]
+                        y1 = y[i]
+                        x2 = x[j]
+                        y2 = y[j]
+                        e_fr += math.sqrt((x1-x2)**2 + (y1-y2)**2)
+                        e_count += 1
+            self.mdsScaleRatio = e_fr / e_count
+        
         diag_mds =  math.sqrt((max(x_mds) - min(x_mds))**2 + (max(y_mds) - min(y_mds))**2)
         e = [math.sqrt((self.graph.coors[0][u] - self.graph.coors[0][v])**2 + 
                   (self.graph.coors[1][u] - self.graph.coors[1][v])**2) for 
@@ -392,8 +492,59 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if len(x) == 1:
             r = 1
         else:
-            r = self.mdsScaleRatio / d * e
-        
+            if self.scalingRatio == 0:
+                r = self.mdsScaleRatio / d * e
+            elif self.scalingRatio == 1:
+                r = self.mdsScaleRatio / d
+            elif self.scalingRatio == 2:
+                r = self.mdsScaleRatio / d * e
+            elif self.scalingRatio == 3:
+                r = self.mdsScaleRatio * e
+            elif self.scalingRatio == 4:
+                r = self.mdsScaleRatio / (w * h)
+            elif self.scalingRatio == 5:
+                r = self.mdsScaleRatio / math.sqrt(w * h)
+            elif self.scalingRatio == 6:
+                r = 1 / math.sqrt(self.graph.nVertices)
+            elif self.scalingRatio == 7:
+                e_mds = 0
+                e_count = 0
+                for i in range(len(mds.points)):
+                    for j in range(i):
+                        x1 = mds.points[i][0]
+                        y1 = mds.points[i][1]
+                        x2 = mds.points[j][0]
+                        y2 = mds.points[j][1]
+                        e_mds += math.sqrt((x1-x2)**2 + (y1-y2)**2)
+                        e_count += 1
+                r = self.mdsScaleRatio / e_mds * e_count
+            elif self.scalingRatio == 8:
+                e_mds = 0
+                e_count = 0
+                for i in range(len(components)):
+                    for j in range(i + 1, len(components)):
+                        x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, phi_i = component_props[i]
+                        x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, phi_j = component_props[j]
+                        e_mds += math.sqrt((x_avg_mds_i-x_avg_mds_j)**2 + (y_avg_mds_i-y_avg_mds_j)**2)
+                        e_count += 1
+                r = self.mdsScaleRatio / e_mds * e_count
+            elif self.scalingRatio == 9:
+                e_mds = 0
+                e_count = 0
+                for i in range(len(mds.points)):
+                    for j in range(i):
+                        x1 = mds.points[i][0]
+                        y1 = mds.points[i][1]
+                        x2 = mds.points[j][0]
+                        y2 = mds.points[j][1]
+                        e_mds += math.sqrt((x1-x2)**2 + (y1-y2)**2)
+                        e_count += 1
+                r = self.mdsScaleRatio / e_mds * e_count
+                
+            #r = self.mdsScaleRatio / d
+            #print "d", d, "r", r
+            #r = self.mdsScaleRatio / math.sqrt(self.graph.nVertices)
+            
         for i in range(len(components)):
             component = components[i]
             x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi = component_props[i]
@@ -411,8 +562,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 self.graph.coors[0][component] = (self.graph.coors[0][component] - x_avg_graph) / r + x_avg_mds
                 self.graph.coors[1][component] = (self.graph.coors[1][component] - y_avg_graph) / r + y_avg_mds
                
-        if callbackUpdateCanvas:
-            callbackUpdateCanvas()
+        #if callbackUpdateCanvas:
+        #    callbackUpdateCanvas()
     
     def mdsCallback(self, a,b=None):
         """Refresh the UI when running  MDS on network components."""
@@ -433,7 +584,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS):
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS, scalingRatio=0):
         """Position the network components according to similarities among them."""
 
         if self.vertexDistance == None:
@@ -454,14 +605,17 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.diag_coors = math.sqrt((min(self.graph.coors[0]) - max(self.graph.coors[0]))**2 + (min(self.graph.coors[1]) - max(self.graph.coors[1]))**2)
         self.rotationOnly = rotationOnly
         self.mdsType = mdsType
+        self.scalingRatio = scalingRatio
 
         w = max(self.graph.coors[0]) - min(self.graph.coors[0])
         h = max(self.graph.coors[1]) - min(self.graph.coors[1])
         d = math.sqrt(w**2 + h**2)
+        #d = math.sqrt(w*h)
         e = [math.sqrt((self.graph.coors[0][u] - self.graph.coors[0][v])**2 + 
                   (self.graph.coors[1][u] - self.graph.coors[1][v])**2) for 
                   (u, v) in self.graph.getEdges()]
         self.mdsScaleRatio = d / sum(e) * float(len(e))
+        #print d / sum(e) * float(len(e))
         
         if avgLinkage:
             matrix = self.vertexDistance.avgLinkage(self.mdsComponents)
@@ -496,10 +650,11 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         del self.callbackProgress
         del self.mdsType
         del self.mdsScaleRatio
+        del self.scalingRatio
         return 0
 
-    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0):
-        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True)
+    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, scalingRatio=0):
+        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True, scalingRatio=scalingRatio)
 
     def saveNetwork(self, fn):
         print "This method is deprecated. You should use orngNetwork.Network.saveNetwork"
