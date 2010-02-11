@@ -730,8 +730,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def readNetwork(self, fn, directed=0):
         print "This method is deprecated. You should use orngNetwork.Network.readNetwork"
         network = Network(1,directed)
-        graph = network.readNetwork(fn, directed)
-        self.setGraph(graph)
-        self.graph = graph
-        return graph
+        net = network.readNetwork(fn, directed)
+        self.setGraph(net)
+        self.graph = net
+        return net
+    
     
