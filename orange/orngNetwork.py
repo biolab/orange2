@@ -111,7 +111,14 @@ class Network(orangeom.Network):
     @staticmethod
     def read(fileName, directed=0):
         """Reads network from Pajek (.net) file."""
-        return Network(2,0).readNetwork(fileName, directed)
+        if type(fileName) == file:
+            net = Network(2,0).parseNetwork(fileName.read(), directed)
+            net.optimization = NetworkOptimization(net)
+            return net
+        else:
+            net = Network(2,0).readNetwork(fileName, directed)
+            net.optimization = NetworkOptimization(net)
+            return net 
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     """main class for performing network layout optimization. Network structure is defined in orangeom.Network class."""
