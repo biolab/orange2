@@ -32,7 +32,7 @@ def loadARFF(filename):
     state = 0 # header
     data = []
     for l in f.readlines():
-        l = l.strip() # strip \n
+        l = l.rstrip("\n") # strip \n
         l = string.replace(l,'\t',' ') # get rid of tabs
         x = string.split(l,sep='%')[0] # strip comments
         if len(string.strip(x)) == 0:
