@@ -66,6 +66,7 @@ WRAPPER(ExampleGenerator);
 class ORANGE_API TDomainBasicAttrStat : public TOrangeVector<PBasicAttrStat> {
 public:
   __REGISTER_CLASS
+  bool hasClassVar; //P has class var
 
   TDomainBasicAttrStat();
   TDomainBasicAttrStat(PExampleGenerator gen, const long &weightID=0);

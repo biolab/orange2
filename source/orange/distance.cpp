@@ -215,7 +215,7 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
 
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
 
-    if (ignoreClass) // can't check it, but suppose there is a class attribute
+    if (ignoreClass && bstat->hasClassVar && (si != ei)) // can't check it, but suppose there is a class attribute
       ei--;
 
     for(; si!=ei; si++) {

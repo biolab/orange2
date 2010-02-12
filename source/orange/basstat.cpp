@@ -120,10 +120,12 @@ void TBasicAttrStat::reset()
 
 
 TDomainBasicAttrStat::TDomainBasicAttrStat()
+: hasClassVar(true)
 {}
 
 
 TDomainBasicAttrStat::TDomainBasicAttrStat(PExampleGenerator gen, const long &weightID)
+: hasClassVar(gen->domain->classVar)
 { PITERATE(TVarList, vi, gen->domain->variables)
     push_back(((*vi)->varType==TValue::FLOATVAR) ? PBasicAttrStat(mlnew TBasicAttrStat(*vi, true)) : PBasicAttrStat());
 
