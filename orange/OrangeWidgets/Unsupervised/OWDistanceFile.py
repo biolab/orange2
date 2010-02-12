@@ -17,7 +17,7 @@ def readMatrix(fn):
     msg = None
     matrix = labels = data = None
     
-    if os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym':
+    if type(fn) != file and (os.path.splitext(fn)[1] == '.pkl' or os.path.splitext(fn)[1] == '.sym'):
         pkl_file = open(fn, 'rb')
         matrix = pickle.load(pkl_file)
         data = None
@@ -28,7 +28,10 @@ def readMatrix(fn):
         
     else:    
         #print fn
-        fle = open(fn)
+        if type(fn) == file:
+            fle = fn
+        else:
+            fle = open(fn)
         while 1:
             lne = fle.readline().strip()
             if lne:
