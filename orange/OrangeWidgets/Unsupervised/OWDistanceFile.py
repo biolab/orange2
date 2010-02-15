@@ -27,7 +27,7 @@ def readMatrix(fn):
         pkl_file.close()
         
     else:    
-        #print fn
+        print fn
         if type(fn) == file:
             fle = fn
         else:
@@ -42,7 +42,7 @@ def readMatrix(fn):
         except:
             msg = "Matrix dimension expected in the first line"
             raise exceptions.Exception
-    
+        print dim
         labeled = len(spl) > 1 and spl[1] in ["labelled", "labeled"]
         matrix = orange.SymMatrix(dim)
         data = None
