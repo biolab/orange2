@@ -43,7 +43,7 @@ TNetwork::TNetwork(TNetwork *net)
 	
 	hierarchy.setTop(vertices);
 
-	int dims[2];
+	npy_intp dims[2];
 	dims[0] = 2;
 	dims[1] = net->nVertices;
 	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
@@ -99,7 +99,7 @@ TNetwork::TNetwork(TGraphAsList *graph)
 
 	hierarchy.setTop(vertices);
 
-	int dims[2];
+	npy_intp dims[2];
 	dims[0] = 2;
 	dims[1] = graph->nVertices;
 	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
@@ -129,7 +129,7 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 
 	hierarchy.setTop(vertices);
 
-	int dims[2];
+	npy_intp dims[2];
 	dims[0] = 2;
 	dims[1] = nVert;
 	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
