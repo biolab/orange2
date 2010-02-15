@@ -46,7 +46,7 @@ TNetwork::TNetwork(TNetwork *net)
 	int dims[2];
 	dims[0] = 2;
 	dims[1] = net->nVertices;
-	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 	
 	int i;
@@ -102,7 +102,7 @@ TNetwork::TNetwork(TGraphAsList *graph)
 	int dims[2];
 	dims[0] = 2;
 	dims[1] = graph->nVertices;
-	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 
 	srand(time(NULL));
@@ -132,7 +132,7 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 	int dims[2];
 	dims[0] = 2;
 	dims[1] = nVert;
-	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	coors = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 
 	srand(time(NULL));
