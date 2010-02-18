@@ -35,8 +35,17 @@ def sendMail(subject):
         s.quit()
     except Exception, ex:
         print "Failed to send error report due to:", ex
-        
 
+        
+def format_checker(content):
+    
+    if len(re.findall('(ID.*?)ID',content.replace('\n',''))):        
+        return True
+    else:
+        sendMail('Uncorrect format of miRBase data-file.')        
+        return False
+
+    
 def get_intoFiles(path, data_webPage):
     
     sections = data_webPage.split('//\n')
@@ -70,8 +79,10 @@ def miRNA_info(path,object,org_name):
         print "miRNA_info Error: Check the web-address."
     
     if data_webPage == []:
-        print 'Cannot read %s ' % address
+        sendMail('Cannot read %s ' % address)
     else:
+        format_checker(data_webPage)
+            
         print 'I have read: %s' % address
         sections = data_webPage.split('//\n')
         sections.pop()
@@ -195,8 +206,8 @@ def miRNA_info(path,object,org_name):
             
             ### targets
             targets = 'None'
-            if org_name in TAR_dict and k in TAR_dict[org_name]:
-                targets = ','.join(TAR_dict[org_name][k])
+            if k in TargetScanLib:
+                targets = ','.join(TargetScanLib[k])
            
             fastprint(os.path.join(path,'%s_matmiRNA.txt' % prefix),'a',k+'\t'+v[0]+'\t'+v[1]+'\t'+pre_forms+'\t'+targets+'\n')
         
@@ -223,89 +234,34 @@ try:
 except OSError:
     pass
 
-### targets library from EMBL-EBI
+
 org_taxo = [tax.name(id) for id in tax.common_taxids()]
 
-download_url = 'http://www.ebi.ac.uk/enright-srv/microcosm/cgi-bin/targets/v5/download.pl'
-
-flag_d = 1
+### targets library from TargetScan
 try:
-    download_page = urllib.urlopen(download_url).read()
+    tarscan_url = 'http://www.targetscan.org//vert_50//vert_50_data_download/Conserved_Site_Context_Scores.txt.zip'
     
-    if re.findall('Not Found',download_page) != []:
-        raise IOError    
+    zf = zipfile.ZipFile(StringIO.StringIO(urllib.urlopen(tarscan_url).read()))
+    arch = zf.read(zf.namelist()[0]).split('\n')[1:]
+    arch.pop()
+    mirnas = [a.split('\t')[3] for a in arch]
+    gene_ids = [a.split('\t')[1] for a in arch]
     
+    TargetScanLib = {}
+    for m,t in zip(mirnas,gene_ids):
+        if not(m in TargetScanLib):
+            TargetScanLib[m] = []
+        if not(t in TargetScanLib[m]):           
+            TargetScanLib[m].append(t)
 except IOError:
-    flag_d = 0
-    sendMail('Cannot open %s' % download_url)
-        
-if flag_d:
-    
-    pattern = '(ftp://\S*\.txt\.\S*\.zip?)'
-    urls = re.findall(pattern,download_page)
-    
-    if urls == []:
-        print 'Error: no url found on EMBL-EBI download page.'
-    else:
-        names = [re.findall('txt\.(\S*?)\.zip',u)[0] for u in urls]
-        org_embl = []
-        for n in names:
-            [first, second] = n.split('_')
-            first = first[0].upper()+first[1:]
-            org_embl.append(' '.join([first,second]))
-        
-        dict_orgURL = dict(zip(org_embl,urls))
-        
-        TAR_dict = {}
-        
-        for k,v in dict_orgURL.items():
-            if k in org_taxo:
-                try:
-                    print 'Building targets library: %s' % k
-                    zf = zipfile.ZipFile(StringIO.StringIO(urllib.urlopen(v).read()))
-                    arch = zf.read(zf.namelist()[0]).split('\n')[5:]
-                    arch.pop()
-                    
-                    mirnas = [a.split('\t')[1] for a in arch]
-                    gene_ids = [a.split('\t')[-2] for a in arch]
-                    
-                    temp_dict = {}
-                    for m,g in zip(mirnas,gene_ids):
-                        
-                        if not(m in temp_dict):
-                            temp_dict[m] = []
-                        if not(g in temp_dict[m]):
-                            temp_dict[m].append(g)
-                    
-                    if not(k in TAR_dict):
-                        TAR_dict[k] = {}
-                        
-                    TAR_dict[k] = temp_dict
-                    
-                except IOError:
-                    sendMail('Cannot open this archive: %s' % v)             
-            
-else:
-    print 'Check the address of the EMBL-EBI download page.'
-
-embl_path = os.path.join(path,'EMBL_groups.txt')
-print 'EMBL file path: %s' % embl_path
-fastprint(embl_path,'w','ORGANISM\tmiRNAs\n')
-for K,V in TAR_dict.items():
-    fastprint(embl_path,'a',K+'\t'+','.join(V.keys())+'\n')
-
-serverFiles.upload("miRNA", "EMBL_groups.txt", embl_path)
-serverFiles.unprotect("miRNA", "EMBL_groups.txt")
-print '\nEMBL_groups.txt uploaded'
-
+    sendMail('Targets not found on: %s' % tarscan_url)    
 
 ### miRNA library form miRBase
 print "\nBuilding miRNA library..."
 address = 'ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.dat.gz'
 flag = 1
 try:
-    data_webPage = gzip.GzipFile(fileobj=StringIO.StringIO(urllib.urlopen(address).read())).read()
-    
+    data_webPage = gzip.GzipFile(fileobj=StringIO.StringIO(urllib.urlopen(address).read())).read()    
 except IOError:
     flag = 0
     sendMail('Database file of miRNAs not found on: %s' % address)
@@ -353,7 +309,6 @@ if flag:
                         
                 else:
                     print 'Check the label.'
-    
     
     serverFiles.upload("miRNA", "miRNA.txt", miRNA_path)
     serverFiles.unprotect("miRNA", "miRNA.txt")
