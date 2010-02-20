@@ -7,6 +7,11 @@
 FINK_ROOT=${1:-/sw}
 
 MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
+if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]]; then
+	FINKINFO_VERSION=$MAC_VERSION
+else
+	FINKINFO_VERSION=5
+fi
 
 # Sets error handler
 trap "echo \"Script failed\"" ERR
@@ -24,7 +29,7 @@ rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
 
 # Gets current (daily) info files from SVN
 echo "Updating local ailab Fink info files repository."
-curl http://www.ailab.si/orange/fink/dists/10.5/main/finkinfo/all.tgz --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+curl "http://www.ailab.si/orange/fink/dists/10.$FINKINFO_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 tar -xzf $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 
@@ -33,10 +38,10 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 	perl -p -i -l -e '$_ = "$_ ailab/main" if /^Trees/' $FINK_ROOT/etc/fink.conf
 fi
 
-# Adds our binary repository to local Fink (APT) configuration if on Mac OS X 10.5
-if [ $MAC_VERSION == "5" ] && ! grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' $FINK_ROOT/etc/apt/sources.list; then
+# Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide compiled packages for
+if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
-	echo 'deb http://www.ailab.si/orange/fink 10.5 main' >> $FINK_ROOT/etc/apt/sources.list
+	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
 
 # Refreshes packages lists
@@ -104,7 +109,7 @@ elif [ $MAC_VERSION -ge "5" ] && [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.O
 		WARNING: It seems you do not have X11 version 2.3.0 or later installed on a
 		         system. This means that it could happen that some package on which
 		         ailab packages depend will fail to run or compile. In this case
-		         please install a newer version from:
+		         please install it from your Mac OS X installation disk or from:
 		         
 		             http://xquartz.macosforge.org/trac/wiki
 	EOMSG
