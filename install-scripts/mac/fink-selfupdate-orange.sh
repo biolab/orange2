@@ -39,7 +39,7 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 fi
 
 # Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide compiled packages for
-if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
+if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
 	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
