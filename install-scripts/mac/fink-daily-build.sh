@@ -70,8 +70,9 @@ if [ ! -x /usr/bin/xcodebuild ]; then
 	exit 6
 fi
 
-if [ "`sw_vers -productVersion | cut -d '.' -f 2`" != "5" ]; then
-	echo "It seems system is not Mac OS X version 10.5."
+MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
+if [[ "$MAC_VERSION" -ne 5 && "$MAC_VERSION" -ne 6 ]]; then
+	echo "It seems system is not Mac OS X version 10.5 or 10.6."
 	exit 7
 fi
 
@@ -103,7 +104,7 @@ if [ $PACKAGE_SOURCE ]; then
 else
 	# Gets current (daily) info files from SVN
 	echo "Updating local ailab Fink info files repository."
-	curl http://www.ailab.si/orange/fink/dists/10.5/main/finkinfo/all.tgz --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+	curl "http://www.ailab.si/orange/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 	tar -xzf $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 	rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 fi
@@ -114,9 +115,9 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 fi
 
 # Adds our binary repository to local Fink (APT) configuration
-if ! grep -q 'deb http://www.ailab.si/orange/fink 10.5 main' $FINK_ROOT/etc/apt/sources.list; then
+if ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
-	echo 'deb http://www.ailab.si/orange/fink 10.5 main' >> $FINK_ROOT/etc/apt/sources.list
+	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
 
 if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
@@ -125,10 +126,10 @@ if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
 fi
 
 if [ $PACKAGE_SOURCE ]; then
-	mkdir -p /Volumes/fink/dists/10.5/main/source/
-	chmod +rx /Volumes/fink/dists/10.5/main/source/
+	mkdir -p "/Volumes/fink/dists/10.$MAC_VERSION/main/source/"
+	chmod +rx "/Volumes/fink/dists/10.$MAC_VERSION/main/source/"
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
+	if [ ! -e /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-1.0b.$STABLE_REVISION.tgz ]; then
 		echo "Making source archive orange-1.0b.$STABLE_REVISION."
 		
 		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/ /tmp/orange-1.0b.$STABLE_REVISION.tgz
@@ -146,8 +147,8 @@ if [ $PACKAGE_SOURCE ]; then
 		
 		MD5SUM=`md5 -q /tmp/orange-1.0b.$STABLE_REVISION.tgz`
 		
-		mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
-		chmod -R +r /Volumes/fink/dists/10.5/main/source/
+		mv /tmp/orange-1.0b.$STABLE_REVISION.tgz /Volumes/fink/dists/10.$MAC_VERSION/main/source/
+		chmod -R +r "/Volumes/fink/dists/10.$MAC_VERSION/main/source/"
 		
 		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/
 		
@@ -157,12 +158,12 @@ if [ $PACKAGE_SOURCE ]; then
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 		chmod +r /Volumes/download/filenames_mac.set
 	else
-		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-1.0b.$STABLE_REVISION.tgz`
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 	fi
 	
 	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
 	
-	if [ ! -e /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
+	if [ ! -e /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
 		echo "Making source archive orange-svn-0.0.$DAILY_REVISION."
 		
 		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/ /tmp/orange-svn-0.0.$DAILY_REVISION.tgz
@@ -180,8 +181,8 @@ if [ $PACKAGE_SOURCE ]; then
 		
 		MD5SUM=`md5 -q /tmp/orange-svn-0.0.$DAILY_REVISION.tgz`
 		
-		mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.5/main/source/
-		chmod -R +r /Volumes/fink/dists/10.5/main/source/
+		mv /tmp/orange-svn-0.0.$DAILY_REVISION.tgz /Volumes/fink/dists/10.$MAC_VERSION/main/source/
+		chmod -R +r /Volumes/fink/dists/10.$MAC_VERSION/main/source/
 		
 		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/
 		
@@ -191,7 +192,7 @@ if [ $PACKAGE_SOURCE ]; then
 		mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 		chmod +r /Volumes/download/filenames_mac.set
 	else
-		MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
+		MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 	fi
 	
 	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -202,7 +203,7 @@ if [ $PACKAGE_SOURCE ]; then
 		SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
 		STABLE_SOURCE_NAME=orange-$SOURCE_NAME-1.0b.$STABLE_REVISION
 		
-		if [ ! -e /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz ]; then
+		if [ ! -e /Volumes/fink/dists/10.$MAC_VERSION/main/source/$STABLE_SOURCE_NAME.tgz ]; then
 			echo "Making source archive $STABLE_SOURCE_NAME."
 			
 			rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
@@ -218,7 +219,7 @@ if [ $PACKAGE_SOURCE ]; then
 			
 			MD5SUM=`md5 -q /tmp/$STABLE_SOURCE_NAME.tgz`
 			
-			mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
+			mv /tmp/$STABLE_SOURCE_NAME.tgz /Volumes/fink/dists/10.$MAC_VERSION/main/source/
 		
 			rm -rf /tmp/$STABLE_SOURCE_NAME/
 			
@@ -227,7 +228,7 @@ if [ $PACKAGE_SOURCE ]; then
 			echo "SOURCE_${SOURCE_VAR}_STABLE=$STABLE_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
 			mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 		else
-			MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$STABLE_SOURCE_NAME.tgz`
+			MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/$STABLE_SOURCE_NAME.tgz`
 		fi
 		
 		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -239,7 +240,7 @@ if [ $PACKAGE_SOURCE ]; then
 		SOURCE_VAR=`basename $dir | tr "[:lower:]" "[:upper:]" | tr -d "-"`
 		DAILY_SOURCE_NAME=orange-$SOURCE_NAME-svn-0.0.$DAILY_REVISION
 		
-		if [ ! -e /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz ]; then
+		if [ ! -e /Volumes/fink/dists/10.$MAC_VERSION/main/source/$DAILY_SOURCE_NAME.tgz ]; then
 			echo "Making source archive $DAILY_SOURCE_NAME."
 			
 			rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
@@ -255,7 +256,7 @@ if [ $PACKAGE_SOURCE ]; then
 			
 			MD5SUM=`md5 -q /tmp/$DAILY_SOURCE_NAME.tgz`
 			
-			mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.5/main/source/
+			mv /tmp/$DAILY_SOURCE_NAME.tgz /Volumes/fink/dists/10.$MAC_VERSION/main/source/
 		
 			rm -rf /tmp/$DAILY_SOURCE_NAME/
 			
@@ -264,7 +265,7 @@ if [ $PACKAGE_SOURCE ]; then
 			echo "SOURCE_${SOURCE_VAR}_DAILY=$DAILY_SOURCE_NAME.tgz" >> /Volumes/download/filenames_mac.set.new
 			mv /Volumes/download/filenames_mac.set.new /Volumes/download/filenames_mac.set
 		else
-			MD5SUM=`md5 -q /Volumes/fink/dists/10.5/main/source/$DAILY_SOURCE_NAME.tgz`
+			MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/$DAILY_SOURCE_NAME.tgz`
 		fi
 		
 		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
@@ -343,15 +344,15 @@ echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
 echo "Preparing public ailab Fink info and binary files repository."
-mkdir -p /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-chmod +rx /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-mkdir -p /Volumes/fink/dists/10.5/main/finkinfo/
-chmod +rx /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+mkdir -p /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+chmod +rx /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+mkdir -p /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
+chmod +rx /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Copying to repository all binary packages."
-cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
-cd /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+cd /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Fixing possible problems with binary packages filenames."
 # Some packages include Fink epoch which uses colon as a delimiter and breaks package retrieval from the repository web server
@@ -379,35 +380,35 @@ while (($f,$n) = each(%fs)) {
 
 echo "Making packages list."
 cd /Volumes/fink/
-perl -MFink::Scanpackages -e "Fink::Scanpackages->scan('dists/10.5/main/binary-darwin-$ARCH/');" | gzip - > dists/10.5/main/binary-darwin-$ARCH/Packages.gz
+perl -MFink::Scanpackages -e "Fink::Scanpackages->scan('dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/');" | gzip - > dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/Packages.gz
 
 echo "Archive: ailab
 Origin: Fink
 Component: main
 Architecture: darwin-$ARCH
-Label: Fink" > dists/10.5/main/binary-darwin-$ARCH/Release
+Label: Fink" > dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/Release
 
 echo "Setting permissions."
-chmod -R +r /Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/
+chmod -R +r /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Copying to repository all info files."
-rm -f /Volumes/fink/dists/10.5/main/finkinfo/*
-cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.5/main/finkinfo/
+rm -f /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/*
+cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
 
 echo "Making an archive of all info files."
-cd /Volumes/fink/dists/10.5/main/finkinfo/
+cd /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
 tar -czf all.tgz *.info
 
 echo "Setting permissions."
-chmod -R +r /Volumes/fink/dists/10.5/main/finkinfo/
+chmod -R +r /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
 
 echo "Removing unnecessary source archives."
 perl -e "
-for (</Volumes/fink/dists/10.5/main/binary-darwin-$ARCH/orange-*.deb>) {
+for (</Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/orange-*.deb>) {
 	m/_(.+)-\\d+_darwin-$ARCH\\.deb/;
 	\$versions{\$1} = 1;
 }
-for (</Volumes/fink/dists/10.5/main/source/*.tgz>) {
+for (</Volumes/fink/dists/10.$MAC_VERSION/main/source/*.tgz>) {
 	m/.+-(.+)\\.tgz/;
 	next if \$versions{\$1};
 	unlink;

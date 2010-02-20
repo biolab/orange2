@@ -1,4 +1,5 @@
 apt						install
+apt-dev						install
 apt-shlibs					install
 base-files					install
 bison						install
@@ -16,13 +17,16 @@ fink						install
 fink-mirrors					install
 gdbm3						install
 gdbm3-shlibs					install
+gettext-bin					install
 glib-shlibs					install
 glib2-shlibs					install
 gzip						install
 io-string-pm					install
 libapr.0-shlibs					install
 libaprutil.0-shlibs				install
+libgettext3-dev					install
 libgettext3-shlibs				install
+libgettext8-shlibs				install
 libiconv					install
 libiconv-bin					install
 libiconv-dev					install

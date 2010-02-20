@@ -10,6 +10,7 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]]; then
 	FINKINFO_VERSION=$MAC_VERSION
 else
+	# The lowest version we provide finkinfo files for, which can be than used also on other systems we do not provide binary packages for
 	FINKINFO_VERSION=5
 fi
 
@@ -38,7 +39,7 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 	perl -p -i -l -e '$_ = "$_ ailab/main" if /^Trees/' $FINK_ROOT/etc/fink.conf
 fi
 
-# Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide compiled packages for
+# Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide binary packages for
 if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
 	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
