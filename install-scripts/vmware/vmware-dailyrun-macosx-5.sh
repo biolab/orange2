@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Should be run as: ./wmvare-dailyrun-macosx.sh [bundle only]
+# Should be run as: ./wmvare-dailyrun-macosx-5.sh [bundle only]
 #
 # If [bundle only] is given it only builds the bundle
 #
@@ -12,7 +12,7 @@ WAIT_STOP_TIME=600
 WAIT_RESTART_TIME=120
 RETRIES=5
 IP_ADDRESS='172.16.213.100'
-NAME='Mac OS X'
+NAME='Mac OS X 10.5'
 
 if [ "$1" ]; then
 	BUNDLE_ONLY=1
