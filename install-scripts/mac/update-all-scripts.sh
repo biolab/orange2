@@ -7,6 +7,7 @@ curl --silent --output update-all-scripts.sh http://www.ailab.si/svn/orange/trun
 curl --silent --output bundle-64bit-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/bundle-64bit-daily-build.sh
 curl --silent --output bundle-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/bundle-daily-build.sh
 curl --silent --output dailyrun.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/dailyrun.sh
+curl --silent --output dailyrun-finkonly-withsource.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly-withsource.sh
 curl --silent --output dailyrun-finkonly.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/dailyrun-finkonly.sh
 curl --silent --output dailyrun-bundleonly.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/dailyrun-bundleonly.sh
 curl --silent --output fink-daily-build.sh http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink-daily-build.sh
