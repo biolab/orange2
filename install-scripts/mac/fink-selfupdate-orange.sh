@@ -64,7 +64,7 @@ cat <<-EOMSG
 	    fink install orange
 EOMSG
 
-if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' && grep '^SelfUpdateMethod:' $FINK_ROOT/etc/fink.conf | grep -q 'point'; then
+if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'unstable/main' || grep '^SelfUpdateMethod:' $FINK_ROOT/etc/fink.conf | grep -q 'point'; then
 	cat <<-EOMSG
 		
 		WARNING: Your local Fink installation does not seem to use unstable Fink
