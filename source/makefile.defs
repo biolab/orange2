@@ -70,4 +70,4 @@ objdir:
 	-@mkdir -p obj > /dev/null
 
 cleantemp:
-	rm -rf obj ppp px makefile.deps
+	rm -rf obj ppp px makefile.deps ../pyxtract/*.pyc ./pyxtract/*.pyc

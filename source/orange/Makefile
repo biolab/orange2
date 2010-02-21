@@ -31,6 +31,6 @@ ifeq ($(OS), Darwin)
 endif
 	cd $(OLD); ln -sf orange.so $(LIBRARY_FILE)
 
-clean:	cleantemp
+clean: cleantemp
 	rm -f r_imports.ipp r_imports.jpp
 	rm -f $(OLD)/orange.so $(OLD)/liborange.so
