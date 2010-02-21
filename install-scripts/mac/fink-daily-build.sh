@@ -77,7 +77,7 @@ if [[ "$MAC_VERSION" -ne 5 && "$MAC_VERSION" -ne 6 ]]; then
 	echo "It seems system is not Mac OS X version 10.5 or 10.6."
 	exit 7
 fi
-if [[ "$MAC_VERSION" -qt "$LAST_MAC_VERSION_FOR_STABLE_PACKAGES" ]]; then
+if [[ "$MAC_VERSION" -gt "$LAST_MAC_VERSION_FOR_STABLE_PACKAGES" ]]; then
 	STABLE_PACKAGES=""
 fi
 
