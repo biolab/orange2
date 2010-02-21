@@ -13,6 +13,8 @@
 STABLE_PACKAGES="orange-py25 orange"
 DAILY_PACKAGES="orange-svn-py25 orange-svn orange-bioinformatics-svn-py25 orange-bioinformatics-svn orange-text-svn-py25 orange-text-svn"
 
+LAST_MAC_VERSION_FOR_STABLE_PACKAGES=5
+
 # Packages which, when installing, want special confirmation from the user
 # We keep those packages installed all the time
 SPECIAL_PACKAGES="passwd xinitrc"
@@ -74,6 +76,9 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 if [[ "$MAC_VERSION" -ne 5 && "$MAC_VERSION" -ne 6 ]]; then
 	echo "It seems system is not Mac OS X version 10.5 or 10.6."
 	exit 7
+fi
+if [[ "$MAC_VERSION" -qt "$LAST_MAC_VERSION_FOR_STABLE_PACKAGES" ]]; then
+	STABLE_PACKAGES=""
 fi
 
 if [ ! "`/usr/X11/bin/X -version 2>&1 | grep '^X.Org X Server' | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+' | cut -d '.' -f 2`" -gt "3" ]; then
@@ -351,7 +356,11 @@ chmod +rx /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Copying to repository all binary packages."
 cp $FINK_ROOT/fink/debs/*.deb /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
-cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+if (shopt -s nullglob; f=($FINK_ROOT/var/cache/apt/archives/*.deb); ((${#f[@]}))); then
+	# We have to test if there are any deb files available as otherwise cp fails
+	cp $FINK_ROOT/var/cache/apt/archives/*.deb /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
+fi
+
 cd /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Fixing possible problems with binary packages filenames."

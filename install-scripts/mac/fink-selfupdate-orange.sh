@@ -33,6 +33,11 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
 	perl -p -i -l -e '$_ = "$_ ailab/main" if /^Trees/' $FINK_ROOT/etc/fink.conf
 fi
 
+if ! grep -q '^UseBinaryDist:.*true' $FINK_ROOT/etc/fink.conf; then
+	echo "Enabling Fink binary packages repositories."
+	perl -p -i -l -e 's/^UseBinaryDist:.*false/UseBinaryDist: true/' $FINK_ROOT/etc/fink.conf
+fi
+
 # Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide binary packages for
 if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
