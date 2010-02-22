@@ -153,7 +153,7 @@ class OWPredictions(OWWidget):
                             if self.showClass: s += " -> "
                         if self.showClass: s += "%s" % str(cl)
                         self.table.setItem(self.rindx[i], col, QTableWidgetItem(s))
-                        print s, self.rindx[i], col
+                        #print s, self.rindx[i], col
                 else:
                     # regression
                     for (i, d) in enumerate(self.data):
@@ -201,7 +201,7 @@ class OWPredictions(OWWidget):
         self.table.setColumnCount(len(self.data.domain.attributes) + (self.data.domain.classVar != None) + len(self.predictors))
         self.table.setRowCount(len(self.data))
         
-        print self.table.rowCount(), len(self.data.domain.attributes), (self.data.domain.classVar != None), len(self.predictors)
+        #print self.table.rowCount(), len(self.data.domain.attributes), (self.data.domain.classVar != None), len(self.predictors)
 
         # HEADER: set the header (attribute names)
 ##        for col in range(len(self.data.domain.attributes)):
