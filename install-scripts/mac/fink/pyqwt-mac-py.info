@@ -1,7 +1,7 @@
 Info3: <<
 Package: pyqwt-mac-py%type_pkg[python]
 Version: 4.2.3
-Revision: 4
+Revision: 5
 Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
 Source-MD5: 5c665d64ce73a6a082423a66113a40e0
 Maintainer: Mitar <mitar@tnode.com>
@@ -9,9 +9,12 @@ Homepage: http://pyqwt.sourceforge.net/
 License: GPL
 Type: python (2.3 2.4 2.5)
 Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5
+PatchFile: %{ni}.patch
+PatchFile-MD5: ff110f1e73a654054966acebdac777dd
 BuildDepends: <<
 	qt3mac,
-	sip-py%type_pkg[python]-bin (>= 4.6)
+	sip-py%type_pkg[python]-bin (>= 4.6),
+	fink (>= 0.24.12)
 <<
 BuildConflicts: qt3
 Depends: <<

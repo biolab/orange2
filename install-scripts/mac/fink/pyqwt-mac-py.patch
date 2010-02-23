@@ -1,0 +1,61 @@
+diff -Naur PyQwt-4.2.3.orig/sip/qwt4qt3/QwtArrayQwtDoublePoint.sip PyQwt-4.2.3/sip/qwt4qt3/QwtArrayQwtDoublePoint.sip
+--- PyQwt-4.2.3.orig/sip/qwt4qt3/QwtArrayQwtDoublePoint.sip	2010-02-23 22:24:22.000000000 +0100
++++ PyQwt-4.2.3/sip/qwt4qt3/QwtArrayQwtDoublePoint.sip	2010-02-23 22:28:22.000000000 +0100
+@@ -51,8 +51,8 @@
+     for (int i = 0; i < PyList_GET_SIZE(a0); ++i) {
+         QwtDoublePoint *item =
+             reinterpret_cast<QwtDoublePoint *>(
+-                sipForceConvertTo_QwtDoublePoint(
+-                    PyList_GET_ITEM(a0, i), &failed));
++                sipForceConvertToType(PyList_GET_ITEM(a0, i), sipType_QwtDoublePoint, NULL, NULL, NULL, &failed));
++
+                     
+         if (failed) {
+             return 0;
+diff -Naur PyQwt-4.2.3.orig/sip/qwt4qt3/QwtModule.sip PyQwt-4.2.3/sip/qwt4qt3/QwtModule.sip
+--- PyQwt-4.2.3.orig/sip/qwt4qt3/QwtModule.sip	2010-02-23 22:24:22.000000000 +0100
++++ PyQwt-4.2.3/sip/qwt4qt3/QwtModule.sip	2010-02-23 22:25:05.000000000 +0100
+@@ -73,7 +73,6 @@
+ 
+ // Converter code
+ %Include common/QwtMap.sip
+-%Include common/QwtMemArray.sip
+ %Include common/QwtValueStack.sip
+ %Include common/QwtValueList.sip
+ 
+diff -Naur PyQwt-4.2.3.orig/sip/qwt4qt3/common/QwtMap.sip PyQwt-4.2.3/sip/qwt4qt3/common/QwtMap.sip
+--- PyQwt-4.2.3.orig/sip/qwt4qt3/common/QwtMap.sip	2010-02-23 22:24:22.000000000 +0100
++++ PyQwt-4.2.3/sip/qwt4qt3/common/QwtMap.sip	2010-02-23 22:27:52.000000000 +0100
+@@ -77,7 +77,7 @@
+     while (PyDict_Next(sipPy, &i, &key, &val)) {
+         double cKey = PyFloat_AS_DOUBLE(key);
+         QString *cVal = reinterpret_cast<QString *>(
+-            sipForceConvertTo_QString(val, sipIsErr));
++            sipForceConvertToType(val, sipType_QString, NULL, NULL, NULL, sipIsErr));
+ 
+         if (*sipIsErr) {
+             delete map;
+diff -Naur PyQwt-4.2.3.orig/sip/qwt4qt3/qwt_plot.sip PyQwt-4.2.3/sip/qwt4qt3/qwt_plot.sip
+--- PyQwt-4.2.3.orig/sip/qwt4qt3/qwt_plot.sip	2010-02-23 22:24:22.000000000 +0100
++++ PyQwt-4.2.3/sip/qwt4qt3/qwt_plot.sip	2010-02-23 22:29:01.000000000 +0100
+@@ -89,8 +89,6 @@
+     const QColor& canvasBackground() const;
+     void setCanvasLineWidth(int);
+     int canvasLineWidth() const;
+-    QwtPlotCurveIterator curveIterator() const;
+-    QwtPlotMarkerIterator markerIterator() const;
+     QwtDiMap canvasMap(int) const;
+     double invTransform(int, int) const;
+     int transform(int, double) const;
+diff -Naur PyQwt-4.2.3.orig/sip/qwt4qt3/qwt_slider.sip PyQwt-4.2.3/sip/qwt4qt3/qwt_slider.sip
+--- PyQwt-4.2.3.orig/sip/qwt4qt3/qwt_slider.sip	2010-02-23 22:24:22.000000000 +0100
++++ PyQwt-4.2.3/sip/qwt4qt3/qwt_slider.sip	2010-02-23 22:26:06.000000000 +0100
+@@ -88,7 +88,7 @@
+ %If (HAS_QWT4)
+ %ConvertToSubClassCode
+     static struct class_graph {
+-        char *name;
++        const char *name;
+         sipWrapperType **type;
+         int yes, no;
+     } graph[] = {
