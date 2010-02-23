@@ -1,9 +1,9 @@
 Info2: <<
 Package: pyqtmac-py%type_pkg[python]
-Version: 3.17.6
-Revision: 3
+Version: 3.18.1
+Revision: 1
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt3/PyQt-mac-gpl-%v.tar.gz
-Source-MD5: 65a3a1f75c697a5381b92b40b9e2b22c
+Source-MD5: 1bd50c8919adc6840d276aee514a1d94
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://www.riverbankcomputing.co.uk/software/pyqt/intro
 License: GPL
