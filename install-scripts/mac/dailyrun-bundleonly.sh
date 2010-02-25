@@ -3,6 +3,8 @@
 # Should be run as: sudo ./dailyrun-bundleonly.sh
 #
 
+MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
+
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
 [ -e /Volumes/download/ ] || { open "smb://orange@193.2.72.35/download/"; sleep 30; }
