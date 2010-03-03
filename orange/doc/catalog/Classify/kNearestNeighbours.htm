@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>k-Nearest Neighbours</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>k-Nearest Neighbours Learner</h1>
+
+<img class="screenshot" src="../icons/k-NearestNeighbours.png">
+<p>k-Nearest Neighbours (kNN) learner</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Learner</DT>
+<DD>The kNN learning algorithm with settings as specified in the dialog.</DD>
+
+<DT>KNN Classifier</DT>
+<DD>Trained classifier (a subtype of Classifier)</DD>
+</dl>
+
+<P>Signal <code>KNN Classifier</code> sends data only if the learning data (signal <code>Examples</code> is present.</P>
+
+<h2>Description</h2>
+
+<p>This widget provides a graphical interface to the k-Nearest Neighbours classifier.</p>
+
+<p>As all widgets for classification, it provides a learner and classifier on the output. Learner is a learning algorithm with settings as specified by the user. It can be fed into widgets for testing learners, for instance <code>Test Learners</code>. Classifier is a kNN Classifier (a subtype of a general classifier), built from the training examples on the input. If examples are not given, there is no classifier on the output.</p>
+
+<img class="leftscreenshot" src="k-NearestNeighbours.png" alt="k-Nearest Neighbours Widget" border=0 />
+
+<P>Learner can be given a name under which it will appear in, say, <code>Test Learners</code>. The default name is "kNN".</P>
+
+<P>Then, you can set the <span class="option">Number of neighbours</span>. Neighbours are weighted by their proximity to the example being classified, so there's no harm in using ten or twenty examples as neighbours. Weights use a Gaussian kernel, so that the last neighbour has a weight of 0.001. If you check <span class="option">Weighting by ranks, not distances</span>, the weighting formula will use the rank of the neighbour instead of its distance to the reference example.</P>
+
+<P>The <span class="option">Metrics</span> you can use are Euclidean, Hamming (the number of attributes in which the two examples differ - not suitable for continuous attributes), Manhattan (the sum of absolute differences for all attributes) and Maximal (the maximal difference between attributes).</P>
+
+<P>If you check <span class="option">Normalize continuous attributes</span>, their values will be divided by their span (on the training data). This ensures that all continuous attributes have equal impact, independent of their original scale.</P>
+
+<P>If you use Euclidean distance leave <span class="option">Ignore unknown values</span> unchecked. The corresponding class for measuring distances will compute the distributions of attribute values and return statistically valid distance estimations.</P>
+
+<P>If you use other metrics and have missing values in the data, imputation may be the optimal way to go, since other measures don't have any such treatment of unknowns. If you don't impute, you can either <span class="option">Ignore unknown values</span>, which treats all missing values as wildcards (so they are equivalent to any other attribute value). If you leave it unchecked, "don't cares" are wildcards, and "don't knows" as different from all values.</P>
+
+<P>When you change one or more settings, you need to push <span class="option">Apply</span>, which will put the new learner on the output and, if the training examples are given, construct a new classifier and output it as well.</P>
+
+
+<h2>Examples</h2>
+
+<P>This schema compares the results of k-Nearest neighbours with the default classifier which always predicts the majority class</P>
+
+<img class="screenshot"
+src="Majority-Knn-SchemaLearner.png" alt="k-Nearest Neighbours Classifier" border=0>
+
+</body>
+</html>

@@ -1,0 +1,236 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<index name="graphs">
+<h1>Graphs</h1>
+
+<P>Orange offers a data structure for representing directed and undirected graphs with various types of weighted connections.</P>
+
+<P>Basic graphs have only one type of edges. Each edge can have   an associated number, representing a strength of the edge - with whatever underlying physical interpretation. Orange's graphs are more general and two vertices can be connected by edges of various types. One use for this would be in genetics, where one gene can excite or inhibit another - or both simultaneously, which is why we can't simply assign negative numbers to the edges. The number of edge types is unlimited, but needs to be set in advance.</P>
+
+<P>Before constructing a graph, you will also need to decide for the underlying data structure. The differences for smaller graphs (<EM>e.g.</EM> with less than 100 nodes) should be insignificant, while for the larger, the decision should be based upon the expected number of edges ("density" of the graph) and the operations you plan to execute. Graphs with large number of edges (<EM>eg.</EM>&gt;<EM>n</EM><SUP>2</SUP>/4, where <EM>n</EM> is the number of vertices) should be represented with adjacency matrices (class <CODE>GraphAsMatrix</CODE>), graphs with small number of edges with adjacency lists (<CODE>GraphAsList</CODE>) and those in between with adjacency trees (<CODE>GraphAsTrees</CODE>).  Regarding the speed, matrices are generally the fastest, while some operations, such as finding all edges leading from certain node, will sometimes be faster with lists or trees.</P>
+
+<P>One thing that is not supported (at the moment?) are multiple edges of the same type between two vertices.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT><CODE><B>nVertices</B></CODE></DT>
+<DD>The number of vertices (read-only, set at construction)</DD>
+
+<DT><CODE><B>nEdgeTypes</B></CODE></DT>
+<DD>The number of different edge types (read-only, set at construction)</DD>
+
+<DT><CODE><B>directed</B></CODE></DT>
+<DD>Tells whether the graph is directed (read-only, set at construction)</DD>
+
+<DT><CODE><B>objects</B></CODE></DT>
+<DD>A dictionary, list or other sequence of objects that correspond to graph nodes. The use of this object is described in section on <A href="#indexing">indexing</A>.</DD>
+
+<DT><CODE><B>forceMapping</B></CODE></DT>
+<DD>Determines whether to map integer indices through 'objects'. Details are described below.</DD>
+</DL>
+
+<DT><CODE><B>returnIndices</B></CODE></DT>
+<DD>If set, the methods that return list of neighbours will return lists of integers even when <CODE>objects</CODE> are given.</DD>
+</P>
+
+<A name="graphtypes"></A>
+<H2>Construction</H2>
+
+<P>When constructing a graph, you will need to decide about the data structure for representation of edges, and call the corresponding constructor. All constructors take the same arguments: the number of vertices (needs to be given in advance, you cannot add additional vertices later), a flag telling whether the graph is directed or not, and the number of edge types. The default number of edge types is 1 (a normal graph), while the other two arguments are mandatory.</P>
+
+<P>You can choose between three constructors, all derived from a single ancestor <CODE><INDEX name="classes/Graph">Graph</CODE>:
+<DL class=attributes>
+<DT><CODE><INDEX name="classes/GraphAsMatrix">GraphAsMatrix(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DD>Edges are stored in a matrix with either <EM>n</EM><SUP>2</SUP> or <EM>n</EM>(<EM>n</EM>+1)/2 elements, depending upon whether the graph is directed or not. (In C++, it is stored as <CODE>float *</CODE> pointing to an array of length <CODE>n*n*nEdgeTypes</CODE> or <CODE>(n*(n+1))/2*nEdgeTypes</CODE> elements, where <CODE>nEdgeTypes</CODE> is the number of edge types.) This representation is suitable for smaller graphs and for dense large graphs. For graph with only one edge type, this representation is more economical than representation with lists or trees when the number of edges is larger than <EM>n</EM><SUP>2</SUP>/4.</P>
+
+<P>Inserting, deleting and checking the edges is fast; listing the neighbours of a certain node is fast unless the graph is sparse, in which case a graph represented with a list or a tree would be faster.</P>
+</DD>
+
+<DT><CODE><INDEX name="classes/GraphAsList">GraphAsList(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DD>Edges are stored in an ordered lists of neighbours, one list for each node. In C++, for each neighbour, the connection is stored in a structure with the vertex number (<CODE>int</CODE>), a pointer to the next structure, and an array of floats, one for each integer. With 16-byte alignment, this would take 16 bytes for graphs with one or two edge types on the usual 32-bit platforms.</P>
+
+<P>For undirected graphs, each edge is stored only once, in the list of the edge with the smaller index. This makes the structure smaller and insertion and lookup faster; it slows down finding the neighbours of a given node.</P>
+
+<P>This structure is convenient for graphs with a very small number of edges. For them, inserting and removing edges is relatively fast; getting all edges leading from a vertex is fast, while getting edges leading to a vertex or getting all neighbours (in directed or undirected graph) is slow.</P>
+</DD>
+
+
+<DT><CODE><INDEX name="classes/GraphAsTree">GraphAsTree(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DD>This structure is similar to <CODE>GraphAsTree</CODE> except that the edges are stored in trees instead of lists. This should be a structure of choice for all graph between really sparse and those having one quarter of possible edges. As expected, queries are fast, while insertion and removal of edges is somewhat slower (though still faster than for <CODE>GraphAsList</CODE> unless the number of edges is really small).</P>
+
+<P>Internally, nodes of the tree contain the vertex number, two pointers and a list of floats. With one edge type, this should be 16 bytes on 32-bit platforms.</P>
+</DD>
+</DL>
+
+<P>An ordinary undirected graph with 10 vertices stored in a matrix would thus be constructed by</P>
+<XMP class=code>graph = orange.GraphAsMatrix(10, 0)
+</XMP>
+<P>A directed graph with 1000 vertices and edges of three types, stored with adjacency trees would be constructed by</P>
+<XMP class=code>graph = orange.GraphAsTree(1000, 1, 3)
+</XMP>
+
+
+<H2>Basic Operations</H2>
+
+<P>All three graph types are used the same way, independent of the underlying structure.</P>
+
+<A name="indexing"></A>
+<H3>Indexing</H3>
+
+<P>Vertices are referred to by either integer indices or Python objects of any type. In the latter case, a mapping should be provided by assigning the 'objects' attribute. For instance, if you set <CODE>graph.objects</CODE> to <CODE>["Age", "Gender", "Height", "Weight"]</CODE> then <CODE>graph["Age", "Height"]</CODE> would be equivalent to <CODE>graph[0, 2]</CODE> and <CODE>graph.getNeighbours("Weight")</CODE> to <CODE>graph.getNeighbours(3)</CODE>. Vertex identifier doesn't need to be a string, , it can be any Python object.</P>
+
+<P>If <CODE>objects</CODE> contains a dictionary, its keys are vertex identifiers and the values in the dictionary should be integers, eg.
+<XMP class="CODE">graph.objects = {}
+graph.objects["Age"] = 0
+graph.objects[None] = 1
+graph.objects[orange] = 4
+</XMP>
+</P>
+
+<P>If not a dictionary, <CODE>objects</CODE> can be any kind of sequence. Usually, you will give it a list of the same length as the number of vertices in the graph, so each element would identify a vertex. When indexing, the index is sought for in the list. <CODE>objects</CODE> can also be a list of attributes, a domain, an example table or even a single string; Orange will run a code equivalent to "<CODE>for o in graph.objects</CODE>", so everything for which such a loop works, goes.</P>
+
+<P>Searching through the list is, of course, rather slow, so it is recommended to use integer indices for larger graphs. So, if you request <CODE>graph.getNeighbours(0)</CODE>, the method will return the neighbours of the first vertex, even if <CODE>objects</CODE> is given. But - what if you want to map all indices, even integers, through <CODE>objects</CODE>? In this case, you need to set <CODE>graph.forceMapping</CODE> to 1. If <CODE>graph.forceMapping</CODE> is set and <CODE>graph.objects</CODE> is given, even <CODE>getNeighbours(0)</CODE> will search the <CODE>graph.objects</CODE> for 0 and return the neighbours of the corresponding (not necessarily the first) node.</P>
+
+
+<H3>Getting and Setting Edges</H3>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>graph[v1, v2]</DT>
+<DD>For ordinary graphs with a single edge type, <CODE>graph[v1, v2]</CODE> returns the weight of the edge between <CODE>v1</CODE> and <CODE>v2</CODE>, or <CODE>None</CODE> if there is no edge (edge's weight can also be 0). Edges can also be set by assigning them a weight, <EM>e.g.</EM>graph[2, 5]=1.5. As described above, if <CODE>objects</CODE> is set, we can use other objects, such as names, as <CODE>v1</CODE> and <CODE>v2</CODE> (the same goes for all other functions described below).</P>
+
+<P>For graphs with multiple edge types, <CODE>graph[v1, v2]</CODE> returns a list of weights for various edge types. Some (or all, if there is no edge) elements of the list can be <CODE>None</CODE>. If the edge does not exist, <CODE>graph[v1, v2]</CODE> returns a list of <CODE>None</CODE>s, not a <CODE>None</CODE>. You can assign a list to <CODE>graph[v1, v2]</CODE>; in graph with three edge types you can set </EM>graph[2, 5] = [1.5, None, -2.0]</CODE>. After that, there are two edges between vertices 2 and 5, one of the first type with weight 1.5, and one of the third with weight -2.0. To remove an edge, you can assign it a least of <CODE>None</CODE>s or a single <CODE>None</CODE>, <EM>e.g.</EM> <CODE>graph[2, 5]=None</CODE>; this removes edges of all types between the two nodes.</P>
+
+<P>The list returned for graphs with multiple edge types is actually a reference to the edge, therefore you can set <CODE>e = graph[v1, v2]</CODE> and then manipulate <CODE>e</CODE>, for instance <CODE>e[1]=10</CODE> or <CODE>e[0]=None</CODE>. Edge will behave just as an ordinary list (well, almost - no slicing ets). However, don't try to assign a list to <CODE>e</CODE>, <EM>eg</EM> <CODE>e=[1, None, 4]</CODE>. This assigns a list to <CODE>e</CODE>, not to the corresponding edge...</P>
+</DD>
+
+<DT>graph[v1, v2, type]</DT>
+<DD>This is defined only for graph with multiple edge types; it returns the weight for the edge of type <CODE>type</CODE> between <CODE>v1</CODE> and <CODE>v2</CODE>, or <CODE>None</CODE> if there is no such edge. You can also establish an edge by assigning a weight (<EM>e.g.</EM> <CODE>graph[2, 5, 2] = -2.0</CODE>) or remove it by assigning it a <CODE>None</CODE> (<CODE>graph[2, 5, 2] = None</CODE>).</DD>
+
+<DT>edgeExists(v1, v2[, type])</DT>
+<DD>Returns true if the edge between <CODE>v1</CODE> and <CODE>v2</CODE> exists. For multiple edge type graphs you can also specify the type of the edge you check for. If the third argument is omitted, the method returns true if there is any kind of edge between the two vertices.</DD>
+
+<DD>It is recommended to use this method when you want to check for a node. In single edge type graphs, <CODE>if graph[v1, v2]:</CODE> will fail when there is an edge but it has a weight of zero. With multiple edge types, <CODE>if graph[v1, v2]:</CODE> will always success since <CODE>graph[v1, v2]</CODE> returns a non-empty list; if there is no edges, this will be a list of <CODE>None</CODE>s, but Python still treats it as "true".</DD>
+
+<DT>addCluster(list_of_vertices)</DT>
+<DD>Creates a cluster - adds edges between all listed vertices.</DD>
+
+</DL>
+
+
+
+<H3>Queries</H3>
+
+<P><CODE>Graph</CODE> provides a set of function that return nodes connected to a certain node.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>getNeighbours(v1[, type])</DT>
+<DD>Returns all the nodes that are connected to <CODE>v1</CODE>. In directed graphs, this includes vertices with edges toward or from <CODE>v1</CODE>. In graphs with multiple edge types you can also specify the edge type you are interested in: <CODE>getNeighbours</CODE> will the return only the vertices that are connected to <CODE>v1</CODE> by edges of that type.</DD>
+
+<DT>getEdgesFrom(v1[, type])</DT>
+<DD>Return all the vertices which are connected to <CODE>v1</CODE> by the edges leading from <CODE>v1</CODE>. In edges with multiple edge types, you can specify the edge type. In undirected graph, this function is equivalent to <CODE>getNeighbours</CODE>.</DD>
+
+<DT>getEdgesTo(v1[, type])</DT>
+<DD>Returns all the vertices with edges leading to <CODE>v1</CODE>. Again, you can decide for a single edge type to observe, and, again again, in undirected graphs this function is equivalent to <CODE>getNeighbours</CODE>.</DD>
+</DL>
+
+<P>If <CODE>objects</CODE> is set, functions return a list of objects (names of vertices or whatever objects you stored in <CODE>objects</CODE>). Otherwise, a list of integer indices is returned. If you want to force <CODE>Graph</CODE> to return integer indices even if <CODE>objects</CODE> is set, set <CODE>graph.returnIndices</CODE> to <CODE>True</CODE>.</P>
+
+<P>Of the three operations, the expensive one is to look for the vertices with edges pointing to the given edge. There is no problem when graph is represented as a matrix (<CODE>graphAsMatrix</CODE>); these are always fast. On directed graph, <CODE>getEdgeFrom</CODE> is always fast as well.</P>
+
+<P>In undirected graphs represented as lists or trees, the edge between vertices with indices <CODE>v1</CODE> and <CODE>v2</CODE> is stored at the list/tree in the smaller of the two indices. Therefore to list all neighbours of <CODE>v1</CODE>, edges with <CODE>v2&lt;v1</CODE> are copied form <CODE>v1</CODE>'s list, while for edges with <CODE>v2&gt;v1</CODE> the function needs to look for <CODE>v1</CODE> in each <CODE>v2's</CODE> list/tree. Lookup in trees is fast, while in representation with adjacency list, the function is slower for <CODE>v1</CODE> closer to <CODE>nVertices</CODE>/2. If <CODE>v1</CODE> is small there is a great number of <CODE>v2&gt;v1</CODE> whose lists are to be checked, but since the lists are ordered, <CODE>v1</CODE> is more to the beginning of these lists (and when a vertex with index higher than <CODE>v1</CODE> is encountered, we know that <CODE>v1</CODE> is not on the list). If <CODE>v2</CODE> is great, there it is more toward the end of the list, but there is smaller number of lists to be checked. Generally, the average number of traversed list elements for <CODE>getNeighbours</CODE>/<CODE>getEdgesFrom</CODE>/<CODE>getEdgesTo</CODE> on undirected graphs with p*nVertices<SUP>2</SUP> edges is p(nVertices-v1)v1.</P>
+
+<P>To sum up, if you have a large undirected graph and intend to query for neighbours (or, equivalently, edges to or from a node) a lot, don't use <CODE>GraphAsList</CODE>. If the graph is small or you won't use these functions, it doesn't matter.</P>
+
+<P>For directed graphs, <CODE>getEdgesFrom</CODE> is trivial. The other two functions are even slower than for undirected graphs, since to find the edges leading from any vertex to a given one, all lists/trees need to be searched. So, if your algorithm will extensively use <CODE>getEdgesTo</CODE> or <CODE>getNeighbours</CODE> and your graph is large but the number of edges is less than nEdges<SUP>2</SUP>/2, you should use <CODE>GraphAsTree</CODE> or, to be faster but consume more memory store the graph as <CODE>GraphAsMatrix</CODE>. If the number of edges is greater, <CODE>GraphAsMatrix</CODE> is more economic anyway. (This calculation is for graph with only one edge type; see the description of <A href="#graphtypes">graph types</A> for details.</P>
+
+<P>However, this is all programmed in C++, so whatever you do, the bottleneck will probably still be in your Python code and not in C++. You probably cannot miss by using <CODE>GraphAsTree</CODE> disregarding the size of the graph and the operations you perform on it.</P>
+
+<H2>Graph Analyses</H2>
+
+<H3>Methods</H3>
+
+<DL class=attributes>
+<DT>getConnectedComponents()</DT>
+<DD>Returns list of all connected components sorted descending by component size.</DD>
+
+<DT>getDegreeDistribution()</DT>
+<DD>Returns degree distribution as dictionary of type {degree:number_of_vertices}.</DD>
+
+<DT>getDegrees()</DT>
+<DD>Returns list of degrees. List size matches number of vertices. Index of given degree matches index of corresponding vertex.</DD>
+
+<DT>getHubs(n)</DT>
+<DD>Returns list of n largest hubs.</DD>
+
+<DT>getShortestPaths(u, v)</DT>
+<DD>Returns list of vertices in the shortest path between u and v.</DD>
+
+<DT>getDistance(u, v)</DT>
+<DD>Returns a distance between vertices u and v.</DD>
+
+<DT>getDiameter()</DT>
+<DD>Returns a diameter of the graph.</DD>
+</DL>
+
+<H3>Examples</H3>
+<p class="header">part of <a href="graph_analyses.py">graph_analyses.py</a> (uses <a href="combination.net">combination.net</a>)</p>
+
+<xmp class=code>components = graph.getConnectedComponents()
+print components
+
+distribution = graph.getDegreeDistribution()
+print distribution
+
+degrees = graph.getDegrees()
+print degrees
+
+hubs = graph.getHubs(3)
+print hubs
+
+path = graph.getShortestPaths(0, 2)
+print path
+
+distance = graph.getDistance(0, 2)
+print distance
+
+diameter = graph.getDiameter()
+print diameter
+
+subgraph = graph.getSubGraph([0, 1, 2, 3])
+subNetwork = NetworkOptimization(subgraph)
+</xmp>
+
+<p>Results:</p>
+<xmp class=code>Connected components
+[[0, 1, 2, 3, 4, 5, 6, 7, 8], [13, 14, 15, 16, 17, 18], [9, 10, 11, 12]]
+
+Degree distribution
+{1: 5, 2: 4, 3: 8, 4: 1, 5: 1}
+
+Degrees
+[4, 3, 3, 2, 2, 3, 2, 3, 2, 3, 3, 3, 3, 5, 1, 1, 1, 1, 1]
+
+Hubs
+[13, 0, 1]
+
+Shortest path
+[2, 0]
+
+Distance
+1
+
+Diameter
+4
+</xmp>
+<p>Subgraph image:</p>
+<img src="graph_subgraph.png">
+<H3>Additional functionality</H3>
+
+<P>Should you need any additional <EM>functionality</EM>, just tell us. Many things are trivial to implement in C++ and will be much faster than the corresponding scripts in Python. (In this regard, minimal span trees, maximal flows, coloring and shortest path search are, of course, not considered basic functionality. :)</P>
+
+</BODY></HTML>

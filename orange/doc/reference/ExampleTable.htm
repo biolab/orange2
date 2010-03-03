@@ -1,0 +1,475 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print></LINK>
+</HEAD>
+
+<BODY>
+<index name="example tables">
+<h1>ExampleTable</h1>
+<index name="classes/ExampleTable">
+
+<P>Examples are usually stored in a table called
+<CODE>orange.ExampleTable</CODE>. In Python you will perceive it a as
+list and this is what it basically is: an ordered sequence of
+examples, supporting the usual Python procedures for lists, including
+the more advanced operations such as slicing and sorting.</P>
+
+<small>This is a bit advanced, but we should write it here so nobody overlooks it: if <code>data</code> is an instance of <code>ExampleTable</code>, <code>data[0]</code> is not a <em>reference</em> to the first element but the first element itself. About the only case in which this is important is when we try to swap two elements, either like <code>data[0], data[1] = data[1], data[0]</code> or with an intermediate variable: it won't work. For the same reason: <b>random.shuffle</b> doesn't work on <code>ExampleTable</code> (as it doesn't on numpy, by the way). Use <code>ExampleTable</code>'s own <code>shuffle</code> method instead.</small>
+
+<P><CODE>ExampleTable</CODE> is derived from a more general abstract class <CODE>ExampleGenerator</CODE>. </P>
+
+<p class=section>Attributes</p>
+
+<DL class=attributes>
+<DT>domain</DT>
+<DD>All examples in a table belong to the same domain - the one that is given in this field.</DD>
+
+<DT>ownsExamples</DT>
+<DD>Tells whether the <CODE>ExampleTable</CODE> contains copies of examples (<CODE>true</CODE>) or only references to examples owned by another table (stored in field <CODE>lock</CODE>). Example tables with references to examples are useful for sampling examples from <CODE>ExampleTable</CODE> without copying examples.</DD>
+
+<DT>lock</DT>
+<DD>The true owner of examples, if this table contains only references. (The main purpose of this field is to lock a reference to the owner, so that it doesn't die before the example table that references its examples).</DD>
+
+<DT>version</DT>
+<DD>An integer that is increased whenever <CODE>ExampleTable</CODE> is changed. This is not foolproof, since <CODE>ExampleTable</CODE> cannot detect when individual examples are changed. It will, however, catch any additions and removals from the table</DD>
+
+<DT>randomGenerator</DT>
+<DD>Random generator that is used by method <CODE>randomexample</CODE>. If the method is called and <CODE>randomGenerator</CODE> is <CODE>None</CODE> a new generator is constructed with random seed 0, and stored here for subsequent use. If you would like to have different random examples each time your script is run, use a random number from Python for a random seed.</DD>
+
+<dt>attributeLoadStatus, metaAttributeLoadStatus</dt>
+<dd>A list and a dictionary describing how the attributes were created. They exist only for example tables which were loaded from files. A detailed description is available on the page about <a href="fileformats.htm">loading the data</a>.</dd>
+</DL>
+
+
+<H2>Construction and Saving</H2>
+
+<P><CODE>ExampleTable</CODE> can be constructed by reading from file, packing existing examples or creating an empty table. To save the data, see the documentation on <a href="fileformats.htm#saving">file formats</a>.</P>
+
+<DL class=attributes>
+<DT>ExampleTable(filename[, createNewOn])</DT>
+<DD><index name="data input">This constructor reads from files. If filename
+includes extension,
+it must be an extension for one of the <A href="fileformats.htm">known
+file formats</A>. If just a stem is given (such as "monk1", without
+".tab", ".names" or whatever), the current directory is searched for
+any file with the given stem with one of the known
+extensions (see the page on <a href="fileformats.htm">file
+formats</A>). If the file is not found in the current directory, Orange will
+also search the directories specified in the environment variable
+ORANGE_DATA_PATH.</P>
+</DD>
+
+<DT>ExampleTable(domain)</DT>
+<DD>This constructor creates an empty <CODE>ExampleTable</CODE> for the given domain.
+For exercise, we shall construct a domain for the common version of Monk datasets; attribute names will be <CODE>a</CODE>, <CODE>b</CODE>, <CODE>c</CODE>, <CODE>d</CODE>, <CODE>e</CODE>, and <CODE>f</CODE>, and their values will be 1, 2, 3, and 4. Attribute <CODE>f</CODE> is four-valued, <CODE>a</CODE>, <CODE>b</CODE> and <CODE>d</CODE> are three-values and <CODE>c</CODE> is binary.
+
+<p class="header">part of <a href="exampletable1.py">exampletable1.py</a></p>
+<XMP class=code>import orange, random
+
+classattr = orange.EnumVariable("y", values = ["0", "1"])
+
+card = [3, 3, 2, 3, 4, 2]
+values = ["1", "2", "3", "4"]
+attributes = [  orange.EnumVariable(chr(97+i),
+                values = values[:card[i]])
+              for i in range(6)]
+
+domain = orange.Domain(attributes + [classattr])
+
+data = orange.ExampleTable(domain)
+</XMP>
+
+<P>Attributes are defined in a list comprehension where <CODE>i</CODE> goes from 0 to 5 (for six attributes), attribute name is <CODE>chr(97+i)</CODE>, which gives letters from a to f, and attribute's values are a slice from list values - exactly as many values as specified in <CODE>card</CODE> for each particular attribute. If you don't understand this, don't mind and pretend that all attributes are defined just as simply as the class attribute.</P>
+
+</DD>
+
+<DT>ExampleTable(examples[, references])</DT>
+<DD>This puts the given examples into a new <CODE>ExampleTable</CODE>. Examples can be given either with <CODE>ExampleGenerator</CODE>, such as <CODE>ExampleTable</CODE>, or as an ordinary Python list containing examples (as objects of type <a href="Example.htm"><CODE>Example</CODE></A>).</P>
+
+<P>If the <a name="x0001924">optional</a> second argument is true, the new <CODE>ExampleTable</CODE> will only store references to examples. In this case, the first argument must be <CODE>ExampleTable</CODE>, not a list.</P>
+</DD>
+
+<DT>ExampleTable(domain, examples)</DT>
+<DD>This constructor converts examples into the given domain and stores them into the new table. Examples can again be given in an <CODE>ExampleGenerator</CODE>, a Python list containing examples as objects of type <CODE>Example</CODE> or Python lists, or Numeric array, if your Orange build supports it.</P>
+
+<P>If you have examples stored in a list of lists, for instance</P>
+
+<XMP class="code">loe = [
+    ["3", "1", "1", "2", "1", "1",  "1"],
+    ["3", "1", "1", "2", "2", "1",  "0"],
+    ["3", "3", "1", "2", "2", "1",  "1"]]
+</XMP>
+
+<P>you can convert it into an <CODE>ExampleTable</CODE> by</P>
+
+<XMP class="code">data = orange.ExampleTable(domain, loe)
+</XMP>
+
+<P>Instead of strings (ie, symbolic values) you can use value indices in <CODE>loe</CODE>, when you find it more appropriate:</CODE>
+
+<XMP class="code">loe = [
+    [2, 0, 0, 1, 0, 0,  1],
+    [2, 0, 0, 1, 1, 0,  0],
+    [2, 2, 0, 1, 1, 0,  1]]
+</XMP>
+
+<P>The other way of putting such examples into an <CODE>ExampleTable</CODE> is by method <A href="#extend"><CODE>extend</CODE></A>.</P>
+
+<P>Finally, here's an example that puts a content of Numeric array into an <code>ExampleTable</code>.</P>
+
+<xmp class="code">
+import Numeric
+d = orange.Domain([orange.FloatVariable('a%i'%x) for x in range(5)])
+a = Numeric.array([[1, 2, 3, 4, 5], [5, 4, 3, 2, 1]])
+t = orange.ExampleTable(a)
+</xmp>
+
+<P>For this example, we first constructed a domain with attributes <Code>a1</code>, <Code>a2</code>, <Code>a3</code>, <Code>a4</code> and <Code>a5</code>. We then put together a simple Numeric <code>array</code> with five columns and put it into a table.</P>
+
+</DD>
+
+<DT>ExampleTable(list-of-tables)</DT>
+<DD>"Horizontally" merges multiple tables into a single table. All the tables must be of the same length since new examples are combined from examples from the given tables. Domains are combined so that each (ordinary) attribute appears only once in the resulting table. The class attribute is the last class attribute in the list of tables; for instance, if three tables are merged but the last one is class-less, the class attribute for the new table will come from the second table. Meta attributes for the new domain are merged based on id's: if the same attribute appears under two id's it will be added twice. If, on the opposite, same id is used for two different attributes in two example tables, this is an error. As examples are merged, Orange checks the attributes (ordinary or meta) that appear in different tables have either the same value or undefined values.</P>
+
+Note that this is not the SQL's join operator as it doesn't try to match any keys between the tables.</P>
+
+For a trivial example, we shall merge two tables stored in the following tab-delimited files.</P>
+
+<p class="header"><a href="merge1.tab">merge1.tab</a></p>
+<XMP class="code">a1    a2    m1    m2
+f     f     f     f
+            meta  meta
+1     2     3     4
+5     6     7     8
+9     10    11    12
+</XMP>
+
+<p class="header"><a href="merge2.tab">merge2.tab</a></p>
+<XMP class="code">a1    a3    m1     m3
+f     f     f      f
+            meta   meta
+1     2.5   3      4.5
+5     6.5   7      8.5
+9     10.5  11     12.5
+</XMP>
+
+The two tables can be loaded, merged and printed out by the following script.
+
+<p class="header"><a href="exampletable_merge.py">exampletable_merge.py</a> (uses <a href="merge1.tab">merge1.tab</a>, <A href="merge2.tab">merge2.tab</A>)</p>
+<XMP class="code">import orange
+
+data1 = orange.ExampleTable("merge1")
+data2 = orange.ExampleTable("merge2", use = data1.domain)
+
+merged = orange.ExampleTable([data1, data2])
+
+print
+print "Domain 1: ", data1.domain
+print "Domain 2: ", data2.domain
+print "Merged:   ", merged.domain
+print
+for i in range(len(data1)):
+    print "   %s\n + %s\n-> %s\n" % (data1[i], data2[i], merged[i])
+</XMP>
+
+<P>First, note the <CODE>use = data1.domain</CODE> which ensures that while loading the second table, the attributes from the first will be reused if they are of same name and type. Without that, the attribute <CODE>a1</CODE> from the first and the attribute <CODE>a2</CODE> from the second table would be two different attributes and the merged table would have two attributes named <CODE>a1</CODE> instead of a single one, which is what we want. The same goes for meta-attribute <CODE>m1</CODE> which will also have the same id in both table. (For this reason, it is important to pass the entire domain, <EM>ie</EM> <CODE>data1.domain</CODE>, not a list of attributes, such as <CODE>data1.domain.variables</CODE> or - obviously intentionally doing it wrong -- <CODE>data1.domain.variables + data1.domain.getmetas().values()</CODE>.)</P>
+
+<P>Merging succeeds since the values of <CODE>a1</CODE> and <CODE>m1</CODE> are the same for all matching examples from <CODE>data1</CODE> and <CODE>data2</CODE>, and the printout is as anticipated.</P>
+<XMP class=code>Domain 1:  [a1, a2], {-2:m1, -3:m2}
+Domain 2:  [a1, a3], {-2:m1, -4:m3}
+Merged:    [a1, a2, a3], {-2:m1, -3:m2, -4:m3}
+
+   [1, 2], {"m1":3, "m2":4}
+ + [1, 2.5], {"m1":3, "m3":4.5}
+-> [1, 2, 2.5], {"m1":3, "m2":4, "m3":4.5}
+
+   [5, 6], {"m1":7, "m2":8}
+ + [5, 6.5], {"m1":7, "m3":8.5}
+-> [5, 6, 6.5], {"m1":7, "m2":8, "m3":8.5}
+
+   [9, 10], {"m1":11, "m2":12}
+ + [9, 10.5], {"m1":11, "m3":12.5}
+-> [9, 10, 10.5], {"m1":11, "m2":12, "m3":12.5}
+</XMP>
+</P>
+</DD>
+
+</DL>
+
+
+<H2>Standard list-like functions</H2>
+
+<P><CODE>ExampleTable</CODE> supports most of standard Python operations on lists. All the basic operations - getting, setting and removing examples and slices are supported.</P>
+
+<DL class=attributes>
+<DT>&lt;items&gt;</DT>
+<DD>When retrieving items (<CODE>Examples</CODE>) from the table, you get references to examples not copies. So, when you write <CODE>ex = data[0]</CODE> and then modify <CODE>ex</CODE>, you will actually change the first example in the <CODE>data</CODE>. If the table contains references to examples, it can only contain references to examples in a single table, so when you assign items, eg. by <CODE>data[10]=example</CODE>, the <CODE>example</CODE> must come from the right table.</P>
+
+<P>When setting items, you can present examples as object of type <CODE>Example</CODE> or as ordinary list, for instance, <CODE>data[0] = ["1", "1", 1, "1", "1", "1", "1"]</CODE>. This form can, of course, only be used by <CODE>ExampleTable</CODE> that own examples.</P>
+</DD>
+
+<DT>&lt;slices&gt;</DT>
+<DD>Slices function as expected: <CODE>data[:10]</CODE>, for instance, gives the first ten examples from <CODE>data</CODE>. These examples are not returned in an <CODE>ExampleTable</CODE> but in ordinary Python list, containing references to examples in the table. For instance, to do something with the first <CODE>n</CODE> examples, you can use a loop like this.
+
+<XMP class=code>for example in data[:n]:
+    do_something(example)
+</XMP>
+
+<P>As for ordinary lists, this is somewhat slower than</P>
+
+<XMP class=code>for i in range(n):
+    do_something(example[n])
+</XMP>
+
+<P>But you probably won't notice the difference except in really large tables.</P>
+
+<P>If the table contains references to examples, similar restrictions as for assigning items apply.</P>
+</DD>
+
+
+<DT>&lt;logical tests&gt;</DT>
+<DD>As for ordinary lists, a table is "false", when empty. Thus, an empty table can be rejected by the following <CODE>if</CODE> statement.
+
+<XMP class=code>if not data:
+    raise "I would really need some examples before I proceed, sir"
+</XMP>
+</DD>
+
+
+<DT>append(example)</DT>
+<DD>Appends a single example to the table. We have already shown how to construct a domain description and an empty example table for Monk 1 dataset. Let us now add a few examples representing the Monk 1 concept (y := (a==b) or (e==1)).
+
+<p class="header">part of <a href="exampletable1.py">exampletable1.py</a></p>
+<XMP class=code>data = orange.ExampleTable(domain)
+for i in range(100):
+    ex = [random.randint(0, c-1) for c in card]
+    ex.append(ex[0]==ex[1] or ex[4]==0)
+    data.append(ex)
+</XMP>
+
+<P>For each example, we prepare a list of six random values, ranging from 0 to the cardinality of the attribute (<CODE>randint(0, c-1)</CODE> returns a random value from between <CODE>0</CODE> and <CODE>c-1</CODE>, inclusive). To this we append a class value, computed according to Monk 1's concept. The constructed list is appended to the table.</P>
+
+<P>Restrictions apply for tables that contain references to examples.</P>
+</DD>
+
+
+<A name="extend"></a>
+<DT>extend(examples)</DT>
+<DD>Appends a list of examples (given as a generator or a Python list) to the table. This function has the same effect as calling <CODE>append</CODE> for each example in the list.</P>
+
+<P>Restrictions apply for tables that contain references to examples.</P>
+</DD>
+
+
+<DT>native([nativity])</DT>
+<DD>Converts the <CODE>ExampleTable</CODE> into an ordinary Python list. If <CODE>nativity</CODE> is 2 (default), the list contains objects of type <CODE>Example</CODE> (references to examples in the table). If 1, even examples are replaced by lists containing objects of type <CODE>Value</CODE> (therefore, <CODE>ExampleTable</CODE> is translated to a list of list of <CODE>Value</CODE>). If <CODE>nativity</CODE> is 0, even values are represented as native Python objects - strings and numbers.
+</DD>
+</DL>
+
+<A name="select"></a>
+<H2>Selection, Filtering, Translation</H2>
+<index name="filtering examples">
+<index name="selecting examples">
+
+<P><CODE>ExampleTable</CODE> offers several methods for selection and translation of examples (some of them are actually inherited from a more general class <CODE>ExampleGenerator</CODE>). For easier illustration, we shall prepare an example table with 10 examples, described by a single numerical attribute having values from 0 to 9 (effectively enumerating the examples).</P>
+
+<p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
+<XMP class=code>import orange
+
+domain = orange.Domain([orange.FloatVariable()])
+data = orange.ExampleTable(domain)
+for i in range(10):
+    data.append([i])
+</XMP>
+
+<DL class=attributes>
+<DT>select(list[, int][, negate=0]) <span class=normalfont>(inherited from <CODE>ExampleGenerator</CODE>)</SPAN></DT>
+<DD>Method <CODE>select</CODE> returns a subset of examples. The argument is a list of integers of the same length as the examples table. <CODE>select</CODE> picks the examples for which the corresponding list's element is equal to the second (optional) argument. If the latter is omitted, example for which the corresponding element is non-zero are selected. An additional keyword argument <CODE>negate=1</CODE> reverses the selection.</P>
+
+<P>Note: <code>select</code> used to have many other functions, which are now deprecated and only kept for compatibility. We shall not document them, except for one that may cause unexpected behaviour. Say we have a data set which does not contain three examples (can have more of less). Calling <code>select([0, 1, 5])</code> will return a table containing only the first, second and sixth attribute. In other words, if you use <code>select</code> like described above (and below), but give it a list of a wrong size, the call will be interpreted as if you want to change the domain. Don't purposely call <code>select</code> to change the domain.</P>
+
+<P>The most natural use of this method is for division of examples into folds. For this, we first prepare a list of fold indices using an appropriate descendant of <CODE>MakeRandomIndices</CODE>; <CODE>MakeRandomIndicesCV</CODE>, for instance, will prepare indices for cross-validation (see documentation on <a href="RandomIndices.htm">random indices</a>). Then we feed the indices to <CODE>select</CODE>, as shown in example below.</P>
+
+<p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
+<XMP class=code>cv_indices = orange.MakeRandomIndicesCV(data, 4)
+print "Indices: ", cv_indices, "\n"
+
+for fold in range(4):
+    train = data.select(cv_indices, fold, negate = 1)
+    test  = data.select(cv_indices, fold)
+    print "Fold %d: train " % fold,
+    for ex in train:
+        print ex,
+    print
+    print "      : test  ",
+    for ex in test:
+        print ex,
+    print
+</XMP>
+
+<P>The printout begins with.</P>
+
+<XMP class=code>Indices:  <1, 0, 2, 2, 0, 1, 0, 3, 1, 3>
+
+Fold 0: train
+     [0.000000]
+     [2.000000]
+     [3.000000]
+     [5.000000]
+     [7.000000]
+     [8.000000]
+     [9.000000]
+
+      : test
+     [1.000000]
+     [4.000000]
+     [6.000000]
+</XMP>
+
+<P>For the first fold (0), the positions of zero's determine the examples that are selected for testing - these are examples at positions 1, 4 and 6 (don't forget that indices in Python start with zero).</P>
+
+<P>Another form of calling function <CODE>select</CODE> is by giving a list of integers that are interpreted as boolean values.</P>
+
+<p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
+<XMP class=code>>>> t = data.select([1, 1, 0, 0, 0,  0, 0, 0, 0, 1])
+>>> for ex in t:
+...     print ex
+[0.000000]
+[1.000000]
+[9.000000]
+</XMP>
+
+<P>This form can also be given the <CODE>negate</CODE> as keyword argument to reverse the selection.</P>
+
+<P>For compatibility reasons, <CODE>select</CODE> method still has some additional functionality which has been moved to methods <CODE>filter</CODE> and <CODE>translate</CODE>.</P>
+</DD>
+
+<DT>selectref(list[, int][, negate=0])</DT>
+<DD>This function is the same as above, except that the new table contains references to examples in the original table instead of copies. This function is especially useful for sampling: the above scripts would be much faster (on large <CODE>ExampleTable</CODE>s, naturally) if they called <CODE>selectref</CODE> instead of <CODE>select</CODE>.</P></DD>
+
+<DT>selectlist(list[, int][, negate=0])</DT>
+<DD>This form stores references to the selected examples in ordinary Python list. It is thus equivalent to calling <CODE>selectref</CODE> and then <CODE>native</CODE>.</DD>
+
+<DT>selectbool(list[, int][, negate=0])</DT>
+<DD>Similar to above select function, except that instead of examples (in whichever form) it returns a list of bools of the same length as the number of examples, denoting the accepted examples.</DD>
+
+<DT>getitems(indices) <span class=normalfont>(inherited from <CODE>ExampleGenerator</CODE>)</SPAN></DT>
+<DD>Argument <CODE>indices</CODE> gives a list of indices of examples to be selected. Selected examples are returned in example table. For instance, calling <CODE>data.getitems([0, 1, 9])</CODE> gives the same result as the above <CODE>data.select([1, 1, 0, 0, 0,  0, 0, 0, 0, 1]</CODE>: a (new) <CODE>ExampleTable</CODE> with examples <CODE>data[0]</CODE>, <CODE>data[1]</CODE> and <CODE>data[9]</CODE>. Calling <CODE>data.getitems(range(10))</CODE> has a similar effect than <CODE>data[:10]</CODE>, except that the former returns an example table and the latter returns ordinary list.</p></DD>
+
+<DT>getitemsref(indices)</DT>
+<DD>Similar to <CODE>getitems</CODE>, except that the resulting table contains references to examples instead of copies.</P></DD>
+
+
+<DT>filter(conditions)<DT>
+<DD>Selects examples according to the given <CODE>condition</CODE>. These can be given in form of keyword arguments or a dictionary; with the latter, additional keyword argument <CODE>negate</CODE> can be given for selection reversal. Result is a new <CODE>ExampleTable</CODE>.
+
+<P>For instance, young patients in the lenses dataset can be selected by</P>
+
+<XMP class=code>young = data.filter(age="young")
+</XMP>
+
+<P>More than one value can be allowed and more than one attribute checked. To select all patients with age "young" or "psby" who are astigmatic, use</P>
+
+<XMP class=code>young = data.filter(age=["young", "presbyopic"], astigm="y")
+</XMP>
+
+<P>If you need to reverse the decision, you cannot simply add <CODE>negate=1</CODE> as in <CODE>select</CODE> method, since this would be interpreted simply as another attribute (<CODE>negate</CODE>) whose value needs to be 1 (e.g. <CODE>values[1]</CODE>, see documentation on <A href="Variable.htm"><CODE>Variable</CODE></A>). For negation, you should use somewhat less readable way to pass arguments to <CODE>filter</CODE> - you should pack them to a dictionary. For instance, to select examples that are not young and astigmatic, use</P>
+
+<XMP class=code>young = data.filter({"age": "young", "astigmatic": "yes"}, negate=1)
+</XMP>
+
+<P>Note that this selects patients that are young, but not astigmatic and those that are astigmatic, but not young. In essence, conjunction of conditions is computed first and the result is negated if <CODE>negate</CODE> is 1. If you need more flexible selection (e.g. disjunction instead of conjunction), see documentation on <a href="preprocessing.htm">preprocessors</a>.</P>
+
+<P>Continuous attribute values are specified by pairs of values. In dataset "bridges", bridges with lengths between 1000 and 2000 (inclusive) are selected by</P>
+
+<XMP class=code>mid = data.filter(LENGTH=(1000, 2000))
+</XMP>
+
+<P>Bridges that are shorter or longer than that selected by inverting the range.</P>
+<XMP class=code>mid = data.filter(LENGTH=(2000, 1000))
+</XMP>
+</DD>
+
+<A name="filter"></a>
+<DT>filter(filt)</DT>
+<DD>Filters examples through a given filter <CODE>filt</CODE> of type <CODE>orange.Filter</CODE>.</P></DD>
+
+
+<DT>filterref, filterlist</DT>
+<DD>Both forms of <CODE>filter</CODE> also have variants that return tables and lists of references to examples, analogous to methods <CODE>selectref</CODE> and <CODE>selectlist</CODE>.
+
+<dt>filterbool</dt>
+<dd>Returns a list of bools denoting which examples are accepted and which are not.</dd>
+w
+</DL>
+
+<H2>Other methods</H2>
+
+<DL class=attributes>
+<dt>checksum()</dt>
+<DD>Computes a CRC32 of the example table. The sum is computed only over discrete and continuous attributes, not over strings and other types of attributes. Meta attributes are also ignored. Besides that, if two tables have the same CRC, you can be pretty sure that they are same.</DD>
+
+<dt>hasMissingValues()</dt>
+<dd>Returns true if the table contains any undefined values, either in attributes or the class. Meta-attributes are not checked.</dd>
+
+<dt>hasMissingClasses()</dt>
+<dd>Returns true if any examples' class is undefined. The function throws an exception if the data is class less.</dd>
+
+<DT>randomexample()</DT>
+<DD>Returns a random example from the table.
+
+<xmp class=code>import orange
+data = orange.ExampleTable("lenses")
+
+print "Random random"
+for i in range(5):
+    print data.randomexample()
+</xmp>
+
+<P>To select random examples, <CODE>ExampleTable</CODE> uses a random number generator stored in the field <CODE>randomGenerator</CODE>. If it has none, a new one is constructed and initialized with random seed 0. As a consequence, such a script will always select the same examples. If you don't want this, create another random generator and use a random number from Python to initialize it.
+
+<XMP class=code>import random
+data.randomGenerator = orange.RandomGenerator(random.randint(0, 10000))
+</XMP>
+
+<P>Since Orange calls constructors when an object of incorrect type is assigned to a built-in attribute, this can be written in a shorter form as
+
+<XMP class=code>import random
+data.randomGenerator = random.randint(0, 10000)
+</XMP>
+</DD>
+
+<DT>removeDuplicates([weightID])</DT>
+<DD>Replaces duplicated examples with single copies. If <CODE>weightID</CODE> is given, a meta-value is added to each example to contain the sum of weights of all examples merged into a particular example.</P></DD>
+
+<DT>sort([attributes])</DT>
+<DD>Sorts examples by attribute values. The order of attributes can be given, beginning with the most important attribute. Note that the ordering is not given by symbolic names (such as "young", "psby"...) but by the order in which values are listed in <CODE>values</CODE> table (see documentation on <a href="Variable.htm"><CODE>Variable</CODE></A>).
+
+<P>Examples in dataset "bridges" can be sorted by lengths and years they were erected by <CODE>data.sort("LENGTH", "ERECTED")</CODE>.</P>
+
+<DT>shuffle()</DT>
+<DD>Randomly shuffles the examples in the table. This function should always be used instead of <code>random.shuffle</code>, which does not work for <code>ExampleTable</code>.</DD>
+
+<DT>changeDomain(domain)</DT>
+<DD>Changes the table's domain, converting all examples in place. Returns <CODE>None</CODE>. This function is not available for tables that contain references to examples.</P>
+</DD>
+</DL>
+
+
+<A name="meta"></a>
+<H2>Meta-values</H2>
+<index name="meta attributes">
+
+<P>Adding a meta-value to all examples in a table is a very common operation, deserving specialized functions. There are two, one for adding and the other for removing a meta-value.</P>
+
+<DL class=attributes>
+<DT>addMetaAttribute(id[, value])</DT>
+<DD>Adds a meta-value to all examples in the table. <CODE>id</CODE> can be an integer returned by <CODE>orange.newmetaid()</CODE>, or a string or an attribute description if meta-attribute is registered in table's <A href="Domain.htm"><CODE>domain</CODE></A>. If <CODE>value</CODE> is given, it must be something convertible to a <CODE>Value</CODE>. If a corresponding meta-attribute is registered with <CODE>domain</CODE>, value can be symbolical. Otherwise, it must be an index (to <CODE>values</CODE>), continuous number or an object of type <CODE>Value</CODE>. <CODE>value</CODE> is an optional argument; default is 1.0 (to be useful as a neutral weight for examples).</DD>
+
+<DT>removeMetaAttribute(id)</DT>
+<DD>Removes a meta-attribute. Again, <CODE>id</CODE> can be an integer or a string or an attribute description registered with the domain.</DD>
+</DL>
+
+</BODY>
+</HTML> 

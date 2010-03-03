@@ -1,0 +1,277 @@
+<html>
+<head>
+<title>Orange Widgets Reference Guide for Developers</title>
+<link rel=stylesheet HREF="../style.css" type="text/css">
+<link rel=stylesheet href="style-print.css" type="text/css" media=print>
+</head>
+<body>
+<h1>Orange Widgets Reference Guide for Developers: Settings</h1>
+
+<P>Well-behaved widgets remember their settings - the state of their
+checkboxes and radio-buttons, the text in their line edits, the
+selections in their combo boxes and similar. These settings are even
+maintained across sessions. This document describes the Orange's
+methods that take care of that.</P>
+
+<P>Orange doesn't really save the state of the controls but instead
+saves the value of the corresponding attributes. For a check box there
+should be a corresponding widget's attribute recording the check box's
+state so that when the user changes a check box, the attribute changes
+and vice-versa. Although you can create such a link manually, you
+should always use the module <a href="owgui.htm">OWGUI</a> instead;
+for instance, for a check box, use <code>OWGUI.checkBox</code> and not
+simply the Qt's <code>QCheckBox</code>.</P>
+
+<P>The settings fall into two groups. Some of them do not depend on
+the data, while other are context-dependent. For the first to be saved
+properly, you only need to list them in the <code>settingsList</code>
+in the widget definition, as already described <a
+href="settings.htm">elsewhere</a>.</P>
+
+<h2>Context dependent settings</h2>
+
+<P>Context dependent settings usually depend upon the attributes that
+are present in the data set domain. For instance, the scatter plot
+widget contains settings that specify the attributes for x and y axis,
+and the settings that define the color, shape and size of the examples
+in the graph. An even more complicated case is the widget for data
+selection with which one can select the examples based on values of
+certain attributes. Before applying the saved settings, these widgets
+needs to check their compliance with the domain of the actual data
+set. To be truly useful, context dependent settings needs to save a
+setting configuration for each particular data set used. That is, when
+given a particular data set, it has to select the saved settings that
+is applicable and matches best currently used data set.</P>
+
+<P>Saving, loading and matching contexts is taken care of by context
+handlers. Currently, there are only two classes of context handlers
+implemented. The first one is the abstract <code>ContextHandler</code>
+and the second one is <code>DomainContextHandler</code> in which the
+context is defined by the data set domain and where the settings
+contain attribute names. The latter should cover most of your needs,
+while for more complicated widgets you will need to derive a new
+classes from it. There may even be some cases in which the context is
+not defined by the domain, in which case the
+<code>ContextHandler</code> will be used as a base for your new
+handler.</P>
+
+<P>Contexts need to be declared, opened and closed. Opening and
+closing usually takes place (in the opposite order) in the function
+that handles the data signal. This is how it looks in the scatter plot
+(the code is somewhat simplified for clarity).</P>
+
+<xmp class="code">    def cdata(self, data, clearResults = 1):
+        self.closeContext()
+
+        exData = self.data
+        self.data = data
+        self.graph.setData(data)
+        self.graph.insideColors = None
+        self.graph.clusterClosure = None
+
+        self.initAttrValues()
+
+        self.openContext("", data)
+
+        self.updateGraph()
+        self.sendSelections()
+</xmp>
+
+<P>In general, the function should go like this.
+<ol>
+<li>Do any clean-up you need, but without clearing any of the settings that need to be saved. Scatter plot needs none.</li>
+<li>Call <code>self.closeContext</code>; this ensures that all the context dependent settings (e.g. attribute names from the list boxes) are remembered.</li>
+<li>Get the data (or whatever you do) and set the controls to some defaults as if there were no context retrieving mechanism. Scatter plot does it by calling <code>initAttrValues()</code> which assigns the first two attributes to the x and y axis and the class attribute to the color. At this phase, you shouldn't call any functions that depend on the settings, such as drawing the graph.</li>
+<li>Call <code>self.openContext</code> (more about the arguments later). This will search for a suitable context and assign the controls new values if one is found. If there is no saved context that can be used, a new context is created and filled with the default values that were assigned at the previous point.</li>
+<li>Finally, adjust the widget according to the retrieved controls. Scatter plot now plots the graph by calling <code>updateGraph</code>.</li>
+</ol>
+</P>
+
+<P><code>closeContext</code> has an argument, the name of the context. If omitted (like above), the default name (<code>""</code>) is used. When opening the context, we give the name and some arguments on which the context depends. In case of <code>DomainContextHandler</code>, which scatter plot uses, we can give it a domain or any object that has a field <code>domain</code> containing a domain. Whether a saved context can be reused is judged upon the presence of attributes in the domain.</P>
+
+<P>If the widget is constructed appropriately (that is, if it strictly uses OWGUI controls instead of the Qt's), no other administration is needed to switch the context.</P>
+
+<P>Except for declaring the context settings, that is. Scatter plot has this just below the <code>settingsList</code>:
+<xmp class="code">contextHandlers = {"": DomainContextHandler("",
+  [("attrX", DomainContextHandler.Required),
+   ("attrY", DomainContextHandler.Required),
+   ("attrLabel", DomainContextHandler.Optional),
+   ("attrShape", DomainContextHandler.Optional),
+   ("attrSize", DomainContextHandler.Optional)])}
+</xmp>
+</P>
+
+<P><code>contextHandlers</code> is a dictionary whose keys are contexts' names. Each widget can have multiple contexts; for an unrealistic example, consider a scatter plot which gets two data sets and uses one attribute from the first for the x axis, and an attribute from the other for y. Since we won't see this often, the default name for a context is an empty string.</P>
+
+<P>The values in the dictionary are context handlers. Scatter plot declares that it has a DomainContextHandler with name "" (sorry for the repetition) with attributes "attrX", "attrY", "attrLabel", "attrShape" and "attrSize". The first two are required, while the other three are optional.</P>
+
+<h2>Using <code>DomainContextHandler</code></h2>
+
+<P>What we said above is not exactly
+true. <code>DomainContextHandler.Required</code> is the default flag,
+so <code>("attrX", DomainContextHandler.Required)</code> can be
+replaced by simply <code>"attrX"</code>. And the latter three have the
+same flags, so they can be grouped into <code>(["attrLabel",
+"attrShape", "attrSize"], DomainContextHandler.Optional)</code>. So
+what scatter plot really says is
+<xmp class="code">contextHandlers = {"": DomainContextHandler("", [
+   "attrX", "attrY",
+   (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
+</xmp>
+</P>
+
+<P>What do "optional" and "required" mean? Say that you used the
+scatter plot on the data with attributes A, B, C and D; A and B are
+used for the x and y axis and D defined the colors of examples. Now
+you load a new data with attributes A, B, E, and F. The same context
+can be used - A and B will again be shown on x and y axis and the
+default (the one set by <code>self.initAttrValues</code>) will be used
+for the color since the attribute D is missing in the new data. Now
+comes the third data set, which only has attributes A, D and E. The
+context now can't be reused since the attribute used for the
+<em>required</em> <code>attrY</code> (the y axis) is missing.</P>
+
+
+<P>OK, now it is time to be a bit formal. As said,
+<code>contextHandlers</code> is a dictionary and the values in it need
+to be context handlers derived from the abstract class
+<code>ContextHandler</code>. The way it is declared of course depends
+upon its constructor, so the above applies only to the usual
+<code>DomainContextHandler</code>.</P>
+
+<P>DomainContextHandler's constructor has the following arguments
+<dl class="attributes">
+<dt>contextName</dt>
+<dd>The name of the context; it should consist of letters and digits (it is used as a prt of a variable name). In case the widget has multiple contexts, they should have unique names. In most cases there will be only one context, so you can leave it empty.</dd>
+
+<dt>fields</dt>
+<dd>The names of the attributes to be saved and the corresponding flags. They are described in more details below.</dd>
+
+<dt>cloneIfImperfect</dt>
+<dd>states that when the context doesn't match perfectly, that is, unless the domain is exactly the same as the domain from which the context was originally created, <code>openContext</code> shouldn't reuse a context but create a copy of the best matching context instead. Default is <code>True</code>.</dd>
+
+<dt>loadImperfect</dt>
+<dd>tells whether the contexts that do not match perfectly (see above) should be used or not. Default is <code>True</code>.</dd>
+
+<dt>findImperfect</dt>
+<dd>tells whether imperfect contexts match at all or not (this flag is somewhat confused with <code>loadImperfect</code>, but it may come useful some day. Default is <code>True</code> again.</dd>
+
+<dt>syncWithGlobal</dt>
+<dd>tells whether instances of this widget should have a shared list of contexts (default). The alternative is that each keeps its own list; each individual list is merged with the global when the widget is deleted from the canvas (or when the canvas is closed). This setting only applies to canvas, while in saved applications widgets always have separate settings lists.</dd>
+
+<dt>maxAttributesToPickle</dt>
+<dd>To keep the size of the context file small, settings for domains exceeding a certain number of attributes are not pickled. Default is 100, but you can increase (or decrease this) if you need to.
+</dl>
+
+<P>The truly interesting argument is <code>fields</code>. It roughly corresponds to the <code>settingsList</code> in that each element specifies one widget attribute to be saved. The elements of <code>fields</code> can be strings, tuples and/or instances of <code>ContextField</code> (whatever you give, it gets automatically converted to the latter). When given as tuples, they should consist of two elements, the field name (just like in <code>settingsList</code>) and a flag. Here are the possible flags:
+<ul>
+<li><code>DomainContextHandler.Optional</code>, <code>DomainContextHandler.SelectedRequired</code> and <code>DomainContextHandler.Required</code> state whether the attribute is optional or required, as explained above. Default is <code>Required</code>. <code>DomainContextHandler.SelectedRequired</code> is applicable only if the control is a list box, where it means that the attributes that are selected are required while the other attributes from the list are not.</li>
+<li><code>DomainContextHandler.NotAttribute</code> the setting is not an attribute name. You can essentially make a check box context dependent, but we very strongly dissuade from this since it can really confuse the user if some check boxes change with the data while most do not.</li>
+<li><code>DomainContextHandler.List</code> tells that the attribute corresponds to a list box.</li>
+</ul>
+</P>
+
+<P>Flags can be combined, so to specify a list in which all attributes
+are required, you would give <code>DomainContextHandler.List +
+DomainContextHandler.Required</code>. Since this combination is
+common, <code>DomainContextHandler.RequiredList</code> can be used
+instead.</P>
+
+<P>There are two shortcuts. The default flag is
+<code>DomainContextHandler.Required</code>. If your attribute is like
+this (as most are), you can give only its name instead of a
+tuple. This is how <code>"attrX"</code> and <code>"attrY"</code> are
+given in the scatter plot. If there are multiple attributes with the
+same flags, you can specify them with a tuple in which the first
+element is not a string but a list of strings. We have seen this trick
+in the scatter plot, too.</P>
+
+<P>But the tuples are actually a shortcut for instances of
+<code>ContextField</code>. When you say <code>"attrX"</code> this is
+actually <code>ContextField("attrX",
+DomainContextHandler.Required)</code> (you should appreciate the
+shortcurt, right?). But see this monster from widget "Select
+Attributes" (file OWDataDomain.py):
+<xmp class="code">contextHandlers = {"": DomainContextHandler("",
+    [ContextField("chosenAttributes",
+                   DomainContextHandler.RequiredList,
+                   selected="selectedChosen", reservoir="inputAttributes"),
+     ContextField("classAttribute",
+                   DomainContextHandler.RequiredList,
+                   selected="selectedClass", reservoir="inputAttributes"),
+     ContextField("metaAttributes",
+                   DomainContextHandler.RequiredList,
+                   selected="selectedMeta", reservoir="inputAttributes")
+])}
+</xmp>
+</P>
+
+<P><code>ContextField</code>'s constructor gets the name and flags and a list of arguments that are written directly into the object instance. To follow the example, recall what Select Attributes looks like: it allows you to select a subset of attributes, the class attribute and the meta attributes that you want to use; the attributes in the corresponding three list boxes are stored in the widget's variables <code>chosenAttributes</code>, <code>classAttribute</code> and <code>metaAttributes</code> respectively. When the user selects some attributes in any of these boxes, the selection is stored in <code>selectedChosen</code>, <code>selectedClass</code> and <cose>selectedMeta</cose>. The remaining attributes - those that are not in any of these three list boxes - are in the leftover listbox on the left-hand side of the widget, and the content of the box is stored in the widget's variable <code>inputAttributes</code>.</P>
+
+<P>The above definition tells that the context needs to store the contents of the three list boxes by specifying the corresponding variables; the list of attributes is given as the name of the field and the list of selected attributes is in the optional named attribute <code>selected</code>. By <code>reservoir</code> we told the context handler that the attributes are taken from <code>inputAttributes</code>. So, when a context is retrieved, all the attributes that are not in any of the three list boxes are put into <code>inputAttributes</code>.</P>
+
+<P>Why the mess? Couldn't we just store <code>inputAttributes</code> as the fourth list box? Imagine that the user first loads the data with attributes A, B, C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in <code>inputAttributes</code>. Now she loads another data which has attributes A, B, C, D, E, and G. The contexts should match (the new data has all the attributes we need), but <code>inputAttributes</code> should now contain E and G, not E and F, since F doesn't exist any more, while G needs to be made available.</P>
+
+<P>You can use <code>ContextField</code> (instead of tuples and strings) for declaring any fields, but you will usually need them only for lists or, maybe, some complicated future controls.</P>
+
+
+<h2>Defining New Context Handlers</h2>
+
+<P>Avoid it if you can. If you can't, here's the list of the methods you may need to implement. You may want to copy as much from the <code>DomainContextHandler</code> as you can.</P>
+
+<dl class="attributes">
+<dt>__init__</dt>
+<dd>Has the same arguments as the <code>DomainContextHandler</code>'s, except for the <code>fields</code>.</dd>
+
+<dt>newContext</dt>
+<dd>Creates and returns a new context. In <code>ContextHandler</code> is returns an instance of <code>Context</code>; you probably won't need to change this.</dd>
+
+<dt>openContext</dt>
+<dd>The method is given a widget and some additional arguments based on which the contexts are compared. In case of <code>DomainContextHandler</code> this is a domain. There can be one or more such arguments. Note that the method <code>openContext</code> which we talked about above is a method of <code>OWBaseWidget</code>, while here we describe a method of context handlers. Actually, <code>OWBaseWidget(self, contextName, *args)</code> calls the context handler's, passing it's <code>self</code> and <code>*args</code>.
+
+It needs to find a matching context and copy its settings to the widget or construct a new context and copy the settings from the widget. Also, when an old context is reused, it should be moved to the beginning of the list. <code>ContextHandler</code> already defines this method, which should usually suffice. <code>DomainContextHandler</code> adds very little to it.</dd>
+
+<dt>closeContext</dt>
+<dd>Copies the settings from the widget by calling <code>settingsFromWidget</code>. You probably won't need to overwrite it.</dd>
+
+<dt>match</dt>
+<dd>The method is called by <code>openContext</code> to find a matching context. Given an existing context and the arguments that were given to <code>openContext</code> (for instance, a domain), it should decide whether the context matches or not. If it returns 2, it is a perfect match (e.g. domains are the same). If it returns 0, the context is not applicable (e.g. some of the required attributes are missing). In case it returns a number between 0 and 1 (excluding 0), the higher the number the better the match. <code>openContext</code> will use the best matching context (or the perfect one, if found).</dd>
+
+<dt>settingsToWidget/settingsFromWidget</dt>
+<dd>Copy the settings to and from the widget.</dd>
+
+<dt>fastSave</dt>
+<dd>This function is called by the widget's <code>__setattr__</code> each time any widget's variable is changed to immediately synchronize the context with the state of the widget. The method is really needed only when <code>syncWithGlobal</code> is set. When the context is closed, <code>closeContext</code> will save the settings anyway.</dd>
+
+<dt>cloneContext</dt>
+<dd>Given an existing context, it prepares and returns a copy. The method is optional; <code>copy.deepcopy</code> can be used instead.</dd>
+</dl>
+
+
+<h2>Saving and loading settings</h2>
+
+<P>Settings can be saved in two different places. Orange Canvas save
+settings in .ini files in directory
+Orange/OrangeWidgets/widgetSettings. Each widget type has its separate
+file; for instance, the scatter plot's settings are saved in
+<code>ScatterPlot.ini</code>. Saved schemas and applications save
+settings in .sav files; the .sav file is placed in the same directory
+as the schema or application, has the same name (except for the
+extension) and contains the settings for all widgets in the
+schema/application.</P>
+
+<P>Saving and loading is done automatically by canvas or the
+application. In a very rare case you need it to run these operations
+manually, the functions involved are <code>loadSettings(self, file =
+None)</code>, <code>saveSettings(self, file = None)</code>,
+<code>loadSettingsStr(self, str)</code>,
+<code>saveSettingsStr(self)</code>. The first two load and save from
+the file; if not given, the default name (widget's name +
+<code>.ini</code>) is used. They are called by the canvas, never by a
+schema or an application. The last two load and save from a string and
+are used by schemas and applications. All the functions are defined as
+methods of <code>OWBaseWidget</code>, which all other widgets are
+derived from.</P>
+
+</body>
+</html>

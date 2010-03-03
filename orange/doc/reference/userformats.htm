@@ -1,0 +1,42 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<H1>User-defined formats</H1>
+<index name="file formats/user-defined">
+<index name="defining new file formats">
+
+<P>You can write your own routines for reading and writing files with examples. This is essentially trivial: a function for loading should get a file name and a flag named <code>createNewOn</code> telling when to create the new attribute; the latter has to have a default value <code>None</code> and be set to <code>orange.Variable.MakeStatus.NoRecognizedValues</code> in the function itself if <code>None</code> is given. When constructing new attributes, function should do so by calling <code>Variable.make</code>, which accepts the name of the attribute, its type, its values and <code>createNewOn</code>. <code>make</code> will return an attribute and the status of the variable, telling whether a new attribute was created or the old one reused and why. The function should return <CODE>ExampleTable</CODE> and a list of statuses. However, if <code>createNewOn</code> was <code>None</code>, the function should return a plain <code>ExampleTable</code>.</p>
+
+<p>This may not look as trivial as promised, but it is easier explained in Python: see module <code>orngIO.py</code>. There is a function <code>loadArff</code> which you can use as a template.</p>
+
+<p>The function for writing gets the file name and examples and writes the file. No special functionality in Orange is needed for this.</P>
+
+<P>Examples are usually loaded by calling <CODE>ExampleTable</CODE>, giving it a file name as an argument. If the user writes his own routines for a format with file extension, say, ".my", it would be handy if <CODE>ExampleTable</CODE> recognized this extension as well and treated the file format the same way as the built-in formats. Here's how you do it. First, define the function(s) for reading and/or writing the examples. You don't need to support both. The function for reading should accept a single argument, the file name, and possibly some keyword arguments; it should return an <CODE>ExampleTable</CODE> with the loaded examples. The writing function gets the file name and the examples, it writes the file(s) and returns nothing.</P>
+
+<P>Unless you do it for a strict private use and you really know what you are doing, the reading function should also accept keyword arguments. These should be the same arguments that are usually passed to <CODE>ExampleTable</CODE>, such as <CODE>dontCheckStored</CODE>. You can also add format specific keyword arguments if you will; everything that <CODE>ExampleTable</CODE> is called with gets passed to your function. In addition, and even more important, you should use <A href="DomainDepot.htm"><CODE>DomainDepot</CODE>s</A> to construct domains and store them (see documentation on loading <a href="fileformats.htm#samedomain">multiple files with the same domain</a> on why this is needed and the page about <a href="DomainDepot.htm">domain depots</a> to see how it's done).</P>
+
+<P>You can also add keyword arguments to the writing function. No general arguments of this kind are currently used in Orange, but you can introduce format specific arguments if needed.</P>
+
+<P>The file name is passed exactly as the caller to <CODE>ExampleTable</CODE> or its <CODE>save</CODE> method gave it. If the caller gave an extension, it will be there. Your code should therefore accept both, so you'll need to commence it by something like <CODE>if filename[-5:] == ".arff": filename = filename[:-5]</CODE>.</P>
+
+
+<P>Finally, if you want the <CODE>ExampleTable</CODE>'s constructor and its <CODE>save</CODE> method to recognize the format, you need to register your functions like this</p>
+
+<XMP class=code>orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
+</XMP>
+
+<P>The first argument tells the format's name; the second and third give the functions for loading and saving the data and the last one specifies the extension. If multiple extensions are possible, give a list of strings instead of a single string.</P>
+
+<P>If you don't support certain operation, pass <CODE>None</CODE> for a function. The following call registers a C5.0 file type that can save the data but doesn't load it.</P>
+
+<XMP class=code>orange.registerFileType("C50", None, toC50, [".names", ".data", ".test"])
+</XMP>
+
+<P>User defined types have a precedence over the built-ins if the extension is given: if you load a file as <CODE>ExampleTable("mydata.names")</CODE> the above functions are used (are rather would be - loading function is not defined above). If there is no extension, built-ins are tried first. This is rather confusing, so it is advisable not to override the existing extensions when not absolutely needed. (Note: these rules might change - in the future user-defined formats will probably have a precedence over built-ins regardless of whether the extension is given or not.)</P>
+
+<P>For more examples see the module orngIO.py in your Orange directory.</P> 

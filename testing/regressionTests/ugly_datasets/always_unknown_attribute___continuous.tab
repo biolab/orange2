@@ -1,0 +1,27 @@
+age	prescription	astigmatic	tear_rate	lenses
+continuous	discrete	discrete	discrete	discrete
+				class
+?	myope	no	reduced	none
+?	myope	no	normal	soft
+?	myope	yes	reduced	none
+?	myope	yes	normal	soft
+?	hypermetrope	no	reduced	none
+?	hypermetrope	no	normal	soft
+?	hypermetrope	yes	reduced	none
+?	hypermetrope	yes	normal	soft
+?	myope	no	reduced	none
+?	myope	no	normal	soft
+?	myope	yes	reduced	none
+?	myope	yes	normal	soft
+?	hypermetrope	no	reduced	none
+?	hypermetrope	no	normal	soft
+?	hypermetrope	yes	reduced	none
+?	hypermetrope	yes	normal	none
+?	myope	no	reduced	none
+?	myope	no	normal	none
+?	myope	yes	reduced	none
+?	myope	yes	normal	soft
+?	hypermetrope	no	reduced	none
+?	hypermetrope	no	normal	soft
+?	hypermetrope	yes	reduced	none
+?	hypermetrope	yes	normal	none

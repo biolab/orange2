@@ -1,0 +1,322 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<index name="imputation">
+<h1>Imputation</h1>
+
+<P>Imputation is a procedure of replacing the missing attribute values with some appropriate values. Imputation is needed because of the methods (learning algorithms and others) that are not capable of handling unknown values, for instance logistic regression.</P>
+
+<P>Missing values sometimes have a special meaning, so they need to be replaced by a designated value. Sometimes we know what to replace the missing value with; for instance, in a medical problem, some laboratory tests might not be done when it is known what their results would be. In that case, we impute certain fixed value instead of the missing. In the most complex case, we assign values that are computed based on some model; we can, for instance, impute the average or majority value or even a value which is computed from values of other, known attribute, using a classifier.</P>
+
+<P>In a learning/classification process, imputation is needed on two occasions. Before learning, the imputer needs to process the training examples. Afterwards, the imputer is called for each example to be classified.</P>
+
+<P>In general, imputer itself needs to be trained. This is, of course, not needed when the imputer imputes certain fixed value. However, when it imputes the average or majority value, it needs to compute the statistics on the training examples, and use it afterwards for imputation of training and testing examples.</P>
+
+<P>While reading this document, bear in mind that imputation is a part of the learning process. If we fit the imputation model, for instance, by learning how to predict the attribute's value from other attributes, or even if we simply compute the average or the minimal value for the attribute and use it in imputation, this should only be done on learning data. If cross validation is used for sampling, imputation should be done on training folds only. Orange provides simple means for doing that.<P>
+
+<P>This page will first explain how to construct various imputers. Then follow the examples for <A href="#use">proper use of imputers</A>. Finally, quite often you will want to use imputation with special requests, such as certain attributes' missing values getting replaced by constants and other by values computed using models induced from specified other attributes. For instance, in one of the studies we worked on, the patient's pulse rate needed to be estimated using regression trees that included the scope of the patient's injuries, sex and age, some attributes' values were replaced by the most pessimistic ones and others were computed with regression trees based on values of all attributes. If you are using learners that need the imputer as a component, you will need to <A href="#callback">write your own imputer constructor</A>. This is trivial and is explained at the end of this page.</P>
+
+
+<H2>Abstract imputers</H2>
+
+<P>As common in Orange, imputation is done by pairs of two classes: one that does the work and another that constructs it. <CODE><INDEX name="classes/ImputerConstructor">ImputerConstructor</CODE> is an abstract root of the hierarchy of classes that get the training data (with an optional id for weight) and constructs an instance of a class, derived from <CODE>Imputer</CODE>. <CODE>Imputer</CODE> can be called either with an <CODE>Example</CODE>; it will return a new example with the missing values imputed (it will leave the original example intact!). If imputer is called with an <CODE>ExampleTable</CODE>, it will return a new example table with imputed examples.</P>
+
+<P class=section>Attributes of <CODE>ImputerConstructor</CODE></P>
+<DL class=attributes>
+<DT>imputeClass</DT>
+<DD>Tell whether to impute the class value (default) or not.</DD>
+</DT>
+</DL>
+
+
+<H2>Simple imputation</H2>
+
+<P>The simplest imputers always impute the same value for a particular attribute, disregarding the values of other attributes. They all use the same imputer class, <CODE><INDEX name="classes/Imputer_defaults">Imputer_defaults</INDEX></CODE>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>defaults</DT>
+<DD>An example with the default values to be imputed instead of the missing. Examples to be imputed must be from the same domain as <CODE>defaults</CODE>.</DD>
+</DT>
+</DL>
+
+<P><CODE>Imputer_defaults</CODE> is constructed by <CODE><index  name="classes/ImputerConstructor_minimal">ImputerConstructor_minimal</CODE>, <CODE><index name="classes/ImputerConstructor_maximal">ImputerConstructor_maximal</CODE> and <CODE><index name="classes/ImputerConstructor_minimal">ImputerConstructor_average</CODE>. For continuous attributes, they will impute the smallest, largest or the average values encountered in the training examples. For discrete, they will impute the lowest (the one with index 0, <I>eg</I> <CODE>attr.values[0]</CODE>), the highest (<CODE>attr.values[-1]</CODE>), and the most common value encountered in the data. The first two imputers will mostly be used when the discrete values are ordered according to their impact on the class (for instance, possible values for symptoms of some disease can be ordered according to their seriousness). The minimal and maximal imputers will then represent optimistic and pessimistic imputations.</P>
+
+<P>The following code will load the bridges data, and first impute the values in a single examples and then in the whole table.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>import orange
+
+data = orange.ExampleTable("bridges")
+
+impmin = orange.ImputerConstructor_minimal(data)
+
+print "Example w/ missing values"
+print data[19]
+print "Imputed:"
+print impmin(data[19])
+print
+
+impdata = impmin(data)
+for i in range(20, 25):
+    print data[i]
+    print impdata[i]
+    print
+</XMP>
+
+<P>This is example shows what the imputer does, not how it is to be used. Don't impute all the data and then use it for cross-validation. As warned at the top of this page, see the instructions for actual <A href="#use">use of imputers</A>.</P>
+
+<P>Note that <CODE>ImputerConstructor</CODE>s are another Orange class with schizophrenic constructor: if you give the constructor the data, it will return an <CODE>Imputer</CODE> - the above call is equivalent to calling <CODE>orange.ImputerConstructor_minimal()(data)</CODE></P>
+
+<P>You can also construct the <CODE>Imputer_defaults</CODE> yourself and specify your own defaults. Or leave some values unspecified, in which case the imputer won't impute them, as in the following example.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>imputer = orange.Imputer_defaults(data.domain)
+imputer.defaults["LENGTH"] = 1234
+</XMP>
+
+<P>Here, the only attribute whose values will get imputed is "LENGTH"; the imputed value will be 1234.</P>
+
+<P>The <CODE>Imputer_default</CODE>'s constructor will accept an argument of type <CODE>Domain</CODE> (in which case it will construct an empty example for <CODE>defaults</CODE>) or an example. (Be careful with this: <CODE>Imputer_default</CODE> will have a reference to the example and not a copy. But you can make a copy yourself to avoid problems: instead of <CODE>orange.Imputer_default(data[0])</CODE> you may want to write <CODE>orange.Imputer_default(orange.Example(data[0]))</CODE>.</P>
+
+
+<H2>Random imputation</H2>
+
+<P><CODE><INDEX name="classes/Imputer_Random">Imputer_Random</INDEX></CODE> imputes random values. The corresponding constructor is <CODEname="classes/ImputerConstructor_Random">ImputerConstructor_Random</CODE>.</p>
+
+<DL class=attributes>
+<DT>imputeClass</DT>
+<DD>Tells whether to impute the class values or not (default: true).</DD>
+
+<DT>deterministic</DT>
+<DD>If true (default is false), random generator is initialized for each example using the example's hash value as a seed. This results in same examples being always imputed the same values.</DD>
+
+<A name="model"></A>
+<H2>Model-based imputation</H2>
+
+<P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE><INDEX name="classes/ImputerConstructor_model">ImputerConstructor_model</CODE> are given a learning algorithm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
+
+<P class=section>Attributes of <CODE>ImputerConstructor_model</CODE></P>
+<DL class=attributes>
+<DT>learnerDiscrete, learnerContinuous</DT>
+<DD>Learner for discrete and for continuous attributes. If any of them is missing, the attributes of the corresponding type won't get imputed.</DD>
+
+<DT>useClass</DT>
+<DD>Tells whether the imputer is allowed to use the class value. As this is most often undesired, this option is by default set to <CODE>false</CODE>. It can however be useful for a more complex design in which we would use one imputer for learning examples (this one would use the class value) and another for testing examples (which would not use the class value as this is unavailable at that moment).</DD>
+</DL>
+</DD>
+
+<P class=section>Attributes of <CODE>Imputer_model</CODE></P>
+<DL class=attributes>
+<DT>models</DT>
+<DD>A list of classifiers, each corresponding to one attribute of the examples whose values are to be imputed. The <CODE>classVar</CODE>'s of the models should equal the examples' attributes. If any of classifier is missing (that is, the corresponding element of the table is <CODE>None</CODE>, the corresponding attribute's values will not be imputed.</DD>
+</DL>
+
+<P>The following imputer predicts the missing attribute values using classification and regression trees with the minimum of 20 examples in a leaf.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>import orngTree
+imputer = orange.ImputerConstructor_model()
+imputer.learnerContinuous = imputer.learnerDiscrete = orngTree.TreeLearner(minSubset = 20)
+imputer = imputer(data)
+</XMP>
+
+<P>We could even use the same learner for discrete and continuous attributes! (The way this functions is rather tricky. If you desire to know: <CODE>orngTree.TreeLearner</CODE> is a learning algorithm written in Python - Orange doesn't mind, it will wrap it into a C++ wrapper for a Python-written learners which then call-backs the Python code. When given the examples to learn from, <CODE>orngTree.TreeLearner</CODE> checks the class type. If it's continuous, it will set the <CODE>orange.TreeLearner</CODE> to construct regression trees, and if it's discrete, it will set the components for classification trees. The common parameters, such as the minimal number of examples in leaves, are used in both cases.)</P>
+
+<P>You can of course use different learning algorithms for discrete and continuous attributes. Probably a common setup will be to use <CODE>BayesLearner</CODE> for discrete and <CODE>MajorityLearner</CODE> (which just remembers the average) for continuous attributes, as follows.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>imputer = orange.ImputerConstructor_model()
+imputer.learnerContinuous = orange.MajorityLearner()
+imputer.learnerDiscrete = orange.BayesLearner()
+imputer = imputer(data)
+</XMP>
+
+<P>You can also construct an <CODE>Imputer_model</CODE> yourself. You will do this if different attributes need different treatment. Brace for an example that will be a bit more complex. First we shall construct an <CODE>Imputer_model</CODE> and initialize an empty list of models.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>imputer = orange.Imputer_model()
+imputer.models = [None] * len(data.domain)
+</XMP>
+
+<P>Attributes "LANES" and "T-OR-D" will always be imputed values 2 and "THROUGH". Since "LANES" is continuous, it suffices to construct a <CODE>DefaultClassifier</CODE> with the default value 2.0 (don't forget the decimal part, or else Orange will think you talk about an index of a discrete value - how could it tell?). For the discrete attribute "T-OR-D", we could construct a <CODE>DefaultClassifier</CODE> and give the index of value "THROUGH" as an argument. But we shall do it nicer, by constructing a <CODE>Value</CODE>. Both classifiers will be stored at the appropriate places in <CODE>imputer.models</CODE>.</P>
+
+<XMP class=code>imputer.models[data.domain.index("LANES")] = orange.DefaultClassifier(2.0)
+
+tord = orange.DefaultClassifier(orange.Value(data.domain["T-OR-D"], "THROUGH"))
+imputer.models[data.domain.index("T-OR-D")] = tord
+</XMP>
+
+<P>"LENGTH" will be computed with a regression tree induced from "MATERIAL", "SPAN" and "ERECTED" (together with "LENGTH" as the class attribute, of course). Note that we initialized the domain by simply giving a list with the names of the attributes, with the domain as an additional argument in which Orange will look for the named attributes.</P>
+
+<XMP class=code>import orngTree
+len_domain = orange.Domain(["MATERIAL", "SPAN", "ERECTED", "LENGTH"], data.domain)
+len_data = orange.ExampleTable(len_domain, data)
+len_tree = orngTree.TreeLearner(len_data, minSubset=20)
+imputer.models[data.domain.index("LENGTH")] = len_tree
+orngTree.printTxt(len_tree)
+</XMP>
+
+<P>We printed the tree just to see what it looks like.</P>
+
+<XMP class=code>SPAN=SHORT: 1158
+SPAN=LONG: 1907
+SPAN=MEDIUM
+|    ERECTED<1908.500: 1325
+|    ERECTED>=1908.500: 1528
+</XMP>
+
+<P>Small and nice. Now for the "SPAN". Wooden bridges and walkways are short, while the others are mostly medium. This could be done by <a href="lookup.htm"><CODE>ClassifierByLookupTable</CODE></A> - this would be faster than what we plan here. See the corresponding documentation on lookup classifier. Here we are gonna do it with a Python function.</P>
+
+<XMP class=code>spanVar = data.domain["SPAN"]
+
+def computeSpan(ex, returnWhat):
+    if ex["TYPE"] == "WOOD" or ex["PURPOSE"] == "WALK":
+        span = "SHORT"
+    else:
+        span = "MEDIUM"
+    return orange.Value(spanVar, span)
+
+imputer.models[data.domain.index("SPAN")] = computeSpan
+</XMP>
+
+<P><CODE>computeSpan</CODE> could also be written as a class, if you'd prefer it. It's important that it behaves like a classifier, that is, gets an example and returns a value. The second element tells, as usual, what the caller expect the classifier to return - a value, a distribution or both. Since the caller, <CODE>Imputer_model</CODE>, always wants values, we shall ignore the argument (at risk of having problems in the future when imputers might handle distribution as well).</P>
+
+<P>OK, that's enough. Other attributes' values will remain unknown.</P>
+
+
+<H3>Treating the missing values as special values</H3>
+
+<P>Missing values sometimes have a special meaning. The fact that something was not measured can sometimes tell a lot. Be, however, cautious when using such values in decision models; it the decision not to measure something (for instance performing a laboratory test on a patient) is based on the expert's knowledge of the class value, such unknown values clearly should not be used in models.</P>
+
+<P><CODE><INDEX name="classes/ImputerConstructor_asValue">ImputerConstructor_asValue</INDEX></CODE> constructs a new domain in which each discrete attribute is replaced with a new attribute that has one value more: "NA". The new attribute will compute its values on the fly from the old one, copying the normal values and replacing the unknowns with "NA".</P>
+
+<P>For continuous attributes, <CODE>ImputerConstructor_asValue</CODE> will construct a two-valued discrete attribute with values "def" and "undef", telling whether the continuous attribute was defined or not. The attribute's name will equal the original's with "_def" appended. The original continuous attribute will remain in the domain and its unknowns will be replaced by averages.</P>
+
+<P><CODE>ImputerConstructor_asValue</CODE> has no specific attributes.</P>
+
+<P>The constructed imputer is named <CODE>Imputer_asValue</CODE> (I bet you wouldn't guess). It converts the example into the new domain, which imputes the values for discrete attributes. If continuous attributes are present, it will also replace their values by the averages.</P>
+
+<P class=section>Attributes of <CODE>Imputer_asValue</CODE></P>
+<DL class=attributes>
+<DT>domain</DT>
+<DD>The domain with the new attributes constructed by <CODE>ImputerConstructor_asValue</CODE>.</DD>
+
+<DT>defaults</DT>
+<DD>Default values for continuous attributes. Present only if there are any.</DD>
+</DL>
+
+<P>Here's a script that shows what this imputer actually does to the domain.</P>
+
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
+<XMP class=code>imputer = orange.ImputerConstructor_asValue(data)
+
+original = data[19]
+imputed = imputer(data[19])
+
+print original.domain
+print
+print imputed.domain
+print
+
+for i in original.domain:
+    print "%s: %s -> %s" % (original.domain[i].name, original[i], imputed[i.name]),
+    if original.domain[i].varType == orange.VarTypes.Continuous:
+        print "(%s)" % imputed[i.name+"_def"]
+    else:
+        print
+print
+</XMP>
+
+<P>The script's output looks like this.</P>
+
+<XMP class=code>[RIVER, ERECTED, PURPOSE, LENGTH, LANES, CLEAR-G, T-OR-D,
+MATERIAL, SPAN, REL-L, TYPE]
+
+[RIVER, ERECTED_def, ERECTED, PURPOSE, LENGTH_def, LENGTH,
+LANES_def, LANES, CLEAR-G, T-OR-D,
+MATERIAL, SPAN, REL-L, TYPE]
+
+
+RIVER: M -> M
+ERECTED: 1874 -> 1874 (def)
+PURPOSE: RR -> RR
+LENGTH: ? -> 1567 (undef)
+LANES: 2 -> 2 (def)
+CLEAR-G: ? -> NA
+T-OR-D: THROUGH -> THROUGH
+MATERIAL: IRON -> IRON
+SPAN: ? -> NA
+REL-L: ? -> NA
+TYPE: SIMPLE-T -> SIMPLE-T
+</XMP>
+
+<P>Seemingly, the two examples have the same attributes (with <CODE>imputed</CODE> having a few additional ones). If you check this by <CODE>original.domain[0] == imputed.domain[0]</CODE>, you shall see that this first glance is <CODE>False</CODE>. The attributes only have the same names, but they are different attributes. If you read this page (which is already a bit advanced), you know that Orange does not really care about the attribute names).</P>
+
+<P>Therefore, if we wrote "<CODE>imputed[i]</CODE>" the program would fail since <CODE>imputed</CODE> has no attribute <CODE>i</CODE>. But it has an attribute with the same name (which even usually has the same value). We therefore use <CODE>i.name</CODE> to index the attributes of <CODE>imputed</CODE>. (Using names for indexing is not fast, though; if you do it a lot, compute the integer index with <CODE>imputed.domain.index(i.name)</CODE>.)</P>
+
+<P>For continuous attributes, there is an additional attribute with "_def" appended; we get it by <CODE>i.name+"_def"</CODE>. Not really nice, but it works.</P>
+
+<P>The first continuous attribute, "ERECTED" is defined. Its value remains 1874 and the additional attribute "ERECTED_def" has value "def". Not so for "LENGTH". Its undefined value is replaced by the average (1567) and the new attribute has value "undef". The undefined discrete attribute "CLEAR-G" (and all other undefined discrete attributes) is assigned the value "NA".</P>
+
+<A name="use"></A>
+<H2>Using imputers</H2>
+
+<P>To properly use the imputation classes in learning process, they must be trained on training examples only. Imputing the missing values and subsequently using the data set in cross-validation will give overly optimistic results.</P>
+
+<H3>Learners with Imputer as a Component</H3>
+
+<P>Orange learners that cannot handle missing values will generally provide a slot for the imputer component. An example of such a class is <A href="LogisticLearner.htm">logistic regression learner</A> with an attribute called <CODE>imputerConstructor</CODE>. To it you can assign an imputer constructor - one of the above constructors or a specific constructor you wrote yourself. When given learning examples, <CODE>LogRegLearner</CODE> will pass them to <CODE>imputerConstructor</CODE> to get an imputer (again some of the above or a specific imputer you programmed). It will immediately use the imputer to impute the missing values in the learning data set, so it can be used by the actual learning algorithm. Besides, when the classifier (<CODE>LogRegClassifier</CODE>) is constructed, the imputer will be stored in its attribute <CODE>imputer</CODE>. At classification, the imputer will be used for imputation of missing values in (testing) examples.</P>
+
+<P>Although details may vary from algorithm to algorithm, this is how the imputation is generally used in Orange's learners. Also, if you write your own learners, it is recommended that you use imputation according to the described procedure.</P>
+
+<H3>Module orngImpute</H3>
+
+<P>Most of Orange's learning algorithms do not use imputers because they can appropriately handle the missing values. Bayesian classifier, for instance, simply skips the corresponding attributes in the formula, while classification/regression trees have components for handling the missing values in various ways.</P>
+
+<P>If for any reason you want to use these algorithms to run on imputed data, you can use the wrappers provide in the module orngImpute. The module's description is a matter of a separate page, but we shall show its code here as another demonstration of how to use the imputers - logistic regression is implemented essentially the same as the below classes.</P>
+
+<P class="header">The complete code of module orngImpute.py</A></P>
+<XMP class=code>import orange
+
+class ImputeLearner(orange.Learner):
+    def __new__(cls, examples = None, weightID = 0, **keyw):
+        self = orange.Learner.__new__(cls, **keyw)
+        self.__dict__.update(keyw)
+        if examples:
+            return self.__call__(examples, weightID)
+        else:
+            return self
+
+    def __call__(self, data, weight=0):
+        trained_imputer = self.imputerConstructor(data, weight)
+        imputed_data = trained_imputer(data, weight)
+        baseClassifier = self.baseLearner(imputed_data, weight)
+        return ImputeClassifier(baseClassifier, trained_imputer)
+
+class ImputeClassifier(orange.Classifier):
+    def __init__(self, baseClassifier, imputer):
+        self.baseClassifier = baseClassifier
+        self.imputer = imputer
+
+    def __call__(self, ex, what=orange.GetValue):
+        return self.baseClassifier(self.imputer(ex), what)
+</XMP>
+
+<P><CODE>LearnerWithImputation</CODE> puts the keyword arguments into the instance's  dictionary. You are expected to call it like <CODE>LearnerWithImputation(baseLearner=&lt;someLearner&gt;, imputer=&lt;someImputerConstructor&gt;)</CODE>. When the learner is called with examples, it trains the imputer, imputes the data, induces a <CODE>baseClassifier</CODE> by the <CODE>baseLearner</CODE> and constructs <CODE>ClassifierWithImputation</CODE> that stores the <CODE>baseClassifier</CODE> and the <CODE>imputer</CODE>. For classification, the missing values are imputed and the classifier's prediction is returned.</P>
+
+<P>Note that this code is slightly simplified, although the omitted details handle non-essential technical issues that are unrelated to imputation.</P>
+
+
+<A name="callback"></A>
+<H2>Writing Your Own Imputer Constructor</H2>
+
+<P>Imputation classes provide the Python-callback functionality (not all Orange classes do so, refer to the documentation on <A href="callbacks.htm">subtyping the Orange classes in Python</A> for a list). If you want to write your own imputation constructor or an imputer, you need to simply program a Python function that will behave like the built-in Orange classes (and even less, for imputer, you only need to write a function that gets an example as argument, imputation for example tables will then use that function).</P>
+
+<P>You will most often write the imputation constructor when you have a special imputation procedure or separate procedures for various attributes, as we've demonstrated in the description of <A href="#model">ImputerConstructor_model</A>. You basically only need to pack everything we've written there to an imputer constructor that will accept a data set and the id of the weight meta-attribute (ignore it if you will, but you must accept two arguments), and return the imputer (probably <CODE>Imputer_model</CODE>). The benefit of implementing an imputer constructor as opposed to what we did above is that you can use such a constructor as a component for Orange learners (like logistic regression) or for wrappers from module orngImpute, and that way properly use the in classifier testing procedures.</P>
+
+!!! ADD AN EXAMPLE
+
+</BODY></HTML>

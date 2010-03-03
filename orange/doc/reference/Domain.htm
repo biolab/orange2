@@ -1,0 +1,345 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print></LINK>
+</HEAD>
+
+<BODY>
+<index name="domain descriptions">
+<h1>Domain Descriptors</h1>
+<index name="classes/Domain">
+
+<P>Domain descriptor (<CODE>orange.Domain</CODE>) serves three purposes.
+<UL>
+<LI>Basically, <CODE>orange.Domain</CODE> is a list of attributes. Each example (<CODE>orange.Example</CODE>) is associated with a domain descriptor, and so are example tables, many classifiers and other objects. For instance, learning examples are stored as list of integers/floats (an array of C unions, actually) and only the associated domain gives them a meaning.</li>
+<li><CODE>orange.Domain</CODE>'s other responsibility is to convert examples between domains. It is through <CODE>orange.Domain</CODE> that classifiers convert the testing examples if they are presented in different domain (ie. with different attributes than the learning examples).</LI>
+<LI>Each example can have meta attributes - attributes, that are not used directly in the induced models, but can carry additional data, such as examples' IDs, weights and similar. If all examples in the dataset have a particular meta attribute, such attribute can be also let known to <CODE>orange.Domain</CODE>.</li>
+</UL>
+</P>
+
+<H4>Attributes</H4>
+
+<P><CODE>orange.Domain</CODE> has a few public accessible fields. Domain descriptor is referenced by many objects and modifying it is so unsafe, that it even the underlying C++ code only performs it on fresh new domains.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>attributes <span class=normalfont>(read-only)</span></DT>
+<DD>A list of domain's attributes, not including the class attribute.</DD>
+
+<DT>variables <span class=normalfont>(read-only)</span></DT>
+<DD>A list of domain's attributes including the class attributes.</DD>
+
+<DT>classVar</DT>
+<DD>Domain's class attribute, or <CODE>None</CODE> if domain is classless. In the latter case, <CODE>attributes</CODE> and <CODE>variables</CODE> are equal.</DD>
+
+<DT>version <span class=normalfont>(read-only)</span></DT>
+<DD>An integer value that is changed whenever the domain is modified. This rarely happens, as told above. The number can also be used as unique domain identifier; two different domains have different <CODE>domainVersion</CODE>s.
+</DD>
+</DL>
+
+<H2>Construction</H2>
+
+<P>There are numerous ways to construct an <CODE>orange.Domain</CODE>. Let <CODE>a</CODE>, <CODE>b</CODE> and <CODE>c</CODE> be three attribute descriptors (for instance, created by <CODE>a, b, c = [orange.EnumVariable(x) for x in ["a", "b", "c"]]</CODE>.</P>
+
+<DL class=attributes>
+<DT>orange.Domain(list-of-attributes)</DT>
+<DD>This is the simplest and the most useful constructor. The new domain will contain the listed attributes, given as objects derived from <CODE>orange.Variable</CODE>. The last attribute in the list will be the class attribute.
+
+<XMP class="code">>>> d = orange.Domain([a, b, c])
+>>> print d.attributes
+<EnumVariable 'a', EnumVariable 'b'>
+>>> print d.classVar
+EnumVariable 'c'
+</XMP>
+</DD>
+
+<DT>orange.Domain(list-of-attributes, class-attribute)</DT>
+<DD>This is similar to above, except that the class attribute is given separately. <CODE>Class-attribute</CODE> must be an attribute descriptor (<CODE>orange.Variable</CODE>), not a string with an attribute name.
+
+<XMP class="code">>>> d = orange.Domain([a, b], c)
+>>> print d.attributes
+<EnumVariable 'a', EnumVariable 'b'>
+>>> print d.classVar
+EnumVariable 'c'
+</XMP>
+</DD>
+
+<DT>orange.Domain(list-of-attributes, flag)</DT>
+<DD>Another variation of the first case. The flag is interpreted as boolean value; if true, the domain will have the class attribute (the last attribute in the list). If false, there's no class attribute. That's therefore a way for constructing a classless domain.
+
+<XMP class="code">>>> d = orange.Domain([a, b, c], 0)
+>>> print d.attributes
+<EnumVariable 'a', EnumVariable 'b', EnumVariable 'c'>
+>>> print d.classVar
+None
+</XMP>
+
+If we replace 0 by 1, we get the same results as in the first two cases.</P>
+</DD>
+
+<DT>orange.Domain(list-of-attributes, source)</DT>
+<DD>In this form, list of attributes can also include attribute names, not only attribute descriptors. The second argument, <CODE>source</CODE>, can be an existing domain or a list of attribute descriptors.
+
+<XMP class="code">>>> d1 = orange.Domain([a, b])
+>>> d2 = orange.Domain(["a", b, c], d1)
+</XMP>
+
+When constructing <CODE>d2</CODE>, we want it to include <CODE>"a"</CODE>, <CODE>b</CODE> and <CODE>c</CODE>. To resolve string <CODE>"a"</CODE>, Orange checks the given source, domain <CODE>d1</CODE>, to see whether it contains an attribute with that name. As it does, the descriptor (<CODE>a</CODE>) is added to <CODE>d2</CODE>. The other two attributes, <CODE>b</CODE> and <CODE>c</CODE> are added without checking <CODE>d1</CODE>.</DD>
+
+<DT>orange.Domain(list-of-attributes, flag, source)</DT>
+<DD>This is similar to the case above, except that the additional flag tells whether there is a class attribute or not.
+
+<XMP class="code">>>> d2 = orange.Domain(["a", b, c], 0, [a, b])
+</XMP>
+
+<P>Here, <CODE>d2</CODE> includes all three attributes but no class attributes. Note also that we have used a list of attribute descriptor as <CODE>source</CODE> instead of an existing domain, as we did in the previous example.</P>
+</DD>
+
+<DT>orange.Domain(domain)</DT>
+<DD>This is the cloning constructor - the new domain has the same attributes and class attribute and the domain passed as an argument, but is a different domain. Since domains are immutable, this constructor is not of much use.</P></DD>
+
+<DT>orange.Domain(domain, class-attribute)</DT>
+<DD>This one is more useful: the new domain has the same attributes as the old one, except that the class attribute is changed. The old class attribute becomes an ordinary attribute and the attribute specified by the second argument becomes a class attribute. The class attribute can be specified either by name (if so, it must be a name of one of the attributes that exist in the "original" domain) or by descriptor.
+
+<XMP class="code">>>> d1 = orange.Domain([a, b, c])
+>>> d2 = orange.Domain(d1, a)
+>>> print d2.attributes
+<EnumVariable 'b', EnumVariable 'c'>
+>>> print d2.classVar
+EnumVariable 'a'
+</XMP>
+
+In this example, we started with a domain <CODE>d1</CODE> with attributes <CODE>a</CODE> and <CODE>b</CODE>, and <CODE>c</CODE> was the class. In the second domain, <CODE>d2</CODE>,  <CODE>c</CODE> becomes an ordinary attribute and <CODE>a</CODE> is the class attribute.
+
+This constructor can be used to add classes to classless domains.
+
+<XMP class=code>>>> d1 = orange.Domain([a, b], 0)
+>>> d2 = orange.Domain(d1, c)
+</XMP>
+
+Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the attribute <CODE>c</CODE> as class attribute. If <CODE>c></CODE> existed before (as an ordinary attribute), it would, naturally, be removed from the list of ordinary attributes.</P>
+</DD>
+
+<DT>orange.Domain(domain, flag)</DT>
+<DD>Finally, this constructor can be used to remove the class attribute. As before, flag tells whether the new domain should have a class attribute or not. However, the flag has effect only if the original domain has a class attribute; if so and if flag is 0, the class attribute is moved to ordinary attributes. In all other cases, the new domain is simply a cloned original domain.</DD>
+</DL>
+
+<H2>Checking attribute types</H2>
+
+<P>There are three convenient functions for checking whether the domain contains any discrete, continuous or other-type attributes.</P>
+
+<dl class="attributes">
+<dt>hasDiscreteAttributes([includeClass])<br/>
+hasContinuousAttributes([includeClass])<br/>
+hasOtherAttributes([includeClass])</dt>
+<dd>The boolean argument tells whether the function should also check the class attribute or not. Default value is True.</dd>
+</dl>
+
+
+<H2>Conversion of examples</H2>
+
+<P>Examples can be converted from one domain to another by calling the domain descriptor.</P>
+
+<p class="header"><a href="domain2.py">domain2.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">>>> import orange
+>>> data = orange.ExampleTable("monk1")
+>>> d2 = orange.Domain(["a", "b", "e", "y"], data.domain)
+>>>
+>>> example = data[55]
+>>> print example
+['1', '2', '1', '1', '4', '2', '0']
+>>> example2 = d2(example)
+>>> print example2
+['1', '2', '4', '0']
+</XMP>
+
+<P>You will probably convert examples this way when writing your own classifiers in Python. Existing classifiers do exactly the same. <CODE>orange.BayesClassifier</CODE>, for instance, stores the domain of the learning examples and calls it to convert the examples to be classified.</P>
+
+<P>An equivalent way of converting examples is to construct a new example, passing the new domain to the constructor.</P>
+
+<XMP class="code">>>> example2 = orange.Example(d2, example)
+</XMP>
+
+<P>Example tables can be converted in a similar manner.</P>
+
+<XMP class="code">>>> data2 = orange.ExampleTable(d2, data)
+>>> print data2[55]
+['1', '2', '4', '0']
+</XMP>
+
+
+<H2>Meta Attributes</H2>
+<A name="meta-attributes"></a>
+<index name="meta attributes">
+
+<P>Meta-values are additional values that can be attached to examples and can have any meaning you want. It is not necessary that all examples in an example table (or even all examples from some domain) have certain meta-value. See documentation on <a href="Example.htm"><CODE>Example</CODE></A> for a more thorough description of meta-values.</p>
+
+<P>Meta attributes that appear in examples can, but don't need to be known to the domain descriptor. Even if they are known, there are no obligations in one way or another: domain does not need to know about any meta values that are attached to examples, and examples do not need to have (all) meta values that are "registered" in the corresponding <CODE>domain</CODE>.</P>
+
+<P>Why register meta attributes by the domain?
+<ul>
+<li>
+If the domain knows about a meta attribute, example indexing can be made smarter. While values of unregistered meta attributes can be obtained only through indices (e.g. <code>example[id]</code>, where <code>id</code> needs to be an integer), values of registered meta attributes are also accessible through string or variable descriptor indices (<code>example["age"]</code>).
+</li>
+
+<li>When printing out an example, the symbolic values of discrete attributes can only be printed if the attribute is registered. Also, if the attribute is registered, the printed out example will show a (more informative) attribute's name instead of a meta-id.</li>
+
+<li>Registering an attribute provides a way to attach a descriptor to a meta-id. See how the <a href="basket.htm">basket file format</a> uses this feature.</li>
+
+<li>When saving examples to a file, only the values of registered meta attributes are saved (and even this only in tab-delimited and related formats since traditional file formats like C4.5's have no meta attributes).</li>
+
+<li>When a new example is constructed, it is automatically assigned the meta attributes listed in the domain; their values are, of course, set to unknown.</li>
+</ul></P>
+
+<P>For the latter two points - saving to a file and construction of new examples - there is an additional flag, added for several practical reasons: a meta attribute can be marked as "optional". Such meta attributes are not saved and not added to newly constructed examples. This functionality is used in, for instance, the above mentioned basket format, where new meta attributes are created while loading the file and we certainly don't want a new example to contain all words from the past examples.</P>
+
+<P>There is another distinction between the optional and non-optional meta attributes: the latter are <em>expected to be present</em> in all examples of that domain. Saving to files, for one, expects them and will fail if a non-optional meta value is missing. Optional attributes may be missing. These rules are, however, mostly not strictly enforced, so adhering to them is rather up to your choice.</P>
+
+<P>In general, register the meta attributes which are permanent and have a certain meaning. If you can't name it, you possibly don't want to register it. An animal name in the zoo data set or a patient ID in a typical medical data set is a good example for a non-optional registered attribute. Word counts in basket format are optional registered attributes. The temporary example weights in bagging or example weights in certain configurations of tree induction or rule learning should be left unregistered.</P>
+
+<P>Since meta attributes do not have a great impact, they can be added and removed even after the domain is constructed and examples of that domain already exist. For instance, if <CODE>data</CODE> contains the Monk 1 data set, we can add a new continuous attribute named <CODE>"misses"</CODE> with the following code.</P>
+
+<P>We shall first provide a few examples, detailed description of the methods follows later.</P>
+
+<p class="header"><a href="domain2.py">domain2.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">>>> misses = orange.FloatVariable("misses")
+>>> id = orange.newmetaid()
+>>> data.domain.addmeta(id, misses)
+>>> print data[55]
+>>> ['1', '2', '1', '1', '4', '2', '0']
+</XMP>
+
+<P>Note that nothing changed in the example. No attributes are added. (This is only natural; the domain descriptor has no idea about which objects refer to it.) As already told, registering meta attributes enables addressing by indexing, either by attribute name or by its descriptor. For instance, to set the attribute to 0 for all examples in the table, you could proceed with</P>
+
+<p class="header"><a href="domain2.py">domain2.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">>>> for example in data:
+...    example[misses] = 0
+</XMP>
+
+<P>An alternative is referring by name.</P>
+
+<XMP class="code">>>> for example in data:
+...    example["misses"] = 0
+</XMP>
+
+<P>Both alternatives are more elegant than the one to which you would have to resort if the meta attribute was not make known to the domain:</P>
+
+<XMP class="code">>>> for example in data:
+...   example.setmeta(id, 0)
+</XMP>
+
+<P>Registering the meta attribute also enhances printouts. When example is printed, meta-values for registered attributes are shown as "name:value" pairs, while for unregistered you will get id's instead of names.</P>
+
+<P>As you can learn by reading documentation on <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A>, the best way to add a meta attribute to whole example table is by calling
+<XMP class="code">data.addMetaAttribute("misses", 0)
+</XMP>
+
+<P>This again works only if "misses" is registered in <CODE>data.domain</CODE> (which we did by calling <CODE>data.domain.addmeta(id, misses)</CODE>). If it's not, you should use an id instead of string "misses" and change 0 to 0.0 to prevent the value from being interpreted as a discrete value (if there is no descriptor, orange has not idea about what you mean by 0 - a discrete index or a continuous value):<P>
+
+<XMP class=code>>>> data.addMetaAttribute(id, 0.0)
+</XMP>
+
+<P>In a massive testing of different models, you could count the number of times that each example was missclassified by calling classifiers in the following loop.</P>
+
+<p class="header"><a href="domain2.py">domain2.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">>>> for example in data:
+...   if example.getclass() != classifier(example):
+...      example[misses] += 1
+</XMP>
+
+<P>The other effect of registering meta attributes is that they appear in converted examples. That is, whenever an example is converted to certain domain, the example will have all the meta attributes that are declared in that domain. If the meta attributes occur in the original domain of the example or can be computed from the attributes in the original domain, they will have appropriate values. When not, their values will be DK.</P>
+
+<XMP class="code">domain = data.domain
+d2 = orange.Domain(["a", "b", "e", "y"], domain)
+for attr in ["c", "d", "f"]:
+    d2.addmeta(orange.newmetaid(), domain[attr])
+d2.addmeta(orange.newmetaid(), orange.EnumVariable("X"))
+data2 = orange.ExampleTable(d2, data)
+</XMP>
+
+<P>Domain <CODE>d2</CODE> is constructed to have only the attributes <CODE>a</CODE>, <CODE>b</CODE>, <CODE>e</CODE> and the class attribute, while the other three attributes are added as meta attributes, among with a mysterious additional attribute <CODE>X</CODE>.</P>
+
+<XMP class="code">>>> print data[55]
+['1', '2', '1', '1', '4', '2', '0'], {"misses":0.000000}
+>>> print data2[55]
+['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?'}
+</XMP>
+
+<P>After conversion, the three attributes are moved to meta attributes and the new attribute appears as unknown.</P>
+
+<DL class=attributes>
+<DT>addmeta(id, descriptor[, optional])</B></CODE></DT>
+<DD>You have seen this function in action already. The id is a negative integer, which you get from <CODE>orange.newmetaid()</CODE>. (You can cheat by just giving any negative integer, say -42, when you would only like to quickly try something. You shouldn't do that in final code, since calling <CODE>orange.newmetaid</CODE> assures that id's are unique. We did so here to ensure that the code's printout is always the same.) The descriptor should be an attribute descriptor derived from <CODE>orange.Variable</CODE>, such as <CODE>EnumVariable</CODE>, <CODE>FloatVariable></CODE> or <CODE>StringVariable</CODE>.
+
+<XMP class="code">>>> d2.addmeta(-42, orange.StringVariable("name"))
+>>> data2[55]["name"] = "Joe"
+>>> print data2[55]
+['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?', "name":'Joe'}
+</XMP>
+
+<P>The optional third argument tells whether the meta attribute is optional (when the value of the argument is non-zero) or not (when it is zero). Different non-zero values can be used for different kinds of non-optional attributes, if needed. These values are application dependent and Orange offers no corresponding registration facilities. If omitted, the attribute is not optional.
+</DD>
+
+<DT>addmetas(dict[, optional])</B></CODE></DT>
+<DD>This method is similar to <CODE>addmeta</CODE> described above, except that it can be used to add multiple meta attributes at once. The dictionary it accepts as an argument is in the same form as the one returned by <CODE>getmetas()</CODE>. Therefore, to add all meta attributes from <CODE>domain</CODE> to <CODE>newdomain</CODE>, use the following statement.
+
+<XMP class="code">newdomain.addmetas(domain.getmetas())
+</XMP>
+
+The optional third argument tells whether the attributes need to be added as optional or non-optional. Default is the latter.
+</DD>
+
+<DT>removemeta(meta-attribute | list-of-attributes)</B></CODE></DT>
+<DD>Removes meta attributes. You can give a single attribute or a list of them. Attributes can be described by descriptors, names or id's (or a mix of that). Removing meta attributes from domain descriptor has no effect on examples.</DD>
+
+<dt>hasmeta(name | descriptor | id)</b></dt>
+<dd>Tells whether the domain has the given meta attribute.</dd>
+
+<DT>metaid(name | descriptor | id)</B></CODE></DT>
+<DD>With this function, you can retrieve a lost id of a meta attribute. You will use this function to get id's of meta attributes that are loaded from tab-delimited files, where you will know their names but not the id's.
+
+<XMP class="code">>>> d2.metaid("name")
+-42
+</XMP>
+</DD>
+
+<DT>getmeta(name | id)</B></CODE></DT>
+<DD>Given a name or an id of an attribute, this function returns its descriptor. For instance, to get the descriptor for the string variable, which we didn't store above, when constructing the meta attribute, we'd call it like this.
+
+<XMP class="code">>>> d2.getmeta("name")
+StringVariable 'name'
+</XMP>
+
+<DT>getmetas([optional])</B></CODE></DT>
+<DD>Returns a list of meta attributes as dictionary where id's are keys and descriptors are values. If the argument optional is given, the function will return only the optional attributes with the same value of the argument, or the non-optional meta attributes, if zero.</DD>
+
+<DT>isOptionalMeta(name | descriptor | id)</B></CODE></DT>
+<DD>The function returns <code>True</code> if the meta attribute is optional and <code>False</code> if it's not.</DD>
+
+</dl>
+
+<H2>Domains as lists</H2>
+
+<P>To a certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors. Domain has a method <CODE>index(var)</CODE> that returns the index of an attribute specified by a descriptor, name (or index, if you believe this makes sense).</P>
+
+<XMP class="code">>>> print d2
+[a, b, e, y], {-4:c, -5:d, -6:f, -7:X}
+>>> d2[1]
+EnumVariable 'b'
+>>> d2["e"]
+EnumVariable 'e'
+>>> d2["d"]
+EnumVariable 'd'
+>>> d2[-4]
+EnumVariable 'c'
+>>> for attr in d2:
+...     print attr.name,
+...
+a b e y
+</XMP>
+
+</BODY> 

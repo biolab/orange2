@@ -1,0 +1,1234 @@
+
+<style>
+div#maininner {
+  padding-top: 25px;
+}
+
+div.catdiv h2 {
+  border-bottom: none;
+  padding-left: 20px;
+  padding-top: 5px;
+  font-size: 14px;
+  margin-bottom: 5px;
+  margin-top: 0px;
+  color: #fe6612;
+}
+
+div.catdiv {
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 20px;
+  background-color: #eeeeee;
+}
+
+div.catdiv table {
+  width: 98%;
+  margin: 10px;
+  padding-right: 20px;
+}
+
+div.catdiv table td {
+  background-color: white;
+/*  height: 18px;*/
+  margin: 25px;
+  vertical-align: center;
+  border-left: solid #eeeeee 10px;
+  border-bottom: solid #eeeeee 3px;
+  font-size: 13px;
+}
+
+div.catdiv table td.left {
+  width: 3%;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+}
+
+div.catdiv table td.left-nodoc {
+  width: 3%;
+  color: #aaaaaa;
+  padding: 0;
+  margin: 0
+}
+
+
+div.catdiv table td.right {
+  padding-left: 5px;
+  border-left: none;
+  width: 22%;
+  font-size: 11px;
+}
+
+div.catdiv table td.right-nodoc {
+  width: 22%;
+  padding-left: 5px;
+  border-left: none;
+  color: #aaaaaa;
+  font-size: 11px;
+}
+
+div.catdiv table td.empty {
+  background-color: #eeeeee;
+}
+
+
+.rnd1 {
+ height: 1px;
+ border-left: solid 3px #ffffff;
+ border-right: solid 3px #ffffff;
+ margin: 0px;
+ padding: 0px;
+}
+
+.rnd2 {
+ height: 2px;
+ border-left: solid 1px #ffffff;
+ border-right: solid 1px #ffffff;
+ margin: 0px;
+ padding: 0px;
+}
+
+.rnd11 {
+ height: 1px;
+ border-left: solid 1px #eeeeee;
+ border-right: solid 1px #eeeeee;
+ margin: 0px;
+ padding: 0px;
+}
+
+.rnd1l {
+ height: 1px;
+ border-left: solid 1px white;
+ border-right: solid 1px #eeeeee;
+ margin: 0px;
+ padding: 0px;
+}
+
+div.catdiv table img {
+  border: none;
+  height: 28px;
+  width: 28px;
+}
+</style>
+
+<script>
+function setElColors(t, id, color) {
+  t.style.backgroundColor=document.getElementById('cid'+id).style.backgroundColor = color;
+}
+</script>
+
+<p style="font-size: 16px; font-weight: bold">Catalog of widgets</p>
+
+
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Data</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid1" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/File.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/File_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 1, '#fff7df')"
+    onmouseout="setElColors(this, 1, null)"
+    onclick="setElColors(this, 1, null); window.location='Data/File.htm'">
+      File
+</td>
+
+  <td id="cid2" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/DataTable.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/DataTable_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 2, '#fff7df')"
+    onmouseout="setElColors(this, 2, null)"
+    onclick="setElColors(this, 2, null); window.location='Data/DataTable.htm'">
+      Data Table
+</td>
+
+  <td id="cid3" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/SelectAttributes.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/SelectAttributes_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 3, '#fff7df')"
+    onmouseout="setElColors(this, 3, null)"
+    onclick="setElColors(this, 3, null); window.location='Data/SelectAttributes.htm'">
+      Select Attributes
+</td>
+
+  <td id="cid4" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Rank.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Rank_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 4, '#fff7df')"
+    onmouseout="setElColors(this, 4, null)"
+    onclick="setElColors(this, 4, null); window.location='Data/Rank.htm'">
+      Rank
+</td>
+</tr>
+<tr>
+
+  <td id="cid5" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/PurgeDomain.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/PurgeDomain_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 5, '#fff7df')"
+    onmouseout="setElColors(this, 5, null)"
+    onclick="setElColors(this, 5, null); window.location='Data/PurgeDomain.htm'">
+      Purge Domain
+</td>
+
+  <td id="cid6" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/MergeData.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/MergeData_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 6, '#fff7df')"
+    onmouseout="setElColors(this, 6, null)"
+    onclick="setElColors(this, 6, null); window.location='Data/MergeData.htm'">
+      Merge Data
+</td>
+
+  <td id="cid7" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Concatenate.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Concatenate_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 7, '#fff7df')"
+    onmouseout="setElColors(this, 7, null)"
+    onclick="setElColors(this, 7, null); window.location='Data/Concatenate.htm'">
+      Concatenate
+</td>
+
+  <td id="cid8" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/DataSampler.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/DataSampler_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 8, '#fff7df')"
+    onmouseout="setElColors(this, 8, null)"
+    onclick="setElColors(this, 8, null); window.location='Data/DataSampler.htm'">
+      Data Sampler
+</td>
+</tr>
+<tr>
+
+  <td id="cid9" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/SelectData.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/SelectData_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 9, '#fff7df')"
+    onmouseout="setElColors(this, 9, null)"
+    onclick="setElColors(this, 9, null); window.location='Data/SelectData.htm'">
+      Select Data
+</td>
+
+  <td id="cid10" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Save.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Save_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 10, '#fff7df')"
+    onmouseout="setElColors(this, 10, null)"
+    onclick="setElColors(this, 10, null); window.location='Data/Save.htm'">
+      Save
+</td>
+
+  <td id="cid11" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Discretize.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Discretize_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 11, '#fff7df')"
+    onmouseout="setElColors(this, 11, null)"
+    onclick="setElColors(this, 11, null); window.location='Data/Discretize.htm'">
+      Discretize
+</td>
+
+  <td id="cid12" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Continuize.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Continuize_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 12, '#fff7df')"
+    onmouseout="setElColors(this, 12, null)"
+    onclick="setElColors(this, 12, null); window.location='Data/Continuize.htm'">
+      Continuize
+</td>
+</tr>
+<tr>
+
+  <td id="cid13" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Impute.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Impute_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 13, '#fff7df')"
+    onmouseout="setElColors(this, 13, null)"
+    onclick="setElColors(this, 13, null); window.location='Data/Impute.htm'">
+      Impute
+</td>
+
+  <td id="cid14" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Data/Outliers.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Outliers_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 14, '#fff7df')"
+    onmouseout="setElColors(this, 14, null)"
+    onclick="setElColors(this, 14, null); window.location='Data/Outliers.htm'">
+      Outliers
+</td>
+<td class="empty"></td><td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Visualize</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid15" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Distributions.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Distribution_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 15, '#fff7df')"
+    onmouseout="setElColors(this, 15, null)"
+    onclick="setElColors(this, 15, null); window.location='Visualize/Distributions.htm'">
+      Distributions
+</td>
+
+  <td id="cid16" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Scatterplot.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ScatterPlot_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 16, '#fff7df')"
+    onmouseout="setElColors(this, 16, null)"
+    onclick="setElColors(this, 16, null); window.location='Visualize/Scatterplot.htm'">
+      Scatterplot
+</td>
+
+  <td id="cid17" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/AttributeStatistics.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/AttributeStatistics_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 17, '#fff7df')"
+    onmouseout="setElColors(this, 17, null)"
+    onclick="setElColors(this, 17, null); window.location='Visualize/AttributeStatistics.htm'">
+      Attribute Statistics
+</td>
+
+  <td id="cid18" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/LinearProjection.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/LinearProjection_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 18, '#fff7df')"
+    onmouseout="setElColors(this, 18, null)"
+    onclick="setElColors(this, 18, null); window.location='Visualize/LinearProjection.htm'">
+      Linear Projection
+</td>
+</tr>
+<tr>
+
+  <td id="cid19" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Radviz.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Radviz_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 19, '#fff7df')"
+    onmouseout="setElColors(this, 19, null)"
+    onclick="setElColors(this, 19, null); window.location='Visualize/Radviz.htm'">
+      Radviz
+</td>
+
+  <td id="cid20" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/Polyviz.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Polyviz_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 20, '#fff7df')"
+    onmouseout="setElColors(this, 20, null)"
+    onclick="setElColors(this, 20, null); window.location='Visualize/Polyviz.htm'">
+      Polyviz
+</td>
+
+  <td id="cid21" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/ParallelCoordinates.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ParallelCoordinates_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 21, '#fff7df')"
+    onmouseout="setElColors(this, 21, null)"
+    onclick="setElColors(this, 21, null); window.location='Visualize/ParallelCoordinates.htm'">
+      Parallel Coordinates
+</td>
+
+  <td id="cid22" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/SurveyPlot.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/SurveyPlot_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 22, '#fff7df')"
+    onmouseout="setElColors(this, 22, null)"
+    onclick="setElColors(this, 22, null); window.location='Visualize/SurveyPlot.htm'">
+      Survey Plot
+</td>
+</tr>
+<tr>
+
+  <td id="cid23" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/MosaicDisplay.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/MosaicDisplay_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 23, '#fff7df')"
+    onmouseout="setElColors(this, 23, null)"
+    onclick="setElColors(this, 23, null); window.location='Visualize/MosaicDisplay.htm'">
+      Mosaic Display
+</td>
+
+  <td id="cid24" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Visualize/SieveDiagram.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/SieveDiagram_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 24, '#fff7df')"
+    onmouseout="setElColors(this, 24, null)"
+    onclick="setElColors(this, 24, null); window.location='Visualize/SieveDiagram.htm'">
+      Sieve Diagram
+</td>
+
+  <td id="cid25" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/SieveMultigram_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Sieve multigram
+      <div class="rnd1l"></div>
+  </td>
+<td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Classify</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid26" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/NaiveBayes.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/NaiveBayes_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 26, '#fff7df')"
+    onmouseout="setElColors(this, 26, null)"
+    onclick="setElColors(this, 26, null); window.location='Classify/NaiveBayes.htm'">
+      Naive Bayes
+</td>
+
+  <td id="cid27" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/SVM.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/BasicSVM_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 27, '#fff7df')"
+    onmouseout="setElColors(this, 27, null)"
+    onclick="setElColors(this, 27, null); window.location='Classify/SVM.htm'">
+      SVM
+</td>
+
+  <td id="cid28" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/LogisticRegression.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/LogisticRegression_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 28, '#fff7df')"
+    onmouseout="setElColors(this, 28, null)"
+    onclick="setElColors(this, 28, null); window.location='Classify/LogisticRegression.htm'">
+      Logistic Regression
+</td>
+
+  <td id="cid29" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/Majority.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Majority_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 29, '#fff7df')"
+    onmouseout="setElColors(this, 29, null)"
+    onclick="setElColors(this, 29, null); window.location='Classify/Majority.htm'">
+      Majority
+</td>
+</tr>
+<tr>
+
+  <td id="cid30" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeViewer.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ClassificationTreeViewer_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 30, '#fff7df')"
+    onmouseout="setElColors(this, 30, null)"
+    onclick="setElColors(this, 30, null); window.location='Classify/ClassificationTreeViewer.htm'">
+      Classification Tree Viewer
+</td>
+
+  <td id="cid31" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTreeGraph.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ClassificationTreeGraph_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 31, '#fff7df')"
+    onmouseout="setElColors(this, 31, null)"
+    onclick="setElColors(this, 31, null); window.location='Classify/ClassificationTreeGraph.htm'">
+      Classification Tree Graph
+</td>
+
+  <td id="cid32" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/CN2RulesViewer.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/CN2RulesViewer_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 32, '#fff7df')"
+    onmouseout="setElColors(this, 32, null)"
+    onclick="setElColors(this, 32, null); window.location='Classify/CN2RulesViewer.htm'">
+      CN2 Rules Viewer
+</td>
+
+  <td id="cid33" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/kNearestNeighbours.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/kNearestNeighbours_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 33, '#fff7df')"
+    onmouseout="setElColors(this, 33, null)"
+    onclick="setElColors(this, 33, null); window.location='Classify/kNearestNeighbours.htm'">
+      k Nearest Neighbours
+</td>
+</tr>
+<tr>
+
+  <td id="cid34" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/Nomogram.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Nomogram_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 34, '#fff7df')"
+    onmouseout="setElColors(this, 34, null)"
+    onclick="setElColors(this, 34, null); window.location='Classify/Nomogram.htm'">
+      Nomogram
+</td>
+
+  <td id="cid35" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/ClassificationTree.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ClassificationTree_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 35, '#fff7df')"
+    onmouseout="setElColors(this, 35, null)"
+    onclick="setElColors(this, 35, null); window.location='Classify/ClassificationTree.htm'">
+      Classification Tree
+</td>
+
+  <td id="cid36" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/CN2.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/CN2_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 36, '#fff7df')"
+    onmouseout="setElColors(this, 36, null)"
+    onclick="setElColors(this, 36, null); window.location='Classify/CN2.htm'">
+      CN2
+</td>
+
+  <td id="cid37" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/RandomForest.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/RandomForest_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 37, '#fff7df')"
+    onmouseout="setElColors(this, 37, null)"
+    onclick="setElColors(this, 37, null); window.location='Classify/RandomForest.htm'">
+      Random Forest
+</td>
+</tr>
+<tr>
+
+  <td id="cid38" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/C4.5.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/C45.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 38, '#fff7df')"
+    onmouseout="setElColors(this, 38, null)"
+    onclick="setElColors(this, 38, null); window.location='Classify/C4.5.htm'">
+      C4.5
+</td>
+
+  <td id="cid39" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Classify/InteractiveTreeBuilder.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ITree_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 39, '#fff7df')"
+    onmouseout="setElColors(this, 39, null)"
+    onclick="setElColors(this, 39, null); window.location='Classify/InteractiveTreeBuilder.htm'">
+      Interactive Tree Builder
+</td>
+<td class="empty"></td><td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Regression</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid40" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTree.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/RegressionTree.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 40, '#fff7df')"
+    onmouseout="setElColors(this, 40, null)"
+    onclick="setElColors(this, 40, null); window.location='Regression/RegressionTree.htm'">
+      Regression Tree
+</td>
+
+  <td id="cid41" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/RegressionTreeGraph.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/RegressionTreeGraph.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 41, '#fff7df')"
+    onmouseout="setElColors(this, 41, null)"
+    onclick="setElColors(this, 41, null); window.location='Regression/RegressionTreeGraph.htm'">
+       Regression Tree Graph
+</td>
+
+  <td id="cid42" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Regression/Pade.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Pade.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 42, '#fff7df')"
+    onmouseout="setElColors(this, 42, null)"
+    onclick="setElColors(this, 42, null); window.location='Regression/Pade.htm'">
+      Pade
+</td>
+<td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Evaluate</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid43" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/ConfusionMatrix.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ConfusionMatrix.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 43, '#fff7df')"
+    onmouseout="setElColors(this, 43, null)"
+    onclick="setElColors(this, 43, null); window.location='Evaluate/ConfusionMatrix.htm'">
+      Confusion Matrix
+</td>
+
+  <td id="cid44" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/ROCAnalysis.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ROCAnalysis.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 44, '#fff7df')"
+    onmouseout="setElColors(this, 44, null)"
+    onclick="setElColors(this, 44, null); window.location='Evaluate/ROCAnalysis.htm'">
+      ROC Analysis
+</td>
+
+  <td id="cid45" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/LiftCurve.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/LiftCurve.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 45, '#fff7df')"
+    onmouseout="setElColors(this, 45, null)"
+    onclick="setElColors(this, 45, null); window.location='Evaluate/LiftCurve.htm'">
+      Lift Curve
+</td>
+
+  <td id="cid46" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/CalibrationPlot.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/CalibrationPlot.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 46, '#fff7df')"
+    onmouseout="setElColors(this, 46, null)"
+    onclick="setElColors(this, 46, null); window.location='Evaluate/CalibrationPlot.htm'">
+      Calibration Plot
+</td>
+</tr>
+<tr>
+
+  <td id="cid47" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/TestLearners.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/TestLearners.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 47, '#fff7df')"
+    onmouseout="setElColors(this, 47, null)"
+    onclick="setElColors(this, 47, null); window.location='Evaluate/TestLearners.htm'">
+      Test Learners
+</td>
+
+  <td id="cid48" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Evaluate/Predictions.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Predictions.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 48, '#fff7df')"
+    onmouseout="setElColors(this, 48, null)"
+    onclick="setElColors(this, 48, null); window.location='Evaluate/Predictions.htm'">
+      Predictions
+</td>
+<td class="empty"></td><td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Associate</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid49" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Associate/AssociationRules.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/AssociationRules.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 49, '#fff7df')"
+    onmouseout="setElColors(this, 49, null)"
+    onclick="setElColors(this, 49, null); window.location='Associate/AssociationRules.htm'">
+      Association Rules
+</td>
+
+  <td id="cid50" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/Itemsets.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Itemsets
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid51" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/ItemsetsExplorer.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Itemsets Explorer
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid52" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Associate/AssociationRulesFilter.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/AssociationRulesFilter.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 52, '#fff7df')"
+    onmouseout="setElColors(this, 52, null)"
+    onclick="setElColors(this, 52, null); window.location='Associate/AssociationRulesFilter.htm'">
+      Association Rules Filter
+</td>
+</tr>
+<tr>
+
+  <td id="cid53" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Associate/AssociationRulesExplorer.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/AssociationRulesExplorer.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 53, '#fff7df')"
+    onmouseout="setElColors(this, 53, null)"
+    onclick="setElColors(this, 53, null); window.location='Associate/AssociationRulesExplorer.htm'">
+      Association Rules Explorer
+</td>
+<td class="empty"></td><td class="empty"></td><td class="empty"></td>
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>
+
+    <div class="catdiv">
+    <div class="rnd1"></div>
+    <div class="rnd2"></div>
+    <h2>Unsupervised</h2>
+    <table>
+<tr>
+
+    
+  <td id="cid54" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceFile.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/DistanceFile_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 54, '#fff7df')"
+    onmouseout="setElColors(this, 54, null)"
+    onclick="setElColors(this, 54, null); window.location='Unsupervised/DistanceFile.htm'">
+      Distance File
+</td>
+
+  <td id="cid55" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/DistanceFile_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Matrix Transformation
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid56" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/SaveDistanceFile_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Save Distance File
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid57" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/DistanceFilter.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Distance Matrix Filter
+      <div class="rnd1l"></div>
+  </td>
+</tr>
+<tr>
+
+  <td id="cid58" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/DistanceMap.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/DistanceMap_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 58, '#fff7df')"
+    onmouseout="setElColors(this, 58, null)"
+    onclick="setElColors(this, 58, null); window.location='Unsupervised/DistanceMap.htm'">
+      Distance Map
+</td>
+
+  <td id="cid59" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/ExampleDistance.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/ExampleDistance.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 59, '#fff7df')"
+    onmouseout="setElColors(this, 59, null)"
+    onclick="setElColors(this, 59, null); window.location='Unsupervised/ExampleDistance.htm'">
+      Example Distance
+</td>
+
+  <td id="cid60" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/AttributeDistance.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/AttributeDistance.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 60, '#fff7df')"
+    onmouseout="setElColors(this, 60, null)"
+    onclick="setElColors(this, 60, null); window.location='Unsupervised/AttributeDistance.htm'">
+      Attribute Distance
+</td>
+
+  <td id="cid61" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/HierarchicalClustering.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/HierarchicalClustering_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 61, '#fff7df')"
+    onmouseout="setElColors(this, 61, null)"
+    onclick="setElColors(this, 61, null); window.location='Unsupervised/HierarchicalClustering.htm'">
+      Hierarchical Clustering
+</td>
+</tr>
+<tr>
+
+  <td id="cid62" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/InteractionGraph.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/InteractionGraph_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 62, '#fff7df')"
+    onmouseout="setElColors(this, 62, null)"
+    onclick="setElColors(this, 62, null); window.location='Unsupervised/InteractionGraph.htm'">
+      Interaction Graph
+</td>
+
+  <td id="cid63" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/k-MeansClustering.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/KMeans_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 63, '#fff7df')"
+    onmouseout="setElColors(this, 63, null)"
+    onclick="setElColors(this, 63, null); window.location='Unsupervised/k-MeansClustering.htm'">
+      k-Means Clustering
+</td>
+
+  <td id="cid64" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/MDS.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/MDS_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 64, '#fff7df')"
+    onmouseout="setElColors(this, 64, null)"
+    onclick="setElColors(this, 64, null); window.location='Unsupervised/MDS.htm'">
+      MDS
+</td>
+
+  <td id="cid65" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/NetworkFile_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Network File
+      <div class="rnd1l"></div>
+  </td>
+</tr>
+<tr>
+
+  <td id="cid66" class="left"
+      onmouseover="this.style.backgroundColor='#fff7df'"
+      onmouseout="this.style.backgroundColor=null"
+      onclick="this.style.backgroundColor=null; window.location='Unsupervised/NetExplorer.htm'">
+      <div class="rnd11"></div>
+      <img src="icons/Network_32.png"/>
+      <div class="rnd11"></div>
+  </td>
+  <td class="right"
+    onmouseover="setElColors(this, 66, '#fff7df')"
+    onmouseout="setElColors(this, 66, null)"
+    onclick="setElColors(this, 66, null); window.location='Unsupervised/NetExplorer.htm'">
+      Net Explorer
+</td>
+
+  <td id="cid67" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/NetworkFromDistances_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      Network from Distances
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid68" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/SOM_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      SOM
+      <div class="rnd1l"></div>
+  </td>
+
+  <td id="cid69" class="left-nodoc">
+      <div class="rnd11"></div>
+      <img src="icons/SOMVisualizer_32.png">
+      <div class="rnd11"></div>
+  </td>
+  <td class="right-nodoc">
+      <div class="rnd1l"></div>
+      SOMVisualizer
+      <div class="rnd1l"></div>
+  </td>
+
+    </tr></table>
+    <div class="rnd2"></div>
+    <div class="rnd1"></div>
+    </div>

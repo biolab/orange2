@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>Predictions</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Predictions</h1>
+
+<img class="screenshot" src="../icons/Predictions.png">
+<p>Shows the model's prediction on data.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Data (ExampleTable)</DT>
+<DD>Data to be classified</DD>
+
+<DT>Predictors (orange.Classifier)</DT>
+<DD>Predictors to be used on the data; multiple widget can connect to this slot</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Predictions (orange.ExampleTable)</DT>
+<DD>Original example table with added predictions</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>The widget gets a data set and one or more predictors (classifiers, not learning algorithms - see the example below). It shows a table with the data and the predictions made.</p>
+
+<p>Despite its simplicity, the widget allows for quite interesting analysis of decisions of predictive models; there is a simple demonstration at the end of the page. Note also, however, the related widget <a href="ConfusionMatrix.htm">Confusion Matrix</a>. Although many things can be done with any of them, there are tasks for which one of them might be much more convenient than the other.</p>
+
+<img class="screenshot" src="Predictions.png"/>
+
+<p>The widget can show class predictions (<span class="option">Show predicted class</span>) and predicted probabilities for the selected classes (<span class="option">Show predicted probabilities</span>, the classes are selected below).</p>
+
+<p>By default, the widget also shows the attributes. This can be disabled by checking <span class="option">Hide all</span> under <span class="option">Data Attributes</span>.</p>
+
+<p>The output of the widget is another data table, where predictions are appended as new meta attributes. The table is output either automatically (<span class="option">Send automatically</span>) or upon clicking <span class="option">Send Predictions</span>.</p>
+
+
+<h2>Example</h2>
+
+<p>Here is a demonstration.</p>
+
+<img class="schema" src="Predictions-Schema.png"/>
+
+<p>First, compare the schema with the one for <a href="TestLearners.htm">Test Learners</a>. Widgets representing learning algorithms, like <a href="../Classify/NaiveBayes.htm">Naive Bayesian classifier</a> or <a href="ClassificationTree.htm">Classification tree</a> provide two kinds of signals, one with a learning algorithm and one with a classifier, that is, a result of the learning algorithm when it is given some data. The learner is available always, while for outputting a classifier, the widget representing a learning algorithm needs to be given some data.</p>
+
+<p>Test Learners tests learning algorithms, hence it expects learning algorithms on the input. In the corresponding schema, we gave the Test Learners some data from the File widget and a few "learner widgets". Widget Predictions shows predictions of a classifier, hence it needs a classifier and data. To get a classifier from the learner widget, the widget needs to be given data.</p>
+
+<p>This is hence what we do: we randomly split the data into two subsets. The larger, containing 70 % of data instances, is given to Naive Bayes and Classification tree, so they can produce the corresponding classifiers. The classifiers go into Predictions, among with the remaining 30 % of the data. Predictions shows how these examples are classified.</p>
+
+<p>The results of this procedure on the heart disease data are shown in the snapshot at beginning of the page. The last three columns are the actual class, and the predictions by the classification tree and naive Bayesian classifier. For the latter two we see the probability of class "1" (since this is the class chosen on the left-hand side of the widget) and the predicted class.</p>
+
+<p>The schema also shows a few things we can do with the data from the widget. First, we can observe it in a <a href="../Data/DataTable.htm">Data Table</a>. It shows a similar view to the one in Predictions, except that the probabilities are shown as separate attributes, so we can sort the examples by them and so on.</p>
+
+<p>To save the predictions, we simply attach the <a href="../Data/Save.htm">Save</a> widget to Predictions.</p>
+
+<p>Finally, we can analyze the classifier's predictions. For instance, we want to observe the relations between probabilities predicted by the two classifiers with respect to the class. For that, we first take <a href="../Data/SelectAttributes.htm">Select Attributes</a> with which we move the meta attributes with probability predictions to ordinary attributes. The transformed data is then given to the <a href="../Visualize/ScatterPlot.htm">Scatter plot</a>, which we set to use the attributes with probabilities for the x and y axes, and the class is (as already by default) used to color the data points.</p>
+
+<img src="Predictions-ExampleScatterplot.png" />
+
+<p>To get the above plot, we added 5% jittering to continuous attributes, since the classification tree gives just a few distinct probabilities, hence without jittering there would be too much overlap between the points.</p>
+
+<p>The blue points at the bottom left represent the people with no diameter narrowing, which were correctly classified by both classifiers. The upper left red points represent the patients with narrowed vessels, which were correctly classified by both. At the top left there are a few blue points: these are those without narrowed vessels to whom the tree gave a high probability of having the disease, while Bayesian classifier was right by predicting a low probability of the disease. In the opposite corner, we can spot red points, that is, the sick, to which the tree gave a low probability, while the naive Bayesian classifier was (again) right by assigning a high probability of having the disease.</p>
+
+<p>Note that this analysis is done on a rather small sample, so these conclusions may be ungrounded.</p>
+
+
+
+
+
+<p>Another example of using this widget is given in the documentation for widget <a href="ConfusionMatrix.htm">Confusion Matrix</a>.</p>
+
+</body>
+</html>

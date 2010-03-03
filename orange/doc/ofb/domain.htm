@@ -1,0 +1,801 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<p class="Path">
+Prev: <a href="o_ensemble.htm">Ensemble Techniques</a>,
+Next: <a href="uncovered.htm">What we did not cover</a>,
+Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
+</p>
+
+<H1>Basic Data Manipulation</H1>
+
+<p>A substantial part of Orange's functionality is data manipulation:
+constructing data sets, selecting instances and attributes, different
+filtering techniques... While all operations on attributes and
+instances can be done on your data set in your favorite spreadsheet
+program, this may not be very convenient as you may not want to jump
+from one environment to another, and can even be prohibitive if data
+manipulation is a part of your learning or testing scheme. In this
+section of tutorial we therefore expose some of the very basic data
+manipulation techniques incorporate in Orange, which in turn may be
+sufficient for those that want to implement their own feature or
+instance selection techniques, or even do something like constructive
+induction.</p>
+
+<h2>A Warm Up</h2>
+
+We will use the data set about car types and characteristics called <a
+href="imports-85.tab">imports-85.tab</a>. Before we do anything, let
+us write a script that examines what are the attributes that are
+included in this data set.
+
+<p class="header">part of <a href="domain1.py">domain1.py</a>  (uses <a href=
+"imports-85.tab">imports-85.tab</a>) </p>
+<xmp class=code>import orange
+
+filename = "imports-85.tab"
+data = orange.ExampleTable(filename)
+print "%s includes %i attributes and a class variable %s" % \
+  (filename, len(data.domain.attributes), data.domain.classVar.name)
+
+print "Attribute names and indices:"
+for i in range(len(data.domain.attributes)):
+  print "(%2d) %-17s" % (i, data.domain.attributes[i].name),
+  if i % 3 == 2: print
+</xmp>
+
+<p>The script prints out a following report:</p>
+
+<xmp class="code">imports-85.tab includes 25 attributes and a class variable price
+Attribute names and indices:
+( 0) symboling         ( 1) normalized-losses ( 2) make
+( 3) fuel-type         ( 4) aspiration        ( 5) num-of-doors
+( 6) body-style        ( 7) drive-wheels      ( 8) engine-location
+( 9) wheel-base        (10) length            (11) width
+(12) height            (13) curb-weight       (14) engine-type
+(15) num-of-cylinders  (16) engine-size       (17) fuel-system
+(18) bore              (19) stroke            (20) compression-ratio
+(21) horsepower        (22) peak-rpm          (23) city-mpg
+(24) highway-mpg
+</xmp>
+
+<h2>Attribute Selection and Construction of Class-Based Domains</h2>
+<index name="feature subset selection">
+
+<p>Every example set in Orange has its domain. Say, a variable
+<code>data</code> stores our data set, then the domain of this data
+set can be accessed through <code>data.domain</code>. Inclusion and
+exclusion of attributes can be managed through domain: we can use one
+domain to construct another one, and then use Orange's
+<code>select</code> function to actually construct a data set from
+original instances given the new domain. There is also a more
+straightforward way to select attributes through directly using
+<code>orange.select</code>.</p>
+
+<p>Here is an example. We again use <code>imports-85</code> data set,
+and construct different data sets that include first five attributes
+(<code>newData1</code>), attributes stated in list and specified by
+their names (<code>newData2</code>), attributes stated in list and
+specified through Orange's object called <code>Variable</code>
+(<code>newData3</code>):
+
+<p class="header"><a href="domain2.py">domain2.py</a>  (uses <a href=
+"imports-85.tab">imports-85.tab</a>) </p>
+<xmp class=code>import orange
+
+def reportAttributes(dataset, header=None):
+  if dataset.domain.classVar:
+    print 'Class variable: %s,' % dataset.domain.classVar.name,
+  else:
+    print 'No Class,',
+  if header:
+    print '%s:' % header
+  for i in range(len(dataset.domain.attributes)):
+    print "%s" % dataset.domain.attributes[i].name,
+    if i % 6 == 5: print
+  print "\n"
+
+filename = "imports-85.tab"
+data = orange.ExampleTable(filename)
+reportAttributes(data, "Original data set")
+
+newData1 = data.select(range(5))
+reportAttributes(newData1, "First five attributes")
+
+newData2 = data.select(['engine-location', 'wheel-base', 'length'])
+reportAttributes(newData2, "Attributes selected by name")
+
+domain3 = orange.Domain([data.domain[0], data.domain['curb-weight'], data.domain[2]])
+newData3 = data.select(domain3)
+reportAttributes(newData3, "Attributes by domain")
+
+domain4 = orange.Domain([data.domain[0], data.domain['curb-weight'], data.domain[2]], 0)
+newData4 = data.select(domain4)
+reportAttributes(newData4, "Attributes by domain")
+</xmp>
+
+<p>The last two examples (construction of <code>newData3</code> and
+<code>newData4</code>) show a very important distinction in crafting
+the domains: in Orange, domains may or may not include class
+variable. For classification and regression tasks, you will obviously
+need class labels, for something like association rules, you won't. In
+the script above, this distinction was made with "0" as a last
+attribute for <code>Orange.domain</code>: this "0" says no, please do
+not construct a class variable as by default,
+<code>Orange.domain</code> would consider that the class variable is
+the last one from the list of attributes.<p>
+
+<p>The output produced by above script is therefore:</p>
+
+<xmp class="code">symboling normalized-losses make fuel-type aspiration num-of-doors
+body-style drive-wheels engine-location wheel-base length width
+height curb-weight engine-type num-of-cylinders engine-size fuel-system
+bore stroke compression-ratio horsepower peak-rpm city-mpg
+highway-mpg
+
+No Class, First five attributes:
+symboling normalized-losses make fuel-type aspiration
+
+No Class, Attributes selected by name:
+engine-location wheel-base length
+
+Class variable: make, Attributes by domain:
+symboling curb-weight
+
+No Class, Attributes by domain:
+symboling curb-weight make
+</xmp>
+
+<p><code>orange.Domain</code> is a rather powerful constructor of domains, and its complete description is beyond this tutorial. But to illustrate some more, here is another example: run it for yourself to see what happens.</p>
+
+<p class="header"><a href="domain3.py">domain3.py</a>  (uses <a href=
+"glass.tab">glass.tab</a>) </p>
+<xmp class=code>import orange
+domain = orange.ExampleTable("glass").domain
+
+tests = ( '(["Na", "Mg"], domain)',
+          '(["Na", "Mg"], 1, domain)',
+          '(["Na", "Mg"], 0, domain)',
+          '(["Na", "Mg"], domain.variables)',
+          '(["Na", "Mg"], 1, domain.variables)',
+          '(["Na", "Mg"], 0, domain.variables)',
+          '([domain["Na"], "Mg"], 0, domain.variables)',
+          '([domain["Na"], "Mg"], 0, source=domain)',
+          '([domain["Na"], "Mg"], 0, source=domain.variables)',
+          '([domain["Na"], domain["Mg"]], 0)',
+          '([domain["Na"], domain["Mg"]], 1)',
+          '([domain["Na"], domain["Mg"]], None)',
+          '([domain["Na"], domain["Mg"]], orange.EnumVariable("something completely different"))',
+          '(domain)',
+          '(domain, 0)',
+          '(domain, 1)',
+          '(domain, "Mg")',
+          '(domain, domain[0])',
+          '(domain, None)',
+          '(domain, orange.FloatVariable("nothing completely different"))')
+
+for args in tests:
+  line = "orange.Domain%s" % args
+  d = eval(line)
+  print line
+  print "  classVar: %s" % d.classVar
+  print "  attributes: %s" % d.attributes
+  print
+</xmp>
+
+<p>Remember that all this script does is domain construction. You
+would still need to use <code>orange.select</code> in order to obtain
+the data example sets.</p>
+
+<h2>Instance Selection</h2>
+<index name="sampling">
+<index name="filtering examples">
+
+<p>Instance selection may be based on values of attributes, or we can
+simply select some instances according to their index. There are also
+a number of filters that may help for instance selection, of which we
+here mention only <code>Filter_sameValues</code>.</p>
+
+<p>First, filtering by index. Again, we will use <code>select</code>
+function, this time giving it a vector of integer values based on
+which <code>select</code> will decide to include or not an
+instance. By default, <code>select</code> includes instances with a
+corresponding non-zero element in this list, but a specific value for
+which corresponding instances may be included may also be
+specified. Notice that through this mechanism you may craft your own
+selection vector in any way you want, and thus (if needed) implement
+some complex instance selection mechanism. Here is though a much
+simpler example:</p>
+
+<p class="header"><a href="domain7.py">domain7.py</a>  (uses <a href=
+"../datasets/adult_sample.tab">glass.tab</a>) </p>
+<xmp class=code>import orange
+
+def report_prob(header, data):
+  print 'Size of %s: %i instances; ' % (header, len(data)),
+  n = 0
+  for i in data:
+    if int(i.getclass())==0:
+      n = n + 1
+  if len(data):
+    print "p(%s)=%5.3f" % (data.domain.classVar.values[0], float(n)/len(data))
+  else:
+    print
+
+filename = "adult_sample.tab"
+data = orange.ExampleTable(filename)
+report_prob('data', data)
+
+selection = [1]*10 + [0]*(len(data)-10)
+data1 = data.select(selection)
+report_prob('data1, first ten instances', data1)
+
+data2 = data.select(selection, negate=1)
+report_prob('data2, other than first ten instances', data2)
+
+selection = [1]*12 + [2]*12 + [3]*12 + [0]*(len(data)-12*3)
+data3 = data.select(selection, 3)
+report_prob('data3, third dozen of instances', data3)
+</xmp>
+
+<p>And here is its output:</p>
+
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
+Size of data1, first ten instances: 10 instances;  p(>50K)=0.200
+Size of data2, other than first ten instances: 967 instances;  p(>50K)=0.242
+Size of data3, third dozen of instances: 12 instances;  p(>50K)=0.583
+</xmp>
+
+<p>The above should not be anything new to the careful reader of this tutorial. Namely, we have already used instance selection in the chapter on <a href="c_performance.htm">performance evaluation of classifiers</a>, where we have also learned how to use <code>MakeRandomIndices2</code> and <code>MakeRandomIndicesCV</code> to craft the selection vectors.</p>
+
+<p>Next and for something new in this tutorial, Orange's <code>select</code> allows also to select instances based on their attribute value. This may be best illustrated through some example, so here it goes:</p>
+
+<p class="header"><a href="domain4.py">domain4.py</a>  (uses <a href=
+"glass.tab">adult_sample.tab</a>) </p>
+<xmp class=code>import orange
+
+def report_prob(header, data):
+  print 'Size of %s: %i instances' % (header, len(data))
+  n = 0
+  for i in data:
+    if int(i.getclass())==0:
+      n = n + 1
+  print "p(%s)=%5.3f" % (data.domain.classVar.values[0], float(n)/len(data))
+
+filename = "adult_sample.tab"
+data = orange.ExampleTable(filename)
+report_prob('original data set', data)
+
+data1 = data.select(sex='Male')
+report_prob('data1', data1)
+
+data2 = data.select(sex='Male', education='Masters')
+report_prob('data2', data2)
+</xmp>
+
+<p>We have used instances from adult data set that for an individual
+described through a set of attributes states if her/his yearly
+earnings were above $50.000. Notice that we have selected instances
+based on their gender (<code>data1</code>) and gender and education
+(<code>data2</code>), and just to show how different are resulting
+data sets reported on number of instances and relative frequency of
+cases with higher earnings. Notice that when more than one
+attribute-value pair is given to <code>select</code>, conjunction of
+conditions are used. The output of above script is:</p>
+
+<xmp class="code">Size of original data set: 977 instances
+p(>50K)=0.242
+Size of data1: 624 instances
+p(>50K)=0.296
+Size of data2: 38 instances
+p(>50K)=0.632
+</xmp>
+
+<p>Could we request examples for which either of conditions holds? Or
+those for which neither of the does? Or... Yes, but not with
+select. For this, we need to use a more versatile filter called
+<code>Preprocessor_take</code>. Here's an example of how it's
+used.</p>
+
+<p class="header">part of <a href="domain5.py">domain5.py</a>  (uses <a href=
+"glass.tab">adult_sample.tab</a>) </p>
+<xmp class=code>filename = "adult_sample.tab"
+data = orange.ExampleTable(filename)
+report_prob('data', data)
+
+filter = orange.Preprocessor_take()
+filter.values = {data.domain["sex"]: "Male", data.domain["education"]: "Masters"}
+
+filter.conjunction = 1
+data1 = filter(data)
+report_prob('data1 (conjunction)', data1)
+
+filter.conjunction = 0
+data1 = filter(data)
+report_prob('data1 (disjunction)', data1)
+
+data2 = data.select(sex='Male', education='Masters')
+report_prob('data2 (select, conjuction)', data2)
+</xmp>
+
+<p>The results are reported as:</p>
+
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
+Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
+Size of data1 (disjunction): 643 instances;  p(>50K)=0.302
+Size of data2 (select, conjuction): 38 instances;  p(>50K)=0.632
+</xmp>
+
+<p>Notice that with <code>conjunction=1</code> the resulting data set
+is just like the one constructed with <code>select</code>. Not just
+that - <CODE>select</CODE> and <CODE>Preprocessor_take</CODE> both
+actually work by constructing a filter of
+<code>Filter_sameValues</code> object, uses it and discards it
+afterwards. What we gained by using <CODE>Preprocessor_take</CODE>
+instead of <CODE>select</CODE> is the access to field
+<code>conjunction</code>; if set to 0, conditions are treated in
+disjunction (OR) instead of in conjunction (AND). And there's also
+<CODE>Preprocessor_take.negate</CODE> that reverses the
+selection. When constructing the filter, it's essential to set the
+<code>domain</code> before specifying the values.</p>
+
+<p>Selection methods can also dealwith with continuous attributes and
+values. Constraints with resepct to some attribute values are
+specified as intervals (lower limit, upper limit). Limits are
+inclusive: for a limit (30,40) and attribute age, an instance will be
+selected if the age is higher or equal to 30 and lower or equal to
+40. If the limits are reversed, e.g. (40,30), examples with values
+outside the interval are selected, that is, an instance is selected if
+age is lower or equal 30 or higher or equal 40. </p>
+
+<p class="header">part of <a href="domain6.py">domain6.py</a>  (uses <a href=
+"glass.tab">adult_sample.tab</a>) </p>
+<xmp class=code>filename = "adult_sample.tab"
+data = orange.ExampleTable(filename)
+report_prob('data', data)
+
+data1 = data.select(age=(30,40))
+report_prob('data1, age from 30 to 40', data1)
+
+data2 = data.select(age=(40,30))
+report_prob('data2, younger than 30 or older than 40', data2)
+</xmp>
+
+<p>Running this script shows that it pays to be in thirties (good for
+authors of this text, at the time of writing):</p>
+
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
+Size of data1, age from 30 to 40: 301 instances;  p(>50K)=0.312
+Size of data2, younger than 30 or older than 40: 676 instances;  p(>50K)=0.210
+</xmp>
+
+<h2>Accessing and Changing Attribute Values</h2>
+
+<p>Early in our tutorial we have learned that if <code>data</code> is
+a variable that stores our data set, instances can be accessed simply
+by indexing the data, like <code>data[5]</code> would be the sixth
+instance (indices start with 0). Attributes can be accessed through
+their index (<code>data[5][3]</code>; fourth attribute of sixth
+instance), name (<code>data[5]["age"]</code>; attribute age of sixth
+instance), or variable (<code>a=data.domain.attributes[5]; print
+data[5][a]</code>; attribute <code>a</code> of sixth instance).</p>
+
+<p>At this point it should be obvious that attribute values can be
+used in any (appropriate) Python's expression, and you may also set
+the values of the attributes, like in <code>data[5]["fuel-type"] =
+"gas"</code>. Orange will report an error if assignment is used with a
+value out of the variable's scope.</p>
+
+<h2>Adding Noise and Unknown Values</h2>
+<index name="noise">
+<index name="missing values/adding of">
+
+<p>Who needs these? Isn't real data populated with noise and missing
+values anyway? Well, in machine learning, you sometimes may want to
+add these to see how robust are your learning
+algorithms. Particularly, if you deal with artificial data sets that
+do not include noise and what to make them more "realistic". Like it
+or not, here is how this may be done.</p>
+
+<p>First, we will add class noise to the data set, and to make thinks
+interesting, use this data set with some learner and observe if and
+how the accuracy of the learner is affected with noise. To add class
+noise, we will use <code>Preprocessor_class_noise</code> with an
+attribute that tells in what percent of instances a class is set to an
+arbitrary value. Notice that probabilities of class values used by
+<code>Preprocessor_class_noise</code> are uniform.</p>
+
+<p class="header"><a href="domain8.py">domain8.py</a>  (uses <a href=
+"glass.tab">adult_sample.tab</a>) </p>
+<xmp class=code>import orange, orngTest, orngStat
+
+filename = "promoters.tab"
+data = orange.ExampleTable(filename)
+data.name = "unspoiled"
+datasets = [data]
+
+add_noise = orange.Preprocessor_addClassNoise()
+for noiselevel in (0.2, 0.4, 0.6):
+  add_noise.proportion = noiselevel
+  d = add_noise(data)
+  d.name = "class noise %4.2f" % noiselevel
+  datasets.append(d)
+
+learner = orange.BayesLearner()
+
+for d in datasets:
+  results = orngTest.crossValidation([learner], d, folds=10)
+  print "%20s   %5.3f" % (d.name, orngStat.CA(results)[0])
+</xmp>
+
+<p>Obviously, we expect that with added noise the performance of any classifier will degrade. This is indeed so for our example and naive Bayes learner:</p>
+
+<xmp class="code">           unspoiled   0.896
+    class noise 0.20   0.811
+    class noise 0.40   0.689
+    class noise 0.60   0.632
+</xmp>
+
+<p>We can also add noise to attributes. Here, we should distinguish
+between continuous and discrete attributes.
+
+<h2>Crafting New Attributes</h2>
+
+<p>In machine learning and data mining, you may often encounter situations where you wish to add an extra attribute which is constructed from some existing subset of attributes. You may do that "manually" (you know exactly from which attributes you will derive the new one, and you know the function as well), or in some automatic way through, say, constructive induction.</p>
+
+<p>To introduce this subject, we will be here very unambitious and
+just show how to deal with the first, manual, case. Here are two
+examples. In the first, we add two attributes to the well-known iris
+data set; the two may represent the approximation of petal and sepal
+area, respectively, and are derived from petal and sepal length and
+width. The attributes are declared first: in our case we use
+<code>orange.FloatVariable</code> that returns an object that stores
+our variable and its properties. One important property -
+<code>getValueFrom</code> - tells how this variable is computed. All
+that we need to do next is to construct new domain that includes new
+variables; from this time on every time the new variables are
+accessed, Orange will know how to compute them.</p>
+
+<p class="header"><a href="domain11.py">domain11.py</a>  (uses <a href=
+"glass.tab">iris.tab</a>) </p>
+<xmp class=code>import orange
+data = orange.ExampleTable('iris')
+
+sa = orange.FloatVariable("sepal area")
+sa.getValueFrom = lambda e, getWhat: e['sepal length'] * e['sepal width']
+
+pa = orange.FloatVariable("petal area")
+pa.getValueFrom = lambda e, getWhat: e['petal length'] * e['petal width']
+
+newdomain = orange.Domain(data.domain.attributes+[sa, pa, data.domain.classVar])
+newdata = data.select(newdomain)
+
+print
+for a in newdata.domain.attributes:
+  print "%13s" % a.name,
+print "%16s" % newdata.domain.classVar.name
+for i in [10,50,100,130]:
+  for a in newdata.domain.attributes:
+    print "%8s%5.2f" % (" ", newdata[i][a]),
+  print "%16s" % (newdata[i].getclass())
+</xmp>
+
+<p>As we took care that four data instances from the new data set are
+nicely printed out, here is the output of the script:</p>
+
+<xmp class="code"> sepal length   sepal width  petal length   petal width    sepal area    petal area             iris
+         5.40          3.70          1.50          0.20         19.98          0.30      Iris-setosa
+         7.00          3.20          4.70          1.40         22.40          6.58  Iris-versicolor
+         6.30          3.30          6.00          2.50         20.79         15.00   Iris-virginica
+         7.40          2.80          6.10          1.90         20.72         11.59   Iris-virginica
+</xmp>
+
+<p>The story is slightly different with nominal attributes, where
+apart from their name we need to declare its set of values as
+well. Everything else is quite similar.  Below is an example that adds
+a new attribute to car data set (see more at <a
+href="http://www.ailab.si/hint/car_dataset.htm">car data set web
+page</a>):</p>
+
+<p class="header"><a href="domain12.py">domain12.py</a>  (uses <a href=
+"glass.tab">car.tab</a>) </p>
+<xmp class=code>import orange
+data = orange.ExampleTable('car')
+
+priceTable={}
+priceTable['v-high:v-high'] = 'v-high'
+priceTable['high:v-high'] = 'v-high'
+priceTable['med:v-high'] = 'high'
+priceTable['low:v-high'] = 'high'
+priceTable['v-high:high'] = 'v-high'
+priceTable['high:high'] = 'high'
+priceTable['med:high'] = 'high'
+priceTable['low:high'] = 'med'
+priceTable['v-high:med'] = 'high'
+priceTable['high:med'] = 'high'
+priceTable['med:med'] = 'med'
+priceTable['low:med'] = 'low'
+priceTable['v-high:low'] = 'high'
+priceTable['high:low'] = 'high'
+priceTable['med:low'] = 'low'
+priceTable['low:low'] = 'low'
+
+def f(price, buying, maint):
+  return orange.Value(price, priceTable['%s:%s' % (buying, maint)])
+
+price = orange.EnumVariable("price", values=["v-high", "high", "med", "low"])
+price.getValueFrom = lambda e, getWhat: f(price, e['buying'], e['maint'])
+newdomain = orange.Domain(data.domain.attributes+[price, data.domain.classVar])
+newdata = data.select(newdomain)
+
+print
+for a in newdata.domain.attributes:
+  print "%10s" % a.name,
+print "%10s" % newdata.domain.classVar.name
+for i in [1,200,300,1200,1700]:
+  for a in newdata.domain.attributes:
+    print "%10s" % newdata[i][a],
+  print "%10s" % newdata[i].getclass()
+</xmp>
+
+<p>The output of this code (we intentionally printed out five selected data instances):</p>
+
+<xmp class="code">    buying      maint      doors    persons    lugboot     safety      price          y
+    v-high     v-high          2          2      small        med     v-high      unacc
+    v-high       high     5-more          4      small       high     v-high      unacc
+    v-high        med     5-more          2        med        low       high      unacc
+       med        low          2          4        med        low        low      unacc
+       low        low          4       more        big       high        low     v-good
+</xmp>
+
+<p>In machine learning, we usually alter the data domain to achieve
+better predictive accuracy, or to introduce attributes that are more
+understood by domain experts. We tested the first hypothesis on our
+data set, and constructed classification trees from, respectively,
+original and new data set. Results of running the following script are
+not striking (in terms of accuracy boost), but still give an example
+on how to do exactly the same cross-validation on two data set with
+the same number of instances.</p>
+
+<p class="header"><a href="domain13.py">domain13.py</a>  (uses <a href=
+"glass.tab">iris.tab</a>) </p>
+<xmp class=code>import orange, orngTest, orngStat, orngTree
+data = orange.ExampleTable('iris')
+
+sa = orange.FloatVariable("sepal area")
+sa.getValueFrom = lambda e, getWhat: e['sepal length'] * e['sepal width']
+pa = orange.FloatVariable("petal area")
+pa.getValueFrom = lambda e, getWhat: e['petal length'] * e['petal width']
+
+newdomain = orange.Domain(data.domain.attributes+[sa, pa, data.domain.classVar])
+newdata = data.select(newdomain)
+
+learners = [orngTree.TreeLearner(mForPruning=2.0)]
+
+indices = orange.MakeRandomIndicesCV(data, 10)
+res1 = orngTest.testWithIndices(learners, data, indices)
+res2 = orngTest.testWithIndices(learners, newdata, indices)
+
+print "original: %5.3f, new: %5.3f" % (orngStat.CA(res1)[0], orngStat.CA(res2)[0])
+</xmp>
+
+<h2>A Wrapper For Feature Subset Selection</h2>
+<index name="feature subset selection/wrapper">
+
+<p>Here, we construct a simple feature subset selection algorithm that
+uses a wrapper approach (see Kohavi R, John G: The Wrapper Approach,
+in Feature Extraction, Construction and Selection : A Data Mining
+Perspective, edited by Huan Liu and Hiroshi Motoda) and a
+hill-climbing strategy for selection of features. Wrapper approach
+estimates the quality of given feature set by running a selected
+learning algorithm. We start with empty feature set, and incrementally
+add features from original data set. We do this only if the
+classification accuracy increases, hence we stop where adding any
+single feature does not result in gain of performance. For evaluation,
+we use cross-validation. [What Kohavi and John describe in their
+wrapper approach is a little more complex, uses best-first search and
+does some smarter evaluation. From the script presented here to their
+algorithm is not far, and you are encouraged to build such wrapper if
+you need one or for an exercise.]</p>
+
+<p class="header"><a href="domain9.py">domain9.py</a>  (uses <a href=
+"voting.tab">voting.tab</a>) </p>
+<xmp class=code>import orange, orngTest, orngStat, orngTree
+
+def WrapperFSS(data, learner, verbose=0, folds=10):
+  classVar = data.domain.classVar
+  currentAtt = []
+  freeAttributes = list(data.domain.attributes)
+
+  newDomain = orange.Domain(currentAtt + [classVar])
+  d = data.select(newDomain)
+  results = orngTest.crossValidation([learner], d, folds=folds)
+  maxStat = orngStat.CA(results)[0]
+  if verbose>=2:
+    print "start (%5.3f)" % maxStat
+
+  while 1:
+    stat = []
+    for a in freeAttributes:
+      newDomain = orange.Domain([a] + currentAtt + [classVar])
+      d = data.select(newDomain)
+      results = orngTest.crossValidation([learner], d, folds=folds)
+      stat.append(orngStat.CA(results)[0])
+      if verbose>=2:
+        print "  %s gained %5.3f" % (a.name, orngStat.CA(results)[0])
+
+    if (max(stat) > maxStat):
+      oldMaxStat = maxStat
+      maxStat = max(stat)
+      bestVarIndx = stat.index(max(stat))
+      if verbose:
+        print "gain: %5.3f, attribute: %s" % (maxStat-oldMaxStat, freeAttributes[bestVarIndx].name)
+      currentAtt = currentAtt + [freeAttributes[bestVarIndx]]
+      del freeAttributes[bestVarIndx]
+    else:
+      if verbose:
+        print "stopped (%5.3f)" % (max(stat) - maxStat)
+      return orange.Domain(currentAtt + [classVar])
+      break
+
+data = orange.ExampleTable("voting")
+learner = orngTree.TreeLearner(mForPruning=0.5)
+
+bestDomain = WrapperFSS(data, learner, verbose=1)
+print bestDomain
+</xmp>
+
+<p>For a wrapper feature subset selection we have defined a function
+<code>WrapperFSS</code>, which takes the data, the learner, and can be
+optionally requested to report on the progress of search
+(<code>verbose=1</code>). Cross-validation is by default using ten
+folds, but you may change this through a parameter of
+<code>WrapperFSS</code>. Here is a result of a single run of the
+script, where we used classification tree as a learner:</p>
+
+<xmp class="code">gain: 0.343, attribute: physician-fee-freeze
+stopped (0.000)
+[physician-fee-freeze, party]
+</xmp>
+
+<p>Notice that only a single attribute was selected
+(<code>party</code> is a class). You may explore the behavior of the
+algorithm in some more detail to see why this happens by calling the
+feature subset selection with <code>verbose=2</code>. You may also
+replace tree learner with some other algorithm. We did this and used
+naive Bayes (<code>learner = orange.BayesLearner()</code>), and got
+the following:</p>
+
+<xmp class="code">gain: 0.343, attribute: physician-fee-freeze
+gain: 0.002, attribute: synfuels-corporation-cutback
+gain: 0.005, attribute: adoption-of-the-budget-resolution
+stopped (0.000)
+[physician-fee-freeze, synfuels-corporation-cutback,
+adoption-of-the-budget-resolution, party]
+</xmp>
+
+<p>The selected set of features includes <code>physician-fee-freeze</code>, but in addition also two other attributes. </p>
+
+<p>[One think with naive Bayes is that it will report a bunch of warnings of the type</p>
+
+<xmp class="code">  classifiers[i] = learners[i](learnset, weight)
+C:\PYTHON22\lib\orngTest.py:256: KernelWarning: 'BayesLearner':
+invalid conditional probability or no attributes
+(the classifier will use apriori probabilities)
+</xmp>
+
+<p>This is because at the start of the feature subset selection, a set
+with no attributes other than class was give to the learner. This
+warnings are ok and can come in handy elsewhere, if you really do not
+like them here, add the following to the code:<p>
+
+<xmp class="code">import warnings
+warnings.filterwarnings("ignore", ".*'BayesLearner': .*",
+orange.KernelWarning)
+</xmp>
+
+<index name="feature subset selection/wrapped learner">
+<p>An issue of course is does this feature subset selection by
+wrapping help us in building a better classifier. To test this, we
+will construct a <code>WrappedFSSLearner</code>, that will take some
+learning algorithm and a data set, do feature subset selection to
+determine the appropriate set of features, and craft classifier from
+data that will include this set of features. Like we did before in our
+Tutorial, we will construct <code>WrappedFSSLearner</code> such that
+it could be used by other Orange modules.</p>
+
+<p class="header">part of <a href="domain10.py">domain10.py</a>  (uses <a href=
+"voting.tab">voting.tab</a>) </p>
+<xmp class=code>def WrappedFSSLearner(learner, examples=None, verbose=0, folds=10, **kwds):
+  kwds['verbose'] = verbose
+  kwds['folds'] = folds
+  learner = apply(WrappedFSSLearner_Class, (learner,), kwds)
+  if examples:
+    return learner(examples)
+  else:
+    return learner
+
+class WrappedFSSLearner_Class:
+  def __init__(self, learner, verbose=0, folds=10, name='learner w wrapper fss'):
+    self.name = name
+    self.learner = learner
+    self.verbose = verbose
+    self.folds = folds
+
+  def __call__(self, data, weight=None):
+    domain = WrapperFSS(data, self.learner, self.verbose, self.folds)
+    selectedData = data.select(domain)
+    if self.verbose:
+      print 'features:', selectedData.domain
+    model = self.learner(selectedData, weight)
+    return Classifier(classifier = model)
+
+class Classifier:
+  def __init__(self, **kwds):
+    self.__dict__.update(kwds)
+
+  def __call__(self, example, resultType = orange.GetValue):
+    return self.classifier(example, resultType)
+
+
+#base = orngTree.TreeLearner(mForPruning=0.5)
+#base.name = 'tree'
+base = orange.BayesLearner()
+base.name = 'bayes'
+import warnings
+warnings.filterwarnings("ignore", ".*'BayesLearner': .*", orange.KernelWarning)
+
+fssed = WrappedFSSLearner(base, verbose=1, folds=5)
+fssed.name = 'w fss'
+
+# evaluation
+
+learners = [base, fssed]
+data = orange.ExampleTable("voting")
+results = orngTest.crossValidation(learners, data, folds=10)
+
+print "Learner      CA     IS     Brier    AUC"
+for i in range(len(learners)):
+  print "%-12s %5.3f  %5.3f  %5.3f  %5.3f" % (learners[i].name, \
+    orngStat.CA(results)[i], orngStat.IS(results)[i],
+    orngStat.BrierScore(results)[i], orngStat.AUC(results)[i])
+</xmp>
+
+<p>The wrapped learner uses <code>WrapperFSS</code>, which is exactly
+the same function that we have developed in out previous script. The
+objects we have introduced in the script above mainly take care of the
+attributes, the code that really does something is actually in the
+<code>__call__</code> function of
+<code>WrappedFSSLearner_Class</code>. Running this script for
+classification tree, we get the same single-attribute set with
+<code>physician-fee-freeze</code> for all of the ten folds, and a
+minimal gain in accuracy. Something similar happens for naive Bayes,
+except that attributes included in the data set are
+<code>[physician-fee-freeze, synfuels-corporation-cutback,
+adoption-of-the-budget-resolution]</code>, and the statistics reported
+are quite higher than for the naive Bayes without feature subset
+selection:</p>
+
+<xmp class="code">Learner      CA     IS     Brier    AUC
+bayes        0.901  0.758  0.177  0.976
+w fss        0.961  0.848  0.064  0.991
+</xmp>
+
+<p>This concludes the lesson on basic data set manipulation, which
+started with description of some really elemental operations and
+finished with no-so-very-basic algorithm. Still, if you are inspired
+for feature subset selection, you may use the code for our wrapper
+approach we have demonstrated at the end of this lesson to extend it
+in any way you like: what you may find out is that writing Orange
+scripts like this is easy and can be quite a joy.  </p>
+
+<hr><br><p class="Path">
+Prev: <a href="o_ensemble.htm">Ensemble Techniques</a>,
+Next: <a href="uncovered.htm">What we did not cover</a>,
+Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
+</p>
+
+</body></html>
+

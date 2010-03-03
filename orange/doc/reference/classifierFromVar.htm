@@ -1,0 +1,103 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<index name="classifiers/from a single attribute">
+<h1>Classifier from Attribute</h1>
+
+<P>Classifiers from attribute predict the class based on the value of a single attribute. While they can be used for making predictions, they actually play a different, yet important role in Orange. They are used not to predict class values but to compute attribute's values. For instance, when a continuous attribute is discretized and replaced by a discrete attribute, an instance of a classifier from attribute takes care of automatic value computation when needed. Similarly, a classifier from attribute usually decides the branch when example is classified in decision trees.</P>
+
+<P>There are two classifiers from attribute; the simpler <CODE>ClassifierFromVarFD</CODE> supposes that example is from some fixed domain and the safer <CODE>ClassifierFromVar</CODE> does not. You should primarily use the latter, moreover since it uses a caching schema which helps the class to be practically as fast as the former.</P>
+
+<P>Both classifiers can be given a transformer that can modify the value. In discretization, for instance, the transformer is responsible to compute a discrete interval for a continuous value of the original attribute.</P>
+
+<H2>ClassifierFromVar</H2>
+<index name="classes/ClassifierFromVarFD">
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>whichVar</DT>
+<DD>The descriptor of the attribute whose value is to be returned.</DD>
+
+<DT>transformer</DT>
+<DD>The transformer for the value. It should be a class derived from <CODE>TransformValue</CODE>, but you can also use a callback function.</DD>
+
+<DT>distributionForUnknown</DT>
+<DD>The distribution that is returned when the <CODE>whichVar</CODE>'s value is undefined.</CODE>
+</DL>
+
+<P>When given an <CODE>example</CODE>, <CODE>ClassifierFromVar</CODE> will return <CODE>transformer(example[whichVar])</CODE>. <CODE>whichVar</CODE> can be either an ordinary attribute, a meta attribute or an attribute which is not defined for the example but has <CODE>getValueFrom</CODE> that can be used to compute the value. If none goes through or if the value found is unknown, a <CODE>Value</CODE> of subtype <CODE>Distribution</CODE> containing <CODE>distributionForUnknown</CODE> is returned.</P>
+
+<P>The class stores the domain version for the last example and its position in the domain. If consecutive examples come from the same domain (which is usually the case), <CODE>ClassifierFromVar</CODE> is just two simple <CODE>if</CODE>s slower than <CODE>ClassifierFromVarFD</CODE>.
+
+<P>As you might have guessed, the crucial component here is the <CODE>transformer</CODE>. Let us, for sake of demonstration, load a Monk 1 dataset and construct an attribute <CODE>e1</CODE> that will have value "1", when <CODE>e</CODE> is "1", and "not 1" when <CODE>e</CODE> is different than 1. There are many ways to do it, and that same problem is covered in different places in Orange documentation. Although the way presented here is not the simplest, it will serve to demonstrate how <CODE>ClassifierFromVar</CODE> works.</P>
+
+<p class="header">part of <a href="classifierFromVar.py">part of classifierFromVar.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class=code>import orange
+data = orange.ExampleTable("monk1")
+e = data.domain["e"]
+
+e1 = orange.EnumVariable("e1", values = ["1", "not 1"])
+
+def eTransformer(value):
+    if int(value) == 0:
+        return 0
+    else:
+        return 1
+
+e1.getValueFrom = orange.ClassifierFromVar()
+e1.getValueFrom.whichVar = e
+e1.getValueFrom.transformer = eTransformer)
+
+data2 = data.select(["a", "b", "e", e1, "y"])
+for i in data2:
+    print i
+</XMP>
+
+<P>As first, you might have noticed that <CODE>transformer</CODE>, an attribute  of a pure C++ object <CODE>ClassifierFromVar</CODE>, has been assigned a Python function. As you can learn by reading <A href="callbacks.htm">the documentation on callback functions</A>, the function itself gets automatically wrapped into a C++ class that performs the argument conversion to Python and back. (Not that you need to know about it. Just use it and be happy that it works.)</P>
+
+<P>The problem here is that the <CODE>eTransformer</CODE> doesn't get the nice instances of <CODE>orange.Value</CODE> that you are used to. You cannot compare the value to a string - the function cannot begin by "<CODE>if value == "1"</CODE>", since the <CODE>value</CODE> has no associated attribute descriptor that would "understand" the string "1". Instead, you need to use integer indices. Since values of <CODE>e</CODE> are "1", "2", "3", "4", index 0 corresponds to value "1". The same goes for returning values; values of <CODE>e1</CODE> are "1" and "not 1", in this order, so returning 0 says "1" and returning 1 says "not 1".</P>
+
+<P>Having written the transformer, the rest is trivial - we assign a <CODE>ClassifierFromVar</CODE> to the new attribute's <CODE>getValueFrom</CODE>, and set its <CODE>whichVar</CODE> to <CODE>e</CODE> and <CODE>transformer</CODE> to <CODE>eTransformer</CODE>.</P>
+
+<P>To check the results, we constructed a new example table containing only attributes <CODE>a</CODE>, <CODE>b</CODE> and <CODE>e</CODE>, the new attribute <CODE>e1</CODE> and the class attribute. For example conversion, the value of <CODE>e1</CODE> is computed by calling <CODE>ClassifierFromVar</CODE> and the overall effect is that for each example <CODE>ex</CODE>, <CODE>e1</CODE> has value <CODE>eTransformer(ex[e])</CODE>.</P>
+
+
+<H2>ClassifierFromVarFD</H2>
+<index name="classes/ClassifierFromVarFD">
+
+<P><CODE>ClassifierFromVarFD</CODE> is very similar to <CODE>ClassifierFromVar</CODE> except that the attribute is not given as a descriptor (like <CODE>whichVar</CODE>) but as an index. The index can be either a position of the attribute in the domain or a meta-id. Given that <CODE>ClassifierFromVarFD</CODE> is practically no faster than <CODE>ClassifierFromVar</CODE> (and can in future even be merged with the latter), you should seldom need to use the class.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>domain <SPAN class=normalfont>(inherited from <CODE>ClassifierFD</CODE>)</SPAN></DT>
+<DD>The domain on which the classifier operates.</DD>
+
+<DT>position</DT>
+<DD>The position of the attribute in the domain or its meta-id.</DD>
+
+<DT>transformer</DT>
+<DD>The transformer for the value.</DD>
+
+<DT>distributionForUnknown</DT>
+<DD>The distribution that is returned when the <CODE>whichVar</CODE>'s value is undefined.</CODE>
+</DL>
+
+<P>When an example is passed to <CODE>ClassifierFromVarFD</CODE>, it is first checked whether it is from the correct <CODE>domain</CODE>; an exception is raised if not. If the domain is OK, the corresponding attribute value is retrieved, transformed and returned.</P>
+
+<P><CODE>ClassifierFromVarFD</CODE>'s twin brother, <CODE>ClassifierFromVar</CODE>, can also handle attributes that are not in the examples' domain or meta-attributes, but can be computed therefrom by using their <CODE>getValueFrom</CODE>. Since <CODE>ClassifierFromVarFD</CODE> doesn't store attribute descriptor but only an index, such functionality is obviously impossible.</P>
+
+<P>To rewrite the above script to use <CODE>ClassifierFromVarFD</CODE>, we need to set the domain and the <CODE>e</CODE>'s index to <CODE>position</CODE> (equivalent to setting <CODE>whichVar</CODE> in <CODE>ClassifierFromVar</CODE>). The initialization of <CODE>ClassifierFromVarFD</CODE> thus goes like this:
+
+<p class="header">part of <a href="classifierFromVar.py">part of classifierFromVar.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class=code>e1.getValueFrom = orange.ClassifierFromVarFD()
+e1.getValueFrom.domain = data.domain
+e1.getValueFrom.position = data.domain.attributes.index(e)
+e1.getValueFrom.transformer = eTransformer
+</XMP>
+
+</BODY>
+</HTML> 

@@ -1,0 +1,411 @@
+<!-- saved from url=(0022)http://internet.e-mail -->
+<!-- saved from url=(0022)http://internet.e-mail -->
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<h1>Learning Rules</h1>
+<index name="classifiers+rule learning">
+<index name="classifiers+CN2">
+
+<p> This document describes main classes used for supervised learning of if-then rules. First two classes, <A href=#rulelearner">RuleLearner</A>  and <A href="#rulebeamfinder">RuleBeamFinder</A> , implement learning of rules by following separate-and-conquer strategy. This strategy consists of several replaceable functions, which are, in our classes, presented as components. As usual for all Orange classes, these components can be easily rewritten (in Python) and can replace the default ones. As there are many components here and to make the presentation of components a bit easier, the description of classes will start with the pseudo code of implemented algorithm to show where functions (components) do actually take place. After the algorithm, the actual description of individual components is given. The third class, class <A href="#rule">Rule</A>, is a class used to represent a single rule. <A href="#examples">Examples</A> at the end are used to illustrate how these three classes can be used to implement different ways of learning rules. </p>
+
+<hr>
+
+<A name="rulelearner"></A>
+<H2>RuleLearner class</H2>
+
+<p><INDEX name="classes/RuleLearner">RuleLearner is a class for inductive learning rules from data. The algorithm follows separate-and-conquer strategy, which has its origins in the AQ family of algorithms (Fuernkranz J.; Separate-and-Conquer Rule Learning, Artificial Intelligence Review 13, 3-54, 1999). Basically, such algorithms search for the "best" possible rule in learning examples, remove covered data from learning examples (separate) and repeat the process (conquers) on the remaining examples. Follows the algorithm of separate-and-conquer rule learning:
+
+<br><br>
+<u>RuleLearner's call function</u>:<br>
+<PRE class="code">
+def __call__(self,examples,weightID=0):
+    ruleList = orange.RuleList()
+    allExamples = orange.ExampleTable(examples)
+    while not self.<b>dataStopping</b>(examples,weightID,self.targetClass):
+        newRule = self.<b>ruleFinder</b>(examples,weightID,self.targetClass,self.baseRules)
+        if self.<b>ruleStopping</b>(ruleList,newRule,examples,weightID):
+            break
+        examples,weightID = self.<b>coverAndRemove</b>(newRule,examples,weightID,self.targetClass)
+        ruleList.append(newRule)
+    return orange.RuleClassifier_firstRule(rules=ruleList,examples=allExamples)
+</PRE>
+<br>
+
+Main functions of this algorithm are <b>dataStopping</b>, <b>ruleFinder</b>, <b>coverAndRemove</b>, and <b>ruleStopping</b>. Each of those functions corresponds to an callable attribute in the class and a component (callable class or function) needs to be set in order that method can work. By default, components that simulate CN2 algorithm will be used, but user can change it to any arbitrary function (component) that accepts and returns appropriate parameters. The instructions and requirements for writting such components is given at the description of attributes.
+
+</p>
+<P class=section>Methods</P>
+<DL class=attributes>
+As ruleLearner is derived from orange Learner class, it has the classical call method that accepts examples and, if available, id number of weight attribute.
+</DL>
+<P class=section>Attributes</P>
+<DL class=attributes>
+
+<DT>dataStopping</DT>
+<DD>This callable attribute accepts a component that checks from the examples whether there will be benefit from further learning, so basically checks if there is enough data to continue learning. The default component returns true if the set of examples is empty or, if targetClass is given, returns true if number of instances with given class is zero.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default component: </td>
+    <td> orange.RuleDataStoppingCriteria_NoPositives</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleDataStoppingCriteria </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> condition = dataStopping(examples,weightID,targetclass) </td>
+  </tr>
+</table>
+
+</DD>
+
+<DT>ruleStopping </DT>
+<DD>ruleStopping is a component that decides from the last rule learned, if it is worthwhile to use this rule and learn more rules. By default, this attribute is set to None - meaning that all rules are accepted.
+
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default component: </td>
+    <td> None</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleStoppingCriteria </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> condition = ruleStopping(ruleList,rule,examples,weight) </td>
+  </tr>
+</table>
+
+
+</DD>
+
+<DT>coverAndRemove </DT>
+<DD>This component removes examples covered by the rule and returns remaining examples. If the targetClass is not given (targetClass = -1), default component does exactly this, and, if target class is given, removes only covered examples that are in the target class.
+
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default component: </td>
+    <td> orange.RuleCovererAndRemover_Default</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleCovererAndRemover </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> (newExamples,newWeightID) = coverAndRemove(rule,examples,weightID,targetClass) </td>
+  </tr>
+</table>
+
+</DD>
+
+<DT>ruleFinder</DT>
+<DD>RuleFinder learns a single rule from examples. By default, RuleBeamFinder class is used, which is explained later on.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default component: </td>
+    <td> orange.RuleBeamFinder</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleFinder </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> rule = ruleFinder(examples,weightID,targetClass,baseRules) </td>
+  </tr>
+</table>
+</DD>
+
+<DT>storeExamples</DT>
+<DD>Set this to 1 if you want the rules to have stored examples.
+</DD>
+
+<DT>targetClass</DT>
+<DD>Learn rules with a specific target class
+</DD>
+
+<DT>baseRules</DT>
+<DD>Base rules are rules that we would like to use in ruleFinder to constrain the learning space. You can see it in the ruleFinder format specification that it takes also a set of base rules as a parameter. If attribute baseRules is not set, it will be set to a set containing only empty rule.
+</DD>
+</DL>
+
+<A name="rulebeamfinder"></A>
+<H2>RuleBeamFinder class</H2>
+
+<p><INDEX name="classes/RuleBeamFinder">RuleBeamFinder class performs beam search for the best rule. This is the default class used in RuleLearner to find the best rule. Pseudo code of the algorithm is shown here:
+<br><br>
+<u>RuleBeamFinder's call function</u>:<br>
+<PRE class = "code">
+    def __call__(self,examples,weightID,targetClass,baseRules):
+        prior = orange.Distribution(examples.domain.classVar,examples,weightID)
+        rulesStar,bestRule = self.<b>initializer</b>(examples,weightID,targetClass,baseRules,self.evaluator,prior)
+        # compute quality of rules in RuleStar and bestRule
+        ...
+        while len(rulesStar)>0:
+            candidates, rulesStar = self.<b>candidateSelector</b>(rulesStar,examples,weightID)
+            for cand in candidates:
+                newRules = self.<b>refiner</b>(cand,examples,weightID,targetClass)
+                for newRule in newRules:
+                    if self.<b>ruleStoppingValidator</b>(newRule,examples,weightID,targetClass,cand.classDistribution)                              newRule.quality = self.<b>evaluator</b>(newRule,examples,weightID,targetClass,prior)
+                        rulesStar.append(newRule)
+                            if self.<b>validator</b>(newRule,examples,weightID,targetClass,prior) and   newRule.quality>bestRule.quality:
+                                bestRule = newRule
+            rulesStar = self.<b>ruleFilter</b>(rulesStar,examples,weightID)
+        return bestRule
+</PRE>
+<br>
+As you can see, there are several exchangeable components. Each of those is explained in the attributes section.
+
+ </p>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+
+<DT>initializer</DT>
+<DD>This component is used to initialize rulesStar and for selecting the initial best rule. By default, baseRules are returned as starting rulesSet and the best from baseRules is set as bestRule.
+If baseRules are not set, this class will return rulesStar with rule that covers all examples (has no selectors) and this rule will be also used as bestRule.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleBeamInitializer_Default </td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleBeamInitializer </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> (ruleList,bestRule) = initializer(examples,weigthID,targetClass,baseRules,evaluator,prior) </td>
+  </tr>
+</table>
+</DD>
+
+
+<DT>candidateSelector</DT>
+<DD>Separates a subset from the current rulesStar and returns it. These rules will be used in the next specification step. Default component takes all rules in rulesStar.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleBeamCandidateSelector_TakeAll</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleBeamCandidateSelector </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> (candidates,ruleList) = candidateSelector(ruleList,examples,weigthID) </td>
+  </tr>
+</table>
+
+</DD>
+
+<DT>refiner</DT>
+<DD>Refines given rule. New rule should cover a strict subset of examples covered by given rule. Default component adds a a conjunctive selector (attribute = att_value) to selectors present in the rule.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleBeamRefiner_Selector</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleBeamRefiner </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> newRule = candidateSelector(rule,examples,weigthID,targetClass) </td>
+  </tr>
+</table>
+</DD>
+
+<DT>ruleFilter</DT>
+<DD>Filters rules to keep beam relatively small to constrain search complexity. By default, it takes five best rules.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleBeamFilter_Width(m=5)</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleBeamFilter </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> rules = ruleFilter(rules,examples,weigthID) </td>
+  </tr>
+</table>
+</DD>
+
+ <DT>evaluator</DT>
+<DD>Evaluates rule from covered examples. By default, entropy is used as a measure.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleEvaluator_Entropy</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleEvaluator </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> quality = evaluator(rule,examples,weigthID,targetClass,prior) </td>
+  </tr>
+</table>
+</DD>
+
+ <DT>ruleStoppingValidator</DT>
+<DD>Validates whether the rule is specialized enough comparing it to its parent. The parent of a rule is a rule from which this rule was specialized.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> None</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleValidator </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> ruleStoppingValidator(rule,examples,weigthID,targetClass,priorOfParentRule) </td>
+  </tr>
+</table>
+
+</DD>
+ <DT>validator</DT>
+<DD>Validates, whether the rule is good enough to be considered as the best rule, i.e. the rule is good enough to be returned by rulefinder. By default, likelihood ratio statistics is used that gives an estimate if rule is statistically better than the default rule.
+<br><br>
+<table border="0">
+  <tr>
+    <td> Default class: </td>
+    <td> orange.RuleValidator_LRS(alpha=1.0)</td>
+  </tr>
+  <tr>
+    <td> Derived from: </td>
+    <td> orange.RuleValidator </td>
+  </tr>
+  <tr>
+    <td> Format: </td>
+    <td> ruleGoodEnough = validator(rule,examples,weigthID,targetClass,prior) </td>
+  </tr>
+</table>
+
+</DD>
+
+</DL>
+
+
+<P class=section>Methods</P>
+<DL class=attributes>
+
+<DT>call operator(examples, weight, targetClass, baseRules);</DT>
+<DD>Learns a rule from examples</DD>
+
+</DL>
+
+<A name="rule"></A>
+<H2>Rule class</H2>
+
+<p><INDEX name="classes/Rule">Rule class is the base class for presentation of a single rule.</p>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+
+<DT>filter</DT>
+<DD>This attribute specifies the contents of the rule; it is the basis of the Rule class. Class Filter_values is set as a default, which can, together with default methods, be replaced with any class inherited from Filter.
+</DD>
+
+<DT>classifier</DT>
+<DD>Each rule can be used as a classical Orange like classificator. By default, Default classifier is used.</DD>
+
+<DT>learner</DT>
+<DD>Learner to be used for making a classifier. By default, MajorityLearner is used.</DD>
+
+<DT>classDistribution</DT>
+<DD>Distribution of class in examples covered by this rule.</DD>
+
+<DT>examples</DT>
+<DD>Covered examples by this rule.</DD>
+
+<DT>weightID</DT>
+<DD>Weight for the stored examples.</DD>
+
+<DT>quality</DT>
+<DD>Quality of the rule. Rules with higher quality are better.</DD>
+
+<DT>complexity</DT>
+<DD>Complexity of the rule. Complexity is used for selecting between rules with equal quality, where rules with lower complexity are preferred. Currently, complexity corresponds to the number of selectors in rule (actually to number of conditions in filter), but, obviously, any other measure can be applied.
+</DD>
+
+</DL>
+
+
+<P class=section>Methods</P>
+<DL class=attributes>
+
+<DT>__init__(self)</DT>
+<DD>Creates and empty rule. </DD>
+
+
+<DT>operator (example)</DT>
+<DD>Returns True if Example if covered by rule and 0 otherwise. </DD>
+
+<DT>operator (examples, ref=True, negate=False)</DT>
+<DD>Filters examples using filter object. Returns examples that are covered by the rule. </DD>
+
+<DT>filterAndStore(examples, weightID=0, targetClass=-1)</DT>
+<DD>This method filters passed examples and stores them in the attribute examples. It also computes classDistribution, sets weight of stored examples and creates a new classifier using learner attribute. </DD>
+</DL>
+
+<A name="examples"></A>
+<H2>Examples</H2>
+
+<p> This last section is used to give some examples how we can replace the default components. All examples are from <a href="testRulelearner.py">testRuleLearner.py</a> (uses <a href="titanic.tab">titanic.tab</a>). </p>
+
+<xmp type="code">learner = orange.RuleLearner()
+cl = learner(data)
+
+# print rules
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+In the first row we initialize the learner, in the second run learner on data that returns a rule classifier, and in the last two lines, the induced rules are printed on screen (uses orngCN2 module). This learner uses only default components, but we wish to change that now. The following two lines, for instance,
+<xmp type="code">learner.ruleFinder = orange.RuleBeamFinder()
+learner.ruleFinder.evaluator = orngCN2.mEstimate(m=50)
+
+# print rules
+cl = learner(data)
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+would change the evaluation function of learner to m-estimate of probability with m set to 50. This evaluation function is implemented in orngCN2 module (orngCN2.py). Notice that we first need to set the ruleFinder component, because the default components are not constructed when the learner is constructed, but only when we run it on data. At that time, the algorithm checks which components are necessary and sets defaults. Similarly, when the learner finishes, it destructs all default components.
+
+Continuing with our example, assume that we wish to set a different validation function and a different bean width. This is simply written as:
+<xmp type="code">learner.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha=0.01,min_coverage=10,max_rule_complexity = 2)
+learner.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = 50)
+
+# print rules
+cl = learner(data)
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+
+

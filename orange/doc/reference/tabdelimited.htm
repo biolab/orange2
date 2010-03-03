@@ -1,0 +1,216 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<H1>Tab-delimited and similar formats</H1>
+<index name="tab-delimited file format">
+
+<P>Besides supporting several common file formats that are used in machine learning (C4.5...), Orange introduces a more capable format that supports many additional features. There are several variations of it. The most powerful is the old-style tab-delimited file, with a header that gives the names of attributes, their type and role (ordinary attributes, class, meta-attribute). A simpler new-style tab-delimited file has a simpler header and when attribute types are omitted, Orange will attempt to guess them itself. Comma-separated files are essentially the same as the new-style tab-delimited, except that they have commas instead of tabulators. Finally, Orange for Windows can also read files in Excel format, provided that you have Excel installed. The organization of the file is again similar to the new-style tab-delimited files.</P>
+
+<P>All file formats begin with the header; in the old-style it has three lines and in the new style it has only one. The remaining lines contain examples. These are given as lists of symbolic values, separated by tabulators in .tab and .txt files, commas in .csv, or occupying a row in an Excel file. Lines in (.tab, .txt and .csv) files that commence by "|" are comment lines and are ignored. There are no comments in Excel. Lines that are entirely empty (except for the delimiters) are skipped.</P>
+
+
+<H3>Domain description - older version (.tab)</H3>
+
+<P>The first line of the file in the older format contains names of the attributes. Names can contain any character but CR, LF, NUL or TAB. Spaces are allowed.</P>
+
+<P>The second line contains types of attributes, one entry for each attribute. Attributes can be of the following four types.
+<UL>
+<LI><B>Discrete attributes</B>, denoted by <CODE>d</CODE> or <CODE>discrete</CODE> for discrete attributes. Alternatively, you can list the possible values of the attribute instead of "d" or "discrete"; values should be separated by spaces. Spaces contained in values must be "escaped" (that is, preceded by a backslash): a value named "light blue" would be written as <CODE>light\ blue</CODE>. Listing attributes is useful since it prescribes the order of the values; if you only described the attribute type by "d", the order of values will be the same as encountered when reading the examples. The corresponding attribute descriptor is of type <A href="Variable.htm#EnumVariable"><CODE>EnumVariable</CODE></A>.</LI>
+<LI><B>Continuous attribute</B>, defined by <CODE>c</CODE> or <CODE>continuous</CODE> for continuous attributes. They are described by an instance of <A href="Variable.htm#FloatVariable"><CODE>FloatVariable</CODE></A>.</LI>
+<LI><B>String attributes</B>, marked by <CODE>string</CODE> and described by <a href="Variable.htm#StringVariable"><CODE>StringVariable</CODE></A>.</LI>
+<LI><B>Basket</B>, marked by <CODE>basket</CODE>; this does not create a single attribute but rather tells the parser that this column will list values of optional continuous meta attributes. There can only be one basket. The attribute needs a name to simplify the parser, yet the name is not used anywhere. <a href="#basket">More on baskets</a> in a dedicated chapter.</LI>
+<LI><B>Python attributes</B> are meant for advanced users who want to store additional with examples or who write specific learning algorithms that can make use of such data. The definition and use of such attributes is described in a specific page on <a href="PythonVariable.htm"><CODE>Python attribute type</CODE></A>.
+</UL>
+
+<P><B>Change: </B> The (undocumented) symbols that could be used for declaring continuous and discrete attributes ('f' and 'float', and 'e' and 'enum') have been removed.</P>
+
+<P>Note that at the moment, Orange learning methods can only use discrete and continuous attributes. String and Python attributes can be used as meta-attributes describing examples, or you can use them in specific learning methods and other algorithms.</P>
+
+<P>The third line of the file contains optional flags.
+<DL>
+<DT><CODE>i</CODE> or <CODE>ignore</CODE></DT>
+<DD>Attributes with this flag are ignored, <EM>i.e.</EM> not read into the table.</DD>
+
+<DT><CODE>c</CODE> or <CODE>class</CODE></DT>
+<DD>denotes a class attribute. There can be at most one such attribute; if there are none, the last attribute is the class.</DD>
+
+<DT><CODE>m</CODE> or <CODE>meta</CODE></DT>
+<DD>denotes a meta-attribute. Such attributes are not used by any learning algorithm (or by algorithms for, say, measuring distances between examples) but are stored with examples. Meta attributes are most often used for weighting the examples.</DD>
+
+<DT><CODE>-dc</CODE></DT>
+<DD>followed by a value that serves as "don't care" symbol for this attribute. This option can be used more than once for each attribute if don't cares are specified with different symbols. See below for the details.</DD>
+</DL>
+
+<P>The basket can be ignored, while other flags have no effect.</P>
+
+<P>The first few lines of iris dataset in this format look like this:</P>
+
+<XMP class="code">sepal length   sepal width   petal length   petal width   iris
+c              c             c              c             d
+                                                          class
+5.1            3.5           1.4            0.2           Iris-setosa
+4.9            3.0           1.4            0.2           Iris-setosa
+4.7            3.2           1.3            0.2           Iris-setosa
+4.6            3.1           1.5            0.2           Iris-setosa
+</XMP>
+
+<H3>Domain description - new version (.txt, .csv and .xls)</H3>
+
+<P>The newer version of tab-delimited formats is much simpler yet still powerful. The domain description is given in a single line which, in its most simple form, contains only the names of the attributes. In this case, Orange will recognize the attribute types itself, using this procedure:</P>
+
+<OL>
+<LI>If the attribute descriptor with the same name is found in known descriptors (passed by <CODE>use</CODE> or determine by reuse), it will be used, thus specifying the attribute type as well.</LI>
+<LI>If the attribute is new, its values in the file are checked:
+<UL>
+<LI>attributes whose values are digits from 0-9 (or some subset of this) are discrete; this is to cover the domains with coded attribute values,</LI>
+<LI>attributes whose values can be parsed as numbers (in .txt) or whose cells contain numbers (in Excel) are continuous,</LI>
+<li>attributes which have more than 20 different values, yet less than half of them appear more than in one example, are strings and are put among meta attributes,</li>
+<LI>other attributes are discrete.</LI>
+Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
+</OL>
+
+<P>The last non-ignored non-meta attribute will be a class attribute. It is not possible to specify a classless domain in those two file formats.</P>
+
+<P>This procedure is not foolproof. You can have continuous attributes whose values are accidentally only digits from 0-9. Or you can have a discrete attribute with values 1.1, 1.2, 1.3 and 2.1. You may want to designate some other attribute as class attribute, ignore another attribute and have a few meta attribute. This can be achieved by prefixes.</P>
+
+<P>Prefixed attributes contain one- or two-lettered prefix, followed by "#" and the name. The first letter of the prefix can be either "m" for meta-attributes, "i" to ignore the attribute, and "c" to define the class attribute. As always, only one attribute can be a class attribue. The second letter denotes the attribute type, "D" for discrete, "C" for continuous, "S" for string attributes and "B" for baskets.</P>
+
+<P>In most cases, however, the attribute detection mechanism will suffice. Therefore, Iris can be given like this:</P>
+
+<XMP class="code">sepal length   sepal width   petal length   petal width   iris
+5.1            3.5           1.4            0.2           Iris-setosa
+4.9            3.0           1.4            0.2           Iris-setosa
+4.7            3.2           1.3            0.2           Iris-setosa
+4.6            3.1           1.5            0.2           Iris-setosa
+</XMP>
+
+<P>If you would like to ignore the first attribute, use the second as a class, explicitly require the third attribute to be discrete and have the fourth attribute be a continuous weight, you would "correct" the first line like this</P>
+
+<XMP class="code">i#sepal length   c#sepal width    D#petal length    mC#petal width    iris
+</XMP>
+
+<a name="basket"></a>
+<H3>Baskets</H3>
+
+<P>Baskets can be used for storing sparse data in tab delimited files. They were specifically designed for text mining needs. If text mining and sparse data is not your business, you can skip this section.</P>
+
+<P>Baskets are given as a list of space-separated <code>&lt;name&gt;=&lt;value&gt;</code> atoms. A continuous meta attribute named &lt;name&gt; will be created and added to the domain as optional if it is not already there. A meta value for that variable will be added to the example. If the value is 1, you can omit the <code>=&lt;value&gt;</code> part.</P>
+
+<P>It is not possible to put meta attributes of other types than continuous in the basket.</P>
+
+<P>A tab delimited file with a basket can look like this:
+<xmp class="code">K       Ca      b_foo     Ba  y
+c       c       basket    c   c
+        meta              i   class
+0.06    8.75    a b a c   0   1
+0.48            b=2 d     0   1
+0.39    7.78              0   1
+0.57    8.22    c=13      0   1</xmp>
+These are the examples read from such a file:
+<xmp class="code">[0.06, 1], {"Ca":8.75, "a":2.000, "b":1.000, "c":1.000}
+[0.48, 1], {"Ca":?, "b":2.000, "d":1.000}
+[0.39, 1], {"Ca":7.78}
+[0.57, 1], {"Ca":8.22, "c":13.000}</xmp>
+</P>
+
+<P>It is recommended to have the basket as the last column, especially if it contains a lot of data.</P>
+
+<P>Note a few things. The basket column's name, b_foo, is not used. In the first example, the value of a is 2 since it appears twice. The ordinary meta attribute, Ca, appears in all examples, even in those where its value is undefined. Meta attributes from the basket appear only where they are defined. This is due to the different nature of these meta attributes: Ca is required while the others are optional.
+<xmp class="code">>>> d.domain.getmetas()
+{-6: FloatVariable 'd', -22: FloatVariable 'Ca', -5: FloatVariable 'c', -4: FloatVariable 'b', -3: FloatVariable 'a'}
+>>> d.domain.getmetas(False)
+{-22: FloatVariable 'Ca'}
+>>> d.domain.getmetas(True)
+{-6: FloatVariable 'd', -5: FloatVariable 'c', -4: FloatVariable 'b', -3: FloatVariable 'a'}
+</xmp>
+To fully understand all this, you should read the documentation on <a href="Domain.htm#meta-attributes">meta attributes in <code>Domain</code></a> and on the <a href="basket.htm">basket file format</a> (a simple format that is limited to baskets only).
+</P>
+
+
+<H3>Comma separated files</H3>
+
+<P>Comma separated files are just like the new-format tab-delimited, except that commas are used instead of tabs. For instance, for documentation on censoring, we downloaded the new Wisconsin breast cancer data from UCI:</P>
+
+<XMP class=code>119513,N,31,18.02,27.6,117.5,1013,0.09489,0.1036, <...>
+8423,N,61,17.99,10.38,122.8,1001,0.1184,0.2776, <...>
+842517,N,116,21.37,17.44,137.5,1373,0.08836,0.1189, <...>
+843483,N,123,11.42,20.38,77.58,386.1,0.1425,0.2839, <...>
+<...>
+</XMP>
+
+<P>To import this data to Orange, we only needed to add the first line, describing the attribute names.</P>
+
+<XMP class=code>m#ID,c#recur,time,radius,texture,perimeter,area,smoothness, <...>
+</XMP>
+
+<P>Since we don't want the ID to be used for learning, we turned it into a meta-attribute. Besides, we needed to tell Orange that "recur" is the class attribute.</P>
+
+
+<H3>Undefined values</H3>
+
+<P>By default, empty fields, <CODE>?</CODE> and <CODE>NA</CODE> are interpreted as "don't care", and "~" and "*" as "don't know". You can't change this: this symbols are reserved.</P>
+
+<P>You can, however, specify additional symbols to denote undefineds. This can be done either per attribute or for all attributes at ones. Per-attribute unknowns are specified using <CODE>-dc</CODE> option in the old-style tab-delimited files. For instance, if unknowns for some attribute are given as "UNK", add <CODE>-dc UNK</CODE> in the third line. There is no similar option in the .txt in .csv files.</P>
+
+<P>General symbols for unknown values are not specified in the file but given as keyword arguments to <CODE>ExampleTable</CODE>. Three keywords are recognized: <CODE>DC</CODE> and <CODE>DK</CODE> give symbols for don't cares and don't knows, and <CODE>NA</CODE> for both; <CODE>DC</CODE> and <CODE>DK</CODE> have the priority over <CODE>NA</CODE>. Only one symbol can be specified for each kind of undefined values.</P>
+
+<P>Although we can also load data in other format (such as C4.5) through calling <CODE>ExampleTable</CODE>, these keyword arguments only affect the formats described on this page.</P>
+
+<P>To show how this works, we shall use the file <A href="undefineds.tab">undefineds.tab</A> which looks like this.</P>
+
+<XMP class=code>a               b               c
+d               d               d
+-dc X -dc UNK   -dc UNAVAILABLE
+0               0               0
+1               1               1
+                                1
+*               *               *
+?               ?               ?
+.               .               .
+GDC             GDC             GDC
+GDK             GDK             GDK
+X               X               X
+UNK             UNK             UNK
+UNAVAILABLE     UNAVAILABLE     UNAVAILABLE
+</XMP>
+
+<P>Let's load and print it.</P>
+
+<p class="header">part of <a href="undefineds.py">undefineds.py</a> (uses <a href=
+"undefineds.tab">undefineds.tab</a>)</p>
+<XMP class=code>import orange
+data = orange.ExampleTable("undefineds", DK="GDK", DC="GDC")
+
+for ex in data:
+    print ex
+</XMP>
+
+<P>Here's how the file is interpreted.</P>
+
+<XMP class=code>['0', '0', '0']
+['1', '1', '1']
+['?', '?', '1']
+['~', '~', '~']
+['?', '?', '?']
+['?', '?', '?']
+['?', '?', '?']
+['~', '~', '~']
+['?', 'X', 'X']
+['?', 'UNK', 'UNK']
+['UNAVAILABLE', '?', 'UNAVAILABLE']
+</XMP>
+
+<P>As the call to <CODE>ExampleTable</CODE> specifies, symbols GDC and GDK stand for don't care and don't know for all attributes. In addition, X and UNK denote don't cares for the first attribute and UNAVAILABLE for the second. For other attributes, these symbols are just normal values.</P>
+
+<P>As you have noted, undefined values are printed as "?" and "~", disregarding the way they were specified in the files they were read from. Orange cannot remember such details.</P>
+
+<P>However, when saving the data back to files, you can specify the symbols to be used (for all attributes, not per-attribute). This is done in a similar fashion as when reading the data - by giving additional keyword arguments <CODE>DC</CODE>, <CODE>DK</CODE> and/or <CODE>NA</CODE> to the function <CODE>saveTabDelimited</CODE>, <CODE>saveTxt</CODE> or <CODE>saveCSV</CODE>.</P>
+
+<P>For instance, if we save the file by <xmp class=CODE>orange.saveTabDelimited("undefined-saved-dc-dk", data, DC="GDC", DK="GDK")</xmp>all don't cares ("?") are written as "GDC" and don't knows as "GDK".</P>
+
+<P>This mechanism should provide for easier exporting to other data mining programs that can handle tab- or comma-delimited files. For specific problems, such as having more names denoting different types of unknowns, possibly in combination with other attribute values, you can easily program your own input/output routines in Python.</P> 

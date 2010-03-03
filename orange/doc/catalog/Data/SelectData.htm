@@ -1,0 +1,83 @@
+<html>
+<head>
+<title>Select Data</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Select Data</h1>
+
+<img class="screenshot" src="../icons/SelectData.png">
+<p>Selects instances from input data sets based on conditions on attributes.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Matching Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set composed from instances from input data set that match user-defined condition.</DD>
+<DT>Non-Matching Examples (ExampleTable)</DT>
+<DD>Data instances from input data set that do not match the user-defined condition.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>This widget allows the user to select a subset of the data from the
+input data set based on the condition defined over a set of data's
+attributes. Data instances that match the selection rule are placed on
+the output channel.</p>
+
+<img class="screenshot"
+src="SelectData.png" alt="Select Data" border=0>
+
+<p>Condition is presented in disjunctive normal form, that is, as
+collection of conjuncted terms (AND operator) with optional disjunction
+(OR operator). In other words, if condition does not include a
+disjunction (OR line in the condition) than selected items are those
+matching all terms in the condition.</p>
+
+<p>Condition terms are defined through selecting of an attribute,
+selecting an operator from the list of operators that apply to
+attribute's type, and, if needed, defining the value to be used in
+condition term. Operators are different for discrete, continuous and
+string attributes.</p>
+
+<p>After the terms is defined, it is included in the condition by
+pressing <span class="option">Add button</span>.</p>
+
+<p>To update or change the condition term, select the corresponding
+line in the <span class="option">Data Selection Criteria</span>, change the term's definition
+(<span class="option">Attribute</span>/<span class="option">Operator</span>/<span class="option">Values</span>) and press <span class="option">Update</span>.</p>
+
+<p>Notice that any change in composition of the condition will trigger
+updates in information pane that displays the number of data instances
+being selected (<span class="option">Data Out</span>). Number of instances that match specific
+condition terms are also displayed at the start of the condition term
+line.</p>
+
+<p>Data set composed of instances that match the defined condition is
+placed on the output channel. If <span class="option">Update on any change</span> is selected,
+than the output is updated on any change in the composition of the
+condition or any of its terms.</p>
+
+<h2>Examples</h2>
+
+<p>Below is a simple example that loads the imports-85 data set and
+compares the lengths of the car in a complete data set and data set
+where some more expensive brands are selected.</p>
+
+<a href="SelectData-Example.gif"><img src="SelectData-Example-S.gif"
+alt="Schema with Data Sampler" class="screenshot" border=0></a>
+
+</body>
+</html>

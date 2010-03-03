@@ -1,0 +1,225 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+
+<p class="Path">
+Prev: <a href="c_basics.htm">My first Orange classifier</a>,
+Next: <a href="c_performance.htm">Testing and Evaluating</a>,
+Up: <a href="classification.htm">Classification</a>
+</p>
+
+<H1>Selected Classification Methods</H1>
+
+<p>Orange supports a number of classification techniques, for instance
+classification trees, variants of naive Bayes,
+k-nearest neighbors, classification through association rules,
+function decomposition, logistic regression, and support vectors
+machines. We have already seen some of naive Bayes, and we will
+look here for a few more. Bear in mind that probably the best (and
+sometimes the only) way to access different methods is through
+their associated <a href="../modules/default.htm">modules</a>, so you
+should look there for more detailed documentation.</p>
+
+<h2>Classification Tree</h2>
+<index name="classifiers+classification trees">
+
+<p>Let us look briefly at a different learning method.
+Classification tree learner (yes, this is the same decision tree)
+is another native Orange learner, but because it is a rather
+complex object that is for its versatility composed of a number of
+other objects (for attribute estimation, stopping criterion, etc.),
+a wrapper (module) called <code>orngTree</code> was build around it to simplify
+the use of classification trees and to assemble the learner with
+some usual (default) components. Here is a script with it:</p>
+
+<p class="header"><a href="tree.py">tree.py</a> (uses <a href=
+"voting.tab">voting.tab</a>)</p>
+<xmp class="code">import orange, orngTree
+data = orange.ExampleTable("voting")
+
+tree = orngTree.TreeLearner(data, sameMajorityPruning=1, mForPruning=2)
+print "Possible classes:", data.domain.classVar.values
+print "Probabilities for democrats:"
+for i in range(5):
+    p = tree(data[i], orange.GetProbabilities)
+    print "%d: %5.3f (originally %s)" % (i+1, p[1], data[i].getclass())
+
+orngTree.printTxt(tree)
+</xmp>
+
+<p>Note that this script is almost the same as the one for naive
+Bayes (<a href="classifier2.py">classifier2.py</a>), except
+that we have imported another module (<code>orngTree</code>) and used learner
+<code>orngTree.TreeLearner</code> to build a classifier called <code>tree</code>.</p>
+
+<p>For those of you that are at home with machine learning: the
+default parameters for tree learner assume that a single example is
+enough to have a leaf for it, gain ratio is used for measuring
+the quality of attributes that are considered for internal nodes of
+the tree, and after the tree is constructed the subtrees no pruning takes
+place (see <a href="../modules/orngTree.htm">orngTree documentation</a> for details).
+The resulting tree with default parameters would be rather big, so we have additionally
+requested that leaves that share common predecessor (node) are pruned if they classify to the same
+class, and requested that tree is post-pruned using m-error estimate pruning method with
+parameter m set to 2.0.</p>
+
+<p>The output of the script that uses classification tree learner
+is:</p>
+
+<xmp class="code">Possible classes: <republican, democrat>
+Probabilities for democrats:
+1: 0.051 (originally republican)
+2: 0.027 (originally republican)
+3: 0.989 (originally democrat)
+4: 0.985 (originally democrat)
+5: 0.985 (originally democrat)
+</xmp>
+
+<p>Notice that all of the instances are classified correctly. The last
+line of the script prints out the tree that was used for
+classification:</p>
+
+<p class="header">output of running the <a href=
+"tree.py">tree.py</a> script</p>
+<xmp class="code">physician-fee-freeze=n: democrat (98.52%)
+physician-fee-freeze=y
+|    synfuels-corporation-cutback=n: republican (97.25%)
+|    synfuels-corporation-cutback=y
+|    |    mx-missile=n
+|    |    |    el-salvador-aid=y
+|    |    |    |    adoption-of-the-budget-resolution=n: republican (85.33%)
+|    |    |    |    adoption-of-the-budget-resolution=y
+|    |    |    |    |    anti-satellite-test-ban=n: democrat (99.54%)
+|    |    |    |    |    anti-satellite-test-ban=y: republican (100.00%)
+|    |    |    el-salvador-aid=n
+|    |    |    |    handicapped-infants=n: republican (100.00%)
+|    |    |    |    handicapped-infants=y: democrat (99.77%)
+|    |    mx-missile=y
+|    |    |    religious-groups-in-schools=y: democrat (99.54%)
+|    |    |    religious-groups-in-schools=n
+|    |    |    |    immigration=y: republican (98.63%)
+|    |    |    |    immigration=n
+|    |    |    |    |    handicapped-infants=n: republican (98.63%)
+|    |    |    |    |    handicapped-infants=y: democrat (99.77%)
+</xmp>
+
+<p>Notice that the printout states the decision at internal nodes and, for leaves, the class label to which a tree would make a classification. These later are associated probability, which is estimated from the learning set of examples.</p>
+
+<p>If you are more of a "visual" type, you may like the following presentation of
+the tree better. This was achieved by printing out a tree in so-called dot file
+(the line of the script required for this is
+<code>orngTree.printDot(tree, fileName='tree.dot', internalNodeShape="ellipse", leafShape="box")</code>),
+which was then compiled to PNG using <a href="http://graphviz.org/">
+AT&T's Graphviz</a> program called dot (see <a href="../modules/orngTree.htm">orngTree documentation</a>
+for more):</p>
+
+<img src="tree.png" alt="A picture of decision tree" border="0">
+
+
+<h2>A Handful of Others</h2>
+<index name="classifiers+k nearest neighbours">
+<index name="classifiers+majority classifier">
+
+<p>Let us here check on two other classifiers. The first one,
+called majority classifier, will seem rather useless, as it always
+classifies to the majority class of the learning set. It predicts
+class probabilities that are equal class distributions from
+learning set. While being useless as such, it may often be good to
+compare this simplest classifier to any other classifier you test
+&ndash; if your other classifier is not significantly better than
+majority classifier, than this may a reason to sit back and
+think.</p>
+
+<p>The second classifier we are introducing here is based on
+k-nearest neighbors algorithm, an instance-based method that finds
+k examples from learning set that are most similar to the instance
+that has to be classified. From the set it obtains in this way, it
+estimates class probabilities and uses the most frequent class for
+prediction.</p>
+
+<p>The following script takes naive Bayes, classification tree
+(what we have already learned), majority and k-nearest neighbors
+classifier (new ones) and prints prediction for first 10 instances
+of voting data set.</p>
+
+<p class="header"><a href="handful.py">handful.py</a>
+(uses <a href="voting.tab">voting.tab</a>)</p>
+<xmp class="code">import orange, orngTree
+data = orange.ExampleTable("voting")
+
+# setting up the classifiers
+majority = orange.MajorityLearner(data)
+bayes = orange.BayesLearner(data)
+tree = orngTree.TreeLearner(data, sameMajorityPruning=1, mForPruning=2)
+knn = orange.kNNLearner(data, k=21)
+
+majority.name="Majority"; bayes.name="Naive Bayes";
+tree.name="Tree"; knn.name="kNN"
+
+classifiers = [majority, bayes, tree, knn]
+
+# print the head
+print "Possible classes:", data.domain.classVar.values
+print "Probability for republican:"
+print "Original Class",
+for l in classifiers:
+    print "%-13s" % (l.name),
+print
+
+# classify first 10 instances and print probabilities
+for example in data[:10]:
+    print "(%-10s)  " % (example.getclass()),
+    for c in classifiers:
+        p = apply(c, [example, orange.GetProbabilities])
+        print "%5.3f        " % (p[0]),
+    print
+</xmp>
+
+<p>The code is somehow long, due to our effort to print the results
+nicely. The first part of the code sets-up our four classifiers,
+and gives them names. Classifiers are then put into the list
+denoted with variable <code>classifiers</code> (this is nice since, if we would
+need to add another classifier, we would just define it and put it
+in the list, and for the rest of the code we would not worry about
+it any more). The script then prints the header with the names of
+the classifiers, and finally uses the classifiers to compute the
+probabilities of classes. Note for a special function <code>apply</code> that we
+have not met yet: it simply calls a function that is given as its
+first argument, and passes it the arguments that are given in the
+list. In our case, <code>apply</code> invokes our classifiers with a data
+instance and request to compute probabilities. The output of our
+script is:</p>
+
+<xmp class="code">Possible classes: <republican, democrat>
+Probability for republican:
+Original Class Majority      Naive Bayes   Tree          kNN
+(republican)   0.386         1.000         0.949         1.000
+(republican)   0.386         1.000         0.973         1.000
+(democrat  )   0.386         0.995         0.011         0.138
+(democrat  )   0.386         0.002         0.015         0.468
+(democrat  )   0.386         0.043         0.015         0.035
+(democrat  )   0.386         0.228         0.015         0.442
+(democrat  )   0.386         1.000         0.973         0.977
+(republican)   0.386         1.000         0.973         1.000
+(republican)   0.386         1.000         0.973         1.000
+(democrat  )   0.386         0.000         0.015         0.000
+</xmp>
+
+<p>Notice that the prediction of majority class classifier does not
+depend on the instance it classifies (of course!). Other than that,
+it would be inappropriate to say anything conclusive on the quality
+of the classifiers &ndash; for this, we will need to resort to
+statistical methods on comparison of classification models, about
+which you can read in our <a href=
+"c_performance.htm">next lesson</a>.</p>
+
+<hr><br><p class="Path">
+Prev: <a href="c_basics.htm">My first Orange classifier</a>,
+Next: <a href="c_performance.htm">Testing and Evaluating</a>,
+Up: <a href="classification.htm">Classification</a>
+</p>
+
+</body>
+</html>
+

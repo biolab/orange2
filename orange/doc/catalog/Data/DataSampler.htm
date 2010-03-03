@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>Data Sampler</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Data Sampler</h1>
+
+<img class="screenshot" src="../icons/DataSampler.png">
+<p>Selects a subset of data instances from the input data set.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Sample (ExampleTable)</DT>
+<DD>Attribute-valued data set as sampled from the input data.</DD>
+<DT>Remaining Examples (ExampleTable)</DT>
+<DD>Data instances from input data set that are not included in the sampled data.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Data Sampler supports provides support for several means of
+sampling of the data from the input channel and outputs the sampled
+data set and complementary data set (with instances from the input set
+that are not included in the sampled data set). Output is set when the
+input data set is set to the widget or after <span class="option">Sample Data</span> is
+pressed.</p>
+
+<img class="screenshot"
+src="DataSampler.png" alt="Data Sampler" border=0>
+
+<p>Sampling may be stratified: if input data contains a class,
+sampling will try to match its class distribution in the output data
+sets.</p>
+
+<p>Several types of sampling are supported. <span class="option">Random
+sampling</span> can draw a
+fixed number of instances or create a data set with a size set as
+a proportion of instances from the input data set. In repeated
+sampling, an data instance may be included in a sampled data several
+times (like in bootstrap).</p>
+
+<p><span class="option">Cross validation</span>,
+<span class="option">Leave-one-out</span> or sampling that creates
+<span class="option">Multiple subsets</span> of preset sample sizes relative to the input data set
+(like random sampling) all create several data samples. Which one is
+send to the output is determined by the data set index in <span class="option">Fold/Group</span>
+(indices start with 1).</p>
+
+<h2>Examples</h2>
+
+<p>Schema where we have sampled 10 data instances from Iris data set
+and presented this selection in <a
+href="Visualize/Scatterplot.htm">Scatterplot</a> widget is shown
+below.</p>
+
+<p><a href="DataSampler-Example.gif"><small>Click to enlarge</small<br/></small><img src="DataSampler-Example-S.gif"
+alt="Schema with Data Sampler" class="screenshot" border=0 /></a></p>
+
+</body>
+</html>

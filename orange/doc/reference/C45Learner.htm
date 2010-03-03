@@ -1,0 +1,209 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<index name="classifiers+c45">
+<h1>C4.5 Classifier and Learner</h1>
+
+<P>C4.5 is a standard benchmark in machine learning. For this
+reason, it is incorporated in Orange, although Orange has its own
+implementation of decision trees.</P>
+
+<P><CODE></CODE> uses the original Quinlan's code for learning so the tree you get is exactly like the one that would be build by standalone C4.5. Upon return, however, the original tree is copied to Orange components that contain exactly the same information plus what is needed to make them visible from Python. To be sure that the algorithm behaves just as the original, we use a dedicated class <CODE>orange.C45TreeNode</CODE> instead of reusing the components used by Orange's tree inducer (ie, <CODE>orange.TreeNode</CODE>). This, however, could be done and probably will be done in the future; we shall still retain <CODE>orange.C45TreeNode</CODE> but offer transformation to <CODE>orange.TreeNode</CODE> so that routines that work on Orange trees will also be usable for C45 trees.</P>
+
+<P><CODE>C45Learner</CODE> and <CODE>C45Classifier</CODE> behave
+like any other Orange learner and classifier. Unlike most of Orange learning algorithms, C4.5 does not accepts weighted examples.</P>
+
+
+<H2>Building the C4.5 plug-in</H2>
+
+<P>We haven't been able to obtain the legal rights to distribute
+C4.5 and therefore couldn't statically link it into Orange. Instead, it's incorporated as a plug-in which you'll need to build yourself. The procedure is trivial, but you'll need a C compiler. On Windows, the scripts we provide work with MS Visual C and the files CL.EXE and LINK.EXE must be on the PATH. On Linux you're equipped with gcc. Mac OS X comes without gcc, but you can download it for free from Apple.</P>
+
+<P>Orange must be installed prior to building C4.5. (This is because the build script will copy the created file next to Orange, which it obviously can't if Orange isn't there yet.)</P>
+
+<OL>
+<LI>Download the <A href="http://www.rulequest.com/Personal/c4.5r8.tar.gz">C4.5 (Release 8) sources</a> from the <a
+href="http://www.rulequest.com/">Rule Quest's site</a> and extract them into some temporary directory. The files will be modified in the further process, so don't use your copy of Quinlan's sources that you need for another purpose.</LI>
+
+<LI>Download <a href="/orange/download/buildC45.zip">buildC45.zip</a> and unzip its contents  into the directory R8/Src of the Quinlan's stuff (it's the directory that contains, for instance, the file average.c).</LI>
+
+<LI>Run buildC45.py, which will build the plug-in and put it next to orange.pyd (or orange.so on Linux/Mac).</LI>
+
+<LI>Run python, import orange and create <CODE>orange.C45Learner()</CODE>. If this fails, something went wrong; see the diagnostic messages from buildC45.py and read the below paragraph.</LI>
+
+<LI>Finally, you can remove the Quinlan's stuff, along with everything created by buildC45.py.</LI>
+</OL>
+
+<P><B>If the process fails</B>, here's what buildC45.py really does: it creates .h files that wrap Quinlan's .i files and ensure that they are not included twice. It modifies C4.5 sources to include .h's instead of .i's. This step can hardly fail. Then follows the platform dependent step which compiles ensemble.c (which includes all the Quinlan's .c files it needs) into c45.dll or c45.so and puts it next to Orange. If this fails, but you do have a C compiler and linker, and you know how to use them, you can compile the ensemble.c into a dynamic library yourself. See the compile and link steps in buildC45.py, if it helps. Anyway, after doing this check that the built C4.5 gives the same results as the original.</P>
+
+<H2>C45Learner</H2>
+<index name="classes/C45Learner">
+
+<P><CODE>C45Learner</CODE>'s attributes have double names - those that you know from C4.5 command lines and the corresponding names of C4.5's internal variables. All defaults are set as in C4.5; if you change nothing, you are running C4.5.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+ <DT>gainRatio (g)</DT>
+ <DD>Determines whether to use information gain (<CODE>false</CODE>, default) or gain ratio
+ for selection of attributes (<CODE>true</CODE>)</DD>
+
+ <DT>batch (b)</DT>
+ <DD>Turn on batch mode (no windows, no iterations); this option is not documented in C4.5 manuals. It conflicts with "window", "increment" and "trials".</DD>
+
+ <DT>subset (s)</DT>
+ <DD>Enables subsetting (default: <CODE>false</CODE>, no subsetting)</DD>
+
+ <DT>probThresh (p)</DT>
+ <DD>Probabilistic threshold for continuous attributes (default: <CODE>false</CODE>)</DD>
+
+ <DT>minObjs (m)</DT>
+ <DD>Minimal number of objects (examples) in leaves (default: 2)</DD>
+
+ <DT>window (w)</DT>
+ <DD>Initial windows size (default: maximum of 20% and twice the square root of the number of data objects)</DD>
+
+ <DT>increment (i)</DT>
+ <DD>The maximum number of objects that can be added to the window at each iteration (default: 20% of the initial window size)</DD>
+
+ <DT>cf (c)</DT>
+ <DD>Prunning confidence level (default: 25%)</DD>
+
+ <DT>trials (t)</DT>
+ <DD>Set the number of trials in iterative (i.e. non-batch) mode (default: 10)</DD>
+
+ <DT>prune</DT>
+ <DD>Return pruned tree (not an original C4.5 option) (default: <CODE>true</CODE>)</DD>
+</DL>
+
+<P><CODE>C45Learner</CODE> also offers another way for setting
+the arguments: it provides a function <CODE>commandline</CODE>
+which is given a string and parses it the same way as C4.5 would
+parse its command line.</P>
+
+
+<H2>C45Classifier</H2>
+<index name="classes/C45Classifier">
+
+<P><CODE>C45Classifier</CODE> contains a faithful reimplementation of Quinlan's function from C4.5. The only difference (and the only reason it's been rewritten) is that it uses a tree composed of <CODE>orange.C45TreeNode</CODE>s instead of C4.5's original tree structure.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>tree</DT>
+<DD>C4.5 tree stored as a tree of <CODE>C45TreeNode</CODE>s.
+</DL>
+
+
+<H2>C45TreeNode</H2>
+<index name="classes/C45TreeNode">
+
+<P>This class is a reimplementation of the corresponding <CODE>struct</CODE> from Quinlan's C4.5 code.
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>nodeType</DT>
+<DD>Type of the node: <CODE>C45TreeNode.Leaf</CODE> (0), <CODE>C45TreeNode.Branch</CODE> (1), <CODE>C45TreeNode.Cut</CODE> (2), <CODE>C45TreeNode.Subset</CODE> (3). "Leaves" are leaves, "branches" split examples based on values of a discrete attribute, "cuts" cut them according to a threshold value of a continuous attributes and "subsets" use discrete attributes but with subsetting so that several values can go into the same branch.</DD>
+
+
+<DT>leaf</DT>
+<DD><CODE>Value</CODE> returned by that leaf. The field is defined for internal nodes as well.</DD>
+
+<DT>items</DT>
+<DD>Number of (learning) examples in the node.</DD>
+
+<DT>classDist</DT>
+<DD>Class distribution for the node (of type <CODE>DiscDistribution</CODE>).</DD>
+
+<DT>tested</DT>
+<DD>The attribute used in the node's test. If node is a leaf, <CODE>tested</CODE> is <CODE>None</CODE>, if node is of type <CODE>Branch</CODE> or <CODE>Cut</CODE> <CODE>tested</CODE> is a discrete attribute, and if node is of type <CODE>cut</CODE> then <CODE>tested</CODE> is a continuous attribute.</DD>
+
+<DT>cut</DT>
+<DD>A threshold for continuous attributes, if node is of type <CODE>Cut</CODE>. Undefined otherwise.</DD>
+
+<DT>mapping</DT>
+<DD>Mapping for nodes of type <CODE>Subset</CODE>. Element <CODE>mapping[i]</CODE> gives the index for an example whose value of <CODE>tested</CODE> is <CODE>i</CODE>. Here, <CODE>i</CODE> denotes an index of value, not a <CODE>Value</CODE>.</DD>
+
+<DT>branch</DT>
+<DD>A list of branches stemming from this node.</DD>
+</DL>
+</CODE>
+
+<HR>
+
+<H2>Examples</H2>
+
+<P>The simplest way to use <CODE>C45Learner</CODE> is to call it. This
+script constructs the same learner as you would get by calling the usual C4.5.</P>
+
+<p class="header">part of <a href="c45.py">c45.py</a> (uses <a
+href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">import orange
+
+data = orange.ExampleTable("lenses")
+tree = orange.C45Learner(data)
+
+for i in data[:5]:
+    print tree(i), i.getclass()
+</XMP>
+
+<P>Arguments can be set by the usual mechanism (the below to lines do the
+same, except that one uses command-line symbols and the other internal
+variable names)</P>
+
+<XMP class="code">tree = orange.C45Learner(data, m=100)
+tree = orange.C45Learner(data, minObjs=100)
+</XMP>
+
+<P>The way that could be prefered by veteran C4.5 user might be through
+method <CODE>commandline</CODE>.</P>
+
+<XMP class="code">lrn = orange.C45Learner()
+lrn.commandline("-m 1 -s")
+tree = lrn(data)
+</XMP>
+
+
+<P>There's nothing special about using <CODE>C45Classifier</CODE> - it's just like any other. To demonstrate what the structure of <CODE>C45TreeNode</CODE>'s looks like, will show a script that prints it out in the same format as C4.5 does. (You can find the script in module orngC45).</P>
+
+<PRE class=code>
+def printTree0(node, classvar, lev):
+    var = node.tested
+
+    if node.nodeType == 0:
+        print "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items),
+
+    elif node.nodeType == 1:
+        for i, val in enumerate(var.values):
+            print ("\n"+"|    "*lev + "%s = %s:") % (var.name, val),
+            printTree0(node.branch[i], classvar, lev+1)
+
+    elif node.nodeType == 2:
+        print ("\n"+"|    "*lev + "%s &lt;= %.1f:") % (var.name, node.cut),
+        printTree0(node.branch[0], classvar, lev+1)
+        print ("\n"+"|    "*lev + "%s > %.1f:") % (var.name, node.cut),
+        printTree0(node.branch[1], classvar, lev+1)
+
+    elif node.nodeType == 3:
+        for i, branch in enumerate(node.branch):
+            inset = filter(lambda a:a[1]==i, enumerate(node.mapping))
+            inset = [var.values[j[0]] for j in inset]
+            if len(inset)==1:
+                print ("\n"+"|    "*lev + "%s = %s:") % (var.name, inset[0]),
+            else:
+                print ("\n"+"|    "*lev + "%s in {%s}:") % (var.name, reduce(lambda x,y:x+", "+y, inset)),
+            printTree0(branch, classvar, lev+1)
+
+
+def printTree(tree):
+    printTree0(tree.tree, tree.classVar, 0)
+    print
+</PRE>
+
+<P>Leaves are the simplest. We just print out the value contained in <CODE>node.leaf</CODE>. Since this is not a qualified value (ie., <CODE>C45TreeNode</CODE> does not know to which attribute it belongs), we need to convert it to a string through <CODE>classVar</CODE>, which is passed as an extra argument to the recursive part of <CODE>printTree</CODE>.</P>
+
+<P>For discrete splits without subsetting, we print out all attribute values and recursively call the function for all branches. Continuous splits are equally easy to handle.</P>
+
+<P>For discrete splits with subsetting, we iterate through branches, retrieve the corresponding values that go into each branch to <CODE>inset</CODE>, turn the values into strings and print them out, separately treating the case when only a single value goes into the branch.</p>
+
+</BODY></HTML>

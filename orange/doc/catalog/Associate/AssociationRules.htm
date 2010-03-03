@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>Association Rules</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Association Rules</h1>
+
+<img class="screenshot" src="../icons/AssociationRules.png">
+<p>Construction of Association Rules</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Association Rules</DT>
+<DD>Induced rules.</DD>
+
+</dl>
+
+<h2>Description</h2>
+
+<p>This widget runs several algorithms for induction of association rules: the original Agrawal's algorithm for sparse data sets, a modified version by Zupan and Demsar which is more suitable for the usual machine learning data, and, finally, an algorithm which induces classification rules where the right-hand side of the rule is always the class attribute. Don't confuse the latter algorithm with rule induction like <a href="../Classify/CN2.htm">CN2</a>.</p>
+
+<img class="leftscreenshot" src="AssociationRules.png" alt="Association Rules Widget" border=0>
+
+<P>The first check box, <span class="option">Use algorithm for sparse data</span> allows you to specify the algorithm to use. If checked, the original Agrawal's algorithm is used, which is designed for (very) sparse data sets. If clear, it will use an algorithm which works better on the usual machine learning data where each example is described by a (smaller) list of attributes and there are not many missing values.</P>
+
+<P>Next, you can decide whether to <span class="option">Induce classification rules</span> or ordinary association rules. The former always have the class attribute (and nothing else) on the right-hand side. You can combine this with any of the above two algorithms.</P>
+
+<P>As for pruning, you can specify the <span class="option">Minimal support</span> and <span class="option">Minimal confidence</span>, where support is percentage of the entire data set covered by the (entire) rule and the confidence is the proportion of the number of examples which fit the right side among those that fit the left side. The running time depends primarily on the support.</P>
+
+<P>If support is set too low, the algorithm may find too many rules and eventually run out of memory. For this reason the number of rules is by default limited to 10000. You can increase the limit at a risk of running out of memory.</P>
+
+<P><span class="option">Build rules</span> runs the algorithm and outputs the induced rules. You need to push this button after changing any settings.</P>
+
+
+<h2>Examples</h2>
+
+<P>This widget is typically used with the <a href="AssociationRulesViewer.htm">Association Rules Viewer</a> and/or <a href="AssociationRulesTreeViewer.htm">Association Rules Tree Viewer</a>. One possible schema is shown below.</P>
+
+<img class="screenshot" src="AssociationRules-Schema.png" alt="Association Rules" border=0>
+
+
+</body>
+</html>

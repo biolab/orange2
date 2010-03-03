@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>Concatenate</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Concatenate</h1>
+
+<img class="screenshot" src="../icons/Concatenate.png">
+<p>Concatenates data from multiple sources.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Primary Table (ExampleTable)</DT>
+<DD>A data set that defines the attribute set and gives the examples</DD>
+
+<DT>Additional Tables (ExampleTable)</DT>
+<DD>Additional tables of examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+</dl>
+
+<h2>Description</h2>
+
+<p>The widget concatenates multiple sets of examples. The merge is "vertical", in
+a sense that two sets of 10 and 5 examples yield a new set of 15 examples.</p>
+
+<img class="screenshot" src="Concatenate.png">
+
+<p>In case one of the tables is connected to the widget as the primary table, the
+resulting table will contain these same attributes. If there is no primary table,
+the attributes can be either a union of all attributes that appear in the tables
+specified as "Additional Tables", or their intersection, that is, a list of attributes
+which appear in all the connected tables.</p>
+
+
+<h2>Example</h2>
+
+<p>The widget can be used, for instance, for merging the data coming from three
+separate files, as shown below.</p>
+
+<img class="schema"
+src="Concatenate-Example.png">
+
+</body>
+</html>

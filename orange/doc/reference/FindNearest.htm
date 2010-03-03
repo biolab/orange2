@@ -1,0 +1,118 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<index name="k nearest neighbours">
+<index name="nearest neighbours">
+<h1>Classes for Finding Nearest Neighbours</h1>
+
+<P>Orange provides classes for finding the nearest neighbours of the given reference example. While we might add some smarter classes in future, we now have only two - abstract classes that defines the general behaviour of neighbour searching classes, and classes that implement brute force search.</P>
+
+<P>As usually in Orange, there is a pair of classes: a class that does the work (<CODE>FindNearest</CODE>) and a class that constructs it ("learning" - getting the examples and arranging them in an appropriate data structure that allows for searching) (<CODE>FindNearestConstructor</CODE>). These two classes are abstract, the classes you can actually use are <CODE>FindNearest_BruteForce</CODE> and <CODE>FindNearestConstructor_BruteForce</CODE>.</P>
+
+<hr>
+
+<H2>FindNearest</H2>
+<index name="classes/FindNearest">
+
+<P><CODE>FindNearest</CODE> returns nearest neighbours of a given example. The class is abstract and it is up to derived classes to decide how the examples are stored and searched. Note that the class even does not have a component for measuring distances between examples; derived classes can either store such a component or store examples in such a way that the component is unnecessary.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>distanceID</DT>
+<DD>Id of a meta attribute that should store the distance from the reference example; if 0 (default), distances are not stored.</DD>
+
+<DT>includeSame</DT>
+<DD>Tells whether to include the examples that are same as the reference; default is <CODE>true</CODE>.</DD>
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__call__(example, k[, needsClass])</DT>
+<DD><P>Returns an ordered list of <CODE>k</CODE> nearest neighbours of <CODE>example</CODE>. If examples are weighted, the length of the list is not necessarily <CODE>k</CODE>, but the total weight of the returned examples will be as close to <CODE>k</CODE> as possible. (If there are enough examples, the total weight will be at least <CODE>k</CODE>.)</P>
+
+<P>If <CODE>k</CODE> is zero, all examples are returned, but sorted by their distances to <CODE>example</CODE>.</P>
+
+<P>If the third argument, <code>needsClass</code> is given and true, <Code>FindNearest</Code> will ignore all examples with missing classes. If the domain is classless, this flag has no effect.</P>
+</DD></DL>
+
+
+<H2>FindNearestConstructor</H2>
+<index name="classes/FindNearestConstructor">
+
+<P>The job of <CODE>FindNearestConstructor</CODE> is to construct an instance of <CODE>FindNearest</CODE>.
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>distanceConstructor</DT>
+<DD>A component of class <CODE>ExamplesDistanceConstructor</CODE> that "learns" to measure distances between examples. Learning can be, for examples, storing the ranges of continuous attributes or the number of value of a discrete attribute (see the page about <a href="ExamplesDistance.htm">measuring distances</a> for more information). The result of learning is an instance of <CODE>ExamplesDistance</CODE> that should be used for measuring distances between examples.</DD>
+
+<DT>includeSame</DT>
+<DD>Tells whether to include the examples that are same as the reference; default is <CODE>true</CODE>.</DD>
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__call__(examples, weightID, distanceID)</DT>
+<DD>Constructs an instance of <CODE>FindNearest</CODE> that would return neighbours of a given <CODE>example</CODE>, obeying <CODE>weightID</CODE> when counting them (also, some measures of distance might consider weights as well) and store the distances in a meta attribute with ID <CODE>distanceID</CODE>.</DD>
+</DL>
+
+
+<H2>FindNearest_BruteForce</H2>
+<index name="classes/FindNearest_BruteForce">
+
+A class for brute force search for nearest neighbours. It stores a table of examples (it's its own copy of examples, not only <CODE>ExampleTable</CODE> with references to another <CODE>ExampleTable</CODE>). When asked for neighbours, it measures distances to all examples, stores them in a heap and returns the first <CODE>k</CODE> as an <CODE>ExampleTable</CODE> with references to examples stored in <CODE>FindNearest_BruteForce</CODE>'s field <CODE>examples</CODE>).
+
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>distance</DT>
+<DD>a component that measures distances between examples</DD>
+
+<DT>examples</DT>
+<DD>a stored list of examples</DD>
+
+<DT>weighID</DT>
+<DD>ID of meta attribute with weight</DD>
+</DL>
+
+<H2>FindNearestConstructor_BruteForce</H2>
+<index name="classes/FindNearestConstructor_BruteForce">
+
+<P>A class that constructs <CODE>FindNearest_BruteForce</CODE>. It calls the inherited <CODE>distanceConstructor</CODE> and then passes the constructed distance measure, among with <CODE>examples</CODE>, <CODE>weightID</CODE> and <CODE>distanceID</CODE>, to the just constructed instance of <CODE>FindNearest_BruteForce</CODE>.</P>
+
+<P>If there are more examples with the same distance fighting for the last places, the tie is resolved by randomly picking the appropriate number of examples. A local random generator is constructed and initiated by a constant computed from the reference example. The effect of this is that same random neighbours will be chosen for the example each time <CODE>FindNearest_BruteForce</CODE> is called.</P>
+
+<P>The following script shows how to find the five nearest neighbours of the first example in the lenses dataset.</P>
+
+<p class="header"><a href="examplesdistance.py">examplesdistance.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>import orange
+
+data = orange.ExampleTable("lenses")
+
+nnc = orange.FindNearestConstructor_BruteForce()
+nnc.distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean()
+
+did = orange.newmetaid()
+nn = nnc(data, 0, did)
+
+print "*** Reference example: ", data[0]
+for ex in nn(data[0], 5):
+    print ex
+</XMP>
+
+<P>First, we prepare a constructor <CODE>nnc</CODE>, and tell it that we want to use Euclidean distance. The we obtain a new id for meta-attribute and call the constructor. The resulting object <CODE>nn</CODE> is trained to find neighbours of examples in lenses dataset. Finally, in the for loop, we call <CODE>nn</CODE> to find the five nearest neighbours of <CODE>data[0]</CODE> and print them out.</P>
+
+<XMP class=code>*** Reference example:  ['young', 'myope', 'no', 'reduced', 'none']
+['young', 'myope', 'no', 'reduced', 'none'], {-2:0.00}
+['young', 'myope', 'yes', 'reduced', 'none'], {-2:1.00}
+['young', 'hypermetrope', 'no', 'reduced', 'none'], {-2:1.00}
+['pre-presbyopic', 'myope', 'no', 'reduced', 'none'], {-2:1.00}
+['presbyopic', 'myope', 'no', 'reduced', 'none'], {-2:1.00}
+</XMP>
+
+<P>All returned examples here have a new meta-attribute with id -2 that shows the distance from the reference example.</P> 

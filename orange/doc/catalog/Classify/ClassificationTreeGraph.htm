@@ -1,0 +1,160 @@
+<html>
+<head>
+<title>Classification Tree Graph</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Classification Tree Graph</h1>
+
+<img class="screenshot" src="../icons/ClassificationTreeGraph.png">
+<p>Visualization of classification tree.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Classification Tree (TreeClassifier)</DT>
+<DD>Classification tree.</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set associated with a classification tree
+node selected by the user.</DD>
+
+</dl>
+
+<h2>Description</h2>
+
+<p>This is a versatile widget with 2-D visualization of classification
+tree that allows user to alter the appearance of the tree and
+associate tree-based data to graphical elements of the
+visualization. In addition, user can select a node, instructing the
+widget to commit the data associated to the node to its output channel,
+thus in combination with other widget obtaining interesting schemas
+for explorative data analysis.</p>
+
+<a href="ClassificationTreeGraph.png"><img class="screenshot"
+src="ClassificationTreeGraph-S.png" alt="Classification Tree Graph
+Widget" border=0></a></center>
+
+<h3>General Tab</h3>
+
+<p>Several general parameters that affect the drawing size of the
+displayed tree may be set in the General tab. Here, user can set the
+zoom factor and define the vertical and horizontal spacing between the
+nodes. Node bubble information (like the one displayed in the snapshot
+above) may be turned off, and user may instruct the widget to truncate
+the text labels to fit provided space.</p>
+
+<h3>Tree Tab</h3>
+
+<a href="ClassificationTreeGraph-TreeTab.png"><img class="screenshot"
+src="ClassificationTreeGraph-TreeTab-S.png" alt="Classification Tree Graph
+- Tree Tab" border=0 align="left"></a>
+
+<p>In this tab the user can define the depth to which the widget will
+display the tree (may be useful when very large trees are
+induced). The edges between the nodes in the tree graph are drawn
+according to the maximum width defined in this tab. All the edges will
+be of equal width if <span class="option">No dependency</span> is chosen in the
+<span class="option">Reference for Edge Width</span> box. When <span class="option">Root node</span> is selected
+instead, the width of the edge will correspond to the proportion of
+instances in the corresponding node with respect to all the instances
+in the training data set (that is, instances in the root node). That
+is, under this selection, the edge will get thinner and thinner when
+traversing toward the bottom of the tree. Selection of <span class="option">Parent
+node</span> makes the edge width correspond to proportion of instances in
+the nodes with respect to the instances in their parent node.</p>
+
+<br clear="all">
+
+<h3>Node Tab</h3>
+
+<a href="ClassificationTreeGraph-NodeTab.png"><img class="screenshot"
+src="ClassificationTreeGraph-NodeTab-S.png" alt="Classification Tree Graph
+- Node Tab" border=0></a></center>
+
+<p>Parameters from the Node Tab govern the appearance of tree nodes
+and define what is displayed in the node box, of which the size can be
+set manually (<span class="option">Node Width</span>). Tree nodes can display two lines of
+information selected by the user (<span class="option">Show Info</span> box). In the
+snapshot the probability for the target class (republican) was
+reported in the first line in the node, and number of instances from
+the training set that reached this node in the second text
+line. Because of treatment of missing values, these numbers may not
+necessary be integers.</p>
+
+<p>The color of the node:
+<ul>
+<li>may be uniform (<span class="option">Node Color</span> set to
+<span class="option">Default</span>),</li>
+<li>correspond to number of instances in the node
+with respect to the number of instances in the root node (<span class="option">Instances
+in node</span>),</li>
+<li>may report on the probability of the majority class
+(<span class="option">Majority class probability</span>) where one would expect that the
+color intensity would be higher towards the leaves of the node,</li>
+<li>may report on probability of the target class (<span class="option">Target class
+probability</span>), with more intense colors marking the nodes where
+instances of target class are more frequent, and</li>
+<li>may report on the distribution of instances with target class,
+where the intensity of node color corresponds to proportion of the
+target class instances in the node with respect to the target class
+instances in the root node (<span class="option">Target class
+distribution</span>).</li>
+</ul>
+
+<h3>Navigation</h3>
+
+<p><span class="option">Find Root</span> aligns the position of the window such that the
+root node is displayed in the center. If user selects the node
+(left-click on the node), <span class="option">Find Selected</span> would bring the widow
+in position to display the selected node in the center. More advanced
+navigation is supported by a navigator window (click on the
+<span class="option">Navigator</span> button), which displays a complete tree with a box
+signifying the currently viewed part of the tree in the main
+window. This box can be moved around thus exposing different parts of
+the tree in the main window. The tree visualization in the navigator
+corresponds to the visualization parameters set in the main
+window. Navigator also supports bubble info box which is displayed
+when mousing over the node in the tree.</p>
+
+<a href="ClassificationTreeGraph-Navigator.gif"><img class="screenshot"
+src="ClassificationTreeGraph-Navigator-S.gif" alt="Classification Tree Graph
+- Navigator" border=0></a></center>
+
+<h2>Examples</h2>
+
+<p>Following is a simple schema where we have read the data,
+constructed the classification tree and viewed it in our tree
+viewer. Notice that if both the viewer and the widget that constructs
+the classification tree are open, any run of tree induction algorithm
+will have an immediate effect in the visualization. You can thus use
+this combination to explore how are the changes in induction algorithm
+reflected in the structure of the resulting tree.</p>
+
+<a href="ClassificationTreeGraph-SimpleSchema.gif"><img class="screenshot"
+src="ClassificationTreeGraph-SimpleSchema-S.gif" alt="Classification Tree Graph
+- Simple Schema" border=0></a></center>
+
+<p>Any click on the node of the tree would place the related data
+instances on the widget's output channel. This is explored in the
+schema below that shows this data in the data table and as a data
+subset in the scatterplot visualizer (for scatterplot to display the
+selected data properly, make sure that the tree data is passed as a
+data subset; this can simply be done by connecting scatterplot to the
+Data widget first, and connecting it to the tree visualization widget
+next).</p>
+
+<a href="ClassificationTreeGraph-Interaction.png"><img class="schema"
+src="ClassificationTreeGraph-Interaction-S.png" alt="Classification Tree Graph
+- Interaction"></a>
+
+</body>
+</html>

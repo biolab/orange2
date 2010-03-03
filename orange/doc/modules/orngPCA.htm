@@ -1,0 +1,215 @@
+<html><HEAD> 
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css"> 
+</HEAD> 
+<body> 
+ 
+<h1>orngPCA: Principal component analysis module</h1>
+
+<p>This module contains tool for performing principal components analysis on data stored as <code>Example table</code>.</p>
+
+<h2>PCA class</h2>
+
+<dl class=attributes>
+<p>PCA(dataset = None, attributes = None, rows = None, standardize = 0, imputer = defaultImputer, continuizer = defaultContinuizer, 
+maxNumberOfComponents = 10, varianceCovered = 0.95, useGeneralizedVectors = 0)</p>
+<dt>dataset</dt>
+<dd><code>ExampleTable</code> instance on which PCA will be performed. If <code>None</code>, only parameters are set and PCA instance
+is returned. Projection can then be performed like this:</dd>
+
+<xmp class="code">import orange, orngPCA
+
+dataset = orange.ExampleTable('iris.tab')
+
+pca = orngPCA.PCA(standardize = True)
+pca = pca(data)</xmp>
+
+<dt>attributes</dt>
+<dd>List of attributes that will be used in projection. Names must match those of <code>ExampleTable</code> instance and there should
+be at least two. If <code>None</code>, whole domain is used.</dd>
+
+<p class="header">part of <a href="PCA1.py">PCA1.py</a></p>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("iris.tab")
+attributes = ['sepal length', 'sepal width', 'petal length', 'petal width']
+
+pca = orngPCA.PCA(data, standardize = True, attributes = attributes)
+
+print "PCA on attributes sepal.length, sepal.width, petal.length, petal.width:"
+print pca</xmp>
+
+<dt>rows</dt>
+<dd><code>True</code>/<code>False</code> array or list with the same length as number of examples in <code>ExampleTable</code> instance.
+Only examples that corresponds to <code>True</code> will be used for projection. If <code>None</code>, all data is used.</dd>
+
+<p class="header">part of <a href="PCA1.py">PCA1.py</a></p>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("iris.tab")
+rows = [1, 0] * (len(data) / 2)
+
+pca = PCA(data, standardize = True, rows = rows)
+
+print "PCA on every second row:"
+print pca</xmp>
+
+<dt>standardize</dt>
+<dd>If <code>True</code>, standardization of data is performed before projection.</dd>
+<dt>imputer</dt>
+<dd><code>orange.Imputer</code> instance. Defines how data is imputed if values are missing. Must NOT be trained. Default is average
+imputation</dd>
+<dt>continuizer</dt>
+<dd>
+<p><code>orange.Continuizer</code> instance. Defines how data is continuized. Default values:</p>
+<p>- Multinomial -> as normalized ordinal</p>
+<p>- Class -> ignore</p>
+<p>- Continuous -> leave</p>
+</dd>
+
+<p class="header">Example on how to use your own imputer and continuizer (<a href="PCA2.py">PCA2.py</a>)</p>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("bridges.tab")
+
+imputer = orange.ImputerConstructor_maximal
+
+continuizer = orange.DomainContinuizer()
+continuizer.multinomialTreatment = continuizer.AsNormalizedOrdinal
+continuizer.classTreatment = continuizer.Ignore
+continuizer.continuousTreatment = continuizer.Leave
+
+pca = PCA(data, standardize = True, imputer = imputer, continuizer = continuizer)
+print pca</xmp>
+
+<dt>maxNumberOfComponents</dt>
+<dd>Defines how many components will be retained. Default is 10, if -1 all components will be retained.</dd>
+<dt>varianceCovered</dt>
+<dd>Defines how much variance of original data should be explained. Default is 0.95</dd>
+<dt>useGeneralizedVectors</dt>
+<dd>If <code>True</code>, generalized vectors are used.</dd>
+
+<p class="header">part of <a href="PCA3.py">PCA3.py</a></p>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("iris.tab")
+
+attributes = ['sepal length', 'sepal width', 'petal length', 'petal width']
+
+pca = PCA(data, standardize = True, attributes = attributes,
+          maxNumberOfComponents = -1, varianceCovered = 1.0)
+		  
+print pca</xmp>
+
+<p class="header">Output:</p>
+<xmp class="code">PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8433            3.0540            3.7587            1.1987  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8253            0.4321            1.7585            0.7606  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       2.9108         0.7277         0.7277
+       0.9212         0.2303         0.9580
+       0.1474         0.0368         0.9948
+       0.0206         0.0052         1.0000
+
+Loadings:
+
+      PC1      PC2      PC3      PC4
+   0.5224  -0.3723  -0.7210   0.2620   sepal length                  
+  -0.2634  -0.9256   0.2420  -0.1241   sepal width                   
+   0.5813  -0.0211   0.1409  -0.8012   petal length                  
+   0.5656  -0.0654   0.6338   0.5235   petal width</xmp>
+
+</dl>
+
+<h2>PCAClassifier class</h2>
+
+<p>Object of this class is returned when PCA is performed successfully. It will contain domain of data on which PCA was performed,
+imputer and continuizer for use in projection, center, deviation, evalues and loadings for PCA. It will also store data of the
+last projection performed for use with biplot.</p>
+
+<p>Summary of projection can be obtained by printing PCAClassifier instance after PCA projection was successfully completed.</p>
+
+<h3>Performing projection:</h3>
+
+<p>Projection can be performed by calling PCA classifier instance with <code>ExampleTable</code> instance. Projection will fail
+if <code>ExampleTable</code> instance domain is not the same as in training set (however, it does not have to be in the same order).
+New <code>ExampleTable</code> instance that is returned will have data projected and domain PC+N where N is goes from 1 to number of
+components.</p>
+
+part of <a href="PCA4.py">PCA4.py</a>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("iris.tab")
+
+attributes = ['sepal length', 'sepal width', 'petal length', 'petal width']
+pca = PCA(data, attributes = attributes, standardize = True)
+
+projected = pca(data)</xmp>
+
+<h3>Plotting functions:</h3>
+
+<p>Matplotlib is needed.</p>
+
+<dl class=attributes>
+<dt>plot(title = 'Scree plot', filename = 'Scree_plot.png')</dt>
+<dd>
+<p>Creates scree plot for current PCA.</p>
+<p>title: title of the scree plot</p>
+<p>filename: path and filename to where the figure should be saved. If <code>None</code> figure is displayed directly.</p>
+</dd>
+
+<dt>biplot(choices = [1,2], scale = 1., title = 'Biplot', filename = 'biplot.png')</dt>
+<dd>
+<p>Creates a biplot for current projection.</p>
+<p>Before calling biplot at least one projection must be performed (it will plot last performed projection). </p>
+<p>- choices: two components number that will be plotted, first on x-axis, second on y-axis. Components are numbered from 1 to N
+where N is number of components returned by PCA. Biplot does not work if there is only one component available. Only the default
+is a biplot in the strict sense</p>
+<p>- scale: transformed data is scaled by lambda ^ scale and loadings are scaled by 1/(lambda ^ scale) where lambda are the
+singular values as computed by princomp multiplied by square root of data length. Normally scale is inside [0, 1], and a
+warning will be printed if the specified scale is outside this range.</p>
+<p>- title and filename: same as for plot</p>
+</dd>
+
+<p class="header">part of <a href="PCA5.py">PCA5.py</a></p>
+<xmp class="code">import orange, orngPCA
+
+data = orange.ExampleTable("iris.tab")
+
+attributes = ['sepal length', 'sepal width', 'petal length', 'petal width']
+pca = PCA(data, standardize = True, attributes = attributes)
+
+pca(data)
+pca.biplot()</xmp>
+
+<p class="header">Output stored in file <code>biplot.png</code>:</p>
+<p><img src="biplot.png"></p>
+</dl>
+
+<h2>Utility functions</h2>
+
+<dl class=attributes>
+<dt>defaultImputer(dataset)</dt>
+<dd>Returns <code>orange.ImputerConstructor_average(dataset)</code>.</dd>
+<dt>defaultContinuizer(dataset)</dt>
+<dd>
+<p>Creates default continuizer with:</p>
+<p>- multinomial -> as normalized ordinal</p>
+<p>- class -> ignore</p>
+<p>- continuous -> leave</p>
+</dd>
+<dt>centerData(dataMatrix)</dt>
+<dd>Perfomrs centering od data along rows, returns center and centered data. <code>dataMatrix</code> is instance of <code>numpy.array</code></dd>
+<dt>standardizeData(dataMatrix)</dt>
+<dd>Performs standardization of data along rows, returns scale and scaled data. Throws error if constant variable is present.</dd>
+</dl>

@@ -1,0 +1,295 @@
+
+body {
+    background-image: url();
+    margin-left: 8px;
+    margin-top: 8px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    font-family: Verdana;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.date {
+    font-family: Verdana;
+    font-size: 9px;
+    text-align: right;  
+}
+
+.Path {
+    font-family: Verdana;
+    font-size: 9px;
+    text-align: right;
+}
+.Path a:link {
+    color: #07009A;
+    text-decoration: none;
+}
+.Path a:visited {
+    color: #07009A;
+    text-decoration: none;
+}
+.Path a:hover {
+    text-decoration: underline;
+}
+
+.text {
+}
+
+P {
+    font-family: Verdana;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+H1 {
+    color: #FC9917;
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 11px;
+    width: 350px;
+    background-color: #000000;
+    vertical-align: middle;
+    padding-left: 1px;
+    white-space: nowrap;
+	clear: both;
+}
+
+.wide {         width: 0px;
+                padding-right: 10px }
+
+H2 {
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 11px;
+    width: 350px;
+    background-color: #F69810;
+    height: 16px;
+    vertical-align: middle;
+    padding-left: 1px;
+    white-space: nowrap;
+	clear: both;
+}
+
+H3 {
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+h4 {
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.Links {
+    font-family: Verdana;
+    color: #FFFFFF;
+    font-size: 8pt;
+    padding-left: 22px;
+    position: relative;
+    line-height: 1.5;
+}
+
+.Links A:link {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+.Links A:visited {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+.Links A:hover {
+    color: #07009A;
+    text-decoration: underline;
+}
+
+.spotLight {
+    color: #FC9917;
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 9pt;
+    width: 200px;
+    background-color: #000000;
+    height: 18px;
+    vertical-align: middle;
+    position: relative;
+    left: 22px;
+    letter-spacing: 1pt;
+}
+
+.spotLightText {
+    font-family: Verdana;
+    color: #FFFFFF;
+    font-size: 8pt;
+    width: 200px;
+    margin-left:1px;
+    margin-right:1px;
+    line-height: 1.5;
+    position: relative;
+    left: 22px;
+}
+
+A:link 
+{
+    color: #07009A;
+    text-decoration: none;
+}
+A:visited
+{
+    color: #07009A;
+    text-decoration: none;
+}
+A:hover
+{
+    text-decoration: underline;
+}
+
+.logo {
+    position: relative;
+    top: 37px;
+}
+
+SPAN.bodyText {
+/*  position: relative;
+    left: 4px; 
+    top: 30px;
+    font-family: Verdana;
+    font-size: 11px;
+    line-height: 1.5; */
+}
+
+.headerTable {
+    position: relative; 
+    left: 4px;
+    font-family: Verdana;
+    font-size: 11px;
+    line-height: 1.5;
+    border: 0;
+}
+
+.printerImage {
+    text-align: right;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+}
+
+.LinkCurrent {
+    color: #000000;
+}
+
+.leftMenu {
+    background-color: #ff6600;
+/*        padding-left: 22px; */
+}
+
+TABLE.main
+{
+    border: 0;
+    width: 100%;
+    height: 100%;
+}
+
+TABLE.header
+{
+    border: 0;
+    width: 100%;
+    border-width: 0;
+    border-style: solid;
+}
+
+.content
+{
+    background-color: #FFFCBF;
+/*    background-color: #F8CB66;*/
+    padding-right: 45px;
+    vertical-align: top;
+}
+
+.mainTable {
+    width:100%;
+    height:100%;  
+    border: 0; 
+}
+
+.code   
+{ 
+    font-size: 9pt;
+}
+
+hr {
+  color: #FC980E;
+  background-color: #FC980E;
+  border: 0;
+  height: 1px;
+ }
+
+.hrstyle
+{
+    color: #FC980E;
+    height: 1px;
+}
+
+div.separator
+{
+    height: 89px;
+}
+
+
+TABLE {
+    font-family: Verdana;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+DL DT {font-weight: bold; padding-top: 6pt; }
+DL DD {margin-left: 24px; }
+
+P.section { font-weight: bold }
+DL.attributes DT { font-family: monospace; font-weight: bold; margin-top: 1em; padding-top: 0pt }
+DL.arguments DT { font-family: monospace; font-weight: bold; margin-left: 3em; margin-bottom: -12pt; margin-top:6pt }
+DL.arguments DD { margin-left: 15em }
+DL.arguments_sm DT { font-family: monospace; font-weight: bold; margin-left: 3em; margin-bottom: -12pt; margin-top:6pt }
+DL.arguments_sm DD { margin-left: 5em;}
+DL.attributes P { margin-top: 0pt; margin-bottom: 0pt}
+DL.attributes DT.notcode { font-family: }
+DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
+P.header { margin-bottom: 0mm; margin-top: 1em}
+
+/*XMP.code { background-color: #FCD179; margin-top: 3px; padding-left: 6px}
+PRE.code { background-color: #FCD179; margin-top: 3px}
+*/
+
+.schema {
+	border:2;
+	border-color: #777777;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+.snapshot {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+
+XMP.code, PRE.code {
+    /*background-color: #FDE0A5;*/
+	background-color: #fffcbf; /*#fdf2b4;*/ /* white */ /* #F8CB66; */
+    margin-top: 3px;
+    padding: 6px;
+    padding-left: 12px;
+    border: #ebe1a7 thin dotted;
+}
+
+.leftscreenshot { 
+    float:left;
+    margin-top: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+

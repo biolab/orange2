@@ -1,0 +1,597 @@
+<HTML>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<H1>Preprocessing</H1>
+<index name="preprocessing data sets">
+
+<P>Preprocessors are classes that take examples, usually stored as
+<CODE>ExampleTable</CODE> and return a new <CODE>ExampleTable</CODE>
+with the examples somehow preprocessed - filtered, weighted etc. All
+preprocessors can therefore be called and given an example generator
+and, optionally, an id of a meta-attribute with weights. They return
+either an <CODE>ExampleTable</code> or a tuple with
+<CODE>ExampleTable</code> and meta-attribute id; tuple is returned if
+id was passed to a preprocessor or if the preprocessor itself added a
+weight. All other parameters (such as, for example, level of noise or
+attributes that are to be removed) are properties and not (direct)
+arguments to the call.</P>
+
+<P>Preprocessors can be used as classes or called, as many other
+classes in Orange, as functions. The example for both ways are
+following shortly.</P>
+
+<P>There is also a method <code>selectionVector</code> which instead of examples returns a list of booleans denoting which examples are accepted and which are not. This of course only supported by preprocessors that filter examples, not by those that modify them.</P>
+
+<P>Most of code samples will work with lenses dataset. We thus suppose that Orange is imported, data is loaded and there are variables that correspond to attribute descriptors:</P>
+
+<XMP class="code">import orange
+data = orange.ExampleTable("lenses")
+age, prescr, astigm, tears = data.domain.attributes
+</XMP>
+
+<H2>Selection of attributes</H2>
+<index name="preprocessing+attribute selection (manual)">
+
+<P>Selection/removal of attributes is taken care by preprocessors <CODE><INDEX name="classes/Preprocessor_select">Preprocessor_select</CODE> and <CODE><INDEX name="classes/Preprocessor_ignore">Preprocessor_ignore</CODE>.
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>attributes</DT>
+<DD>Attributes to be selected/removed</DD>
+</DL>
+
+<P>The long way to use the <CODE>Preprocessor_select</CODE> is to construct the object, assign the attributes and call it.</P>
+
+<p class="header"><a href="pp-attributes.py">pp-attributes.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<xmp class="code">>>> pp = orange.Preprocessor_select()
+>>> pp.attributes = [age, tears]
+>>>
+>>> data2 = pp(data)
+>>> print "Attributes: %s, classVar %s" % (data2.domain.attributes, data2.domain.classVar)
+Attributes: <EnumVariable 'age', EnumVariable 'tears'>, classVar None
+</XMP>
+
+<P>Note that you cannot pass the attributes names (eg. <CODE>pp.attributes = ["age", "tears"]</CODE>) since the domain is not known at the time of the preprocessor construction. Variables <CODE>age</CODE> and <CODE>tears</CODE> are attribute descriptors.</P>
+
+<P>A quicker way to use preprocessor is to construct the object, pass the arguments and set the options in a single call.</P>
+
+<p class="header"><a href="pp-attributes.py">pp-attributes.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<xmp class="code">>>> data2 = orange.Preprocessor_ignore(data, attributes = [age, tears])
+>>> print "Attributes: %s, classVar %s" % (data2.domain.attributes, data2.domain.classVar)
+Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariable 'y'
+</XMP>
+
+<P>In most cases, however, we'll have examples stored in an <CODE>ExampleTable</CODE> and utilize the <CODE>select</CODE> statement instead of those two preprocessors.</P>
+
+
+
+<H2>Selection of examples</H2>
+<index name="preprocessing+selecting examples">
+<index name="preprocessing+filtering examples">
+
+<P>This section covers preprocessors for selection of examples. Selection can be random, based on criteria matching or on checking for the presence of (un)defined values.<P>
+
+<H3>Selection by values</H3>
+
+<P>As for selecting the attribute subset, there are again two preprocessors - <CODE><INDEX name="classes/Preprocessor_take">Preprocessor_take</CODE> takes examples that match the given criteria and <CODE><INDEX name="classes/Preprocesor_drop">Preprocesor_drop</CODE> removes them.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>values</DT>
+<DD>A dictionary-like list of type <CODE>ValueFilterList</CODE> (don't mind about it, if you don't need to) containing the criteria that an example must match to be selected/removed.</DD>
+</DL>
+
+<P>In below examples we shall concentrate on <CODE>Preprocessor_take</CODE>; <CODE>Preprocessor_drop</CODE> works analogously.</P>
+
+<p class="header"><a href="pp-select.py">pp-select.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">>>> pp = orange.Preprocessor_take()
+>>> pp.values[prescr] = "hyper"
+>>> pp.values[age] = ["young", "psby"]
+>>> data2 = pp(data)
+>>>
+>>> for ex in data2:
+>>>    print ex
+['psby', 'hyper', 'y', 'normal', 'no']
+['psby', 'hyper', 'y', 'reduced', 'no']
+['psby', 'hyper', 'n', 'normal', 'soft']
+['psby', 'hyper', 'n', 'reduced', 'no']
+['young', 'hyper', 'y', 'normal', 'hard']
+['young', 'hyper', 'y', 'reduced', 'no']
+['young', 'hyper', 'n', 'normal', 'soft']
+['young', 'hyper', 'n', 'reduced', 'no']
+</XMP>
+
+<P>We required "prescr" to be "hyper", and "age" to be "young" or "psby". The latter was given as a list of strings, and the former as a single string (although we could also pass it in a one-element list). The field <CODE>pp.values</CODE> behaves like a dictionary, where keys are attributes and values are conditions.<P>
+
+<P>This should be enough for most users. If you need to know everything: the condition is not simply a list of strings (<CODE>["young", "psby"]</CODE>), but an object of type <CODE>ValueFilter_discrete</CODE>. The acceptable values are stored in a field surprisingly called <CODE>values</CODE>, and there is another field, <CODE>acceptSpecial</CODE> that decides what to do with special attribute values (don't know, don't care). You can check that <CODE>pp.values[age].acceptSpecial</CODE> is -1, which means that special values are simply ignored. If <CODE>acceptSpecial</CODE> is 0, the example is rejected and if it is 1, it is accepted (as if the attribute's value would be one of those listed in <CODE>values</CODE>). Should you by any reason want to specify the condition directly, you can do it by <CODE>pp.values[age] = orange.ValueFilter_discrete(values = orange.ValueList(["young", "psby"], age))</CODE> (Did I just hear something about prefering the shortcut?)</P>
+
+<P>More information on <CODE>ValueFilterList</CODE> can be find in the page about <A href="filters.htm">filters</A>.</P>
+
+<P>As you suspected, it is also possible to filter by values of continuous attributes. So, if age was continuous, we could select teenagers by</P>
+
+<XMP class="code">>>> pp.values[age] = (10, 19)
+</XMP>
+
+<P>Both boundaries are inclusive. How to select those from outside an interval? By reversing the order:</P>
+
+<XMP class="code">>>> pp.values[age] = (19, 10)
+</XMP>
+
+<P>Again, this should be enough for most. For "hackers": the condition is stored as <CODE>ValueFilter_continuous</CODE> which has a common ancestor with <CODE>ValueFilter_discrete</CODE>, <CODE>ValueFilter</CODE>. The boundaries are in the fields <CODE>min</CODE> and <CODE>max</CODE>. Here, <CODE>min</CODE> is always smaller or equal to <CODE>max</CODE>; there is a flag <CODE>outside</CODE> which is false by default. Again, you can construct the condition manually, by <CODE>pp.values[age] = orange.ValueFilter_continuous(min=10, max=19)</CODE>.</P>
+
+<P>Finally, here's a shortcut. The preprocessor's field <CODE>values</CODE> behaves like a dictionary and can thus also be initialized as one. The shortest way to achieve the same result as above is</P>
+
+<XMP class="code">data2 = orange.Preprocessor_take(data,
+            values = {prescr: "hyper", age: ["young", "psby"]})
+</XMP>
+
+
+<H3>Removal of duplicates</H3>
+<index name="preprocessing+duplicated examples removal">
+
+<P><CODE><INDEX name="classes/Preprocessor_remove_duplicates">Preprocessor_remove_duplicates</CODE> merges multiple occurrences of the same example into a single example whose weight is the sum of all merged examples. If examples were originally non-weighted, a new weight meta-attribute is prepared. This preprocessor always returns a tuple with examples and weight id.</P>
+
+<P>To show how to use it, we shall first remove the attribute <CODE>age</CODE>, to introduce duplicated examples.</P>
+
+<p class="header"><a href="pp-duplicates.py">pp-duplicates.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">>>> data2 = orange.Preprocessor_ignore(data, attributes = [age])
+>>> data2, weightID = orange.Preprocessor_removeDuplicates(data2)
+>>> for ex in data2:
+>>>    print ex
+['hyper', 'y', 'normal', 'no'], {-2:2.00}
+['hyper', 'y', 'reduced', 'no'], {-2:3.00}
+['hyper', 'n', 'normal', 'soft'], {-2:3.00}
+['hyper', 'n', 'reduced', 'no'], {-2:3.00}
+['myope', 'y', 'normal', 'hard'], {-2:3.00}
+['myope', 'y', 'reduced', 'no'], {-2:3.00}
+['myope', 'n', 'normal', 'no'], {-2:1.00}
+['myope', 'n', 'reduced', 'no'], {-2:3.00}
+['myope', 'n', 'normal', 'soft'], {-2:2.00}
+['hyper', 'y', 'normal', 'hard'], {-2:1.00}
+</XMP>
+
+<P>The new weight attribute has id -2 (which can be checked by looking at <CODE>weightID</CODE> and the resulting examples are merges of up to three original examples. Note that you may get values other than -2 if you run the script for multiple times.</P>
+
+
+<H3>Selection by missing values</H3>
+<index name="preprocessing/missing values removal">
+<index name="missing values/removal of">
+
+<P>There are four preprocessors that select or remove examples with missing values. <CODE><INDEX name="classes/Preprocessor_dropMissing">Preprocessor_dropMissing</CODE> removes examples with any missing values and <CODE><INDEX name="classes/Preprocessor_dropMissingClasses">Preprocessor_dropMissingClasses</CODE> removes examples with missing the class value. The other pair is <CODE><INDEX name="classes/Preprocessor_takeMissing">Preprocessor_takeMissing</CODE> and <CODE><INDEX name="classes/Preprocessor_takeMissingClasses">Preprocessor_takeMissingClasses</CODE> that select only examples with at least one missing value or without class value, respectively. See examples in the section about <a href="#adding_missing_values">adding missing values</A>.</P>
+
+
+<H2>Shuffling</H2>
+<index name="preprocessing/shuffling attribute values">
+<index name="shuffle"
+
+<P>Some statistical tests require making a certain attribute useless by permuting its values across examples. There is a preprocessor to do this, called <code>Preprocessor_shuffle</code>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>attributes</DT>
+<DD>A list of attributes (usually a single attribute) whose values need to be shuffled.</DD>
+</DL>
+
+<P>Here's how to use it:</P>
+<xmp class="code">d2 = orange.Preprocessor_shuffle(d, attributes=[d.domain[0]])</xmp>
+
+<P>Executing this will create a new table <code>d2</code>, which will contain all examples from <code>d</code> but with the values of the first attribute permuted.</P>
+
+<H2>Adding noise</H2>
+<index name="preprocessing+adding noise">
+<index name="noise">
+
+<P>Orange has separate preprocessors for discrete and continuous noise. When discrete noise is applied, a proportion of noisy values needs to be provided. If it is, for instance, 0.25, then every fourth value will be changed to a random. Note that this does not mean that a quarter of values will be changed since the random value can be equal to the original. For continuous noise, the value is modified by a random value from Gaussian distribution; the user provides the deviation.</P>
+
+<H3>Class noise</H3>
+
+<P>Preprocessor <CODE><INDEX name="classes/Preprocessor_addClassNoise">Preprocessor_addClassNoise</CODE> sets the example's class to a random value with a given probability.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>proportion</DT>
+<DD>Proportion of changed values. If set to, for instance, 0.25, preprocessor will set random classes to one quarter of examples (rounded to the closest integer).</DD>
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used for adding noise. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>>>> data2 = orange.Preprocessor_addClassNoise(data, proportion = 0.5)
+</XMP>
+
+<P>Note again that this doesn't mean that the class for half of examples will be changed. The preprocessor works like this. If the dataset has <CODE>N</CODE> examples, class attribute has <CODE>v</CODE> values and the noise proportion is <CODE>p</CODE>, then <CODE>N*p/v</CODE> randomly chosen examples will be assigned to class 1, other <CODE>N*p/v</CODE> randomly chosen examples will be assigned to class 2 and so forth; <CODE>N*(1-p)/v</CODE> examples will be left alone. When numbers do not divide evenly, they are not rounded to the closest integer; instead, groups that get an example more or less are chosen at random.</P>
+
+<P>For instance, dataset lenses has 24 examples and class attribute has three distinct values. Four randomly chose examples are assigned to each of the three classes, while the remaining 12 examples are left as they are.</P>
+
+<P>Preprocessor <CODE><INDEX name="classes/Preprocessor_addGaussianClassNoise">Preprocessor_addGaussianClassNoise</CODE> adds Gaussian noise with given deviation.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>deviation</DT>
+<DD>Sets the deviation for the noise; a random number with distribution N(0, <CODE>deviation</CODE>) is added to each example.</DD>
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used for adding noise. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<P>To show how this works, we shall construct a simple example table with 20 examples, described only by the "class" attribute. It will be continuous and always have value 100. To this, we will apply Gaussian noise with deviation 10.</P>
+
+<p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>>>> cdomain = orange.Domain([orange.FloatVariable()])
+>>> cdata = orange.ExampleTable(cdomain, [[100]]*20)
+>>> cdata2 = orange.Preprocessor_addGaussianClassNoise(cdata, deviation=10)
+</XMP>
+
+<H3>Attribute noise</H3>
+
+<P>Preprocessor <code><INDEX name="classes/Preprocessor_addNoise">Preprocessor_addNoise</code> sets attributes to random values; probability can be prescribed for each attribute individually and for all attributes in general.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>proportions</DT>
+<DD>A dictionary-like list with proportions of each individual attribute values that are set to random. This list can also include the class attribute</DD>
+
+<DT>defaultProportion</DT>
+<DD>Proportion of changed values for all attributes not specifically listed above. Default proportion does not cover the class attribute.</DD>
+
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used for adding noise. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<P>Note the treatment of the class attribute. If you want to add class noise with this filter, it does not suffice to set <CODE>defaultProportion</CODE> as this only applies to other attributes. You need to specifically request the noise for class attribute in <CODE>proportions</CODE>.</P>
+
+<p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XML class=code>
+age, prescr, astigm, tears, y = tuple(data.domain.variables)
+pp = orange.Preprocessor_addNoise()
+pp.proportions[age]=0.3
+pp.proportions[prescr]=0.5
+pp.defaultProportion = 0.2
+data2 = pp(data)
+</XML>
+
+<P>This preprocessor will set 30% of values of "age" to random, as well as 50% of values of "prescr" and 20% of values of other attributes. See the above description of <CODE>Preprocessor_addClassNoise</CODE> for details on how examples are selected.</P>
+
+<P>The class attribute will be left intact. Note that <CODE>age</CODE> and <CODE>prescr</CODE> are attribute descriptors, not strings or indices.</P>
+
+<P>To add noise to continuous attributes use preprocessor <CODE>Preprocessor_addGaussianNoise</CODE>.</p>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>deviations</DT>
+<DD>Deviations for individual attributes</DD>
+<DT>defaultDeviation</DT>
+<DD>Deviations for attributes not specifically listed in <CODE>deviations</CODE></DD>
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used for adding noise. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<P>The following scripts adds Gaussian noise with deviation 1.0 to all attributes in iris dataset except to "petal_width". To achieve this, it sets the <CODE>defaultDeviation</CODE> to 1.0, but specifically sets the noise level for "petal_width" to 0.</P>
+
+<p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>pp = orange.Preprocessor_addGaussianNoise()
+pp.deviations[iris.domain["petal width"]] = 0.0
+pp.defaultDeviation = 1.0
+data2 = pp(iris)
+</XMP>
+
+
+<H2>Adding missing values</H2>
+<index name="preprocessing+adding missing values">
+<A name="adding_missing_values">
+
+<P>Preprocessors for adding missing values (that is, replacing known values with don't-knows or don't-cares) are similar to those for introducing noise. There are two preprocessors, one for all attributes and another that only manipulates the class attribute values.</P>
+
+<H3>Removing class values</H3>
+
+<P>Removing class values is taken care by <CODE><INDEX name="classes/Preprocessor_addMissingClasses">Preprocessor_addMissingClasses</CODE>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>proportion</DT>
+<DD>Proportion of examples for which the class value will be removed.</DD>
+
+<DT>specialType</DT>
+<DD>The type of special value to be used. Can be <CODE>orange.ValueTypes.DK</CODE> or <CODE>orange.ValueTypes.DC</CODE> for "don't know" and "don't care".</DD>
+
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used for selecting examples for class value removal. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<P>The following script replaces 50% of class values by "don't know", prints out the classes for all examples, then removes examples with missing classes and print the classes out again.</P>
+
+<p class="header"><a href="pp-missing.py">part of pp-missing.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>pp = orange.Preprocessor_addMissingClasses()
+pp.proportion = 0.5
+pp.specialType = orange.ValueTypes.DK
+data2 = pp(data)
+
+print "Removing 50% of class values:",
+for ex in data2:
+    print ex.getclass(),
+print
+
+data2 = orange.Preprocessor_dropMissingClasses(data2)
+print "Removing examples with unknown class values:",
+for ex in data2:
+    print ex.getclass(),
+print
+</XMP>
+
+
+<H3>Removing attribute values</H3>
+
+<P><CODE><INDEX name="classes/Preprocessor_addMissing">Preprocessor_addMissing</CODE> replaces known values of attributes with unknowns of prescribed type.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>proportions</DT>
+<DD>A dictionary-like list with proportions of examples for which the value of particular attribute will be replaced by undefined values.</DD>
+<DT>defaultProportion</DT>
+<DD>Proportion of changed values for attributes not specifically listed in <CODE>proportions</CODE>.</DD>
+<DT>specialType</DT>
+<DD>The type of special value to be used. Can be <CODE>orange.ValueTypes.DK</CODE> or <CODE>orange.ValueTypes.DC</CODE> for "don't know" and "don't care".</DD>
+<DT>randomGenerator</DT>
+<DD>Random number generator to be used to select values for removal. If left <CODE>None</CODE>, a new generator is constructed each time the preprocessor is called, and initialized with random seed 0.</DD>
+</DL>
+
+<P>As for adding noise, this preprocessor does not manipulate the class value unless the class attributes is specifically listed in <CODE>proportions</CODE>.</P>
+
+<P>The following examples removes 20% of values of "age" and 50% of values of "astigm" in dataset lenses, replacing them with "don't care". The it prints out the examples with missing values.</P>
+
+<p class="header"><a href="pp-missing.py">part of pp-missing.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class=code>age, prescr, astigm, tears, y = data.domain.variables
+pp = orange.Preprocessor_addMissing()
+pp.proportions = {age: 0.2, astigm: 0.5}
+pp.specialType = orange.ValueTypes.DC
+data = pp(data)
+
+print "\n\nSelecting examples with unknown values"
+data3 = orange.Preprocessor_takeMissing(data2)
+for ex in data3:
+    print ex
+</XMP>
+
+
+<H2>Assigning weights</H2>
+<index name="preprocessing/weighting">
+
+<P>Orange stores weights of examples as meta-attributes. Weights can be stored and read from file (as any other meta-attribute) if they are given in advance or computed outside Orange. Orange itself has two preprocessors for weighting examples.</P>
+
+<H3>Weighting by classes</H3>
+
+<P>Weighting by classes (<code><INDEX name="classes/Preprocessor_addClassWeight">Preprocessor_addClassWeight</code>) assigns weights according to classes of examples.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>classWeights</DT>
+<DD>A list of weights for each class.</DD>
+
+<DT>equalize</DT>
+<DD>Make the class distribution homogenous by decreasing and increasing example weights.</DD>
+</DL>
+
+<P>If you have, for instance, loaded the now famous lenses domain and want all examples of the first class to have a weight of 2.0 and those of the second and the third a weight of 1.0, you would achieve this by</P>
+
+<p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">pp = orange.Preprocessor_addClassWeight()
+pp.classWeights = [2.0, 1.0, 1.0]
+data2, weightID = pp(data)
+
+print "  - original class distribution: ", orange.Distribution(y, data2)
+print "  - weighted class distribution: ", orange.Distribution(y, data2, weightID)
+</XMP>
+
+<P>Script prints</P>
+<XMP class=code>  - original class distribution:  <15.000, 5.000, 4.000>
+  - weighted class distribution:  <30.000, 5.000, 4.000>
+</XMP>
+
+<P>The number of examples in the first class has seemingly doubled. Printing out the examples reveals that those belonging to the first class ("no") have a weight of 2.0 while the other weigh 1.0. Weighted examples can then be used for learning, either directly</P>
+
+<XMP class="code">>>> ba = orange.BayesLearner(data2, weight)
+</XMP>
+
+<P>or by through some sampling procedure, such as cross-validation</P>
+
+<XMP class="code">>>> res = orngTest.crossValidation([orange.BayesLearner()], (data2, weight))
+</XMP>
+
+<P>In a highly unbalanced dataset where the majority class prevails by large over the minority, it is often desirable to reduce the number of majority class examples. The traditional way of doing this is by randomly selecting only a certain proportion of examples belonging to majority class. The alternative to this is assigning a smaller weight to examples belonging to the majority class (this, naturally, requires a learning algorithm capable of processing weights). For this purpose, <CODE>Preprocessor_addClassWeight</CODE> can be told to equalize the class distribution prior to weighting. Let's see how this works on lenses.</P>
+
+<p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">data2, weightID = orange.Preprocessor_addClassWeight(data, equalize=1)
+</XMP>
+
+<P>Equalizing computes such weights that the weighted number of examples in each class is equivalent. In our case, we originally had a total of 24 examples, of which 15 belong to the first class, and 5 and 4 in the other two. The preprocessor reweighted examples so that there are 8 (one third) in each of the three classes. Examples in the first class therefore got a weight of 8/15=0.53, as can be quickly checked:</P>
+
+<XMP class="code">>>> data2[0]
+['psby', 'hyper', 'y', 'normal', 'no'], {6:0.53}
+</XMP>
+
+<P>Usually, you would use both, equalizing and weighting. This way, you prescribe the exact proportions of classes.</P>
+
+<p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">pp = orange.Preprocessor_addClassWeight()
+pp.classWeights = [0.5, 0.25, 0.25]
+pp.equalize = 1
+data2, weightID = pp(data)
+print "  - original class distribution: ", orange.Distribution(y, data2)
+print "  - weighted class distribution: ", orange.Distribution(y, data2, weightID)
+</XMP>
+
+<P>This script prints</P>
+<XMP class=code>  - original class distribution:  <15.000, 5.000, 4.000>
+  - weighted class distribution:  <12.000, 6.000, 6.000>
+</XMP>
+
+<P><EM>Formally</EM>, preprocessor functions like this:
+<UL>
+<LI>If equalization is not requested, each examples' existing weight is multiplied by the corresponding weight in <CODE>classWeights.</CODE></LI>
+<LI>If equalization is requested and no (or empty) <CODE>classWeights</CODE> is passed, the examples will be reweighted so that the (weighted) number of examples (i.e. the sum of example weights) stays the same and the weighted distribution of classes is uniform.</LI>
+<LI>If equalization is requested and class weights are given, ratios of class frequencies will be as given in <CODE>classWeights</CODE>; if weights of two classes in the <CODE>classWeights</CODE> list or <EM>a</EM> and <EM>b</EM>, then the ratio of weighted examples of those two classes will be <EM>a:b</EM>. The sum of weights of all examples does not stay the same but multiplies by the sum of elements in <CODE>classWeight</CODE>.</LI>
+</UL>
+</P>
+
+<P>The latter case sound complicated, but isn't. As we have seen in the last example on lenses domain, the number of examples stayed the same (12+6+6=24) when the <CODE>classWeights</CODE> were <CODE>[0.5, 0.25, 0.25]</CODE>. If <CODE>classWeights</CODE> were <CODE>[2, 1, 1]</CODE>, the (weighted) number of examples would quadruple. The actual number of examples (length of the example table) would naturally stay the same, what changes is only the sum of weights.</P>
+
+<P>Special care is taken of the empty classes. If we have a three-class problem with 24 examples, but one of the classes is empty, pure equalization would put 12 (not 8!) examples to each class. Similar holds for the case when equalization and class weights are given: if <CODE>classWeights</CODE> sums to 1, the sum of weights will stay the same.</P>
+
+<H3>Censoring</H3>
+
+
+<P>The other weights introducing preprocessor deals with censoring. In some areas, like medicine, we often deal with examples with different credibilities. If, for instance, we follow a group of cancer patients treated with chemotherapy and the class attribute tells whether the disease recurred, then we might have patients which were followed for a period of five years and others which moved from the country or died for an unrelated reason in a few months. Although both may be classified as non-recurring, it is obvious that the weight of the former should be greater than that of the latter.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>outcomeVar</DT>
+<DD>Descriptor for attribute containing the outcome; if left unset, class variable is used as outcome. It can be either meta- or normal attribute.</DD>
+
+<DT>timeVar</DT>
+<DD>The attribute with follow-up time. This will usually (but not necessarily) be meta-attribute.</DD>
+
+<DT>eventValue</DT>
+<DD>An integer index of the value of <CODE>outcomeVar</CODE> that denotes failure; all other denote censoring (eg. if symbolic value "fail" denotes failure, then <CODE>eventValue</CODE> must be set to <CODE>outcomeVar.values.index("fail")</CODE> or, equivalently, <CODE>int(orange.Value(outcomeVar, "fail"))</CODE>.</DD>
+
+<DT>method</DT>
+<DD>Sets the weighting method used; can be <CODE>orange.Preprocessor_addClassWeight.Linear</CODE>, <CODE>orange.Preprocessor_addClassWeight.KM</CODE> or <CODE>orange.Preprocessor_addClassWeight.Bayes</CODE> for linear, Kaplan-Meier and Bayesian weighting (see below).</DD>
+
+<DT>maxTime</DT>
+<DD>Time after which a censored example is treated as "survived". This attribute's meaning depends on the selected method.</DD>
+
+<DT>addComplementary</DT>
+<DD>If <CODE>true</CODE> (default is <CODE>false</CODE>), for each censored example a complementary failing example is added with the weight equal to the amount for which the original example's weight was decreased.</DD>
+</DL>
+
+<P>There are different approaches to weighting censored examples. Orange implements three of them. In any case, examples that failed are good examples of failing. They failed for sure and have a weight of 1. The same goes for examples that did not fail and were observed for at least <CODE>maxTime</CODE> (given by user). Weighting is needed for examples that did not fail but were not observed long enough. If <CODE>addComplementary</CODE> flag is <CODE>false</CODE> (default), the example's weight is decreased by a factor computed by one of the methods described below. If <CODE>true</CODE>, a complementary failing example is added with the weight equal to the amount for which the original example's weight was decreased.
+<DL>
+<DT><B>Linear weighting</B></DT>
+<DD>Linear weighting is a simple <EM>ad-hoc</EM> method which assigns a weight linear to the observation time: an example that was observed for time <EM>t</EM> gets a weight of <EM>t</EM>/<CODE>maxTime</CODE>. If <CODE>maxTime</CODE> is not given, the maximal time in the data is taken.</DD>
+
+<DT><B>Kaplan-Meier</B></DT>
+<DD>Kaplan-Meier curve models the probability of not failing at or before time <EM>t<SUB>i</SUB></EM>. It is computed iteratively: probability of not failing at or before time <EM>t<SUB>i</SUB></EM> equals probability of not failing before or at <EM>t<SUB>i-1</SUB></EM> multiplied by probability for not failing in interval between those two times. The latter probability is estimated as a proportion of examples (say patients) that were OK by <EM>t<SUB>i-1</SUB></EM> but failed in between <EM>t<SUB>i-1</SUB></EM> - <EM>t<SUB>i</SUB></EM>.</P>
+
+<P>Non-failing examples that are observed for time <EM>t&lt;maxTime</EM> have a weight of KM(<EM>maxTime</EM>)/KM(<EM>t</EM>) - this is a conditional probability for not failing till <CODE>maxTime</CODE> given that the example did not fail before time <EM>t</EM>.</P>
+</DD>
+
+<DT><B>Weighting by Bayesian probabilities</B></DT>
+<DD>This method is similar to Kaplan-Meier, but simpler. For each time-point <EM>t</EM> we can compute the probability of failing by Bayesian formula, where aprior probability of failing is computed as the proportion of examples observed at <CODE>maxTime</CODE> that failed. Likewise, conditional probability that an example that will eventually fail but doesn't fail at (or before) time <CODE>t</CODE> is computed from a corresponding proportion. The third needed probability is probability of not failing at (or before) time <CODE>t</CODE>, which is computed as proportion of those that didn't fail at <CODE>t</CODE> among those that were observed for at least time <CODE>t</CODE>.</DD>
+</DL>
+
+<P>Practical experiments showed that all weighting methods give similar results.</P>
+
+<P>The following script load the new Wisconsin breast cancer dataset which tells whether cancer recurred or not; if it recurred, it gives time of recurrence, if not, it gives disease free time. Weights are assigned using Kaplan-Meier method with 20 as maximal time. The name of the attribute with time is "time". Failing examples are those whose class value is "R"; we don't need to assign the <CODE>outcomeVar</CODE>, since the event is stored in the class attribute.</P>
+
+<P>To see the results, we print out all non-recurring examples with disease free time less than 10.</P>
+
+<p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
+(uses <a href="wpbc.csv">lenses.csv</a>)</p>
+<XMP class="code">import orange
+data = orange.ExampleTable("wpbc")
+
+time = data.domain["time"]
+fail = data.domain.classVar.values.index("R")
+
+data2, weightID = orange.Preprocessor_addCensorWeight(
+   data, 0,
+   eventValue = fail, timeVar=time, maxTime = 20,
+   method = orange.Preprocessor_addCensorWeight.KM)
+
+print "class\ttime\tweight"
+for ex in data2.select(recur="N", time=(0, 10)):
+    print "%s\t%5.2f\t%5.3f" % (ex.getclass(), float(ex["time"]), ex.getmeta(weightID))
+print
+</XMP>
+
+<P>The script prints</P>
+
+<XMP class=code>class   time    weight
+N    10.00 0.927
+N    5.00  0.875
+N    5.00  0.875
+N    5.00  0.875
+N    8.00  0.895
+N    1.00  0.852
+N   10.00  0.927
+N    7.00  0.885
+N    8.00  0.895
+N    1.00  0.852
+N    9.00  0.910
+N   10.00  0.927
+N    6.00  0.880
+N    8.00  0.895
+N    3.00  0.861
+N    3.00  0.861
+N   10.00  0.927
+N    8.00  0.895
+N    6.00  0.880
+</XMP>
+
+
+<H2>Discretization</H3>
+<index name="preprocessing+discretization">
+
+<P>The discretization preprocessor <CODE><INDEX name="classes/Preprocessor_discretize">Preprocessor_discretize</CODE> is a substitute for the discretizers in module <CODE>orngDisc</CODE>. It has three attributes.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>attributes</DT>
+<DD>A list of attributes to be discretized. Leave it <CODE>None</CODE> (default) to discretize all.</DD>
+
+<DT>discretizeClass</DT>
+<DD>Tells whether to discretize the class attribute as well. Default is <CODE>false</CODE>.</DD>
+
+<DT>method</DT>
+<DD>Discretization method. Need to be set to a component derived from <CODE>Discretization</CODE> <EM>e.g.</EM> <CODE>EquiDistDiscretization</CODE>, <CODE>EquiNDiscretization</CODE> and <CODE>EntropyDiscretization</CODE>.</DD>
+</DL>
+
+<P>This is the simplest way to discretize the iris dataset:</P>
+<p class="header"><a href="pp-discretization.py">part of pp-discretization.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
+<XMP class="code">import orange
+iris = orange.ExampleTable("iris")
+
+pp = orange.Preprocessor_discretize()
+pp.method = orange.EquiDistDiscretization(numberOfIntervals = 5)
+data2 = pp(iris)
+</XMP>
+
+<P>To discretize only "petal length" and "sepal length", set the <CODE>attributes</CODE>:</P>
+<XMP class=code>pp.attributes = [iris.domain["petal length"], iris.domain["sepal length"]]
+</XMP>
+
+<H2>Applying filters</H2>
+<index name="preprocessing/filters">
+
+<P>The last preprocessor, <code><INDEX name="classes/Preprocessor_filter">Preprocessor_filter</code> offers a way of applying example <A href="filters.htm">filters</A>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>filter</DT>
+<DD>For each example in the example generator <CODE>filter</CODE> is asked whether to keep it or not.</DD>
+</DL>
+
+<P>For instance, to exclude the examples with defined class values, you can call</P>
+
+<XMP class=code>data2 = orange.Preprocessor_filter(data, filter = orange.Filter_hasClassValue())
+</XMP>
+
+<P>Note that you can employ preprocessors for most tasks that you could use the filters for, and that filters can also be applied by <a href="ExampleTable.htm#filter"><CODE>ExampleTable</CODE>'s method <CODE>filter</CODE></A>. The preferred way is the way which you prefer.</P>
+</BODY> 

@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Mosaic Display</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Mosaic Display</h1>
+
+<img class="screenshot" src="../icons/MosaicDisplay.png">
+<p>Shows a mosaic display of n-way tables.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Input data set.</DD>
+<DT>Example Subset (ExampleTable)</DT>
+<DD>A subset of data instances from Examples.</DD>
+</dl>
+
+<dl class=attributes>
+  <DT>Selected Examples (ExampleTable)</DT>
+<DD>A subset of examples belonging to manually selected cells in mosaic display.</DD>
+<DD></DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>(None)</DT>
+<DD></DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>The mosaic display is a graphical method to visualize the counts in n-way <a href="http://en.wikipedia.org/wiki/Contingency_table">contingency tables</a>, that is, tables where each cell corresponds to a distinct value-combination of n attributes. The method was proposed by <a href="#HartiganKleiner81" title="Hartigan &amp; Kleiner (1981) Mosaics for contingency tables">Hartigan & Kleiner (1981)</a> and extended in <a href="#Friendly94" title="Friendly (1994) Mosaic displays for multi-way contingency tables">Friendly (1994)</a>. Each cell in mosaic display corresponds to a single cell in contingency table. If the data contains a class attribute, the mosaic display will show the class distribution.</p>
+
+<p>Orange's implementation of mosaic display allows to observe the interactions of up to four variables in a single visualization. The snapshot below shows a mosaic display for the Titanic data set, observing three variables (sex, status, and age) and their association with a class (survived). The diagram shows that the survival (red color) was highest for women traveling in the first class, and lowest for men traveling in the second and third class.</p>
+
+<img class="screenshot" src="MosaicDisplay-Titanic.png" alt="Mosaic Display widget">
+
+<p>This visualization gets slightly more complex - but once getting used to, more informative - if the expected class distribution is shown on the same visualization. For this purpose, a sub-box (<span class="option">Use sub-boxes on the left to show...</span> and below it choose <span class="option">Apriori class distribution</span>. This would plot a bar on the top of every cell displayed, being able to observe the difference between the actual and expected distribution for each cell. Change <span class="option">Apriori class distribution</span> to <span class="option">Expected class distribution</span> to compare the actual distributions to those computed by assuming the independence of attributes.</p>
+
+<img class="screenshot" src="MosaicDisplay-Titanic-Apriori.png" alt="Mosaic Display and Titanic">
+
+<p>The degree of deviation from aprori class distribution for each cell can be directly visualized using <span class="option">Standard Pearson residuals</span> option (from <span class="option">Colors in cells represent ...</span> box, see snapshot below). On Titanic data set, this visualization clearly shows for which combinations of attributes the changes of survival were highest or lowest.</p>
+
+<img class="screenshot" src="MosaicDisplay-Titanic-Residuals.png" alt="Residuals in Mosaic Display">
+
+<p>If there are many attributes, finding subsets which would yield interesting mosaic displays is at least cumbersome. Orange implementation includes <span class="option">VizRank</span> (<span class="option">Main</span> tab), which can list provide a list of most interesting subsets with chosen cardinality. Various measures of interestingness are implemented, but in principle all favor displays where at least some cells would exhibit high deviation from the apriori class distributions.</p>
+
+<img class="screenshot" src="MosaicDisplay-Titanic-VizRank.png" alt="Mosaic Display and VizRank">
+
+<p>Instead of comparing cell's class distribution to apriori ones, these can be compared to distribution from a subset of instances from the same data domain. The widget uses a separate input channel for this purpose. Notice also that individual cells can be selected/de-selected (clicking with left or right mouse button on the cell), sending out the instances from the selected cells using the <span class="option">Selected Examples</span> channel.</p>
+
+<h2>References</h2>
+
+<p id="HartiganKleiner81">Hartigan, J. A., and Kleiner, B. (1981).  Mosaics for contingency tables. In W. F. Eddy (Ed.),  Computer Science and Statistics: Proceedings of the 13th Symposium on the Interface. New York: Springer-Verlag.</p>
+
+<p id="Friendly94">Friendly, M. (1994). Mosaic displays for multi-way contingency tables.  Journal of the American Statistical Association,  89, 190-200.</p>
+
+</body>
+</html>

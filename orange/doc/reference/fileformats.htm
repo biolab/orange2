@@ -1,0 +1,106 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<index name="file formats">
+<index name="c45 file format">
+<index name="tab-delimited file format">
+<index name="comma-separated file format">
+<index name="basket file format">
+
+<h1>Loading Data from Files</h1>
+
+<P>Orange reads and writes files in a number of different formats.
+<DL>
+<DT><B>C4.5</B></DT>
+<DD>A format used in Quinlan's system C45; the system is a standard benchmark and the file format is one of the most widely formats in machine learning. It uses at least two files, &lt;stem&gt;.names contains descriptions of attributes and &lt;stem&gt;.data contains learning examples. If so requested, C4.5 also reads a file &lt;stem&gt;.test with testing examples. The details about the format can be found on Quinlan's web pages. This format is not the same as C5 (aka See5). C5's format is rather complex and only a limited support is planned for some future release of Orange. There's no point in supporting a format that allows specification of all kinds of transformations is these can be done in Python scripts.</DD>
+
+<DT><B><a href="tabdelimited.htm">Tab-delimited</a></B></DT>
+<DD>An easy-to-use, yet powerful native Orange file format. Both, domain description and examples are stored in the same file. It comes in two flavors. In the older version, the first three lines contain names of the attributes, their values and optional flags, respectively. In newer, the first line contains attribute names whose prefixes describe the attribute types and optional flags - the prefixes need only be given in special occasions, while in general the parser will guess the attribute types itself. In both flavors, the remaining lines contain examples. Fields are delimited by tabulators. Detailed description is given in a page on <a href="tabdelimited.htm">tab-delimited formats</a>.</DD>
+
+<DT><B><a href="tabdelimited.htm">Comma-separated</a></B></DT>
+<DD>The format itself is similar to the new-favor <a href="tabdelimited.htm">tab-delimited formats</a>: the first line lists attribute names and the remaining lines contain values, separated by commas. Spaces are trimmed. Additional specifiers can be prefixed to the attribute names.</DD>
+
+<DT><B><a href="basket.htm">Basket</a></B></DT>
+<DD>Basket format is suitable for storing sparse examples. These are not described by the usual list of values of attributes whose order is defined in domain descriptor. Instead, all values are written as meta-attributes. Examples in such format can be used for derivation of association rules; if you want to use them for any other purpose, you need to convert them into "ordinary" examples by pulling some meta-attributes into ordinary attributes. At the moment, this file format is limited to continuous attributes only.</DD>
+
+<DT><B><a href="tabdelimited.htm">Excel</a></B></DT>
+<DD>This format is only available on Windows. Besides, you need to have Excel installed in order for Orange to be able to read those files. Besides besides, Orange occasionally hangs during communication with Excel, for an unknown reason. The file format is generally the same as the second flavor of <a href="tabdelimited.htm">tab-delimited files</a>, except that tab-separated entries in the former are here substituted by spreadsheet's cells. This format is read-only, for now; if you want to output the file by Orange and then process it with Excel, you can use tab-delimited files.</DD>
+
+<DT><B><A href="userformats.htm">User defined formats</A></B></DT>
+<DD>You can define your own function(s) for reading and/or writing examples, and register them with Orange.</DD>
+</DL>
+
+<index name="loading examples">
+
+<H2>Loading Examples</H2>
+
+<P>Loading examples is trivial. To load the data from the file <CODE>iris.tab</CODE>, you simply type</P>
+
+<XMP class="code">>>> data = orange.ExampleTable("iris.tab")
+</XMP>
+
+<P>You can, of course, also give a relative or absolute path to the file. Well, <CODE>ExampleTable</CODE> is even smarted than that. You can omit the file extension.</P>
+
+<XMP class="code">>>> data = orange.ExampleTable("iris")
+</XMP>
+
+<P>This will do the same - Orange will look for any file with stem "iris" and a recognizable extension, such as .tab, .names, If orange discovers that you have, for instance, iris.tab <EM>and</EM> iris.names in the current directory, it will issue an error. You will have to provide the extension in this case.</P>
+
+<P>When reading Excel files with multiple worksheets, the active worksheet (the one which was visible when the file was last saved) is read. To override this, you can specify a worksheet by appending a "#" and the worksheet's name to the file name. If your iris file is in Excel's format in a worksheet named "train", you can read it by
+
+<XMP class="code">>>> data = orange.ExampleTable("iris#train")
+</XMP>
+
+
+<P>What follows is a bit more complicated, so beginners may want to skip it.</P>
+
+<H2>Advanced: Reuse of Attributes</H2>
+
+<P>There's a slight complication, which occurs when you have, for instance, separate files for training and testing examples.</P>
+
+<XMP class="code">>>> train = orange.ExampleTable("iris_train")
+>>> test = orange.ExampleTable("iris_test")
+</XMP>
+
+<P>Orange distinguishes between attributes based on descriptors, not names. That is to say, you can have two different attributes with the same name. If one is used for learning, the classifier would not recognize the second attribute as the same attribute when testing. When loading the data, Orange thus examines a list of all existing attributes and reuses them whenever possible, that is, when there exists an attribute with the same name and type and, in case of discrete attributes, the same order of values. The order of values only matters when it is explicitly set in the data file (e.g. in the second line of a tab-delimited file).</P>
+
+<P>There are only two special cases which require user intervention. If the user accidentally specified different order of values for two same attributes or he first loaded a data file without any prescribed order (so the values are sorted alphabetically), but then went on to load a file with a different prescribed order. The consequences are bad: any classifier trained on one and used on the other data set would treat the attribute values as missing. This is, however, a user's mistake which is hard to prevent.</P>
+
+<P>A more common is the opposite case: the user loads two different data sets with two different attributes which accidentally have the same name and no conflict in the order of values. The attribute is reused, so the list of values now contains the values for both attributes. For instance, the first data set has an attribute <code>a</code> with values <code>1</code> and <code>2</code>, and the other has an attribute <code>a</code> with values <code>yes</code> and <code>no</code>. Without the order being prescribed, we get a common attribute <code>a</code> with values <code>1</code>, <code>2</code>, <code>yes</code> and <code>no</code>. This is, however, difficult to miss and simple to correct.</p>
+
+<P><code>orange.ExampleTable</code> has an additional flag with which we can tell when to construct new attributes. By default (<code>orange.Variable.MakeStatus.Incompatible</code>), new attributes are constructed only when there exists no attribute with the same name or type or when its order of values is incompatible with the order for the new attribute. One can decide not to reuse the attribute if the two attributes have no common values (<code>orange.Variable.MakeStatus.NoRecognizedValues</code>), which would help in the above case. To be even stricter, one can require the old attribute to have all the values of the new one (<code>orange.Variable.MakeStatus.MissingValues</code>). Finally, all attributes will be constructed anew if <Code>orange.Variable.MakeStatus.OK</Code> is used.</P>
+
+<P>After loading, the instance <Code>ExampleTable</Code> has an attribute <Code>attributeLoadStatus</Code>, which describes, for each attribute, the status of the attribute found among the existing attributes. So, if <code>attributeLoadStatus[3]</code> equals <code>Variable.MakeStatus.Incompatible</code>, the fourth attribute was not reused since the existing attribute of the same name had an incompatible order of values. If <code>attributeLoadStatus[4]</code> equals <code>Variable.MissingValues</code>, the candidate for reuse for the fifth attribute had some missing values; whether it has been reused or we have a new attribute depends upon the flag passed to <Code>ExampleTable</Code>. The same information for meta attributes is provided in a dictionary <Code>metaAttributeLoadStatus</Code>, where the key is a meta-attribute id and the value is the corresponding status.</P>
+
+<P>Loading files essentially uses the function <a href="Variable.htm#getExisting"><code>Variable.make</code></a> for creating attributes. A detailed description of the statuses is available <a href="Variable.htm#getExisting"><code>there</code></a>.
+
+<P><B>Note</B>: these things have been in the past handler through <a href="DomainDepot.htm">domain depots</A> and special arguments to <code>ExampleTable</code> by which the user could give a list of domains and/or attributes to reuse. The system has been complicated and unclear, so it has been abandoned. Domain depots still exist, yet we consider removing them, too.</P>
+
+
+<H2>Saving Examples</H2>
+<A name="saving"></a>
+<index name="saving examples">
+
+<P>Saving examples to files is even simpler. <CODE>ExampleTable</CODE> (actually its ancestor, <CODE>ExampleGenerator</CODE>) implements a method <CODE>save</CODE> which accepts a single argument, file name, from which it also deduces the format. For instance, if examples are stored in <CODE>ExampleTable</CODE> <CODE>data</CODE>, we can save them as tab-delimited file by
+
+<XMP class="code">>>> data.save("mydata.tab")
+</XMP>
+
+<P>If the file format requires multiple files (such as C4.5, where the attribute definitions and the examples are separate files with different extensions), specify one of them and Orange will make the things right. For instance, to save the data in C4.5, call either
+
+<XMP class="code">>>> data.save("mydata.names")
+</XMP>
+or
+<XMP class="code">>>> data.save("mydata.data")
+</XMP>
+
+Orange will write both files, <CODE>mydata.names</CODE> and <CODE>mydata.data</CODE> in both cases.</P>
+
+<P>Some formats are not able to store all types of data sets. For instance, C4.5 can only store examples where the outcome is discrete.</P>
+
+<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separate saving function (<CODE>saveC45</CODE>, <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For C45, the domain definition files will be given extension .names, while data files will be given the standard extensions (.data) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
+

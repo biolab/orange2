@@ -1,0 +1,417 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+</HEAD>
+<body>
+<h1>orngCA: Orange Correspondence Analysis</h1>
+
+<P>Correspondence anaysis is an explorative technique applyed to
+analysis of contingency tables. The module provides implements
+correspondence analysis for two-way frequency crosstabulation
+tables.</P>
+
+<P>Module contains one class <CODE>CA</CODE> which wraps all the
+mathematical functions and a function <CODE>input</CODE> for loading
+contingency table from a file. The class can be constructed by
+providing a contingency table as a parameter to the
+constructor. Contingency table is encoded as a Python's nested lists,
+"list-of-lists" or using numpy types <CODE>matrix</CODE> and
+<CODE>array</CODE>. The class also includes a method
+<CODE>input(filename)</CODE> that reads the contingency table from a
+file, where each row of contingency table is represented with a line
+of comma-separated numbers. Different means of passing the contingency
+table to a correspondence analysis method are illustrated in the
+following snippet:<p>
+
+<XMP class="code">>>> import orngCA
+>>> data = [[72,    39,    26,    23,     4],
+...         [95,    58,    66,    84,    41],
+...         [80,    73,    83,     4,    96],
+...         [79,    93,    35,    73,    63]]
+>>> c = orngCA.CA(data)
+>>>
+>>> data = orngCA.input('contigencyTable')
+>>> c = orngCA.CA(data)
+</XMP>
+
+<H2>Class orngCA</H2>
+
+<H3>Attributes</H3>
+
+<P>The attributes provide access to the contingency table and various
+matrices created in the analysis process.</P>
+
+<dl class="attributes">
+<dt>dataMatrix</dt>
+<dd>A contingency table as provided by the user.</dd>
+<dt>A</dt>
+<dd>Principal axes of the column clouds.</dd> 
+<dt>B</dt>
+<dd>Principal axes of the row clouds.</dd>
+<dt>D</dt>
+<dd>Matrix whose diagonal elements are singular values of the
+decomposition.</dd>
+<dt>F</dt><dd>Coordinates of the row profiles with respect to
+principal axes in the matrix <B>B</B>.</dd>
+<dt>G</dt><dd>Coordinates of the
+column profiles with respect to principal axes in the matrix <B>A</B>.</dd>
+</dl>
+
+
+<H3>Methods</H3>
+<dl class="attributes">
+<dt>getA(), getB(), ..., getG</dt><dd>Returns the matrices <B>A</B> to
+<B>G</B>, respectively.</dd>
+<dt>getPrincipalRowProfilesCoordinates(dim = (0,1))</dt>
+<dd>Returns co-ordinates of the row profiles with respect to principal
+axes <B>A</B>. Only co-ordinates defined in tuple <CODE>dim</CODE> are
+returned. <CODE>dim</CODE> is optional and if omitted, first two
+dimensions are returned. </dd>
+<dt>getPrincipalColProfilesCoordinates(dim = (0,1))</dt>
+<dd>Returns co-ordinates of the column profiles with respect to
+principal axes <B>B</B>. Only co-ordinates defined in tuple <CODE> dim
+</CODE> are returned. If <CODE>dim </CODE>is omitted, first two
+dimensions are returned. </dd>
+<dt>DecompositionOfInertia(axis = 0)</dt>
+<dd>Returns decomposition of the inertia across the axes. Columns of
+this matrix represents contribution of the rows or columns to the
+inertia of <CODE>axis</CODE>. If <CODE>axis</CODE> equals to 0,
+inertia is decomposed across
+rows. If axis equals to 1, inertia is decomposed across columns. This
+parameter is optional, and defaults to 0. </dd>
+<dt>InertiaOfAxis(percentage = 0)</dt>
+<dd>Returns numpy <CODE>array</CODE> whose elements are inertias of axes. If
+<CODE>percentage = 1</CODE> percentages of inertias of each axis are
+returned. </dd>
+<dt>ContributionOfPointsToAxis(rowColumn = 0, axis = 0, percentage =
+0) </dt><dd>Returns numpy <CODE>array</CODE> whose elements are
+contributions of points to the inertia of axis. Argument
+<CODE>rowColumn</CODE> defines wheter the calculation will be
+performed for row (default action) or column points. The values can be
+represented in percentages if <CODE>percentage = 1</CODE>. </dd>
+<dt>PointsWithMostInertia(rowColumn = 0, axis = (0, 1)) </dt>
+<dd>Returns indices of row or column points sorted in decresing value
+of their contribution to axes defined in a tuple
+<CODE>axis</CODE>. </dd>
+<dt>PlotScreeDiagram() </dt>
+<dd>Creates a canvas and plots a scree diagram in it.</dd>
+<dt>Biplot(dim = (0, 1)) </dt>
+<dd>Plots row points and column points in 2D canvas. If arguments are
+omitted, the first two dimensions are displayed, otherwise tuple dim
+defines principal axes. </dd>
+</dl>
+
+<h2>Examples of use</h2>
+<P> Data table given below represents smoking habits of different
+employees in a company.</P>
+
+
+<TABLE WIDTH=476 BORDER=1 BORDERCOLOR="#000000" CELLPADDING=0 CELLSPACING=0>
+	<COL WIDTH=78>
+	<COL WIDTH=79>
+	<COL WIDTH=79>
+	<COL WIDTH=79>
+
+	<COL WIDTH=79>
+	<COL WIDTH=78>
+	<TR>
+		<TD WIDTH=78>
+			<P ><BR>
+			</P>
+		</TD>
+		<TD COLSPAN=4 WIDTH=318>
+			<P  ALIGN=CENTER>Smoking category</P>
+
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER><BR>
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>Staff Group</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>(1) None</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>(2) Light</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>(3) Medium</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>(4) Heavy</P>
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>Row Totals</P>
+
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>(1) Senior managers</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>4</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>2</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>3</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>2</P>
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>11</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+
+			<P  ALIGN=CENTER>(2) Junior Managers</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>4</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>3</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>7</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>4</P>
+		</TD>
+		<TD WIDTH=78>
+
+			<P  ALIGN=CENTER>18</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>(3) Senior Employees</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>25</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>10</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>12</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>2</P>
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>51</P>
+		</TD>
+	</TR>
+
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>(4) Junior Employees</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>18</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>24</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>33</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>13</P>
+
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>88</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>(5) Secretaries</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>10</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>6</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>7</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>2</P>
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>25</P>
+
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>Column Totals</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>61</P>
+
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>45</P>
+		</TD>
+		<TD WIDTH=79>
+			<P  ALIGN=CENTER>62</P>
+		</TD>
+		<TD WIDTH=79>
+
+			<P  ALIGN=CENTER>25</P>
+		</TD>
+		<TD WIDTH=78>
+			<P  ALIGN=CENTER>193</P>
+		</TD>
+	</TR>
+</TABLE>
+
+<P>The 4 column values in each row of the table can be viewed as
+coordinates in a 4-dimensional space, and the (Euclidean) distances
+could be computed between the 5 row points in the 4-dimensional
+space. The distances between the points in the 4-dimensional space
+summarize all information about the similarities between the rows in
+the table above. Correspondence analysis module can be used to find a
+lower-dimensional space, in which the row points are positioned in a
+manner that retains all, or almost all, of the information about the
+differences between the rows. All information about the similarities
+between the rows (types of employees in this case) can be presented in
+a simple 2-dimensional graph. While this may not appear to be
+particularly useful for small tables like the one shown above, the
+presentation and interpretation of very large tables (e.g.,
+differential preference for 10 consumer items among 100 groups of
+respondents in a consumer survey) could greatly benefit from the
+simplification that can be achieved via correspondence analysis (e.g.,
+represent the 10 consumer items in a 2-dimensional space). This
+analysis can be similarly performed on columns of the table. </P>
+
+<P>Following lines load modules and data needed for the
+analysis. Analysis is started in the last line.</P>
+
+<XMP class="code">
+ 1    import orange
+ 2    from orngCA import CA
+ 3    
+ 4    data = [[4, 2, 3, 2], 
+ 5            [4, 3, 7, 4], 
+ 6            [25, 10, 12, 4], 
+ 7            [18, 24, 33, 13], 
+ 8            [10, 6, 7, 2]]
+ 9    
+10    c = CA(data)
+</XMP>
+
+<P>After analysis finishes, results can be inspected:</P>
+<XMP class="code">
+11    print "Column profiles:"
+12    print c._CA__colProfiles
+13    print
+14    print "Row profiles:"
+15    print c._CA__rowProfiles
+16    print 
+
+Column profiles:
+[[ 0.06557377  0.06557377  0.40983607  0.29508197  0.16393443]
+ [ 0.04444444  0.06666667  0.22222222  0.53333333  0.13333333]
+ [ 0.0483871   0.11290323  0.19354839  0.53225806  0.11290323]
+ [ 0.08        0.16        0.16        0.52        0.08      ]]
+
+Row profiles:
+[[ 0.36363636  0.18181818  0.27272727  0.18181818]
+ [ 0.22222222  0.16666667  0.38888889  0.22222222]
+ [ 0.49019608  0.19607843  0.23529412  0.07843137]
+ [ 0.20454545  0.27272727  0.375       0.14772727]
+ [ 0.4         0.24        0.28        0.08      ]]
+
+</XMP>
+
+<P>The points in the two-dimensional display that are close to each
+other are similar with regard to the pattern of relative frequencies
+across the columns, i.e. they have similar row profiles. After
+producing the plot it can be noticed that along the most important
+first axis in the plot, the Senior employees and Secretaries are
+relatively close together. This can be also seen by examining row
+profile, these two groups of employees show very similar patterns of
+relative frequencies across the categories of smoking intensity.</P>
+
+
+<P>Lines 17- 19 print out singular values , eigenvalues, percentages
+of inertia explained. These are important values to decide how many
+axes are needed to represent the data. The dimensions are "extracted"
+to maximize the distances between the row or column points, and
+successive dimensions will "explain" less and less of the overall
+inertia. </P>
+
+<XMP class="code">
+17    print "Singular values: " + str(diag(c.D))
+18    print "Eigen values: " + str(square(diag(c.D)))
+19    print "Percentage of Inertia:" + str(c.PercentageOfInertia())
+20    print
+
+Singular values: 
+[  2.73421115e-01   1.00085866e-01   2.03365208e-02   1.20036007e-16]
+Eigen values: 
+[  7.47591059e-02   1.00171805e-02   4.13574080e-04   1.44086430e-32]
+Percentage of Inertia:
+[  8.78492893e+01   1.16387938e+01   5.11916964e-01   1.78671526e-29]
+</XMP>
+
+<P>Lines 21-22 print out principal row co-ordinates with respect to
+first two axes. And lines 24-25 show decomposition of inertia. </P>
+
+<XMP class="code">
+21    print "Principal row coordinates:"
+22    print c.getPrincipalRowProfilesCoordinates()
+23    print 
+24    print "Decomposition Of Inertia:"
+25    print c.DecompositionOfInertia()
+</XMP>
+
+<P>Following two last statements plot a scree diagram and a
+biplot. Scree diagram is a plot of the amount of inertia accounted
+for by successive dimensions, i.e. it is a plot of the percentage of
+inertia against the components, plotted in order of magnitude from
+largest to smallest. This plot is usually used to identify components
+with the highest contribution of inertia, which are selected, and then
+look for a change in slope in the diagram, where the remaining factors
+seem simply to be debris at the bottom of the slope and they are
+discarded. Biplot is a plot or row and column point in two-dimensional
+space.</P>
+
+<XMP class="code">
+27    c.PlotScreeDiagram()
+</XMP> 
+
+<P>
+<img src="scree.png">
+</P>
+
+<XMP class="code">
+28    c.Biplot()
+</XMP>
+
+<P>
+<img src="biplot.png">
+</P>
+</body> </html>

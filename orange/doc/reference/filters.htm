@@ -1,0 +1,278 @@
+<HTML>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<index name="filtering examples">
+<H1>Filters</H1>
+
+<P>Filters are objects that can be used for selecting examples. They are somewhat related to <A href="preprocessing.htm">preprocessors</A>. Filters are more limited, they can accept or reject examples, but cannot modify them. Additional restriction of filters is that they only see individual examples, not entire datasets. This is important at random selection of examples (see <A href="#randomfilter"><CODE>Filter_random</CODE></A>).</P>
+
+<H2>General behavior</H2>
+
+<P>All filters have two attributes.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT><CODE><B>negate</B></CODE></DT>
+<DD>Inverts filters decisions</DD>
+
+<DT><CODE><B>domain</B></CODE></DT>
+<DD>Domain to which examples are converted prior to checking (except for <CODE>Filter_random</CODE>, which ignores this field).</DD>
+</DL>
+
+<P>Besides the constructor, filters provide the call operator and a method that returns a list denoting which examples match the filter criterion.</P>
+
+<P class="section">Attributes</P>
+<dl class="attributes">
+<dt>__call__(example)</dt>
+<dd>Checks whether the example matches the filter's criterion and returns either <code>True</code> or <code>False</code>.</dd>
+
+<dt>__call__(examples)</dt>
+<dd>When given an entire example table, it returns a list of examples (as an <code>ExampleTable</code>) that matches the criterion.</dd>
+
+<dt>selectionVector(examples)</dt>
+<dd>Returns a list of bools of the same length as <code>examples</code>, denoting which examples are accepted. Equivalent to <code>[filter(ex) for ex in examples]</code></dd>.
+</dl>
+
+<P>An alternative way to apply a filter to a table of examples is to call <A href="ExampleTable.htm#filter"><CODE>ExampleTable.filter</CODE></A>.</P>
+
+<H2>Random filter</H2>
+<A name="randomfilter"></A>
+<index name="classes/Filter_random">
+
+<P><CODE>Filter_random</CODE> accepts an example with a given probability.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>prob</DT>
+<DD>Probability for accepting an example.</DD>
+
+<DT>randomGenerator</DT>
+<DD>A random number generator that used for making selections. If not set before the filter is used for the first time, a new generator is constructed and stored here for the future use.</DD>
+</DL>
+
+<P>The inherited attribute <CODE>domain</CODE> is ignored.</P>
+
+<p class="header"><a href="filter.py">part of filter.py</a></p>
+<XMP class="code">>>> randomfilter = orange.Filter_random(prob = 0.7, randomGenerator = 24)
+>>> for i in range(10):
+...    print randomfilter(example),
+1 1 0 1 0 0 0 1 1 1
+</XMP>
+
+<P>For this script, <CODE>example</CODE> should be some learning example; you can load any data and set <CODE>example = data[0]</CODE>. Script's result will always be the same. Although the probability of selecting an example is set to 0.7, the filter accepted the example six times out of ten. Since filter only sees individual examples, it cannot be accurate; if you need to select exactly 70% of examples in a dataset, use a <A href="RandomIndices.htm">random indices</A>.</P>
+
+<P>Setting the random generator ensures that the filter will always select the same examples, disregarding of how many times you run the script or what you do (in Orange) before you run it. <CODE>randomGenerator=24</CODE> is a shortcut for <CODE>randomGenerator = orange.RandomGenerator(24)</CODE> or <CODE>randomGenerator = orange.RandomGenerator(initseed=24)</CODE>.</P>
+
+<P>To select a subset of examples instead of calling the filter for each individual example, use the filter like this.</P>
+<XMP class=code>data70 = randomfilter(data)
+</XMP>
+
+
+<H2>Filtering examples with(out) unknown values</H2>
+<index name="classes/Filter_isDefined">
+<index name="classes/Filter_hasClass">
+
+<P><CODE>Filter_isDefined</CODE> selects examples for which all attribute values are defined (known). By default, the filter checks all attributes; you can modify the list <CODE>check</CODE> to select the attributes to be checked. This filter never checks meta-attributes are not checked. (There is an obsolete filter <CODE>Filter_hasSpecial</CODE>, which does the opposite, that is, selects examples with at least one unknown value, in any of attributes, including the class attribute. <CODE>Filter_hasSpecial</CODE> always checks all attributes except meta-attributes.) <CODE>Filter_hasClass</CODE> selects examples with defined class value. You can use <CODE>negate</CODE> to invert the selection, as shown in the script below.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>check</DT>
+<DD>A list of boolean elements specifying which attributes to check. Each element corresponds to an attribute in the domain. By default, <CODE>check</CODE> is <CODE>None</CODE>, meaning that all attributes are checked. The list is initialized to a list of <CODE>true</CODE>s when the filter's <CODE>domain</CODE> is set unless the list already exists. You can also set <CODE>check</CODE> manually, even without setting the <CODE>domain</CODE>. The list can be indexed by ordinary integers (<I>e.g.</I>, <CODE>check[0]</CODE>); if <CODE>domain</CODE> is set, you can also address the list by attribute names or descriptors.</DD>
+</DL>
+
+<P>As for all Orange objects, it is not recommended to modify the <CODE>domain</CODE> after it has been set once, unless you know exactly what you are doing. In this particular case, changing the domain would disrupt the correspondence between the domain attributes and the <CODE>check</CODE> list, causing unpredictable behaviour.</P>
+
+
+<p class="header">part of <a href="filter.py">filter.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">data = orange.ExampleTable("lenses")
+data2 = data[:5]
+data2[0][0] = "?"
+data2[1].setclass("?")
+print "First five examples"
+for ex in data2:
+    print ex
+
+print "\nExamples without unknown values"
+f = orange.Filter_isDefined(domain = data.domain)
+for ex in f(data2):
+    print ex
+
+print "\nExamples without unknown values, ignoring 'age'"
+f.check["age"] = 0
+for ex in f(data2):
+    print ex
+
+print "\nExamples with unknown values (ignoring age)"
+for ex in f(data2, negate=1):
+    print ex
+
+print "\nExamples with defined class"
+for ex in orange.Filter_hasClassValue(data2):
+    print ex
+
+print "\nExamples with undefined class"
+for ex in orange.Filter_hasClassValue(data2, negate=1):
+    print ex
+</XMP>
+
+<H2>Filtering examples with(out) a meta value</H2>
+<index name="classes/Filter_hasMeta">
+
+<P>Filter <code>Filter_hasMeta</code> filters out the attributes that don't have (or that <em>do have</em>, when <code>negate</code>d) a meta attribute with the given id.</P>
+
+<DL class=attributes>
+<DT>id</DT>
+<dd>The id of the meta attribute we look for.</dd>
+</DL>
+
+<P>This is filter is especially useful with examples from basket format and their optional meta attributes. If they come, for instance, from a text mining domain, we can use it to get the documents that contain a certain word.</P>
+
+
+<p class="header">part of <a href="filter.py">filterm.py</a>
+(uses <a href="inquisition.basket">inquisition.basket</a>)</p>
+<xmp class="code">data = orange.ExampleTable("inquisition.basket")
+haveSurprise = orange.Filter_hasMeta(data, id = data.domain.index("surprise"))</xmp>
+
+<P>This example, which will print out all instances that contain the word "surprise", gets the id of the meta attribute from the domain by searching for the attribute named "surprise". This meta attribute is optional and does not necessarily appear in all examples. To fully understand how this particular example works, you should be familiar with <a href="Domain.htm#meta-attributes">optional meta attributes</a> and the <a href="basket.htm">basket file format</a>.</P>
+
+<P>This filter can of course also be used in other situations involving meta values that appear only in some examples. The corresponding attributes do not need to be registered in the domain.</P>
+
+
+<H2>Filtering by attribute values</H2>
+
+<H3>Fast filter for single values</H3>
+<index name="classes/Filter_sameValue">
+
+<P><CODE>Filter_sameValue</CODE> is a fast filter for selecting examples with particular value of some attribute.
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>position</DT>
+<DD>Position of the attribute in the domain.</DD>
+
+<DT>value</DT>
+<DD>Attribute's value</DD>
+</DL>
+
+<P>If <CODE>domain</CODE> is not set, make sure that examples are from the right domain so that <CODE>position</CODE> applies to the attribute you want.</P>
+
+<p class="header"><a href="filter.py">part of filter.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">filteryoung = orange.Filter_sameValue()
+age = data.domain["age"]
+filteryoung.value = orange.Value(age, "young")
+filteryoung.position = data.domain.attributes.index(age)
+print "\nYoung examples"
+for ex in filteryoung(data):
+    print ex
+</XMP>
+
+<P>This script select examples with age="young" from lenses dataset. Setting position is somewhat tricky: <CODE>data.domain.attributes</CODE> behaves as a list and provides method <CODE>index</CODE>, which we can use to retrieve the position of attribute <CODE>age</CODE>. The attribute <CODE>age</CODE> is also needed to construct a <CODE>Value</CODE>.</P>
+
+<P>As you can see, this filter is dirty but quick.</P>
+
+<H3>Simple filter for continuous attributes</H3>
+
+<P>ValueFilter class provides different methods for filtering values of countinuous attributes: <CODE>ValueFilter.Equal</CODE>, <CODE>ValueFilter.Less</CODE>, <CODE>ValueFilter.LessEqual</CODE>, <CODE>ValueFilter.Greater</CODE>, <CODE>ValueFilter.GreaterEqual</CODE>, <CODE>ValueFilter.Between</CODE>, <CODE>ValueFilter.Outside</CODE>.
+
+<P>In the following excerpt there are two different filters used: <CODE>ValueFilter.GreaterEqual</CODE> which needs only one parameter and <CODE>ValueFilter.Between</CODE> which needs to be defined by two parameters.
+
+<p class="header"><a href="filterv.py">part of filterv.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
+
+<XMP class="code">fcont = orange.Filter_values(domain = data.domain)
+
+fcont[0] = (orange.ValueFilter.GreaterEqual, 7.6)
+print "\n\nThe first attribute is greater than or equal to 7.6"
+for ex in fcont(data):
+    print ex
+
+fcont[0] = (orange.ValueFilter.Between, 4.6, 5.0)
+print "\n\nThe first attribute is between to 4.5 and 5.0"
+for ex in fcont(data):
+    print ex
+</XMP>
+
+
+<H3>Filter for multiple values and attributes</H3>
+<index name="classes/Filter_Values">
+<index name="classes/ValueFilterList">
+<index name="classes/ValueFilter">
+<index name="classes/ValueFilter_discrete">
+<index name="classes/ValueFilter_continuous_">
+
+
+<P><CODE>Filter_Values</CODE> performs a similar function as <CODE>Filter_sameValue</CODE>, but can handle conjunctions and disjunctions of more complex conditions.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>conditions</DT>
+<DD>A list of type <CODE>ValueFilterList</CODE> that contains conditions.</DD>
+
+<DT>conjunction<DT>
+<DD>Decides whether the filter will compute conjunction or disjunction of conditions. If <CODE>true</CODE>, example is accepted if no values are rejected. If <CODE>false</CODE>, example is accepted if at least one value is accepted.</DD>
+</DL>
+
+<P>Elements of list <CODE>conditions</CODE> must be objects of type <CODE>ValueFilter_discrete</CODE> for discrete and <CODE>ValueFilter_continuous</CODE> for continuous attributes; both are derived from <CODE>ValueFilter</CODE>.
+
+<P>Both have fields <CODE><B>position</B></CODE> denoting the position of the checked attribute (just as in <CODE>Filter_sameValue</CODE>) and <CODE><B>acceptSpecial</B></CODE> that determines whether undefined values are accepted (1), rejected (0) or simply ignored (-1, default).</P>
+
+<P><CODE><B>ValueFilter_discrete</B></CODE> has field <CODE><B>values</B></CODE> of type <CODE>ValueList</CODE> that contains objects of type <CODE><B>Value</B></CODE> that represent the acceptable values.</P>
+
+<P><CODE><B>ValueFilter_continous</B></CODE> has fields <CODE><B>min</B></CODE> and <CODE><B>max</B></CODE> that define an interval, and field <CODE><B>outside</B></CODE> that tells whether values outside or inside interval are accepted. Default is <CODE>false</CODE> (inside).</P>
+
+<p class="header"><a href="filter.py">part of filter.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">fya = orange.Filter_values()
+fya.domain = data.domain
+age, astigm = data.domain["age"], data.domain["astigmatic"]
+fya.conditions.append(orange.ValueFilter_discrete(
+                        position = data.domain.attributes.index(age),
+                        values=[orange.Value(age,"young"),
+                                orange.Value(age, "presbyopic")])
+                     )
+fya.conditions.append(orange.ValueFilter_discrete(
+                        position = data.domain.attributes.index(astigm),
+                        values=[orange.Value(astigm, "yes")])
+                     )
+for ex in fya(data):
+    print ex
+</XMP>
+
+<P>This script selects examples whose age is "young" or "presbyopic" and which are astigmatic. Unknown values are ignored (if value for one of the two attributes is missing, only the other is checked; if both are missing, example is accepted).
+
+<P>Script first constructs the filter and assigns a domain. Then it appends both conditions to the filter's <CODE>conditions</CODE> field. Both are of type <CODE>orange.ValueFilter_discrete</CODE>, since the two attributes are discrete. Position of the attribute is obtained the same way as for <CODE>Filter_sameValue</CODE>, described above.</P>
+
+<P>The list of conditions can also be given to filter constructor. The following filter will accept examples whose age is "young" or "presbyopic" or who are astigmatic (<CODE>conjunction = 0</CODE>). For contrast from above filter, unknown age is not acceptable (but examples with unknown age can still be accepted if they are astigmatic). Meanwhile, examples with unknown astigmatism are always accepted.</P>
+
+
+<p class="header"><a href="filter.py">part of filter.py</a>
+(uses <a href="lenses.tab">lenses.tab</a>)</p>
+<XMP class="code">fya = orange.Filter_values(
+   domain = data.domain,
+   conditions = [
+     orange.ValueFilter_discrete(
+       position = data.domain.attributes.index(age),
+       values = [orange.Value(age, "young"),
+                 orange.Value(age, "presbyopic")],
+       acceptSpecial = 0
+     ),
+     orange.ValueFilter_discrete(
+       position = data.domain.attributes.index(astigm),
+       values = [orange.Value(astigm, "yes")],
+       acceptSpecial = 1
+     )
+   ],
+   conjunction = 0
+)
+</XMP>
+
+<P>If you don't find this filter attractive, use <a href="preprocessing.htm"><CODE>Preprocessor_take</CODE></a> instead, which is less flexible but more intelligent and friendly.</P>
+
+</BODY>

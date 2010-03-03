@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>Save</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Save</h1>
+
+<img class="screenshot" src="../icons/Save.png">
+<p>Saves data to a file.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>(None)</DT>
+</dl>
+
+<h2>Description</h2>
+
+<table><tr><td valign="top">
+<img class="screenshot" src="Save.png" align="left">
+</td>
+<td valign="top">
+
+<p>Takes a data set provided at the input channel and saves it to a
+data file with the specified name. The widget remembers a history of the most recent file names.
+It can save into tab-delimited and comma-separated files, as well as the
+C4.5's format and Weka's .arrf files.</p>
+
+<p>The widget does not save the data every time it receives a new signal on
+the input as this would constantly (and, mostly, inadvertently) overwrite
+the file. Instead the data is saved after a new file name is set or the
+user pushes <span class="option">Save current data</span>.</p>
+</td></tr></table>
+
+<h2>Example</h2>
+
+<p>The schema below can be used to train the naive Bayesian classifier on the data loaded
+from a file, use the classifier on data from another file and save the misclassified examples
+(or the correctly classified, depending on what we select in the Confusion Matrix) into a file.</p>
+
+<img class="schema"
+src="Save-Example.png" alt="Schema with Save widget">
+
+</body>
+</html>

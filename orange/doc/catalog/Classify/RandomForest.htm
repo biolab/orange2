@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Random Forest</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Random Forest</h1>
+
+<img class="screenshot" src="../icons/RandomForest.png">
+<p>Random forest learner</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Learner</DT>
+<DD>The random forest learning algorithm with settings as specified in the dialog</DD>
+
+<DT>Random Forest Classifier</DT>
+<DD>Trained random forest</DD>
+
+<DT>Choosen Tree</DT>
+<DD>One of the classification trees from the random forest classifer</DD>
+
+</dl>
+
+
+<h2>Description</h2>
+
+<p>Random forest is a classification technique that proposed by <a href="#Breiman2001">Leo Brieman (2001)</a>, given the set of class-labeled data, builds a set of classification trees. Each tree is developed from a bootstrap sample from the training data. When developing individual trees, an arbitrary subset of attributes is drawn (hence the term "random") from which the best attribute for the split is selected. The classification is based on the majority vote from individually developed tree classifiers in the forest.</p>
+
+<p>Random forest widget provides for a GUI to Orange's own implementation of random forest (<a href="/orange/doc/modules/orngEnsemble.htm">orngEnsemble</a> module). The widget output the learner, and, given the training data on its input, the random forest. Additional output channel is provided for a selected classification tree (from the forest) for the purpose of visualization or further analysis.</p>
+
+<table><tr>
+<td valign="top">
+<img class="screenshot" src="RandomForest.png" border=0 alt="Random Forest widget"></td>
+<td valign="top">
+<p>In the widget, the first field is used to specify the name of the learner or classifier. Next block of parameters tells the algorithm how many classification trees will be included in the forest (<span class="option">Number of trees in forest</span>), and how many attributes will be arbitrarily drawn for consideration at each node. If the later is not specified (option <span class="option">Consider exactly ...</span> left unchecked), this number is equal to square root of number of attributes in the data set. Original Brieman's proposal is to grow the trees without any pre-prunning, but since this later often works quite well the user can set the depth to which the trees will be grown (<span class="option">Maximal depth of individual trees</span>). As another pre-pruning option, the stopping condition in terms of minimal number of instances in the node before splitting can be set. Finally, if the training data is given to the widget, the <span class="option">Index of the tree on the output</span> can be specified, instructing the widget to send the requested classifier.
+</td></tr></table>
+</p>
+
+<h2>Examples</h2>
+
+<p>Snapshot below shows a standard comparison schema of a random forest and a tree learner (in this case, C4.5) on a specific data set.</p>
+
+<img class="screenshot" src="RandomForest-Test.png" alt="Random forest evaluation" border=0></td>
+
+<p>A simple use of this widget where we wanted to explore how do the actual trees in the forest look like is presented in the following snapshot. In our case, the 5-th tree from the forest was rendered in the Classification Tree Graph widget.</p>
+
+<img class="screenshot" src="RandomForest-TreeGraph.png" alt="Visualization of a tree from random forest"border=0></td>
+
+
+<h2>References</h2>
+
+Breiman L (2001) Random Forests. Machine Learning 45 (1), 5-32. [<a href="http://www.springerlink.com/content/u0p06167n6173512/fulltext.pdf">PDF</a>]
+
+</body>
+</html>

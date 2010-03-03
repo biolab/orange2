@@ -1,0 +1,22 @@
+	BODY, P, UL, TABLE { background-color: "#ffffff"; font-family: "Verdana", "Geneva", sans-serif}
+BODY, P, UL, TABLE { font-size: 10pt }
+H1 { font-size: large; font-weight: bold }
+H2 { font-size: large; font-weight: normal}
+H3 { font-size: medium; font-weight: bold}
+H4 { font-size: normal; font-weight: bold}
+HR { color: "#ffbb00"; height: 1.3pt }
+IMT { border: 0}
+P.section { font-weight: bold; font-size: 110%}
+DL.attributes DT { font-family: monospace; font-weight: bold; font-size: 10pt; margin-top: 1em }
+DL.attributes P { margin-top: 0pt; margin-bottom: 0pt}
+DL.attributes DT.notcode { font-family: }
+DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
+
+/* This is not supported by IE 6.0 for windows... Shame on them */
+P.header + .code { background-color: "#ffffcc"; font-size: 9pt; top-margin: 0mm}
+
+.normalfont { font-family: "Verdana", "Geneva", sans-serif}
+.code { background-color: "#ffffcc"; font-size: 9pt}
+.xcode { background-color: "#ffbb00"; font-size: 9pt}
+.header { margin-bottom: -4mm}
+.links {}

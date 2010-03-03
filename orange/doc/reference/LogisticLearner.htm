@@ -1,0 +1,151 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+<body>
+<index name="classifiers+logistic regression">
+<h1>Logistic Regression Classifier and Learner</h1>
+<P align=left>Logistic regression is a popular classification method that comes from statistics. The model is described by a linear combination of coefficients,
+<P align=center>F = beta_0 + beta_1*X_1 + beta_2*X_2 + ... + beta_k*X_k<BR></P>
+<P>and the probability (p)&nbsp;of a class value is&nbsp; computed as:</P>
+<P align=center>p = exp(F)/(1+exp(F))</P>
+
+<P>The outcome variable (class) must be binary (dichotomous) and discrete attributes must be translated to continuous. While Orange kernel provides the basic functionality, module <A href="../modules/orngLR.htm">orngLR.py</A> covers the necessary adaptations and conversions.</P>
+
+<hr>
+
+<H2>LogRegClassifier</H2>
+<index name="classes/LogRegClassifier">
+
+<P><CODE>LogRegClassifier</CODE> stores estimated values of regression coefficients and their significances, and uses them to predict classes and class probabilities using the equations described above.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>beta</DT>
+<DD>Estimated regression coefficients.</DD>
+
+<DT>beta_se</DT>
+<DD>Estimated standard errors for regression coefficients.</DD>
+
+<DT>wald_Z</DT>
+<DD>Wald Z statistics for beta coefficients. Wald Z is computed as <CODE>beta</CODE>/<CODE>beta_se</CODE>.</DD>
+
+<DT>P</DT>
+<DD>List of P-values for beta coefficients, that is, the probability that beta coefficients differ from 0.0. The probability is computed from squared Wald Z statistics that is distributed with Chi-Square distribution.</DD>
+
+<DT>likelihood</DT>
+<DD>The probability of the sample (ie. learning examples) observed on the basis of the derived model, as a function of the regression parameters.
+</DD>
+
+<DT>fitStatus</DT>
+<DD>Tells how the model fitting ended - either regularly  (<CODE>LogRegFitter.OK</CODE>), or it was interrupted due to one of beta coefficients escaping towards infinity (<CODE>LogRegFitter.Infinity</CODE>) or since the values didn't converge (<CODE>LogRegFitter.Divergence</CODE>). The value tells about the classifier's "reliability"; the classifier itself is useful in either case.</DD>
+</DL>
+
+<H2>LogRegLearner</H2>
+<index name="classes/LogRegLearner">
+
+<P>Logistic learner fits the beta coefficients and computes the related statistics by calling the specified <CODE>fitter</CODE>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>fitter</DT>
+<DD>An object that fits beta coefficients and corresponding
+standard errors from a set of data.</DD>
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>fitModel(examples[, weightID =])</DT>
+<DD>Fits the model by calling <CODE>fitter</CODE>. If fitting succeeds, it returns a <CODE>Classifer</CODE>; if not, it returns the offending attribute. You should therefore always check the type of result returned, as follows.
+
+<XMP class=code>c = fitModel(examples)
+if isinstance(c, Variable):
+    < remove the attribute c and see what happens >
+else:
+    < we have a classifier, life is beautiful >
+</XMP>
+</DL>
+
+<P>As all learners, <CODE>LogRegLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../modules/orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
+</DL>
+
+<H2><A name=fitters></A>Logistic Regression Fitters</H2>
+
+<P>Fitters are objects that LogRegLearner uses to fit the model.</P>
+
+<H3>LogRegFitter</H3>
+<index name="classes/LogRegFitter">
+
+<P><CODE>LogRegFitter</CODE> is the abstract base class for logistic fitters. It defines the form of call operator and the constants denoting its (un)success:</P>
+
+<P class=section>Constants</P>
+<DL class=attributes>
+<DT>OK</DT>
+<DD>Fitter succeeded to converge to the optimal fit.</DD>
+
+<DT>Infinity</DT>
+<DD>Fitter failed due to one or more beta coefficients escaping towards infinity.</DD>
+
+<DT>Divergence</DT>
+<DD>Beta coefficients failed to converge, but none of beta coefficients escaped.</DD>
+
+<DT>Constant</DT>
+<DD>There is a constant attribute that causes the matrix to be singular.</DD>
+
+<DT>Singularity</DT>
+<DD>The matrix is singular.</DD>
+</DL>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__call__(examples, weightID)</DT>
+<DD>Performs the fitting. There can be two different cases: either the fitting succeeded to find a set of beta coefficients (although possibly with difficulties) or the fitting failed altogether. The two cases return different results.
+<DL class=attributes>
+<DT>(status, beta, beta_se, likelihood)</DT>
+<DD>The fitter managed to fit the model. The first element of the tuple, <CODE>result</CODE>, tells about the problems occurred; it can be either <CODE>OK</CODE>, <CODE>Infinity</CODE> or <CODE>Divergence</CODE>. In the latter cases, returned values may still be useful for making predictions, but it's recommended that you inspect the coefficients and their errors and make your decision whether to use the model or not.</DD>
+
+<DT>(status, attribute)</DT>
+<DD>The fitter failed and the returned <CODE>attribute</CODE> is responsible for it. The type of failure is reported in <CODE>status</CODE>, which can be either <CODE>Constant</CODE> or <CODE>Singularity</CODE>.</DD>
+</DL>
+</P>
+
+<P style="margin-top:12pt">The proper way of calling the fitter is to expect and handle all the situations described. For instance, if <CODE>fitter</CODE> is an instance of some fitter and <CODE>examples</CODE> contain a set of suitable examples, a script should look like this:</P>
+
+<XMP class=code>res = fitter(examples)
+if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
+   status, beta, beta_se, likelihood = res
+   < proceed by doing something with what you got >
+else:
+   status, attr = res
+   < remove the attribute or complain to the user or ... >
+</XMP>
+</DL>
+
+<H3>LogRegFitter_Cholesky</H3>
+<index name="classes/LogRegFitter_Cholesky">
+
+<P><CODE>LogRegFitter_Cholesky</CODE> is the sole fitter available at the moment. It is a C++ translation of <A href="http://users.bigpond.net.au/amiller/">Alan Miller's logistic regression code</A>. It uses Newton-Raphson algorithm to iteratively minimize least squares error computed from learning examples.</P>
+
+<hr>
+
+<P><FONT size=5>Examples</FONT></P></H2>
+
+<p>Since basic logistic regression allows only continuous
+attributes and a dichotome class, we show only a very basic example. More detailed use of logistic regression is shown in logistic regression module.</p>
+
+<p>Let us load the data, induce a classifier and see how it performs on the first five examples.</p>
+
+<xmp class="code">>>> data = orange.ExampleTable("ionosphere")
+>>> logistic = orange.LogRegLearner(data)
+>>>
+>>> for ex in data[:5]:
+...    print ex.getclass(), logistic(ex)
+g g
+b b
+g g
+b b
+g g
+</xmp>
+
+</body>

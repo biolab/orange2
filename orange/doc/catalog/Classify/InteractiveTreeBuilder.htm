@@ -1,0 +1,100 @@
+<html>
+<head>
+<title>Interactive Tree Builder</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Interactive Tree Builder</h1>
+
+<img class="screenshot" src="../icons/InteractiveTreeBuilder.png">
+<p>A widget for manual construction and/or editing of classification trees</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Learning examples</DD>
+
+<DT>Tree Learner (orange.TreeLearner)</DT>
+<DD>An optional tree learner to be used instead of the default tree learner.</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Examples (orange.ExampleTable)</DT>
+<DD>Examples from the selected tree node.</DD>
+
+<DT>Classifier (orange.TreeClassifier)</DT>
+<DD>The constructed tree.</DD>
+
+<DT>Tree Learner (orange.Learner)</DT>
+<DD>A learner which always returns the same tree - the one constructed in the widget</DD>
+</dl>
+
+<P>Signal <code>Examples</code> sends data only if some tree node is selected and contains some examples.</P>
+
+<h2>Description</h2>
+
+<p>This is a very exciting widget which is useful for teaching induction of classification trees and also in practice, where a data miner and an area expert can use it to manually construct a classification tree helped by the entire Orange's widgetry.</p>
+
+<P>The widget is based on <a href="ClassificationTreeViewer.htm">Classification Tree Viewer</a>. It is mostly the same (so you are encouraged to read the related documentation), except for the different input/output signals and the addition of a few buttons.</P>
+
+<table>
+<tr><td valign="top"><img class="screenshot" src="InteractiveTreeBuilder.png" alt="Interactive Tree Builder widget" border=0></td>
+</tr></table>
+
+<P>Button <span class="option">Split</span> splits the selected tree node according to the criterion above the button. For instance, if we pressed Split in the above widget, the animals that don't give milk and have no feathers (the pictures shows a tree for the zoo data set) would be split according to whether they are <code>aquatic</code> or not. In case of continuous attributes, a cut off point needs to be specified as well.</P>
+
+<P>If Split is used on a node which is not a leaf, the criterion at that node is replaced. If we, for instance, selected the &lt;root&gt; node and pushed Split, the criterion <code>milk</code> would be replaced with <code>aquatic</code> and the nodes below (<code>feathers</code>) are removed.</P>
+
+<P>Button <span class="option">Cut</span> cuts the tree at the selected node. If we pushed Cut in the situation in the picture, nothing would happen since the selected node (<code>feathers=0</code>) is already a leaf. If we selected <code>&lt;root&gt;</code> and pushed Cut, the entire tree would be cut off.</P>
+
+<P>Cut is especially useful in combination with <code>Build</code> which builds a subtree at the current node. So, if we push Build in the situation depicted above, a subtree would be built for the milkless featherless animals, leaving the rest of the tree (that is, the existing two nodes) intact. If Build is pressed at a node which is not leaf, the entire subtree at that node is replaced with an automatically induced tree.</P>
+
+<P>Build uses some reasonable default parameters for tree learning (information gain ratio is used for attribute selection with a minimum of 2 examples per leaf, which gives an algorithm equivalent to Quinlan's C4.5). To gain more control on the tree construction arguments, use a <a href="ClassificationTree.htm">Classification Tree widget</a> or <a href="C4.5.htm">C4.5</a> widget, set its parameters and connect it to the input of Interactive Tree Builder. The set parameters will the be used for the tree induction. (If you use C4.5, the original Quinlan's algorithm, don't forget to check <span class="option">Convert to orange tree structure</span>.)</P>
+
+<P>The widget has several outputs. <span class="option">Examples</span> gives, as in <a href="ClassificationTreeViewer.htm">Classification Tree Viewer</a> the list of examples from the selected node. This output can be used to observe the statistical properties or visualizations of various attributes for a specific node, based on which we should decide whether we should split the examples and how.</P>
+
+<P>Signal <span class="option">Classification Tree</span> can be attached to another tree viewer. Using a Classification Tree Viewer is not really useful as it will show the same picture as Interactive Tree Builder. We can however connect the more colorful <a href="ClassificationTreeGraph.htm">Classification Tree Graph</a>.</P>
+
+<P>The last output is <span class="option">Tree Learner</span>. This is a tree learner which always gives the same tree - the one we constructed in this widget. This can be used to assess the tree's quality with the <a href="../Evaluate/TestLearners.htm">Test Learners</a> widget. This requires some caution, though: you should not test the tree on the same data you used to induce it. See the Examples section below for the correct procedure.</P>
+
+<h2>Examples</h2>
+
+<P>The first snapshot shows the typical "environment" of the Interactive Tree Builder.</P>
+
+<img class="screenshot"
+src="InteractiveTreeBuilder-SchemaInduction.png" alt="A schema with Interactive Tree Builder" border=0>
+
+<P>The learning examples may come from a file. We also use a <a href="ClassificationTree.htm">Classification Tree</a> widget to able to set the tree induction parameters for the parts of the tree we want to induce automatically.</P>
+
+<P>On the right hand side, we have the <a href="../Data/Rank.htm">Rank</a> widget which assesses the quality of attributes through measures like information gain, gini index and others. Emulating the induction algorithm by selecting the attributes having the highest value for one of these measures should give the same results as using Classification Tree widget instead of the Interactive Builder. However, in manual construction we can (and should) also rely on the visualization widgets. One-dimensional visualizations like <a href="../Visualize/Distributions.htm">Distributions</a> give us an impression about the properties of a single attribute, while two- and more dimensional visualizations like <a href="../Visualize/Scatterplot.htm">Scatterplot</a> and <a href="../Visualize/LinearProjection.htm">Linear Projection</a> will give us a kind of lookahead by telling us about the useful combinations of attributes. We have also deployed the <a href="../Data/DataTable.htm">Data Table</a> widget since seeing particular examples in a tree node may also sometimes help the expert.</P>
+
+<P>Finally, we use the <a href="ClassificationTreeGraph.htm">Classification Tree Graph</a> to present the resulting tree in a fancy looking picture.</P>
+
+<P>As the widget name suggests, the tree construction should be interactive, making the best use of the available Orange's visualization techniques and help of the area expert. At the beginning the widget presents a tree containing only the root. One way to proceed is to immediately click Build and then study the resulting tree. Data examples for various nodes can be presented and visualized to decide which parts of the tree make sense, which don't and should better be reconstructed manually, and which subtrees should be cut off. The other way is to start constructing the tree manually, adding the nodes according to the expert's knowledge and occasionally use Build button to let Orange make a suggestion.</P>
+
+
+<P>Although expert's help will usually prevent overfitting the data, special care still needs to be taken when we are interested in knowing the performance of the induced tree. Since the widely used cross-validation is for obvious reasons inapplicable when the model is constructed manually, we should split the data into training and testing set prior to building the tree.</P>
+
+<img class="screenshot"
+src="InteractiveTreeBuilder-SchemaSampling.png" alt="A schema with Interactive Tree Builder" border=0>
+
+<P>We have used the <a href="../Data/DataSampler">Data Sampler</a> widget for splitting the data; in most cases we recommend using stratified random sampling with a sample size of 70% for training. These examples (denoted as "Examples" in the snapshot) are fed to the Interactive Tree Builder where we employ the Orange's armory to construct the tree as described above.</P>
+
+<P>The tricky part is connecting the <code>Test Learners</code>: Data Sampler's Examples should be used as Test Learners' Data, and Data Sampler's Remaining Examples are the Test Learners' Separate Test Data.</P>
+
+<img class="screenshot"
+src="InteractiveTreeBuilder-SchemaSampling-Wiring.png" alt="Connecting Data Sampler to Test Learners when using Interactive Tree Builder" border=0>
+
+<P>In Test Learners, don't forget to set the Sampling type to <span class="option">Test on test data</span>. Interactive Tree Builder should then give its Tree Learner to Test Learners. To compare the manually constructed tree with, say, an automatically constructed one and with a Naive Bayesian classifier, we can include these two in the schema.</P>
+
+<P>Test Learners will now feed the training data (70% sample it gets from Data Sampler) to all three learning algorithms. While Naive Bayes and Classification Tree will actually learn, Interactive Tree Builder will ignore the training examples and return the manually built tree. All three models will then be tested on the remaining 30% examples.</P>
+
+</body>
+</html>
