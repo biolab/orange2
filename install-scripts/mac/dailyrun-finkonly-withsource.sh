@@ -19,7 +19,7 @@ fi
 DAILY_REVISION_1=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_1" ] || exit 1
-DAILY_REVISION_2=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+DAILY_REVISION_2=`svn info --non-interactive http://www.ailab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_2" ] || exit 1
 
