@@ -30,6 +30,9 @@ DAILY_SOURCE_DIRS="install-scripts/mac/bundle-lite/ add-ons/Bioinformatics/ add-
 # Temporary removed from a list because packages and/or dependencies are broken: jadetex docbook-utils
 OTHER_PACKAGES="db47 db47-aes db44 db44-aes giflib libungif ghostscript ghostscript-esp ghostscript6 ghostscript-nox ghostscript6-nox ptex-base ptex-nox-base tetex-base tetex-nox-base texlive-base texlive-nox-base lynx links w3m elinks"
 
+# Miscellaneous extra packages which are not really needed for Orange but are useful for CS research
+EXTRA_PACKAGES="macfuse gcc42 gcc43 gcc44 octave git gnuplot-nox imagemagick-nox rrdtool maxima nmap wireshark openssl pstree python26 python3 rdiff-backup svn swi-prolog"
+
 FINK_ARGS="--yes --build-as-nobody"
 FINK_SELFUPDATE_ARGS="--yes"
 APT_ARGS="--assume-yes"
@@ -289,9 +292,9 @@ fink $FINK_ARGS update-all
 yes | fink $FINK_ARGS install $SPECIAL_PACKAGES
 
 # Removes possiblly installed packages which we want built
-fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES
+fink $FINK_ARGS purge --recursive $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES $EXTRA_PACKAGES
 # Sometimes Fink and APT are not in sync so we remove packages also directly
-for package in $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES ; do
+for package in $STABLE_PACKAGES $DAILY_PACKAGES $OTHER_PACKAGES $EXTRA_PACKAGES ; do
 	echo $package "purge" | dpkg --set-selections
 done
 apt-get $APT_ARGS dselect-upgrade
@@ -299,7 +302,7 @@ apt-get $APT_ARGS dselect-upgrade
 # Stores current packages status
 dpkg --get-selections '*' > /tmp/dpkg-selections.list
 
-for package in $OTHER_PACKAGES ; do
+for package in $OTHER_PACKAGES $EXTRA_PACKAGES ; do
 	# Restores intitial packages status
 	dpkg --get-selections '*' | cut -f 1 | xargs -n 1 -J % echo % purge | dpkg --set-selections
 	dpkg --set-selections < /tmp/dpkg-selections.list
