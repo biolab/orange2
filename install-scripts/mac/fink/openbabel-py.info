@@ -1,0 +1,45 @@
+Info3: <<
+Package: openbabel-py%type_pkg[python]
+Type: python (2.5 2.6)
+Version: 2.2.3
+Revision: 2
+###
+Depends: openbabel-common (>= %v-%r), libopenbabel3-shlibs (>= %v-%r), python%type_pkg[python]
+BuildDepends: openbabel-dev (>= %v-%r)
+###
+Source: mirror:sourceforge:openbabel/openbabel-%v.tar.gz
+Source-MD5: 7ea8845c54d6d3a9be378c78088af804
+###
+GCC: 4.0
+###
+DocFiles: AUTHORS COPYING ChangeLog INSTALL README THANKS
+###
+Description: Pick up where Babel left off
+DescDetail: <<
+	Open Babel is a project designed to pick up where Babel left off, as a
+	cross-platform program and library designed to interconvert between many
+	file formats used in molecular modeling and computational chemistry.
+
+	This packages provides Python bindings.
+<<
+###
+License: GPL
+Maintainer: Justin F. Hallett <thesin@users.sourceforge.net>
+Homepage: http://openbabel.sourceforge.net/
+###
+CompileScript: <<
+	#!/bin/bash -ev
+	
+	cd scripts/python/
+	export OPENBABEL_INSTALL=%p
+	%p/bin/python%type_raw[python] setup.py build
+<<
+###
+InstallScript: <<
+	#!/bin/bash -ev
+
+	cd scripts/python/
+	export OPENBABEL_INSTALL=%p
+	%p/bin/python%type_raw[python] setup.py install --root=%d
+<<
+<<
