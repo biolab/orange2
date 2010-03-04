@@ -1,0 +1,9 @@
+Document: python-orange-svn
+Title: Orange Documentation (Python module)
+Author: Laboratory of Artificial Intelligence, Faculty of Computer and Information Science, University of Ljubljana, Slovenia
+Abstract: Documentation for Orange Python module
+Section: Science/Data Analysis
+
+Format: HTML
+Index: /usr/share/doc/python-orange-svn/default.htm
+Files: /usr/share/doc/python-orange-svn/*.htm /usr/share/doc/python-orange-svn/modules/*.htm /usr/share/doc/python-orange-svn/reference/*.htm

@@ -1,0 +1,129 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+DEFAULT_PYTHON := $(shell pyversions -vd)
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	# Nothing to be done
+	touch configure-stamp
+
+build: build-stamp
+build-stamp: configure-stamp  
+	dh_testdir
+
+	$(MAKE) -C source
+	$(MAKE) -C source/crs
+
+	mv source/crs/_orngCRS.so .
+
+	touch $@
+
+clean: 
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	$(MAKE) -C source clean
+	$(MAKE) -C source/crs clean
+	
+	rm -f _orngCRS.so
+
+	dh_clean 
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+
+	rm -f COPYING doc/COPYING
+	rm -f INSTALL.linux.txt doc/INSTALL.linux.txt
+
+	# Documentation for orange-svn
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
+	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
+	cp doc/style.css $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
+	cp -r doc/widgets/ $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/
+
+	# Install icon
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/pixmaps/
+	mv $(CURDIR)/debian/tmp/usr/share/doc/orange-svn/widgets/icon.xpm $(CURDIR)/debian/tmp/usr/share/pixmaps/orange.xpm
+
+	# Documentation for python-orange-svn
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
+	cp LICENSES $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
+	cp -r doc/* $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/
+	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/python-orange-svn/widgets/
+
+	# Files for both orange-svn and python-orange-svn
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
+	find . -mindepth 1 -maxdepth 1 -not -name debian -exec cp -r {} $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/ ';'
+	
+	# Cleans up
+	cd $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/ ; \
+	rm -rf COPYING LICENSES doc/ source/ debian/ ; \
+	rm -rf c45.dll liborange_include.a updateOrange.py
+
+	# Installation registration
+	echo "orange" > $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange.pth
+	echo "datasetsPath=\"/usr/share/doc/python-orange-svn/datasets/\"" > $(CURDIR)/debian/tmp/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/orngConfiguration.py
+
+	# Generates executable
+	mkdir -p $(CURDIR)/debian/tmp/usr/bin/
+	echo "#!/bin/bash" > $(CURDIR)/debian/tmp/usr/bin/orange
+	echo "exec -a \"\$$0\" /usr/bin/python" /usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/OrangeCanvas/orngCanvas.pyw "\"\$$@\"" >> $(CURDIR)/debian/tmp/usr/bin/orange
+	chmod +x $(CURDIR)/debian/tmp/usr/bin/orange
+
+	# Generates ld.so.conf file
+	mkdir -p $(CURDIR)/debian/tmp/etc/ld.so.conf.d/
+	echo "/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/" > $(CURDIR)/debian/tmp/etc/ld.so.conf.d/orange.conf
+
+# Build architecture-independent files here.
+binary-indep: build install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: python-orange-svn orange-svn
+
+python-orange-svn orange-svn: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -p$@
+	dh_installdocs -p$@
+#	dh_installexamples -p$@
+	dh_install -p$@ --sourcedir=debian/tmp --exclude=build-stamp --exclude=configure-stamp
+	cd debian/tmp ; rm -rf `cat ../$@.install`
+	dh_installmenu -p$@
+#	dh_installdebconf -p$@
+#	dh_installlogrotate -p$@
+#	dh_installemacsen -p$@
+#	dh_installpam -p$@
+#	dh_installmime -p$@
+#	dh_installinit -p$@
+#	dh_installcron -p$@
+#	dh_installinfo -p$@
+	dh_installman -p$@
+	dh_link -p$@
+	dh_strip -p$@
+	dh_compress -p$@
+	dh_fixperms -p$@
+#	dh_perl -p$@
+	dh_python -p$@ /usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
+	dh_makeshlibs -p$@
+	dh_installdeb -p$@
+	dh_shlibdeps -p$@ -l$(CURDIR)/debian/python-orange-svn/usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
+	dh_gencontrol -p$@
+	dh_md5sums -p$@
+	dh_builddeb -p$@
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure

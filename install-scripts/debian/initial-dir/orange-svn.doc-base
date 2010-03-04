@@ -1,0 +1,9 @@
+Document: orange-svn
+Title: Orange Documentation (GUI)
+Author: Laboratory of Artificial Intelligence, Faculty of Computer and Information Science, University of Ljubljana, Slovenia
+Abstract: Documentation for Orange graphical user interface and widgets
+Section: Science/Data Analysis
+
+Format: HTML
+Index: /usr/share/doc/orange-svn/widgets/default.htm
+Files: /usr/share/doc/orange-svn/widgets/*.htm
