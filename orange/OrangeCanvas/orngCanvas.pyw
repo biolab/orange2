@@ -4,7 +4,7 @@
 
 # This module has to be imported first because it takes care of the system PATH variable
 # Namely, it throws out the MikTeX directories which contain an incompatible Qt .dll's
-import orngEnviron
+import orngEnviron, orngAddOns
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -114,7 +114,6 @@ class OrangeCanvasDlg(QMainWindow):
             self.toolReloadWidgets = self.toolbar.addAction(QIcon(self.reload_pic), "Reload Widgets", self.reloadWidgets)
         self.toolbar.addSeparator()
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
-
         self.toolbar.addSeparator()
         w = QWidget()
         w.setLayout(QHBoxLayout())
@@ -137,6 +136,12 @@ class OrangeCanvasDlg(QMainWindow):
         orngTabs.constructCategoriesPopup(self)
         self.createWidgetsToolbar()
         self.readShortcuts()
+        
+        def addOnRefreshCallback():
+            self.widgetRegistry = orngRegistry.readCategories()
+            orngTabs.constructCategoriesPopup(self)
+            self.createWidgetsToolbar()
+        orngAddOns.addOnRefreshCallback.append(addOnRefreshCallback)
 
         # create menu
         self.initMenu()
@@ -279,6 +284,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction("&Delete Widget Settings", self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()
         self.menuOptions.addAction(sys.platform == "darwin" and "&Preferences..." or "Canvas &Options...", self.menuItemCanvasOptions)
+        ### self.menuOptions.addAction("&Add-ons...", self.menuItemAddOns)  ###TODO Temporarily Disabled.
 
         localHelp = 0
         self.menuHelp = QMenu("&Help", self)
@@ -567,31 +573,58 @@ class OrangeCanvasDlg(QMainWindow):
             
             self.schema.canvasView.repaint()
         
-            import orngEnviron, orngRegistry
-            if dlg.toAdd != []:
-                for (name, dir) in dlg.toAdd: 
-                    orngEnviron.registerAddOn(name, dir)
+#            import orngEnviron, orngRegistry
+#            if dlg.toAdd != []:
+#                for (name, dir) in dlg.toAdd: 
+#                    orngEnviron.registerAddOn(name, dir)
             
-            if dlg.toRemove != []:
-                for (catName, cat) in dlg.toRemove:
-                    addonsToRemove = set()
-                    for widget in cat.values():
-                        addonDir = widget.directory
-                        while os.path.split(addonDir)[1] in ["prototypes", "widgets"]:
-                            addonDir = os.path.split(addonDir)[0]
-                        addonName = os.path.split(addonDir)[1]
-                        addonsToRemove.add( (addonName, addonDir) )
-                    for addonToRemove in addonsToRemove: 
-                        orngEnviron.registerAddOn(add=False, *addonToRemove)
-            
-            if dlg.toAdd != [] or dlg.toRemove != []:
-                self.widgetRegistry = orngRegistry.readCategories()
+#            if dlg.toRemove != []:
+#                for (catName, cat) in dlg.toRemove:
+#                    addonsToRemove = set()
+#                    for widget in cat.values():
+#                        addonDir = widget.directory
+#                        while os.path.split(addonDir)[1] in ["prototypes", "widgets"]:
+#                            addonDir = os.path.split(addonDir)[0]
+#                        addonName = os.path.split(addonDir)[1]
+#                        addonsToRemove.add( (addonName, addonDir) )
+#                    for addonToRemove in addonsToRemove: 
+#                        orngEnviron.registerAddOn(add=False, *addonToRemove)
+#            
+#            if dlg.toAdd != [] or dlg.toRemove != []:
+#                self.widgetRegistry = orngRegistry.readCategories()
 
             # save tab order settings
             newTabList = [(str(dlg.tabOrderList.item(i).text()), int(dlg.tabOrderList.item(i).checkState())) for i in range(dlg.tabOrderList.count())]
             if newTabList != self.settings["WidgetTabs"]:
                 self.settings["WidgetTabs"] = newTabList
                 self.createWidgetsToolbar()
+
+    def menuItemAddOns(self):
+        dlg = orngDlgs.AddOnManagerDialog(self, None)
+        if dlg.exec_() == QDialog.Accepted:
+            for (id, addOn) in dlg.addOnsToRemove.items():
+                try:
+                    addOn.uninstall(refresh=False)
+                    if id in dlg.addOnsToAdd.items():
+                        orngAddOns.installAddOnFromRepo(dlg.addOnsToAdd[id], globalInstall=False, refresh=False)
+                        del dlg.addOnsToAdd[id]
+                except Exception, e:
+                    print "Problem %s add-on %s: %s" % ("upgrading" if id in dlg.addOnsToAdd else "removing", addOn.name, e)
+            for (id, addOn) in dlg.addOnsToAdd.items():
+                if id.startswith("registered:"):
+                    try:
+                        orngAddOns.registerAddOn(addOn.name, addOn.directory, refresh=False, systemWide=False)
+                    except Exception, e:
+                        print "Problem registering add-on %s: %s" % (addOn.name, e)
+                else:
+                    try:
+                        orngAddOns.installAddOnFromRepo(dlg.addOnsToAdd[id], globalInstall=False, refresh=False)
+                    except Exception, e:
+                        print "Problem installing add-on %s: %s" % (addOn.name, e)
+            if len(dlg.addOnsToAdd)+len(dlg.addOnsToRemove)>0:
+                orngAddOns.refreshAddOns(reloadPath=True)
+                
+                    
 
     def updateStyle(self):
         QApplication.setStyle(QStyleFactory.create(self.settings["style"]))
