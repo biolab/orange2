@@ -1,5 +1,7 @@
 # coding=utf-8
 import os, sys, user
+from zipfile import ZipFile
+import urllib
 
 if os.name == "nt":
     paths = os.environ["PATH"].split(";")
@@ -14,6 +16,9 @@ def __getDirectoryNames():
         import orange
         orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
 
+    orangeDocDir = os.path.join(orangeDir, "doc")
+    #TODO This might be redefined in orngConfiguration.
+
     try:
         orangeVer = orangeDir.split(os.path.sep)[-1]
     except:
@@ -22,7 +27,7 @@ def __getDirectoryNames():
     canvasDir = os.path.join(orangeDir, "OrangeCanvas")
     widgetDir = os.path.join(orangeDir, "OrangeWidgets")
     picsDir = os.path.join(widgetDir, "icons")
-    addOnsDir = os.path.join(orangeDir, "add-ons")
+    addOnsDirSys = os.path.join(orangeDir, "add-ons")
 
     if not os.path.isdir(widgetDir) or not os.path.isdir(widgetDir):
         canvasDir = None
@@ -51,6 +56,8 @@ def __getDirectoryNames():
         outputDir = os.path.join(home, "."+orangeVer)                  # directory for saving settings and stuff
         defaultReportsDir = os.path.join(home, "orange-reports")
 
+    addOnsDirUser = os.path.join(outputDir, "add-ons")
+
     orangeSettingsDir = outputDir
     if sys.platform == "darwin":
         bufferDir = os.path.join(home, "Library")
@@ -66,7 +73,7 @@ def __getDirectoryNames():
             try: os.makedirs(dname)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
             except: pass
 
-    return dict([(name, vars()[name]) for name in ["orangeDir", "canvasDir", "widgetDir", "picsDir", "addOnsDir", "defaultReportsDir", "orangeSettingsDir", "widgetSettingsDir", "canvasSettingsDir", "bufferDir"]])
+    return dict([(name, vars()[name]) for name in ["orangeDir", "orangeDocDir", "canvasDir", "widgetDir", "picsDir", "addOnsDirSys", "addOnsDirUser", "defaultReportsDir", "orangeSettingsDir", "widgetSettingsDir", "canvasSettingsDir", "bufferDir"]])
 
 def samepath(path1, path2):
     return os.path.normcase(os.path.normpath(path1)) == os.path.normcase(os.path.normpath(path2))
@@ -87,41 +94,7 @@ def addOrangeDirectoriesToPath():
         if os.path.isdir(path) and not any([samepath(path, x) for x in sys.path]):
             sys.path.insert(0, path)
 
-def __readAddOnsList():
-    addonsFile = os.path.join(orangeSettingsDir, "add-ons.txt")
-    if os.path.isfile(addonsFile):
-        return [tuple([x.strip() for x in lne.split("\t")]) for lne in file(addonsFile, "rt")]
-    else:
-        return []
-
-def __writeAddOnsList(addons):
-    file(os.path.join(orangeSettingsDir, "add-ons.txt"), "wt").write("\n".join(["\t".join(l) for l in addons]))
-
-def registerAddOn(name, path, add = True):
-    if os.path.isfile(path):
-        path = os.path.dirname(path)
-    __writeAddOnsList([x for x in __readAddOnsList() if x[0] != name and x[1] != path] + (add and [(name, path)] or []))
-
-    addOns = __getAddOns()
-    globals().update(addOns)
-    addAddOnsDirectoriesToPath()
-
-def __getAddOns():
-    defaultAddOns = [(name, os.path.join(addOnsDir, name)) for name in os.listdir(addOnsDir)] if os.path.isdir(addOnsDir) else []
-    registeredAddOns = __readAddOnsList()
-    return {'addOns': defaultAddOns + registeredAddOns}
-
-def addAddOnsDirectoriesToPath():
-    for (name, path) in addOns:
-        for p in [path, os.path.join(path, "widgets"), os.path.join(path, "widgets", "prototypes")]:
-            if os.path.isdir(p) and not any([samepath(p, x) for x in sys.path]):
-                sys.path.insert(0, p)
-
 directoryNames = __getDirectoryNames()
 globals().update(directoryNames)
 
-addOns = __getAddOns()
-globals().update(addOns)
-
 addOrangeDirectoriesToPath()
-addAddOnsDirectoriesToPath()
