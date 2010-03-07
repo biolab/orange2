@@ -5,26 +5,35 @@ import os, sys, re, glob, stat
 from orngSignalManager import OutputSignal, InputSignal
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import widgetParser
 
 orangeDir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 if not orangeDir in sys.path:
     sys.path.append(orangeDir)
 
-import orngEnviron
+import orngEnviron, orngAddOns
 
 class WidgetDescription:
     def __init__(self, **attrs):
         self.__dict__.update(attrs)
 
+    def docDir(self):
+        if not self.addOn:  # A built-in widget
+            subDir = os.sep+os.path.relpath(self.directory, orngEnviron.widgetDir) if "relpath" in os.path.__dict__ else self.directory.replace(orngEnviron.widgetDir, "")
+            return os.path.join(orngEnviron.orangeDocDir, "catalog%s" % subDir)
+        else:  # An add-on widget
+            addOnDocDir = self.addOn.directoryDocumentation()
+            return os.path.join(addOnDocDir, "widgets")
+
+
 class WidgetCategory(dict):
-    def __init__(self, name, widgets):
-        self.update(widgets)
-        self.name = name
-    def __init__(self, name):
+    def __init__(self, name, widgets=None):
+        if widgets:
+            self.update(widgets)
         self.name = name
    
 def readCategories(silent=False):
-    currentCacheVersion = 1
+    currentCacheVersion = 2
     
     global widgetsWithError, widgetsWithErrorPrototypes
     widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
@@ -46,29 +55,32 @@ def readCategories(silent=False):
     except:
         cachedWidgetDescriptions = {} 
 
-    directories = [] # tuples (catName, dirName, plugin, isPrototype)
+    directories = [] # tuples (defaultCategory, dirName, plugin, isPrototype)
     for dirName in os.listdir(widgetDirName):
         directory = os.path.join(widgetDirName, dirName)
         if os.path.isdir(directory):
-            directories.append((directory, "", "prototypes" in dirName.lower()))
-
-    # read list of add-ons (in orange/add-ons as well as those additionally registered by the user)
-    for (name, dirName) in orngEnviron.addOns:
-        addOnWidgetsDir = os.path.join(dirName, "widgets")
+            directories.append((None, directory, None, "prototypes" in dirName.lower()))
+            
+    # read list of add-ons
+    for addOn in orngAddOns.installedAddOns.values() + orngAddOns.registeredAddOns:
+        addOnWidgetsDir = os.path.join(addOn.directory, "widgets")
         if os.path.isdir(addOnWidgetsDir):
-            directories.append((addOnWidgetsDir, addOnWidgetsDir, False))
+            directories.append((addOn.name, addOnWidgetsDir, addOn, False))
         addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
         if os.path.isdir(addOnWidgetsPrototypesDir):
-            directories.append((addOnWidgetsPrototypesDir, addOnWidgetsPrototypesDir, True))
+            directories.append((None, addOnWidgetsPrototypesDir, addOn, True))
 
     categories = {}     
-    for dirName, plugin, isPrototype in directories:
-        widgets = readWidgets(dirName, cachedWidgetDescriptions, isPrototype, silent=silent)
+    for defCat, dirName, addOn, isPrototype in directories:
+        widgets = readWidgets(dirName, cachedWidgetDescriptions, isPrototype, silent=silent, addOn=addOn, defaultCategory=defCat)
         for (wName, wInfo) in widgets:
             catName = wInfo.category
             if not catName in categories:
                 categories[catName] = WidgetCategory(catName)
-            categories[catName][wName] = wInfo
+            if wName in categories[catName]:
+                print "Warning! A widget with duplicated name '%s' in category '%s' has been found! It will _not_ be available in the Canvas." % (wName, catName)
+            else:
+                categories[catName][wName] = wInfo
 
     cacheFile = file(cacheFilename, "wb")
     cPickle.dump(categories, cacheFile)
@@ -85,22 +97,25 @@ def readCategories(silent=False):
     return categories
 
 
-re_inputs = re.compile(r'[ \t]+self.inputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
-re_outputs = re.compile(r'[ \t]+self.outputs\s*=\s*(?P<signals>\[[^]]*\])', re.DOTALL)
-
 hasErrors = False
 splashWindow = None
 widgetsWithError = []
 widgetsWithErrorPrototypes = []
 
-def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False):
+def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False, addOn=None, defaultCategory=None):
     import sys, imp
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
-    predir, widgetdir = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))
-    if widgetdir == "widgets":
-        widgetdir = os.path.split(predir.strip(os.path.sep).strip(os.path.altsep))[1]
+    
+    if not defaultCategory:
+        predir, defaultCategory = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))
+        if defaultCategory == "widgets":
+            defaultCategory = os.path.split(predir.strip(os.path.sep).strip(os.path.altsep))[1]
+    
+    if defaultCategory.lower() == "prototypes" or prototype:
+        defaultCategory = "Prototypes"
+    
     for filename in glob.iglob(os.path.join(directory, "*.py")):
         if os.path.isdir(filename) or os.path.islink(filename):
             continue
@@ -112,14 +127,11 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             continue
         
         data = file(filename).read()
-        istart = data.find("<name>")
-        iend = data.find("</name>")
-        if istart < 0 or iend < 0:
+        try:
+            meta = widgetParser.WidgetMetaData(data, defaultCategory, enforceDefaultCategory=prototype)
+        except:   # Probably not an Orange widget module.
             continue
-        name = data[istart+6:iend]
-        inputList = getSignalList(re_inputs, data)
-        outputList = getSignalList(re_outputs, data)
-        
+
         dirname, fname = os.path.split(filename)
         widgname = os.path.splitext(fname)[0]
         try:
@@ -130,7 +142,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 splashWindow.setMask(logo.mask())
                 splashWindow.show()
                 
-            splashWindow.showMessage("Registering widget %s" % name, Qt.AlignHCenter + Qt.AlignBottom)
+            splashWindow.showMessage("Registering widget %s" % meta.name, Qt.AlignHCenter + Qt.AlignBottom)
             qApp.processEvents()
             
             # We import modules using imp.load_source to avoid storing them in sys.modules,
@@ -143,23 +155,22 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             if not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
                 sys.path.remove(dirname)
             widgClass = wmod.__dict__[widgname]
-            inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(inputList))
-            outputClasses = set(y.__name__ for x in eval(outputList) for y in eval(x[1], wmod.__dict__).mro())
+            inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(meta.inputList))
+            outputClasses = set(y.__name__ for x in eval(meta.outputList) for y in eval(x[1], wmod.__dict__).mro())
             
             widgetInfo = WidgetDescription(
-                             name = data[istart+6:iend],
+                             name = meta.name,
                              time = datetime,
                              fileName = widgname,
                              fullName = filename,
                              directory = directory,
-                             inputList = inputList, outputList = outputList,
+                             addOn = addOn,
+                             inputList = meta.inputList, outputList = meta.outputList,
                              inputClasses = inputClasses, outputClasses = outputClasses
                              )
     
-            for attr, deflt in (("contact>", "") , ("icon>", "icons/Unknown.png"), ("priority>", "5000"), ("description>", ""), ("category>", widgetdir)):
-                istart, iend = data.find("<"+attr), data.find("</"+attr)
-                setattr(widgetInfo, attr[:-1], istart >= 0 and iend >= 0 and data[istart+1+len(attr):iend].strip() or deflt)
-                
+            for attr in ["contact", "icon", "priority", "description", "category"]:
+                setattr(widgetInfo, attr, getattr(meta, attr))
     
             # build the tooltip
             widgetInfo.inputs = [InputSignal(*signal) for signal in eval(widgetInfo.inputList)]
@@ -177,9 +188,11 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 formatedOutList = "<b>Outputs:</b><br>"
                 for signal in widgetInfo.outputs:
                     formatedOutList += " &nbsp; &nbsp; - " + signal.name + " (" + signal.type + ")<br>"
+
+            addOnName = "" if not widgetInfo.addOn else " (from add-on %s)" % widgetInfo.addOn.name
     
-            widgetInfo.tooltipText = "<b><b>&nbsp;%s</b></b><hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (name, widgetInfo.description, formatedInList[:-4], formatedOutList[:-4]) 
-            widgets.append((name, widgetInfo))
+            widgetInfo.tooltipText = "<b><b>&nbsp;%s</b></b>%s<hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (meta.name, addOnName, widgetInfo.description, formatedInList[:-4], formatedOutList[:-4]) 
+            widgets.append((meta.name, widgetInfo))
         except Exception, msg:
             if not hasErrors and not silent:
                 print "There were problems importing the following widgets:"
@@ -193,14 +206,3 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 widgetsWithErrorPrototypes.append(widgname)
        
     return widgets
-
-
-re_tuple = re.compile(r"\(([^)]+)\)")
-
-def getSignalList(regex, data):
-    inmo = regex.search(data)
-    if inmo:
-        return str([tuple([y[0] in "'\"" and y[1:-1] or str(y) for y in (x.strip() for x in ttext.group(1).split(","))])
-               for ttext in re_tuple.finditer(inmo.group("signals"))])
-    else:
-        return "[]"
