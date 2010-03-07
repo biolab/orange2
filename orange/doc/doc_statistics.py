@@ -8,14 +8,14 @@ if test_type in ["orange", "orng"]:
     orange_dir = orngEnviron.orangeDir
     module_head = "orng"
 elif test_type == "obi":
-    orange_dir = orngEnviron.addOnsDir + "/Bioinformatics"
+    orange_dir = orngEnviron.addOnsDirSys + "/Bioinformatics"
     if not os.path.exists(orange_dir):
         orange_dir = os.path.split(orngEnviron.orangeDir)[0] + "/Bioinformatics"
     if not os.path.exists(orange_dir):
         orange_dir = os.path.split(orngEnviron.orangeDir)[0] + "/bioinformatics"
     module_head = "obi"
 elif test_type == "text":
-    orange_dir = orngEnviron.addOnsDir + "/Text"
+    orange_dir = orngEnviron.addOnsDirSys + "/Text"
     module_head = "orng"
 else:
     print "Error: wrong arguments"

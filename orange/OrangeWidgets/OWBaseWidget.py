@@ -681,50 +681,9 @@ class OWBaseWidget(QDialog):
             self.eventHandler(self.captionTitle + ": " + text, eventVerbosity)
 
     def openWidgetHelp(self):
-        if self.orangeDir:
-#            try:
-#                import win32help
-#                if win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self._category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC):
-#                    return
-#            except:
-#                pass
-
-#===============================================================================
-#            from PyQt4 import QtWebKit
-#            qApp.helpWindow = helpWindow = QtWebKit.QWebView()
-#            print "file://%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:])
-#            helpWindow.load(QUrl("file:///%s/doc/widgets/catalog/%s/%s.htm" % (self.orangeDir, self._category, self.__class__.__name__[2:])))
-#            helpWindow.show()
-#===============================================================================
-            qApp.canvasDlg.helpWindow.showHelpFor(self, True)
-            return
-            try:
-                import webbrowser
-                webbrowser.open("file://%s/%s/%s.htm" % (self.orangeDir, self.docDir(), self.__class__.__name__[2:]), 0, 1)
-                return
-            except:
-                pass
-
-        try:
-            import webbrowser
-            webbrowser.open("http://www.ailab.si/orange/%s/%s.htm" % (self.docDir(), self.__class__.__name__[2:]))
-            return
-        except:
-            pass
+        if "widgetInfo" in self.__dict__:  # This widget is on a canvas.
+            qApp.canvasDlg.helpWindow.showHelpFor(self.widgetInfo, True)
         
-    def docDir(self):
-        if os.path.normpath(self.widgetDir) in os.path.normpath(self.thisWidgetDir):  # A built-in widget
-            subDir = os.sep+os.path.relpath(self.thisWidgetDir, self.widgetDir) if "relpath" in os.path.__dict__ else self.thisWidgetDir.replace(self.widgetDir, "")
-            return "doc/catalog%s" % subDir
-        elif os.path.normpath(self.addOnsDir) in os.path.normpath(self.thisWidgetDir):  # An add-on widget
-            # Two os.path.splits in the following line to remove the trailing "/widgets"
-            addonDir = os.path.split(self.thisWidgetDir)[0]
-            subDir = os.path.relpath(addonDir, self.addOnsDir) if os.path.relpath else addonDir.replace(self.addOnsDir, "")
-            addOnsSubdir = os.path.relpath(self.addOnsDir, self.orangeDir)
-            return os.path.join(addOnsSubdir, "%s/doc/catalog" % subDir)
-        else:
-            return ""
-
     def focusInEvent(self, *ev):
         #print "focus in"
         #if qApp.canvasDlg.settings["synchronizeHelp"]:  on ubuntu: pops up help window on first widget focus for every widget   
