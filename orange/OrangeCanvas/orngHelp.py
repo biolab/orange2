@@ -29,20 +29,21 @@ class HelpWindow(QDialog):
         self.helpBrowser = QWebView(self)
         self.layout().addWidget(self.helpBrowser)
         
-    def showHelpFor(self, widget, bringToFront=False):
-#        if os.path.relpath(widget.thisWidgetDir, widget.addOnsDir).startswith(widget._category):
-#            catalogDir = os.path.join(widget.addOnsDir,widget._category,"doc","catalog")
-#        else:
-#            catalogDir = os.path.join(widget.orangeDir, "doc", "catalog", widget._category)
-        helpFileName = ("%s/%s/%s.htm" % (widget.orangeDir, widget.docDir(), widget.__class__.__name__[2:])).replace("\\", "/")
-#        helpFileName = "%s/%s.htm" % (catalogDir, widget.__class__.__name__[2:])
+    def showHelpFor(self, widgetInfo, bringToFront=False):
+        helpFileName = os.path.join(widgetInfo.docDir(), "%s.htm" % (widgetInfo.fileName[2:])).replace("\\", "/")
         if not os.path.exists(helpFileName):
             QMessageBox.warning( None, "Not available", "Sorry, there is no documentation available for this widget.", QMessageBox.Ok)
             return
-        self.helpBrowser.load(QUrl("file:///"+helpFileName))
-        self.show()
-        if bringToFront:
-            self.raise_()
+        self.open("file:///"+helpFileName)
+            
+    def open(self, url, bringToFront=False, modal=False):
+        self.helpBrowser.load(QUrl(url))
+        if modal:
+            self.exec_()
+        else:
+            self.show()
+            if bringToFront:
+                self.raise_()
 
     def synchronizeHelpClicked(self, st):
         canvasDlg.settings["synchronizeHelp"] = st == Qt.Checked

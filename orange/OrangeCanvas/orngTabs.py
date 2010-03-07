@@ -9,6 +9,7 @@ from string import strip, count, replace
 import orngDoc, orngOutput, orngRegistry
 from orngSignalManager import InputSignal, OutputSignal
 import OWGUIEx
+import orngHelp
 
 WB_TOOLBOX = 0
 WB_TREEVIEW = 1
@@ -38,12 +39,16 @@ class OrangeLabel(QLabel):
 class WidgetButtonBase():
     def __init__(self, name, widgetInfo, widgetTabs, canvasDlg):
         self.shiftPressed = 0
+        self.ctrlPressed = 0
         self.name = name
         self.widgetInfo = widgetInfo
         self.widgetTabs = widgetTabs
         self.canvasDlg = canvasDlg
 
     def clicked(self, rightClick = False, pos = None):
+        if self.ctrlPressed:
+            qApp.canvasDlg.helpWindow.showHelpFor(self.widgetInfo, False)
+            return
         win = self.canvasDlg.schema
         if pos:
             pos = win.mapFromGlobal(pos)
@@ -159,6 +164,7 @@ class WidgetButton(QFrame, WidgetButtonBase):
         self.setFrameShape(QFrame.NoFrame)
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         self.shiftPressed = e.modifiers() & Qt.ShiftModifier
+        self.ctrlPressed = e.modifiers() & Qt.ControlModifier
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
@@ -246,12 +252,14 @@ class MyTreeWidget(QTreeWidget):
         QTreeWidget.mousePressEvent(self, e)
         self.mousePressed = 1
         self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
+        self.ctrlPressed = bool(e.modifiers() & Qt.ControlModifier)
         self.mouseRightClick = e.button() == Qt.RightButton
         
     def mouseReleaseEvent(self, e):
         QTreeWidget.mouseReleaseEvent(self, e)
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
         self.shiftPressed = bool(e.modifiers() & Qt.ShiftModifier)
+        self.ctrlPressed = bool(e.modifiers() & Qt.ControlModifier)
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
@@ -264,6 +272,9 @@ class MyTreeWidget(QTreeWidget):
         
     def itemClicked(self, item, column):
         if isinstance(item, WidgetTreeFolder):
+            return
+        if self.ctrlPressed:
+            qApp.canvasDlg.helpWindow.showHelpFor(item.widgetInfo, False)
             return
         win = self.canvasDlg.schema
         win.addWidget(item.widgetInfo)
