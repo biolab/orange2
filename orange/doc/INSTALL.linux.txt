@@ -49,7 +49,7 @@ directory.)
 
 cd configure
 python configure.py -Q ../qwt-5.1 --module-install-path=/usr/lib/python2.6/dist-packages/PyQt4/Qwt5
-make
+make -j8
 sudo make install
 
 3. COMPILING AND INSTALLING ORANGE
