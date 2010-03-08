@@ -3751,10 +3751,12 @@ TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, sv
 		rho->at(i)=model->rho[i];
 	if(model->param.probability){
 		probA = mlnew TFloatList(nr_class*(nr_class-1)/2);
-		probB = mlnew TFloatList(nr_class*(nr_class-1)/2);
+		if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR) // Regression has only probA
+			probB = mlnew TFloatList(nr_class*(nr_class-1)/2);
 		for(i=0;i<nr_class*(nr_class-1)/2;i++){
 			probA->at(i) = model->probA[i];
-			probB->at(i) = model->probB[i];
+			if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR)
+				probB->at(i) = model->probB[i];
 		}
 	}
 }
