@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -3459,7 +3459,7 @@ for(float *ei = matrix->elements, *ee = matrix->elements + ((dim*(dim+1))>>1); e
 		matmax = tei;
 }
 
-const int plac = 4 + (matmax==0 ? 1 : int(ceil(log10((double)matmax))));
+const int plac = 4 + (fabs(matmax) < 1 ? 1 : int(ceil(log10((double)matmax))));
 const int elements = (matrix->matrixType == TSymMatrix::Lower) ? (dim*(dim+1))>>1 : dim * dim;
 char *smatr = new char[3 * dim + (plac+2) * elements];
 char *sptr = smatr;
