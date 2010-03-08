@@ -178,7 +178,10 @@ class SVMLearnerEasy(SVMLearner):
         
         if self.svm_type in [1,4]:
             numOfNuValues=9
-            maxNu = max(self.maxNu(newexamples) - 1e-7, 0.0)
+            if self.svm_type == SVMLearner.Nu_SVC:
+                maxNu = max(self.maxNu(newexamples) - 1e-7, 0.0)
+            else:
+                maxNu = 1.0
             parameters.append(("nu", [i/10.0 for i in range(1, 9) if i/10.0 < maxNu] + [maxNu]))
         else:
             parameters.append(("C", [2**a for a in  range(-5,15,2)]))
