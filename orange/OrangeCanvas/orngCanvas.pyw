@@ -284,7 +284,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction("&Delete Widget Settings", self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()
         self.menuOptions.addAction(sys.platform == "darwin" and "&Preferences..." or "Canvas &Options...", self.menuItemCanvasOptions)
-        ### self.menuOptions.addAction("&Add-ons...", self.menuItemAddOns)  ###TODO Temporarily Disabled.
+        self.menuOptions.addAction("&Add-ons...", self.menuItemAddOns)
 
         localHelp = 0
         self.menuHelp = QMenu("&Help", self)
