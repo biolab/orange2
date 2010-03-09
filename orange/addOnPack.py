@@ -183,6 +183,9 @@ class AddOnPackDlg(QWizard):
         page.setTitle("Destination")
         page.setLayout(QVBoxLayout())
         self.addPage( page )
+
+        self.prepareOnly = False
+        chkPrepareOnly = OWGUI.checkBox(page, self, "prepareOnly", "Do not pack, only prepare addon.xml and arrange documentation", callback = self.callbackPrepareOnlyChange)
             
         p = OWGUI.widgetBox(page, "Filesystem", orientation="horizontal")
         self.oaoFileName = ""
@@ -199,6 +202,9 @@ class AddOnPackDlg(QWizard):
         p = OWGUI.widgetBox(page, "Repository", orientation="vertical")
         OWGUI.label(p, self, "Uploading into repositories is not yet implemented, sorry.")
     
+    def callbackPrepareOnlyChange(self):
+        self.eOaoFileName.setEnabled(not self.prepareOnly)
+    
     def browseDestinationFile(self):
         filename = str(QFileDialog.getSaveFileName(self, 'Save Packed Orange Add-on', self.oaoFileName, "*.oao"))
 
@@ -210,17 +216,21 @@ class AddOnPackDlg(QWizard):
         rao.prepare(self.ao.id, self.ao.name, str(self.eVersion.text()), unicode(self.eDescription.toPlainText()), self.eTags.parseEntries(),
                     self.eAOrganizations.parseEntries(), self.eAAuthors.parseEntries(), self.eAContributors.parseEntries(), self.preferredDir,
                     str(self.eHomePage.text()))
-        import zipfile
-        oao = zipfile.ZipFile(self.oaoFileName, 'w')
-        dirs = os.walk(self.directory)
-        for (dir, subdirs, files) in dirs:
-            relDir = os.path.relpath(dir, self.directory) if hasattr(os.path, "relpath") else dir.replace(self.directory, "")
-            while relDir.startswith("/") or relDir.startswith("\\"):
-                relDir = relDir[1:]
-            for file in files:
-                oao.write(os.path.join(dir, file), os.path.join(relDir, file))
         
-        QMessageBox.information( None, "Done", 'Your add-on has been successfully packed!', QMessageBox.Ok + QMessageBox.Default)
+        if not self.prepareOnly:
+            import zipfile
+            oao = zipfile.ZipFile(self.oaoFileName, 'w')
+            dirs = os.walk(self.directory)
+            for (dir, subdirs, files) in dirs:
+                relDir = os.path.relpath(dir, self.directory) if hasattr(os.path, "relpath") else dir.replace(self.directory, "")
+                while relDir.startswith("/") or relDir.startswith("\\"):
+                    relDir = relDir[1:]
+                for file in files:
+                    oao.write(os.path.join(dir, file), os.path.join(relDir, file))
+            QMessageBox.information( None, "Done", 'Your add-on has been successfully packed!', QMessageBox.Ok + QMessageBox.Default)
+        else:
+            QMessageBox.information( None, "Done", 'Your add-on has been successfully prepared!', QMessageBox.Ok + QMessageBox.Default)
+            
         QWizard.accept(self)
 
 def main(argv=None):
