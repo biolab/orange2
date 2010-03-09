@@ -32,6 +32,7 @@ class EventfulGraphicsView(QGraphicsView):
     def __init__(self, scene, parent, master):
         QGraphicsView.__init__(self, scene, parent)
         self.master = master
+#        self.setRenderHints(QPainter.Antialiasing)
         self.viewport().setMouseTracking(True)
 
 class EventfulGraphicsScene(QGraphicsScene):
@@ -48,7 +49,6 @@ class EventfulGraphicsScene(QGraphicsScene):
             self.master.mouseRelease(event.scenePos().x(), event.scenePos().y())
 
     def mouseMoveEvent (self, event):
-        print "mouse moved"
         if self.master.matrix:
             self.master.mouseMove(event)
 
@@ -482,12 +482,22 @@ class OWDistanceMap(OWWidget):
             clusterTop = HierarchicalClusterItem(self.rootCluster, None, self.scene)
             clusterLeft = HierarchicalClusterItem(self.rootCluster, None, self.scene)
             clusterHeight = 100.0
-            clusterTop.setTransform(QTransform().scale(width/float(len(self.rootCluster)), -clusterHeight/clusterTop.rect().height()).\
-                                    translate(0, -clusterTop.rect().height()))
-            clusterTop.setPos(0, self.offsetY)
-            clusterLeft.setTransform(QTransform().scale(clusterHeight/clusterLeft.rect().height(), width/float(len(self.rootCluster))).\
-                                    rotate(90).translate(0, -clusterTop.rect().height()))
-            clusterLeft.setPos(self.offsetX, 0)
+            
+            clusterTop.setSize(width, -clusterHeight)
+            clusterLeft.setSize(width, clusterHeight)
+            
+#            clusterTop.setTransform(QTransform().scale(width/float(len(self.rootCluster)), -clusterHeight/clusterTop.rect().height()).\
+#                                    translate(0, -clusterTop.rect().height()))
+#            clusterTop.scale(1.0, -1.0)
+            clusterTop.setPos(0, self.offsetY + clusterHeight)
+#            clusterLeft.setTransform(QTransform().scale(clusterHeight/clusterLeft.rect().height(), width/float(len(self.rootCluster))).\
+#                                    rotate(90.001).translate(0, -clusterTop.rect().height()))
+
+#            clusterLeft.setTransform(QTransform().scale(width/float(len(self.rootCluster)), clusterHeight/clusterLeft.rect().height()))
+#            clusterLeft.rotate(90)
+
+            clusterLeft.rotate(90)
+            clusterLeft.setPos(self.offsetX + clusterHeight, 0)
             self.offsetX += clusterHeight + 10
             self.offsetY += clusterHeight + 10
 
@@ -845,25 +855,20 @@ class OWDistanceMap(OWWidget):
 
 #####################################################################
 # new canvas items
-
-class ImageItem(QGraphicsRectItem):
+        
+class ImageItem(QGraphicsPixmapItem):
     def __init__(self, bitmap, scene, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
-        QGraphicsRectItem.__init__(self, None, scene)
-##        self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # we take care palette has proper values with proper types
-        self.image = QImage(bitmap, width, height, QImage.Format_Indexed8)
-        self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
-        self.image.setColorTable(signedPalette(palette))
-        self.scene = scene
-        self.setRect(0, 0 ,width, height)
-##        self.setX(x); self.setY(y); self.setZValue(z)
+        image = QImage(bitmap, width, height, QImage.Format_Indexed8)
+        image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
+        if qVersion() <= "4.5":
+            image.setColorTable(signedPalette(palette))
+        else:
+            image.setColorTable(palette)
+        pixmap = QPixmap.fromImage(image)
+        QGraphicsPixmapItem.__init__(self, pixmap, None, scene)
         self.setPos(x, y)
         self.setZValue(z)
-        self.show()
-
-    def paint(self, painter, option, widget=None):
-##        painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
-        x, y, w, h = option.exposedRect.x(), option.exposedRect.y(), option.exposedRect.width(), option.exposedRect.height()
-        painter.drawImage(x, y, self.image, x, y, w, h)
+#        self.show()
 
 class QCustomGraphicsText(QGraphicsSimpleTextItem):
     def __init__(self, text, scene = None, rotateAngle = 0.0, font=None):

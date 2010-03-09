@@ -4,12 +4,14 @@ from functools import partial
 class HierarchicalClusterItem(QGraphicsRectItem):
     """ An object used to draw orange.HierarchicalCluster on a QGraphicsScene
     """
-    def __init__(self, cluster, *args):
+    def __init__(self, cluster, *args, **kwargs):
         QGraphicsRectItem.__init__(self, *args)
+        self.setCacheMode(QGraphicsItem.NoCache)
         self.scaleH = 1.0
         self.scaleW = 1.0
         self._selected = False
         self._highlight = False
+        self.orientation = kwargs.get("orientation", Qt.Horizontal)
         self.highlightPen = QPen(Qt.black, 2)
         self.highlightPen.setCosmetic(True)
         self.standardPen = QPen(Qt.blue, 1)
@@ -28,9 +30,7 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         else:
             self.setRect(cluster.first, 0, 0, 0)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
-        pen = QPen(Qt.blue, 1)
-        pen.setCosmetic(True)
-        self.setPen(pen)
+        self.setPen(self.standardPen)
         self.setBrush(QBrush(Qt.white, Qt.SolidPattern))
 ##        self.setAcceptHoverEvents(True)
         
@@ -42,24 +42,28 @@ class HierarchicalClusterItem(QGraphicsRectItem):
         """
         return not self.parentItem() or (self.parentItem() and not isinstance(self.parentItem(), HierarchicalClusterItem))
 
-    def clusterGeometryReset(self):
+    def clusterGeometryReset(self, scaleX=1.0, scaleY=1.0):
         """ Updates the cluster geometry from the position of leafs.
         """
         for branch in self.branches:
-            branch.clusterGeometryReset()
+            branch.clusterGeometryReset(scaleX=scaleX, scaleY=scaleY)
 
         if self.branches:
             self.setRect(self.branches[0].rect().center().x(),
                          0.0, #self.cluster.height,
                          self.branches[-1].rect().center().x() - self.branches[0].rect().center().x(),
-                         self.cluster.height)
+                         self.cluster.height * scaleY)
+        else:
+            self.setRect(self.cluster.first * scaleX, 0, 0, 0)
 
     def paint(self, painter, option, widget=None):
         painter.setBrush(self.brush())
         painter.setPen(Qt.NoPen)
         painter.drawRect(self.rect())
         
+        painter.save()
         painter.setPen(self.pen())
+#        print painter.pen().isCosmetic(), painter.pen().widthF(), painter.testRenderHint(QPainter.NonCosmeticDefaultPen) 
         x, y, w, h = self.rect().x(), self.rect().y(), self.rect().width(), self.rect().height()
         if self.branches:
             painter.drawLine(self.rect().bottomLeft(), self.rect().bottomRight())
@@ -67,6 +71,13 @@ class HierarchicalClusterItem(QGraphicsRectItem):
             painter.drawLine(self.rect().bottomRight(), QPointF(self.rect().right(), self.branches[-1].rect().bottom()))
         else:
             pass #painter.drawText(QRectF(0, 0, 30, 1), Qt.AlignLeft, str(self.cluster[0]))
+        painter.restore()
+        
+    def setSize(self, width, height):
+        if self.isTopLevel():
+            scaleY = float(height) / self.cluster.height
+            scaleX = float(width) / len(self.cluster)  
+            self.clusterGeometryReset(scaleX, scaleY)
         
     def boundingRect(self):
         return self.rect()
@@ -102,7 +113,6 @@ class HierarchicalClusterItem(QGraphicsRectItem):
     @partial(property, fset=setSelected)
     def selected(self):
         return self._selected
-
     
     def __iter__(self):
         """ Iterates over all leaf nodes in cluster
