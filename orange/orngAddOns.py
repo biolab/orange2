@@ -876,7 +876,7 @@ def addAddOnDirectoriesToPath():
     sys.path = [dir for dir in sys.path if dir not in addOnDirectories]
     for addOn in installedAddOns.values() + registeredAddOns:
         path = addOn.directory
-        for p in [path, os.path.join(path, "widgets"), os.path.join(path, "widgets", "prototypes"), os.path.join(path, "lib-%s" % "-".join(( sys.platform, platform.machine() if sys.platform!="win32" else "", ".".join(map(str, sys.version_info[:2])) )) )]:
+        for p in [path, os.path.join(path, "widgets"), os.path.join(path, "widgets", "prototypes"), os.path.join(path, "lib-%s" % "-".join(( sys.platform, "x86" if (platform.machine()=="") else platform.machine(), ".".join(map(str, sys.version_info[:2])) )) )]:
             if os.path.isdir(p) and not any([orngEnviron.samepath(p, x) for x in sys.path]):
                 if p not in sys.path:
                     addOnDirectories.append(p)
@@ -1011,12 +1011,15 @@ def __writeAddOnLists(addons, userOnly=False):
         file(os.path.join(orngEnviron.orangeDir        , "add-ons.txt"), "wt").write("\n".join(["%s\t%s" % (a.name, a.directory) for a in addons if     a.systemWide]))
 
 def registerAddOn(name, path, add = True, refresh=True, systemWide=False):
-    if os.path.isfile(path):
-        path = os.path.dirname(path)
-    __writeAddOnLists([a for a in __readAddOnLists(userOnly=not systemWide) if a.name != name and a.directory != path] + (add and [OrangeRegisteredAddOn(name, path, systemWide)] or []), userOnly=not systemWide)
-
-    global registeredAddOns
-    registeredAddOns.append( OrangeRegisteredAddOn(name, path, systemWide) )
+    if not add:
+        unregisredAddOn(name, path, userOnly=not systemWide)
+    else:
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
+        __writeAddOnLists([a for a in __readAddOnLists(userOnly=not systemWide) if a.name != name and a.directory != path] + ([OrangeRegisteredAddOn(name, path, systemWide)] or []), userOnly=not systemWide)
+    
+        global registeredAddOns
+        registeredAddOns.append( OrangeRegisteredAddOn(name, path, systemWide) )
     if refresh:
         refreshAddOns()
 
