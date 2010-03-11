@@ -91,7 +91,7 @@ class OWAttributeDistance(OWWidget):
                 if self.classInteractions == 3:
                     for a1 in range(len(atts)):
                         for a2 in range(a1):
-                            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, self.data, 0).r
+                            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, self.data, 0).p
                 else:
                     import numpy, statc
                     m = self.data.toNumpyMA("A")[0]
@@ -99,7 +99,7 @@ class OWAttributeDistance(OWWidget):
                     filleds = [list(numpy.ma.filled(m[:,i], averages[i])) for i in range(len(atts))]
                     for a1, f1 in enumerate(filleds):
                         for a2 in range(a1):
-                            matrix[a1, a2] = statc.spearmanr(f1, filleds[a2])[0]
+                            matrix[a1, a2] = statc.spearmanr(f1, filleds[a2])[1]
                 
             return matrix
         else:
