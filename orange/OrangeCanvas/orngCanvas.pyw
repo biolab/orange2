@@ -598,6 +598,7 @@ class OrangeCanvasDlg(QMainWindow):
             if newTabList != self.settings["WidgetTabs"]:
                 self.settings["WidgetTabs"] = newTabList
                 self.createWidgetsToolbar()
+                orngTabs.constructCategoriesPopup(self)
 
     def menuItemAddOns(self):
         dlg = orngDlgs.AddOnManagerDialog(self, None)
