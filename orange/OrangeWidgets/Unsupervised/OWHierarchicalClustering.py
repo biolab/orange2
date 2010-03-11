@@ -373,7 +373,7 @@ class OWHierarchicalClustering(OWWidget):
             else:
                 table1=orange.ExampleTable(self.selection)
                 self.selectedExamples=table1
-                self.unselectedExamples = orange.ExampleTable(unselected)
+                self.unselectedExamples = orange.ExampleTable(unselected) if unselected else None
             self.send("Selected Examples",self.selectedExamples)
             self.send("Unselected Examples", self.unselectedExamples)
 
