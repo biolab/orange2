@@ -46,7 +46,7 @@ class OWHierarchicalClustering(OWWidget):
                         ("Ward's linkage", orange.HierarchicalClustering.Ward),
                         ("Complete linkage", orange.HierarchicalClustering.Complete),
                      ]
-        self.Linkage=0
+        self.Linkage=3
         self.OverwriteMatrix=0
         self.Annotation=0
         self.Brightness=5
