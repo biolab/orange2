@@ -4,6 +4,7 @@
 #
 
 APT_ARGS="--assume-yes"
+APTITUDE_ARGS="--assume-yes"
 BUILD_DIR="/tmp/orange-build"
 
 ARCH=`dpkg --print-architecture`
@@ -32,7 +33,9 @@ if [ -e "/mnt/debian/dists/lenny/main/binary-$ARCH/python-orange-svn_0.0.$DAILY_
 	exit 0
 fi
 
-apt-get $APT_ARGS update
+aptitude $APTITUDE_ARGS update
+aptitude $APTITUDE_ARGS install devscripts build-essential
+aptitude $APTITUDE_ARGS build-depends python-orange-svn
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
