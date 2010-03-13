@@ -42,7 +42,6 @@ apt-get $APT_ARGS source python-orange-svn
 
 if [ -e "python-orange-svn-0.0.$DAILY_REVISION" ]; then
 	echo "Package for $DAILY_REVISION revision already exists, just building it."
-fi
 else
 	echo "Making source archive python-orange-svn-0.0.$DAILY_REVISION."
 	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ python-orange-svn-0.0.$DAILY_REVISION/
