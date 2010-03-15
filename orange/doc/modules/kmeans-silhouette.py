@@ -1,20 +1,12 @@
 import orange
 import orngClustering
-import random
 
-data = orange.ExampleTable("iris")
-# data = orange.ExampleTable("lung-cancer")
-
-bestscore = 0
-for k in range(2,10):
-    random.seed(42)
-    km = orngClustering.KMeans(data, k, 
-            initialization=orngClustering.KMeans_init_hierarchicalClustering(n=50), 
-            nstart=10)
+data = orange.ExampleTable("voting")
+# data = orange.ExampleTable("iris")
+for k in range(2,5):
+    km = orngClustering.KMeans(data, k, initialization=orngClustering.kmeans_init_diversity)
     score = orngClustering.score_silhouette(km)
-    print "%d: %.3f" % (k, score)
-    if score > bestscore:
-        best_km = km
-        bestscore = score
+    print k, score
 
-orngClustering.plot_silhouette(best_km, filename='tmp.png')
+km = orngClustering.KMeans(data, 3, initialization=orngClustering.kmeans_init_diversity)
+orngClustering.plot_silhouette(km, "kmeans-silhouette.png")
