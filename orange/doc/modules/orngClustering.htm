@@ -185,6 +185,37 @@ for data, name in zip(data_sets, data_names):
    vehicle  11   4   3
 </xmp>
 
+<p>The following code computes the silhouette score for three different clusterings (k=2..7), and at the end plots a silhuette plot
+for k=3.<p>
+
+<p class="header"><a href="kmeans-silhouette.py">kmeans-silhouette.py</a> (uses <a href="iris.tab">iris.tab</a></p>
+<xmp class=code>import orange
+import orngClustering
+
+data = orange.ExampleTable("iris")
+for k in range(2,8):
+    km = orngClustering.KMeans(data, k, initialization=orngClustering.kmeans_init_diversity)
+    score = orngClustering.score_silhouette(km)
+    print k, score
+
+km = orngClustering.KMeans(data, 3, initialization=orngClustering.kmeans_init_diversity)
+orngClustering.plot_silhouette(km, "kmeans-silhouette.png")
+</xmp>
+
+<p>The analysis sugests that clustering with k=2 is preferred as it yields the maximal silhouette coefficien:</p>
+
+ <xmp class=code>2 0.629467553352
+3 0.504318855054
+4 0.407259377854
+5 0.358628975081
+6 0.353228492088
+7 0.366357876944
+</xmp>
+
+<p>Silhouette plot for k=3 is given below:</p>
+
+<img src="kmeans-silhouette.png">
+
 <h2>Hierarchical Clustering</h2>
 
 <dl class="attributes">
@@ -201,7 +232,7 @@ for data, name in zip(data_sets, data_names):
 <dd class="ddfun">Returns k topmost clusters (top k nodes of the clustering tree) from hierarchical clustering.</dd>
 
 <dt>hierarhicalClustering_topClustersMembership(root, k)</dt>
-<dd class="ddfun">Returns a list with indexes which indicate the membership of data instances used to create the clustering to top k clusters.</dd>
+<dd class="ddfun">Returns a list with indexes which indicate the membership of data instances that are included in top k clusters.</dd>
 </dl>
 
 
