@@ -17,7 +17,7 @@ EXIT_VALUE=$?
 echo "Orange (Debian $ARCH) [$EXIT_VALUE]" > "/mnt/download/buildLogs/debian/debian-$ARCH-daily-build.log"
 date >> "/mnt/download/buildLogs/debian/debian-$ARCH-daily-build.log"
 cat /tmp/debian-daily-build.log >> "/mnt/download/buildLogs/debian/debian-$ARCH-daily-build.log"
-(($EXIT_VALUE)) && echo "Running debian-daily-build.sh failed"
+(($EXIT_VALUE)) && echo "Running debian-daily-build.sh ($ARCH) failed"
 
 # Zero exit value
 true
