@@ -831,7 +831,10 @@ def loadRepositories():
             file.close()
         except Exception, e:
             print "Unable to load repository list! Error: %s" % e
-    updateDefaultRepositories()
+    try:
+        updateDefaultRepositories()
+    except Exception, e:
+        print "Unable to refresh default repositories: %s" % (e)
     for r in availableRepositories:
         #TODO: # Should show some progress (and enable cancellation)
         try:
