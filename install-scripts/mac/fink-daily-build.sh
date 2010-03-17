@@ -423,12 +423,9 @@ echo "Copying to repository all info files."
 rm -f /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/*
 cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
 
-# Wait a little bit to prevent "file changed as we read it" errors later on
-sleep 5
-
 echo "Making an archive of all info files."
-cd /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
-tar -czf all.tgz *.info
+cd $FINK_ROOT/fink/dists/ailab/main/finkinfo/
+tar -czf /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz *
 
 echo "Setting permissions."
 chmod -R +r /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
