@@ -1,4 +1,4 @@
-!define NAME_PYTHON python-2.5.msi
+!define NAME_PYTHON python-2.5.4.msi
 !define NAME_PYTHONWIN pywin32-212.win32-py2.5.exe
 !define NAME_MFC mfc71.dll
 
