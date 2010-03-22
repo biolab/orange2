@@ -35,7 +35,8 @@ def unisetattr(self, name, value, grandparent):
         if hasattr(grandparent, "__setattr__") and isinstance(obj, grandparent):
             grandparent.__setattr__(obj, lastname,  value)
         else:
-            obj.__dict__[lastname] = value
+            setattr(obj, lastname, value)
+#            obj.__dict__[lastname] = value
 
     controlledAttributes = getattr(self, "controlledAttributes", None)
     controlCallback = controlledAttributes and controlledAttributes.get(name, None)
@@ -499,11 +500,11 @@ class OWBaseWidget(QDialog):
         return None
 
     # ########################################################################
-    def connect(self, control, signal, method):
+    def connect(self, control, signal, method, type=Qt.AutoConnection):
         wrapper = SignalWrapper(self, method)
         self.connections[(control, signal)] = wrapper   # save for possible disconnect
         self.wrappers.append(wrapper)
-        QDialog.connect(control, signal, wrapper)
+        QDialog.connect(control, signal, wrapper, type)
         #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
 
 
