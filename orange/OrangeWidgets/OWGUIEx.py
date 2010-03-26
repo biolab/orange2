@@ -108,7 +108,7 @@ def lineEditHint(widget, master, value, *arg, **args):
     le.callbackOnComplete = callback                                    # this is called when the user selects one of the items in the list
     return le
         
-class LineEditHint(QLineEdit):        
+class LineEditHint(QLineEdit):
     def __init__(self, parent):
         QLineEdit.__init__(self, parent)
         QObject.connect(self, SIGNAL("textEdited(const QString &)"), self.textEdited)
@@ -245,6 +245,53 @@ class LineEditHint(QLineEdit):
         if self.listUpdateCallback:
             self.listUpdateCallback()
         
+class QLineEditWithActions(QLineEdit):
+    def __init__(self, *args):
+        QLineEdit.__init__(self, *args)
+#        self._leftActions = []
+#        self._rightActions = []
+        self._actions = []
+        self._buttons = []
+        self._buttonLayout = QHBoxLayout(self)
+        self._editArea = QSpacerItem(10, 10, QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self._buttonLayout.addSpacerItem(self._editArea)
+        self.setLayout(self._buttonLayout)
+        
+        self._buttonLayout.setContentsMargins(0, 0, 0, 0)
+
+    def insertAction(self, index, action, *args):
+        self._actions.append(action)
+        button = QToolButton(self)
+        button.setDefaultAction(action)
+        button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        button.setCursor(QCursor(Qt.ArrowCursor))
+        
+        self._buttons.append(button)
+        self._insertWidget(index, button, *args)
+        
+    def addAction(self, action, *args):
+        self.insertAction(-1, action, *args)
+        
+    def _insertWidget(self, index, widget, *args):
+        widget.installEventFilter(self)
+        self._buttonLayout.insertWidget(index, widget, *args)
+        
+    def eventFilter(self, obj, event):
+        if obj in self._buttons:
+            if event.type() == QEvent.Resize:
+                if event.size().width() != event.oldSize().width():
+                    QTimer.singleShot(50, self._updateTextMargins)
+        return QLineEdit.eventFilter(self, obj, event)
+                
+    def _updateTextMargins(self):
+        left = 0
+        right = sum(w.width() for  w in self._buttons) + 4
+        print right
+        if qVersion() >= "4.6":
+            self.setTextMargins(left, 0, right, 0)
+        else:
+            style = "padding-left: %ipx; padding-right: %ipx; height: %ipx;" % (left, right, self.height())
+            self.setStyleSheet(style)
         
 if __name__ == "__main__":
     import sys, random, string, OWGUI
