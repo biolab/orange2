@@ -265,6 +265,7 @@ class QLineEditWithActions(QLineEdit):
         button.setDefaultAction(action)
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button.setCursor(QCursor(Qt.ArrowCursor))
+        button.setStyleSheet("border: none;")
         
         self._buttons.append(button)
         self._insertWidget(index, button, *args)
@@ -286,12 +287,23 @@ class QLineEditWithActions(QLineEdit):
     def _updateTextMargins(self):
         left = 0
         right = sum(w.width() for  w in self._buttons) + 4
-        print right
         if qVersion() >= "4.6":
             self.setTextMargins(left, 0, right, 0)
         else:
             style = "padding-left: %ipx; padding-right: %ipx; height: %ipx;" % (left, right, self.height())
             self.setStyleSheet(style)
+            
+    def setPlaceholderText(self, text):
+        self._placeHolderText = text
+        self.update()
+        
+    def paintEvent(self, event):
+        QLineEdit.paintEvent(self, event)
+        if not self.text() and self._placeHolderText and not self.hasFocus():
+            painter = QPainter(self)
+            rect = self._editArea.geometry()
+            painter.setPen(QPen(self.palette().color(QPalette.Inactive, QPalette.WindowText).light()))
+            painter.drawText(rect, Qt.AlignVCenter, " " + self._placeHolderText)
         
 if __name__ == "__main__":
     import sys, random, string, OWGUI
