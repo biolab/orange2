@@ -359,12 +359,12 @@ class OWHierarchicalClustering(OWWidget):
 
                 domain.addmetas(origDomain.getmetas())
                 table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
-                table1.extend(orange.ExampleTable(self.selection))
+                table1.extend(orange.ExampleTable(self.selection) if self.selection else [])
                 for i in range(len(self.selection)):
                     table1[i][aid] = clustVar("Cluster " + str(c[i]))
 
                 table2 = orange.ExampleTable(domain)
-                table2.extend(orange.ExampleTable(unselected))
+                table2.extend(orange.ExampleTable(unselected) if unselected else [])
                 for ex in table2:
                     ex[aid] = clustVar("Other")
 
