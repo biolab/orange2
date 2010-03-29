@@ -132,8 +132,11 @@ class OWImpute(OWWidget):
                 self.indiType = 0
 
     def individualSelected(self, i = -1):
-        if i == -1 and self.attrList.selectedItems() != []:
-            i = self.attrList.row(self.attrList.selectedItems()[0])
+        if i == -1:
+            if self.attrList.selectedItems() != []:
+                i = self.attrList.row(self.attrList.selectedItems()[0])
+            else:
+                i = 0
         if self.data:
             self.selectedAttr = i
             attr = self.data.domain[i]
@@ -247,7 +250,7 @@ class OWImpute(OWWidget):
             self.imputerConstructor = imputerConstructor
 
         def __call__(self, data):
-            return lambda data2, remover=self.removerConstructor(data), imputer=self.imputerConstructor(data): imputer(remover(data2))
+            return lambda data2, remover=self.removerConstructor(data), imputer=self.imputerConstructor(data): imputer(data2 if isinstance(data2, orange.Example) else remover(data2))
 
     class SelectDefined:
         # This argument can be a list of attributes or a bool
