@@ -139,6 +139,21 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
         var = ci->first;
     }
 
+  var = mlnew TEnumVariable(name);
+  TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
+  if (evar) { 
+    if (fixedOrderValues)
+      const_PITERATE(TStringList, si, fixedOrderValues)
+        evar->addValue(*si);
+  
+    if (values) {
+      vector<string> sorted;
+      TEnumVariable::presortValues(*values, sorted);
+      const_ITERATE(vector<string>, ssi, sorted)
+        evar->addValue(*ssi);
+    }
+  }
+
   return var;
 }
 
@@ -155,14 +170,29 @@ TVariable *TVariable::make(const string &name, const int &varType, TStringList *
     var = NULL;
     *status = TVariable::OK;
   }
-  else
+  else {
     var = getExisting(name, varType, fixedOrderValues, values, createNewOn, status);
+  }
     
   if (!var) {
       switch (varType) {
-        case TValue::INTVAR:
+        case TValue::INTVAR: {
           var = mlnew TEnumVariable(name);
+          TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
+          if (evar) { 
+            if (fixedOrderValues)
+              const_PITERATE(TStringList, si, fixedOrderValues)
+                evar->addValue(*si);
+          
+            if (values) {
+              vector<string> sorted;
+              TEnumVariable::presortValues(*values, sorted);
+              const_ITERATE(vector<string>, ssi, sorted)
+                evar->addValue(*ssi);
+            }
+          }
           break;
+        }
 
         case TValue::FLOATVAR:
           var = mlnew TFloatVariable(name);
@@ -171,23 +201,9 @@ TVariable *TVariable::make(const string &name, const int &varType, TStringList *
         case STRINGVAR:
           var = mlnew TStringVariable(name);
           break;
-     }
+      }
   }
-
-  TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
-  if (evar) { 
-    if (fixedOrderValues)
-      const_PITERATE(TStringList, si, fixedOrderValues)
-        evar->addValue(*si);
-  
-    if (values) {
-      vector<string> sorted;
-      TEnumVariable::presortValues(*values, sorted);
-      const_ITERATE(vector<string>, ssi, sorted)
-        evar->addValue(*ssi);
-    }
-  }
-  
+   
   return var;
 }
 
