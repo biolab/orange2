@@ -340,7 +340,7 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
 
     if (!missing.empty()) {
       if (missing.size() == 1) {
-        char excbuf[128];
+        char excbuf[512];
         snprintf(excbuf, 512, "saveBasket: attribute with id %i was not found in Domain and has not been stored", *(missing.begin()));
         raiseWarning(false, excbuf);
       }

@@ -101,7 +101,7 @@ void raiseWarning(bool exhaustive, const char *s)
 }
 
 
-extern char excbuf[256]; // defined in errors.cpp
+extern char excbuf[512]; // defined in errors.cpp
 
 bool raiseWarning(PyObject *warnType, const char *s, ...)
 { 
