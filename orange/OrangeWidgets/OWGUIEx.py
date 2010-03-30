@@ -245,6 +245,139 @@ class LineEditHint(QLineEdit):
         if self.listUpdateCallback:
             self.listUpdateCallback()
         
+        
+class LineEditWFocusOutMk2(QLineEdit):
+    def __init__(self, *args, **kwargs):
+        QLineEdit.__init__(self, *args)
+        self.mouseOverPix = False
+        self.showIcon = False
+        self.leftTextMargin, self.topTextMargin, self.rightTextMargin, self.bottomTextMargin = 1, 1, 1, 1
+        self.placeHolderText = ""
+        self.connect(self, SIGNAL("textEdited(QString)"), self.textEdited)
+        self.connect(self, SIGNAL("editingFinished()"), self.editingFinished)
+        self.setStyleSheet("QLineEdit { padding-right: 20px; border-radius: 4px;}")
+        
+    def textEdited(self, string):
+        self.showIcon = True
+        self.update()
+    
+    def editingFinished(self):
+        self.showIcon = False
+        self.update()
+        
+    def enterPixmap(self):
+        import OWGUI
+        return OWGUI.getEnterIcon().pixmap(self.height(), self.height())
+    
+    def mouseMoveEvent(self, event):
+        self.mouseOverPix = self.iconRect().contains(event.pos())
+        self.setCursor(Qt.ArrowCursor if self.mouseOverPix and self.showIcon else Qt.IBeamCursor)
+        self.update()
+        return QLineEdit.mouseMoveEvent(self, event)
+    
+    def mousePressEvent(self, event):
+        if self.iconRect().contains(event.pos()) and event.buttons() & Qt.LeftButton:
+            self.emit(SIGNAL("editingFinished()"))
+            self.emit(SIGNAL("clicked()"))
+    
+    def styleOption(self):
+        option = QStyleOptionFrameV2()
+        option.initFrom(self)
+        return option
+    
+    def iconRect(self):
+        rect = self.contentsRect()
+        rect.adjust(rect.width() - rect.height() + 2, -1, -1, -1)
+        return rect
+    
+    def paintEvent(self, event):
+       QLineEdit.paintEvent(self, event)
+         
+       try:
+           rect = self.contentsRect()
+           size = self.style().sizeFromContents(QStyle.CT_LineEdit, self.styleOption(), rect.size(), self)
+           rect = self.iconRect()
+           pix = self.enterPixmap()
+           p = QPainter(self)
+           p.setRenderHint(QPainter.Antialiasing)
+           p.setOpacity(1.0 if self.mouseOverPix else 0.7)
+           if self.showIcon:
+               p.drawPixmap(rect, pix, QRect(QPoint(0, 0), pix.size()))
+       except Exception, ex:
+           print ex
+           
+class SpinBoxWFocusOut(QSpinBox):
+    def __init__(self, min, max, step, bi):
+        QSpinBox.__init__(self, bi)
+        self.setRange(min, max)
+        self.setSingleStep(step)
+        self.setLineEdit(LineEditWFocusOutMk2(self))
+        self.connect(self.lineEdit(), SIGNAL("textChanged(QString)"), self.lineEdit().textEdited)
+        self.connect(self, SIGNAL("valueChanged(QString)"), self.lineEdit().textEdited)
+        self.connect(self, SIGNAL("valueChanged(QString)"), self.setValueChanged)
+#        self.connect(self.lineEdit(), SIGNAL("editingFinished()"), self.valueCommited)
+        self.connect(self, SIGNAL("editingFinished()"), self.commitValue)
+        self.connect(self.lineEdit(), SIGNAL("clicked()"), self.commitValue)
+        
+        self.connect(self, SIGNAL("editingFinished()"), self.lineEdit().editingFinished)
+        self.valueChangedFlag = False
+        
+    def setValueChanged(self, text):
+        print "valueChanged", text
+        self.valueChangedFlag = True
+        
+    def commitValue(self):
+        if self.valueChangedFlag:
+            print "valueCommited"
+            self.emit(SIGNAL("valueCommited(int)"), self.value())
+            self.valueChangedFlag = False
+                  
+    def onChange(self, value):
+        pass
+    
+    def onEnter(self):
+        pass
+    
+    def setValue(self, text):
+        QSpinBox.setValue(self, text)
+        self.valueChangedFlag = False
+        
+class DoubleSpinBoxWFocusOut(QDoubleSpinBox):
+    def __init__(self, min, max, step, bi):
+        QDoubleSpinBox.__init__(self, bi)
+        self.setDecimals(math.ceil(-math.log10(step)))
+        self.setRange(min, max)
+        self.setSingleStep(step)
+        self.setLineEdit(LineEditWFocusOutMk2(self))
+        self.connect(self.lineEdit(), SIGNAL("textChanged(QString)"), self.lineEdit().textEdited)
+        self.connect(self, SIGNAL("valueChanged(QString)"), self.lineEdit().textEdited)
+        self.connect(self, SIGNAL("valueChanged(QString)"), self.setValueChanged)
+        self.connect(self, SIGNAL("editingFinished()"), self.commitValue)
+        self.connect(self.lineEdit(), SIGNAL("clicked()"), self.commitValue)
+        
+        self.connect(self, SIGNAL("editingFinished()"), self.lineEdit().editingFinished)
+        self.valueChangedFlag = False
+        
+    def setValueChanged(self, text):
+        print "valueChanged", text
+        self.valueChangedFlag = True
+        
+    def commitValue(self):
+        if self.valueChangedFlag:
+            print "valueCommited", self.value()
+            self.emit(SIGNAL("valueCommited(double)"), self.value())
+            self.valueChangedFlag = False
+                  
+    def onChange(self, value):
+        pass
+    
+    def onEnter(self):
+        pass
+    
+    def setText(self, text):
+        QDoubleSpinBox.setValue(self, text)
+        self.valueChangedFlag = False
+        
 class QLineEditWithActions(QLineEdit):
     def __init__(self, *args):
         QLineEdit.__init__(self, *args)
@@ -289,9 +422,9 @@ class QLineEditWithActions(QLineEdit):
         right = sum(w.width() for  w in self._buttons) + 4
         if qVersion() >= "4.6":
             self.setTextMargins(left, 0, right, 0)
-        elif sys.platform != "darwin": ## On Mac this does not work properly
-            style = "padding-left: %ipx; padding-right: %ipx; height: %ipx; margin: 0px; border: " % (left, right, self.height())
-            self.setStyleSheet(style)
+#        elif sys.platform != "darwin": ## On Mac this does not work properly 
+#            style = "padding-left: %ipx; padding-right: %ipx; height: %ipx; margin: 0px; border: " % (left, right, self.height())
+#            self.setStyleSheet(style)
             
     def setPlaceholderText(self, text):
         self._placeHolderText = text
