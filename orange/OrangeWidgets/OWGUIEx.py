@@ -1,6 +1,6 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import math, re, string
+import math, re, string, sys
 from OWGUI import widgetLabel, widgetBox, lineEdit
 
 def lineEditFilter(widget, master, value, *arg, **args):
@@ -289,8 +289,8 @@ class QLineEditWithActions(QLineEdit):
         right = sum(w.width() for  w in self._buttons) + 4
         if qVersion() >= "4.6":
             self.setTextMargins(left, 0, right, 0)
-        else:
-            style = "padding-left: %ipx; padding-right: %ipx; height: %ipx;" % (left, right, self.height())
+        elif sys.platform != "darwin": ## On Mac this does not work properly
+            style = "padding-left: %ipx; padding-right: %ipx; height: %ipx; margin: 0px; border: " % (left, right, self.height())
             self.setStyleSheet(style)
             
     def setPlaceholderText(self, text):
