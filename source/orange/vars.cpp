@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -20,7 +20,7 @@
 
 
 // to include Python.h before STL defines a template set (doesn't work with VC 6.0)
-#include "garbage.hpp" 
+#include "garbage.hpp"
 
 #include <set>
 #include <stack>
@@ -68,16 +68,16 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
 {
   if ((fixedOrderValues && fixedOrderValues->size() ) && (varType != TValue::INTVAR))
     ::raiseErrorWho("Variable", "cannot specify the value list for non-discrete attributes");
-    
+
   if (failOn == TVariable::OK) {
     if (status)
       *status = TVariable::OK;
     return NULL;
   }
-  
+
   vector<pair<TVariable *, int> > candidates;
   TStringList::const_iterator vvi, vve;
-  
+
   ITERATE(list<TVariable *>, vi, TVariable::allVariables) {
     if (((*vi)->varType == varType) && ((*vi)->name == name)) {
       int tempStat = TVariable::OK;
@@ -86,11 +86,11 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
       // discrete ones need further checking if they have any defined values
       TEnumVariable *evar = dynamic_cast<TEnumVariable *>(*vi);
       if (evar && evar->values->size()) {
-      
+
         if (fixedOrderValues && !evar->checkValuesOrder(*fixedOrderValues))
           tempStat = TVariable::Incompatible;
-          
-        if ((tempStat == TVariable::OK) 
+
+        if ((tempStat == TVariable::OK)
             && (values && values->size() || fixedOrderValues && fixedOrderValues->size())) {
           for(vvi = evar->values->begin(), vve = evar->values->end();
               (vvi != vve)
@@ -100,7 +100,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
           if (vvi == vve)
             tempStat = TVariable::NoRecognizedValues;
          }
-         
+
          if ((tempStat == TVariable::OK) && fixedOrderValues) {
            for(vvi = fixedOrderValues->begin(), vve = fixedOrderValues->end();
                (vvi != vve) && evar->hasValue(*vvi);
@@ -108,7 +108,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
            if (vvi != vve)
              tempStat = TVariable::MissingValues;
          }
-          
+
          if ((tempStat == TVariable::OK) && values) {
            set<string>::const_iterator vsi(values->begin()), vse(values->end());
            for(; (vsi != vse) && evar->hasValue(*vsi); vsi++);
@@ -116,7 +116,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
              tempStat = TVariable::MissingValues;
          }
        }
-    
+
       candidates.push_back(make_pair(*vi, tempStat));
       if (tempStat == TVariable::OK)
         break;
@@ -129,7 +129,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
   if (!status)
     status = &intStatus;
   *status = TVariable::NotFound;
-  
+
   const int actFailOn = failOn > TVariable::Incompatible ? TVariable::Incompatible : failOn;
   for(vector<pair<TVariable *, int> >::const_iterator ci(candidates.begin()), ce(candidates.end());
       ci != ce; ci++)
@@ -139,13 +139,13 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
         var = ci->first;
     }
 
-  var = mlnew TEnumVariable(name);
+  //var = mlnew TEnumVariable(name);
   TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
-  if (evar) { 
+  if (evar) {
     if (fixedOrderValues)
       const_PITERATE(TStringList, si, fixedOrderValues)
         evar->addValue(*si);
-  
+
     if (values) {
       vector<string> sorted;
       TEnumVariable::presortValues(*values, sorted);
@@ -173,17 +173,17 @@ TVariable *TVariable::make(const string &name, const int &varType, TStringList *
   else {
     var = getExisting(name, varType, fixedOrderValues, values, createNewOn, status);
   }
-    
+
   if (!var) {
       switch (varType) {
         case TValue::INTVAR: {
           var = mlnew TEnumVariable(name);
           TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
-          if (evar) { 
+          if (evar) {
             if (fixedOrderValues)
               const_PITERATE(TStringList, si, fixedOrderValues)
                 evar->addValue(*si);
-          
+
             if (values) {
               vector<string> sorted;
               TEnumVariable::presortValues(*values, sorted);
@@ -203,7 +203,7 @@ TVariable *TVariable::make(const string &name, const int &varType, TStringList *
           break;
       }
   }
-   
+
   return var;
 }
 
@@ -326,19 +326,19 @@ TValue TVariable::computeValue(const TExample &ex)
 
 
 bool TVariable::firstValue(TValue &val) const
-{ 
+{
   raiseError("attribute '%s' does not support 'firstValue' method", name.c_str());
   return false;
 }
 
 bool TVariable::nextValue(TValue &val) const
-{ 
+{
   raiseError("attribute '%s' does not support 'nextValue' method", name.c_str());
   return false;
 }
 
 TValue TVariable::randomValue(const int &rand)
-{ 
+{
   raiseError("attribute '%s' does not support 'randomValue' method", name.c_str());
   return TValue();
 }
@@ -368,7 +368,7 @@ TEnumVariable::TEnumVariable(const string &aname, PStringList val)
 
 
 TEnumVariable::TEnumVariable(const TEnumVariable &var)
-: TVariable(var), 
+: TVariable(var),
   values(mlnew TStringList(var.values.getReference())),
   baseValue(var.baseValue)
 {}
@@ -377,11 +377,11 @@ TEnumVariable::TEnumVariable(const TEnumVariable &var)
 bool TEnumVariable::isEquivalentTo(const TVariable &old) const
 {
   TEnumVariable const *eold = dynamic_cast<TEnumVariable const *>(&old);
-  
+
   if (!eold || !TVariable::isEquivalentTo(old) ||
          ((baseValue != -1) && (eold->baseValue != -1) && (baseValue != eold->baseValue)))
      return false;
-     
+
   TStringList::const_iterator vi1(values->begin()), ve1(values->end());
   TStringList::const_iterator vi2(eold->values->begin()), ve2(eold->values->end());
   for(; (vi1 != ve1) && (vi2 != ve2) && (*vi1 == *vi2); vi1++, vi2++);
@@ -396,7 +396,7 @@ int  TEnumVariable::noOfValues() const
 bool TEnumVariable::firstValue(TValue &val) const
 { if (values->size()) {
     val = TValue(0);
-    return true; 
+    return true;
   }
   else {
     val = TValue(DK());
@@ -424,7 +424,7 @@ TValue TEnumVariable::randomValue(const int &rand)
 
 
 void TEnumVariable::addValue(const string &val)
-{ 
+{
   if (values->size() > 50) {
     if (valuesTree.empty())
       createValuesTree();
@@ -473,11 +473,11 @@ bool TEnumVariable::hasValue(const string &s)
 {
   if (!valuesTree.empty())
     return valuesTree.lower_bound(s) != valuesTree.end();
-    
+
   PITERATE(TStringList, vli, values)
     if (*vli == s)
       return true;
-      
+
   return false;
 }
 
@@ -505,7 +505,7 @@ void TEnumVariable::str2val_add(const string &valname, TValue &valu)
   else {
     TStringList::iterator vi = find(values->begin(), values->end(), valname);
     if (vi!=values->end())
-      valu = TValue(int(vi - values->begin())); 
+      valu = TValue(int(vi - values->begin()));
     else if (!str2special(valname, valu)) {
       addValue(valname);
       valu = TValue(noValues);
@@ -530,7 +530,7 @@ void TEnumVariable::str2val(const string &valname, TValue &valu)
   else {
     TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
     if (vi!=values->end())
-      valu = TValue(int(vi - values->begin())); 
+      valu = TValue(int(vi - values->begin()));
     else if (!str2special(valname, valu))
       raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
   }
@@ -551,11 +551,11 @@ bool TEnumVariable::str2val_try(const string &valname, TValue &valu)
     }
     return str2special(valname, valu);
   }
-    
+
   else {
     TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
     if (vi!=values->end()) {
-      valu = TValue(int(vi - values->begin())); 
+      valu = TValue(int(vi - values->begin()));
       return true;
     }
     return str2special(valname, valu);
@@ -573,7 +573,7 @@ void TEnumVariable::val2str(const TValue &val, string &str) const
 
   if (val.svalV) {
     const TDiscDistribution *dval = dynamic_cast<const TDiscDistribution *>(val.svalV.getUnwrappedPtr());
-    if (!dval) 
+    if (!dval)
       raiseError("invalid value type");
 
     str = "(";
@@ -601,7 +601,7 @@ void TEnumVariable::createValuesTree()
 
 bool TEnumVariable::checkValuesOrder(const TStringList &refValues)
 {
-  for(TStringList::const_iterator ni(refValues.begin()), ne(refValues.end()), ei(values->begin()), ee(values->end()); 
+  for(TStringList::const_iterator ni(refValues.begin()), ne(refValues.end()), ei(values->begin()), ee(values->end());
       (ei != ee) && (ni != ne); ei++, ni++)
     if (*ei != *ni)
       return false;
@@ -613,7 +613,7 @@ void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &s
 {
   sorted.clear();
   sorted.insert(sorted.begin(), unsorted.begin(), unsorted.end());
-  
+
   vector<string>::iterator si, se(sorted.end());
   const char ***ssi, **ssii, ***rssi;
   for(ssi = specialSortCases, rssi = specialCasesResorted; *ssi; ssi++, rssi++) {
@@ -624,7 +624,7 @@ void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &s
       return;
     }
   }
-  
+
   se = sorted.end();
   for(ssii = putAtBeginning; *ssii; ssii++) {
     for(si = sorted.begin(); (si != se) && stricmp(*ssii, si->c_str()); si++);
@@ -662,7 +662,7 @@ TFloatVariable::TFloatVariable(const string &aname)
 bool TFloatVariable::isEquivalentTo(const TVariable &old) const
 {
   TFloatVariable const *eold = dynamic_cast<TFloatVariable const *>(&old);
-  return eold && TVariable::isEquivalentTo(old) && 
+  return eold && TVariable::isEquivalentTo(old) &&
          (startValue == eold->startValue) && (endValue == eold->endValue) && (stepValue == eold->stepValue);
 }
 
@@ -784,7 +784,7 @@ int TFloatVariable::str2val_low(const string &valname, TValue &valu)
 
 
 void TFloatVariable::str2val(const string &valname, TValue &valu)
-{ 
+{
   switch (str2val_low(valname, valu)) {
     case -1: raiseError("'%s' is not a legal value for continuous attribute '%s'", valname.c_str(), name.c_str());
     case -2: raiseError("value %5.3f out of range %5.3f-%5.3f", valu.floatV, startValue, endValue);
@@ -792,7 +792,7 @@ void TFloatVariable::str2val(const string &valname, TValue &valu)
 }
 
 bool TFloatVariable::str2val_try(const string &valname, TValue &valu)
-{ 
+{
   return str2val_low(valname, valu) == 1;
 }
 
