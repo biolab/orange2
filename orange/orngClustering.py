@@ -335,10 +335,10 @@ def hierarchicalClustering_attributes(data, distance=None, linkage=orange.Hierar
     matrix = orange.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
-            matrix[a1, a2] = orange.PearsonCorrelation(a1, a2, data, 0).p
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=progressCallback)
+            matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
+    root = orange.HierarchicalClustering(matrix, linkage=linkage, progressCallback=(lambda value, obj=None: progressCallback(value*100.0/(2 if order else 1))) if progressCallback else None)
     if order:
-        orderLeaves(root, matrix, progressCallback=progressCallback)
+        orderLeaves(root, matrix, progressCallback=(lambda value: progressCallback(50.0 + value/2)) if progressCallback else None)
     return root
 
 def hierarchicalClustering_clusterList(node, prune=None):
