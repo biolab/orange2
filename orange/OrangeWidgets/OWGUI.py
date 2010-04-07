@@ -1692,6 +1692,82 @@ class IndicatorItemDelegate(QStyledItemDelegate):
             painter.drawEllipse(rect.center(), self.indicatorSize, self.indicatorSize) #rect.adjusted(rect.width() / 2 - 5, rect.height() - 5, -rect.width() /2 + 5, -rect.height()/2 + 5))
             painter.restore()
 
+class LinkStyledItemDelegate(QStyledItemDelegate):
+    LinkRole = OrangeUserRole.next()
+    def __init__(self, parent):
+        QStyledItemDelegate.__init__(self, parent)
+        self.mousePressState = QModelIndex(), QPoint()
+        self.connect(parent, SIGNAL("entered(QModelIndex)"), self.onEntered)
+            
+    def sizeHint(self, option, index):
+        size = QStyledItemDelegate.sizeHint(self, option, index)
+        return QSize(size.width(), max(size.height(), 20))
+    
+    def linkRect(self, option, index):
+        style = self.parent().style()
+        text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
+        textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
+        margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
+        textRect = textRect.adjusted(margin, 0, -margin, 0)
+        font = index.data(Qt.FontRole)
+        if font.isValid():
+            font = font.toPyObject()
+        else:
+            font = option.font
+        metrics = QFontMetrics(font)
+        elideText = metrics.elidedText(text, option.textElideMode, textRect.width())
+        return metrics.boundingRect(textRect, option.displayAlignment, elideText)
+      
+    def editorEvent(self, event, model, option, index):
+        if event.type()==QEvent.MouseButtonPress and self.linkRect(option, index).contains(event.pos()):
+            self.mousePressState = QPersistentModelIndex(index), QPoint(event.pos())
+            
+        elif event.type()== QEvent.MouseButtonRelease:
+            link = index.data(LinkRole)
+            pressedIndex, pressPos = self.mousePressState
+            if pressedIndex == index and (pressPos - event.pos()).manhattanLength() < 5 and link.isValid():
+                 import webbrowser
+                 webbrowser.open(link.toString())
+            self.mousePressState = QModelIndex(), event.pos()
+            
+        elif event.type()==QEvent.MouseMove:
+            link = index.data(LinkRole)
+            if link.isValid() and self.linkRect(option, index).contains(event.pos()):
+                self.parent().viewport().setCursor(Qt.PointingHandCursor)
+            else:
+                self.parent().viewport().setCursor(Qt.ArrowCursor)
+            
+        return QStyledItemDelegate.editorEvent(self, event, model, option, index)
+    
+    def onEntered(self, index):
+        link = index.data(LinkRole)
+        if not link.isValid():
+            self.parent().viewport().setCursor(Qt.ArrowCursor)
+    
+    def paint(self, painter, option, index):
+        if index.data(LinkRole).isValid():
+            style = qApp.style()
+            style.drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+            style.drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
+            text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
+            textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
+            margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
+            textRect = textRect.adjusted(margin, 0, -margin, 0)
+            elideText = QFontMetrics(option.font).elidedText(text, option.textElideMode, textRect.width())
+            painter.save()
+            font = index.data(Qt.FontRole)
+            if font.isValid():
+                painter.setFont(font.toPyObject())
+            else:
+                painter.setFont(option.font)
+            painter.setPen(QPen(Qt.blue))
+            painter.drawText(textRect, option.displayAlignment, elideText)
+            painter.restore()
+        else:
+            QStyledItemDelegate.paint(self, painter, option, index)
+    
+LinkRole = LinkStyledItemDelegate.LinkRole
+
 ##############################################################################
 # progress bar management
 
