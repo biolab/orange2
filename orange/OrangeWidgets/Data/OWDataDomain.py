@@ -291,13 +291,12 @@ class OWDataDomain(OWWidget):
             self.inputAttributes = filter(lambda x:x not in self.usedAttributes, self.allAttributes)
         else:
             self.inputAttributes = []
-        #print "before: ", self.inputAttributes
         self.filterInputAttrs.setAllListItems()
         self.filterInputAttrs.updateListBoxItems(callCallback = 0)
+        
         if self.data and self.inputAttributesList.count() != len(self.inputAttributes):       # the user has entered a filter - we have to remove some inputAttributes
             itemsText = [str(self.inputAttributesList.item(i).text()) for i in range(self.inputAttributesList.count())]
-            self.inputAttributes = [ (item, self.data.domain[item].varType) for item in itemsText]
-        #print "after: ", self.inputAttributes
+            self.inputAttributes = [ (item, self.data.domain[item].varType) for item in itemsText if item in self.data.domain]
         self.updateInterfaceState()
 
     def removeFromUsed(self, attributes):
@@ -381,8 +380,8 @@ class OWDataDomain(OWWidget):
 
 if __name__=="__main__":
     import sys
-    #data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
+#    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     # add meta attribute
     data.domain.addmeta(orange.newmetaid(), orange.StringVariable("name"))
     for ex in data:
