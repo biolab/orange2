@@ -1711,11 +1711,15 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
         textRect = textRect.adjusted(margin, 0, -margin, 0)
         font = index.data(Qt.FontRole)
         if font.isValid():
-            font = font.toPyObject()
+            font = QFont(font)
         else:
             font = option.font
         metrics = QFontMetrics(font)
         elideText = metrics.elidedText(text, option.textElideMode, textRect.width())
+        try:
+            str(elideText)  ## on Windows with PyQt 4.4 sometimes this fails
+        except Exception, ex:
+            elideText = text
         return metrics.boundingRect(textRect, option.displayAlignment, elideText)
       
     def editorEvent(self, event, model, option, index):
@@ -1757,7 +1761,7 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
             painter.save()
             font = index.data(Qt.FontRole)
             if font.isValid():
-                painter.setFont(font.toPyObject())
+                painter.setFont(QFont(font))
             else:
                 painter.setFont(option.font)
             painter.setPen(QPen(Qt.blue))
