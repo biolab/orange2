@@ -671,7 +671,10 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("style"):
             items = [str(n) for n in QStyleFactory.keys()]
             lowerItems = [str(n).lower() for n in QStyleFactory.keys()]
-            currStyle = str(qApp.style().objectName()).lower()
+            if sys.platform == "darwin":
+                currStyle = "cleanlooks"
+            else:
+                currStyle = str(qApp.style().objectName()).lower()
             self.settings.setdefault("style", items[lowerItems.index(currStyle)])
 
 
