@@ -72,6 +72,32 @@ class UpdateThread(QThread):
         self.emit(SIGNAL("advance()"))
         qApp.processEvents()
         
+class RunnableTask(QRunnable):
+    def __init__(self, call):
+        QRunnable.__init__(self)
+        self.setAutoDelete(False)
+        self._call = call
+        
+    def run(self):
+        self._return = self._call()
+        
+class UpdateTask(QObject):
+    def __init__(self, args, parent=None):
+        QObject.__init__(self, parent)
+        self.args = args
+        
+    def __call__(self):
+        try:
+            ret = orngServerFiles.download(*(self.args + (self._advance,)))
+        except Exception, ex:
+            self.emit(SIGNAL("finished(QString)"), QString(str(ex)))
+            return
+        self.emit(SIGNAL("finished(QString)"), QString("Ok"))
+        return ret
+            
+    def _advance(self):
+        self.emit(SIGNAL("advance()"))
+        
 class UpdateOptionsWidget(QWidget):
     def __init__(self, updateCallback, removeCallback, state, *args):
         QWidget.__init__(self, *args)
@@ -169,7 +195,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.updateButton.setEnabled(False)
         self.setData(2, Qt.DisplayRole, QVariant(""))
         serverFiles = orngServerFiles.ServerFiles(access_code=self.master.accessCode if self.master.accessCode else None) 
-        self.thread = tt = UpdateThread(None, self.domain, self.filename, serverFiles)
+#        self.thread = tt = UpdateThread(None, self.domain, self.filename, serverFiles)
+        self.thread = tt = UpdateTask((self.domain, self.filename, serverFiles), None)
         
         pb = ItemProgressBar(self.treeWidget())
         pb.setRange(0, 100)
@@ -184,10 +211,13 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
 #        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
         QObject.connect(self.thread, SIGNAL("advance()"), pb.advance, Qt.QueuedConnection)
         QObject.connect(self.thread, SIGNAL("advance()"), self._progressBarRedirect.advance, Qt.QueuedConnection)
-        QObject.connect(self.thread, SIGNAL("finish(QString)"), self.EndDownload, Qt.QueuedConnection)
+        QObject.connect(self.thread, SIGNAL("finished(QString)"), self.EndDownload, Qt.QueuedConnection)
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
-        self.thread.start()
+#        self.thread.start()
+        self._runnable = RunnableTask(self.thread)  
+        QThreadPool.globalInstance()
+        QThreadPool.globalInstance().start(self._runnable)
 
     def EndDownload(self, exitCode=0):
         self.treeWidget().removeItemWidget(self, 2)
@@ -208,19 +238,13 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             self.master._sum_progressBar = None
         elif master_pb:
             master_pb.in_progress -= 1
+        
+#        self.thread, self._runnable = None, None
             
     def Remove(self):
         orngServerFiles.remove(self.domain, self.filename)
-#        name = os.path.join(orngServerFiles.localpath(self.domain), self.filename)
-#        if os.path.isdir(name):
-#            import shutil
-#            shutil.rmtree(name)
-#        elif os.path.isfile(name):
-#            os.remove(name)
-#        os.remove(name + ".info")
         self.state = 2
         self.updateWidget.SetState(self.state)
-#        self.setData(3, Qt.DisplayRole, QVariant(self.stateDict[2]))
         self.master.UpdateInfoLabel()
         self.UpdateToolTip()
 
