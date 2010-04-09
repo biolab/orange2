@@ -253,9 +253,11 @@ class OWDataTable(OWWidget):
             table.horizontalHeader().setMovable(True)
             table.horizontalHeader().setClickable(True)
             table.horizontalHeader().setSortIndicatorShown(False)
+            
             option = table.viewOptions()
-            metrics = QFontMetrics(option.font)
-            table.verticalHeader().setDefaultSectionSize(int(metrics.lineSpacing() * 1.15 + 2))
+            size = table.style().sizeFromContents(QStyle.CT_ItemViewItem, option, QSize(20, 20))
+            
+            table.verticalHeader().setDefaultSectionSize(size.height() * 1.15 + 2)
 
             self.id2table[id] = table
             self.table2id[table] = id
