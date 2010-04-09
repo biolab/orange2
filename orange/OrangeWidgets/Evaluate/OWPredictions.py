@@ -116,6 +116,7 @@ class OWPredictions(OWWidget):
         self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
 
         self.table.setItemDelegate(OWGUI.TableBarItem(self))
+        self.table.verticalHeader().setDefaultSectionSize(22)
         
         self.header = self.table.horizontalHeader()
         self.vheader = self.table.verticalHeader()
