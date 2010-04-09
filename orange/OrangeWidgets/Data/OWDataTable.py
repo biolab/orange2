@@ -255,9 +255,9 @@ class OWDataTable(OWWidget):
             table.horizontalHeader().setSortIndicatorShown(False)
             
             option = table.viewOptions()
-            size = table.style().sizeFromContents(QStyle.CT_ItemViewItem, option, QSize(20, 20))
+            size = table.style().sizeFromContents(QStyle.CT_ItemViewItem, option, QSize(20, 20), table) #QSize(20, QFontMetrics(option.font).lineSpacing()), table)
             
-            table.verticalHeader().setDefaultSectionSize(size.height() * 1.15 + 2)
+            table.verticalHeader().setDefaultSectionSize(size.height() + 2) #int(size.height() * 1.25) + 2)
 
             self.id2table[id] = table
             self.table2id[table] = id
@@ -348,6 +348,9 @@ class OWDataTable(OWWidget):
         def p():
             table.updateGeometries()
             table.viewport().update()
+        
+        size = table.verticalHeader().sectionSizeHint(0)
+        table.verticalHeader().setDefaultSectionSize(size)
         
         self.connect(datamodel, SIGNAL("layoutChanged()"), lambda *args: QTimer.singleShot(50, p))
         
