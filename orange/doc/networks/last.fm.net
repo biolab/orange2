@@ -1,7 +1,8 @@
 ### This file was generated with Orange Network Visualizer ### 
 
+*Network "Similar music artists"
 
-*Network "no name" 
+*Description "Nodes represent music artists. Two artists are connected if they are in the top 5 similar artist list on the last.fm internet radio." 
 
 *Vertices     1239        1
        1 "0" 	1945.4009    2126.1778    0.5000	
