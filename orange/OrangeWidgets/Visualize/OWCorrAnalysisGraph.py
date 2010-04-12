@@ -37,11 +37,11 @@ class OWCorrAnalysisGraph(OWGraph):
 ##        self.tooltipKind = 1
         
         self.markLines = []
-        self.mytips = MyQToolTip(self)
+        self.mytips = None #MyQToolTip(self)
         
-        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
-        self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
-        self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)        
+#        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
+#        self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
+#        self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)        
         
     def activateBrowsing(self, activate):
         if activate:
@@ -80,10 +80,11 @@ class OWCorrAnalysisGraph(OWGraph):
         self.replot()        
         
     def __fixAxes(self):
-        self.setAxisScale(QwtPlot.xBottom, self.axisScale(QwtPlot.xBottom).interval().minValue(), self.axisScale(QwtPlot.xBottom).interval().maxValue())
-        self.setAxisScale(QwtPlot.xTop, self.axisScale(QwtPlot.xTop).interval().minValue(), self.axisScale(QwtPlot.xTop).interval().maxValue())
-        self.setAxisScale(QwtPlot.yLeft, self.axisScale(QwtPlot.yLeft).interval().minValue(), self.axisScale(QwtPlot.yLeft).interval().maxValue())
-        self.setAxisScale(QwtPlot.yRight, self.axisScale(QwtPlot.yRight).interval().minValue(), self.axisScale(QwtPlot.yRight).interval().maxValue())         
+        pass
+#        self.setAxisScale(QwtPlot.xBottom, self.axisScale(QwtPlot.xBottom).interval().minValue(), self.axisScale(QwtPlot.xBottom).interval().maxValue())
+#        self.setAxisScale(QwtPlot.xTop, self.axisScale(QwtPlot.xTop).interval().minValue(), self.axisScale(QwtPlot.xTop).interval().maxValue())
+#        self.setAxisScale(QwtPlot.yLeft, self.axisScale(QwtPlot.yLeft).interval().minValue(), self.axisScale(QwtPlot.yLeft).interval().maxValue())
+#        self.setAxisScale(QwtPlot.yRight, self.axisScale(QwtPlot.yRight).interval().minValue(), self.axisScale(QwtPlot.yRight).interval().maxValue())         
             
     def removeBrowsingCurve(self):
         if self.browseKey: self.removeCurve(self.browseKey)
@@ -161,9 +162,10 @@ class OWCorrAnalysisGraph(OWGraph):
             OWGraph.onMouseReleased(self, e)
             
     def createCurve(self, x, y, circle = 0):
-        xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
-        yrange = self.axisScale(QwtPlot.yLeft).interval().maxValue() - self.axisScale(QwtPlot.yLeft).interval().minValue()
-        aspectRatio = yrange / xrange
+#        xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
+#        yrange = self.axisScale(QwtPlot.yLeft).interval().maxValue() - self.axisScale(QwtPlot.yLeft).interval().minValue()
+#        aspectRatio = yrange / xrange
+        aspectRatio = 1.0
         if not circle:
             self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2)])
         else:
