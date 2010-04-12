@@ -846,6 +846,16 @@ PyObject *Network_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VAR
   PyCATCH
 }
 
+PyObject *Network_get_description(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> desc")*/
+{
+  PyTRY
+	CAST_TO(TNetwork, graph);
+	//Py_INCREF(graph->desc);
+	return PyString_FromString(graph->desc.c_str());
+  PyCATCH
+}
+
+
 int getWords(string const& s, vector<string> &container)
 {
     int n = 0;
@@ -917,6 +927,7 @@ PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 	string line;
 	ifstream file(fn);
 	string graphName = "";
+	string description = "";
 	int nVertices = 0;
 	int nEdges = 0;
 
@@ -942,6 +953,19 @@ PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 					else
 					{
 						file.close();
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					}
+				}
+				else if (stricmp(words[0].c_str(), "*description") == 0)
+				{
+					//cout << "Network" << endl;
+					if (n > 1)
+					{
+						description = words[1];
+						//cout << "description: " << description << endl;
+					}
+					else
+					{
 						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 				}
@@ -1016,6 +1040,7 @@ PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 		}
 
 		graph = mlnew TNetwork(nVertices, nEdges, directed == 1);
+		graph->desc = description;
 
 		TFloatVariable *indexVar = new TFloatVariable("index");
 		indexVar->numberOfDecimals = 0;
@@ -1268,6 +1293,7 @@ PyObject *Network_parseNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 	string line;
 	istringstream file(fn, istringstream::in);
 	string graphName = "";
+	string description = "";
 	int nVertices = 0;
 	int nEdges = 0;
 
@@ -1289,6 +1315,19 @@ PyObject *Network_parseNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 					{
 						graphName = words[1];
 						//cout << "Graph name: " << graphName << endl;
+					}
+					else
+					{
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					}
+				}
+				else if (stricmp(words[0].c_str(), "*description") == 0)
+				{
+					//cout << "Network" << endl;
+					if (n > 1)
+					{
+						description = words[1];
+						//cout << "description: " << description << endl;
 					}
 					else
 					{

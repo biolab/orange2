@@ -119,7 +119,7 @@ public:
 
   double **pos;
   PyArrayObject *coors;
-
+  string desc;
   PExampleTable items; //P ExampleTable of vertices data
   PExampleTable links; //P ExampleTable of edges data
   TNetworkHierarchy hierarchy;
