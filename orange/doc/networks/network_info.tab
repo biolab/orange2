@@ -1,5 +1,5 @@
 Network	dir	Item Set	Edge Set	Vertices	Edges	Date	Description
 string	string	string	string	continuous	continuous	string	string
 							
-airtraffic.net	doc/datasets/	""	""	749	7688	4/12/2010	""
-last.fm.net	doc/datasets/	""	""	1239	7926	4/12/2010	""
+airtraffic.net	doc/datasets/	airtraffic_items.tab	""	749	7688	4/12/2010	""
+last.fm.net	doc/datasets/	last.fm_items.tab	""	1239	7926	4/12/2010	""
