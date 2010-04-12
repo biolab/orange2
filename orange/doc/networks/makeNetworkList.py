@@ -23,13 +23,13 @@ for netFile in glob.glob(os.path.join(os.getcwd(), '*.net')):
 	net = orngNetwork.Network.read(netFile)
 	name, ext = os.path.splitext(netFile)
 	
-	itemFile = none
+	itemFile = ""
 	if os.path.exists(name + '_items.tab'):
 		itemFile = name + '_items.tab'
 	elif os.path.exists(name + '.tab'):
 		itemFile = name + '.tab'
 	
-	edgeFile = none
+	edgeFile = ""
 	if os.path.exists(os.path.join(name, '_edges.tab')):
 		edgeFile = os.path.join(name, '_items.tab')
 	
