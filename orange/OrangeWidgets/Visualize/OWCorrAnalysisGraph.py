@@ -33,18 +33,17 @@ class OWCorrAnalysisGraph(OWGraph):
         self.maxPoints = 10
         self.docs = []
         self.features = []
+        self.brushAlpha = 255
         
 ##        self.tooltipKind = 1
         
         self.markLines = []
-        self.mytips = None #MyQToolTip(self)
-        
-#        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
-#        self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
-#        self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)        
+        self.mytips = None #MyQToolTip(self)     
         
     def activateBrowsing(self, activate):
         if activate:
+            if self.tempSelectionCurve:
+                self.removeLastSelection()
             self.removeBrowsingCurve()
             self.markLines = []
             self.state = BROWSE_RECTANGLE
@@ -90,6 +89,16 @@ class OWCorrAnalysisGraph(OWGraph):
         if self.browseKey: self.removeCurve(self.browseKey)
         self.browseCurve = None
         self.browseKey = None
+        
+    def mouseMoveEvent(self, event):
+        canvasPos = self.canvas().mapFrom(self, event.pos())
+        xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, canvasPos.y())
+        
+        return OWGraph.mouseMoveEvent(self, event)
+#        for text, (x, y, cx, cy) in zip(self.tips.texts, self.tips.positions):
+#            if abs(xFloat -x) < self.radius and abs(yFloat - y) < self.radius:
+#                OWToolTip.instance().showToolTip(text, event.globalPos())
      
     def onMouseMoved(self, e):
         xrange = self.axisScale(QwtPlot.xBottom).interval().maxValue() - self.axisScale(QwtPlot.xBottom).interval().minValue()
@@ -178,29 +187,30 @@ class OWCorrAnalysisGraph(OWGraph):
             yDataU.extend(yDataD)
             self.browseCurve.setData(xDataU, yDataU)
             
-    def activateZooming(self):
-##        self.browseButton.setOn(0)
-##        self.browseButtonCircle.setOn(0)
-        self.__backToZoom()
-        self.state = ZOOMING
-        if self.tempSelectionCurve: self.removeLastSelection()
-
-    def activateRectangleSelection(self):
-##        self.browseButton.setOn(0)
-##        self.browseButtonCircle.setOn(0)
-        self.__backToZoom()
-        self.state = SELECT_RECTANGLE
-        if self.tempSelectionCurve: self.removeLastSelection()
-
-    def activatePolygonSelection(self):
-##        self.browseButton.setOn(0)
-##        self.browseButtonCircle.setOn(0)
-        self.__backToZoom()
-        self.state = SELECT_POLYGON
-        if self.tempSelectionCurve: self.removeLastSelection()       
+#    def activateZooming(self):
+###        self.browseButton.setOn(0)
+###        self.browseButtonCircle.setOn(0)
+#        self.__backToZoom()
+#        self.state = ZOOMING
+#        if self.tempSelectionCurve: self.removeLastSelection()
+#
+#    def activateRectangleSelection(self):
+###        self.browseButton.setOn(0)
+###        self.browseButtonCircle.setOn(0)
+#        self.__backToZoom()
+#        self.state = SELECT_RECTANGLE
+#        if self.tempSelectionCurve: self.removeLastSelection()
+#
+#    def activatePolygonSelection(self):
+###        self.browseButton.setOn(0)
+###        self.browseButtonCircle.setOn(0)
+#        self.__backToZoom()
+#        self.state = SELECT_POLYGON
+#        if self.tempSelectionCurve: self.removeLastSelection()       
 
     def _sort(self, x, y):
         return int(sign((y[1] - x[1] and [y[1] - x[1]] or [x[0] - y[0]])[0]))
+    
     def addMarkers(self, cor, x, y, r, bold = 0):
         if not len(cor):
             return

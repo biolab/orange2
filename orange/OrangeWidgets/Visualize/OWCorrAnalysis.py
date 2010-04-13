@@ -37,11 +37,12 @@ def checkFromText(data):
     elif len(data.domain.attributes) * 2 < len(data.domain.getmetas(orngText.TEXTMETAID)):
         return True
     return False
+        
 
 class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
-                    "colorSettings", "percRadius", "recentFiles"]
+                    "colorSettings", "percRadius", "recentFiles", "graph.brushAlpha"]
 
     contextHandlers = {"": DomainContextHandler("", ["attrRow", "attrCol"])}
 
@@ -120,11 +121,12 @@ class OWCorrAnalysis(OWWidget):
 
 
         #zooming
-        self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
+#        self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
+        
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
-        self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.sendSelections)
+#        self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.sendSelections)
 
-        self.apply = False
         OWGUI.button(self.GeneralTab, self, 'Update Graph', self.buttonUpdate)
 
         OWGUI.button(self.GeneralTab, self, 'Save graph', self.graph.saveToFile)
@@ -137,6 +139,7 @@ class OWCorrAnalysis(OWWidget):
         # SETTINGS TAB
         # point width
         OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.brushAlpha', box=' Transparancy ', minValue=1, maxValue=255, step=1, callback = self.replotCurves)
 
         # general graph settings
         box4 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
@@ -188,7 +191,7 @@ class OWCorrAnalysis(OWWidget):
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
 
-        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection, self.zoomSelectToolbar.actionBrowse, self.zoomSelectToolbar.actionBrowseCircle][self.toolbarSelection], [])
+#        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection, self.zoomSelectToolbar.actionBrowse, self.zoomSelectToolbar.actionBrowseCircle][self.toolbarSelection], [])
 
         self.resize(700, 800)
 
@@ -323,8 +326,9 @@ class OWCorrAnalysis(OWWidget):
             self.attrColCombo.addItem('words')
         else:
             for attr in self.data.domain:
-                if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.addItem(self.icons[attr.varType], attr.name)
-                if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.addItem(self.icons[attr.varType], attr.name)
+                if attr.varType == orange.VarTypes.Discrete:
+                    self.attrRowCombo.addItem(self.icons[attr.varType], attr.name)
+                    self.attrColCombo.addItem(self.icons[attr.varType], attr.name)
 
         self.attrRow = str(self.attrRowCombo.itemText(0))
         if self.attrColCombo.count() > 1:
@@ -402,12 +406,9 @@ class OWCorrAnalysis(OWWidget):
                 self.CA = orngCA.CA(caList)
             self.tipsR = [s for s, v in ca.outerDistribution.items()]
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
-            print self.tipsR, self.tipsC
-#            self.rowCategories = [(ex[1].native(), "Row points") for ex in self.data]
-            self.rowCategories = [(str(ex[self.attrRow]), "Row points") for ex in self.data]
-            self.rowCategoties = reduce(lambda list, cat: list + [cat] if cat not in list else list,
-                                        self.rowCategories, []) 
-#            self.rowCategories = list(dict(self.rowCategories).items())
+            
+            self.rowCategories = [(t , "Row points") for t in self.tipsR]
+            
             self.catColors = {"Row points": 0}
             del ca
 
@@ -417,7 +418,6 @@ class OWCorrAnalysis(OWWidget):
         self.colSlider.setMinimum(1)
         self.colSlider.setMaximum(len(self.tipsC))
         self.percCol = len(self.tipsC) > 100 and 0.5 * len(self.tipsC) or len(self.tipsC)
-
 
         self.initAxesValues()
         self.tabsMain.setCurrentWidget(self.graph)
@@ -450,105 +450,121 @@ class OWCorrAnalysis(OWWidget):
         self.updateGraph()
 
     def buttonUpdate(self):
-        self.apply = True
         self.graph.state = ZOOMING
-        self.zoomSelectToolbar.buttonBrowse.setChecked(0)
-        self.zoomSelectToolbar.buttonBrowseCircle.setChecked(0)
-        self.zoomSelectToolbar.buttonZoom.setChecked(1)
+#        self.zoomSelectToolbar.buttonBrowse.setChecked(0)
+#        self.zoomSelectToolbar.buttonBrowseCircle.setChecked(0)
+#        self.zoomSelectToolbar.buttonZoom.setChecked(1)
         self.updateGraph()
-        self.apply = False
 
     def updateGraph(self):
         self.graph.zoomStack = []
         if not self.data:
             return
-        if not self.apply:
-            return
 
         self.graph.removeAllSelections()
 ##        self.graph.removeBrowsingCurve()
         self.graph.removeDrawingCurves() #removeCurves()
-#        self.graph.removeMarkers()
+        self.graph.removeMarkers()
 #        self.graph.tips.removeAll()
 
-        if self.graph.showXaxisTitle == 1: self.graph.setXaxisTitle("Axis " + self.attrX)
+        if self.graph.showXaxisTitle == 1: self.graph.setXaxisTitle("Axis " + str(self.attrX))
         else: self.graph.setXaxisTitle("")
 
-        if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
+        if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + str(self.attrY))
         else: self.graph.setYLaxisTitle("")
 
-        cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
+        cor = rowcor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percRow)
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
+        
+        labelDict = dict(zip([t + "R" for t in self.tipsR], cor))
         cor = [cor[i] for i in indices]
+        
         tipsR = [self.tipsR[i] + 'R' for i in indices]
-        #if not self.graph.showRowLabels: tipsR = ['' for i in indices]
-        labelDict = dict(zip(tipsR, cor))
+#        if not self.graph.showRowLabels: tipsR = ['' for i in indices]
+#        labelDict = dict(zip(tipsR, cor))
         rowCategories = [self.rowCategories[i] for i in indices]
-        print labelDict, rowCategories
         for cat, col in self.catColors.items():
             newtips = [c[0] + 'R' for c in rowCategories if c[1] == cat]
             newcor = [labelDict[f] for f in newtips]
-            if not self.graph.showRowLabels: newtips = ['' for i in indices]
+#            if not self.graph.showRowLabels: newtips = ['' for i in indices]
             self.plotPoint(newcor, col, newtips, cat or "Row points", self.graph.showFilledSymbols)
+            if self.graph.showRowLabels:
+                self.plotMarkers(newcor, newtips)
 
-        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
+        cor = colcor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percCol)
         indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsC = [self.tipsC[i] + 'C' for i in indices]
-        if not self.graph.showColumnLabels: tipsC = ['' for i in indices]
+#        if not self.graph.showColumnLabels: tipsC = ['' for i in indices]
         self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
+        if self.graph.showColumnLabels:
+            self.plotMarkers(cor, tipsC)
 
-        cor = array(cor)
+        corall = vstack((array(colcor), array(rowcor))) 
+        cor = array(corall)
         maxx, minx = max(cor[:, 0]), min(cor[:, 0])
         maxy, miny = max(cor[:, 1]), min(cor[:, 1])
         
-        self.graph.setAxisScale(QwtPlot.xBottom, minx - (maxx - minx) * 0.05, maxx + (maxx - minx) * 0.5)
-        self.graph.setAxisScale(QwtPlot.yLeft, miny - (maxy - miny) * 0.05, maxy + (maxy - miny) * 0.5)
+        self.graph.setAxisScale(QwtPlot.xBottom, minx - (maxx - minx) * 0.07, maxx + (maxx - minx) * 0.07)
+        self.graph.setAxisScale(QwtPlot.yLeft, miny - (maxy - miny) * 0.07, maxy + (maxy - miny) * 0.07)
         self.graph.replot()
-
+        print minx, maxx
 
     def plotPoint(self, cor, color, tips, curveName = "", showFilledSymbols = 1):
         fillColor = self.colors[color]
         edgeColor = self.colors[color]
 
         cor = array(cor)
-        key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols)
+        key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols, brushAlpha=self.graph.brushAlpha)
 
         for i in range(len(cor)):
             x = cor[i][0]
             y = cor[i][1]
             self.graph.tips.addToolTip(x, y, tips[i])
-
-    def sendSelections(self, e):
-        self.docs = self.graph.docs
-        self.features = self.graph.features
-        hasNameAttribute = 'name' in [i.name for i in self.data.domain.attributes]
-        examples = []
-        if not hasNameAttribute:
-            for ex in self.data:
-                if ex['text'].value[:35] in self.docs:
-                    examples.append(ex)
+            
+            
+    def plotMarkers(self, cor, markers):
+        for mark, (x, y) in zip(markers, cor):
+            self.graph.addMarker(mark, x, y, Qt.AlignCenter | Qt.AlignBottom)
+            
+    def sendSelections(self):
+        if self.textData:
+            self.docs = self.graph.docs
+            self.features = self.graph.features
+            hasNameAttribute = 'name' in [i.name for i in self.data.domain.attributes]
+            examples = []
+            if not hasNameAttribute:
+                for ex in self.data:
+                    if ex['text'].value[:35] in self.docs:
+                        examples.append(ex)
+            else:
+                for ex in self.data:
+                    if ex['name'].native() in self.docs:
+                        examples.append(ex)
+            newMetas = {}
+            for ex in examples:
+                for k, v in ex.getmetas(orngText.TEXTMETAID).items():
+                    if k not in newMetas.keys():
+                        newMetas[k] = self.data.domain[k]
+            newDomain = orange.Domain(self.data.domain.attributes, 0)
+            newDomain.addmetas(newMetas, orngText.TEXTMETAID)
+            newdata = orange.ExampleTable(newDomain, examples)
+            self.send("Selected data", newdata)
         else:
-            for ex in self.data:
-                if ex['name'].native() in self.docs:
-                    examples.append(ex)
-        newMetas = {}
-        for ex in examples:
-            for k, v in ex.getmetas(orngText.TEXTMETAID).items():
-                if k not in newMetas.keys():
-                    newMetas[k] = self.data.domain[k]
-        newDomain = orange.Domain(self.data.domain.attributes, 0)
-        newDomain.addmetas(newMetas, orngText.TEXTMETAID)
-        newdata = orange.ExampleTable(newDomain, examples)
-        self.send("Selected data", newdata)
+            pass
 
     def replotCurves(self):
-        for key in self.graph.curveKeys():
-            symbol = self.graph.curveSymbol(key)
-            self.graph.setCurveSymbol(key, QwtSymbol(symbol.style(), symbol.brush(), symbol.pen(), QSize(self.graph.pointWidth, self.graph.pointWidth)))
-        self.graph.repaint()
+        self.updateGraph()
+        
+#        for curve in self.graph.itemList():
+#            if isinstance(curve, QwtPlotCurve):
+#                curve.symbol().setSize(QSize(self.graph.pointWidth, self.graph.pointWidth))
+#                color = curve.symbol().brush().color()
+#                color.setAlpha(self.graph.brushAlpha)
+#                curve.symbol().setBrush(QBrush(color))
+#        self.graph.replot()
 
     def setShowGridlines(self):
         self.graph.enableGridXB(self.showGridlines)
@@ -581,59 +597,6 @@ class OWCorrAnalysis(OWWidget):
         self.graph.radius = 100.0
         return 
         self.graph.radius =  (self.graph.axisScale(QwtPlot.xBottom).interval().maxValue() - self.graph.axisScale(QwtPlot.xBottom).interval().minValue()) * self.percRadius / 100.0;
-
-class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
-    def __init__(self, widget, parent, graph, autoSend = 0):
-        ZoomSelectToolbar.__init__(self, widget, parent, graph, autoSend)
-        self.widget = widget
-        group = OWGUI.widgetBox(parent, "Browsing", orientation="horizontal")
-        self.buttonBrowse = OWToolbars.createButton(group, "Browsing tool - Rectangle", self.actionBrowse, QIcon(OWToolbars.dlg_browseRectangle), toggle = 1)
-        self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QIcon(OWToolbars.dlg_browseCircle), toggle = 1)
-
-    def actionZooming(self):
-        ZoomSelectToolbar.actionZooming(self)
-        if 'buttonBrowse' in dir(self): self.buttonBrowse.setChecked(0)
-        if 'buttonBrowseCircle' in dir(self): self.buttonBrowseCircle.setChecked(0)
-
-    def actionRectangleSelection(self):
-        ZoomSelectToolbar.actionRectangleSelection(self)
-        if 'buttonBrowse' in dir(self): self.buttonBrowse.setChecked(0)
-        if 'buttonBrowseCircle' in dir(self): self.buttonBrowseCircle.setChecked(0)
-
-    def actionPolygonSelection(self):
-        ZoomSelectToolbar.actionPolygonSelection(self)
-        if 'buttonBrowse' in dir(self): self.buttonBrowse.setChecked(0)
-        if 'buttonBrowseCircle' in dir(self): self.buttonBrowseCircle.setChecked(0)
-
-    def actionBrowse(self):
-        state = self.buttonBrowse.isChecked()
-        self.buttonBrowse.setChecked(state)
-        self.graph.activateBrowsing(state)
-        if state:
-            self.buttonBrowseCircle.setChecked(0)
-            self.buttonZoom.setChecked(0)
-            self.buttonSelectRect.setChecked(0)
-            self.buttonSelectPoly.setChecked(0)
-            if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 3
-            self.widget.calcRadius()
-        else:
-            self.buttonZoom.setChecked(1)
-            if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
-
-    def actionBrowseCircle(self):
-        state = self.buttonBrowseCircle.isChecked()
-        self.buttonBrowseCircle.setChecked(state)
-        self.graph.activateBrowsingCircle(state)
-        if state:
-            self.buttonBrowse.setChecked(0)
-            self.buttonZoom.setChecked(0)
-            self.buttonSelectRect.setChecked(0)
-            self.buttonSelectPoly.setChecked(0)
-            if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 4
-            self.widget.calcRadius()
-        else:
-            self.buttonZoom.setChecked(1)
-            if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
 
 if __name__=="__main__":
     #from orngTextCorpus import *
