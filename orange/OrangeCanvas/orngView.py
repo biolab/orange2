@@ -264,7 +264,7 @@ class SchemaView(QGraphicsView):
             self.tempLine.updateLinePos(point)
 
         elif self.widgetSelectionRect:
-            self.widgetSelectionRect.setRect(QRectF(self.mouseDownPosition, point))            
+            self.widgetSelectionRect.setRect(QRectF(self.mouseDownPosition, point).normalized())            
 
             # select widgets in rectangle
             widgets = self.getItemsAtPos(self.widgetSelectionRect, orngCanvasItems.CanvasWidget)
