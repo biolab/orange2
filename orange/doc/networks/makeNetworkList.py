@@ -6,7 +6,8 @@ import orange
 import orngNetwork
 
 atts = []
-atts.append(orange.StringVariable("Network"))
+atts.append(orange.StringVariable("Network Name"))
+atts.append(orange.StringVariable("Network File"))
 atts.append(orange.StringVariable("dir"))
 atts.append(orange.StringVariable("Item Set"))
 atts.append(orange.StringVariable("Edge Set"))
@@ -33,6 +34,6 @@ for netFile in glob.glob(os.path.join(os.getcwd(), '*.net')):
 	if os.path.exists(os.path.join(name, '_edges.tab')):
 		edgeFile = os.path.join(name, '_items.tab')
 	
-	netlist.append([os.path.basename(netFile), "doc/datasets/", os.path.basename(itemFile), os.path.basename(edgeFile), net.nVertices, len(net.getEdges()), "4/12/2010", net.description])
+	netlist.append([net.name, os.path.basename(netFile), "doc/datasets/", os.path.basename(itemFile), os.path.basename(edgeFile), net.nVertices, len(net.getEdges()), "4/12/2010", net.description])
 	
 netlist.save("network_info.tab")	
