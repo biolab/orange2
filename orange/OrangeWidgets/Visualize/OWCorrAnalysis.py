@@ -42,12 +42,12 @@ def checkFromText(data):
 class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
-                    "colorSettings", "percRadius", "recentFiles", "graph.brushAlpha"]
+                    "colorSettings", "percRadius", "recentFiles", "graph.brushAlpha", "attrRow", "attrCol"]
 
     contextHandlers = {"": DomainContextHandler("", ["attrRow", "attrCol"])}
 
-    def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'CorrAnalysis')
+    def __init__(self, parent=None, signalManager=None, name='Correspondence Analysis', **kwargs):
+        OWWidget.__init__(self, parent, signalManager, name, *kwargs)
         self.callbackDeposit = []
 
         self.inputs = [("Data", ExampleTable, self.dataset)]
@@ -295,7 +295,7 @@ class OWCorrAnalysis(OWWidget):
 
 
     def dataset(self, dataset):
-        self.closeContext()
+        self.closeContext("")
         if dataset:
             self.data = dataset
             if textCorpusModul:
@@ -311,8 +311,11 @@ class OWCorrAnalysis(OWWidget):
             self.data = None
             self.initAttrValues()
 
-        self.openContext("", dataset)
-        self.buttonUpdate()
+        if dataset:
+            self.openContext("", dataset)
+            self.updateTables()
+        
+#        self.buttonUpdate()
 
     def initAttrValues(self):
         self.attrRowCombo.clear()
@@ -335,8 +338,6 @@ class OWCorrAnalysis(OWWidget):
             self.attrCol = str(self.attrColCombo.itemText(1))
         else:
             self.attrCol = str(self.attrColCombo.itemText(0))
-
-        self.updateTables()
 
     def updateTables(self):
         if self.textData:
