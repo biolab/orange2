@@ -412,6 +412,9 @@ class OWNetworkCanvas(OWGraph):
       self.state = MOVE_SELECTION
 
   def mouseMoveEvent(self, event):
+      if not self.visualizer:
+        return
+        
       if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION and self.GMmouseMoveEvent != None:
           newX = self.invTransform(2, event.pos().x())
           newY = self.invTransform(0, event.pos().y())
@@ -490,6 +493,9 @@ class OWNetworkCanvas(OWGraph):
               self.stopOptimizing = 1
 
   def mousePressEvent(self, event):
+    if not self.visualizer:
+        return
+        
     self.grabKeyboard()
     self.mouseSelectedVertex = 0
     self.GMmouseMoveEvent = None
@@ -520,6 +526,9 @@ class OWNetworkCanvas(OWGraph):
         OWGraph.mousePressEvent(self, event)     
 
   def mouseReleaseEvent(self, event):  
+      if not self.visualizer:
+        return
+        
       self.releaseKeyboard()
       if self.state == MOVE_SELECTION:
           self.state = SELECT_RECTANGLE
@@ -539,7 +548,7 @@ class OWNetworkCanvas(OWGraph):
           if self.mouseSelectedVertex == 1 and x1 == x2 and y1 == y2 and self.selectVertex(self.GMmouseStartEvent):
               pass
           elif self.mouseSelectedVertex == 0:
-          
+               
               selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
 
               def selectVertex(ndx):
@@ -564,6 +573,9 @@ class OWNetworkCanvas(OWGraph):
           OWGraph.mouseReleaseEvent(self, event)
 
   def keyPressEvent(self, keyEvent):
+      if not self.visualizer:
+        return
+        
       print keyEvent.key()
       if keyEvent.key() == 87:
           print "W"
@@ -1013,6 +1025,7 @@ class OWNetworkCanvas(OWGraph):
           yMin = self.axisScaleDiv(QwtPlot.yLeft).interval().minValue()
           yMax = self.axisScaleDiv(QwtPlot.yLeft).interval().maxValue()
           self.addMarker("no network", (xMax - xMin) / 2, (yMax - yMin) / 2, alignment=Qt.AlignCenter, size=self.fontSize)
+          self.tooltipNeighbours = 0
           self.replot()
           return
       
