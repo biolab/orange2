@@ -15,7 +15,7 @@ from orngNetwork import Network
 
 class NetworkVertex():
     def __init__(self):
-        self.index = - 1
+        self.index = -1
         self.marked = False
         self.show = True
         self.selected = False
@@ -207,7 +207,7 @@ class OWNetworkCanvas(OWGraph):
       self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
       self.visualizer = None
       self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
-      self.edgesKey = - 1
+      self.edgesKey = -1
       #self.vertexSize = 6
       self.nVertices = 0
       self.enableXaxis(0)
@@ -244,6 +244,7 @@ class OWNetworkCanvas(OWGraph):
       self.maxVertexSize = 5
       self.minVertexSize = 5
       self.showComponentAttribute = None
+      self.forceVectors = None
       
       self.fontSize = 12
            
@@ -432,7 +433,7 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != - 1 and mind < 50:
+          if ndx != -1 and mind < 50:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
               self.networkCurve.setMarkedVertices(toMark)
               self.drawPlotItems()
@@ -453,7 +454,7 @@ class OWNetworkCanvas(OWGraph):
               py = self.invTransform(0, event.y())   
               v, mind = self.visualizer.closestVertex(px, py)
                             
-              if v != - 1 and mind < 100:
+              if v != -1 and mind < 100:
                   if self.visualizer.vertexDistance == None:
                       dst = 'vertex distance signal not set'
                   else:
@@ -469,7 +470,7 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != - 1 and mind < 30:
+          if ndx != -1 and mind < 30:
               if not self.optimizing:
                   self.optimizing = 1
                   initTemp = 1000
@@ -568,7 +569,7 @@ class OWNetworkCanvas(OWGraph):
           print "W"
           selection = [v.index for v in self.vertices if v.selected]
           #print selection
-          self.visualizer.rotateVertices([selection], [ - 1])
+          self.visualizer.rotateVertices([selection], [ -1])
           self.drawPlotItems(replot=1)
           
       elif keyEvent.key() == 81:
@@ -581,7 +582,7 @@ class OWNetworkCanvas(OWGraph):
 
   def clickedSelectedOnVertex(self, pos):
       min = 1000000
-      ndx = - 1
+      ndx = -1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -595,14 +596,14 @@ class OWNetworkCanvas(OWGraph):
       
       d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != - 1:
+      if min < d and ndx != -1:
           return self.vertices[ndx].selected
       else:
           return False
       
   def clickedOnVertex(self, pos):
       min = 1000000
-      ndx = - 1
+      ndx = -1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -616,14 +617,14 @@ class OWNetworkCanvas(OWGraph):
       
       d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != - 1:
+      if min < d and ndx != -1:
           return True
       else:
           return False
               
   def selectVertex(self, pos):
       min = 1000000
-      ndx = - 1
+      ndx = -1
 
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
@@ -637,7 +638,7 @@ class OWNetworkCanvas(OWGraph):
       
       d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
-      if min < d and ndx != - 1:
+      if min < d and ndx != -1:
           if self.insideview:
               self.networkCurve.unSelect()
               self.vertices[ndx].selected = not self.vertices[ndx].selected
@@ -671,6 +672,11 @@ class OWNetworkCanvas(OWGraph):
               self.networkCurve.setHiddenVertices(set(range(self.nVertices)) - visible)
 
       edgesCount = 0
+      
+      if self.forceVectors != None:
+          for v in self.forceVectors:
+              self.addCurve("force", Qt.white, Qt.green, 1, style=QwtPlotCurve.Lines, xData=v[0], yData=v[1], showFilledSymbols=False)
+              print v[0], v[1]
       
       for r in self.circles:
           step = 2 * pi / 64;
@@ -783,7 +789,7 @@ class OWNetworkCanvas(OWGraph):
             lbl = lbl + str(value) + "\n"
   
         if lbl != '':
-          lbl = lbl[: - 1]
+          lbl = lbl[:-1]
           self.tips.addToolTip(x1, y1, lbl)
           self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
                  
@@ -853,7 +859,7 @@ class OWNetworkCanvas(OWGraph):
       minValue = None
       maxValue = None
       
-      if attribute[0] != "(" or attribute[ - 1] != ")":
+      if attribute[0] != "(" or attribute[ -1] != ")":
           i = 0
           for var in table.domain.variables:
               if var.name == attribute:
@@ -1059,7 +1065,7 @@ class OWNetworkCanvas(OWGraph):
             visualizer.graph.links = None
             
           if visualizer.graph.links != None and len(visualizer.graph.links) > 0:
-              edge.links_index = row_ind[i+1][j+1]
+              edge.links_index = row_ind[i + 1][j + 1]
               row = visualizer.graph.links[edge.links_index]
               edge.label = [str(row[r].value) for r in range(2, len(row))]
 

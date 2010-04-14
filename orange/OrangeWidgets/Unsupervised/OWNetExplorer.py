@@ -52,7 +52,8 @@ class OWNetExplorer(OWWidget):
                         ("Selected Distance Matrix", orange.SymMatrix),
                         ("Selected Examples", ExampleTable), 
                         ("Unselected Examples", ExampleTable), 
-                        ("Marked Examples", ExampleTable)]
+                        ("Marked Examples", ExampleTable),
+                        ("Attribute Selection List", AttributeList)]
         
         self.markerAttributes = []
         self.tooltipAttributes = []
@@ -289,7 +290,9 @@ class OWNetExplorer(OWWidget):
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         self.btnRotate = OWGUI.button(ibs, self, "Rotate", callback=self.rotateComponents, toggleButton=1)
         self.btnRotateMDS = OWGUI.button(ibs, self, "Rotate (MDS)", callback=self.rotateComponentsMDS, toggleButton=1)
-        
+        self.btnForce = OWGUI.button(ibs, self, "Draw Force", callback=self.drawForce, toggleButton=1)
+        self.scalingRatio = 0
+        OWGUI.spin(ib, self, "scalingRatio", 0, 9, 1, label="Set scalingRatio: ")
         OWGUI.doubleSpin(ib, self, "mdsStressDelta", 0, 10, 0.0000000000000001, label="Min stress change: ")
         OWGUI.spin(ib, self, "mdsSteps", 1, 100000, 1, label="MDS steps: ")
         OWGUI.spin(ib, self, "mdsRefresh", 1, 100000, 1, label="MDS refresh steps: ")
@@ -302,6 +305,9 @@ class OWNetExplorer(OWWidget):
         
         OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
         
+        self.attSelectionAttribute = 0
+        self.comboAttSelection = OWGUI.comboBox(ib, self, "attSelectionAttribute", label='Send attribute selection list:', orientation='horizontal', callback=self.sendAttSelectionList)
+        self.comboAttSelection.addItem("Select attribute")
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -334,6 +340,19 @@ class OWNetExplorer(OWWidget):
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
         
+    def sendAttSelectionList(self):
+        vars = [x.name for x in self.visualize.getVars()]
+        if not self.comboAttSelection.currentText() in vars:
+            return
+        att = str(self.comboAttSelection.currentText())
+        vertices = self.graph.networkCurve.getSelectedVertices()
+        
+        if len(vertices) != 1:
+            return
+        
+        attributes = str(self.visualize.graph.items[vertices[0]][att]).split(', ')
+        self.send("Attribute Selection List", attributes)
+        
     def edit(self):
         vars = [x.name for x in self.visualize.getVars()]
         if not self.editCombo.currentText() in vars:
@@ -352,6 +371,14 @@ class OWNetExplorer(OWWidget):
                 self.visualize.graph.items[v][att] = str(self.editValue)
         
         self.setItems(self.visualize.graph.items)
+        
+    def drawForce(self):
+        if self.btnForce.isChecked():
+            self.graph.forceVectors = self.visualize.computeForces() 
+        else:
+            self.graph.forceVectors = None
+            
+        self.updateCanvas()
         
     def rotateProgress(self, curr, max):
         self.progressBarSet(int(curr * 100 / max))
@@ -422,7 +449,9 @@ class OWNetExplorer(OWWidget):
         self.btnRotate.setText("Rotate graph components")
         self.progressBarFinished()
         
-    def mdsProgress(self, avgStress, stepCount):
+    def mdsProgress(self, avgStress, stepCount):    
+        self.drawForce()
+
         self.mdsInfoA.setText("Avg. Stress: %.20f" % avgStress)
         self.mdsInfoB.setText("Num. steps: %i" % stepCount)
         self.progressBarSet(int(stepCount * 100 / self.mdsSteps))
@@ -466,9 +495,9 @@ class OWNetExplorer(OWWidget):
         self.progressBarInit()
         
         if self.mdsAvgLinkage:
-            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta)
+            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio)
         else:
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType)            
+            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio)            
         
         btn.setChecked(False)
         btn.setText(btnCaption)
@@ -1111,6 +1140,7 @@ class OWNetExplorer(OWWidget):
             self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.editCombo.addItem(self.icons[var.varType], unicode(var.name))
+            self.comboAttSelection.addItem(self.icons[var.varType], unicode(var.name))
         
         for var in edgeVars:
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
@@ -1147,6 +1177,7 @@ class OWNetExplorer(OWWidget):
         self.showComponentCombo.clear()
         self.edgeColorCombo.clear()
         self.editCombo.clear()
+        self.comboAttSelection.clear()
         
         self.colorCombo.addItem("(same color)")
         self.edgeColorCombo.addItem("(same color)")
@@ -1154,6 +1185,7 @@ class OWNetExplorer(OWWidget):
         self.nameComponentCombo.addItem("Select attribute")
         self.showComponentCombo.addItem("Select attribute")
         self.editCombo.addItem("Select attribute")
+        self.comboAttSelection.addItem("Select attribute")
       
     def setGraph(self, graph):      
         if graph == None:
