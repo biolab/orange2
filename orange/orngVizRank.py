@@ -874,8 +874,10 @@ class VizRank:
                             xanchors, yanchors = self.graph.createXAnchors(len(attrIndices)), self.graph.createYAnchors(len(attrIndices))
                             attrNames = [self.graph.dataDomain[attr].name for attr in attrIndices]
                         else:
-                            xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
-                            table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
+                            projections = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
+                            if projections != None:
+                                xanchors, yanchors, (attrNames, newIndices) = projections
+                                table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
                         accuracy, other_results = self.evaluateProjection(table)
