@@ -594,7 +594,7 @@ class OWDistanceMap(OWWidget):
         self.selector.setRect(QRectF(0, 0, self.CellWidth, self.CellHeight))
 
         self.updateSelectionRect()
-        self.scene.setSceneRect(self.scene.itemsBoundingRect())
+        self.scene.setSceneRect(self.scene.itemsBoundingRect().adjusted(-5, -5, 5, 5))
         self.scene.update()
 
     def addSelectionLine(self, x, y, direction):
