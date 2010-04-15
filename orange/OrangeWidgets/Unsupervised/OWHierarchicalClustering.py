@@ -7,7 +7,6 @@
 """
 
 from OWWidget import *
-from sets import Set
 from OWQCanvasFuncts import *
 import OWGUI
 import OWColorPalette
@@ -378,7 +377,7 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Unselected Examples", self.unselectedExamples)
 
         elif self.matrixSource=="Data Distance":
-            names=list(Set([d.strain for d in self.selection]))
+            names=list(set([d.strain for d in self.selection]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, self.selection)]) for name in names]
             self.send("Structured Data Files",data)
             
