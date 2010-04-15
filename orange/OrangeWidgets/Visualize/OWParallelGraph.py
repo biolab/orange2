@@ -177,8 +177,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
         keys.sort()     # otherwise the order of curves change when we slide the alpha slider
         for key in keys:
             curve = ParallelCoordinatesCurve(len(attributes), mainCurves[key], key)
-            if self.useAntialiasing:  curve.setRenderHint(QwtPlotItem.RenderAntialiased)
-            if self.useSplines:       curve.setCurveAttribute(QwtPlotCurve.Fitted)
+            if self.useAntialiasing:  
+                curve.setRenderHint(QwtPlotItem.RenderAntialiased)
+            if self.useSplines:
+                curve.setCurveAttribute(QwtPlotCurve.Fitted)
+#                curve.setCurveFitter(QwtSplineCurveFitter())
             curve.attach(self)
 
         # add sub curves
@@ -186,8 +189,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
         keys.sort()     # otherwise the order of curves change when we slide the alpha slider
         for key in keys:
             curve = ParallelCoordinatesCurve(len(attributes), subCurves[key], key)
-            if self.useAntialiasing: curve.setRenderHint(QwtPlotItem.RenderAntialiased)
-            if self.useSplines:      curve.setCurveAttribute(QwtPlotCurve.Fitted)
+            if self.useAntialiasing: 
+                curve.setRenderHint(QwtPlotItem.RenderAntialiased)
+            if self.useSplines:      
+                curve.setCurveAttribute(QwtPlotCurve.Fitted)
+                print "sub:", curve
             curve.attach(self)
 
 
@@ -542,13 +548,17 @@ class OWParallelGraph(OWGraph, orngScaleData):
 class ParallelCoordinatesCurve(QwtPlotCurve):
     def __init__(self, attrCount, yData, color, name = ""):
         QwtPlotCurve.__init__(self, name)
+        self.setStyle(QwtPlotCurve.Lines)
         self.setItemAttribute(QwtPlotItem.Legend, 0)
 
         lineCount = len(yData) / attrCount
         self.attrCount = attrCount
         self.xData = range(attrCount) * lineCount
         self.yData = yData
-        self.setData(self.xData, self.yData)
+        
+#        self._cubic = self.cubicPath(None, None)
+        
+        self.setData(QPolygonF(map(lambda t:QPointF(*t), zip(self.xData, self.yData))))
         if type(color) == tuple:
             self.setPen(QPen(QColor(*color)))
         else:
@@ -559,9 +569,33 @@ class ParallelCoordinatesCurve(QwtPlotCurve):
         low = max(0, int(math.floor(xMap.s1())))
         high = min(self.attrCount-1, int(math.ceil(xMap.s2())))
         painter.setPen(self.pen())
+        if not self.testCurveAttribute(QwtPlotCurve.Fitted):
+            for i in range(self.dataSize() / self.attrCount):
+                start = self.attrCount * i + low
+                end = self.attrCount * i + high 
+                self.drawLines(painter, xMap, yMap, start, end)
+        else:
+            painter.save()
+#            painter.scale(xMap.transform(1.0), yMap.transform(1.0))
+            painter.strokePath(self.cubicPath(xMap, yMap), self.pen())
+#            painter.strokePath(self._cubic, self.pen())
+            painter.restore()
 
+    def cubicPath(self, xMap, yMap):
+        path = QPainterPath()
+        transform = lambda x, y: QPointF(xMap.transform(x), yMap.transform(y))
+#        transform = lambda x, y: QPointF(x, y)
+#        data = [QPointF(transform(x, y)) for x, y in zip(self.xData, self.yData)]
+        data = [(x, y) for x, y in zip(self.xData, self.yData)]
         for i in range(self.dataSize() / self.attrCount):
-            start = self.attrCount * i + low
-            end = self.attrCount * i + high
-            self.drawLines(painter, xMap, yMap, start, end)
+            segment = data[i*self.attrCount: (i + 1)*self.attrCount]
+            for i, p in enumerate(segment[:-1]):
+                x1, y1 = p
+                x2, y2 = segment[i + 1]
+                path.moveTo(transform(x1, y1))
+                path.cubicTo(transform(x1 + 0.5, y1), transform(x2 - 0.5, y2), transform(x2, y2))
+        return path        
+                
+                
+            
 
