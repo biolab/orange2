@@ -31,8 +31,8 @@ for netFile in glob.glob(os.path.join(os.getcwd(), '*.net')):
 		itemFile = name + '.tab'
 	
 	edgeFile = ""
-	if os.path.exists(os.path.join(name, '_edges.tab')):
-		edgeFile = os.path.join(name, '_items.tab')
+	if os.path.exists(name + '_edges.tab'):
+		edgeFile = name + '_edges.tab'
 	
 	netlist.append([net.name, os.path.basename(netFile), "doc/datasets/", os.path.basename(itemFile), os.path.basename(edgeFile), net.nVertices, len(net.getEdges()), "4/12/2010", net.description])
 	

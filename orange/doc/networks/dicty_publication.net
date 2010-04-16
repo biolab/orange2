@@ -1,6 +1,6 @@
 *Network "D. discoideum gene publication network"
 
-*Descriptio "Network from Dictyostelium discoideum gene and publication data. It contains nodes of two types: genes and MeSH terms. Edges connect: genes that were cited in similar publications, MeSH terms that were used to annotate the same publications, and genes to MeSH terms which were used to annotate publications citing the genes."
+*Description "Network from Dictyostelium discoideum gene and publication data. It contains nodes of two types: genes and MeSH terms. Edges connect: genes that were cited in similar publications, MeSH terms that were used to annotate the same publications, and genes to MeSH terms which were used to annotate publications citing the genes."
 
 *Date "8/1/2008"
 
