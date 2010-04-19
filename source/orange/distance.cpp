@@ -513,7 +513,7 @@ PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenera
   if (ddist)
     edr->distributions->normalize();
   
-  for(int attrIndex = 0, nAttrs = gen->domain->variables->size(); attrIndex != nAttrs; attrIndex++)
+  for(int attrIndex = 0, nAttrs = gen->domain->attributes->size(); attrIndex != nAttrs; attrIndex++)
     if (domain.variables->at(attrIndex)->varType == TValue::FLOATVAR) {
       if (bstat) {
         const TBasicAttrStat &bas = bstat->at(attrIndex).getReference();
@@ -554,9 +554,9 @@ float TExamplesDistance_Relief::operator()(const TExample &e1, const TExample &e
 
   const bool hasDistributions = bool(distributions);
 
-  TExample::const_iterator e1i(e1.begin()), e1e(e1.end());
+  TExample::const_iterator e1i(e1.begin());
   TExample::const_iterator e2i(e2.begin());
-  TFloatList::const_iterator avgi(averages->begin()),
+  TFloatList::const_iterator avgi(averages->begin()), avge(averages->end()),
                              nori(normalizations->begin()),
                              btsi(bothSpecial->begin());
 
@@ -565,7 +565,7 @@ float TExamplesDistance_Relief::operator()(const TExample &e1, const TExample &e
     di = distributions->begin();
 
   float dist = 0.0;
-  for(; e1i!=e1e; e1i++, e2i++, avgi++, nori++, btsi++) {
+  for(; avgi!=avge; e1i++, e2i++, avgi++, nori++, btsi++) {
     float dd = 0.0;
     const TValue &v1 = *e1i, &v2 = *e2i;
     if (v1.varType==TValue::INTVAR) {             // discrete
