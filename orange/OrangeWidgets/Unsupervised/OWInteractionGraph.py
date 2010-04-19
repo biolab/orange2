@@ -19,7 +19,7 @@ import OWGUI, OWDlgs
 
 class IntGraphView(QGraphicsView):
     def __init__(self, parent, name, *args):
-        apply(QGraphicsView.__init__,(self,) + args)
+        QGraphicsView.__init__(self, *args)
         self.parent = parent
         self.name = name
 
@@ -242,15 +242,18 @@ class OWInteractionGraph(OWWidget):
         del f
 
         # execute dot and save otuput to pipes
-        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
-        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
+        import subprocess
+        textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
+        textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0]
+#        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
+#        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
 
-        textPng = pipePngIn.read()
-        textPlainList = pipePlainIn.readlines()
-        pipePngIn.close()
-        pipePlainIn.close()
-        pipePngOut.close()
-        pipePlainOut.close()
+#        textPng = pipePngIn.read()
+#        textPlainList = pipePlainIn.readlines()
+#        pipePngIn.close()
+#        pipePlainIn.close()
+#        pipePngOut.close()
+#        pipePlainOut.close()
         os.remove(fname)
 
         # if the output from the pipe was empty, then the software isn't installed correctly
