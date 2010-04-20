@@ -28,7 +28,11 @@ class IntGraphView(QGraphicsView):
 
     # mouse button was pressed
     def mousePressEvent(self, ev):
+        scenePos = self.mapToScene(ev.pos())
+        pos = QPoint(int(scenePos.x()), int(scenePos.y()))
+        ev = QMouseEvent(ev.type(), pos, ev.button(), ev.buttons(), ev.modifiers())
         self.parent.mousePressed(self.name, ev)
+        
 
 
 ###########################################################################################
