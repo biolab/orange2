@@ -138,6 +138,7 @@ class OWInteractionGraph(OWWidget):
             for (attr1, attr2, rect) in self.lines:
                 if rect.contains(pos):
                     self.send("Attribute Pair", [attr1, attr2])
+                    print attr1, attr2
                     return
         elif ev.button() == Qt.LeftButton and name == "interactions":
             self.rest = None
@@ -244,7 +245,7 @@ class OWInteractionGraph(OWWidget):
         # execute dot and save otuput to pipes
         import subprocess
         textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
-        textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0]
+        textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
 #        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
 #        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
 
