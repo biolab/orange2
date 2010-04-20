@@ -1673,6 +1673,27 @@ class TableBarItem(QItemDelegate):
         self.drawDisplay(painter, option, option.rect, text)
         painter.restore()
         
+class BarItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent, brush=QBrush(QColor(255, 170, 127)), scale=(0.0, 1.0)):
+        QStyledItemDelegate.__init__(self, parent) 
+        self.brush = brush
+        self.scale = scale
+        
+    def paint(self, painter, option, index):
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewRow, option, painter)
+        qApp.style().drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter)
+        rect = option.rect
+        val, ok = index.data(Qt.DisplayRole).toDouble()
+        if ok:
+            min, max = self.scale
+            val = (val - min) / (max - min)
+            painter.save()
+            if option.state & QStyle.State_Selected:
+                painter.setOpacity(0.75)
+            painter.setBrush(self.brush)
+            painter.drawRect(rect.adjusted(1, 1, - rect.width() * (1.0 - val) -2, -2))
+            painter.restore()
+        
 class IndicatorItemDelegate(QStyledItemDelegate):
     IndicatorRole = OrangeUserRole.next()
     def __init__(self, parent, role=IndicatorRole, indicatorSize=2):
@@ -1824,17 +1845,30 @@ def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     return w
 
 class VisibleHeaderSectionContextEventFilter(QObject):
+    def __init__(self, parent, itemView=None):
+        QObject.__init__(self, parent)
+        self.itemView = itemView
     def eventFilter(self, view, event):
         if type(event) == QContextMenuEvent:
             model = view.model()
             headers = [(view.isSectionHidden(i), model.headerData(i, view.orientation(), Qt.DisplayRole)) for i in range(view.count())]
             menu = QMenu("Visible headers", view)
+            
             for i, (checked, name) in enumerate(headers):
                 action = QAction(name.toString(), menu)
                 action.setCheckable(True)
                 action.setChecked(not checked)
                 menu.addAction(action)
                 
+                def toogleHidden(bool, section=i):
+                    view.setSectionHidden(section, not bool)
+                    if bool:
+                        if self.itemView:
+                            self.itemView.resizeColumnToContents(i)
+                        else:
+                            view.resizeSection(i, max(view.sectionSizeHint(i), 10))
+                        
+                self.connect(action, SIGNAL("toggled(bool)"), toogleHidden)
                 self.connect(action, SIGNAL("toggled(bool)"), lambda bool, section=i: view.setSectionHidden(section, not bool))
             menu.exec_(event.globalPos())
             return True
