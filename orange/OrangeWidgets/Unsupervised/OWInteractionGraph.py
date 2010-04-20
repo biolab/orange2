@@ -142,7 +142,6 @@ class OWInteractionGraph(OWWidget):
             for (attr1, attr2, rect) in self.lines:
                 if rect.contains(pos):
                     self.send("Attribute Pair", [attr1, attr2])
-                    print attr1, attr2
                     return
         elif ev.button() == Qt.LeftButton and name == "interactions":
             self.rest = None
@@ -268,9 +267,15 @@ class OWInteractionGraph(OWWidget):
         # create a picture
         pixmap = QPixmap()
         pixmap.loadFromData(textPng)
-        canvasPixmap = self.canvasR.addPixmap(pixmap)
-        width = canvasPixmap.pixmap().width()
-        height = canvasPixmap.pixmap().height()
+        if hasattr(self, "canvasPixmap"):
+            self.canvasPixmap.setPixmap(pixmap)
+        else:
+            self.canvasPixmap = self.canvasR.addPixmap(pixmap)
+            
+        width = self.canvasPixmap.pixmap().width()
+        height = self.canvasPixmap.pixmap().height()
+        
+        self.canvasR.setSceneRect(QRectF(0, 0, width, height).adjusted(-10, -10, 10, 10))
         #self.canvasR.resize(width, height)
 
         # hide all rects
