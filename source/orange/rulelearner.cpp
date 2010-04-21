@@ -454,29 +454,21 @@ float TRuleEvaluator_LRS::operator()(PRule rule, PExampleTable, const int &, con
     return lrs;
   }
 
-  float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 1e-5;
-  float P = (targetClass < exp_dist.size()) && (exp_dist[targetClass] > 0.0) ? exp_dist[targetClass] : 1e-5;
-
-  if (p/obs_dist.abs <= P/exp_dist.abs)
-    return 0.0;
+  float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass]-0.5 : 1e-5f;
+  float P = (targetClass < exp_dist.size()) && (exp_dist[targetClass] > 0.0) ? exp_dist[targetClass] : 1e-5f;
 
   float n = obs_dist.abs - p;
   float N = exp_dist.abs - P;
 
-  if (N<=0.0)
-    N = 1e-6f;
-  if (p<=0.0)
-    p = 1e-6f;
-  if (n<=0.0)
-    n = 1e-6f;
+  // border cases
+  if (N<=1e-5f) return 0.0;
+  if (p<=1e-5f) return 0.0;
+  if (n<=1e-5f) n = 1e-5f;
 
-
-  p = p - 0.5;
-  n = obs_dist.abs - p;
   if (p<=(p+n)*P/(P+N))
 	return 0.0;
-  float ep = obs_dist.abs*P/(exp_dist.abs);
 
+  float ep = obs_dist.abs*P/(exp_dist.abs);
   float lrs = 2 * (p*log(p/ep) + n*log(n/obs_dist.abs) +
                    (P-p)*log((P-p)/(exp_dist.abs-obs_dist.abs)) + (N-n)*log((N-n)/(exp_dist.abs-obs_dist.abs)) -
                    (P-p)*log(P/exp_dist.abs)-N*log(N/exp_dist.abs));
@@ -850,105 +842,6 @@ float TRuleEvaluator_mEVC::evaluateRuleM(PRule rule, PExampleTable examples, con
 
 // evaluates a rule, which can have its base conditions, base rule
 // can be evaluted in any way.
-float TRuleEvaluator_mEVC::evaluateRuleEVC_Step(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb)
-{
-  // extreme value distribution; optimism from parent Rule to rule
-  PEVDist evd = evDistGetter->call(rule, 0, 0);
-
-  if (!evd || evd->mu < 0.0)
-    return -10e+6;
-  //printf("mu=%f, beta=%f\n",evd->mu,evd->beta);
-  if (evd->mu == 0.0 || !rule->parentRule)
-  {
-    // return as if rule distribution is not optimistic
-    rule->chi = getChi(rule->classDistribution->atint(targetClass), rule->classDistribution->abs - rule->classDistribution->atint(targetClass),
-                apriori->atint(targetClass), apriori->abs - apriori->atint(targetClass));
-	  rule->estRF = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
-    rule->distP = rule->classDistribution->atint(targetClass);
-    return (rule->classDistribution->atint(targetClass)+m*aprioriProb)/(rule->classDistribution->abs+m);
-  }
-
-  // rule's chi
-  float chi = getChi(rule->classDistribution->atint(targetClass), rule->classDistribution->abs - rule->classDistribution->atint(targetClass),
-                   rule->parentRule->distP, rule->parentRule->classDistribution->abs - rule->parentRule->distP);
-
-  float ePos = 0.0;
-  float median = evd->median();
-  float rule_acc = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
-  float parent_acc = rule->parentRule->distP/rule->parentRule->classDistribution->abs;
-
-   // need correcting? if rule very good, correcting will not change anything
-  //printf("chi = %4.3f, median = %4.3f\n",chi, median);
-
-  // compute new distP
-  if (chi<=median)
-  {
-      LRInv *diffFunc = new LRInv(rule->classDistribution->abs, rule->parentRule->distP, rule->parentRule->classDistribution->abs, median);
-      rule->distP = brent(rule->classDistribution->atint(targetClass), rule->classDistribution->abs, 100, diffFunc);
-      delete diffFunc;
-  }
-  else
-    rule->distP = rule->classDistribution->atint(targetClass);
-
-//  if (rule->parentRule->distP > rule->parentRule->classDistribution->atint(targetClass))
-//  {
-//  if (rule->classDistribution->atint(targetClass) >= 38 || rule->parentRule->classDistribution->atint(targetClass) >= 38)
- //   {
-//  printf("complexoty = %d\n", rule->complexity);
- //   printf("parent: all = %4.2f, pos = %4.2f, distP = %4.2f\n", rule->parentRule->classDistribution->abs, rule->parentRule->classDistribution->atint(targetClass), rule->parentRule->distP);
- //   printf("child: all = %4.2f, pos = %4.2f, distP = %4.2f\n", rule->classDistribution->abs, rule->classDistribution->atint(targetClass), rule->distP);
- // }
-
-  if ((evd->mu-chi)/evd->beta < -100)
-      // return as if rule distribution is not optimistic
-    ePos = rule->classDistribution->atint(targetClass);
-/*  else if (rule_acc < parent_acc)
-    ePos = rule->classDistribution->atint(targetClass); */
-  else if (chi<=median)
-    ePos = rule->classDistribution->abs * parent_acc;
-  else {
-      // correct chi
-      LNLNChiSq *diffFunc = new LNLNChiSq(evd,chi);
-      rule->chi = brent(0.0,chi,100, diffFunc); // this is only the correction of one step chi
-      delete diffFunc;
-
-      //printf("rule chi = %4.3f\n",rule->chi);
-      // compute expected number of positive examples relatively to base rule
-      if (rule->chi > 0.0)
-      {
-        // correct optimism
-
-        LRInv *diffFunc = new LRInv(rule->classDistribution->abs, rule->parentRule->distP, rule->parentRule->classDistribution->abs, rule->chi); //-0.45);
-        ePos = brent(rule->parentRule->distP/rule->parentRule->classDistribution->abs*rule->classDistribution->abs, rule->classDistribution->atint(targetClass), 100, diffFunc);
-        //printf("epos = %4.3f\n",ePos);
-        delete diffFunc;
-      }
-      else
-        ePos = rule->classDistribution->abs * parent_acc;
-  }
-
-  float ePosOA; // expected positive examples considering base rule also
-  ePosOA = combineEPositives(rule->parentRule->classDistribution->abs, rule->parentRule->distP, rule->parentRule->estRF, rule->classDistribution->abs, ePos/rule->classDistribution->abs);
-  //printf("eposoa = %4.3f\n",ePosOA);
-
-  rule->chi = getChi(ePosOA, rule->classDistribution->abs - ePosOA,
-                apriori->atint(targetClass), apriori->abs - apriori->atint(targetClass));
-
-  rule->estRF = ePosOA/rule->classDistribution->abs;
-  float quality = (ePosOA + m*aprioriProb)/(rule->classDistribution->abs+m);
-  //printf("quality = %4.3f, rf = %4.3f\n",quality, rule->estRF);
- // if (rule->classDistribution->atint(targetClass) >= 38 || rule->parentRule->classDistribution->atint(targetClass) >= 38)
- //   printf("child: all %4.4f %4.4f %4.4f\n", rule->distP, quality, aprioriProb);
-  if (quality > aprioriProb)
-    return quality;
-  if (rule_acc < aprioriProb)
-    return rule_acc;
-  return aprioriProb; //-0.01+0.01*rule_acc;
-}
-
-
-// evaluates a rule, which can have its base conditions, base rule
-// can be evaluted in any way.
 float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb)
 {
   // extreme value distribution; optimism from parent Rule to rule
@@ -1022,8 +915,6 @@ float TRuleEvaluator_mEVC::evaluateRuleEVC(PRule rule, PExampleTable examples, c
 }
 
 
-
-
 float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori)
 {
   rule->chi = 0.0;
@@ -1041,8 +932,6 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
     quality = evaluateRulePessimistic(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
   else if (optimismReduction == 2)
     quality = evaluateRuleEVC(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
-  else
-    quality = evaluateRuleEVC_Step(rule,examples,weightID,targetClass,apriori,rLength,aprioriProb);
 
 /*  if (optimismReduction == 2)
 	printf("rule: %f, %f, %f\n",rule->classDistribution->atint(targetClass), rule->classDistribution->abs, quality); */
@@ -1078,8 +967,6 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
       bestQuality = evaluateRulePessimistic(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
     else if (optimismReduction == 2)
       bestQuality = evaluateRuleEVC(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
-    else
-      bestQuality = evaluateRuleEVC_Step(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
 
     rule->estRF = estRF;
     rule->classDistribution = oldRuleDist;
@@ -2094,14 +1981,6 @@ float TLogitClassifierState::getAUC()
 
 void TLogitClassifierState::setPrefixRule(int rule_i) //, int position)
 {
-/*	TIntList::iterator frs(frontRules->begin()+position), fre(frontRules->end());
-	while (fre > frs)
-	{
-		frontRules->insert(fre, *(fre-1));
-		fre--;
-	}
-
-	frontRules->insert(frs, rule_i); */
 	prefixRules->push_back(rule_i);
 	setFixed(rule_i);
 	updateFixedPs(rule_i);
@@ -2137,9 +2016,9 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minS
   {
 	  bool changed = setBestPrefixRule();
 	  while (changed) {
-      if (optimizeBetasFlag)
-        optimizeBetas();
-		  changed = setBestPrefixRule();
+		if (optimizeBetasFlag)
+			optimizeBetas();
+		changed = setBestPrefixRule();
 	  }
   }
 
@@ -2158,146 +2037,62 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minS
 
 bool TRuleClassifier_logit::setBestPrefixRule()
 {
-//Each rule should cover at least 50% of examples
-//Bries score / example should be highest
-//New quality could not be higher than original quality and could not be lower or equal to prior probability.
+// adding a prefix rule should improve brier score and it should not decrease AUC
 
   PLogitClassifierState tempState;
   currentState->copyTo(tempState);
   int bestRuleI = -1;
-  float bestImprovement = 0.0;  // improvement of brier score
+  float best_brier_improvement = 0.0;
   float bestNewQuality = 0.0;
 
   PDistribution apriori = getClassDistribution(examples, weightID);
+  float apriori_prob, new_positive, new_covered, new_rf_rule, rf_rule;
+  float oldQuality, newQuality, brier_improvement;
+  float current_auc = currentState->getAUC();
+  float current_brier = currentState->getBrierScore();
 
   for (int i=0; i<rules->size(); i++) {
-    // compute corrected quality
-    float new_positive = 0.0, new_covered = 0.0;
-    float fixed_prob = 0.0;
-    float apriori_prob = apriori->atint(rules->at(i))/apriori->abs;
-    int j;
-    for (j=0; j<examples->numberOfExamples(); j++)
-    {
+    // compute new coverage
+	new_positive = 0.0; new_covered = 0.0;
+    for (int j=0; j<examples->numberOfExamples(); j++)
         if (rules->at(i)->call(examples->at(j)) && !tempState->isExampleFixed[j])
         {
             if (getClassIndex(rules->at(i)) == examples->at(j).getClass().intV)
                 new_positive ++;
             new_covered ++;
         }
-        if (rules->at(i)->call(examples->at(j)) && tempState->isExampleFixed[j])
-          fixed_prob += tempState->p[getClassIndex(rules->at(i))][j];
-    }
-    // adjust old quality with changed relative frequency
-    if (!new_covered)
-      continue;
+	if (new_covered < 1)
+		continue;
 
-    float oldQuality = rules->at(i)->quality;
-    float newQuality = 0.0;
-    float rf_rule = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i))) + 2*apriori_prob;
-    rf_rule /= rules->at(i) -> classDistribution->abs + 2;
-    float new_rf_rule = new_positive + 2*apriori_prob;
-    new_rf_rule /= new_covered + 2;
-
-    newQuality = oldQuality * new_rf_rule / rf_rule;
-    float cov_perc = 1.0; //max(min((float)1.0, (float)new_covered / 30), (float) new_covered / rules->at(i)->classDistribution->abs);
-    //newQuality = (oldQuality * rules->at(i)->classDistribution->abs - fixed_prob) / (new_covered);
-    if (rules->at(i)->classDistribution->abs == apriori->abs)
-      newQuality = new_positive / new_covered;
-    if (newQuality < apriori_prob && rules->at(i)->classDistribution->abs < apriori->abs)
-      newQuality = apriori_prob;
-/*    if (newQuality > oldQuality * new_rf_rule / rf_rule && rules->at(i)->classDistribution->abs < apriori->abs)
-      newQuality = oldQuality * new_rf_rule / rf_rule; */
-    if (newQuality > oldQuality && rules->at(i)->classDistribution->abs < apriori->abs)
-      newQuality = oldQuality;
-
- /*   if (abs(newQuality-oldQuality) > 0.1 && rules->at(i)->classDistribution->abs < apriori->abs)
+/*	// rule should cover at least 50% of its own examples (so that conditions still make some sense)
+    if (new_covered < rules->at(i)->classDistribution->abs / 2)
       continue; */
 
-    //printf("new: %f, old: %f\n", newQuality, oldQuality);
-   // if (newQuality > oldQuality && cov_perc < 0.5)
-   //   newQuality = oldQuality;
-      
-/*    if (new_rf_rule > rel_freq)
-      if (new_covered > 30)
-        newQuality = oldQuality * (new_rf_rule / rel_freq);
-      else
-        newQuality = oldQuality;
-    else
-        newQuality = oldQuality * ((new_positive / new_covered) / rel_freq); */
+	apriori_prob = apriori->atint(getClassIndex(rules->at(i))) / apriori->abs;
+    new_rf_rule = new_positive / new_covered;
+	if (new_rf_rule <= apriori_prob)
+		continue;
 
+	// corrected quality of the rule (due to rules in the prefix set already)
+    oldQuality = rules->at(i)->quality;
+	rf_rule = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i)));
+	rf_rule /= rules->at(i) -> classDistribution->abs;
+	newQuality = oldQuality * (new_positive + 2*rf_rule) / (new_covered + 2) / rf_rule;
 
-/*
-    float fixedExamplesPerc = 0.0;
-    float oldBrierScore = 0.0, newBrierScore = 0.0;
-
-    // adjust quality of rule according to previously covered
-    float oldQuality = rules->at(i)->quality;
-    float sumQualityFixed = 0.0;
-    int j, nFixed=0;
-    for (j=0; j<examples->numberOfExamples(); j++)
-        if (rules->at(i)->call(examples->at(j)) && tempState->isExampleFixed[j])
-        {
-            sumQualityFixed += tempState->p[examples->at(j).getClass().intV][j];
-            nFixed++;
-        }
-    // the average predicted probability should be as original rule quality
-    float requiredSum = oldQuality * rules->at(i)->classDistribution->abs;
-    if (nFixed >= rules->at(i)->classDistribution->abs)
-        continue;
-    float newQuality = (requiredSum - sumQualityFixed) / (rules->at(i)->classDistribution->abs - nFixed);
-    if (newQuality <= 0.0 || newQuality >= 1.0)
-        continue; */
+    // check if improvement is good
     rules->at(i)->quality = newQuality;
     currentState->setPrefixRule(i);
     rules->at(i)->quality = oldQuality;
 
-    // it must cover 50% and improve brier score
-    float fixedExamples = 0.0;
-    float oldBrierScore = 0.0, newBrierScore = 0.0;
-    float oldAbsScore = 0.0, newAbsScore = 0.0;
-    float oldLLScore = 0.0, newLLScore = 0.0;
-    for (j=0; j<examples->numberOfExamples(); j++)
-    {
-        if (rules->at(i)->call(examples->at(j)) && tempState->isExampleFixed[j])
-            fixedExamples ++;
-        if (rules->at(i)->call(examples->at(j)) && !tempState->isExampleFixed[j])
-        {
-            newAbsScore += 1.0-currentState->p[examples->at(j).getClass().intV][j];
-            oldAbsScore += 1.0-tempState->p[examples->at(j).getClass().intV][j];
-            newBrierScore += pow(1.0-currentState->p[examples->at(j).getClass().intV][j],2.0);
-            oldBrierScore += pow(1.0-tempState->p[examples->at(j).getClass().intV][j],2.0);
-            newLLScore += log(currentState->p[examples->at(j).getClass().intV][j] > 0 ? currentState->p[examples->at(j).getClass().intV][j] : 1e-6);
-            oldLLScore += log(tempState->p[examples->at(j).getClass().intV][j] > 0 ? tempState->p[examples->at(j).getClass().intV][j] : 1e-6);
-        }
-    }
-// !(fixedExamples/rules->at(i)->classDistribution->abs <= 0.5 || (rules->at(i)->classDistribution->abs-fixedExamples)>30)  || 
-    // 
-    if (newAbsScore >= oldAbsScore || newBrierScore >= oldBrierScore) // || newLLScore <= oldLLScore)
-    {
-        tempState->copyTo(currentState);
-        continue;
-    }
+	brier_improvement = (current_brier - currentState->getBrierScore()) / new_covered;
 
-/*    if (cov_perc < 0.5 && cov_perc > bestImprovement)
-    {
-        bestImprovement = cov_perc;
-        bestRuleI = i;
-        bestNewQuality = newQuality;
-    } */
-    //if (cov_perc >= 0.5 && (oldAbsScore-newAbsScore)/(rules->at(i)->classDistribution->abs-fixedExamples) + 1.0 > bestImprovement )
-    //if ((oldAbsScore-newAbsScore)/(rules->at(i)->classDistribution->abs-fixedExamples) > bestImprovement )
-    //if (cov_perc < 0.5 && cov_perc + newQuality > bestImprovement)
-    //{
-    //    bestImprovement = cov_perc + newQuality; //1.0 + (oldAbsScore-newAbsScore)/(rules->at(i)->classDistribution->abs-fixedExamples);
-    //    bestRuleI = i;
-    //    bestNewQuality = newQuality;
-    //}
-    if (newQuality * cov_perc > bestImprovement)
-    {
-        bestImprovement = newQuality * cov_perc; //1.0 + (oldAbsScore-newAbsScore)/(rules->at(i)->classDistribution->abs-fixedExamples);
-        bestRuleI = i;
-        bestNewQuality = newQuality;
-    }
+	if (currentState->getAUC() >= current_auc && 
+	    brier_improvement > best_brier_improvement)
+	{
+		best_brier_improvement = brier_improvement;
+		bestRuleI = i;
+		bestNewQuality = newQuality;
+	}
     tempState->copyTo(currentState);
   }
   if (bestRuleI > -1)
@@ -2474,124 +2269,6 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
       skipRule[i] = false;
 }
 
-// betas update
-/*void TRuleClassifier_logit::updateRuleBetas(float step)
-{
-  stabilizeAndEvaluate(step,-1);
-  PLogitClassifierState finalState;
-  currentState->copyTo(finalState);
-
-  bool changed = true;
-  while (changed)
-  {
-    changed = false;  
-
-    // loop through rules to find the biggest problem
-    int worstI = -1;
-    float worstSig = 1000;
-    for (int i=0; i<rules->size(); i++) {
-        if (currentState->avgProb->at(i) >= rules->at(i)->quality)
-            continue;
-        if (skipRule[i])
-            continue;
-
-        float under_estimate = (rules->at(i)->quality - currentState->avgProb->at(i));//*rules->at(i)->classDistribution->abs;
-        // if under estimate error is big enough
-        if (under_estimate > 0.01) {
-            // is the difference between estimated quality and relative frequency lower than current worstEval?
-            //if (wsig->at(i) < worstSig)
-            if (currentState->betas[i] - wsd->at(i) < worstSig)
-            {
-                //worstSig = wsig->at(i);
-                worstSig = currentState->betas[i] - wsd->at(i);
-                worstI = i;
-            }
-        }
-    }
-    if (worstI > -1)
-    {
-        bool impr_curr = false;
-        float curr_step = step;
-        while (!impr_curr)
-        {
-            currentState->newBeta(worstI,currentState->betas[worstI]+curr_step);
-            if (currentState->avgProb->at(worstI) >= rules->at(worstI)->quality)
-            {
-                finalState->copyTo(currentState);
-                curr_step /= 2.0;
-            }
-            else
-            {
-              stabilizeAndEvaluate(curr_step,-1);
-              currentState->copyTo(finalState);
-              changed = true;
-              impr_curr = true;
-            }
-        }
-    }
-  }
-
-  finalState->copyTo(currentState);
-}*/
-
-void TRuleClassifier_logit::updateRuleBetas_old(float step_)
-{
-  /* for (int i=0; i<rules->size(); i++) {
-    if (skipRule[i])
-        continue;
-    currentState->newBeta(i,wsd->at(i));
-  } */
-  stabilizeAndEvaluate(step_,-1);
-  PLogitClassifierState finalState;
-  currentState->copyTo(finalState);
-
-  float step = 2.0;
-  bool changed;
-  float worst_underestimate, underestimate;
-  int worst_rule_index;
-  while (step > 0.001)
-  {
-      step /= 2;
-      changed = true;
-      while (changed)
-      {
-        changed = false;
-        worst_underestimate = (float)0.01;
-        worst_rule_index = -1;
-        // find rule with greatest underestimate in probability
-        for (int i=0; i<rules->size(); i++) {
-            if (currentState->avgProb->at(i) >= rules->at(i)->quality)
-                continue;
-            if (skipRule[i])
-                continue;
-
-            underestimate = (rules->at(i)->quality - currentState->avgProb->at(i));//*rules->at(i)->classDistribution->abs;
-            // if under estimate error is big enough
-            if (underestimate > worst_underestimate)
-            {
-                worst_underestimate = underestimate;
-                worst_rule_index = i;
-            }
-        }
-        if (worst_rule_index > -1)
-        {
-            currentState->newBeta(worst_rule_index,currentState->betas[worst_rule_index]+step);
-            if (currentState->avgProb->at(worst_rule_index) > rules->at(worst_rule_index)->quality)
-            {
-                finalState->copyTo(currentState);
-            }
-            else
-            {
-              stabilizeAndEvaluate(step,-1);
-              currentState->copyTo(finalState);
-              changed = true;
-            }
-        }
-      }
-  }
-  finalState->copyTo(currentState);
-}
-
 void TRuleClassifier_logit::updateRuleBetas(float step_)
 {
 
@@ -2606,20 +2283,15 @@ void TRuleClassifier_logit::updateRuleBetas(float step_)
   float brier = currentState->getBrierScore();
   float temp_auc, temp_brier;
   int worst_rule_index;
-  vector<double> underest;
-  vector<int> indices;
   while (step > 0.001)
   {
       step /= 2;
       changed = 0;
-//      printf("brier = %4.2f, auc = %4.2f,step = %4.2f\n", brier, auc, step);
       while (changed < 100)
       {
         changed = 0;
         worst_underestimate = (float)0.01;
         worst_rule_index = -1;
-        underest.clear();
-        indices.clear();
         // find rule with greatest underestimate in probability
         for (int i=0; i<rules->size(); i++) {
             if (currentState->avgProb->at(i) >= rules->at(i)->quality)
@@ -2634,50 +2306,9 @@ void TRuleClassifier_logit::updateRuleBetas(float step_)
                 worst_underestimate = underestimate;
                 worst_rule_index = i;
             }
-            if (underestimate > 0.01)
-            {
-              // insert and keep list ordered
-              int ins;
-              for (ins=0; ins<underest.size(); ins++)
-                if (underest.at(ins) < underestimate)
-                  break;
-              underest.insert(underest.begin() + ins, underestimate);
-              indices.insert(indices.begin() + ins, i);
-            }
         }
         if (worst_rule_index > -1)
         {
-/*          int i;
-          for (i=0; i<indices.size(); i++)
-          {
-            currentState->copyTo(tempState);
-            currentState->newBeta(indices.at(i),currentState->betas[indices.at(i)]+step);
-            if (currentState->avgProb->at(indices.at(i)) > rules->at(indices.at(i))->quality)
-            {
-              tempState->copyTo(currentState);
-              continue;
-            }
-            else {
-              stabilizeAndEvaluate(step,-1);
-              temp_auc = currentState->getAUC();
-              temp_brier = currentState->getBrierScore();
-              printf("TEMP: brier = %4.2f, auc = %4.2f\n", temp_brier, temp_auc);
-              if (temp_auc >= auc && temp_brier < brier)
-              {
-                currentState->copyTo(finalState);
-                changed = 0;
-                auc = temp_auc;
-                brier = temp_brier;
-                break;
-              }
-              else
-              {
-                tempState->copyTo(currentState);
-              }
-            }
-          } 
-          if (i == indices.size())
-          {*/
             currentState->newBeta(worst_rule_index,currentState->betas[worst_rule_index]+step);
             if (currentState->avgProb->at(worst_rule_index) > rules->at(worst_rule_index)->quality)
             {
@@ -2710,70 +2341,6 @@ void TRuleClassifier_logit::updateRuleBetas(float step_)
   }
   finalState->copyTo(currentState);
 }
-
-/*void TRuleClassifier_logit::stabilizeAndEvaluate(float & step, int last_changed_rule_index)
-{
-    PLogitClassifierState tempState;
-    currentState->copyTo(tempState);
-    bool changed = true;
-    while (changed)
-    {
-        changed = false;
-        // first find problematic rule with highest difference between quality and relative frequency
-        int worstI = -1;
-        float worstSig = -1000.0;
-        for (int i=0; i<rules->size(); i++)
-        {
-            if (currentState->avgProb->at(i) > (rules->at(i)->quality + 0.01) && currentState->betas[i] > 0.0 
-                && currentState->betas[i] - wsd->at(i) > worstSig && i != last_changed_rule_index)
-            {
-                worstSig = currentState->betas[i] - wsd->at(i);
-                worstI = i;
-            }
-        }
-        if (worstI > -1)
-        {
-            float curr_step = step;
-            bool impr_curr = false;
-            while (!impr_curr)
-            {
-                float new_beta = currentState->betas[worstI]-curr_step > 0 ? currentState->betas[worstI]-curr_step : 0.0;
-                currentState->newBeta(worstI,new_beta);
-                if (currentState->avgProb->at(worstI) < rules->at(worstI)->quality)
-                {
-                    tempState->copyTo(currentState);
-                    curr_step /= 2;
-                }
-                else
-                {
-                    currentState->copyTo(tempState);
-                    impr_curr = true;
-                    changed = true;
-                }
-            }
-        }
-
-        for (int i=0; i<rules->size(); i++)
-        {
-            if (i == last_changed_rule_index)
-                continue;
-            // if optimistic, decrease beta
-            if ( (currentState->avgProb->at(i) > rules->at(i)->quality) && (currentState->betas[i]-step)>=0.0)
-            {
-                currentState->newBeta(i,currentState->betas[i]-step);
-                if (currentState->avgProb->at(i) < rules->at(i)->quality)
-                {
-                    tempState->copyTo(currentState);
-                }
-                else
-                {
-                    currentState->copyTo(tempState);
-                    changed = true;
-                }
-            }
-        } 
-    }
-}*/
 
 
 void TRuleClassifier_logit::stabilizeAndEvaluate(float & step, int last_changed_rule_index)
