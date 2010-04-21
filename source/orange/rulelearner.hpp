@@ -243,7 +243,6 @@ public:
   bool ruleAttSignificant(PRule, PExampleTable, const int &, const int &targetClass, PDistribution, float &);
   float chiAsimetryCorrector(const float &);
   float evaluateRuleEVC(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
-  float evaluateRuleEVC_Step(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float evaluateRulePessimistic(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float evaluateRuleM(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb);
   float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution );
