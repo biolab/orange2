@@ -198,15 +198,19 @@ class OWInteractionGraph(OWWidget):
     # receive new data and update all fields
     def setData(self, data):
         self.warning([0,1])
+        self.error(0)
 
         self.originalData = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         if not self.originalData:
             return
 
         self.originalData = orange.Preprocessor_dropMissing(self.originalData)
-
+            
         if len(self.originalData) != len(data):
-            self.warning(0, "Examples with missing values were removed. Keeping %d of %d examples." % (len(data), len(self.originalData)))
+            self.warning(0, "Examples with missing values were removed. Keeping %d of %d examples." % (len(self.originalData), len(data)))
+        if len(self.originalData) == 0:
+            self.error(0, "All examples from the data set were removed!")
+            return
         if self.originalData.domain.hasContinuousAttributes():
             self.warning(1, "Continuous attributes were discretized using entropy discretization.")
 
@@ -215,6 +219,8 @@ class OWInteractionGraph(OWWidget):
         self.updateNewData(self.originalData)
 
     def updateNewData(self, data):
+        if not data:
+            return
         self.data = data
         self.interactionMatrix = orngInteract.InteractionMatrix(data, dependencies_too=1)
 
@@ -245,7 +251,7 @@ class OWInteractionGraph(OWWidget):
         self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
         del f
 
-        # execute dot and save otuput to pipes
+        # execute dot
         import subprocess
         try:
             textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
