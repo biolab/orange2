@@ -75,11 +75,11 @@ class OWCN2(OWWidget):
         g = OWGUI.widgetBox(self.ruleQualityBG, orientation = "horizontal");
         b2 = QRadioButton("m-estimate", g); g.layout().addWidget(b2)
         self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
+        b3 = QRadioButton("EVC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b3)
+        b4 = QRadioButton("WRACC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b4)
+        self.ruleQualityBG.buttons = [b1, b2, b3, b4]
 
-        b3 = QRadioButton("WRACC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b3)
-        self.ruleQualityBG.buttons = [b1, b2, b3]
-
-        for i, button in enumerate([b1, b2, b3]):
+        for i, button in enumerate([b1, b2, b3, b4]):
             self.connect(button, SIGNAL("clicked()"), lambda v=i: self.qualityButtonPressed(v))
 
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
@@ -144,35 +144,44 @@ class OWCN2(OWWidget):
         #progress bar
         self.progressBarInit()
 
-        #learner
-        self.learner=orngCN2.CN2UnorderedLearner()
-        self.learner.name = self.name
-        self.learner.progressCallback=CN2ProgressBar(self)
-        self.send("Learner",self.learner)
-
-        ruleFinder=orange.RuleBeamFinder()
-        if self.QualityButton==0:
-            ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
-        elif self.QualityButton==1:
-            ruleFinder.evaluator=orngCN2.mEstimate(self.m)
-        elif self.QualityButton==2:
-            ruleFinder.evaluator=orngCN2.WRACCEvaluator()
-
+        #learner / specific handling in case of EVC learning (completely different type of class)
         if self.useMaxRuleLength:
             maxRuleLength = self.MaxRuleLength
         else:
             maxRuleLength = -1
-        ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.stepAlpha,
-                    min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
-        ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha,
-                    min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
-        ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
-        self.learner.ruleFinder=ruleFinder
+        
+        if self.QualityButton == 2:
+            self.learner=orngCN2.CN2EVCUnorderedLearner(width=self.BeamWidth, rule_sig=self.Alpha, att_sig=self.stepAlpha,
+                                                        min_coverage = self.MinCoverage, max_rule_complexity = maxRuleLength)
+            self.learner.name = self.name
+            self.learner.progressCallback=CN2ProgressBar(self)
+            self.send("Learner",self.learner)
+        else:
+            self.learner=orngCN2.CN2UnorderedLearner()
+            self.learner.name = self.name
+            self.learner.progressCallback=CN2ProgressBar(self)
+            self.send("Learner",self.learner)
 
-        if self.CoveringButton==0:
-            self.learner.coverAndRemove=orange.RuleCovererAndRemover_Default()
-        elif self.CoveringButton==1:
-            self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight)
+            ruleFinder=orange.RuleBeamFinder()
+            if self.QualityButton==0:
+                ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
+            elif self.QualityButton==1:
+                ruleFinder.evaluator=orngCN2.mEstimate(self.m)
+            elif self.QualityButton==3:
+                ruleFinder.evaluator=orngCN2.WRACCEvaluator()
+
+
+            ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.stepAlpha,
+                        min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
+            ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha,
+                        min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
+            ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
+            self.learner.ruleFinder=ruleFinder
+
+            if self.CoveringButton==0:
+                self.learner.coverAndRemove=orange.RuleCovererAndRemover_Default()
+            elif self.CoveringButton==1:
+                self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight)
 
         self.classifier=None
         self.error()
@@ -211,6 +220,7 @@ class OWCN2(OWWidget):
         for i in range(len(self.ruleQualityBG.buttons)):
             self.ruleQualityBG.buttons[i].setChecked(id == i)
         self.mSpin.control.setEnabled(id == 1)
+        self.coveringAlgBG.setEnabled(not id == 2)
 
     def coveringAlgButtonPressed(self,id=0):
         self.CoveringButton = id
@@ -225,7 +235,7 @@ if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWCN2()
     #w.dataset(orange.ExampleTable("titanic.tab"))
-    w.dataset(orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\titanic.tab"))
+    w.dataset(orange.ExampleTable("titanic.tab"))
     w.show()
     app.exec_()
     w.saveSettings()
