@@ -1,5 +1,6 @@
 import orange
 import random, math
+from orngABCN2 import ABCN2
 
 def ruleToString(rule, showDistribution = True):
     def selectSign(oper):
@@ -639,178 +640,14 @@ def add_sub_rules(rules, examples, weight, learner, dists):
 #    else:
 #        return cn2
     
-class CN2EVCUnorderedLearner(orange.RuleLearner):
+class CN2EVCUnorderedLearner(ABCN2):
     """This is implementation of CN2 + EVC as evaluation + LRC classification.
         Main parameters:
           -- ...
     """
-    
-    def __new__(cls, examples=None, weightID=0, **kwargs):
-        self = orange.RuleLearner.__new__(cls, **kwargs)
-        if examples is not None:
-            self.__init__(**kwargs)
-            return self.__call__(examples, weightID)
-        else:
-            return self
-    
-    def __init__(self, m=2, opt_reduction=2, min_improved=1, min_improved_perc=0.0, nsampling=100, width=5,
-                 rule_sig=0.05, att_sig=0.5, max_rule_complexity=5, min_coverage=5, add_sub_rules = True,
-                 min_cl_sig = 0.5, min_beta = 0.0, set_prefix_rules = False, alternative_learner = None, **kwds):
-        """
-        Parameters:
-            EVC related:
-                m                   ... m-estimate to be corrected with EVC (default 2)
-                opt_reduction       ... types of EVC correction; 0=no correction, 1=pessimistic, 2=normal (default 2)
-                nsampling           ... number of samples in estimating extreme value distribution (for EVC) (default 100)
+    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
+        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
+                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
 
-            Probabilistic covering:
-                min_improved        ... minimal number of examples improved in probabilistic covering (default 1)
-                min_improved_perc   ... minimal percentage of covered examples that need to be improved (default 0.0)
-
-            Beam search:
-                width               ... beam width (default 5)
-
-            Rule Validation:
-                rule_sig            ... minimal rule significance (default 1.0)
-                att_sig             ... minimal attribute significance in rule (default 1.0)
-                max_rule_complexity ... maximum number of conditions in rule (default 5)
-                min_coverage        ... minimal number of covered examples (default 5)
-
-            Classifier (LCR) related:
-                add_sub_rules       ... add sub rules ? (default True)
-                min_cl_sig          ... minimal significance of beta in classifier (default 0.5)
-                min_beta            ... minimal beta value (default 0.0)
-                set_prefix_rules    ... should ordered prefix rules be added? (default False)
-                alternative_learner ... use rule-learner as a correction method for other machine learning methods. (default None)
-        """
-        
-        # argument ID which is passed to abcn2 learner
-        # two learners, learner with arguments and learners without
-        self.ruleFinder = orange.RuleBeamFinder()
-        self.ruleFilter = orange.RuleBeamFilter_Width(width=width)
-        evdGet = orange.EVDistGetter_Standard()
-        self.ruleFinder.evaluator = orange.RuleEvaluator_mEVC(m=m, evDistGetter = evdGet, min_improved = min_improved, min_improved_perc = min_improved_perc)
-        self.ruleFinder.evaluator.returnExpectedProb = True
-        self.ruleFinder.evaluator.optimismReduction = opt_reduction
-        self.ruleFinder.evaluator.ruleAlpha = rule_sig
-        self.ruleFinder.evaluator.attributeAlpha = att_sig
-        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = 1.0, min_quality = 0., max_rule_complexity = max_rule_complexity - 1)        
-        self.ruleFinder.evaluator.validator = orange.RuleValidator_LRS(alpha = 1.0, min_quality = 0., min_coverage=min_coverage)        
-        self.coverAndRemove = CovererAndRemover_Prob()
-        self.ruleStopping = None
-        self.dataStopping = orange.RuleDataStoppingCriteria_NoPositives()        
-        self.N = nsampling
-        self.add_sub_rules = add_sub_rules
-        self.min_cl_sig = min_cl_sig
-        self.min_beta = min_beta
-        self.set_prefix_rules = set_prefix_rules
-        self.alternativeLearner = alternative_learner
-        self.__dict__.update(kwds)
-    
-    def __call__(self, examples, weight=0):        
-        supervisedClassCheck(examples)
-        apriori = orange.Distribution(examples.domain.classVar, examples, weight)
-        ruleSet = orange.RuleList()  # resulting set of rules
-
-        # Progress bar in widgets 
-        progress=getattr(self,"progressCallback",None)
-        if progress:
-            self.progressCallback = progress
-            progress.start = 0.0
-            progress.end = 0.0
-            distrib = orange.Distribution(examples.domain.classVar, examples, weightID)
-            distrib.normalize()
-
-        # Main Loop
-        temp_dists = []
-        for cl_i,cl in enumerate(examples.domain.classVar):
-            # rulesForClass ... rules for this class only
-            rulesForClass = orange.RuleList()
-            if progress:
-                progress.start = progress.end
-                progress.end += distrib[cl]
-
-            # Compute EVD distribution if not set
-            if getattr(self, "dists", None):
-                self.ruleFinder.evaluator.evDistGetter.dists = createEVDistList(self.dists[cl_i])
-                temp_dists.append(self.dists[cl_i])
-            else:
-                ds = computeDists(examples, weight=weight, targetClass=cl_i, N=self.N, learner=self)
-                self.ruleFinder.evaluator.evDistGetter.dists = createEVDistList(ds)
-                temp_dists.append(ds)
-            examples = self.coverAndRemove.initialize(examples, weight, cl, apriori)
-            self.ruleFinder.evaluator.probVar = examples.domain.getmeta(self.coverAndRemove.probAttribute)
-            self.targetClass = cl
-            # Learn rules
-            while not self.dataStopping(examples,weight,cl):
-                # Learn rule
-                rule = self.learnRule(examples,weight,cl)
-                if not rule or len(rule.filter.conditions)==0: # stop learning if no rule has been learned
-                    break
-                (examples,weight) = self.coverAndRemove(rule,examples,weight,cl)
-                # add rule to rule set
-                if not rule_in_set(rule,rulesForClass):
-                    rulesForClass.append(rule)
-                if progress:
-                    progress(self.coverAndRemove.remainingExamplesP(examples,cl),None)
-                else:
-                    print "%4.2f,"%self.coverAndRemove.remainingExamplesP(examples,cl),
-            if not progress:
-                print
-            ruleSet.extend(self.coverAndRemove.getBestRules(rulesForClass,examples,weight))
-            if progress:
-                progress(1.0,None)
-            self.ruleFinder.evaluator.probVar = None
-        if self.add_sub_rules:
-            ruleSet = add_sub_rules(ruleSet, examples, weight, self, temp_dists)
-        return self.LCR(ruleSet, examples, weight)            
-
-    def learnRule(self,examples,weightID,targetClass):
-        self.ruleFinder.evaluator.bestRule = None
-        rule = self.ruleFinder(examples,weightID,targetClass,orange.RuleList())
-        return self.ruleFinder.evaluator.bestRule
-
-    def LCR(self, rules, examples, weight):
-        if self.alternativeLearner:
-            classifier = self.alternativeLearner(examples,weight)
-            probDist = orange.DistributionList()
-            for e in examples:
-                probDist.append(classifier(e,orange.GetProbabilities))
-            cl = orange.RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, examples, weight, self.set_prefix_rules, classifier, probDist)
-        else:
-            cl = orange.RuleClassifier_logit(rules, self.min_cl_sig, self.min_beta, examples, weight, self.set_prefix_rules)
-
-        for ri,r in enumerate(cl.rules):
-            cl.rules[ri].setattr("beta",cl.ruleBetas[ri])
-        cl.rules = self.sortRules(cl.rules)
-        cl.ruleBetas = [r.beta for r in cl.rules]
-        cl.data = examples
-        return cl
-
-    def sortRules(self, rules):
-        newRules = orange.RuleList()
-        foundRule = True
-        while foundRule:
-            foundRule = False
-            bestRule = None
-            for r in rules:
-                if r in newRules:
-                    continue
-                if r.beta < 0.01 and r.beta > -0.01:
-                    continue
-                if not bestRule:
-                    bestRule = r
-                    foundRule = True
-                    continue
-                if len(r.filter.conditions) < len(bestRule.filter.conditions):
-                    bestRule = r
-                    foundRule = True
-                    continue
-                if len(r.filter.conditions) ==  len(bestRule.filter.conditions) and r.beta > bestRule.beta:
-                    bestRule = r
-                    foundRule = True
-                    continue
-            if bestRule:
-                newRules.append(bestRule)
-        return newRules    
+                     
         
