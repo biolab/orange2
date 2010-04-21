@@ -247,8 +247,12 @@ class OWInteractionGraph(OWWidget):
 
         # execute dot and save otuput to pipes
         import subprocess
-        textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
-        textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
+        try:
+            textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
+            textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
+        except OSError, ex:
+            textPng = ""
+            textPlainList = []
 #        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
 #        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
 
