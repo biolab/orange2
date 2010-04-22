@@ -112,7 +112,7 @@ class ExampleTableModel(QAbstractItemModel):
                 return QVariant(tip)  
         else:
             if role == Qt.DisplayRole:
-                return QVariant(section)
+                return QVariant(section + 1)
         return QVariant()
     
     def sort(self, column, order=Qt.AscendingOrder):
