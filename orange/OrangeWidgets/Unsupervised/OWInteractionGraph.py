@@ -479,7 +479,7 @@ class OWInteractionGraph(OWWidget):
                 width = int(bottomRightRectList[0]) - xLeft
                 height = int(bottomRightRectList[1]) - yTop
 
-                rect = OWQCanvasFuncts.OWCanvasRectangle(self.canvasR, xLeft+2, yTop+2, width, height, penColor = Qt.blue, penWidth = 4, show = 0)
+                rect = OWQCanvasFuncts.OWCanvasRectangle(self.canvasR, xLeft, yTop, width, height, penColor = Qt.blue, penWidth = 4, show = 0)
 
                 if isAttribute == 1:
                     name = data.domain[int(attrIndex)].name
