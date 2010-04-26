@@ -462,16 +462,12 @@ class OWDistanceMap(OWWidget):
         else:
             self.offsetY = 5
 
-##        palette = self.colorPalette.getCurrentColorSchema().getPalette()
         palette = self.getGammaCorrectedPalette() #self.palette
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth),
                             int(self.CellHeight), lo, hi, 1.0, self.Grid)
 ##                            int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
-##        self.scene.setSceneRect(0, 0, 2000, 2000) # this needs adjustment
-
         for tmpText in self.annotationText:
-##            tmpText.setScene(None)
             self.scene.removeItem(tmpText)
 
         for cluster in self.clusterItems:
@@ -484,20 +480,13 @@ class OWDistanceMap(OWWidget):
             clusterHeight = 100.0
             
             clusterTop.setSize(width, -clusterHeight)
-            clusterLeft.setSize(width, clusterHeight)
+            clusterLeft.setSize(height, clusterHeight)
             
-#            clusterTop.setTransform(QTransform().scale(width/float(len(self.rootCluster)), -clusterHeight/clusterTop.rect().height()).\
-#                                    translate(0, -clusterTop.rect().height()))
-#            clusterTop.scale(1.0, -1.0)
-            clusterTop.setPos(0, self.offsetY + clusterHeight)
-#            clusterLeft.setTransform(QTransform().scale(clusterHeight/clusterLeft.rect().height(), width/float(len(self.rootCluster))).\
-#                                    rotate(90.001).translate(0, -clusterTop.rect().height()))
+            clusterTop.setPos(0 + self.CellWidth / 2.0, self.offsetY + clusterHeight)
 
-#            clusterLeft.setTransform(QTransform().scale(width/float(len(self.rootCluster)), clusterHeight/clusterLeft.rect().height()))
-#            clusterLeft.rotate(90)
 
             clusterLeft.rotate(90)
-            clusterLeft.setPos(self.offsetX + clusterHeight, 0)
+            clusterLeft.setPos(self.offsetX + clusterHeight, 0 + self.CellHeight / 2.0)
             self.offsetX += clusterHeight + 10
             self.offsetY += clusterHeight + 10
 
@@ -510,6 +499,9 @@ class OWDistanceMap(OWWidget):
         # determine the font size to fit the cell width
         fontrows = self.getfont(self.CellHeight)
         fontcols = self.getfont(self.CellWidth)
+        
+        fontmetrics_row = QFontMetrics(fontrows)
+        fontmetrics_col = QFontMetrics(fontcols)
     
         # labels rendering
         self.annotationText = []
@@ -549,11 +541,14 @@ class OWDistanceMap(OWWidget):
             for i in range(0, len(self.annotationText)/2):
 ##                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
 ##                self.annotationText[i*2].setY(self.offsetY)
-                self.annotationText[i*2].setPos(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth, self.offsetY + maxWidth)
+                self.annotationText[i*2].setPos(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth + \
+                                                fontmetrics_row.height()/2.0,
+                                                self.offsetY + maxWidth)
 ##                self.annotationText[i*2 + 1].setX(self.offsetX)
 ##                self.annotationText[i*2 + 1].setY(self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
 ##                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxHeight + 3 + (i+0.5)*self.CellHeight)
-                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxWidth + 3 + (i+0.5)*self.CellHeight)
+                self.annotationText[i*2 + 1].setPos(self.offsetX, self.offsetY + maxWidth + 3 + (i+0.5)*self.CellHeight +\
+                                                    fontmetrics_col.height()/2.0)
 
             self.offsetX += maxWidth + 10
 ##            self.offsetY += maxHeight + 10
@@ -577,8 +572,8 @@ class OWDistanceMap(OWWidget):
 
         if self.rootCluster and self.order:
             ## We now know the location of bitmap
-            clusterTop.setPos(self.offsetX, clusterTop.y())
-            clusterLeft.setPos(clusterLeft.x(), self.offsetY)
+            clusterTop.setPos(self.offsetX + self.CellWidth/2.0/self.Merge, clusterTop.y())
+            clusterLeft.setPos(clusterLeft.x(), self.offsetY + self.CellHeight/2.0/self.Merge)
             
         self.distanceImage = ImageItem(bitmap, self.scene, width, height,
                                        palette, x=self.offsetX, y=self.offsetY, z=0)
@@ -616,14 +611,15 @@ class OWDistanceMap(OWWidget):
 
     def getfont(self, height):
         """finds the font that for a given height"""
-        dummy = QGraphicsSimpleTextItem("123", None, self.scene)
-        for fontsize in range(8, 2, -1):
-            font = QFont("", fontsize)
-            dummy.setFont(font)
-            if dummy.boundingRect().height() <= height:
-                break
-        self.scene.removeItem(dummy)
-        return font
+        return QFont("", max(min(height, 8), 2))
+#        dummy = QGraphicsSimpleTextItem("123", None, self.scene)
+#        for fontsize in range(8, 2, -1):
+#            font = QFont("", fontsize)
+#            dummy.setFont(font)
+#            if dummy.boundingRect().height() <= height:
+#                break
+#        self.scene.removeItem(dummy)
+#        return font
 
     def updateSelectionRect(self):
         entireSelection = []
