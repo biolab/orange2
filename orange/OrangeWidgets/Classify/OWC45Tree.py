@@ -105,8 +105,9 @@ class OWC45Tree(OWWidget):
         except orange.KernelException, ex:
             self.error(0, "C45Loader: cannot load \c45.dll")
             import orngDebugging
-            if not orngDebugging.orngDebuggingEnabled: # Dont show the message box when running debugging scripts
+            if not orngDebugging.orngDebuggingEnabled and getattr(self, "__showMessageBox", True):  # Dont show the message box when running debugging scripts
                 QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
+                setattr(self, "__showMessageBox", False)
             return
 
         self.learner.name = self.name
