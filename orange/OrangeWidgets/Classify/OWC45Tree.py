@@ -95,17 +95,18 @@ class OWC45Tree(OWWidget):
 
 
     def setLearner(self):
+        self.error(0)
         try:
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
                                              minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100.,
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
                                              convertToOrange = 1, #self.convertToOrange,
                                              storeExamples = 1)
-        except:
+        except orange.KernelException, ex:
+            self.error(0, "C45Loader: cannot load \c45.dll")
             import orngDebugging
-            if orngDebugging.orngDebuggingEnabled: # raise error with no user input
-                raise
-            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
+            if not orngDebugging.orngDebuggingEnabled: # Dont show the message box when running debugging scripts
+                QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
             return
 
         self.learner.name = self.name
