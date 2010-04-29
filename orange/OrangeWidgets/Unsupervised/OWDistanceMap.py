@@ -517,14 +517,20 @@ class OWDistanceMap(OWWidget):
                 indices = [self.distanceMapConstructor.order[i] for i in tmp]
             else:
                 indices = tmp
-
+                
             maxHeight = 0
             maxWidth = 0
+            exampleTableHasNames = type(items) == orange.ExampleTable and any(ex.name for ex in items)
             for i in range(0, len(indices)):
                 text = items[indices[i]]
+                
                 if type(text) not in [str, unicode]:
-                    text = text.name
-                if text<>"":
+                    if exampleTableHasNames or isinstance(text, orange.Variable): 
+                        text = text.name
+                    else:
+                        text = repr(text)
+                        
+                if text != "":
                     tmpText = QCustomGraphicsText(text, self.scene, -90.0, font=fontcols)
                     tmpText.show()
                     if tmpText.boundingRect().height() > maxHeight:

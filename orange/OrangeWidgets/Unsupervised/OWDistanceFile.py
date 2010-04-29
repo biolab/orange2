@@ -199,6 +199,8 @@ class OWDistanceFile(OWWidget):
             lbl = orange.StringVariable('label')
             self.data = orange.ExampleTable(orange.Domain([lbl]), 
                                             [[str(l)] for l in self.labels])
+            for e, label in zip(self.data, self.labels):
+                e.name = label
             matrix.setattr("items", self.data)
         
         if self.data == None and self.labels == None:
