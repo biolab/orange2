@@ -15,7 +15,11 @@ import OWGUI
 
 class OWMergeData(OWWidget):
 
-##    settingsList = ["memberName"]
+    settingsList = ["varA", "varB"]
+
+    contextHandlers = {"A": DomainContextHandler("A", ["varA"]),
+                       "B": DomainContextHandler("B", ["varB"])}
+                                                 
 
     def __init__(self, parent = None, signalManager = None, name = "Merge data"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
@@ -49,7 +53,7 @@ class OWMergeData(OWWidget):
         grid.addWidget(boxAttrA, 0,0)
         self.lbAttrA = OWGUI.listBox(boxAttrA, self, "lbAttrAItems", callback = self.lbAttrAChange)
 
-        # attribute B
+        # attribute  B
         boxAttrB = OWGUI.widgetBox(self, 'Attribute B', orientation = "vertical", addToLayout=0)
         grid.addWidget(boxAttrB, 0,1)
         self.lbAttrB = OWGUI.listBox(boxAttrB, self, "lbAttrBItems", callback = self.lbAttrBChange)
@@ -78,6 +82,8 @@ class OWMergeData(OWWidget):
     ############################################################################################################################################################
 
     def onDataAInput(self, data):
+        print "in dataA"
+        self.closeContext("A")
         # set self.dataA, generate new domain if it is the same as of self.dataB.domain
         if data and self.dataB and data.domain == self.dataB.domain:
             if data.domain.classVar:
@@ -105,11 +111,17 @@ class OWMergeData(OWWidget):
         self.lbAttrA.clear()
         for var in self.varListA:
             self.lbAttrA.addItem(QListWidgetItem(self.icons[var.varType], var.name))
+        self.openContext("A", self.dataA)
+        print "varA", self.varA
+        if self.varA in self.varListA:
+            self.varA = self.varListA[self.varListA.index(self.varA)]
+            self.lbAttrA.setCurrentItem(self.lbAttrA.item(self.varListA.index(self.varA)))
         self.sendData()
 
 
     def onDataBInput(self, data):
         # set self.dataB, generate new domain if it is the same as of self.dataA.domain
+        self.closeContext("B")
         if data and self.dataA and data.domain == self.dataA.domain:
             if data.domain.classVar:
                 classVar = data.domain.classVar.clone()
@@ -136,6 +148,13 @@ class OWMergeData(OWWidget):
         self.lbAttrB.clear()
         for var in self.varListB:
             self.lbAttrB.addItem(QListWidgetItem(self.icons[var.varType], var.name))
+            
+        self.openContext("B", self.dataB)
+        print "varB", self.varB
+        if self.varB in self.varListB:
+            self.varB = self.varListB[self.varListB.index(self.varB)]
+            print self.varListB.index(self.varB)
+            self.lbAttrB.setCurrentItem(self.lbAttrB.item(self.varListB.index(self.varB)))
         self.sendData()
 
 
