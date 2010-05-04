@@ -81,8 +81,16 @@ class OWMergeData(OWWidget):
     ## Data input and output management
     ############################################################################################################################################################
 
+    def inVarList(self, varList, var):
+        if var in varList:
+            return True, varList.index(var)
+        elif var and var.varType == orange.Variable.String and var.name in [v.name for v in varList]:
+            return True, [v.name for v in varList].index(var.name)
+        else:
+            return False, -1
+        
+        
     def onDataAInput(self, data):
-        print "in dataA"
         self.closeContext("A")
         # set self.dataA, generate new domain if it is the same as of self.dataB.domain
         if data and self.dataB and data.domain == self.dataB.domain:
@@ -112,10 +120,10 @@ class OWMergeData(OWWidget):
         for var in self.varListA:
             self.lbAttrA.addItem(QListWidgetItem(self.icons[var.varType], var.name))
         self.openContext("A", self.dataA)
-        print "varA", self.varA
-        if self.varA in self.varListA:
-            self.varA = self.varListA[self.varListA.index(self.varA)]
-            self.lbAttrA.setCurrentItem(self.lbAttrA.item(self.varListA.index(self.varA)))
+        match, index = self.inVarList(self.varListA, self.varA)
+        if match:
+            self.varA = self.varListA[index]
+            self.lbAttrA.setCurrentItem(self.lbAttrA.item(index))
         self.sendData()
 
 
@@ -150,11 +158,10 @@ class OWMergeData(OWWidget):
             self.lbAttrB.addItem(QListWidgetItem(self.icons[var.varType], var.name))
             
         self.openContext("B", self.dataB)
-        print "varB", self.varB
-        if self.varB in self.varListB:
-            self.varB = self.varListB[self.varListB.index(self.varB)]
-            print self.varListB.index(self.varB)
-            self.lbAttrB.setCurrentItem(self.lbAttrB.item(self.varListB.index(self.varB)))
+        match, index = self.inVarList(self.varListB, self.varB)
+        if match:
+            self.varB = self.varListB[index]
+            self.lbAttrB.setCurrentItem(self.lbAttrB.item(index))
         self.sendData()
 
 
@@ -183,7 +190,7 @@ class OWMergeData(OWWidget):
     def sendData(self):
         """Sends out data.
         """
-        if self.varA and self.varB:
+        if self.varA and self.varB and self.dataA and self.dataB:
             # create dictionaries: attribute values -> example index
             val2idxDictA = {}
             for eIdx, e in enumerate(self.dataA):
