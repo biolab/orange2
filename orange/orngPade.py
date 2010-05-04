@@ -3,7 +3,6 @@ import math, numpy, string, os
 
 from orangeom import star, dist
 from copy import deepcopy
-from sets import Set
 
 #pathQHULL = r"c:\qhull"
 #pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
@@ -205,7 +204,7 @@ def starRegression(cache, dimensions, progressCallback=None, **args):
         if S==[]:
             cache.deltas[x] = ['?' for i in dimensions]
             continue
-        st  =list(Set(reduce(lambda x,y: x+y, S)))
+        st  =list(set(reduce(lambda x,y: x+y, S)))
         A = [points[i][:-1] for i in st]
         b = [[points[i][-1]] for i in st]
         cache.deltas[x] = [i[0] for i in numpy.linalg.lstsq(A, b)[0]]
@@ -241,7 +240,7 @@ def starUnivariateRegression(cache, dimensions, progressCallback = None, **args)
         if S==[]:
             cache.deltas[x] = ['?' for i in dimensions]
             continue
-        st = list(Set(reduce(lambda x,y: x+y, S)))
+        st = list(set(reduce(lambda x,y: x+y, S)))
         lenst = len(st)
         avgy = sum([points[i][-1] for i in st])/lenst
         for d in dimensions:
@@ -372,7 +371,7 @@ def Dpca(self):
         if S==[]:
             self.deltas[x] = ['?' for i in dimensions]
             continue
-        st = list(Set(reduce(lambda x,y: x+y, S)))
+        st = list(set(reduce(lambda x,y: x+y, S)))
         lenst = len(st)
         avgy = sum([points[i][-1] for i in st])/lenst
         for di, d in enumerate(dimensions):
