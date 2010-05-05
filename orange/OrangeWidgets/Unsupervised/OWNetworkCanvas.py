@@ -253,6 +253,7 @@ class OWNetworkCanvas(OWGraph):
       
       self.networkCurve = NetworkCurve(self)
       self.callbackMoveVertex = None
+      self.callbackSelectVertex = None
       
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
@@ -571,6 +572,9 @@ class OWNetworkCanvas(OWGraph):
                   self.selectVertices()
       else:
           OWGraph.mouseReleaseEvent(self, event)
+          
+      if self.callbackSelectVertex != None:
+          self.callbackSelectVertex()
 
   def keyPressEvent(self, keyEvent):
       if not self.visualizer:

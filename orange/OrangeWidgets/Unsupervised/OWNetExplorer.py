@@ -308,6 +308,8 @@ class OWNetExplorer(OWWidget):
         self.attSelectionAttribute = 0
         self.comboAttSelection = OWGUI.comboBox(ib, self, "attSelectionAttribute", label='Send attribute selection list:', orientation='horizontal', callback=self.sendAttSelectionList)
         self.comboAttSelection.addItem("Select attribute")
+        self.autoSendAttributes = 0
+        OWGUI.checkBox(ib, self, 'autoSendAttributes', "auto send attributes", callback=self.setAutoSendAttributes)
         
         self.icons = self.createAttributeIconDict()
         self.setMarkMode()
@@ -339,7 +341,13 @@ class OWNetExplorer(OWWidget):
         self.resize(1000, 600)
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
-        
+    
+    def setAutoSendAttributes(self):
+        if self.autoSendAttributes:
+            self.graph.callbackSelectVertex = self.sendAttSelectionList
+        else:
+            self.graph.callbackSelectVertex = None
+
     def sendAttSelectionList(self):
         vars = [x.name for x in self.visualize.getVars()]
         if not self.comboAttSelection.currentText() in vars:
