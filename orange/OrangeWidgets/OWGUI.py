@@ -1864,12 +1864,12 @@ class VisibleHeaderSectionContextEventFilter(QObject):
                     view.setSectionHidden(section, not bool)
                     if bool:
                         if self.itemView:
-                            self.itemView.resizeColumnToContents(i)
+                            self.itemView.resizeColumnToContents(section)
                         else:
-                            view.resizeSection(i, max(view.sectionSizeHint(i), 10))
+                            view.resizeSection(section, max(view.sectionSizeHint(section), 10))
                         
                 self.connect(action, SIGNAL("toggled(bool)"), toogleHidden)
-                self.connect(action, SIGNAL("toggled(bool)"), lambda bool, section=i: view.setSectionHidden(section, not bool))
+#                self.connect(action, SIGNAL("toggled(bool)"), lambda bool, section=i: view.setSectionHidden(section, not bool))
             menu.exec_(event.globalPos())
             return True
         
