@@ -613,7 +613,10 @@ class MDSGraph(OWGraph):
             self.closestPairs = sorted(heapq.nsmallest(np, ((m[i, j], i, j) for i in range(m.dim) for j in range(i))))
                 
         for c in self.distanceLineKeys:
-            c.detach()
+            try:
+                c.detach()
+            except RuntimeError, ex: #underlying C/C++ object has been deleted
+                pass
         self.distanceLineKeys = []
                 
         hdist = self.closestPairs[:np]
@@ -647,7 +650,10 @@ class MDSGraph(OWGraph):
                 self.updateDistanceLines()
             else:
                 for c in self.distanceLineKeys:
-                    c.detach()
+                    try:
+                        c.detach()
+                    except RuntimeError, ex: #underlying C/C++ object has been deleted
+                        pass 
                 self.distanceLineKeys = []
             self.replot()
 
