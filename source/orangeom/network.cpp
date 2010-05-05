@@ -28,6 +28,8 @@ TNetwork::TNetwork(TNetwork *net)
 	optimize.clear();
 	vector<int> vertices;
 	vector<int> neighbours;
+	desc = "";
+	name = "";
 	int v1;
 	for(v1 = 0; v1 < net->nVertices; v1++) {
 		net->getNeighboursFrom_Single(v1, neighbours);
@@ -84,6 +86,8 @@ TNetwork::TNetwork(TGraphAsList *graph)
 	optimize.clear();
 	vector<int> vertices;
 	vector<int> neighbours;
+	desc = "";
+	name = "";
 
 	for(int v1 = 0; v1 < graph->nVertices; v1++) {
 		graph->getNeighboursFrom_Single(v1, neighbours);
@@ -120,6 +124,9 @@ TNetwork::TNetwork(const int &nVert, const int &nEdge, const bool dir)
 	import_array();
 	optimize.clear();
 	vector<int> vertices;
+	desc = "";
+	name = "";
+
 	int i;
 	for (i = 0; i < nVert; i++)
 	{
@@ -855,6 +862,14 @@ PyObject *Network_get_description(PyObject *self, PyObject *args) /*P Y A RGS(ME
   PyCATCH
 }
 
+PyObject *Network_get_name(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> name")*/
+{
+  PyTRY
+	CAST_TO(TNetwork, graph);
+	//Py_INCREF(graph->desc);
+	return PyString_FromString(graph->name.c_str());
+  PyCATCH
+}
 
 int getWords(string const& s, vector<string> &container)
 {
@@ -1041,6 +1056,7 @@ PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 
 		graph = mlnew TNetwork(nVertices, nEdges, directed == 1);
 		graph->desc = description;
+		graph->name = graphName;
 
 		TFloatVariable *indexVar = new TFloatVariable("index");
 		indexVar->numberOfDecimals = 0;
