@@ -61,7 +61,6 @@ class SVMLearner(orange.SVMLearner):
         examples = orange.Preprocessor_dropMissingClasses(examples)
         if len(examples) == 0:
             raise ValueError("Example table is without any defined classes")
-        print examples, len(examples), len(examples.domain)
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
             self.svm_type+=3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
