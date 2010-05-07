@@ -644,7 +644,7 @@ class OWSOMVisualizer(OWWidget):
         for n in self.selectionList:
             if self.inputSet == 0 and n.examples:
                 ex.extend(n.examples)
-            elif self.inputSet == 1 and n.mappedExamples:
+            elif self.inputSet == 1 and getattr(n, "mappedExamples", False):
                 ex.extend(n.mappedExamples)
         if len(ex):
             self.send("Examples",ex)

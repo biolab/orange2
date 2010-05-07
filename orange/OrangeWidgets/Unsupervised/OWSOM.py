@@ -11,6 +11,13 @@ import orngSOM
 from OWWidget import *
 import OWGUI
 
+#class orange_input(object):
+#    def __init__(self, input_type, check=None):
+#        pass
+#    
+#    def __get__(self, instance):
+#        return self.__call__        
+
 class OWSOM(OWWidget):
     settingsList=["xdim", "ydim", "neighborhood", "topology", "alphaType", "iterations1", "iterations2",
                   "radius1", "radius2", "alpha1", "alpha2", "initialization", "eps"]
@@ -75,10 +82,29 @@ class OWSOM(OWWidget):
         
         self.resize(100, 100)
 
+    def dataWithDefinedValues(self, data, ):
+        self.warning(1235)
+        self.warning(1236)
+        exclude = []
+        for attr in data.domain.variables:
+            if not any(not ex[attr].isSpecial() for ex in data):
+                exclude.append(attr)
+        if exclude:
+            self.warning(1235, "Excluding attributes with all unknown values: %s." % ", ".join(attr.name for attr in exclude))
+            exclude_class = data.domain.classVar in exclude
+            if exclude_class:
+                self.warning(1236, "Excluding class attribute: %s" % data.domain.classVar.name) 
+            domain = orange.Domain([attr for attr in data.domain.variables if attr not in exclude],
+                                   data.domain.classVar if not exclude_class else False)
+            domain.addmetas(data.domain.getmetas())
+            data = orange.ExampleTable(domain, data)
+            
+        return data
         
     def setData(self, data=None):
         self.data = data
         if data:
+            self.data = self.dataWithDefinedValues(data)
             self.ApplySettings()
         else:
             self.send("Classifier", None)
