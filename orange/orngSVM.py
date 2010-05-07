@@ -58,6 +58,7 @@ class SVMLearner(orange.SVMLearner):
     maxNu = staticmethod(maxNu)
 
     def __call__(self, examples, weight=0):
+        examples = orange.Preprocessor_dropMissingClasses(examples)
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
             self.svm_type+=3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
@@ -74,7 +75,7 @@ class SVMLearner(orange.SVMLearner):
         if self.svm_type == orange.SVMLearner.Nu_SVC: #check nu feasibility
             maxNu = self.maxNu(examples)
             if self.nu > maxNu:
-                if getattr(self, "verbose", 0):
+                if getattr(self, "verbose", 0) or True:
                     import warnings
                     warnings.warn("Specified nu %.3f is infeasible. Setting nu to %.3f" % (self.nu, maxNu))
                 nu = max(maxNu - 1e-7, 0.0)
