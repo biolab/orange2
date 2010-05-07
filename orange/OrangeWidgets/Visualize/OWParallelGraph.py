@@ -193,7 +193,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curve.setRenderHint(QwtPlotItem.RenderAntialiased)
             if self.useSplines:      
                 curve.setCurveAttribute(QwtPlotCurve.Fitted)
-                print "sub:", curve
             curve.attach(self)
 
 
