@@ -120,7 +120,8 @@ class OWSVM(OWWidget):
     def setData(self, data=None):
         self.error(0)
         if data:
-            if data.domain.classVar:
+            data = orange.Preprocessor_dropMissingClasses(data)
+            if data.domain.classVar and len(data):
                 self.data=data
             else:
                 self.data=None
