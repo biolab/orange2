@@ -377,7 +377,7 @@ class SOMMap(orange.Classifier):
 
         if examples and examples.domain.classVar:
             for node in self.map:
-                node.classifier = orange.MajorityLearner(node.examples)
+                node.classifier = orange.MajorityLearner(node.examples if node.examples else examples)
 
     def getBestMatchingNode(self, example):
         """ Return the best matching node
