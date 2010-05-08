@@ -405,7 +405,7 @@ PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, c
 }
 
 
-void TDomainDepot::pattrFromtAttr(TDomainDepot::TAttributeDescriptions descs, TDomainDepot::TPAttributeDescriptions &pdescs) {
+void TDomainDepot::pattrFromtAttr(TDomainDepot::TAttributeDescriptions &descs, TDomainDepot::TPAttributeDescriptions &pdescs) {
   pdescs.clear();
   ITERATE(TDomainDepot::TAttributeDescriptions, adi, descs) {
     pdescs.push_back(&*adi);

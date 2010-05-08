@@ -70,7 +70,7 @@ public:
 
   typedef vector<TAttributeDescription> TAttributeDescriptions;
   typedef vector<TAttributeDescription *> TPAttributeDescriptions;
-  static void pattrFromtAttr(TDomainDepot::TAttributeDescriptions, TDomainDepot::TPAttributeDescriptions &);
+  static void pattrFromtAttr(TDomainDepot::TAttributeDescriptions &, TDomainDepot::TPAttributeDescriptions &);
 
   static bool checkDomain(const TDomain *, const TPAttributeDescriptions *attributes, bool hasClass,
                           const TPAttributeDescriptions *metas, int *metaIDs = NULL);
