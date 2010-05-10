@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -105,12 +105,12 @@ public:
 
   CLASSCONSTANTS(MultinomialTreatment) enum { LowestIsBase, FrequentIsBase, NValues, Ignore, IgnoreAllDiscrete, ReportError, AsOrdinal, AsNormalizedOrdinal};
   CLASSCONSTANTS(ContinuousTreatment) enum { Leave, NormalizeBySpan, NormalizeByVariance };
-  CLASSCONSTANTS(ClassTreatment: LeaveUnlessTarget=3; ErrorIfCannotHandle=4; AsOrdinal=5)
+  CLASSCONSTANTS(ClassTreatment: LeaveUnlessTarget=3; ErrorIfCannotHandle=5; AsOrdinal=6)
 
   bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined
   int continuousTreatment; //P(&DomainContinuizer_MultinomialTreatment) 0-leave as they are, 1-divide by span, 1-normalize
-  int multinomialTreatment; //P(&DomainContinuizer_ContinuousTreatment) 0-lowest value, 1-most frequent (or baseValue), 2-n binary, 3-ignore, 4-error, 5-convert as ordinal, 6-ordinal,normalized
-  int classTreatment; //P(&DomainContinuizer_ClassTreatment) 3-leave as is unless target is given, 4-error if not continuous nor binary nor target given, 5-convert as ordinal (unless target given)
+  int multinomialTreatment; //P(&DomainContinuizer_ContinuousTreatment) 0-lowest value, 1-most frequent (or baseValue), 2-n binary, 3-ignore, 4-ignore all discrete, 5-error, 6-convert as ordinal, 7-ordinal,normalized
+  int classTreatment; //P(&DomainContinuizer_ClassTreatment) 3-leave as is unless target is given, 5-error if not continuous nor binary nor target given, 6-convert as ordinal (unless target given)
 
   TDomainContinuizer();
 
