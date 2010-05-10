@@ -305,16 +305,22 @@ class OWTestLearners(OWWidget):
                 l.results = res
 
         self.error()
-        try:
-            scores = [eval("orngStat." + s.f) for s in self.stat]
-            for (i, l) in enumerate(learners):
-                self.learners[l.id].scores = [s[i] for s in scores]
-        except:
-            type, val, traceback = sys.exc_info()
-            sys.excepthook(type, val, traceback)  # output the exception
-            self.error("An error occurred while evaluating %s" % \
-                       " ".join([l.name for l in learners]))
-
+        scores = []
+        for s in self.stat:
+            try:
+                scores.append(eval("orngStat." + s.f))
+#                scores = [eval("orngStat." + s.f) for s in self.stat]
+#                for (i, l) in enumerate(learners):
+#                    self.learners[l.id].scores = [s[i] for s in scores]
+            except:
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # output the exception
+                self.error("An error occurred while evaluating %s" % \
+                           " ".join([l.name for l in learners]))
+                scores.append([None] * len(self.learners))
+        for (i, l) in enumerate(learners):
+            self.learners[l.id].scores = [s[i] for s in scores]
+            
         self.sendResults()
 
     def recomputeCM(self):
