@@ -74,7 +74,7 @@ elif sys.platform == "linux2":
         print "compiler/linker exited abnormally"
 
 elif sys.platform == "darwin":
-    ret = os.system('gcc -F. -bundle -O3 ensemble.c -o %s/c45.so' % orangedir)
+    ret = os.system('gcc -F. -bundle -O3 -arch ppc -arch i386 -arch x86_64 ensemble.c -o %s/c45.so' % orangedir)
     if ret:
         print "compiler/linker exiter abnormally"
 
