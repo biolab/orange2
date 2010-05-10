@@ -737,9 +737,10 @@ class ScaleView(QGraphicsView):
         self.markerPos=0
 
     def clear(self):
-        for a in self.scene().obj:
-            self.scene().removeItem(a)
-        self.scene().removeItem(self.scene().marker)
+        self.scene().clear()
+#        for a in self.scene().obj:
+#            self.scene().removeItem(a)
+#        self.scene().removeItem(self.scene().marker)
         self.scene().obj=[]
 
     def drawScale(self, treeAreaW, height):
@@ -851,41 +852,17 @@ class BubbleRect(QGraphicsRectItem):
         self.text=QGraphicsTextItem(self)
         self.text.setPos(5, 5)
         self.setZValue(30)
-##        self.text.setZValue(31)
 
     def setText(self, text):
         self.text.setPlainText(text)
         self.setRect(0, 0, self.text.boundingRect().width()+6,self.text.boundingRect().height()+6)
-##        self.rect().setWidth(self.text.boundingRect().width())
-##        self.rect().setHeight(self.text.boundingRect().height())
-
-##    def show(self):
-##        QGraphicsRectItem.show(self)
-##        self.text.show()
-##
-##    def hide(self):
-##        QGraphicsRectItem.hide(self)
-##        self.text.hide()
 
     def setPos(self, x, y):
         if self.scene().sceneRect().contains(x+self.rect().width(),y):
             QGraphicsRectItem.setPos(self, x+5, y+5)
-##            self.text.move(x+6,y+6)
         else:
             QGraphicsRectItem.setPos(self, x-self.rect().width()-5, y+5)
-##            self.text.move(x-self.width()-3,y+6)
-        #if not self.canvas().onCanvas(1,y+self.height()):
-        #    self.move(x,y-self.height())
-            #if not self.canvas().onCanvas(self.x(),self.y()) and  \
-            #               self.canvas().onCanvas(self.x(),self.y()+self.height()):
-            #    while not self.canvas().onCanvas(self.x(),self.y()) and self.y()<self.canvas().height():
-            #        QCanvasRectangle.move(self,self.x(), self.y()+10)
-            #    self.move(self.x(),self.y())
 
-
-##    def setCanvas(self, canvas):
-##        QCanvasRectangle.setCanvas(self,canvas)
-##        self.text.setCanvas(canvas)
 
 if __name__=="__main__":
     app=QApplication(sys.argv)

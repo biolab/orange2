@@ -692,7 +692,6 @@ class MDSGraph(OWGraph):
             if self.stressBySize or self.stressByTransparency:
                 stresses = map(sum, self.mds.stress)
                 mins, maxs = min(stresses), max(stresses)
-                print mins, maxs
                 ks = self.PointSize / max(1, maxs-mins)
                 cs = 1 / max(1., maxs-mins)
             for i in range(len(self.colors)):
