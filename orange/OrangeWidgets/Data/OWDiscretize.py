@@ -512,7 +512,7 @@ class OWDiscretize(OWWidget):
         graphGraphBox = OWGUI.widgetBox(graphBox)
         self.graph = DiscGraph(self, graphGraphBox)
         graphGraphBox.layout().addWidget(self.graph)
-        reportButton2 = OWGUI.button(graphGraphBox, self, "Report Graph", callback = self.reportGraph)
+        reportButton2 = OWGUI.button(graphGraphBox, self, "Report Graph", callback = self.reportGraph, debuggingEnabled=0)
 
         #graphOptBox.layout().setSpacing(4)
         box = OWGUI.widgetBox(graphOptBox, "Split gain measure", addSpace=True)
