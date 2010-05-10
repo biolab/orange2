@@ -254,6 +254,7 @@ class OWKMeans(OWWidget):
         self.km = orngClustering.KMeans(
             self.data,
             centroids = self.K,
+            minscorechange=0,
             nstart = self.restarts,
             initialization = self.initializations[self.initializationType][1],
             distance = self.distanceMeasures[self.distanceMeasure][1],
