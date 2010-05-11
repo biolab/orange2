@@ -16,6 +16,8 @@ import statc
 from PyQt4.Qwt5 import *
 from itertools import izip
 
+import orngDebugging
+
 ##############################################################################
 # main class
 
@@ -113,7 +115,8 @@ class OWKMeans(OWWidget):
                        tooltip=None, indent=20,
                        callback = self.update)
         OWGUI.spin(cb.box, self, "restarts", label="Restarts", orientation="horizontal",
-                   min=1, max=100, callback=self.update, callbackOnReturn=True)
+                   min=1, max=100 if not orngDebugging.orngDebuggingEnabled else 5,
+                   callback=self.update, callbackOnReturn=True)
 
         box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
         cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
