@@ -1727,6 +1727,7 @@ class LinkStyledItemDelegate(QStyledItemDelegate):
     def linkRect(self, option, index):
         style = self.parent().style()
         text = self.displayText(index.data(Qt.DisplayRole), QLocale.system())
+        self.initStyleOption(option, index)
         textRect = style.subElementRect(QStyle.SE_ItemViewItemText, option)
         margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin, option) + 1
         textRect = textRect.adjusted(margin, 0, -margin, 0)
