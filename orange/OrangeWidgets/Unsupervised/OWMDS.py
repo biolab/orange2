@@ -96,7 +96,7 @@ class OWMDS(OWWidget):
         b2 = OWGUI.widgetBox(box)
         OWGUI.widgetLabel(b2, "Proportion of connected pairs")
         OWGUI.separator(b2, height=3)
-        sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint)
+        sl = OWGUI.hSlider(b2, self, "graph.proportionGraphed", minValue=0, maxValue=20, callback=self.graph.updateLinesRepaint, tooltip="Proportion of connected pairs (Maximum of 1000 lines will be drawn")
         OWGUI.checkBox(box, self, "graph.differentWidths", "Show distance by line width", callback = self.graph.updateLinesRepaint)
         OWGUI.checkBox(box, self, "graph.stressByTransparency", "Show stress by transparency", callback = self.graph.updateLinesRepaint)
         OWGUI.checkBox(box, self, "graph.stressBySize", "Show stress by symbol size", callback = self.updateStressBySize)
@@ -604,7 +604,7 @@ class MDSGraph(OWGraph):
 
     def updateDistanceLines(self):
         N = len(self.mds.points)
-        np = int(N*(N-1)/2. * self.proportionGraphed/100.)
+        np = min(int(N*(N-1)/2. * self.proportionGraphed/100.), 1000) # draw maximum of 1000 closest pairs
         needlines = int(math.ceil((1 + math.sqrt(1+8*np)) / 2)) 
 
         if self.closestPairs is None or len(self.closestPairs) < np:
