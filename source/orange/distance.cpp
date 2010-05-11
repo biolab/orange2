@@ -389,8 +389,13 @@ TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass
       TDiscDistribution *distr = (*di).AS(TDiscDistribution);
       ITERATE(vector<float>, pi, distr->distribution)
         sum2 += (*pi) * (*pi);
-      sum2 /= distr->abs * distr->abs;
-      bothSpecialDist->push_back(1-sum2);
+      if (distr->abs > 1e-6) {
+        sum2 /= distr->abs * distr->abs;
+        bothSpecialDist->push_back(1-sum2);
+      }
+      else {
+        bothSpecialDist->push_back(0.0);
+      }
     }
     else
       bothSpecialDist->push_back(0.0);
