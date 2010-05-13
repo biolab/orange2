@@ -525,7 +525,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuCheckForUpdates(self):
         import updateOrange
-        self.updateDlg = updateOrange.updateOrangeDlg(None, "", Qt.WDestructiveClose)
+        self.updateDlg = updateOrange.updateOrangeDlg(None)#, Qt.WA_DeleteOnClose)
 
     def menuItemAboutOrange(self):
         dlg = orngDlgs.AboutDlg()
