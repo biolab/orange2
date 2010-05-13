@@ -232,6 +232,9 @@ def getLinearSVMWeights(classifier):
         else:
             w[key]=mul*val
             
+    def to_float(val):
+        return float(val) if not val.isSpecial() else 0.0 
+            
     SVs=classifier.supportVectors
     weights=[]
     classes=classifier.supportVectors.domain.classVar.values
@@ -246,12 +249,12 @@ def getLinearSVMWeights(classifier):
             for svInd in apply(range, svRanges[i]):
                 for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
-                        updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
+                        updateWeights(w, attr, to_float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             coefInd=i
             for svInd in apply(range, svRanges[j]):
                 for attr in SVs.domain.attributes+SVs[svInd].getmetas(False, orange.Variable).keys():
                     if attr.varType==orange.VarTypes.Continuous:
-                        updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
+                        updateWeights(w, attr, to_float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             weights.append(w)
     return weights
 
@@ -330,7 +333,7 @@ class RFE(object):
         >>> data_with_removed_features = rfe(data, 5) # retruns an example table with only 5 best attributes
     """
     def __init__(self, learner=None):
-        self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.Linear)
+        self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.Linear, normalization=False)
 
     def getAttrScores(self, data, stopAt=0):
         """ Return a dict mapping attributes to scores (scores are not scores in a general
@@ -338,9 +341,9 @@ class RFE(object):
         evaluation).  
         """
         iter = 1
-        attrs = data.domain.attributese
+        attrs = data.domain.attributes
         attrScores = {}
-        while len(attrs)>stopAt:
+        while len(attrs) > stopAt:
             weights = getLinearSVMWeights(self.learner(data))
             print iter, "Remaining:", len(attrs)
             score = dict.fromkeys(attrs, 0)
