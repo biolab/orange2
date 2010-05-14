@@ -10,19 +10,19 @@ def log2(x):
 
 def checkNonZero(x):
     if x==0.0:
-        raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
+        raise ValueError, "Cannot compute the score: no examples or sum of weights is 0.0."
 
 def gettotweight(res):
     totweight = reduce(lambda x, y: x+y.weight, res.results, 0)
     if totweight==0.0:
-        raise SystemError, "Cannot compute the score: sum of weights is 0.0."
+        raise ValueError, "Cannot compute the score: sum of weights is 0.0."
     return totweight
 
 def gettotsize(res):
     if len(res.results):
         return len(res.results)
     else:
-        raise SystemError, "Cannot compute the score: no examples."
+        raise ValueError, "Cannot compute the score: no examples."
 
 
 def splitByIterations(res):
@@ -55,7 +55,7 @@ def statisticsByFolds(stats, foldN, reportSE, iterationIsOuter):
     # remove empty folds, turn the matrix so that learner is outer
     if iterationIsOuter:
         if not stats:
-            raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
+            raise ValueError, "Cannot compute the score: no examples or sum of weights is 0.0."
         numberOfLearners = len(stats[0])
         stats = filter(lambda (x, fN): fN>0.0, zip(stats,foldN))
         stats = [ [x[lrn]/fN for x, fN in stats] for lrn in range(numberOfLearners)]
@@ -63,9 +63,9 @@ def statisticsByFolds(stats, foldN, reportSE, iterationIsOuter):
         stats = [ [x/Fn for x, Fn in filter(lambda (x, Fn): Fn > 0.0, zip(lrnD, foldN))] for lrnD in stats]
 
     if not stats:
-        raise SystemError, "Cannot compute the score: no classifiers"
+        raise ValueError, "Cannot compute the score: no classifiers"
     if not stats[0]:
-        raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
+        raise ValueError, "Cannot compute the score: no examples or sum of weights is 0.0."
     
     if reportSE:
         return [(statc.mean(x), statc.sterr(x)) for x in stats]
@@ -132,7 +132,7 @@ def regressionError(res, **argkw):
                     else:
                         scores[i][tex.iterationNumber] += (float(cls) - ai)**2
         else: # unweighted<>0
-            raise SystemError, "weighted error scores with SE not implemented yet"
+            raise NotImplementedError, "weighted error scores with SE not implemented yet"
 
         if argkw.get("norm-abs") or argkw.get("norm-sqr"):
             scores = [[x/n for x, n in zip(y, norm)] for y in scores]
@@ -237,7 +237,7 @@ def MSE_old(res, **argkw):
                 for i, cls in enumerate(tex.classes):
                     MSEs[i][tex.iterationNumber] += (float(cls) - ac)**2
         else:
-            raise SystemError, "weighted RMSE with SE not implemented yet"
+            raise ValueError, "weighted RMSE with SE not implemented yet"
         MSEs = [[x/ni for x, ni in zip(y, nIter)] for y in MSEs]
         if argkw.get("sqrt", 0):
             MSEs = [[math.sqrt(x) for x in y] for y in MSEs]
@@ -750,7 +750,9 @@ def MCC(confm):
         except ZeroDivisionError:
             # Zero difision occurs when there is either no true positives 
             # or no true negatives i.e. the problem contains only one 
-            # type of classes. 
+            # type of classes.
+            import warnings
+            warnings.warn("Can't compute MCC: TP or TN is zero or not defined")
             r = None
 
     return r
@@ -945,7 +947,7 @@ def frange(start, end=None, inc=None):
 def TCverticalAverageROC(ROCcurves, samples = 10):
     def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
         if (P1x == P2x) or ((X > P1x) and (X > P2x)) or ((X < P1x) and (X < P2x)):
-            raise SystemError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
+            raise ValueError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
         dx = float(P2x) - float(P1x)
         dy = float(P2y) - float(P1y)
         m = dy/dx
@@ -962,9 +964,11 @@ def TCverticalAverageROC(ROCcurves, samples = 10):
         (fp, tp, _) = ROC[i]
         if fp == FPsample:
             return tp
-        elif fp < FPsample:
+        elif fp < FPsample and i + 1 < len(ROC):
             return INTERPOLATE(ROC[i], ROC[i+1], FPsample)
-        raise SystemError, "cannot compute: TP_FOR_FP in TCverticalAverageROC"
+        elif fp < FPsample and i + 1 == len(ROC): # return the last
+            return ROC[i][1]
+        raise ValueError, "cannot compute: TP_FOR_FP in TCverticalAverageROC"
         #return 0.0
 
     average = []
@@ -1137,7 +1141,6 @@ def computeLiftCurve(res, classIndex=-1):
 
     results = []
     P, N = tots[1], tots[0]
-
     for plist in problists:
         ## corn gives an increasing by scores list, we need a decreasing by scores
         plist.reverse()
@@ -1147,7 +1150,10 @@ def computeLiftCurve(res, classIndex=-1):
         for (f, (thisNeg, thisPos)) in plist:
             TP += thisPos
             FP += thisNeg
-            curve.append( ((TP+FP)/(P + N), TP, (f, FP/N)) )
+            if FP > N:
+                import warnings
+                warnings.warn("The sky is falling!!")
+            curve.append( ((TP+FP)/(P + N), TP, (f, FP/(N or 1))) )
         results.append(curve)
 
     return P, N, results
@@ -1333,7 +1339,7 @@ def AUC_multi(res, useWeights = True, method = 0):
 # Results over folds are averages; if some folds examples from one class only, the folds are merged
 def AUC(res, method = 0, useWeights = True):
     if len(res.classValues) < 2:
-        raise "Cannot compute AUC on a single-class problem"
+        raise ValueError("Cannot compute AUC on a single-class problem")
     elif len(res.classValues) == 2:
         return AUC_binary(res, useWeights)
     else:
