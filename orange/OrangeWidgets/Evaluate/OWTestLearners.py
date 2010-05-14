@@ -289,7 +289,10 @@ class OWTestLearners(OWWidget):
                                           times=self.pRepeat, callback=pb.advance, storeExamples = True)
             pb.finish()
         elif self.resampling==3:
-            res = orngTest.learnAndTestOnLearnData(learners, self.data, storeExamples = True)
+            pb = OWGUI.ProgressBar(self, iterations=len(learners))
+            res = orngTest.learnAndTestOnLearnData(learners, self.data, storeExamples = True, callback=pb.advance)
+            pb.finish()
+            
         elif self.resampling==4:
             if not self.testdata:
                 for l in self.learners.values():
@@ -304,22 +307,19 @@ class OWTestLearners(OWWidget):
             if l.learner in learners:
                 l.results = res
 
-        self.error()
+        self.error(range(len(self.stat)))
         scores = []
-        for s in self.stat:
+        for i, s in enumerate(self.stat):
             try:
                 scores.append(eval("orngStat." + s.f))
-#                scores = [eval("orngStat." + s.f) for s in self.stat]
-#                for (i, l) in enumerate(learners):
-#                    self.learners[l.id].scores = [s[i] for s in scores]
-            except:
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # output the exception
-                self.error("An error occurred while evaluating %s" % \
-                           " ".join([l.name for l in learners]))
+                
+            except Exception, ex:
+                self.error(i, "An error occurred while evaluating orngStat." + s.f + "on %s due to %s" % \
+                           (" ".join([l.name for l in learners]), ex.message))
                 scores.append([None] * len(self.learners))
+                
         for (i, l) in enumerate(learners):
-            self.learners[l.id].scores = [s[i] for s in scores]
+            self.learners[l.id].scores = [s[i] if s else None for s in scores]
             
         self.sendResults()
 

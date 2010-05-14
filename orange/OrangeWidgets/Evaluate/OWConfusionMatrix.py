@@ -66,6 +66,7 @@ class OWConfusionMatrix(OWWidget):
     def setTestResults(self, res):
         self.res = res
         if not res:
+            self.matrix = None
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
             return
@@ -101,7 +102,7 @@ class OWConfusionMatrix(OWWidget):
 
 
     def learnerChanged(self):
-        if not self.res.numberOfLearners:
+        if not (self.res and self.res.numberOfLearners):
             return
         
         if self.selectedLearner and self.selectedLearner[0] > self.res.numberOfLearners:
@@ -122,6 +123,9 @@ class OWConfusionMatrix(OWWidget):
 
 
     def reprint(self):
+        if not self.matrix:
+            return
+        
         cm = self.matrix[self.selectedLearner[0]]
 
         dim = len(cm)
@@ -139,6 +143,8 @@ class OWConfusionMatrix(OWWidget):
         for ri, r in enumerate(cm):
             for ci, c in enumerate(r):
                 item = self.table.item(ri, ci)
+                if not item:
+                    continue
                 if self.shownQuantity == 0:
                     item.setText(self.isInteger % c)
                 elif self.shownQuantity == 1:
@@ -220,7 +226,7 @@ class OWConfusionMatrix(OWWidget):
 
         selected = [(x.row(), x.column()) for x in self.table.selectedIndexes()]
         res = self.res
-        if not res or not selected:
+        if not res or not selected or not self.selectedLearner:
             self.send("Selected Examples", None)
             return
 

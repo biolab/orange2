@@ -217,7 +217,7 @@ class singleClassROCgraph(OWGraph):
         self.diagonalCKey.setVisible(self.showDiagonal)
 
         showSomething = 0
-        for cNum in range(len(self.showClassifiers)):
+        for cNum in range(len(zip(self.showClassifiers, self.mergedCKeys))):
             showCNum = (self.showClassifiers[cNum] <> 0)
 
             ## 'merge' averaging
@@ -248,7 +248,7 @@ class singleClassROCgraph(OWGraph):
             self.thresholdCKeys[cNum].setVisible(b)
 
             ## 'None' averaging
-            for iNum in range(len(self.showIterations)):
+            for iNum in range(len(zip(self.showIterations, self.classifierIterationCKeys[cNum], self.classifierIterationConvexCKeys[cNum]))):
                 b = (self.averagingMethod == None) and showCNum and (self.showIterations[iNum] <> 0)
                 showSomething = showSomething or b
                 self.classifierIterationCKeys[cNum][iNum].setVisible(b)
@@ -399,7 +399,13 @@ class singleClassROCgraph(OWGraph):
         ##
         ## self.averagingMethod == 'vertical':
         ## calculated from the self.classifierIterationROCdata data
-        (averageCurves, verticalErrorBarValues) = orngStat.TCverticalAverageROC(ROCS, self.VTAsamples)
+        try:
+            (averageCurves, verticalErrorBarValues) = orngStat.TCverticalAverageROC(ROCS, self.VTAsamples)
+        except (ValueError, SystemError), er:
+            print >> sys.stderr, "Failed to compute vertical average ROC curve. " + er.message
+            averageCurves, verticalErrorBarValues = [], []
+            pass
+         
         classifier = 0
         for c in averageCurves:
             self.verticalConvexHullData.append(c)
@@ -555,22 +561,23 @@ class singleClassROCgraph(OWGraph):
 
     def setPointWidth(self, v):
         self.performanceLineSymbol.setSize(v, v)
-        self.performanceLineCKey.setSymbol(self.performanceLineSymbol)
+        if self.performanceLineCKey:
+            self.performanceLineCKey.setSymbol(self.performanceLineSymbol)
         self.update()
 
     def setCurveWidth(self, v):
-        for cNum in range(len(self.showClassifiers)):
+        for cNum in range(len(zip(self.showClassifiers, self.mergedCKeys))):
             self.mergedCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             self.verticalCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             self.thresholdCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
-            for iNum in range(len(self.showIterations)):
+            for iNum in range(len(zip(self.showIterations, self.classifierIterationCKeys[cNum]))):
                 self.classifierIterationCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
         self.update()
 
     def setConvexCurveWidth(self, v):
-        for cNum in range(len(self.showClassifiers)):
+        for cNum in range(len(zip(self.showClassifiers, self.mergedConvexCKeys))):
             self.mergedConvexCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
-            for iNum in range(len(self.showIterations)):
+            for iNum in range(len(zip(self.showIterations, self.classifierIterationConvexCKeys[cNum]))):
                 self.classifierIterationConvexCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
         self.update()
 
@@ -892,7 +899,7 @@ class OWROC(OWWidget):
             if vi == self.targetClass:
                 distrib.append(0.0)
             else:
-                distrib.append(self.pvalueList[vi] / float(sum - self.pvalue))
+                distrib.append(0.0 if sum - self.pvalue == 0  else self.pvalueList[vi] / float(sum - self.pvalue))
 
         dif = self.maxpsum - sum
         for vi in range(len(distrib)):
@@ -904,10 +911,10 @@ class OWROC(OWWidget):
 
         ## small changes
         dif = self.maxpsum - int(statc.sum(self.pvalueList))
-        while abs(dif) > 0:
+        while abs(dif) > 0 and len(self.pvalueList) > 1:
             if dif > 0: vi = self.pvalueList.index(min(self.pvalueList[:self.targetClass] + [self.maxp + 1] + self.pvalueList[self.targetClass+1:]))
             else: vi = self.pvalueList.index(max(self.pvalueList[:self.targetClass] + [self.minp - 1] + self.pvalueList[self.targetClass+1:]))
-
+            
             if dif > 0: self.pvalueList[vi] += 1
             elif dif < 0: self.pvalueList[vi] -= 1
 
@@ -935,8 +942,9 @@ class OWROC(OWWidget):
         if not dres:
             self.targetClass = None
             self.classCombo.clear()
-            self.removeGraphs()
             self.testSetsQLB.clear()
+            self.classifiersQLB.clear()
+            self.removeGraphs()
             self.openContext("", dres)
             return
         self.dres = dres

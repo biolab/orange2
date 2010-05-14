@@ -204,9 +204,9 @@ class OWCalibrationPlot(OWWidget):
         self.selectedClassifiers = []
 
         # GUI
-        self.graphsGridLayoutQGL = QGridLayout(self)
         import sip
         sip.delete(self.mainArea.layout())
+        self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
         self.mainArea.setLayout(self.graphsGridLayoutQGL)
 
         ## save each ROC graph in separate file

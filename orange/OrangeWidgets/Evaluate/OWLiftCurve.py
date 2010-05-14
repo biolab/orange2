@@ -110,7 +110,10 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
             minc = 0
             localMinCostPoints = []
             for (cNum, (threshold, FPrate)) in fp:
-                cost = self.pvalue*(1.0 - TP/self.P)*self.FNcost + (1.0 - self.pvalue)*FPrate*self.FPcost
+                if TP > self.P:
+                    import warnings
+                    warnings.warn("The sky is falling!!")
+                cost = self.pvalue*(1.0 - TP/(self.P or 1))*self.FNcost + (1.0 - self.pvalue)*FPrate*self.FPcost
                 if first or cost < minc:
                     first = 0
                     minc = cost
