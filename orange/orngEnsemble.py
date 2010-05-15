@@ -177,6 +177,8 @@ class RandomForestLearner(orange.Learner):
         else:
             self.rand = random.Random()
             self.rand.seed(0)
+            
+        self.randstate = self.rand.getstate() #original state
 
         if not learner:
             # tree learner assembled as suggested by Brieman (2001)
@@ -189,6 +191,8 @@ class RandomForestLearner(orange.Learner):
         # if number of attributes for subset is not set, use square root
         if hasattr(self.learner.split, 'attributes') and not self.learner.split.attributes:
             self.learner.split.attributes = int(sqrt(len(examples.domain.attributes)))
+
+        self.rand.setstate(self.randstate) #when learning again, set the same state
 
         n = len(examples)
         # build the forest
