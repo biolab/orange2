@@ -48,16 +48,19 @@ class OWAttributeDistance(OWWidget):
         self.reportData(self.data)
 
     def computeMatrix(self):
-        self.error()
+        self.error(0)
         if self.data:
             atts = self.data.domain.attributes
             matrix = orange.SymMatrix(len(atts))
             matrix.setattr('items', atts)
-
             if self.classInteractions < 3:
                 if self.data.domain.hasContinuousAttributes():
                     if self.discretizedData is None:
-                        self.discretizedData = orange.Preprocessor_discretize(self.data, method=orange.EquiNDiscretization(numberOfIntervals=4))
+                        try:
+                            self.discretizedData = orange.Preprocessor_discretize(self.data, method=orange.EquiNDiscretization(numberOfIntervals=4))
+                        except orange.KernelException, ex:
+                            self.error(0, "An error ocured during data discretization: %s" % ex.message)
+                            return None
                     data = self.discretizedData
                 else:
                     data = self.data
@@ -70,7 +73,7 @@ class OWAttributeDistance(OWWidget):
                         classedDomain = orange.Domain(data.domain.attributes, orange.EnumVariable("foo", values=["0", "1"]))
                         data = orange.ExampleTable(classedDomain, data)
                     else:
-                        self.error("The selected distance measure requires a data set with a class attribute")
+                        self.error(0, "The selected distance measure requires a data set with a class attribute")
                         return None
 
                 im = orngInteract.InteractionMatrix(data, dependencies_too=1)
@@ -94,7 +97,7 @@ class OWAttributeDistance(OWWidget):
                             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, self.data, 0).r) / 2.0
                 else:
                     if len(self.data) < 3:
-                        self.error("The selected distance measure requires a data set with at least 3 instances")
+                        self.error(0, "The selected distance measure requires a data set with at least 3 instances")
                         return None
                     import numpy, statc
                     m = self.data.toNumpyMA("A")[0]
