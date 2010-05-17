@@ -93,6 +93,9 @@ class OWAttributeDistance(OWWidget):
                         for a2 in range(a1):
                             matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, self.data, 0).r) / 2.0
                 else:
+                    if len(self.data) < 3:
+                        self.error("The selected distance measure requires a data set with at least 3 instances")
+                        return None
                     import numpy, statc
                     m = self.data.toNumpyMA("A")[0]
                     averages = numpy.ma.average(m, axis=0)
