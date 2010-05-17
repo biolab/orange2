@@ -482,7 +482,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
             self.potentialsImage = QImage(imagebmp, rx, ry, QImage.Format_Indexed8)
-            self.potentialsImage.setColorTable(ColorPalette.signedPalette(palette))
+            self.potentialsImage.setColorTable(ColorPalette.signedPalette(palette) if qVersion() < "4.5" else palette)
             self.potentialsImage.setNumColors(256)
             self.potentialContext = (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
 
