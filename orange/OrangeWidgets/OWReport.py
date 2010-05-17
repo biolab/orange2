@@ -215,7 +215,7 @@ class ReportWindow(OWWidget):
 
         tt = file(self.indexfile, "rt").read()
         
-        index = "<br/>".join('<a href="%s">%s</a>' % (self.tree.item(i).elementId, self.re_h1.search(self.tree.item(i).content).group("name"))
+        index = "<br/>".join('<a href="#%s">%s</a>' % (self.tree.item(i).elementId, self.re_h1.search(self.tree.item(i).content).group("name"))
                              for i in range(self.tree.count()))
             
         data = "\n".join(self.tree.item(i).content for i in range(self.tree.count()))
