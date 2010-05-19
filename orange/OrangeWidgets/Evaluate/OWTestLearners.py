@@ -324,6 +324,8 @@ class OWTestLearners(OWWidget):
         self.sendResults()
 
     def recomputeCM(self):
+        if not self.results:
+            return
         cm = orngStat.computeConfusionMatrices(self.results, classIndex = self.targetClass)
         scores = [(indx, eval("orngStat." + s.f))
                   for (indx, s) in enumerate(self.stat) if s.cmBased]
@@ -344,6 +346,7 @@ class OWTestLearners(OWWidget):
             # data was removed, remove the scores
             for l in self.learners.values():
                 l.scores = []
+                l.results = None
             self.send("Evaluation Results", None)
         else:
             # new data has arrived
@@ -427,8 +430,10 @@ class OWTestLearners(OWWidget):
         """commit evaluation results"""
         # for each learner, we first find a list where a result is stored
         # and remember the corresponding index
+
         valid = [(l.results, [x.id for x in l.results.learners].index(l.id))
-                 for l in self.learners.values() if l.scores]
+                 for l in self.learners.values() if l.scores and l.results]
+            
         if not (self.data and len(valid)):
             self.send("Evaluation Results", None)
             return
