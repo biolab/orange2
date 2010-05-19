@@ -297,12 +297,15 @@ class OWHierarchicalClustering(OWWidget):
             OWWidget.keyReleaseEvent(self, key)
 
     def updateCutOffLine(self):
-        if self.SelectionMode:
-            self.dendrogram.cutOffLine.show()
-            self.footerView.scene().marker.show()
-        else:
-            self.dendrogram.cutOffLine.hide()
-            self.footerView.scene().marker.hide()
+        try:
+            if self.SelectionMode:
+                self.dendrogram.cutOffLine.show()
+                self.footerView.scene().marker.show()
+            else:
+                self.dendrogram.cutOffLine.hide()
+                self.footerView.scene().marker.hide()
+        except RuntimeError: # underlying C/C++ object has been deleted
+            pass
         self.dendrogram.update()
         self.footerView.scene().update()
 
