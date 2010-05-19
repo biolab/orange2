@@ -117,7 +117,7 @@ class OWPade(OWWidget):
                 self.derivativeAsMeta = 0
                 self.metaCB.setEnabled(False)
 
-        self.applyButton.setEnabled(bool(self.dimensions) or self.output)
+        self.applyButton.setEnabled(bool(self.dimensions) or (self.output and bool(self.contAttributes)))
 
     def methodChanged(self):
         self.deltas = None
@@ -146,7 +146,7 @@ class OWPade(OWWidget):
 
     def apply(self):
         data = self.data
-        if not data:
+        if not data or not self.contAttributes:
             self.send("Examples", None)
             return
 
