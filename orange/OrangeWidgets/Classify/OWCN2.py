@@ -154,12 +154,12 @@ class OWCN2(OWWidget):
             self.learner=orngCN2.CN2EVCUnorderedLearner(width=self.BeamWidth, rule_sig=self.Alpha, att_sig=self.stepAlpha,
                                                         min_coverage = self.MinCoverage, max_rule_complexity = maxRuleLength)
             self.learner.name = self.name
-            self.learner.progressCallback=CN2ProgressBar(self)
+#            self.learner.progressCallback=CN2ProgressBar(self)
             self.send("Learner",self.learner)
         else:
             self.learner=orngCN2.CN2UnorderedLearner()
             self.learner.name = self.name
-            self.learner.progressCallback=CN2ProgressBar(self)
+#            self.learner.progressCallback=CN2ProgressBar(self)
             self.send("Learner",self.learner)
 
             ruleFinder=orange.RuleBeamFinder()
@@ -188,7 +188,9 @@ class OWCN2(OWWidget):
         if self.data:
             oldDomain = orange.Domain(self.data.domain)
             learnData = orange.ExampleTable(oldDomain, self.data)
+            self.learner.progressCallback=CN2ProgressBar(self)
             self.classifier=self.learner(learnData)
+            self.learner.progressCallback=None
             self.classifier.name=self.name
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
