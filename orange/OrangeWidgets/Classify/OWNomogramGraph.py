@@ -974,7 +974,10 @@ class BasicNomogramFooter(QGraphicsScene):
         self.initVars(nomogram, parent)
 
     def logit(self, val):
+        try:
             return math.exp(val)/(1+math.exp(val))
+        except OverflowError:
+            return 1.0
     
     def invLogit(self, p):    
         return math.log(p/max(1-p,aproxZero))

@@ -23,7 +23,9 @@ import orngLR
 aproxZero = 0.0001
 
 def getStartingPoint(d, min):
-    if min<0:
+    if d == 0:
+        return min
+    elif min<0:
         curr_num = numpy.arange(-min+d, step=d)
         curr_num = curr_num[len(curr_num)-1]
         curr_num = -curr_num
@@ -35,6 +37,8 @@ def getStartingPoint(d, min):
     return curr_num
 
 def getRounding(d):
+    if d == 0:
+        return 2
     rndFac = math.floor(math.log10(d));
     if rndFac<-2:
         rndFac = int(-rndFac)
