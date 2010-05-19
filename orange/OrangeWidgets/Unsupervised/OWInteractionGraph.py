@@ -249,6 +249,7 @@ class OWInteractionGraph(OWWidget):
         os.close(fhandle)
         f = file(fname, "wt")
         self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
+        f.close()
         del f
 
         # execute dot
@@ -256,7 +257,7 @@ class OWInteractionGraph(OWWidget):
         try:
             textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
             textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
-        except OSError, ex:
+        except (OSError, IOError), ex:
             textPng = ""
             textPlainList = []
 #        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
