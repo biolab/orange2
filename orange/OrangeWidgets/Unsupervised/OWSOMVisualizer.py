@@ -479,6 +479,7 @@ class OWSOMVisualizer(OWWidget):
         self.scene = SOMScene(self, self)
         self.sceneView = QGraphicsView(self.scene, self.mainArea)
         self.sceneView.viewport().setMouseTracking(True)
+        self.sceneView.setRenderHints(QPainter.Antialiasing)
 
         self.mainArea.layout().addWidget(self.sceneView)
         
