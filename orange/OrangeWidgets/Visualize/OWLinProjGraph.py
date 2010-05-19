@@ -164,7 +164,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             selectedData = numpy.take(self.originalData, indices, axis = 0)
             averages = numpy.average(numpy.compress(validData, selectedData, axis=1), 1)
             classData = numpy.compress(validData, self.originalData[self.dataClassIndex])
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            if classData.any():
+                self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
+            else:
+                self.potentialsClassifier = None
 
 
         # ##############################################################
@@ -699,13 +702,21 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             self.potentialsImage.setColorTable(OWColorPalette.signedPalette(palette) if qVersion() < "4.5" else palette)
             self.potentialsImage.setNumColors(256)
             self.potentialContext = (rx, ry, self.shownAttributes, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
+            self.potentialsImageFromClassifier = self.potentialsClassifier
 
 
 
     def drawCanvas(self, painter):
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
-            self.computePotentials()
-            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
+            if not (self.potentialsClassifier is getattr(self, "potentialsImageFromClassifier", None)):
+                self.computePotentials()
+            target = QRectF(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1),
+                            self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, -1),
+                            self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1))
+            source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
+            painter.drawImage(target, self.potentialsImage, source)
+            print "drawImage"
+#            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
         OWGraph.drawCanvas(self, painter)
 
 
