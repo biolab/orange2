@@ -244,7 +244,7 @@ class OWAssociationRulesViewer(OWWidget):
         bottomGrid = QGridLayout()
         bottom = OWGUI.widgetBox(mainRight, orientation = bottomGrid)
 
-        self.reportButton = OWGUI.button(bottom, self, "&Report", self.reportAndFinish, addToLayout=0)
+        self.reportButton = OWGUI.button(bottom, self, "&Report", self.reportAndFinish, addToLayout=0, debuggingEnabled=0)
 #        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules, addToLayout=0)
         commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules, addToLayout=0)
         autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)], addToLayout=0)
@@ -259,6 +259,8 @@ class OWAssociationRulesViewer(OWWidget):
         self.resize(1000, 380)
 
     def sendReport(self):
+        if not self.rules:
+            return 
         self.reportSettings("Rules statistics",
                             [("Total number of rules", len(self.rules)),
                              ("Support", "%i%% - %i%%" % (self.supp_allmin*100, self.supp_allmax*100)),
@@ -326,7 +328,7 @@ class OWAssociationRulesViewer(OWWidget):
         self.selectedRules = sum(sum((row[self.sel_colmin : self.sel_colmax+1] for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]), []), [])
         self.displayRules()
         self.updateConfSupp()
-        self.saveButton.setEnabled(len(self.selectedRules) > 0)
+#        self.saveButton.setEnabled(len(self.selectedRules) > 0)
 
 
     def displayRules(self):
