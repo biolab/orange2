@@ -44,7 +44,7 @@ class OWItemsetsExplorer(OWWidget):
         OWGUI.label(box, self, "Selected examples: %(nSelectedExamples)s")
 
         box = OWGUI.widgetBox(self.controlArea, "Tree", addSpace = True)
-        OWGUI.spin(box, self, "treeDepth", label = "Tree depth", min = 0, max = 10, step = 1, callback = self.populateTree, callbackOnReturn = True)
+        OWGUI.spin(box, self, "treeDepth", label = "Tree depth", min = 1, max = 10, step = 1, callback = self.populateTree, callbackOnReturn = True)
         OWGUI.checkBox(box, self, "showWholeItemsets", "Display whole itemsets", callback = self.setWholeItemsets)
         OWGUI.button(box, self, "Expand All", callback = lambda: self.treeItemsets.expandAll())
         OWGUI.button(box, self, "Collapse", callback = lambda: self.treeItemsets.collapseAll())
