@@ -57,7 +57,12 @@ MOS_TOPPROJ = 0
 MOS_SEMINAIVE = 1
 MOS_COMBINING = 2
 
-discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini()), ("Distance", MeasureAttribute_Distance()), ("Minimum description length", MeasureAttribute_MDL())]
+discMeasures = [("None", None),
+                ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
+                ("Gain ratio", orange.MeasureAttribute_gainRatio()),
+                ("Gini index", orange.MeasureAttribute_gini()),
+                ("Distance", MeasureAttribute_Distance()),
+                ("Minimum description length", MeasureAttribute_MDL())]
 
 def norm_factor(p):
     max = 10.
@@ -79,7 +84,7 @@ class orngMosaic:
         self.attributeCount = 2
         self.optimizationType = MAXIMUM_NUMBER_OF_ATTRS
         self.qualityMeasure = MDL
-        self.attrDisc = MDL
+        self.attrDisc = MEAS_MDL # MDL
         self.percentDataUsed = 100
 
         self.ignoreTooSmallCells = 1    # when computing chi-square and kramer's phi, ignore cells with less than 5 elements

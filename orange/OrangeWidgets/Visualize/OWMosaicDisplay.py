@@ -802,7 +802,7 @@ class OWMosaicDisplay(OWWidget):
 
     def createColorDialog(self):
         c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
-        c.createDiscretePalette("discPalette", "Discrete Palette", OWColorPalette.defaultColorBrewerPalette)
+        c.createDiscretePalette("discPalette", "Discrete Palette", OWColorPalette.defaultRGBColors) #defaultColorBrewerPalette)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
