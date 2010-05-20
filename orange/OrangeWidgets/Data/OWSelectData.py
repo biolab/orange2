@@ -778,6 +778,22 @@ class OWSelectData(OWWidget):
                 print "%i\t%i\t%s\t%s\t%s\t%i\t%s\t%s\t%i" % (i+1,
                 int(cond.enabled),cond.type,cond.varName,str(cond.operator),
                 int(cond.negated),str(cond.val1),str(cond.val2),int(cond.caseSensitive))
+                
+    def sendReport(self):
+        self.reportSettings("Output", [("Remove unused values/attributes", self.purgeAttributes),
+                                       ("Remove unused classes", self.purgeClasses)])
+        text = "<table>\n<th>Attribute</th><th>Condition</th><th>Value</th>/n"
+        for i, cond in enumerate(self.Conditions):
+            if cond.type == "OR":
+                text += "<tr><td span=3>\"OR\"</td></tr>\n"
+            else:
+                text += "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (cond.varName, repr(cond.operator), cond.val1)
+            
+        text += "</table>" 
+        import OWReport
+        self.reportSection("Conditions")
+        self.reportRaw(OWReport.reportTable(self.criteriaTable))
+#        self.reportTable("Conditions", self.criteriaTable)
 
 
 class Condition:
