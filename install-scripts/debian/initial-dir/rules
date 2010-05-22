@@ -114,7 +114,7 @@ python-orange-svn orange-svn: build install
 	dh_installman -p$@
 	dh_link -p$@
 	dh_strip -p$@
-	dh_compress -p$@
+	dh_compress -p$@ -X.tab -X.csv
 	dh_fixperms -p$@
 #	dh_perl -p$@
 	dh_python -p$@ /usr/lib/python$(DEFAULT_PYTHON)/site-packages/orange/
