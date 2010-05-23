@@ -1,7 +1,7 @@
 Info3: <<
-Package: orange-text-svn
+Package: orange-text-gui-svn-py25
 Version: 0.0.__DAILY_REVISION__
-Revision: 6
+Revision: 7
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-text-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_TEXT__
 Maintainer: Mitar <mitar@tnode.com>
@@ -14,7 +14,8 @@ Depends: <<
 	orange-svn (>= %v),
 	orange-text-svn-py25 (>= %v)
 <<
-Conflicts: orange-text
+Conflicts: orange-text, orange-text-svn
+Replaces: orange-text-svn
 Architecture: i386, powerpc
 Description: Orange text mining add-on (GUI)
 DescDetail: <<
@@ -31,7 +32,7 @@ SplitOff: <<
 		python25,
 		orange-svn-py25 (>= %v)
 	<<
-	Suggests: orange-text-svn
+	Suggests: orange-text-gui-svn-py25
 	Conflicts: orange-text-py25
 	Description: Orange text mining add-on (Python module)
 	DescDetail: <<
@@ -70,11 +71,11 @@ CompileScript: <<
 InstallScript: <<
 	#!/bin/bash -ev
 	
-	# Documentation for orange-text-svn
-	mkdir -p %i/share/doc/orange-text-svn/
-	cp COPYING LICENSES %i/share/doc/orange-text-svn/
-	cp doc/style.css %i/share/doc/orange-text-svn/
-	mv doc/widgets/ %i/share/doc/orange-text-svn/
+	# Documentation for orange-text-gui-svn-py25
+	mkdir -p %i/share/doc/orange-text-gui-svn-py25/
+	cp COPYING LICENSES %i/share/doc/orange-text-gui-svn-py25/
+	cp doc/style.css %i/share/doc/orange-text-gui-svn-py25/
+	mv doc/widgets/ %i/share/doc/orange-text-gui-svn-py25/
 	
 	# Documentation for orange-text-svn-py25
 	mkdir -p %i/share/doc/orange-text-svn-py25/
@@ -84,7 +85,7 @@ InstallScript: <<
 	# Cleans up
 	rm -rf COPYING LICENSES doc/ source/ setup.py
 	
-	# Files for both orange-text-svn and orange-text-svn-py25
+	# Files for both orange-text-gui-svn-py25 and orange-text-svn-py25
 	mkdir -p %i/lib/python2.5/site-packages/orange/add-ons/Text/
 	mv * %i/lib/python2.5/site-packages/orange/add-ons/Text/
 	

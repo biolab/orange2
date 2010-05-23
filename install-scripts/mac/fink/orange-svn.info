@@ -1,5 +1,5 @@
 Info3: <<
-Package: orange-svn
+Package: orange-gui-svn-py25
 Version: 0.0.__DAILY_REVISION__
 Revision: 15
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-svn-%v.tgz
@@ -17,7 +17,8 @@ Depends: <<
 	pyqwt-qt4mac-py25 (>= 5.1),
 	graphviz
 <<
-Conflicts: orange
+Conflicts: orange, orange-svn
+Replaces: orange-svn
 Architecture: i386, powerpc
 Description: Data mining framework (GUI)
 DescDetail: <<
@@ -36,7 +37,7 @@ SplitOff: <<
 		numpy-py25,
 		pil-py25
 	<<
-	Suggests: orange-svn
+	Suggests: orange-gui-svn-py25
 	Conflicts: orange-py25
 	Description: Data mining framework (Python module)
 	DescDetail: <<
@@ -98,11 +99,11 @@ CompileScript: <<
 InstallScript: <<
 	#!/bin/bash -ev
 	
-	# Documentation for orange-svn
-	mkdir -p %i/share/doc/orange-svn/
-	cp COPYING LICENSES %i/share/doc/orange-svn/
-	cp doc/style.css %i/share/doc/orange-svn/
-	mv doc/widgets/ %i/share/doc/orange-svn/
+	# Documentation for orange-gui-svn-py25
+	mkdir -p %i/share/doc/orange-gui-svn-py25/
+	cp COPYING LICENSES %i/share/doc/orange-gui-svn-py25/
+	cp doc/style.css %i/share/doc/orange-gui-svn-py25/
+	mv doc/widgets/ %i/share/doc/orange-gui-svn-py25/
 	
 	# Documentation for orange-svn-py25
 	mkdir -p %i/share/doc/orange-svn-py25/
@@ -113,7 +114,7 @@ InstallScript: <<
 	rm -rf COPYING LICENSES doc/ source/
 	rm -rf c45.dll liborange_include.a updateOrange.py
 	
-	# Files for both orange-svn and orange-svn-py25
+	# Files for both orange-gui-svn-py25 and orange-svn-py25
 	mkdir -p %i/lib/python2.5/site-packages/orange/
 	mv * %i/lib/python2.5/site-packages/orange/
 	
