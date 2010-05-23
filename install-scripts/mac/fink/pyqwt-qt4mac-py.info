@@ -1,14 +1,14 @@
 Info3: <<
 Package: pyqwt-qt4mac-py%type_pkg[python]
 Version: 5.2.0
-Revision: 5
+Revision: 6
 Source: mirror:sourceforge:pyqwt/PyQwt-%v.tar.gz
 Source-MD5: fcd6c6029090d473dcc9df497516eae7
 Maintainer: Mitar <mitar@tnode.com>
 Homepage: http://pyqwt.sourceforge.net/
 License: GPL
-Type: python (2.3 2.4 2.5)
-Distribution: (%type_pkg[python] = 23) 10.4, (%type_pkg[python] = 23) 10.5, (%type_pkg[python] = 23) 10.6
+Type: python (2.4 2.5 2.6)
+Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 BuildDepends: <<
 	qt4-mac,
 	sip-py%type_pkg[python]-bin (>= 4.6)
