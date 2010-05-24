@@ -1465,7 +1465,7 @@ vector<float> difs;
 SELF_AS(TExamplesDistance_Normalized).getDifs(*ex1, *ex2, difs);
 
 PyObject *l = PyList_New(difs.size());
-for(int i = 0, e = difs.size(); i<e; e++)
+for(int i = 0, e = difs.size(); i<e; i++)
 PyList_SetItem(l, i, PyFloat_FromDouble(difs[i]));
 
 return l;
