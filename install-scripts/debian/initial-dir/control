@@ -9,7 +9,7 @@ Homepage: http://www.ailab.si/orange/
 Package: orange-svn
 Architecture: any
 Provides: ${python:Provides}
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-orange-svn (= ${binary:Version}), python-qt4 (>= 4.4.2-4), python-qwt5-qt4 (>= 5.1.1-1), graphviz
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-orange-svn (= ${binary:Version}), python-qt4 (>= 4.4.2-4), python-qwt5-qt4 (>= 5.1.0.dfsg-1), graphviz
 Section: science
 Description: Data mining framework (GUI)
  Orange is a component-based data mining software. It includes a range
