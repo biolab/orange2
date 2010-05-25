@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6)
 Version: 0.0.__DAILY_REVISION__
-Revision: 17
+Revision: 18
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
 Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
@@ -19,7 +19,7 @@ Depends: <<
 	graphviz
 <<
 # Conflicts other versions because of app bundle
-Conflicts: orange, orange-svn, orange-gui-svn-py24, orange-gui-svn-py25, orange-gui-svn-py26
+Conflicts: orange, orange-svn
 Replaces: orange-svn
 Architecture: i386, powerpc
 Description: Data mining framework (GUI)
@@ -31,7 +31,7 @@ DescDetail: <<
 	
 	This package provides a graphical user interface.
 <<
-AppBundles: ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app
+AppBundles: ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange-%type_pkg[python].app
 SplitOff: <<
 	Package: orange-svn-py%type_pkg[python]
 	Depends: <<
@@ -97,6 +97,7 @@ CompileScript: <<
 		exec -a "$0" %p/bin/python%type_raw[python] "$CANVAS_FILE" "$@"
 	EOF
 	chmod +x ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app/Contents/MacOS/Orange
+	mv ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange.app ../orange-bundlelite-svn-0.0.__DAILY_REVISION__/Orange-%type_pkg[python].app
 <<
 InstallScript: <<
 	#!/bin/bash -ev
