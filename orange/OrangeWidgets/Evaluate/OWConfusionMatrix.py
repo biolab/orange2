@@ -123,7 +123,7 @@ class OWConfusionMatrix(OWWidget):
 
 
     def reprint(self):
-        if not self.matrix:
+        if not self.matrix or not self.selectedLearner: 
             return
         
         cm = self.matrix[self.selectedLearner[0]]
