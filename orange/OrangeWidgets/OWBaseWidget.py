@@ -15,6 +15,8 @@ from string import *
 from orngSignalManager import *
 import OWGUI
 
+from orngDebugging import debug
+
 ERROR = 0
 WARNING = 1
 
@@ -254,12 +256,17 @@ class OWBaseWidget(QDialog):
     # this function is called at the end of the widget's __init__ when the widgets is saving its position and size parameters
     def restoreWidgetPosition(self):
         if self.savePosition:
+            space = qApp.desktop().availableGeometry(self)
             if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
 #                print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition, "to", max(self.widgetXPosition, 0), max(self.widgetYPosition, 0)
-                self.move(max(self.widgetXPosition, 0), max(self.widgetYPosition, 0))
+                self.move(max(self.widgetXPosition, space.x()), max(self.widgetYPosition, space.y()))
             if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
-                screenGeometry = qApp.desktop().screenGeometry(self)
-                self.resize(min(self.widgetWidth, screenGeometry.width()), min(self.widgetHeight, screenGeometry.height()))
+                self.resize(min(self.widgetWidth, space.width()), min(self.widgetHeight, space.height()))
+            frame = self.frameGeometry()
+            area = lambda rect: rect.width() * rect.height()
+            if area(frame.intersected(space)) < area(frame):
+                self.move(max(min(space.right() - frame.width(), frame.x()), space.x()), 
+                          max(min(space.height() - frame.height(), frame.y()), space.y()))
 
     # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
     def restoreWidgetStatus(self):
