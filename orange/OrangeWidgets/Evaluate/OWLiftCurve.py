@@ -57,8 +57,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         ## self.averagingMethod == 'merge':
         mergedIterations = orngEval.ExperimentResults(1, self.splitByIterations[0].classifierNames, self.splitByIterations[0].classValues, self.splitByIterations[0].weights, classifiers=self.splitByIterations[0].classifiers, loaded=self.splitByIterations[0].loaded)
         i = 0
-        for isplit in self.splitByIterations:
-            if self.showIterations[i]:
+        for show, isplit in zip(self.showIterations, self.splitByIterations):
+            if show:
                 for te in isplit.results:
                     mergedIterations.results.append( te )
             i += 1
