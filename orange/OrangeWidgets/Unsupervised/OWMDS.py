@@ -545,30 +545,30 @@ class OWMDS(OWWidget):
 class MDSGraph(OWGraph):
     def __init__(self, parent=None, name=None):
         OWGraph.__init__(self, parent, name)
-        self.data=None
-        self.mds=None
-        self.PointSize=5
-        self.ColorAttr=0
-        self.SizeAttr=0
-        self.ShapeAttr=0
-        self.NameAttr=0
+        self.data = None
+        self.mds = None
+        self.PointSize = 5
+        self.ColorAttr = 0
+        self.SizeAttr = 0
+        self.ShapeAttr = 0
+        self.NameAttr = 0
         self.ShowStress = False
         self.differentWidths = True
         self.stressByTransparency = True
         self.stressBySize = False
-        self.NumStressLines=10
+        self.NumStressLines = 10
         self.proportionGraphed = 20
-        self.ShowName=True
+        self.ShowName = True
         #self.curveKeys=[]
-        self.pointKeys=[]
-        self.points=[]
-        self.lines=[]
-        self.lineKeys=[]
-        self.distanceLineKeys=[]
-        self.colors=[]
-        self.sizes=[]
+        self.pointKeys = []
+        self.points = []
+        self.lines = []
+        self.lineKeys = []
+        self.distanceLineKeys = []
+        self.colors = []
+        self.sizes = []
         self.closestPairs = None
-        self.shapeList=[QwtSymbol.Ellipse,
+        self.shapeList = [QwtSymbol.Ellipse,
                                 QwtSymbol.Rect,
                                 QwtSymbol.Diamond,
                                 QwtSymbol.Triangle,
@@ -580,29 +580,27 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.XCross ]
 
     def setData(self, mds, colors, sizes, shapes, names, showFilled):
-        if 1:
-#        if mds:
-            self.mds=mds
-            #self.data=data
-            self.colors=colors
-            self.sizes=sizes
-            self.shapes=shapes
-            self.names=names
-            self.showFilled=showFilled #map(lambda d: not d, showFilled)
-            self.updateData()
+        self.mds = mds
+        #self.data=data
+        self.colors = colors
+        self.sizes = sizes
+        self.shapes = shapes
+        self.names = names
+        self.showFilled = showFilled #map(lambda d: not d, showFilled)
+        self.updateData()
 
     def updateData(self):
-#        if self.mds:
-        if 1:
-            self.clear()
-            self.distanceLineKeys = []
-            if self.ShowStress:
-                self.updateDistanceLines()
-            self.setPoints()
+        self.clear()
+        self.distanceLineKeys = []
+        if self.ShowStress:
+            self.updateDistanceLines()
+        self.setPoints()
         self.updateAxes()
         self.replot()
 
     def updateDistanceLines(self):
+        if not self.mds:
+            return
         N = len(self.mds.points)
         np = min(int(N*(N-1)/2. * self.proportionGraphed/100.), 1000) # draw maximum of 1000 closest pairs
         needlines = int(math.ceil((1 + math.sqrt(1+8*np)) / 2)) 
@@ -658,6 +656,8 @@ class MDSGraph(OWGraph):
             self.replot()
 
     def setPoints(self):
+        if not self.mds:
+            return 
         if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0 and not self.stressBySize and not self.stressByTransparency:
             colors=[c[self.ColorAttr] for c in self.colors]
 
