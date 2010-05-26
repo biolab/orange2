@@ -51,6 +51,9 @@ class OWAttributeDistance(OWWidget):
         self.error(0)
         if self.data:
             atts = self.data.domain.attributes
+            if len(atts) < 2:
+                self.error(0, "Dataset must contain at least two attributes")
+                return None
             matrix = orange.SymMatrix(len(atts))
             matrix.setattr('items', atts)
             if self.classInteractions < 3:
