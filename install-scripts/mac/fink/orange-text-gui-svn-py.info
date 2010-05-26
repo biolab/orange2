@@ -2,7 +2,7 @@ Info3: <<
 Package: orange-text-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6)
 Version: 0.0.__DAILY_REVISION__
-Revision: 9
+Revision: 10
 Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-text-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_TEXT__
 Maintainer: Mitar <mitar@tnode.com>
@@ -11,7 +11,7 @@ License: GPL
 Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 Depends: <<
 	python%type_pkg[python],
-	orange-svn (>= %v),
+	orange-gui-svn-py%type_pkg[python] (>= %v),
 	orange-text-svn-py%type_pkg[python] (>= %v)
 <<
 Conflicts: orange-text, orange-text-svn
