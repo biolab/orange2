@@ -690,12 +690,12 @@ def NPV(confm):
     if type(confm) == list:
         return [NPV(cm) for cm in confm]
     else:
-        tot = confm.TP+confm.TN
+        tot = confm.FN+confm.TN
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute NPV: one or both classes have no instances")
             return -1
-        return confm.TP/tot
+        return confm.TN/tot
 
 def F1(confm):
     """Return F1 score (harmonic mean of precision and recall) over the given confusion matrix."""
