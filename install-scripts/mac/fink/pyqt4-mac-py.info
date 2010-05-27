@@ -2,11 +2,11 @@ Info2: <<
 
 Package: pyqt4-mac-py%type_pkg[python]
 Type: python (2.4 2.5 2.6)
-Version: 4.7
+Version: 4.7.3
 Revision: 1
 Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
-Source-MD5: dc58e2c5afc31a2dd285346bc16081ee
+Source-MD5: 55ecd293b4a0e337b9c7e10479c53d96
 
 Depends: qt4-mac-core-shlibs
 BuildDepends:<<
