@@ -298,7 +298,9 @@ class OWTestLearners(OWWidget):
                 for l in self.learners.values():
                     l.scores = []
                 return
-            res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata, storeExamples = True)
+            pb = OWGUI.ProgressBar(self, iterations=len(learners))
+            res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata, storeExamples = True, callback=pb.advance)
+            pb.finish()
         if self.isclassification():
             cm = orngStat.computeConfusionMatrices(res, classIndex = self.targetClass)
 

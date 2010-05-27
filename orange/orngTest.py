@@ -401,7 +401,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
     return testResults
 
 
-def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], **argkw):
+def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     storeExamples = argkw.get("storeExamples", 0)
 
@@ -422,6 +422,11 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
         elif pp[0]=="LT":
             learnset, testset = pp[1](learnset, testset)
             
+    classifiers = []
+    for learner in learners:
+        classifiers.append(learner(learnset, learnweight))
+        if callback:
+            callback()
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
     testResults = testOnData(classifiers, (testset, testweight), testResults, iterationNumber, storeExamples)
@@ -430,7 +435,7 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
     return testResults
 
 
-def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], **argkw):
+def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], callback=None, **argkw):
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     storeExamples = argkw.get("storeExamples", 0)
 
@@ -455,7 +460,11 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
     else:
         testset = learnset    
 
-    classifiers = [learner(learnset, learnweight) for learner in learners]
+    classifiers = []
+    for learner in learners:
+        classifiers.append(learner(learnset, learnweight))
+        if callback:
+            callback()
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
     testResults = testOnData(classifiers, (testset, learnweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
