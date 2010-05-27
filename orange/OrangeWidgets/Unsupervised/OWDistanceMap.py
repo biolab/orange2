@@ -237,6 +237,7 @@ class OWDistanceMap(OWWidget):
         self.selectionLines = []
         self.annotationText = []
         self.clusterItems = []
+        self.selectionRects = []
 
         self.legendText1 = QGraphicsSimpleTextItem(None, self.scene)
         self.legendText2 = QGraphicsSimpleTextItem(None, self.scene)
@@ -317,13 +318,17 @@ class OWDistanceMap(OWWidget):
             self.send("Examples", None)
         else:
             selection = self.selection.getSelection()
+            
             for sel in selection:
+                x1, y1 = sel.x(), sel.y()
+                x2, y2 = x1 + sel.width(), y1 + sel.height()
+                 
                 if (len(self.distanceMap.elementIndices)==0):
-                    tmp += range(sel[0].x(), sel[1].x()+1)
-                    tmp +=range(sel[0].y(), sel[1].y()+1)
-                else:
-                    tmp += range(self.distanceMap.elementIndices[sel[0].x()], self.distanceMap.elementIndices[sel[1].x()+1])
-                    tmp +=range(self.distanceMap.elementIndices[sel[0].y()], self.distanceMap.elementIndices[sel[1].y()+1])
+                    tmp += range(x1, x2)
+                    tmp += range(y1, y2)
+                else:   
+                    tmp += range(self.distanceMap.elementIndices[x1], self.distanceMap.elementIndices[x2])
+                    tmp += range(self.distanceMap.elementIndices[y1], self.distanceMap.elementIndices[y2])
 
             for i in tmp:
                 if self.distanceMapConstructor.order:
@@ -619,53 +624,31 @@ class OWDistanceMap(OWWidget):
         self.selectionLines += [selLine]
 
     def getfont(self, height):
-        """finds the font that for a given height"""
         return QFont("", max(min(height, 8), 2))
-#        dummy = QGraphicsSimpleTextItem("123", None, self.scene)
-#        for fontsize in range(8, 2, -1):
-#            font = QFont("", fontsize)
-#            dummy.setFont(font)
-#            if dummy.boundingRect().height() <= height:
-#                break
-#        self.scene.removeItem(dummy)
-#        return font
-
-    def updateSelectionRect(self):
-        entireSelection = []
-        newSel = False
-        for selLine in self.selectionLines:
-            self.scene.removeItem(selLine)
         
-        self.selectionLines = []
-        if len(self.selection.getSelection())>0:
-            for sel in self.selection.getSelection():
-                for i in range(sel[0].x(), sel[1].x()):
-                    for j in range(sel[0].y(), sel[1].y()):
-                        selTuple = (i, j)
-                        if not (selTuple in entireSelection):
-                            entireSelection += [selTuple]
-            for selTuple in entireSelection:
-                #check left
-                if (not (selTuple[0] - 1, selTuple[1]) in entireSelection):
-                    self.addSelectionLine(selTuple[0], selTuple[1], 1)
-
-                #check up
-                if (not (selTuple[0], selTuple[1] - 1) in entireSelection):
-                    self.addSelectionLine(selTuple[0], selTuple[1], 0)
-
-                #check down
-                if (not (selTuple[0], selTuple[1] + 1) in entireSelection):
-                    self.addSelectionLine(selTuple[0], selTuple[1] + 1, 0)
-
-                #check right
-                if (not (selTuple[0] + 1, selTuple[1]) in entireSelection):
-                    self.addSelectionLine(selTuple[0] + 1, selTuple[1], 1)
-        self.scene.update()
+    def updateSelectionRect(self):
+        selections = self.selection.getSelection()
+        for rect in self.selectionRects:
+            self.scene.removeItem(rect)
+        self.selectionRects = []
+            
+        color = self.selectionColor
+        pen = QPen(self.qrgbToQColor(color),v_sel_width)
+        pen.setCosmetic(True)
+        for selection in selections:
+            rect = QGraphicsRectItem(QRectF(selection), self.distanceImage, self.scene)
+            rect.setPen(pen)
+            rect.setBrush(QBrush(Qt.NoBrush))
+            rect.setZValue(20)
+            rect.scale(self.CellWidth, self.CellHeight)
+            self.selectionRects.append(rect)
 
     def clearScene(self):
         if self.distanceImage:
             self.scene.removeItem(self.distanceImage)
             self.distanceImage = None
+            self.selectionRects = [] # selectionRects are children of distanceImage
+            
         if self.legendImage:
             self.scene.removeItem(self.legendImage)
             self.legendImage = None
@@ -697,7 +680,7 @@ class OWDistanceMap(OWWidget):
         x, y = event.scenePos().x(), event.scenePos().y()
         row = self.rowFromMousePos(x,y)
         col = self.colFromMousePos(x,y)
-
+        
         if (self.clicked==True):
             self.selection.UpdateSel(col, row)
 
@@ -899,47 +882,31 @@ class SelectionManager:
     def SelStart(self, x, y):
         if x < 0: x=0
         if y < 0: y=0
-        self.currSel = QPoint(x,y)
-        self.currSelEnd = QPoint(x,y)
+        self.currSel = QRect(x, y, 1, 1)
+        self.currSelEnd = QRect(x, y, 1, 1)
         self.selecting = True
 
     def UpdateSel(self, x, y):
-        self.currSelEnd = QPoint(x,y)
+        self.currSelEnd = QRect(x, y, 1, 1)
 
     def CancelSel(self):
         self.selecting = False
-
+        
     def SelEnd(self):
-        minx = min(self.currSel.x(), self.currSelEnd.x())
-        maxx = max(self.currSel.x(), self.currSelEnd.x())
-
-        miny = min(self.currSel.y(), self.currSelEnd.y())
-        maxy = max(self.currSel.y(), self.currSelEnd.y())
-
-        if (minx==maxx) and (miny==maxy):
-            maxx+=1
-            maxy+=1
-
-        self.selection += [(QPoint(minx, miny),QPoint(maxx,maxy))]
+        self.selection += [self.currSel.united(self.currSelEnd).normalized()]
         self.selecting = False
 
     def clear(self):
         self.selection = []
 
     def undo(self):
-        if len(self.selection)>0:
+        if len(self.selection) > 0:
             del self.selection[len(self.selection)-1]
-
+    
     def getSelection(self):
-        res = self.selection + []
-        if self.selecting==True:
-            minx = min(self.currSel.x(), self.currSelEnd.x())
-            maxx = max(self.currSel.x(), self.currSelEnd.x())
-
-            miny = min(self.currSel.y(), self.currSelEnd.y())
-            maxy = max(self.currSel.y(), self.currSelEnd.y())
-
-            res += [(QPoint(minx, miny),QPoint(maxx,maxy))]
+        res = list(self.selection)
+        if self.selecting == True:
+            res += [self.currSel.united(self.currSelEnd).normalized()]
         return res
 
 if __name__=="__main__":
