@@ -327,10 +327,10 @@ class BagOfWords(object):
 class RFE(object):
     """ Recursive feature elimination using linear svm derived attribute weights.
     Example::
-        >>> rfe = RFE(SVMLearner(kernel_type=SVMLearner.Linear))
+        >>> rfe = RFE(SVMLearner(kernel_type=SVMLearner.Linear, normalization=False)) # normalization=False -> SVM Learner should not change the domain 
         >>> rfe.getAttrScores(data) #returns a dictionary of attribute scores
         {...}
-        >>> data_with_removed_features = rfe(data, 5) # retruns an example table with only 5 best attributes
+        >>> data_with_removed_features = rfe(data, 5) # returns an example table with only 5 best attributes
     """
     def __init__(self, learner=None):
         self.learner = learner or SVMLearner(kernel_type=orange.SVMLearner.Linear, normalization=False)
