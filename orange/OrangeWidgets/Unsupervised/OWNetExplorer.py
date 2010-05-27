@@ -261,9 +261,9 @@ class OWNetExplorer(OWWidget):
         
         ib = OWGUI.widgetBox(self.infoTab, orientation="horizontal")
         
-        OWGUI.button(ib, self, "Degree distribution", callback=self.showDegreeDistribution)
-        OWGUI.button(ib, self, "Save network", callback=self.saveNetwork)
-        OWGUI.button(ib, self, "Save image", callback=self.graph.saveToFile)
+        OWGUI.button(ib, self, "Degree distribution", callback=self.showDegreeDistribution, debuggingEnabled=False)
+        OWGUI.button(ib, self, "Save network", callback=self.saveNetwork, debuggingEnabled=False)
+        OWGUI.button(ib, self, "Save image", callback=self.graph.saveToFile, debuggingEnabled=False)
         
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
@@ -349,19 +349,25 @@ class OWNetExplorer(OWWidget):
             self.graph.callbackSelectVertex = None
 
     def sendAttSelectionList(self):
-        vars = [x.name for x in self.visualize.getVars()]
-        if not self.comboAttSelection.currentText() in vars:
-            return
-        att = str(self.comboAttSelection.currentText())
-        vertices = self.graph.networkCurve.getSelectedVertices()
-        
-        if len(vertices) != 1:
-            return
-        
-        attributes = str(self.visualize.graph.items[vertices[0]][att]).split(', ')
+        if self.visualize:
+            vars = [x.name for x in self.visualize.getVars()]
+            if not self.comboAttSelection.currentText() in vars:
+                return
+            att = str(self.comboAttSelection.currentText())
+            vertices = self.graph.networkCurve.getSelectedVertices()
+            
+            if len(vertices) != 1:
+                return
+            
+            attributes = str(self.visualize.graph.items[vertices[0]][att]).split(', ')
+        else:
+            attributes = None
         self.send("Attribute Selection List", attributes)
         
     def edit(self):
+        if self.visualize is None:
+            return
+        
         vars = [x.name for x in self.visualize.getVars()]
         if not self.editCombo.currentText() in vars:
             return
@@ -381,7 +387,7 @@ class OWNetExplorer(OWWidget):
         self.setItems(self.visualize.graph.items)
         
     def drawForce(self):
-        if self.btnForce.isChecked():
+        if self.btnForce.isChecked() and self.visualize is not None:
             self.graph.forceVectors = self.visualize.computeForces() 
         else:
             self.graph.forceVectors = None
@@ -968,7 +974,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
         
     def showDistancesClick(self):
-        if self.visualize.vertexDistance == None:
+        if self.visualize and self.visualize.vertexDistance == None:
             self.warning("Vertex distance signal is not set. Distances are not known.")
         self.graph.showDistances = self.showDistances
         
