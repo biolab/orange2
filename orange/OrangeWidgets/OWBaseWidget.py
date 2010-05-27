@@ -15,8 +15,6 @@ from string import *
 from orngSignalManager import *
 import OWGUI
 
-from orngDebugging import debug
-
 ERROR = 0
 WARNING = 1
 
