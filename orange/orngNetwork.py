@@ -157,7 +157,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             for u in component:
                 u_ = numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]])
-                force = 0                
+                force = numpy.array([0.0, 0.0])                
                 for v in outer_vertices:
                     v_ = numpy.array([self.graph.coors[0][v], self.graph.coors[1][v]])
                     d = self.vertexDistance[u, v]
