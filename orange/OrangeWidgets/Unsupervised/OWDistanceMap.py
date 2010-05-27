@@ -544,7 +544,7 @@ class OWDistanceMap(OWWidget):
                         maxWidth = tmpText.boundingRect().width()
                     self.annotationText += [tmpText]
             
-            fix = 1.0 if qVersion >= "4.6" else 0.0 # on Qt 4.6 the graphics simple text item seems to have a diffrent alignment 
+            fix = 1.0 if qVersion() >= "4.6" else 0.0 # on Qt 4.6 the graphics simple text item seems to have a diffrent alignment 
                         
             for i in range(0, len(self.annotationText)/2):
 ##                self.annotationText[i*2].setX(self.offsetX + maxWidth + 3 + (i+0.5)*self.CellWidth)
