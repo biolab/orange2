@@ -168,6 +168,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([numpy.compress(validData, self.unscaled_x_positions), numpy.compress(validData, self.unscaled_y_positions), classData])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
             else:
                 self.potentialsClassifier = None
+            self.potentialsImage = None
 
 
         # ##############################################################

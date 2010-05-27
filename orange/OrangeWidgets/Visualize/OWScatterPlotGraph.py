@@ -65,6 +65,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.tips.removeAll()
         self.tooltipData = []
         self.potentialsClassifier = None
+        self.potentialsImage = None
+        self.canvas().invalidatePaintCache()
         self.shownXAttribute = xAttr
         self.shownYAttribute = yAttr
 
