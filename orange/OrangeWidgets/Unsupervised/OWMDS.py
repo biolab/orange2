@@ -56,11 +56,11 @@ class OWMDS(OWWidget):
                               ("Sammon stress", orngMDS.SammonStress),
                               ("Signed Sammon stress", orngMDS.SgnSammonStress),
                               ("Signed relative stress", orngMDS.SgnRelStress)]
-
-        self.loadSettings()
         
         self.graph=MDSGraph(self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
+        
+        self.loadSettings()
 
         tabs=OWGUI.tabWidget(self.controlArea)
         
