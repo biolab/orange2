@@ -3,7 +3,7 @@ Info2: <<
 Package: pyqt4-mac-py%type_pkg[python]
 Type: python (2.4 2.5 2.6)
 Version: 4.7.3
-Revision: 1
+Revision: 2
 Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 Source: http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-%v.tar.gz
 Source-MD5: 55ecd293b4a0e337b9c7e10479c53d96
@@ -38,7 +38,7 @@ InstallScript: <<
 make install
 perl -pi -e 's|%i|%p|g' %i/lib/python%type_raw[python]/site-packages/PyQt4/pyqtconfig.py %i/bin/pyuic4 
 <<
-DocFiles: ChangeLog LICENSE.GPL2 LICENSE.GPL3 GPL_EXCEPTION_ADDENDUM.TXT GPL_EXCEPTION.TXT OPENSOURCE-NOTICE.TXT NEWS README
+DocFiles: LICENSE.GPL2 LICENSE.GPL3 GPL_EXCEPTION_ADDENDUM.TXT GPL_EXCEPTION.TXT OPENSOURCE-NOTICE.TXT NEWS README THANKS
 License: GPL
 Description: Python bindings for the Qt toolkit
 DescPackaging: <<
@@ -57,7 +57,7 @@ SplitOff: <<
   Replaces: pyqt4-py23-bin, pyqt4-py24-bin, pyqt4-py25-bin, pyqt4-py26-bin, pyqt4-mac-py24-bin, pyqt4-mac-py25-bin, pyqt4-mac-py26-bin
 
   Files: bin
-  DocFiles: ChangeLog LICENSE.GPL2 LICENSE.GPL3 GPL_EXCEPTION_ADDENDUM.TXT GPL_EXCEPTION.TXT OPENSOURCE-NOTICE.TXT NEWS README
+  DocFiles: LICENSE.GPL2 LICENSE.GPL3 GPL_EXCEPTION_ADDENDUM.TXT GPL_EXCEPTION.TXT OPENSOURCE-NOTICE.TXT NEWS README THANKS
   License: GPL
 <<
 
