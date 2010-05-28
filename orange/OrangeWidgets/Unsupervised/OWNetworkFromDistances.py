@@ -195,7 +195,10 @@ class OWNetworkFromDistances(OWWidget):
             # set the threshold
             # set edges where distance is lower than threshold
                   
-            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold, self.kNN, self.andor)
+            self.warning(0)
+            if self.kNN >= self.data.dim:
+                self.warning(0, "kNN larger then supplied distance matrix dimension. Using k = %i" % (self.data.dim - 1))
+            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold, min(self.kNN, self.data.dim - 1), self.andor)
             edges = graph.getEdges()
             
             #print graph.nVertices, self.matrix.dim
