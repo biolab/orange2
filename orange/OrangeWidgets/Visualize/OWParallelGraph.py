@@ -437,7 +437,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     def testArrowContact(self, indices, x, y):
         if type(indices) != list: indices = [indices]
         for index in indices:
-            if index >= len(self.visualizedAttributes): continue
+            if index >= len(self.visualizedAttributes) or index < 0: continue
             intX = self.transform(QwtPlot.xBottom, index)
             bottom = self.transform(QwtPlot.yLeft, self.selectionConditions.get(self.visualizedAttributes[index], [0,1])[0])
             bottomRect = QRect(intX-self.bottomPixmap.width()/2, bottom, self.bottomPixmap.width(), self.bottomPixmap.height())
