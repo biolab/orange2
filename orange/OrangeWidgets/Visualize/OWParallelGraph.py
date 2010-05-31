@@ -383,8 +383,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
             # create bar curve
             for j in range(attrLen):
                 attrVal = variableValueSorted[j]
-                attrValCont = contingency[attrVal]
-
+                try:
+                    attrValCont = contingency[attrVal]
+                except IndexError, ex:
+                    print >> sys.stderr, ex, attrVal, contingency
+                    continue
+                
                 for i in range(clsCount):
                     clsVal = classValueSorted[i]
 
