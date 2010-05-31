@@ -358,9 +358,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
             if self.dataDomain[attr].varType != orange.VarTypes.Discrete:
                 continue
             if self.dataDomain[attr] == self.dataDomain.classVar:
-                maxVal = max(maxVal, max(orange.Distribution(attr, self.rawData)))
+                maxVal = max(maxVal, max(orange.Distribution(attr, self.rawData) or [1]))
             else:
-                maxVal = max(maxVal, max([max(val) for val in self.domainContingency[attr].values()]))
+                maxVal = max(maxVal, max([max(val or [1]) for val in self.domainContingency[attr].values()] or [1]))
                 
 
         for graphAttrIndex, index in enumerate(indices):
