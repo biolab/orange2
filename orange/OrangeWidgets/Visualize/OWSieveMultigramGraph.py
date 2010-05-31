@@ -24,7 +24,9 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         self.tips.removeAll()
 
         # we must have at least 3 attributes to be able to show anything
-        if len(labels) < 3: return
+        if len(labels) < 3:
+            self.replot()
+            return
 
         length = len(labels)
         indices = []
@@ -111,7 +113,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         else:
             pearson = (actual - expected) / sqrt(expected)
 
-        if abs(pearson) < self.minPearson: return       # we don't want to draw white lines
+        if abs(pearson) <= self.minPearson: return       # we don't want to draw white lines
 
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
             intPearson = min(math.floor(pearson), self.maxPearson)
