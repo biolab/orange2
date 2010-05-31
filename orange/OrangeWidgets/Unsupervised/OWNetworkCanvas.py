@@ -895,8 +895,8 @@ class OWNetworkCanvas(OWGraph):
       palette.setNumberOfColors(len(colorIndices))
       
       if colorIndex != None and table.domain[colorIndex].varType == orange.VarTypes.Continuous:
-          minValue = float(min([x[colorIndex].value for x in table if x[colorIndex].value != "?"]))
-          maxValue = float(max([x[colorIndex].value for x in table if x[colorIndex].value != "?"]))
+          minValue = float(min([x[colorIndex].value for x in table if x[colorIndex].value != "?"] or [0.0]))
+          maxValue = float(max([x[colorIndex].value for x in table if x[colorIndex].value != "?"] or [0.0]))
           
       return colorIndices, colorIndex, minValue, maxValue
   
