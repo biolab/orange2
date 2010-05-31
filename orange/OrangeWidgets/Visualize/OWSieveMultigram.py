@@ -71,9 +71,17 @@ class OWSieveMultigram(OWVisWidget):
     def setData(self, data):
         self.closeContext()
         self.information()
+        self.error([0, 1])
         self.data = None
         if data: 
             data = orange.Preprocessor_dropMissing(data)
+            if len(data) == 0:
+                self.error(0, "No examples without missing values")
+                data = None
+        if not self.isDataWithClass(data):
+            self.error(1, "Data is without class")
+            data = None
+            
         if data and data.domain.hasContinuousAttributes():
             data = discretizeDomain(data, 1)
             self.information("Continuous attributes were discretized using entropy discretization.")
@@ -125,7 +133,7 @@ class OWSieveMultigram(OWVisWidget):
 
     def computeProbabilities(self):
         self.probabilities = {}
-        if self.data == None: return
+        if not self.data: return
 
         self.setStatusBarText("Please wait. Computing...")
         total = len(self.data)
