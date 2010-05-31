@@ -8,12 +8,19 @@ import statc
 ##############################################################################
 # miscellaneous functions (used across this module)
 
+def _modus(dist):
+    if dist:
+        return dist.modus()
+    else:
+        return None
+    
 def data_center(data):
     """Return the central - average - point in the data set"""
     atts = data.domain.attributes
     astats = orange.DomainBasicAttrStat(data)
     center = [astats[a].avg if a.varType == orange.VarTypes.Continuous \
-              else max(enumerate(orange.Distribution(a, data)), key=lambda x:x[1])[0] if a.varType == orange.VarTypes.Discrete
+#              else max(enumerate(orange.Distribution(a, data)), key=lambda x:x[1])[0] if a.varType == orange.VarTypes.Discrete
+              else _modus(orange.Distribution(a, data)) if a.varType == orange.VarTypes.Discrete
               else None
               for a in atts]
     if data.domain.classVar:
@@ -253,7 +260,7 @@ class KMeans:
         """initialize cluster centroids"""
         if self.centroids and not self.nstart > 1: # centroids were specified
             return
-        self.centroids = self.initialization(self.data, self.k, self.distance) 
+        self.centroids = self.initialization(self.data, self.k, self.distance)
         
     def compute_centeroid(self, data):
         """Return a centroid of the data set."""
@@ -372,7 +379,7 @@ def hierarhicalClustering_topClustersMembership(root, k):
 def orderLeaves(tree, matrix, progressCallback=None):
     """Order the leaves in the clustering tree.
 
-    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for herarchical clustering')
+    (based on Ziv Bar-Joseph et al. (Fast optimal leaf ordering for hierarchical clustering')
     Arguments:
         tree   --binary hierarchical clustering tree of type orange.HierarchicalCluster
         matrix --orange.SymMatrix that was used to compute the clustering
@@ -399,34 +406,35 @@ def orderLeaves(tree, matrix, progressCallback=None):
             Vrr = set(tree.right.right or tree.right)
             Vrl = set(tree.right.left or tree.right)
             other = lambda e, V1, V2: V2 if e in V1 else V1
+            tree_left, tree_right = tree.left, tree.right
             for u in Vl:
                 for w in Vr:
                     if True: #Improved search
                         C = min([matrix[m, k] for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)])
-                        orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree.left, u, m])
-                        orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree.right, w, k])
+                        orderedMs = sorted(other(u, Vll, Vlr), key=lambda m: M[tree_left, u, m])
+                        orderedKs = sorted(other(w, Vrl, Vrr), key=lambda k: M[tree_right, w, k])
                         k0 = orderedKs[0]
                         curMin = 1e30000 
                         curMK = ()
                         for m in orderedMs:
-                            if M[tree.left, u, m] + M[tree.right, w, k0] + C >= curMin:
+                            if M[tree_left, u, m] + M[tree_right, w, k0] + C >= curMin:
                                 break
                             for k in  orderedKs:
-                                if M[tree.left, u, m] + M[tree.right, w, k] + C >= curMin:
+                                if M[tree_left, u, m] + M[tree_right, w, k] + C >= curMin:
                                     break
-                                if curMin > M[tree.left, u, m] + M[tree.right, w, k] + matrix[m, k]:
-                                    curMin = M[tree.left, u, m] + M[tree.right, w, k] + matrix[m, k]
+                                if curMin > M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]:
+                                    curMin = M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
                                     curMK = (m, k)
                         M[tree, u, w] = M[tree, w, u] = curMin
-                        ordering[tree, u, w] = (tree.left, u, curMK[0], tree.right, w, curMK[1])
-                        ordering[tree, w, u] = (tree.right, w, curMK[1], tree.left, u, curMK[0])
+                        ordering[tree, u, w] = (tree_left, u, curMK[0], tree_right, w, curMK[1])
+                        ordering[tree, w, u] = (tree_right, w, curMK[1], tree_left, u, curMK[0])
                     else:
                         def MFunc((m, k)):
-                            return M[tree.left, u, m] + M[tree.right, w, k] + matrix[m, k]
+                            return M[tree_left, u, m] + M[tree_right, w, k] + matrix[m, k]
                         m, k = min([(m, k) for m in other(u, Vll, Vlr) for k in other(w, Vrl, Vrr)], key=MFunc)
                         M[tree, u, w] = M[tree, w, u] = MFunc((m, k))
-                        ordering[tree, u, w] = (tree.left, u, m, tree.right, w, k)
-                        ordering[tree, w, u] = (tree.right, w, k, tree.left, u, m)
+                        ordering[tree, u, w] = (tree_left, u, m, tree_right, w, k)
+                        ordering[tree, w, u] = (tree_right, w, k, tree_left, u, m)
 
             if progressCallback:
                 progressCallback(100.0 * len(visitedClusters) / len(tree.mapping))
