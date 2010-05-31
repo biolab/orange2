@@ -195,7 +195,7 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data and (len(data) == 0 or len(data.domain) == 0):
+        if data is not None and (len(data) == 0 or len(data.domain) == 0):
             data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
