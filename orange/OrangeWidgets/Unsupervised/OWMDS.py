@@ -145,14 +145,13 @@ class OWMDS(OWWidget):
             self.setList(data)
         elif isinstance(data, orange.VarList):
             self.setVarList(data)
-          
         if matrix:
             self.mds=orngMDS.MDS(matrix)
             self.mds.points=numpy.random.random(size=[self.mds.n, self.mds.dim])
             self.mds.getStress()
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
             if data and type(data) == orange.ExampleTable:
-                self.openContext("",self.data)
+                self.openContext("",self.data) 
             self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
         else:
             self.graph.clear()
@@ -181,11 +180,11 @@ class OWMDS(OWWidget):
         for name in ["No name"]+attrName:
             self.nameCombo.addItem(name)
 
-        if data.domain.classVar:
-            if data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.graph.ColorAttr = len(data.domain.variables) # index 0 is Same color!
-            elif data.domain.classVar.varType == orange.VarTypes.Continuous:
-                self.graph.SizeAttr = len(data.domain.variables) # index 0 is Same color!
+#        if data.domain.classVar:
+#            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+#                self.graph.ColorAttr = len(data.domain.variables) # index 0 is Same color!
+#            elif data.domain.classVar.varType == orange.VarTypes.Continuous:
+#                self.graph.SizeAttr = len(data.domain.variables) # index 0 is Same color!
         try:
             self.graph.NameAttr = 1 + [name.lower() for name in attrName].index("name")
         except:
@@ -243,6 +242,11 @@ class OWMDS(OWWidget):
                     self.names[i][attrI]= check(data[i],attr) and " "+str(data[i][attr]) or ""
                     #self.sizes[i][j+1]=5
                 attrI+=1
+        if data and data.domain.classVar:
+            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.graph.ColorAttr = len(self.colors[0]) - 1 # index 0 is Same color!
+            elif data.domain.classVar.varType == orange.VarTypes.Continuous:
+                self.graph.SizeAttr = len(self.sizes[0]) - 1 # index 0 is Same color!
 
     def setList(self, data):
         self.colorCombo.clear()
