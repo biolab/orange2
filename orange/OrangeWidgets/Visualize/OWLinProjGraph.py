@@ -716,7 +716,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                             self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1))
             source = QRectF(0, 0, self.potentialsImage.size().width(), self.potentialsImage.size().height())
             painter.drawImage(target, self.potentialsImage, source)
-            print "drawImage"
 #            painter.drawImage(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1), self.potentialsImage)
         OWGraph.drawCanvas(self, painter)
 
