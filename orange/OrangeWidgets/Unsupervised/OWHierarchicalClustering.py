@@ -36,8 +36,6 @@ class OWHierarchicalClustering(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         #OWWidget.__init__(self, parent, 'Hierarchical Clustering')
         OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering')
-        self.parent=parent
-        self.callbackDeposit=[]
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
@@ -107,9 +105,16 @@ class OWHierarchicalClustering(OWWidget):
         dendrogramBox=OWGUI.widgetBox(self.controlArea, "Dendrogram settings", addSpace=16)
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
         cblp = OWGUI.checkBox(dendrogramBox, self, "PrintDepthCheck", "Limit print depth", callback = self.applySettings)
-        ib = OWGUI.indentedBox(dendrogramBox, orientation = 0)
-        OWGUI.widgetLabel(ib, "Depth"+ "  ")
-        slpd = OWGUI.hSlider(ib, self, "PrintDepth", minValue=1, maxValue=50, callback=self.applySettings)
+        
+        option = QStyleOptionButton()
+        cblp.initStyleOption(option)
+        checkWidth = cblp.style().subElementRect(QStyle.SE_CheckBoxContents, option, cblp).x()
+        
+#        ib = OWGUI.indentedBox(dendrogramBox, orientation = 0)
+        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
+        ib.layout().setContentsMargins(checkWidth, 5, 5, 5)
+#        OWGUI.widgetLabel(ib, "Depth"+ "  ")
+        slpd = OWGUI.hSlider(ib, self, "PrintDepth", minValue=1, maxValue=50, label="Depth  ", callback=self.applySettings)
         cblp.disables.append(ib)
         cblp.makeConsistent()
         
@@ -117,9 +122,13 @@ class OWHierarchicalClustering(OWWidget):
         #OWGUI.spin(dendrogramBox, self, "VDSize", label="Vertical size", min=100,
         #        max=10000, step=10)
         cbhs = OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Manually set horizontal size",
-                callback=[lambda:self.hSizeBox.setDisabled(self.ManualHorSize), self.applySettings])
-        self.hSizeBox=OWGUI.spin(OWGUI.indentedBox(dendrogramBox), self, "HDSize", label="Size"+"  ", min=200,
+                callback=self.applySettings)
+        
+        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
+        self.hSizeBox=OWGUI.spin(ib, self, "HDSize", label="Size"+"  ", min=200,
                 max=10000, step=10, callback=self.applySettings, callbackOnReturn = True, controlWidth=45)
+        self.hSizeBox.layout().setContentsMargins(checkWidth, 5, 5, 5)
+        
         cbhs.disables.append(self.hSizeBox)
         cbhs.makeConsistent()
         
@@ -128,11 +137,31 @@ class OWHierarchicalClustering(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Selection")
         OWGUI.checkBox(box, self, "SelectionMode", "Show cutoff line", callback=self.updateCutOffLine)
-        cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster indices", callback=self.commitDataIf)
-        self.classificationBox = ib = OWGUI.indentedBox(box)
-        le = OWGUI.lineEdit(ib, self, "ClassifyName", "Name" + "  ", callback=self.commitDataIf, orientation=0, controlWidth=75)
-        OWGUI.separator(ib, height = 4)
-        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 0, items = ["Class attribute", "Attribute", "Meta attribute"], callback=self.commitDataIf)
+        cb = OWGUI.checkBox(box, self, "ClassifySelected", "Append cluster IDs", callback=self.commitDataIf)
+#        self.classificationBox = ib = OWGUI.indentedBox(box, sep=0)
+        self.classificationBox = ib = OWGUI.widgetBox(box, margin=0)
+        
+        form = QWidget()
+        le = OWGUI.lineEdit(form, self, "ClassifyName", None, callback=None, orientation="horizontal")
+        self.connect(le, SIGNAL("editingFinished()"), self.commitDataIf)
+#        le_layout.addWidget(le.placeHolder)
+#        OWGUI.separator(ib, height = 4)
+
+        aa = OWGUI.comboBox(form, self, "addIdAs", label = None, orientation = "horizontal", items = ["Class attribute", "Attribute", "Meta attribute"], callback=self.commitDataIf)
+        
+        layout = QFormLayout()
+        layout.setSpacing(8)
+        layout.setContentsMargins(0, 5, 0, 5)
+        layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        layout.setLabelAlignment(Qt.AlignLeft)# | Qt.AlignJustify)
+        layout.addRow("Name  ", le)
+        layout.addRow("Place  ", aa)
+        
+        form.setLayout(layout)
+        
+        ib.layout().addWidget(form)
+        ib.layout().setContentsMargins(checkWidth, 5, 5, 5)
+        
         cb.disables.append(ib)
         cb.makeConsistent()
         
@@ -150,6 +179,8 @@ class OWHierarchicalClustering(OWWidget):
         self.footerView=ScaleView(self, scale, self.mainArea)
         self.dendrogram = Dendrogram(self)
         self.dendrogramView = DendrogramView(self.dendrogram, self.mainArea)
+        
+        self.connect(self.dendrogram, SIGNAL("sceneRectChanged(QRectF)"), self.footerView.sceneRectUpdated)
     
         self.mainArea.layout().addWidget(self.headerView)
         self.mainArea.layout().addWidget(self.dendrogramView)
@@ -167,6 +198,7 @@ class OWHierarchicalClustering(OWWidget):
         self.resize(800, 500)
         
         self.matrix = None
+        self.selectionList = []
 
     def sendReport(self):
         self.reportSettings("Settings",
@@ -235,13 +267,21 @@ class OWHierarchicalClustering(OWWidget):
             self.classificationBox.setDisabled(True)
         if self.matrixSource=="Example Distance":
             self.openContext("", items)
-        self.constructTree()
+        self.error(0)
+        try:
+            self.constructTree()
+        except orange.KernelException, ex:
+            self.error(0, "Could not cluster data! %s" % ex.message)
+            self.dataset(None)
+            
 
     def updateLabel(self):
 #        self.rootCluster.mapping.setattr("objects", self.matrix.items)
 #        self.dendrogram.updateLabel()
 #        return
     
+        if self.matrix is None:
+            return
         items=self.matrix.items
         if self.Annotation==0:
             self.rootCluster.mapping.setattr("objects",
@@ -399,6 +439,7 @@ class DendrogramView(QGraphicsView):
     def __init__(self,*args):
         apply(QGraphicsView.__init__, (self,)+args)
         self.viewport().setMouseTracking(True)
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
     def resizeEvent(self, e):
         QGraphicsView.resizeEvent(self,e)
@@ -431,6 +472,7 @@ class Dendrogram(QGraphicsScene):
         #self.setDoubleBuffering(True)
         self.holdoff=False
         self.treeAreaWidth = 0
+        self.selectionList = []
         #self.setMouseTrackingEnabled(True)
 
     def displayTree(self, root):
@@ -457,18 +499,21 @@ class Dendrogram(QGraphicsScene):
         self.header.scene().setSceneRect(0, 0, self.width()+20, scaleHeight)
         (self.rootGraphics,a)=self.drawTree(self.rootCluster,0)
         self.updateLabel()
-        self.header.drawScale(self.treeAreaWidth, root.height)
         for old in self.oldSelection:
             for new in self.rectObj:
                 if new.cluster==old:
                     self.addSelection(new)
 
+        self.header.drawScale(self.treeAreaWidth, root.height)
+        
         self.bubbleRect=BubbleRect(None)
         self.addItem(self.bubbleRect)
         self.otherObj.append(self.bubbleRect)
-        fix=max([a.boundingRect().width() for a in self.textObj])
-        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+fix+rightMargin, 2*topMargin+self.gTextPos)
+#        fix=max([a.boundingRect().width() for a in self.textObj])
+#        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+fix+rightMargin, 2*topMargin+self.gTextPos)
+        self.setSceneRect(self.itemsBoundingRect().adjusted(-5, -5, 5, 5))
         self.cutOffLine.setLine(0,0,0,self.height())
+        self.header.moveMarker(0)
         self.update()
 
     def drawTree(self, cluster, l):
@@ -478,7 +523,7 @@ class Dendrogram(QGraphicsScene):
             (leftR, hi)=self.drawTree(cluster.left, level)
             (rightR,low)=self.drawTree(cluster.right, level)
             top=leftMargin+self.treeAreaWidth- \
-                self.treeAreaWidth*cluster.height/self.treeHeight
+                self.treeAreaWidth*cluster.height/(self.treeHeight or 1)
             rectW=self.width()-self.textAreaWidth-top
             rectH=low-hi
             rect=MyCanvasRect(top, hi, rectW+2, rectH)
@@ -503,6 +548,9 @@ class Dendrogram(QGraphicsScene):
             self.gTextPos+=self.gTextPosInc
             return (None, self.gTextPos-self.gTextPosInc/2)
 
+    def removeItem(self, item):
+        if item.scene() is self:
+            QGraphicsScene.removeItem(self, item)
 
     def clear(self):
         for a in self.rectObj:
@@ -530,8 +578,9 @@ class Dendrogram(QGraphicsScene):
                 a.setPlainText("(%i items)" % len(a.cluster))
             else:
                 a.setPlainText(str(a.cluster[0]))
-        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+max([a.boundingRect().width() \
-                for a in self.textObj])+rightMargin, self.height())
+#        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+max([a.boundingRect().width() \
+#                for a in self.textObj])+rightMargin, self.height())
+        self.setSceneRect(self.itemsBoundingRect().adjusted(-5, -5, 5, 5))
         self.update()
 
     def highlight(self, objList):
@@ -724,15 +773,15 @@ class Dendrogram(QGraphicsScene):
             self.cutOffLine.hide()
             self.cutOffLine.setPos(x,0)
             self.update()
-
-
+        
 class ScaleView(QGraphicsView):
     def __init__(self, parent, *args):
         apply(QGraphicsView.__init__, (self,)+args)
         self.parent=parent
         self.setFixedHeight(20)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+#        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+#        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.scene().obj=[]
         self.scene().marker=QGraphicsRectItem(None, self.scene())
         self.scene().treeAreaW = 0
@@ -740,11 +789,11 @@ class ScaleView(QGraphicsView):
         self.markerPos=0
 
     def clear(self):
-        self.scene().clear()
-#        for a in self.scene().obj:
-#            self.scene().removeItem(a)
-#        self.scene().removeItem(self.scene().marker)
-        self.scene().obj=[]
+        for a in self.scene().obj:
+            self.scene().removeItem(a)
+        if self.scene().marker.scene() is self.scene():
+            self.scene().removeItem(self.scene().marker)
+        self.scene().obj = []
 
     def drawScale(self, treeAreaW, height):
         self.clear()
@@ -765,40 +814,48 @@ class ScaleView(QGraphicsView):
             self.scene().obj.append(text)
             self.scene().obj.append(line1)
             self.scene().obj.append(line2)
-            xPos-=(distInc/height)*treeAreaW
+            xPos-=(distInc/(height or 1))*treeAreaW
             dist+=distInc
 
-        self.marker=OWCanvasRectangle(self.scene(),self.markerPos-3,0,1,20, brushColor=QColor("blue"))
+        self.marker=OWCanvasRectangle(self.scene(),self.markerPos - 1,0,1,20, brushColor=QColor("blue"))
         self.marker.setZValue(1)
-        self.scene().obj.append(self.marker)
+#        self.scene().obj.append(self.marker)
         self.scene().marker=self.marker
+#        self.scene().setSceneRect(QRectF(0.0, 0.0, leftMargin + treeAreaW, 20))
 
     def mousePressEvent(self, e):
-        if e.pos().x()<0 and e.pos().x()>leftMargin+self.scene().treeAreaW:
-            return
+        pos = self.mapToScene(e.pos())
+        if pos.x()<0 and pos.x()>leftMargin+self.scene().treeAreaW:
+            pos = QPointF(max(min(pos.x(), leftMargin+self.scene().treeAreaW), 0), pos.y())
         self.commitStatus=self.parent.CommitOnChange
         self.parent.CommitOnChange=False
         self.marker=self.scene().marker
-        self.markerPos=e.pos().x()+3
-        self.marker.setPos(self.markerPos-3,0)
+        self.markerPos=pos.x()
+        self.marker.setPos(self.markerPos, 0)
         self.markerDragged=True
-        self.parent.dendrogram.setCutOffLine(e.pos().x())
+        self.parent.dendrogram.setCutOffLine(pos.x())
 
     def mouseReleaseEvent(self, e):
+        pos = self.mapToScene(e.pos())
         self.markerDragged=False
         self.parent.CommitOnChange=self.commitStatus
-        self.parent.dendrogram.setCutOffLine(e.pos().x())
+        self.parent.dendrogram.setCutOffLine(pos.x())
 
     def mouseMoveEvent(self, e):
-        if e.pos().x()<0 or e.pos().x()>leftMargin+self.scene().treeAreaW:
-            return
-        if self.markerDragged and e.pos():
-           self.markerPos=e.pos().x()+3
-           self.marker.setPos(self.markerPos-3,0)
-           self.parent.dendrogram.setCutOffLine(e.pos().x())
+        pos = self.mapToScene(e.pos())
+        if pos.x()<0 or pos.x()>leftMargin+self.scene().treeAreaW:
+            pos = QPointF(max(min(pos.x(), leftMargin+self.scene().treeAreaW), 0), pos.y())
+        if self.markerDragged and pos:
+           self.markerPos=pos.x()
+           self.marker.setPos(self.markerPos,0)
+           self.parent.dendrogram.setCutOffLine(pos.x())
 
     def moveMarker(self, x):
         self.scene().marker.setPos(x,0)
+        
+    def sceneRectUpdated(self, rect):
+        rect = QRectF(rect.x(), 0, rect.width(), self.scene().sceneRect().height())
+        self.scene().setSceneRect(rect)
 
 class MyCanvasRect(QGraphicsRectItem):
     def __init__(self, *args):
