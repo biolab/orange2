@@ -133,7 +133,7 @@ class orngMosaic:
         self.contingencies = {}
         self.clearResults()
 
-        if data and (len(data) == 0 or len(data.domain) == 0):        # if we don't have any examples or attributes then this is not a valid data set
+        if data is not None and (len(data) == 0 or len(data.domain) == 0):        # if we don't have any examples or attributes then this is not a valid data set
             data = None
 
         self.data = discretizeDomain(data, removeUnusedValues)
