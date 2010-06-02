@@ -228,8 +228,8 @@ class OWBaseWidget(QDialog):
     def createAttributeIconDict(self):
         return OWGUI.getAttributeIcons()
 
-    def isDataWithClass(self, data, wantedVarType = None):
-        self.error([1234, 1235])
+    def isDataWithClass(self, data, wantedVarType = None, checkMissing=False):
+        self.error([1234, 1235, 1236])
         if not data:
             return 0
         if not data.domain.classVar:
@@ -237,6 +237,9 @@ class OWBaseWidget(QDialog):
             return 0
         if wantedVarType and data.domain.classVar.varType != wantedVarType:
             self.error(1235, "Unable to handle %s class." % (data.domain.classVar.varType == orange.VarTypes.Discrete and "discrete" or "continuous"))
+            return 0
+        if checkMissing and not orange.Preprocessor_dropMissingClasses(data):
+            self.error(1236, "Unable to handle data set with all missing classes")
             return 0
         return 1
 
