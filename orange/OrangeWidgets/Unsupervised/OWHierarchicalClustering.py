@@ -5,6 +5,7 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>2100</priority>
 """
+from __future__ import with_statement
 
 from OWWidget import *
 from OWQCanvasFuncts import *
@@ -24,6 +25,16 @@ except:
     class DataFiles(object):
         pass
 
+class recursion_limit(object):
+    def __init__(self, limit=1000):
+        self.limit = limit
+        
+    def __enter__(self):
+        self.old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(self.limit)
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.setrecursionlimit(self.old_limit)
 
 class OWHierarchicalClustering(OWWidget):
     settingsList=["Linkage", "OverwriteMatrix", "Annotation", "Brightness", "PrintDepthCheck",
@@ -497,7 +508,8 @@ class Dendrogram(QGraphicsScene):
         self.treeAreaWidth=self.width()-leftMargin-self.textAreaWidth
         self.font.setPointSize(self.textSize)
         self.header.scene().setSceneRect(0, 0, self.width()+20, scaleHeight)
-        (self.rootGraphics,a)=self.drawTree(self.rootCluster,0)
+        with recursion_limit(sys.getrecursionlimit() + len(self.rootCluster) + 1):
+            (self.rootGraphics,a)=self.drawTree(self.rootCluster,0)
         self.updateLabel()
         for old in self.oldSelection:
             for new in self.rectObj:
@@ -779,8 +791,8 @@ class ScaleView(QGraphicsView):
         apply(QGraphicsView.__init__, (self,)+args)
         self.parent=parent
         self.setFixedHeight(20)
-#        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-#        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.scene().obj=[]
         self.scene().marker=QGraphicsRectItem(None, self.scene())
@@ -817,7 +829,9 @@ class ScaleView(QGraphicsView):
             xPos-=(distInc/(height or 1))*treeAreaW
             dist+=distInc
 
-        self.marker=OWCanvasRectangle(self.scene(),self.markerPos - 1,0,1,20, brushColor=QColor("blue"))
+#        self.marker=OWCanvasRectangle(self.scene(),self.markerPos - 1, 0, 1, 20, brushColor=QColor("blue"))
+        self.marker = QGraphicsRectItem(QRectF(-1.0, 0.0, 1.0, 20.0), None, self.scene())
+        self.marker.setPos(self.markerPos, 0)
         self.marker.setZValue(1)
 #        self.scene().obj.append(self.marker)
         self.scene().marker=self.marker
@@ -852,6 +866,7 @@ class ScaleView(QGraphicsView):
 
     def moveMarker(self, x):
         self.scene().marker.setPos(x,0)
+        self.markerPos = x
         
     def sceneRectUpdated(self, rect):
         rect = QRectF(rect.x(), 0, rect.width(), self.scene().sceneRect().height())
