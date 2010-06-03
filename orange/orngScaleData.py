@@ -10,6 +10,7 @@ try:
 except:
     import numpy.core.ma as MA
 
+import warnings
 
 # ####################################################################
 # return a list of sorted values for attribute at index index
@@ -66,8 +67,13 @@ def discretizeDomain(data, removeUnusedValues = 1, numberOfIntervals = 2):
 
     # if we have a continuous class we have to discretize it before we can discretize the attributes
     if className and data.domain.classVar.varType == orange.VarTypes.Continuous:
-        newClass = equiDisc(data.domain.classVar.name, data)
-        newClass.name = className
+        try:
+            newClass = equiDisc(data.domain.classVar.name, data)
+            newClass.name = className
+        except orange.KernelException, ex:
+            warnings.warn("Could not discretize class variable '%s'. %s" % (data.domain.classVar.name, ex.message))
+            newClass = None
+            className = None
         newDomain = orange.Domain(data.domain.attributes, newClass)
         data = orange.ExampleTable(newDomain, data)
 
@@ -76,15 +82,20 @@ def discretizeDomain(data, removeUnusedValues = 1, numberOfIntervals = 2):
             name = attr.name
             if attr.varType == orange.VarTypes.Continuous:  # if continuous attribute then use entropy discretization
                 if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                    attr = entroDisc(attr, data)
+                    new_attr = entroDisc(attr, data)
                 else:
-                    attr = equiDisc(attr, data)
+                    new_attr = equiDisc(attr, data)
+            else:
+                new_attr = attr
             if removeUnusedValues:
-                attr = orange.RemoveUnusedValues(attr, data)
-            attr.name = name
-            discAttrs.append(attr)
-        except:     # if all values are missing, entropy discretization will throw an exception. in such cases ignore the attribute
-            pass
+                new_attr = orange.RemoveUnusedValues(new_attr, data)
+                if new_attr is None:
+                    raise orange.KernelException, "No values"
+            
+            new_attr.name = name
+            discAttrs.append(new_attr)
+        except orange.KernelException, ex:     # if all values are missing, entropy discretization will throw an exception. in such cases ignore the attribute
+            warnings.warn("Could not discretize %s attribute. %s" % (attr.name, ex.message))
 
     if className: discAttrs.append(data.domain.classVar)
     return data.select(discAttrs)
