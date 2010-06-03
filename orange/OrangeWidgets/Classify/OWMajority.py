@@ -38,7 +38,7 @@ class OWMajority(OWWidget):
         self.send("Learner", self.learner)
 
     def setData(self,data):
-        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
 
         if self.data:
             try:

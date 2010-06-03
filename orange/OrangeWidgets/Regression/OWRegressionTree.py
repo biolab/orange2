@@ -85,29 +85,29 @@ class OWRegressionTree(OWWidget):
         self.send("Learner",learner)
         self.error()
 
-        if not self.data:
-            return
-
-        try:
-            classifier=learner(self.data)
-            classifier.name=self.Name
-            self.send("Regressor",classifier)
-            self.send("Regression Tree", classifier)
-        except orange.KernelException, (errValue):
-            self.error(str(errValue))
-            self.send("Regressor",None)
-            self.send("Regression Tree", None)
+        classifier = None
+        
+        if self.data:
+            try:
+                classifier=learner(self.data)
+                classifier.name=self.Name
+            except orange.KernelException, (errValue):
+                self.error(str(errValue))
+                classifier = None
+        
+        self.send("Regressor", classifier)
+        self.send("Regression Tree", classifier)
         #orngTree.printTxt(classifier)
 
     def dataset(self, data):
-        self.data=data
-        if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
-            self.setLearner()
-        else:
-            self.data = None
-            self.send("Learner",None)
-            self.send("Regressor",None)
-            self.send("Regression Tree", None)
+        self.data = self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True) and data or None
+#        if data and self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True):
+        self.setLearner()
+#        else:
+#            self.data = None
+#            self.send("Learner",None)
+#            self.send("Regressor",None)
+#            self.send("Regression Tree", None)
 
 if __name__=="__main__":
     app=QApplication(sys.argv)

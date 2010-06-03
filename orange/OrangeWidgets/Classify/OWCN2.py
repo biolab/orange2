@@ -214,7 +214,7 @@ class OWCN2(OWWidget):
 
     def dataset(self, data):
         #self.data=data
-        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.setLearner()
 
     def qualityButtonPressed(self, id=0):

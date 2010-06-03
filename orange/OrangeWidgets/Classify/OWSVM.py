@@ -118,16 +118,7 @@ class OWSVM(OWWidget):
                 a.setDisabled(b)
 
     def setData(self, data=None):
-        self.error(0)
-        if data:
-            data = orange.Preprocessor_dropMissingClasses(data)
-            if data.domain.classVar and len(data):
-                self.data=data
-            else:
-                self.data=None
-                self.error(0, "The dataset does not contain a class variable")
-        else:
-            self.data=None
+        self.data = self.isDataWithClass(data, checkMissing=True) and data or None
         self.paramButton.setDisabled(not self.data)
         self.applySettings()
 
@@ -167,12 +158,10 @@ class OWSVM(OWWidget):
             self.classifier=self.learner(self.data)
             self.supportVectors=self.classifier.supportVectors
             self.classifier.name=self.name
-        if self.learner:
-            self.send("Learner", self.learner)
-        if self.classifier:
-            self.send("Classifier", self.classifier)
-        if self.supportVectors:
-            self.send("Support Vectors", self.supportVectors)
+            
+        self.send("Learner", self.learner)
+        self.send("Classifier", self.classifier)
+        self.send("Support Vectors", self.supportVectors)
 
     def parameterSearch(self):
         if not self.data:

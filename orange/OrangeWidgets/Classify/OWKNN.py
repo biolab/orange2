@@ -81,7 +81,7 @@ class OWKNN(OWWidget):
             self.cbNormalize.setEnabled(False)
             
     def setData(self,data):
-        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.setLearner()
 
 
@@ -98,6 +98,7 @@ class OWKNN(OWWidget):
 
 
     def learn(self):
+        self.classifier = None
         if self.data and self.learner:
             try:
                 self.classifier = self.learner(self.data)
@@ -105,7 +106,7 @@ class OWKNN(OWWidget):
             except Exception, (errValue):
                 self.classifier = None
                 self.error(str(errValue))
-            self.send("KNN Classifier", self.classifier)
+        self.send("KNN Classifier", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
