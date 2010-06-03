@@ -124,6 +124,8 @@ class OWPredictions(OWWidget):
         self.connect(self.header, SIGNAL("sectionPressed(int)"), self.sort)
         self.sortby = -1
         self.resize(800, 600)
+        
+        self.handledAllSignalsFlag = False
 
 
     ##############################################################################
@@ -131,7 +133,7 @@ class OWPredictions(OWWidget):
 
     def updateTableOutcomes(self):
         """updates the columns associated with the classifiers"""
-        if not self.data or not self.predictors or not self.outvar:
+        if not self.data or not self.predictors or not self.outvar or not self.handledAllSignalsFlag:
             return
 
         classification = self.outvar.varType == orange.VarTypes.Discrete
@@ -146,7 +148,7 @@ class OWPredictions(OWWidget):
                 if classification:
                     for (i, d) in enumerate(self.data):
                         (cl, p) = c(d, orange.GetBoth)
-
+                        
                         self.classifications[i].append(cl)
                         s = ""
                         if showprob:
@@ -193,7 +195,7 @@ class OWPredictions(OWWidget):
         else:
             for i in range(len(self.data.domain.variables)):
                 self.table.hideColumn(i)
-
+        
     def setTable(self):
         """defines the attribute/predictions table and paints its contents"""
         if not self.outvar or self.data==None:
@@ -275,6 +277,12 @@ class OWPredictions(OWWidget):
     ##############################################################################
     # Input signals
 
+    def handleNewSignals(self):
+        self.handledAllSignalsFlag = True
+        if self.data:
+            self.setTable()
+            self.checksendpredictions()
+            
     def consistenttarget(self, target):
         """returns TRUE if target is consistent with current predictiors and data"""
         if self.predictors:
@@ -282,6 +290,7 @@ class OWPredictions(OWWidget):
         return True
 
     def setData(self, data):
+        self.handledAllSignalsFlag = False
         if not data:
             self.data = data
             self.datalabel = "N/A"
@@ -290,8 +299,8 @@ class OWPredictions(OWWidget):
             vartypes = {1:"discrete", 2:"continuous"}
             self.data = data
             self.rindx = range(len(self.data))
-            self.setTable()
-            self.checksendpredictions()
+#            self.setTable() 
+#            self.checksendpredictions()
             self.datalabel = "%d instances" % len(data)
         self.checkenable()
 
@@ -309,6 +318,8 @@ class OWPredictions(OWWidget):
                     return None
             return ov
 
+        self.handledAllSignalsFlag = False
+        
         # remove the classifier with id, if empty
         if not predictor:
             if self.predictors.has_key(id):
@@ -346,10 +357,10 @@ class OWPredictions(OWWidget):
                 self.selectedClasses = []
                 self.tasklabel = "Classification"
 
-        if self.data:
-            self.setTable()
-            self.table.show()
-            self.checksendpredictions()
+#        if self.data:
+#            self.setTable()
+#            self.table.show()
+#            self.checksendpredictions()
         self.checkenable()
 
     ##############################################################################
