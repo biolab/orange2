@@ -38,7 +38,7 @@
 
 #include "tabdelim.ppp"
 
-int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces=true, bool csv = false);
+int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces=true, bool csv = false, bool allowEmpty=false);
 bool atomsEmpty(const vector<string> &atoms);
 
 
@@ -75,8 +75,8 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   
   vector<string> atoms;
   for (int i = headerLines; !feof(fei.file) && i--; )
-    // read one line (not counting comment lines, but counting empty lines)
-    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv) == -1));
+    // read one line (not counting comment lines, but the flag line may be empty)
+    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv, (headerLines==3) && !i) == -1));
 
   startDataPos = ftell(fei.file);
   startDataLine = fei.line;
@@ -248,7 +248,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
   }
 
   // if there is no flags line, it is not .tab
-  while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv)==-1));
+  while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv, true)==-1));
   if (feof(fei.file)) {
     char *res = mlnew char[128];
     res = strcpy(res, "file has only two lines");
@@ -493,7 +493,7 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
   TIntList::const_iterator ati, atb(attributeTypes->begin());
 
   for (int i = headerLines; !feof(fei.file) && i--; )
-    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv) == -1));
+    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv, (headerLines==3) && !i) == -1));
 
   while (!feof(fei.file)) {
     if (readTabAtom(fei, atoms, true, csv) <= 0)
@@ -620,7 +620,7 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
   if (varTypes.empty())
     ::raiseError("cannot read types of attributes");
 
-  while(!feof(fei.file) && (readTabAtom(fei, varFlags, true, csv) == -1));
+  while(!feof(fei.file) && (readTabAtom(fei, varFlags, true, csv, true) == -1));
 
   if (varNames.size() != varTypes.size())
     ::raiseError("mismatching number of attributes and their types.");
@@ -754,7 +754,7 @@ int trimAtomsList(vector<string> &atoms)
    
     Returns number of atoms, -1 for comment line and -2 for EOF
     */
-int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces, bool csv)
+int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces, bool csv, bool allowEmpty)
 {
   atoms.clear();
 
@@ -786,7 +786,7 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
       case '\n':
         if (atom.length() || atoms.size())
           atoms.push_back(trim(atom));  // end of line
-        if (atoms.size())
+        if (allowEmpty || atoms.size())
           return trimAtomsList(atoms);
         break;
 
