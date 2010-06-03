@@ -8,7 +8,7 @@ import OWQCanvasFuncts
 
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
-    def __init__(self, graph, extraButtons = []):
+    def __init__(self, graph, extraButtons = [], defaultName="graph"):
         OWBaseWidget.__init__(self, None, None, "Image settings", modal = TRUE, resizingEnabled = 0)
 
         self.graph = graph
@@ -18,6 +18,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.saveAllSizes = 0
         self.penWidthFactor = 1
         self.lastSaveDirName = "./"
+        self.defaultName = defaultName
 
         self.loadSettings()
 
@@ -49,7 +50,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
     def saveImage(self, filename = None, size = None, closeDialog = 1):
         if not filename:
-            filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF);;Scalable Vector Graphics (*.SVG)", ".png")
+            filename = self.getFileName(self.defaultName, "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF);;Scalable Vector Graphics (*.SVG)", ".png")
             if not filename: return
 
         (fil,ext) = os.path.splitext(filename)
@@ -107,7 +108,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         return source
 
     def saveToMatplotlib(self):
-        filename = self.getFileName("graph.py","Python Script (*.py)", ".py")
+        filename = self.getFileName(self.defaultName, "Python Script (*.py)", ".py")
         if filename:
             if isinstance(self.graph, QwtPlot):
                 self.graph.saveToMatplotlib(filename, self.getSize())
@@ -169,7 +170,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     # ############################################################
     # EXTRA FUNCTIONS ############################################
     def getFileName(self, defaultName, mask, extension):
-        fileName = str(QFileDialog.getSaveFileName(self, "Save to..", self.lastSaveDirName + defaultName, mask))
+        fileName = str(QFileDialog.getSaveFileName(self, "Save to..", os.path.join(self.lastSaveDirName, defaultName), mask))
         if not fileName: return None
         if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
 
