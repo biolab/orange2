@@ -367,7 +367,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if self.resultList.count() > 0:
             self.resultList.setCurrentItem(self.resultList.item(0))
 
-    def setData(self, data, removeUnusedValues = 0):
+    def setData(self, data, removeUnusedValues = 0): 
         orngMosaic.setData(self, data, removeUnusedValues)
 
         self.setStatusBarText("")
@@ -384,10 +384,11 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
             # add class values
-            self.classValueCombo.addItems(getVariableValuesSorted(self.data.domain.classVar))
-            self.updateShownArguments()
-            if len(self.data.domain.classVar.values) > 0:
-                self.classValueCombo.setCurrentIndex(0)
+            if orange.RemoveUnusedValues(self.data.domain.classVar, self.data) is not None:
+                self.classValueCombo.addItems(getVariableValuesSorted(self.data.domain.classVar))
+                self.updateShownArguments()
+                if len(self.data.domain.classVar.values) > 0:
+                    self.classValueCombo.setCurrentIndex(0)
 
         return self.data
 
