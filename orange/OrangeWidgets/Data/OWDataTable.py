@@ -346,8 +346,11 @@ class OWDataTable(OWWidget):
         
         table.setModel(datamodel)
         def p():
-            table.updateGeometries()
-            table.viewport().update()
+            try:
+                table.updateGeometries()
+                table.viewport().update()
+            except RuntimeError:
+                pass
         
         size = table.verticalHeader().sectionSizeHint(0)
         table.verticalHeader().setDefaultSectionSize(size)
