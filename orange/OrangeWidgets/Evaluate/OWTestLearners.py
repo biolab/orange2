@@ -342,7 +342,7 @@ class OWTestLearners(OWWidget):
     def setData(self, data):
         """handle input train data set"""
         self.closeContext()
-        self.data = data
+        self.data = self.isDataWithClass(data, checkMissing=True) and data or None
         self.fillClassCombo()
         if not self.data:
             # data was removed, remove the scores
