@@ -32,6 +32,7 @@ class OWOutliers(OWWidget):
         self.data = None                    # input data set
         self.dataInput = None
         self.distanceMatrix = None
+        
         kernelSizeValid = QDoubleValidator(self.controlArea)
 
 
@@ -62,6 +63,8 @@ class OWOutliers(OWWidget):
                        callback=self.applySettings)
 
         OWGUI.separator(self.controlArea)
+        
+        self.loadSettings()
       
         self.resize(100,100)
         self.applySettings()
@@ -115,11 +118,11 @@ class OWOutliers(OWWidget):
         self.haveInput = 0        
         outlier = orngOutlier.OutlierDetection()
         
-        if self.distanceMatrix <> None:
+        if self.distanceMatrix is not None:
             outlier.setDistanceMatrix(self.distanceMatrix) 
             self.data=getattr(self.distanceMatrix, "items")
             self.haveInput = 1     
-        elif self.dataInput <> None:
+        elif self.dataInput is not None:
             self.data = self.dataInput
             outlier.setExamples(self.data, self.metrics[self.metric][1](self.data))        
             self.haveInput = 1
