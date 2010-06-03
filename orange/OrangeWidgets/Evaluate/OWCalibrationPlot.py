@@ -299,6 +299,7 @@ class OWCalibrationPlot(OWWidget):
     def removeGraphs(self):
         for g in self.graphs:
             g.removeCurves()
+            g.hide()
 
     def saveToFile(self):
         if self.graph:
