@@ -756,6 +756,8 @@ int trimAtomsList(vector<string> &atoms)
     */
 int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces, bool csv, bool allowEmpty)
 {
+  allowEmpty = false; // a temporary fix!!!!!
+  
   atoms.clear();
 
   if (!fei.file)
