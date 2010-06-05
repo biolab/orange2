@@ -756,8 +756,6 @@ int trimAtomsList(vector<string> &atoms)
     */
 int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces, bool csv, bool allowEmpty)
 {
-  allowEmpty = false; // a temporary fix!!!!!
-  
   atoms.clear();
 
   if (!fei.file)
@@ -768,7 +766,7 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
 
   fei.line++;
 
-  char c;
+  char c, c2;
   int col = 0;
   string atom;
   for(;;) {
@@ -786,6 +784,9 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
     switch(c) {
       case '\r':
       case '\n':
+        c2 = fgetc(fei.file);
+        if ((c2!='\r') && (c2!='\n') || (c2 == c))
+          ungetc(c2, fei.file);
         if (atom.length() || atoms.size())
           atoms.push_back(trim(atom));  // end of line
         if (allowEmpty || atoms.size())
