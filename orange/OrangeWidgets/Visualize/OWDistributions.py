@@ -234,7 +234,7 @@ class OWDistributionGraph(OWGraph):
         for key in keys:
             ckey = PolygonCurve(pen=QPen(Qt.black), brush=QBrush(Qt.gray))
             ckey.attach(self)
-            ckey.setRenderHints(QwtPlotItem.RenderAntialiased, self.useAntialiasing)
+            ckey.setRenderHint(QwtPlotItem.RenderAntialiased, self.useAntialiasing)
             if self.variableContinuous:
                 ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
                 ff="%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
@@ -305,6 +305,7 @@ class OWDistributionGraph(OWGraph):
                         continue
                     ckey = PolygonCurve(pen = QPen(self.discPalette[oi]), brush = QBrush(self.discPalette[oi]))
                     ckey.attach(self)
+                    ckey.setRenderHint(QwtPlotItem.RenderAntialiased, self.useAntialiasing)
                     if self.variableContinuous:
                         ckey.setData([key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                         ff = "%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
