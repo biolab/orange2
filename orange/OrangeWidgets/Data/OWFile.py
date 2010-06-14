@@ -305,10 +305,11 @@ class OWFile(OWWidget):
         if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
 
     def sendReport(self):
-        self.reportSettings("File",
-                            [("File name", self.loadedFile),
-                             ("Format", self.formats.get(os.path.splitext(self.loadedFile)[1], "unknown format"))])
-        self.reportData(self.dataReport)
+        if hasattr(self, "dataReport"):
+            self.reportSettings("File",
+                                [("File name", self.loadedFile),
+                                 ("Format", self.formats.get(os.path.splitext(self.loadedFile)[1], "unknown format"))])
+            self.reportData(self.dataReport)
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
