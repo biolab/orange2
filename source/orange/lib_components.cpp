@@ -1259,7 +1259,7 @@ if (PyOrVariable_Check(args)) {
 		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable==var)
 			: (*ci)->outerVariable && ((*ci)->outerVariable==var))
 			return ci - cont->begin();
-  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", var->name);
+  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", var->name.c_str());
   return -1;
 }
 
