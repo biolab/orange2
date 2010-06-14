@@ -394,7 +394,7 @@ class ListItemWithLabel(QListWidgetItem):
 
 
 class OWDiscretize(OWWidget):
-    settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize"]
+    settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize", "resetIndividuals"]
     contextHandlers = {"": PerfectDomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
                                                      "indiDiscretization", "intervals", "classIntervals", "indiIntervals",
                                                      "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals",
