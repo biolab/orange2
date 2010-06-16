@@ -158,9 +158,9 @@ def main(argv):
         root = "%s/doc" % orngEnviron.orangeDir
         module = "orange"
     elif module == "obi":
-        root = orngEnviron.addOnsDir + "/Bioinformatics/doc"
+        root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
     elif module == "text":
-        root = orngEnviron.addOnsDir + "/Text/doc"
+        root = orngEnviron.addOnsDirSys + "/Text/doc"
     else:
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
         sys.exit(1)
