@@ -1,7 +1,7 @@
 import statc, operator, math
 from operator import add
 import orngMisc, orngTest
-
+import numpy
 
 #### Private stuff
 
@@ -756,6 +756,53 @@ def MCC(confm):
             r = None
 
     return r
+
+def scottsPi(confm, bIsListOfMatrices=True):
+   """Compute Scott's Pi for measuring inter-rater agreement for nominal data
+
+   http://en.wikipedia.org/wiki/Scott%27s_Pi
+   Scott's Pi is a statistic for measuring inter-rater reliability for nominal
+   raters.
+
+   @param confm: confusion matrix, or list of confusion matrices. To obtain
+                           non-binary confusion matrix, call
+                           orngStat.computeConfusionMatrices and set the
+                           classIndex parameter to -2.
+   @param bIsListOfMatrices: specifies whether confm is list of matrices.
+                           This function needs to operate on non-binary
+                           confusion matrices, which are represented by python
+                           lists, therefore one needs a way to distinguish
+                           between a single matrix and list of matrices
+   """
+
+   if bIsListOfMatrices:
+       try:
+           return [scottsPi(cm, bIsListOfMatrices=False) for cm in confm]
+       except TypeError:
+           # Nevermind the parameter, maybe this is a "conventional" binary
+           # confusion matrix and bIsListOfMatrices was specified by mistake
+           return scottsPiSingle(confm, bIsListOfMatrices=False)
+   else:
+       if isinstance(confm, ConfusionMatrix):
+           confm = numpy.array( [[confm.TP, confm.FN],
+                   [confm.FP, confm.TN]], dtype=float)
+       else:
+           confm = numpy.array(confm, dtype=float)
+
+       marginalSumOfRows = numpy.sum(confm, axis=0)
+       marginalSumOfColumns = numpy.sum(confm, axis=1)
+       jointProportion = (marginalSumOfColumns + marginalSumOfRows)/ \
+                           (2.0 * numpy.sum(confm, axis=None))
+       # In the eq. above, 2.0 is what the Wikipedia page calls
+       # the number of annotators. Here we have two annotators:
+       # the observed (true) labels (annotations) and the predicted by
+       # the learners.
+
+       prExpected = numpy.sum(jointProportion ** 2, axis=None)
+       prActual = numpy.sum(numpy.diag(confm), axis=None)/numpy.sum(confm, axis=None)
+
+       ret = (prActual - prExpected) / (1.0 - prExpected)
+       return ret
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
