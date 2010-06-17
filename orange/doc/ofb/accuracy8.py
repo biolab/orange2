@@ -28,7 +28,9 @@ stat = (('CA', 'CA(res)'),
         ('Brier', 'BrierScore(res)'),
         ('F1', 'F1(cm)'),
         ('F2', 'Falpha(cm, alpha=2.0)'),
-        ('MCC', 'MCC(cm)'))
+        ('MCC', 'MCC(cm)'),
+        ('sPi', 'scottsPi(cm)'),
+        )
 
 scores = [eval("orngStat."+s[1]) for s in stat]
 print
