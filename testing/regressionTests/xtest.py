@@ -1,6 +1,6 @@
 #! usr/bin/env python
 
-import os, re, sys, time
+import os, re, sys, time, subprocess
 import getopt
 import orngEnviron
 
@@ -53,9 +53,13 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
         names.sort()
 
         if names or True:
-            print "-" * 79
-            print "Directory '%s'" % dir
-            print
+            if just_print == "report-html":
+                print "<h2>Directory '%s'</h2>" % dir
+                print '<table class="xtest_report">'
+            elif just_print:
+                print "-" * 79
+                print "Directory '%s'" % dir
+                print
 
         # test_set includes all the scripts (file, status) to be tested
         for name in names:
@@ -79,7 +83,11 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                     else:
                         dont_test.append(name)
 
-        if just_print:
+        if just_print == "report-html":
+            for name, lastResult in test_set:
+                print '  <tr><td><a href="%s/%s">%s</a></td><td>%s</td></tr>' % (dir, name, name, lastResult)
+            print "</table>"
+        elif just_print:
             for name, lastResult in test_set:
                 print "%-30s %s" % (name, lastResult)
                 
@@ -98,7 +106,6 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         os.remove(remname)
                     
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
-                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, `titerations`, outputsdir)
 
                 result = open("xtest1_report", "rt").readline().rstrip() or "crash"
                 error_status = max(error_status, states.index(result))
@@ -115,7 +122,7 @@ error_status = 0
 
 def usage():
     """Print out help."""
-    print "%s [update|test|report|errors] -[h|s] [--single|--module=[orange|obi|text]|--dir=<dir>|] <files>" % sys.argv[0]
+    print "%s [update|test|report|report-html|errors] -[h|s] [--single|--module=[orange|obi|text]|--dir=<dir>|] <files>" % sys.argv[0]
     print "  test:   regression tests on all scripts"
     print "  update: regression tests on all previously failed scripts (default)"
     print "  report: report on testing results"
@@ -133,7 +140,7 @@ def main(argv):
     
     command = "update"
     if argv:
-        if argv[0] in ["update", "test", "report", "errors", "help"]:
+        if argv[0] in ["update", "test", "report", "report-html", "errors", "help"]:
             command = argv[0]
             del argv[0]
 
@@ -165,7 +172,7 @@ def main(argv):
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
         sys.exit(1)
     
-    test_scripts(command=="test", command=="report", module=module, root_directory=root, 
+    test_scripts(command=="test", command=="report" or (command=="report-html" and command or False), module=module, root_directory=root, 
                 test_files=test_files, directories=directories)
     # sys.exit(error_status)
     
