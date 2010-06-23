@@ -84,8 +84,12 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         dont_test.append(name)
 
         if just_print == "report-html":
+            import glob
             for name, lastResult in test_set:
-                print '  <tr><td><a href="%s/%s">%s</a></td><td>%s</td></tr>' % (dir, name, name, lastResult)
+                if lastResult =="OK":
+                    print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dir, name, name, lastResult)
+                else:            
+                    print '  <tr><td><a href="results/%s/%s/%s.%s.%s.%s.txt">%s</a></td><td>%s</td></tr>' % (module, dir, name, platform, pyversion, lastResult, name, lastResult)
             print "</table>"
         elif just_print:
             for name, lastResult in test_set:
