@@ -52,7 +52,7 @@ public:
 
   /* If you want to avoid rewrapping, you should write this as static and
      pass the discretizer as PDiscretizer. */
-  virtual PVariable constructVar(PVariable) = 0;
+  virtual PVariable constructVar(PVariable, float mindiff = 1.0) = 0;
 
   virtual void getCutoffs(vector<float> &cutoffs) const = 0;
 };
@@ -87,7 +87,7 @@ public:
   TEquiDistDiscretizer(const int=-1, const float=-1.0, const float=-1.0);
 
   virtual void transform(TValue &);
-  virtual PVariable constructVar(PVariable);
+  virtual PVariable constructVar(PVariable, float mindiff = 1.0);
 
   virtual void getCutoffs(vector<float> &cutoffs) const;
 };
@@ -102,7 +102,7 @@ public:
   TThresholdDiscretizer(const float &threshold = 0.0);
   virtual void transform(TValue &);
 
-  virtual PVariable constructVar(PVariable);
+  virtual PVariable constructVar(PVariable, float mindiff = 1.0);
 
   virtual void getCutoffs(vector<float> &cutoffs) const;
 };
@@ -119,7 +119,7 @@ public:
   TIntervalDiscretizer(const string &boundaries);
 
   virtual void      transform(TValue &);
-  PVariable constructVar(PVariable var);
+  PVariable constructVar(PVariable var, float mindiff = 1.0);
 
   virtual void getCutoffs(vector<float> &cutoffs) const;
 };
@@ -134,7 +134,7 @@ public:
 
   TBiModalDiscretizer(const float & = 0.0, const float & = 0.0);
   virtual void transform(TValue &);
-  PVariable constructVar(PVariable var);
+  PVariable constructVar(PVariable var, float mindiff = 1.0);
 
   virtual void getCutoffs(vector<float> &cutoffs) const;
 };
@@ -182,12 +182,12 @@ public:
   virtual PVariable operator()(const TContDistribution &, PVariable var) const;
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID=0);
 
-  void cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr) const;
-  void cutoffsByCounting(PIntervalDiscretizer, const TContDistribution &) const;
-  void cutoffsByDivision(PIntervalDiscretizer, const TContDistribution &) const;
+  void cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr, float &mindiff) const;
+  void cutoffsByCounting(PIntervalDiscretizer, const TContDistribution &, float &mindiff) const;
+  void cutoffsByDivision(PIntervalDiscretizer, const TContDistribution &, float &mindiff) const;
   void cutoffsByDivision(const int &noInt, TFloatList &points, 
                         map<float, float>::const_iterator fbeg, map<float, float>::const_iterator fend,
-                        const float &N) const;
+                        const float &N, float &mindiff) const;
 };
 
 
@@ -209,7 +209,7 @@ public:
 
 protected:
   void divide(const TS::const_iterator &, const TS::const_iterator &, const TDiscDistribution &,
-              float entropy, int k, vector<pair<float, float> > &, TSimpleRandomGenerator &rgen) const;
+              float entropy, int k, vector<pair<float, float> > &, TSimpleRandomGenerator &rgen, float &mindiff) const;
 };
 
 

@@ -104,8 +104,9 @@ string mcvt(double f, int decs)
 /*  Constructs a new TEnumVariable. Its values represent the intervals for values of passed variable var;
     getValueFrom points to a classifier which gets a value of the original variable (var) and transforms it using
     'this' transformer. */
-PVariable TEquiDistDiscretizer::constructVar(PVariable var)
+PVariable TEquiDistDiscretizer::constructVar(PVariable var, float mindiff)
 { 
+  mindiff = 1.0; // Ignores the given mindiff; see http://www.ailab.si/orange/trac/ticket/576
   TFloatVariable *fvar = var.AS(TFloatVariable);
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
@@ -120,7 +121,7 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var)
 
   else {
     float roundfactor;
-    int decs = numDecs(step, roundfactor);
+    int decs = numDecs(step<mindiff ? step : mindiff, roundfactor);
 
     if ((fvar->adjustDecimals != 2) && (decs < fvar->numberOfDecimals)) {
       decs = fvar->numberOfDecimals;
@@ -179,8 +180,9 @@ void TThresholdDiscretizer::transform(TValue &val)
 }
 
 
-PVariable TThresholdDiscretizer::constructVar(PVariable var)
+PVariable TThresholdDiscretizer::constructVar(PVariable var, float mindiff)
 { 
+  mindiff = 1.0; // Ignores the given mindiff; see http://www.ailab.si/orange/trac/ticket/576
   TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
@@ -225,8 +227,9 @@ void TBiModalDiscretizer::transform(TValue &val)
 }
 
 
-PVariable TBiModalDiscretizer::constructVar(PVariable var)
+PVariable TBiModalDiscretizer::constructVar(PVariable var, float mindiff)
 { 
+  mindiff = 1.0; // Ignores the given mindiff; see http://www.ailab.si/orange/trac/ticket/576
   TFloatVariable *fvar = var.AS(TFloatVariable);
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
@@ -240,7 +243,10 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var)
     raiseError("invalid interval: (%5.3f, %5.3f]", low, high);
 
   float roundfactor;
-  int decs = numDecs(high-low, roundfactor);
+  if (high-low < mindiff) {
+    mindiff = high-low;
+  }
+  int decs = numDecs(mindiff, roundfactor);
 
   if ((fvar->adjustDecimals != 2) && (decs < fvar->numberOfDecimals)) {
     decs = fvar->numberOfDecimals;
@@ -300,8 +306,9 @@ void TIntervalDiscretizer::transform(TValue &val)
     values of passed variable var; getValueFrom points to a classifier which
     gets a value of the original variable (var) and transforms it using
     'this' transformer. */
-PVariable TIntervalDiscretizer::constructVar(PVariable var)
+PVariable TIntervalDiscretizer::constructVar(PVariable var, float mindiff )
 {
+  mindiff = 1.0; // Ignores the given mindiff; see http://www.ailab.si/orange/trac/ticket/576
   TFloatVariable *fvar = var.AS(TFloatVariable);
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
@@ -319,7 +326,6 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
 
   else {
     TFloatList::iterator vb(points->begin()), ve(points->end()), vi;
-    float mindiff = 1.0;
     for(vi=vb+1; vi!=ve; vi++) {
       float ndiff = *vi - *(vi-1);
       if (ndiff<mindiff)
@@ -455,36 +461,42 @@ TEquiNDiscretization::TEquiNDiscretization(int anumber)
 PVariable TEquiNDiscretization::operator()(const TContDistribution &distr, PVariable var) const
 { 
   PIntervalDiscretizer discretizer=mlnew TIntervalDiscretizer;
+  float mindiff;
   
   if (distr.size() <= numberOfIntervals) {
-    cutoffsByMidpoints(discretizer, distr);
+    cutoffsByMidpoints(discretizer, distr, mindiff);
   }
   else if (recursiveDivision && false) { // XXX remove when the routine is finished
-    cutoffsByDivision(discretizer, distr);
+    cutoffsByDivision(discretizer, distr, mindiff);
   }
   else {
-    cutoffsByCounting(discretizer, distr);
+    cutoffsByCounting(discretizer, distr, mindiff);
   }
 
-  return discretizer->constructVar(var);
+  return discretizer->constructVar(var, mindiff);
 }
 
-void TEquiNDiscretization::cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
+void TEquiNDiscretization::cutoffsByMidpoints(PIntervalDiscretizer discretizer, const TContDistribution &distr, float &mindiff) const
 {
+  mindiff = 1.0;
   TContDistribution::const_iterator cdi(distr.begin()), cde(distr.end());
   if (cdi!=cde) {
     float prev = (*cdi).first;
     while (++cdi != cde) {
       discretizer->points->push_back((prev+(*cdi).first)/2.0);
+      if (((*cdi).first - prev) < mindiff) {
+          mindiff = (*cdi).first - prev;
+      }
     }
   }
 }
 
-void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
+void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, const TContDistribution &distr, float &mindiff) const
 {
   if (numberOfIntervals<=0)
     raiseError("invalid number of intervals (%i)", numberOfIntervals);
 
+  mindiff = 1.0;
   float N = distr.abs;
   int toGo = numberOfIntervals;
   float inthis = 0, prevel = -1; // initialized to avoid warnings
@@ -498,12 +510,18 @@ void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, c
       ni = di; ni++;
       if ((ni!=de) && (inthis - inone < (*di).second / 2)) {
         discretizer->points->push_back( ((*ni).first + (*di).first) /2);
+        if ((*ni).first - (*di).first < mindiff) {
+          mindiff = (*ni).first - (*di).first;
+        }
         N -= inthis;
         inthis = 0;
         prevel = (*ni).first;
       }
       else {
         discretizer->points->push_back( (prevel + (*di).first) / 2);
+        if ((*di).first - prevel < mindiff) {
+          mindiff = (*di).first - prevel;
+        }
         N -= (inthis - ((*di).second));
         inthis = (*di).second;
         prevel = (*di).first;
@@ -515,13 +533,13 @@ void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, c
 }
 
 
-void TEquiNDiscretization::cutoffsByDivision(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
-{ cutoffsByDivision(numberOfIntervals, discretizer->points.getReference(), distr.begin(), distr.end(), distr.abs); }
+void TEquiNDiscretization::cutoffsByDivision(PIntervalDiscretizer discretizer, const TContDistribution &distr, float &mindiff) const
+{ cutoffsByDivision(numberOfIntervals, discretizer->points.getReference(), distr.begin(), distr.end(), distr.abs, mindiff); }
 
 
 void TEquiNDiscretization::cutoffsByDivision(const int &, TFloatList &, 
                                             map<float, float>::const_iterator, map<float, float>::const_iterator,
-                                            const float &) const
+                                            const float &, float &) const
 { /*XXX to be finished
 
   if (noInt & 1) {
@@ -662,9 +680,10 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
   if (!k)
     raiseError("no examples or all values of attribute '%s' are unknown", var->name.c_str());
 
+  float mindiff = 1.0;
 
   vector<pair<float, float> > points;
-  divide(S.begin(), S.end(), all, float(getEntropy(all)), k, points, rgen);
+  divide(S.begin(), S.end(), all, float(getEntropy(all)), k, points, rgen, mindiff);
 
   /* This is not correct: if, for instance, we have two cut-off points we should always remove
      the one that was added later... */
@@ -684,7 +703,7 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
         discretizer->points->push_back((*fi).first);
   }
 
-  return discretizer->constructVar(var);
+  return discretizer->constructVar(var, mindiff);
 }
 
 
@@ -692,7 +711,8 @@ void TEntropyDiscretization::divide(
   const TS::const_iterator &first, const TS::const_iterator &last,
 	const TDiscDistribution &distr, float entropy, int k,
   vector<pair<float, float> > &points,
-  TSimpleRandomGenerator &rgen) const
+  TSimpleRandomGenerator &rgen,
+  float &mindiff) const
 {
   TDiscDistribution S1dist, S2dist = distr, bestS1, bestS2;
   float bestE = -1.0;
@@ -738,15 +758,19 @@ void TEntropyDiscretization::divide(
   float cutoff = (*bestT).first;
   bestT++;
 
+  if ((*bestT).first - cutoff < mindiff) {
+     mindiff = (*bestT).first - cutoff;
+  }
+
 //  cout << cutoff << ", info gain=" << gain << ", MDL=" << MDL << endl;
   if (gain>MDL) {
     if ((k1>1) && (first!=bestT))
-      divide(first, bestT, bestS1, entropy1, k1, points, rgen);
+      divide(first, bestT, bestS1, entropy1, k1, points, rgen, mindiff);
 
     points.push_back(pair<float, float>(cutoff, gain-MDL));
 
     if ((k2>1) && (bestT!=last))
-      divide(bestT, last, bestS2, entropy2, k2, points, rgen);
+      divide(bestT, last, bestS2, entropy2, k2, points, rgen, mindiff);
   }
   else if (forceAttribute && !points.size())
     points.push_back(pair<float, float>(cutoff, gain-MDL));
