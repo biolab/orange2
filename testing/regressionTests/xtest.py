@@ -84,7 +84,6 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         dont_test.append(name)
 
         if just_print == "report-html":
-            import glob
             for name, lastResult in test_set:
                 if lastResult =="OK":
                     print '  <tr><td><a href="results/%s/%s/%s.txt">%s</a></td><td>%s</td></tr>' % (module, dir, name, name, lastResult)
@@ -110,7 +109,8 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         os.remove(remname)
                     
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
-
+                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, str(titerations), outputsdir)
+                
                 result = open("xtest1_report", "rt").readline().rstrip() or "crash"
                 error_status = max(error_status, states.index(result))
                 os.remove("xtest1_report")
