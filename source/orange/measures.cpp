@@ -1168,10 +1168,6 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
 
     ITERATE(vector<vector<int> >, cli, examplesByClasses) {
       const float inCliClass = (*cli).size();
-      const float classReferenceWeight =
-         regression ? referenceWeight 
-                    : referenceWeight * (referenceExample.getClass().intV == table[cli->front()].getClass().intV ? -1.0 : float(inCliClass) / float(N-inCliClass));
-
       vector<pair<int, float> > distances(inCliClass);
       vector<pair<int, float> >::iterator disti = distances.begin(), diste;
       ITERATE(vector<int> , clii, *cli)
@@ -1205,8 +1201,10 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
                                                       weightEE));
             ndC += weightEE * classDist;
           }
-          else
-            refNeighbours.push_back(TNeighbourExample(disti->first, weightEE * (neighbourExample.getClass().intV == referenceClass ? -1 : 1)));
+          else {
+            const int neighbourClass = neighbourExample.getClass().intV;
+            refNeighbours.push_back(TNeighbourExample(disti->first, weightEE * (neighbourClass == referenceClass ? -1 : float(inCliClass) / (N - examplesByClasses[neighbourClass].size()))));
+          }
         } while ((++disti != diste) && (disti->second == thisDist));
 
         needwei -= inWeight;
