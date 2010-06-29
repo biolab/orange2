@@ -41,3 +41,5 @@ rm -rf o:\regressionLogs\winxp\*
 cp -rf results o:\regressionLogs\winxp
 cp -f regression*.txt o:\regressionLogs\winxp\
 cp -f regression*.html o:\regressionLogs\winxp\
+
+shutdown -s
