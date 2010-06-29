@@ -5038,15 +5038,16 @@ PyObject *DomainDistributions__reduce__(TPyOrange *self, PyObject *) { return Li
 /* Note that this is not like callable-constructors. They return different type when given
    parameters, while this one returns the same type, disregarding whether it was given examples or not.
 */
-PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID] | <list of Distribution>) -> DomainDistributions") ALLOWS_EMPTY
+PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID, skipDiscrete, skipContinuous] | <list of Distribution>) -> DomainDistributions") ALLOWS_EMPTY
 { PyTRY
     if (!args || !PyTuple_Size(args))
       return WrapNewOrange(mlnew TDomainDistributions(), type);
       
     int weightID;
-    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
-    if (gen)
-      return WrapNewOrange(mlnew TDomainDistributions(gen, weightID), type);
+    PExampleGenerator gen;
+    int skipDiscrete=0, skipContinuous=0;
+    if (PyArg_ParseTuple(args, "O&|O&ii:Distribution.new", &pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &skipDiscrete, &skipContinuous))
+      return WrapNewOrange(mlnew TDomainDistributions(gen, weightID, skipDiscrete!=0, skipContinuous!=0), type);
 
     PyErr_Clear();
 
