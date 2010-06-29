@@ -166,11 +166,13 @@ TFilter_sameValue::TFilter_sameValue(const TValue &aval, int apos, bool aneg, PD
 // Chooses an example if position-th attribute's value equals (or not) the specified value
 bool TFilter_sameValue::operator()(const TExample &example)
 { 
-  if (domain && (domain != example.domain))
+  if (domain && (domain != example.domain)) {
     // this is slow & inefficient, but it's the only legal way of doing it
-    return (TExample(domain, example)[position] == value) != negate;
+    TExample ex(domain, example);
+    return ((position != -1 ? ex[position] : example.getClass()) == value) != negate;
+  }
   else
-    return (example[position] == value) != negate;
+    return ((position != -1 ? example[position]  : example.getClass()) == value) != negate;
 }
 
 
