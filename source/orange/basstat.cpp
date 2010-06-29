@@ -82,6 +82,9 @@ TBasicAttrStat::TBasicAttrStat(PExampleGenerator gen, PVariable var, const long 
   recompute();
 }
 
+// This is numerically unstable.
+// Here is a better algorithm, which also handles higher moments:
+// http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Higher-order_statistics
 
 // Adds an example with value f and weight p; n is increased by p, avg by p*f and dev by p*sqr(f)
 void TBasicAttrStat::add(float f, float p)
