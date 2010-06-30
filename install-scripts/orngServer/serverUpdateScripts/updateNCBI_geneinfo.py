@@ -25,8 +25,8 @@ obiGene.NCBIGeneInfo.get_gene_history_from_ncbi(gene_history_filename)
 info = open(gene_info_filename, "rb")
 hist = open(gene_history_filename, "rb")
 
-taxids = obiTaxonomy.common_taxids()
-essential = obiTaxonomy.essential_taxids()
+taxids = obiGene.NCBIGeneInfo.common_taxids()
+essential = obiGene.NCBIGeneInfo.essential_taxids()
 
 genes = dict([(taxid, []) for taxid in taxids])
 for gi in info:
@@ -35,7 +35,7 @@ for gi in info:
 
 history = dict([(taxid, []) for taxid in taxids])
 for hi in hist:
-    if any(hi.startswith(id + "\t") for id in taxids):
+    if any(hi.startswith(id + "\t") for id in taxids): 
         history[hi.split("\t", 1)[0]].append(hi.strip())
 
         
