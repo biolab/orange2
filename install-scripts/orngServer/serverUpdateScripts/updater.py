@@ -23,7 +23,7 @@ if not args:
             "updateOMIM.py", "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
     
 for script in args:
-    log = open(os.path.join(option.log_dir, script + ".log"), "wb")
+    log = open(os.path.join(option.log_dir, script + ".log.txt"), "wb")
     p = subprocess.Popen([sys.executable, script, "-u", option.user, "-p", option.password], stdout=log, stderr=log)
     while p.poll() is None:
         time.sleep(3)
@@ -32,7 +32,7 @@ for script in args:
     if option.mailto:
         fromaddr = "orange@fri.uni-lj.si"
         toaddr = option.mailto.split(",")
-        msg = open(os.path.join(option.log_dir, script + ".log"), "rb").read()
+        msg = open(os.path.join(option.log_dir, script + ".log.txt"), "rb").read()
         msg = "From: %s\r\nTo: %s\r\nSubject: Error running %s update script\r\n\r\n" % (fromaddr, ",".join(toaddr), script) + msg
         try:
             import smtplib
