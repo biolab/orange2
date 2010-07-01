@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <limits>
 #include "graph.ppp"
+#include <iterator>
 
 double _disconbuf = numeric_limits<double>::quiet_NaN();
 
