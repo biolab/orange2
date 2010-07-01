@@ -25,8 +25,9 @@ if not args:
 for script in args:
     log = open(os.path.join(option.log_dir, script + ".log"), "wb")
     p = subprocess.Popen([sys.executable, script, "-u", option.user, "-p", option.password], stdout=log, stderr=log)
-    sts = os.waitpid(p.pid, 0)
-    log.write("\n" + script + " exited with exit status %s" % sts[1])
+    while p.poll() is None:
+        time.sleep(3)
+    log.write("\n" + script + " exited with exit status %s" % p.poll())
     log.close()
     if option.mailto:
         fromaddr = "orange@fri.uni-lj.si"
