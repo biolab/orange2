@@ -68,11 +68,11 @@ for org in u.GetAvailableOrganisms():
         filename = os.path.join(tmpDir, "gene_association." + org + ".tar.gz")
         
         ## Load the annotations to test them and collect all taxon ids from them
-        o = obiGO.Annotations(filename, genematcher=obiGene.GMDirect())
-        del o
+        a = obiGO.Annotations(filename, genematcher=obiGene.GMDirect())
         taxons = set([ann.taxon for ann in a.annotations])
         for taxId in [t.split(":")[-1] for t in taxons if "|" not in t]: ## exclude taxons with cardinality 2
             updatedTaxonomy[taxId].add(org)
+        del a
         ## Upload the annotation
 #        if org in _dbOrgMap:
 #            orgName = keggOrgNames[_dbOrgMap[org]].split("(")[0].strip()
