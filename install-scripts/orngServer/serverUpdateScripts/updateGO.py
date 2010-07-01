@@ -31,6 +31,7 @@ if u.IsUpdatable(obiGO.Update.UpdateOntology, ()):
     filename = os.path.join(tmpDir, "gene_ontology_edit.obo.tar.gz")
     ##load the ontology to test it
     o = obiGO.Ontology(filename)
+    del o
     ##upload the ontology
     print "Uploading gene_ontology_edit.obo.tar.gz"
     serverFiles.upload("GO", "gene_ontology_edit.obo.tar.gz", filename, title = "Gene Ontology (GO)",
@@ -67,7 +68,8 @@ for org in u.GetAvailableOrganisms():
         filename = os.path.join(tmpDir, "gene_association." + org + ".tar.gz")
         
         ## Load the annotations to test them and collect all taxon ids from them
-        a = obiGO.Annotations(filename, genematcher=obiGene.GMDirect())
+        o = obiGO.Annotations(filename, genematcher=obiGene.GMDirect())
+        del o
         taxons = set([ann.taxon for ann in a.annotations])
         for taxId in [t.split(":")[-1] for t in taxons if "|" not in t]: ## exclude taxons with cardinality 2
             updatedTaxonomy[taxId].add(org)
