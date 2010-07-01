@@ -84,7 +84,7 @@ void info_flush() {}
 //extern void info_flush();
 #endif
 
-class l2_lr_fun : public function
+class l2_lr_fun : public function1
 {
 public:
 	l2_lr_fun(const problem *prob, double Cp, double Cn);
@@ -239,7 +239,7 @@ void l2_lr_fun::XTv(double *v, double *XTv)
 	}
 }
 
-class l2loss_svm_fun : public function
+class l2loss_svm_fun : public function1
 {
 public:
 	l2loss_svm_fun(const problem *prob, double Cp, double Cn);
@@ -700,7 +700,7 @@ void train_one(const problem *prob, const parameter *param, double *w, double Cp
 			pos++;
 	neg = prob->l - pos;
 
-	function *fun_obj=NULL;
+	function1 *fun_obj=NULL;
 	switch(param->solver_type)
 	{
 		case L2_LR:
@@ -732,7 +732,7 @@ void train_one(const problem *prob, const parameter *param, double *w, double Cp
 }
 
 //
-// Interface functions
+// Interface function1s
 //
 model* train(const problem *prob, const parameter *param)
 {
@@ -1217,9 +1217,9 @@ extern int dscal_(int *, double *, double *, int *);
 #endif
 
 
-TRON::TRON(const function *fun_obj, double eps, int max_iter)
+TRON::TRON(const function1 *fun_obj, double eps, int max_iter)
 {
-	this->fun_obj=const_cast<function *>(fun_obj);
+	this->fun_obj=const_cast<function1 *>(fun_obj);
 	this->eps=eps;
 	this->max_iter=max_iter;
 }
@@ -1406,7 +1406,7 @@ double TRON::norm_inf(int n, double *x)
 
 
 /*
-The folowing load save functions are used for orange pickling
+The folowing load save function1s are used for orange pickling
 */
 
 int linear_save_model_alt(string &buffer, struct model *model_)

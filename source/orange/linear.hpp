@@ -105,7 +105,7 @@ const char *check_parameter(const struct problem *prob, const struct parameter *
 #ifndef _TRON_H
 #define _TRON_H
 
-class function
+class function1
 {
 public:
 	virtual double fun(double *w) = 0 ;
@@ -113,13 +113,13 @@ public:
 	virtual void Hv(double *s, double *Hs) = 0 ;
 
 	virtual int get_nr_variable(void) = 0 ;
-	virtual ~function(void){}
+	virtual ~function1(void){}
 };
 
 class TRON
 {
 public:
-	TRON(const function *fun_obj, double eps = 0.1, int max_iter = 1000);
+	TRON(const function1 *fun_obj, double eps = 0.1, int max_iter = 1000);
 	~TRON();
 
 	void tron(double *w);
@@ -130,7 +130,7 @@ private:
 
 	double eps;
 	int max_iter;
-	function *fun_obj;
+	function1 *fun_obj;
 };
 
 #endif /* _TRON_H */
@@ -156,9 +156,9 @@ class ORANGE_API TLinearLearner : public TLearner{
 public:
 	__REGISTER_CLASS
 	
-	CLASSCONSTANTS(LossFunction) enum {L2_LR, L2Loss_SVM_Dual, L2Loss_SVM, L1Loss_SVM_Dual };
+	CLASSCONSTANTS(Lossfunction1) enum {L2_LR, L2Loss_SVM_Dual, L2Loss_SVM, L1Loss_SVM_Dual };
 	
-	int solver_type;	//P(&LinearLearner_LossFunction) Solver type (loss function)
+	int solver_type;	//P(&LinearLearner_Lossfunction1) Solver type (loss function1)
 	float eps;			//P Stopping criteria
 	float C;			//P Regularization parameter
 

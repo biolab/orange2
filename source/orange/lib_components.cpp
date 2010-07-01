@@ -3119,6 +3119,32 @@ PyObject *SymMatrix_getValues(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "(
 	PyCATCH
 }
 
+PyObject *SymMatrix_getKNN(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "((i, K) -> list of values)")
+{
+	PyTRY
+	CAST_TO(TSymMatrix, matrix)
+
+	int kNN;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "ii:SymMatrix.getKNN", &i, &kNN))
+		return PYNULL;
+
+	vector<int> closest;
+	matrix->getknn(i, kNN, closest);
+
+	PyObject* components_list = PyList_New(0);
+	
+	for (i = 0; i < closest.size(); i++) {
+		PyObject *nel = Py_BuildValue("i", closest[i]);
+		PyList_Append(components_list, nel);
+		Py_DECREF(nel);
+	}
+
+	return components_list;
+	PyCATCH
+}
+
 PyObject *SymMatrix_avgLinkage(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Clusters -> SymMatrix)")
 {
 	PyTRY
