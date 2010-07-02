@@ -78,18 +78,20 @@ unique_cluster_id = defaultdict(gen().next)
          
 organisms = sorted(organisms.values())
 
+import time
 for i, org1 in enumerate(organisms):
     for org2 in organisms[i+1:]:
         print "http://inparanoid.sbc.su.se/download/current/orthoXML/InParanoid.%s-%s.orthoXML" % (org1, org2)
         try:
             stream = urllib2.urlopen("http://inparanoid.sbc.su.se/download/current/orthoXML/InParanoid.%s-%s.orthoXML" % (org1, org2))
         except Exception, ex:
-            print >> sys.stderr, ex
+            print ex
             continue
         orthologs = obiHomoloGene._parseOrthoXML(stream)
         orthologs = [(unique_cluster_id[org1, org2, clid], taxid, gene_symbol) for (clid, taxid , gene_symbol) in orthologs]
         
         combined_orthologs.extend(orthologs)
+        time.sleep(10)
         
 #import cPickle
 #cPickle.dump(combined_orthologs, open("orthologs.pck", "wb"))
