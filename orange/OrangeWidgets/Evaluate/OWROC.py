@@ -318,12 +318,11 @@ class singleClassROCgraph(OWGraph):
         ##
         ## self.averagingMethod == 'merge':
         mergedIterations = orngTest.ExperimentResults(1, self.splitByIterations[0].classifierNames, self.splitByIterations[0].classValues, self.splitByIterations[0].weights, classifiers=self.splitByIterations[0].classifiers, loaded=self.splitByIterations[0].loaded)
-        i = 0
-        for isplit in self.splitByIterations:
-            if self.showIterations[i]:
+        for i, (isplit, show) in enumerate(zip(self.splitByIterations, self.showIterations)):
+            if show:
                 for te in isplit.results:
                     mergedIterations.results.append( te )
-            i += 1
+                    
         self.mergedConvexHullData = []
         if len(mergedIterations.results) > 0:
             curves = self.computeCurve(mergedIterations, self.targetClass, 1)
