@@ -257,18 +257,10 @@ class OWInteractionGraph(OWWidget):
         try:
             textPng = subprocess.Popen(["dot", fname, "-Tpng"], stdout=subprocess.PIPE).communicate()[0]
             textPlainList = subprocess.Popen(["dot", fname, "-Tismap"], stdout=subprocess.PIPE).communicate()[0].splitlines()
-        except (OSError, IOError), ex:
+        except OSError, ex:
             textPng = ""
             textPlainList = []
-#        (pipePngOut, pipePngIn) = os.popen2("dot %s -Tpng" % fname, "b")
-#        (pipePlainOut, pipePlainIn) = os.popen2("dot %s -Tismap" % fname, "t")
-
-#        textPng = pipePngIn.read()
-#        textPlainList = pipePlainIn.readlines()
-#        pipePngIn.close()
-#        pipePlainIn.close()
-#        pipePngOut.close()
-#        pipePlainOut.close()
+        
         os.remove(fname)
 
         # if the output from the pipe was empty, then the software isn't installed correctly
