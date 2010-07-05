@@ -290,7 +290,7 @@ class DomainContextHandler(ContextHandler):
             else:
                 value = widget.getdeepattr(field.name)
                 # shallow copy of the list
-                context.values[field.name] = type(value)(value)
+                context.values[field.name] = copy.copy(value) #type(value)(value)
                 if hasattr(field, "selected"):
                     context.values[field.selected] = list(widget.getdeepattr(field.selected))
 
@@ -300,7 +300,7 @@ class DomainContextHandler(ContextHandler):
                 if name == field.name:
                     if field.flags & self.List:
                         # shallow copy of the list
-                        context.values[field.name] = type(value)(value)
+                        context.values[field.name] = copy.copy(value) #type(value)(value)
                     else:
                         self.saveLow(context, widget, name, value, field.flags)
                     return
@@ -312,7 +312,7 @@ class DomainContextHandler(ContextHandler):
         # The code below uses type(value)(value) to make at least a shallow copy of the
         # attributes. This will mostly make copies of integers, floats and strings, but
         # it is crucial to make copies of lists
-        value = type(value)(value)
+        value = copy.copy(value) #type(value)(value)
         if isinstance(value, str):
             valtype = not flags & self.ExcludeOrdinaryAttributes and context.attributes.get(value, -1)
             if valtype == -1:
@@ -447,12 +447,12 @@ class ClassValuesContextHandler(ContextHandler):
         values = context.values = {}
         for field in self.fields:
             value = widget.getdeepattr(field)
-            values[field] = type(value)(value)
+            values[field] = copy.copy(value) #type(value)(value)
 
     def fastSave(self, context, widget, name, value):
         if context and name in self.fields:
             # shallow copy!
-            context.values[name] = type(value)(value)
+            context.values[name] = copy.copy(value) #type(value)(value)
 
     def match(self, context, imperfect, classes):
         return context.classes == classes and 2
@@ -508,7 +508,7 @@ class PerfectDomainContextHandler(DomainContextHandler):
             if not attr and flags & self.IncludeMetaAttributes:
                 attr = [x[1] for x in context.metas if x[0] == value]
 
-            value = type(value)(value)
+            value = copy.copy(value) #type(value)(value)
             if attr:
                 context.values[field] = value, attr[0]
             else:
