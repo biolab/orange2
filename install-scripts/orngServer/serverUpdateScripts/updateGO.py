@@ -90,14 +90,14 @@ for org in u.GetAvailableOrganisms():
         
 try:
     import cPickle
-    tax = cPickle.load(open(os.path.join(tmpDir, "taxonomy.pickle")))
+    tax = cPickle.load(open(os.path.join(tmpDir, "taxonomy.pickle"), "rb"))
 except Exception:
     tax = {}
 
 ## Upload taxonomy if any differences in the updated taxonomy
 if any(tax.get(key, set()) != updatedTaxonomy.get(key, set()) for key in set(updatedTaxonomy)):
     tax.update(updatedTaxonomy)
-    cPickle.dump(tax, open(os.path.join(tmpDir, "taxonomy.pickle"), "w"))
+    cPickle.dump(tax, open(os.path.join(tmpDir, "taxonomy.pickle"), "wb"))
     serverFiles.upload("GO", "taxonomy.pickle", os.path.join(tmpDir, "taxonomy.pickle"), title="GO taxon IDs",
                        tags = ["GO", "taxon", "organism", "essential", "#version:%i" % obiGO.Taxonomy.version])
     serverFiles.unprotect("GO", "taxonomy.pickle")
