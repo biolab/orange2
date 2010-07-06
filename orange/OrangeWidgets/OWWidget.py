@@ -33,7 +33,8 @@ class OWWidget(OWBaseWidget):
         self.space = self.controlArea
 
         if wantGraph and showSaveGraph:
-            self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=2)
+            self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="horizontal", margin=2)
+            self.buttonBackground.layout().setSpacing(10)
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)
 
