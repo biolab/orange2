@@ -455,7 +455,7 @@ class OWSOMVisualizer(OWWidget):
     drawModes = ["None", "U-Matrix", "Component planes"]
     
     def __init__(self, parent=None, signalManager=None, name="SOM visualizer"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.inputs = [("SOMMap", orngSOM.SOMMap, self.setSomMap), ("Examples", ExampleTable, self.data)]
         self.outputs = [("Examples", ExampleTable)]
         
@@ -541,8 +541,9 @@ class OWSOMVisualizer(OWWidget):
         check = OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
         OWGUI.setStopper(self, button, check, "selectionChanged", self.commit)
 
-        OWGUI.separator(self.controlArea)
-        OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
+        OWGUI.rubber(self.controlArea)
+#        OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveGraph)
         
         self.selectionList = []
         self.ctrlPressed = False

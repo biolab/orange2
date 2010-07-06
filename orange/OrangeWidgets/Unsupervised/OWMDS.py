@@ -35,7 +35,7 @@ class OWMDS(OWWidget):
                                                   ContextField("graph.ShowName", DomainContextHandler.Optional)])}
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
@@ -118,7 +118,8 @@ class OWMDS(OWWidget):
         infoBox=OWGUI.widgetBox(mds, "Info")
         self.infoA=OWGUI.widgetLabel(infoBox, "Avg. stress:")
         self.infoB=OWGUI.widgetLabel(infoBox, "Num. steps")
-        OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
+#        OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         self.resize(900,630)
 
         self.done=True

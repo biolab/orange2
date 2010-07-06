@@ -326,7 +326,7 @@ class OWTreeViewer2D(OWWidget):
                     "TruncateText"]
 
     def __init__(self, parent=None, signalManager = None, name='TreeViewer2D'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.root = None
         self.selectedNode = None
 
@@ -414,6 +414,8 @@ class OWTreeViewer2D(OWWidget):
         self.rootNode=None
         self.tree=None
         self.resize(800, 500)
+        
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveGraph)
 
     def sendReport(self):
         from PyQt4.QtSvg import QSvgGenerator

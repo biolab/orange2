@@ -69,7 +69,7 @@ class OWDistanceMap(OWWidget):
 
     def __init__(self, parent=None, signalManager = None):
 #        self.callbackDeposit = [] # deposit for OWGUI callback function
-        OWWidget.__init__(self, parent, signalManager, 'Distance Map')
+        OWWidget.__init__(self, parent, signalManager, 'Distance Map', wantGraph=True)
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
         self.outputs = [("Examples", ExampleTable), ("Attribute List", orange.VarList)]
@@ -245,7 +245,8 @@ class OWDistanceMap(OWWidget):
         self.errorText = QGraphicsSimpleTextItem("Bitmap is too large.", None, self.scene)
         self.errorText.setPos(10,10)
         
-        OWGUI.button(self.controlArea, self, "&Save Graph", lambda:OWChooseImageSizeDlg(self.scene).exec_(), debuggingEnabled = 0)
+#        OWGUI.button(self.controlArea, self, "&Save Graph", lambda:OWChooseImageSizeDlg(self.scene).exec_(), debuggingEnabled = 0)
+        self.connect(self.graphButton, SIGNAL("clicked()"), lambda:OWChooseImageSizeDlg(self.scene).exec_())
 
 
         #restore color schemas from settings

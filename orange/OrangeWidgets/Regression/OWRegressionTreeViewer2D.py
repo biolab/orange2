@@ -162,7 +162,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         
         OWGUI.rubber(self.NodeTab)
         
-        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
+#        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
 
