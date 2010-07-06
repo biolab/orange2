@@ -97,9 +97,9 @@ class OWHierarchicalClustering(OWWidget):
         #HC Settings
         OWGUI.comboBox(self.controlArea, self, "Linkage", box="Linkage",
                 items=self.linkageMethods, tooltip="Choose linkage method",
-                callback=self.constructTree, addSpace = 16)
+                callback=self.constructTree, addSpace = True)
         #Label
-        box = OWGUI.widgetBox(self.controlArea, "Annotation", addSpace = 16)
+        box = OWGUI.widgetBox(self.controlArea, "Annotation", addSpace = True)
         self.labelCombo=OWGUI.comboBox(box, self, "Annotation",
                 items=["None"],tooltip="Choose label attribute",
                 callback=self.updateLabel)
@@ -113,7 +113,7 @@ class OWHierarchicalClustering(OWWidget):
 
 
         #Dendrogram graphics settings
-        dendrogramBox=OWGUI.widgetBox(self.controlArea, "Limits", addSpace=16)
+        dendrogramBox=OWGUI.widgetBox(self.controlArea, "Limits", addSpace=True)
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
         
         form = QFormLayout()
