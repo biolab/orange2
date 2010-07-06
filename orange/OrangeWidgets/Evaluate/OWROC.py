@@ -567,7 +567,8 @@ class singleClassROCgraph(OWGraph):
         def setW(curve):
             sym = curve.symbol() #.setPen(QPen(self.classifierColor[cNum], v))
             sym.setSize(v + 1, v + 1)
-            curve.setSymbol(sym)
+            if QWT_VERSION_STR >= "5.2": # in Qwt 5.1.* curve.setSymbol results in a crash 
+                curve.setSymbol(sym)
             
         for item in self.itemList():
             setW(item)
