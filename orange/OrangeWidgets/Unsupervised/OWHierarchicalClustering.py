@@ -46,7 +46,7 @@ class OWHierarchicalClustering(OWWidget):
     
     def __init__(self, parent=None, signalManager=None):
         #OWWidget.__init__(self, parent, 'Hierarchical Clustering')
-        OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering')
+        OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering', wantGraph=True)
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
@@ -104,7 +104,7 @@ class OWHierarchicalClustering(OWWidget):
                 items=["None"],tooltip="Choose label attribute",
                 callback=self.updateLabel)
 
-        OWGUI.spin(box, self, "TextSize", label="Text font size",
+        OWGUI.spin(box, self, "TextSize", label="Text size",
                         min=5, max=15, step=1, callback=self.applySettings, controlWidth=40)
         OWGUI.spin(box,self, "LineSpacing", label="Line spacing",
                         min=2,max=8,step=1, callback=self.applySettings, controlWidth=40)
@@ -113,35 +113,54 @@ class OWHierarchicalClustering(OWWidget):
 
 
         #Dendrogram graphics settings
-        dendrogramBox=OWGUI.widgetBox(self.controlArea, "Dendrogram settings", addSpace=16)
+        dendrogramBox=OWGUI.widgetBox(self.controlArea, "Limits", addSpace=16)
         #OWGUI.spin(dendrogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
-        cblp = OWGUI.checkBox(dendrogramBox, self, "PrintDepthCheck", "Limit print depth", callback = self.applySettings)
+        
+        form = QFormLayout()
+        form.setLabelAlignment(Qt.AlignLeft)
+        sw = OWGUI.widgetBox(dendrogramBox, orientation="horizontal", addToLayout=False) #QWidget(dendrogramBox)
+        cw = OWGUI.widgetBox(dendrogramBox, orientation="horizontal", addToLayout=False) #QWidget(dendrogramBox)
+        
+        sllp = OWGUI.hSlider(sw, self, "PrintDepth", minValue=1, maxValue=50, callback=self.applySettings)
+        cblp = OWGUI.checkBox(cw, self, "PrintDepthCheck", "Show to depth", callback = self.applySettings, disables=[sw])
+        form.addRow(cw, sw)
+#        dendrogramBox.layout().addLayout(form)
+#        box = OWGUI.widgetBox(dendrogramBox, orientation=form)
         
         option = QStyleOptionButton()
         cblp.initStyleOption(option)
         checkWidth = cblp.style().subElementRect(QStyle.SE_CheckBoxContents, option, cblp).x()
         
 #        ib = OWGUI.indentedBox(dendrogramBox, orientation = 0)
-        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
-        ib.layout().setContentsMargins(checkWidth, 5, 5, 5)
+#        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
+#        ib.layout().setContentsMargins(checkWidth, 5, 5, 5)
 #        OWGUI.widgetLabel(ib, "Depth"+ "  ")
-        slpd = OWGUI.hSlider(ib, self, "PrintDepth", minValue=1, maxValue=50, label="Depth  ", callback=self.applySettings)
-        cblp.disables.append(ib)
-        cblp.makeConsistent()
+#        slpd = OWGUI.hSlider(ib, self, "PrintDepth", minValue=1, maxValue=50, label="Depth  ", callback=self.applySettings)
+#        cblp.disables.append(ib)
+#        cblp.makeConsistent()
         
-        OWGUI.separator(dendrogramBox)
+#        OWGUI.separator(dendrogramBox)
         #OWGUI.spin(dendrogramBox, self, "VDSize", label="Vertical size", min=100,
         #        max=10000, step=10)
-        cbhs = OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Manually set horizontal size",
-                callback=self.applySettings)
         
-        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
-        self.hSizeBox=OWGUI.spin(ib, self, "HDSize", label="Size"+"  ", min=200,
-                max=10000, step=10, callback=self.applySettings, callbackOnReturn = True, controlWidth=45)
-        self.hSizeBox.layout().setContentsMargins(checkWidth, 5, 5, 5)
+#        form = QFormLayout()
+        sw = OWGUI.widgetBox(dendrogramBox, orientation="horizontal", addToLayout=False) #QWidget(dendrogramBox)
+        cw = OWGUI.widgetBox(dendrogramBox, orientation="horizontal", addToLayout=False) #QWidget(dendrogramBox)
         
-        cbhs.disables.append(self.hSizeBox)
-        cbhs.makeConsistent()
+        hsb = OWGUI.spin(sw, self, "HDSize", min=200, max=10000, step=10, callback=self.applySettings, callbackOnReturn = False)
+        cbhs = OWGUI.checkBox(cw, self, "ManualHorSize", "Horizontal size", callback=self.applySettings, disables=[sw])
+        
+#        ib = OWGUI.widgetBox(dendrogramBox, margin=0)
+#        self.hSizeBox=OWGUI.spin(ib, self, "HDSize", label="Size"+"  ", min=200,
+#                max=10000, step=10, callback=self.applySettings, callbackOnReturn = True, controlWidth=45)
+#        self.hSizeBox.layout().setContentsMargins(checkWidth, 5, 5, 5)
+        self.hSizeBox = hsb
+        form.addRow(cw, sw)
+        dendrogramBox.layout().addLayout(form)
+        
+        
+#        cbhs.disables.append(self.hSizeBox)
+#        cbhs.makeConsistent()
         
         #OWGUI.checkBox(dendrogramBox, self, "ManualHorSize", "Fit horizontal size")
         #OWGUI.checkBox(dendrogramBox, self, "AutoResize", "Auto resize")
@@ -183,7 +202,8 @@ class OWHierarchicalClustering(OWWidget):
         
         
         OWGUI.rubber(self.controlArea)
-        OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
+#        OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveGraph)
 
         scale=QGraphicsScene(self)
         self.headerView=ScaleView(self, scale, self.mainArea)
