@@ -547,7 +547,8 @@ class singleClassROCgraph(OWGraph):
         if self.performanceLineCKey:
             self.performanceLineCKey.setData(lpx, lpy)
             self.performanceLineCKey.setVisible(b)
-        self.update()
+        self.replot()
+#        self.update()
 
     def costChanged(self, FPcost, FNcost):
         self.FPcost = float(FPcost)
@@ -562,7 +563,24 @@ class singleClassROCgraph(OWGraph):
         self.performanceLineSymbol.setSize(v, v)
         if self.performanceLineCKey:
             self.performanceLineCKey.setSymbol(self.performanceLineSymbol)
-        self.update()
+            
+        def setW(curve):
+            sym = curve.symbol() #.setPen(QPen(self.classifierColor[cNum], v))
+            sym.setSize(v + 1, v + 1)
+            curve.setSymbol(sym)
+            
+        for item in self.itemList():
+            setW(item)
+            
+#        for cNum in range(len(zip(self.showClassifiers, self.mergedCKeys))):
+#            setW(self.mergedCKeys[cNum]) #.setPen(QPen(self.classifierColor[cNum], v))
+#            setW(self.verticalCKeys[cNum]) #.setPen(QPen(self.classifierColor[cNum], v))
+#            setW(self.thresholdCKeys[cNum]) #.setPen(QPen(self.classifierColor[cNum], v))
+#            setW(self.mergedCThresholdKeys[cNum])
+#            for iNum in range(len(zip(self.showIterations, self.classifierIterationCKeys[cNum]))):
+#                setW(self.classifierIterationCKeys[cNum][iNum]) #.setPen(QPen(self.classifierColor[cNum], v))
+        self.replot()
+#        self.update()
 
     def setCurveWidth(self, v):
         for cNum in range(len(zip(self.showClassifiers, self.mergedCKeys))):
@@ -571,14 +589,16 @@ class singleClassROCgraph(OWGraph):
             self.thresholdCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             for iNum in range(len(zip(self.showIterations, self.classifierIterationCKeys[cNum]))):
                 self.classifierIterationCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
-        self.update()
+        self.replot()
+#        self.update()
 
     def setConvexCurveWidth(self, v):
         for cNum in range(len(zip(self.showClassifiers, self.mergedConvexCKeys))):
             self.mergedConvexCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
             for iNum in range(len(zip(self.showIterations, self.classifierIterationConvexCKeys[cNum]))):
                 self.classifierIterationConvexCKeys[cNum][iNum].setPen(QPen(self.classifierColor[cNum], v))
-        self.update()
+        self.replot()
+#        self.update()
 
     def setShowDiagonal(self, v):
         self.showDiagonal = v
@@ -590,7 +610,8 @@ class singleClassROCgraph(OWGraph):
         self.verticalConvexHullCKey.setPen(self.convexHullPen)
         self.thresholdConvexHullCKey.setPen(self.convexHullPen)
         self.classifierConvexHullCKey.setPen(self.convexHullPen)
-        self.update()
+        self.replot()
+#        self.update()
 
     def setHullColor(self, c):
         self.convexHullPen.setColor(c)
@@ -598,7 +619,8 @@ class singleClassROCgraph(OWGraph):
         self.verticalConvexHullCKey.setPen(self.convexHullPen)
         self.thresholdConvexHullCKey.setPen(self.convexHullPen)
         self.classifierConvexHullCKey.setPen(self.convexHullPen)
-        self.update()
+        self.replot()
+#        self.update()
 
     def sizeHint(self):
         return QSize(100, 100)
@@ -709,7 +731,7 @@ class OWROC(OWWidget):
         # settings tab
         self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
         OWGUI.radioButtonsInBox(self.settingsTab, self, 'AveragingMethodIndex', ['Merge (expected ROC perf.)', 'Vertical', 'Threshold', 'None'], box='Averaging ROC curves', callback=self.selectAveragingMethod)
-        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=3, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=0, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='ROC curve width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexCurveWidth', box='ROC convex curve width', minValue=1, maxValue=5, step=1, callback=self.setConvexCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='ROC convex hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
