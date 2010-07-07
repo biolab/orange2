@@ -13,8 +13,9 @@ import orngHelp
 
 WB_TOOLBOX = 0
 WB_TREEVIEW = 1
-WB_TABBAR_NO_TEXT = 2
-WB_TABBAR_TEXT = 3
+WB_TREEVIEW_NO_ICONS = 2
+WB_TABBAR_NO_TEXT = 3
+WB_TABBAR_TEXT = 4
 
 # we have to use a custom class since QLabel by default ignores the mouse
 # events if it is showing text (it does not ignore events if it's showing an icon)
@@ -186,11 +187,12 @@ class WidgetButton(QFrame, WidgetButtonBase):
 
 
 class WidgetTreeItem(QTreeWidgetItem, WidgetButtonBase):
-    def __init__(self, parent, name, widgetInfo, tabs, canvasDlg):
+    def __init__(self, parent, name, widgetInfo, tabs, canvasDlg, wbType=1):
         QTreeWidgetItem.__init__(self, parent)
         WidgetButtonBase.__init__(self, name, widgetInfo, tabs, canvasDlg)
         
-        self.setIcon(0, canvasDlg.getWidgetIcon(widgetInfo))
+        if wbType == WB_TREEVIEW:
+            self.setIcon(0, canvasDlg.getWidgetIcon(widgetInfo))
         self.setText(0, name)
         self.setToolTip(0, widgetInfo.tooltipText)
     
@@ -322,7 +324,7 @@ class WidgetListBase:
             exIndex = 0
             for (priority, name, widgetInfo) in widgets:
                 if isinstance(self, WidgetTree):
-                    button = WidgetTreeItem(tab, name, widgetInfo, self, self.canvasDlg)
+                    button = WidgetTreeItem(tab, name, widgetInfo, self, self.canvasDlg, widgetTypeList)
                 else:
                     button = WidgetButton(tab, name, widgetInfo, self, self.canvasDlg, widgetTypeList, iconSize)
                     for k in range(priority/1000 - exIndex):

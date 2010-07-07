@@ -463,6 +463,10 @@ class CanvasOptionsDlg(QDialog):
         OWGUI.comboBox(canvasDlgSettings, self.settings, "style", label = "Window style:", orientation = "horizontal", items = [str(n) for n in QStyleFactory.keys()], sendSelectedValue = 1, debuggingEnabled = 0)
         OWGUI.checkBox(canvasDlgSettings, self.settings, "useDefaultPalette", "Use style's standard palette", debuggingEnabled = 0)
         
+        OWGUI.separator(canvasDlgSettings)
+        OWGUI.comboBox(canvasDlgSettings, self.settings, "widgetListType", label="Toolbox style:", orientation="horizontal",
+                       items = ["Tool box", "Tree view", "Tree view (no icons)", "Tabs without labels", "Tabs with labels"], debuggingEnabled=0)
+        
 #        if canvasDlg:
 #            selectedWidgetBox = OWGUI.widgetBox(schemeSettings, orientation = "horizontal")
 #            self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)

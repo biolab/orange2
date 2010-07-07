@@ -118,9 +118,9 @@ class OrangeCanvasDlg(QMainWindow):
         w = QWidget()
         w.setLayout(QHBoxLayout())
         
-        items = ["Tool box", "Tree view", "Tabs without labels", "Tabs with labels"]
+        items = ["Tool box", "Tree view", "Tree view (no icons)", "Tabs without labels", "Tabs with labels"]
         ind = max(len(items) - 1, self.settings["widgetListType"])
-        OWGUI.comboBox(w, self.settings, "widgetListType", label="Style:", orientation="horizontal", items=items, callback=self.createWidgetsToolbar, debuggingEnabled=0)
+        self.widgetListTypeCB = OWGUI.comboBox(w, self.settings, "widgetListType", label="Style:", orientation="horizontal", items=items, callback=self.createWidgetsToolbar, debuggingEnabled=0)
         self.toolbar.addWidget(w)
         
         self.toolbar.addSeparator()
@@ -205,7 +205,7 @@ class OrangeCanvasDlg(QMainWindow):
         if self.settings["widgetListType"] == 0:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
-        elif self.settings["widgetListType"] == 1:
+        elif self.settings["widgetListType"] in [1, 2]:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetTree(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         else:
@@ -548,6 +548,10 @@ class OrangeCanvasDlg(QMainWindow):
             if self.settings["snapToGrid"] != dlg.settings["snapToGrid"]:
                 self.updateSnapToGrid()
 
+            if self.settings["widgetListType"] != dlg.settings["widgetListType"]:
+                self.settings["widgetListType"] = dlg.settings["widgetListType"]
+                self.createWidgetsToolbar()
+                self.widgetListTypeCB.setCurrentIndex(self.settings["widgetListType"])
             self.settings.update(dlg.settings)
             self.updateStyle()
             
