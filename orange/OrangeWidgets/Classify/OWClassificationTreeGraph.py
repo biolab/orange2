@@ -178,6 +178,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 
         self.scene=TreeGraphicsScene(self)
         self.sceneView=TreeGraphicsView(self, self.scene)
+        self.sceneView.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.mainArea.layout().addWidget(self.sceneView)
         self.toggleZoomSlider()
 #        self.scene.setSceneRect(0,0,800,800)
@@ -231,7 +232,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                              ("Tree size", "%i nodes, %i leaves" % (orngTree.countNodes(self.tree), orngTree.countLeaves(self.tree)))])
         OWTreeViewer2D.sendReport(self)
 
-
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_():
@@ -254,10 +254,13 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         for n in self.scene.nodes():
             if hasattr(n, "_rect"):
                 delattr(n, "_rect")
+            if not self.LimitNodeWidth:
+                n.setTextWidth(-1)
             self.updateNodeInfo(n, flags)
         if True:
-            w = max([n.rect().width() for n in self.scene.nodes()] + [0])
+            w = min(max([n.rect().width() for n in self.scene.nodes()] + [0]), self.MaxNodeWidth if self.LimitNodeWidth else sys.maxint)
             for n in self.scene.nodes():
+                n.setRect(QRectF(n.rect().x(), n.rect().y(), w, n.rect().height()))
                 n.setRect(n.rect() | QRectF(0, 0, w, 1))
         self.scene.fixPos(self.rootNode, 10, 10)
         
@@ -294,7 +297,12 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         OWTreeViewer2D.activateLoadedSettings(self)
         self.setNodeInfo()
         self.toggleNodeColor()
-
+        
+    def toggleNodeSize(self):
+        self.setNodeInfo()
+        self.scene.update()
+        self.sceneView.repaint()
+        
     def toggleNodeColor(self):
         for node in self.scene.nodes():
             if self.NodeColorMethod == 0:   # default

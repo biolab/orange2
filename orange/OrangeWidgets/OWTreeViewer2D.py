@@ -88,11 +88,15 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         
     def setHtml(self, html):
-        return QGraphicsTextItem.setHtml(self, '<body>' + html.replace("<hr>", "<hr width=20000>") + "</body>") #bug in Qt (need width = 20000)
-        
+        if qVersion() < "4.5":
+            html = html.replace("<hr>", "<hr width=20000>") #bug in Qt (need width = 20000)
+        return QGraphicsTextItem.setHtml(self, "<body>" + html + "</body>") 
+    
     def updateContents(self):
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.droplet.setVisible(bool(self.branches))
+        if hasattr(self, "_rect"):
+            self.setTextWidth(self._rect.width())
         
     def setRect(self, rect):
         self.prepareGeometryChange()
@@ -201,8 +205,8 @@ class TreeGraphicsView(QGraphicsView):
 #            fmt.setSamples(32)
 #            print fmt.sampleBuffers()
 #            self.setViewport(gl.QGLWidget(fmt, self))
-#        except:
-#            pass
+#        except Exception, ex:
+#            print ex
         self.viewport().setMouseTracking(True)
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.TextAntialiasing)
@@ -322,7 +326,7 @@ class OWTreeViewer2D(OWWidget):
     settingsList = ["ZoomAutoRefresh", "AutoArrange", "ToolTipsEnabled",
                     "Zoom", "VSpacing", "HSpacing", "MaxTreeDepth", "MaxTreeDepthB",
                     "LineWidth", "LineWidthMethod",
-                    "NodeSize", "NodeInfo", "NodeColorMethod",
+                    "MaxNodeWidth", "LimitNodeWidth", "NodeInfo", "NodeColorMethod",
                     "TruncateText"]
 
     def __init__(self, parent=None, signalManager = None, name='TreeViewer2D'):
@@ -340,13 +344,15 @@ class OWTreeViewer2D(OWWidget):
         self.MaxTreeDepth = 5; self.MaxTreeDepthB = 0
         self.LineWidth = 5; self.LineWidthMethod = 0
         self.NodeSize = 5
+        self.MaxNodeWidth = 150
+        self.LimitNodeWidth = False
         self.NodeInfo = [0, 1]
 
         self.NodeColorMethod = 0
         self.Zoom = 5
         self.VSpacing = 5; self.HSpacing = 5
         self.TruncateText = 1
-
+        
         self.loadSettings()
         self.NodeInfo.sort()
 
@@ -393,9 +399,13 @@ class OWTreeViewer2D(OWWidget):
 
         # NODE TAB
 #        # Node size options
-#        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node width',
-#                      minValue=1, maxValue=10, step=1,
-#                      callback=self.toggleNodeSize, ticks=1)
+        w = OWGUI.widgetBox(NodeTab, orientation="horizontal")
+        cb = OWGUI.checkBox(w, self, "LimitNodeWidth", "Max node width", callback=self.toggleNodeSize)
+        sl = OWGUI.hSlider(w, self, 'MaxNodeWidth', #box='Max node width',
+                      minValue=50, maxValue=200, step=10,
+                      callback=self.toggleNodeSize, ticks=50)
+        cb.disables.append(sl)
+        cb.makeConsistent()
 
         # Node information
         OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
@@ -474,6 +484,9 @@ class OWTreeViewer2D(OWWidget):
 
             edge.setPen(QPen(Qt.gray, width, Qt.SolidLine, Qt.RoundCap))
         self.scene.update()
+        
+    def toogleNodeSize(self):
+        pass
 
     def toggleNavigator(self):
         self.navWidget.setHidden(not self.navWidget.isHidden())
