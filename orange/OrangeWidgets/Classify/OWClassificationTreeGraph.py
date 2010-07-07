@@ -299,6 +299,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.toggleNodeColor()
         
     def toggleNodeSize(self):
+        print "toggle"
         self.setNodeInfo()
         self.scene.update()
         self.sceneView.repaint()
