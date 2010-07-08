@@ -37,7 +37,8 @@ class OWNetExplorer(OWWidget):
     "selectedSchemaIndex", "edgeColorSettings", "selectedEdgeSchemaIndex",
     "showMissingValues", "fontSize", "mdsTorgerson", "mdsAvgLinkage",
     "mdsSteps", "mdsRefresh", "mdsStressDelta", "organism","showTextMiningInfo", 
-    "toolbarSelection"] 
+    "toolbarSelection", "minComponentEdgeWidth", "maxComponentEdgeWidth",
+    "mdsFromCurrentPos"] 
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Net Explorer')
@@ -106,10 +107,13 @@ class OWNetExplorer(OWWidget):
         self.organism = 'goa_human'
         self.showTextMiningInfo = 0
         self.toolbarSelection = 0
+        self.minComponentEdgeWidth = 0
+        self.maxComponentEdgeWidth = 0
+        self.mdsFromCurrentPos = 0
         
         self.loadSettings()
         
-        self.visualize = None
+        self.optimization = None
         self.markInputItems = None
         
         self.mainArea.layout().setContentsMargins(0,4,4,4)
@@ -145,7 +149,7 @@ class OWNetExplorer(OWWidget):
         self.optCombo.addItem("Circular Random")
         self.optCombo.addItem("Pivot MDS")
         self.optCombo.setCurrentIndex(self.optMethod)
-        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 20000, 1, label="Iterations: ")
+        self.stepsSpin = OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 100000, 1, label="Iterations: ")
         self.stepsSpin.setEnabled(False)
         
         self.optButton = OWGUI.button(self.optimizeBox, self, "Optimize layout", callback=self.optLayout, toggleButton=1)
@@ -299,11 +303,14 @@ class OWNetExplorer(OWWidget):
         ibs = OWGUI.widgetBox(ib, orientation="horizontal")
         OWGUI.checkBox(ibs, self, 'mdsTorgerson', "Torgerson's approximation")
         OWGUI.checkBox(ibs, self, 'mdsAvgLinkage', "Use average linkage")
+        OWGUI.checkBox(ib, self, 'mdsFromCurrentPos', "MDS from current positions")
         self.mdsInfoA=OWGUI.widgetLabel(ib, "Avg. stress:")
         self.mdsInfoB=OWGUI.widgetLabel(ib, "Num. steps:")
         self.rotateSteps = 100
         
         OWGUI.spin(ib, self, "rotateSteps", 1, 10000, 1, label="Rotate max steps: ")
+        OWGUI.spin(ib, self, "minComponentEdgeWidth", 0, 100, 1, label="Min component edge width: ", callback=self.setComponentEdgeWidth)
+        OWGUI.spin(ib, self, "maxComponentEdgeWidth", 0, 200, 1, label="Max component edge width: ", callback=self.setComponentEdgeWidth)
         
         self.attSelectionAttribute = 0
         self.comboAttSelection = OWGUI.comboBox(ib, self, "attSelectionAttribute", label='Send attribute selection list:', orientation='horizontal', callback=self.sendAttSelectionList)
@@ -341,6 +348,11 @@ class OWNetExplorer(OWWidget):
         self.resize(1000, 600)
         self.setGraph(None)
         #self.controlArea.setEnabled(False)
+        
+    def setComponentEdgeWidth(self):
+        self.graph.minComponentEdgeWidth = self.minComponentEdgeWidth
+        self.graph.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        self.updateCanvas()
     
     def setAutoSendAttributes(self):
         if self.autoSendAttributes:
@@ -368,7 +380,7 @@ class OWNetExplorer(OWWidget):
         if self.visualize is None:
             return
         
-        vars = [x.name for x in self.visualize.getVars()]
+        vars = [x.name for x in self.optimization.getVars()]
         if not self.editCombo.currentText() in vars:
             return
         att = str(self.editCombo.currentText())
@@ -377,18 +389,18 @@ class OWNetExplorer(OWWidget):
         if len(vertices) == 0:
             return
         
-        if self.visualize.graph.items.domain[att].varType == orange.VarTypes.Continuous:
+        if self.optimization.graph.items.domain[att].varType == orange.VarTypes.Continuous:
             for v in vertices:
-                self.visualize.graph.items[v][att] = float(self.editValue)
+                self.optimization.graph.items[v][att] = float(self.editValue)
         else:
             for v in vertices:
-                self.visualize.graph.items[v][att] = str(self.editValue)
+                self.optimization.graph.items[v][att] = str(self.editValue)
         
-        self.setItems(self.visualize.graph.items)
+        self.setItems(self.optimization.graph.items)
         
     def drawForce(self):
         if self.btnForce.isChecked() and self.visualize is not None:
-            self.graph.forceVectors = self.visualize.computeForces() 
+            self.graph.forceVectors = self.optimization.computeForces() 
         else:
             self.graph.forceVectors = None
             
@@ -405,18 +417,18 @@ class OWNetExplorer(OWWidget):
             self.btnRotateMDS.setChecked(False)
             return
         
-        if self.visualize == None:
+        if self.optimization == None:
             self.information('No network found')
             self.btnRotateMDS.setChecked(False)
             return
         
-        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+        if self.vertexDistance.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.btnRotateMDS.setChecked(False)
             return
         
         if not self.btnRotateMDS.isChecked():
-          self.visualize.stopMDS = 1
+          self.optimization.stopMDS = 1
           #self.btnMDS.setChecked(False)
           #self.btnMDS.setText("MDS on graph components")
           return
@@ -424,10 +436,10 @@ class OWNetExplorer(OWWidget):
         self.btnRotateMDS.setText("Stop")
         qApp.processEvents()
         
-        self.visualize.vertexDistance = self.vertexDistance
+        self.optimization.vertexDistance = self.vertexDistance
         self.progressBarInit()
         
-        self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True)            
+        self.optimization.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, rotationOnly=True, mdsFromCurrentPos=self.mdsFromCurrentPos)            
             
         self.btnRotateMDS.setChecked(False)
         self.btnRotateMDS.setText("Rotate graph components (MDS)")
@@ -439,26 +451,26 @@ class OWNetExplorer(OWWidget):
             self.btnRotate.setChecked(False)
             return
         
-        if self.visualize == None:
+        if self.optimization == None:
             self.information('No network found')
             self.btnRotate.setChecked(False)
             return
         
-        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+        if self.vertexDistance.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.btnRotate.setChecked(False)
             return
         
         if not self.btnRotate.isChecked():
-          self.visualize.stopRotate = 1
+          self.optimization.stopRotate = 1
           return
       
         self.btnRotate.setText("Stop")
         qApp.processEvents()
         
-        self.visualize.vertexDistance = self.vertexDistance
+        self.optimization.vertexDistance = self.vertexDistance
         self.progressBarInit()
-        self.visualize.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
+        self.optimization.rotateComponents(self.rotateSteps, 0.0001, self.rotateProgress, self.updateCanvas)
         self.btnRotate.setChecked(False)
         self.btnRotate.setText("Rotate graph components")
         self.progressBarFinished()
@@ -486,18 +498,18 @@ class OWNetExplorer(OWWidget):
             btn.setChecked(False)
             return
         
-        if self.visualize == None:
+        if self.optimization == None:
             self.information('No network found')
             btn.setChecked(False)
             return
         
-        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+        if self.vertexDistance.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             btn.setChecked(False)
             return
         
         if not btn.isChecked():
-            self.visualize.stopMDS = 1
+            self.optimization.stopMDS = 1
             btn.setChecked(False)
             btn.setText(btnCaption)
             return
@@ -505,13 +517,13 @@ class OWNetExplorer(OWWidget):
         btn.setText("Stop")
         qApp.processEvents()
         
-        self.visualize.vertexDistance = self.vertexDistance
+        self.optimization.vertexDistance = self.vertexDistance
         self.progressBarInit()
         
         if self.mdsAvgLinkage:
-            self.visualize.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio)
+            self.optimization.mdsComponentsAvgLinkage(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, scalingRatio = self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)
         else:
-            self.visualize.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio)            
+            self.optimization.mdsComponents(self.mdsSteps, self.mdsRefresh, self.mdsProgress, self.updateCanvas, self.mdsTorgerson, self.mdsStressDelta, mdsType=mdsType, scalingRatio=self.scalingRatio, mdsFromCurrentPos=self.mdsFromCurrentPos)            
         
         btn.setChecked(False)
         btn.setText(btnCaption)
@@ -527,19 +539,24 @@ class OWNetExplorer(OWWidget):
         self.error('')
         self.information('')
         
-        if matrix == None or self.visualize == None or self.visualize.graph == None:
+        if matrix == None or self.optimization == None or self.optimization.graph == None:
             self.vertexDistance = None
-            if self.visualize: self.visualize.vertexDistance = None
+            if self.optimization: self.optimization.vertexDistance = None
+            if self.graph: self.graph.vertexDistance = None
             return
         
-        if matrix.dim != self.visualize.graph.nVertices:
+        if matrix.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.vertexDistance = None
-            if self.visualize: self.visualize.vertexDistance = None
+            if self.optimization: self.optimization.vertexDistance = None
+            if self.graph: self.graph.vertexDistance = None
             return
         
         self.vertexDistance = matrix
-        if self.visualize: self.visualize.vertexDistance = matrix
+        if self.optimization: self.optimization.vertexDistance = matrix
+        if self.graph: self.graph.vertexDistance = matrix
+        
+        self.updateCanvas()
             
     def setSendMarkedNodes(self):
         if self.checkSendMarkedNodes:
@@ -554,8 +571,8 @@ class OWNetExplorer(OWWidget):
             self.send("Marked Examples", None)
             return
         
-        if self.visualize != None and self.visualize.graph != None and self.visualize.graph.items != None:
-            items = self.visualize.graph.items.getitems(markedNodes)
+        if self.optimization != None and self.optimization.graph != None and self.optimization.graph.items != None:
+            items = self.optimization.graph.items.getitems(markedNodes)
             self.send("Marked Examples", items)
             return
         
@@ -563,8 +580,8 @@ class OWNetExplorer(OWWidget):
 
     def collapse(self):
         #print "collapse"
-        self.visualize.collapse()
-        self.graph.addVisualizer(self.visualize)
+        self.optimization.collapse()
+        self.graph.addVisualizer(self.optimization)
         #if not nodes is None:
         #    self.graph.updateData()
         #    self.graph.addSelection(nodes, False)
@@ -572,7 +589,7 @@ class OWNetExplorer(OWWidget):
         
     def clustering(self):
         #print "clustering"
-        self.visualize.graph.getClusters()
+        self.optimization.graph.getClusters()
         
     def insideviewneighbours(self):
         if self.graph.insideview == 1:
@@ -599,10 +616,10 @@ class OWNetExplorer(OWWidget):
             print "One node must be selected!"
         
     def showComponents(self):
-        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
             return
         
-        vars = [x.name for x in self.visualize.getVars()]
+        vars = [x.name for x in self.optimization.getVars()]
         
         if not self.showComponentCombo.currentText() in vars:
             self.graph.showComponentAttribute = None
@@ -617,28 +634,28 @@ class OWNetExplorer(OWWidget):
         self.progressBarFinished()
         self.lastNameComponentAttribute = None
         
-        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
             return
         
-        vars = [x.name for x in self.visualize.getVars()]
+        vars = [x.name for x in self.optimization.getVars()]
         if not self.nameComponentCombo.currentText() in vars:
             return
         
         self.progressBarInit()
-        components = [c for c in self.visualize.graph.getConnectedComponents() if len(c) > 1]
-        if 'component name' in self.visualize.graph.items.domain:
-            keyword_table = self.visualize.graph.items
+        components = [c for c in self.optimization.graph.getConnectedComponents() if len(c) > 1]
+        if 'component name' in self.optimization.graph.items.domain:
+            keyword_table = self.optimization.graph.items
         else:
-            keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.visualize.graph.items))]) 
+            keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.optimization.graph.items))]) 
         
         import obiGO 
         ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet) 
         annotations = obiGO.Annotations.Load(self.organism, ontology=ontology, progressCallback=self.progressBarSet)
 
-        allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.visualize.graph.items])
+        allGenes = set([e[str(self.nameComponentCombo.currentText())].value for e in self.optimization.graph.items])
         foundGenesets = False
         if len(annotations.geneNames & allGenes) < 1:
-            allGenes = set(reduce(operator.add, [e[str(self.nameComponentCombo.currentText())].value.split(', ') for e in self.visualize.graph.items]))
+            allGenes = set(reduce(operator.add, [e[str(self.nameComponentCombo.currentText())].value.split(', ') for e in self.optimization.graph.items]))
             if len(annotations.geneNames & allGenes) < 1:            
                 self.warning('no genes found')
                 return
@@ -704,9 +721,9 @@ class OWNetExplorer(OWWidget):
                 continue
             
             if foundGenesets:
-                genes = reduce(operator.add, [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value.split(', ') for v in component])
+                genes = reduce(operator.add, [self.optimization.graph.items[v][str(self.nameComponentCombo.currentText())].value.split(', ') for v in component])
             else:
-                genes = [self.visualize.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
+                genes = [self.optimization.graph.items[v][str(self.nameComponentCombo.currentText())].value for v in component]
                     
             res1 = annotations.GetEnrichedTerms(genes, aspect="P")
             res2 = annotations.GetEnrichedTerms(genes, aspect="F")
@@ -745,20 +762,20 @@ class OWNetExplorer(OWWidget):
             self.progressBarSet(i*100.0/len(components))
                 
         self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
-        self.setItems(orange.ExampleTable([self.visualize.graph.items, keyword_table]))
+        self.setItems(orange.ExampleTable([self.optimization.graph.items, keyword_table]))
         self.progressBarFinished()   
         
     def nameComponents_old(self):
-        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None:
+        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None:
             return
         
-        vars = [x.name for x in self.visualize.getVars()]
+        vars = [x.name for x in self.optimization.getVars()]
         
         if not self.nameComponentCombo.currentText() in vars:
             return
         
-        components = self.visualize.graph.getConnectedComponents()
-        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.visualize.graph.items))]) 
+        components = self.optimization.graph.getConnectedComponents()
+        keyword_table = orange.ExampleTable(orange.Domain(orange.StringVariable('component name')), [[''] for i in range(len(self.optimization.graph.items))]) 
         
         excludeWord = ["AND", "OF", "KEGG", "ST", "IN", "SIG"]
         excludePart = ["HSA"]
@@ -770,7 +787,7 @@ class OWNetExplorer(OWWidget):
             all_values = []
             for vertex in component:
                 values = []
-                value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                value =  str(self.optimization.graph.items[vertex][str(self.nameComponentCombo.currentText())])
                 
                 value = value.replace(" ", ",")
                 value_top = value.split(",")
@@ -786,7 +803,7 @@ class OWNetExplorer(OWWidget):
                 words.extend(values)
                 
                 
-                #value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                #value =  str(self.optimization.graph.items[vertex][str(self.nameComponentCombo.currentText())])
                 #value = value.replace(" ", "_")
                 #value = value.replace(",", "_")
                 #values = value.split("_")
@@ -872,7 +889,7 @@ class OWNetExplorer(OWWidget):
             all_values = []
             for vertex in component:
                 values = []
-                value =  str(self.visualize.graph.items[vertex][str(self.nameComponentCombo.currentText())])
+                value =  str(self.optimization.graph.items[vertex][str(self.nameComponentCombo.currentText())])
                 
                 value = value.replace(" ", ",")
                 value_top = value.split(",")
@@ -957,7 +974,7 @@ class OWNetExplorer(OWWidget):
         
         self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
         #print "self.lastNameComponentAttribute:", self.lastNameComponentAttribute
-        items = orange.ExampleTable([self.visualize.graph.items, keyword_table])
+        items = orange.ExampleTable([self.optimization.graph.items, keyword_table])
         self.setItems(items)
         
         #for item in items:
@@ -1002,11 +1019,11 @@ class OWNetExplorer(OWWidget):
         self.graph.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
         self.graph.markWithRed = False
 
-        if not self.visualize or not self.visualize.graph:
+        if not self.optimization or not self.optimization.graph:
             return
         
         hubs = self.hubs
-        vgraph = self.visualize.graph
+        vgraph = self.optimization.graph
 
         if hubs == 0:
             self.graph.setMarkedVertices([])
@@ -1090,7 +1107,7 @@ class OWNetExplorer(OWWidget):
             else:
                 fn = str(filename)
             
-            self.visualize.graph.saveNetwork(fn)
+            self.optimization.graph.saveNetwork(fn)
                     
     def sendData(self):
         graph = self.graph.getSelectedGraph()
@@ -1119,8 +1136,8 @@ class OWNetExplorer(OWWidget):
         self.send("Selected Distance Matrix", matrix)
                 
     def setCombos(self):
-        vars = self.visualize.getVars()
-        edgeVars = self.visualize.getEdgeVars()
+        vars = self.optimization.getVars()
+        edgeVars = self.optimization.getEdgeVars()
         lastLabelColumns = self.lastLabelColumns
         lastTooltipColumns = self.lastTooltipColumns
         
@@ -1133,9 +1150,9 @@ class OWNetExplorer(OWWidget):
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                 self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
                 
-            if var.varType in [orange.VarTypes.String] and hasattr(self.visualize.graph, 'items') and self.visualize.graph.items != None and len(self.visualize.graph.items) > 0:
+            if var.varType in [orange.VarTypes.String] and hasattr(self.optimization.graph, 'items') and self.optimization.graph.items != None and len(self.optimization.graph.items) > 0:
                 
-                value = self.visualize.graph.items[0][var].value
+                value = self.optimization.graph.items[0][var].value
                 
                 # can value be a list?
                 try:
@@ -1203,14 +1220,24 @@ class OWNetExplorer(OWWidget):
       
     def setGraph(self, graph):      
         if graph == None:
-            self.visualize = None
-            self.graph.addVisualizer(self.visualize)
+            self.optimization = None
+            self.graph.addVisualizer(self.optimization)
             self.clearCombos()
             return
         
         #print "OWNetwork/setGraph: new visualizer..."
-        self.visualize = orngNetwork.NetworkOptimization(graph)
-        self.graph.addVisualizer(self.visualize)
+        self.optimization = orngNetwork.NetworkOptimization(graph)
+        self.graph.addVisualizer(self.optimization)
+        self.graph.renderAntialiased = self.renderAntialiased
+        self.graph.showEdgeLabels = self.showEdgeLabels
+        self.graph.maxVertexSize = self.maxVertexSize
+        self.graph.maxEdgeSize = self.maxLinkSize
+        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
+        self.lastColorColumn = self.colorCombo.currentText()
+        self.graph.minComponentEdgeWidth = self.minComponentEdgeWidth
+        self.graph.maxComponentEdgeWidth = self.maxComponentEdgeWidth
+        
+        
 
         #for i in range(graph.nVertices):
         #    print "x:", graph.coors[0][i], " y:", graph.coors[1][i]
@@ -1254,7 +1281,7 @@ class OWNetExplorer(OWWidget):
         self.showComponentAttribute = None
 
         k = 1.13850193174e-008
-        nodes = self.visualize.nVertices()
+        nodes = self.optimization.nVertices()
         t = k * nodes * nodes
         self.frSteps = int(5.0 / t)
         if self.frSteps <   1: self.frSteps = 1;
@@ -1271,13 +1298,6 @@ class OWNetExplorer(OWWidget):
             self.optMethod = 0
             self.setOptMethod()            
             
-        self.graph.renderAntialiased = self.renderAntialiased
-        self.graph.showEdgeLabels = self.showEdgeLabels
-        self.graph.maxVertexSize = self.maxVertexSize
-        self.graph.maxEdgeSize = self.maxLinkSize
-        self.lastVertexSizeColumn = self.vertexSizeCombo.currentText()
-        self.lastColorColumn = self.colorCombo.currentText()
-
         if self.vertexSize > 0:
             self.graph.setVerticesSize(self.vertexSizeCombo.currentText(), self.invertSize)
         else:
@@ -1300,14 +1320,14 @@ class OWNetExplorer(OWWidget):
     def setItems(self, items=None):
         self.error('')
         
-        if self.visualize == None or self.visualize.graph == None or items == None:
+        if self.optimization == None or self.optimization.graph == None or items == None:
             return
         
-        if len(items) != self.visualize.graph.nVertices:
+        if len(items) != self.optimization.graph.nVertices:
             self.error('ExampleTable items must have one example for each vertex.')
             return
         
-        self.visualize.graph.setattr("items", items)
+        self.optimization.graph.setattr("items", items)
         
         self.setVertexSize()
         self.showIndexLabels()
@@ -1322,7 +1342,7 @@ class OWNetExplorer(OWWidget):
         #print 'combo:',self.markInputCombo.currentText()
         if self.markInputItems != None and len(self.markInputItems) > 0:
             values = [str(x[var]).strip().upper() for x in self.markInputItems]
-            toMark = [i for (i,x) in enumerate(self.visualize.graph.items) if str(x[var]).strip().upper() in values]
+            toMark = [i for (i,x) in enumerate(self.optimization.graph.items) if str(x[var]).strip().upper() in values]
             #print "mark:", toMark
             self.graph.setMarkedVertices(list(toMark))
             self.graph.replot()
@@ -1336,17 +1356,17 @@ class OWNetExplorer(OWWidget):
         self.markInputRadioButton.setEnabled(False)
         self.markInputItems = items
         
-        if self.visualize == None or self.visualize.graph == None or self.visualize.graph.items == None or items == None:
+        if self.optimization == None or self.optimization.graph == None or self.optimization.graph.items == None or items == None:
             return
         
         if len(items) > 0:
-            lstOrgDomain = [x.name for x in self.visualize.graph.items.domain] + [self.visualize.graph.items.domain[x].name for x in self.visualize.graph.items.domain.getmetas()]
+            lstOrgDomain = [x.name for x in self.optimization.graph.items.domain] + [self.optimization.graph.items.domain[x].name for x in self.optimization.graph.items.domain.getmetas()]
             lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
             commonVars = set(lstNewDomain) & set(lstOrgDomain)
 
             if len(commonVars) > 0:
                 for var in commonVars:
-                    orgVar = self.visualize.graph.items.domain[var]
+                    orgVar = self.optimization.graph.items.domain[var]
                     mrkVar = items.domain[var]
 
                     if orgVar.varType == mrkVar.varType and orgVar.varType == orange.VarTypes.String:
@@ -1381,7 +1401,7 @@ class OWNetExplorer(OWWidget):
                             
     def updateCanvas(self):
         # if network exists
-        if self.visualize != None:
+        if self.optimization != None:
             self.graph.updateCanvas()
               
     def keyPressEvent(self, e):
@@ -1406,13 +1426,13 @@ class OWNetExplorer(OWWidget):
 #            OWWidget.keyPressEvent(self, e)
 
     def showDegreeDistribution(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         from matplotlib import rcParams
         import pylab as p
         
-        x = self.visualize.graph.getDegrees()
+        x = self.optimization.graph.getDegrees()
         nbins = len(set(x))
         if nbins > 500:
           bbins = 500
@@ -1457,7 +1477,7 @@ class OWNetExplorer(OWWidget):
     Layout Optimization
     """
     def optLayout(self):
-        if self.visualize == None:   #grafa se ni
+        if self.optimization == None:   #grafa se ni
             self.optButton.setChecked(False)
             return
         
@@ -1510,16 +1530,16 @@ class OWNetExplorer(OWWidget):
 
     def random(self):
         #print "OWNetwork/random.."
-        if self.visualize == None:   #grafa se ni
+        if self.optimization == None:   #grafa se ni
             return    
             
-        self.visualize.random()
-        #print self.visualize.coors
+        self.optimization.random()
+        #print self.optimization.coors
         #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
         
     def fr(self, weighted):
-        if self.visualize == None:   #grafa se ni
+        if self.optimization == None:   #grafa se ni
             return
               
         if not self.optButton.isChecked():
@@ -1545,7 +1565,7 @@ class OWNetExplorer(OWWidget):
                 #print "iteration, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.visualize.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+                initTemp = self.optimization.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
@@ -1553,7 +1573,7 @@ class OWNetExplorer(OWWidget):
             #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
             if self.stopOptimization:
                     return
-            initTemp = self.visualize.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+            initTemp = self.optimization.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
             qApp.processEvents()
             self.updateCanvas()
         else:
@@ -1561,7 +1581,7 @@ class OWNetExplorer(OWWidget):
                 #print "iteration ostanek, initTemp: " + str(initTemp)
                 if self.stopOptimization:
                     return
-                initTemp = self.visualize.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
+                initTemp = self.optimization.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes, weighted)
                 iteration += 1
                 qApp.processEvents()
                 self.updateCanvas()
@@ -1570,28 +1590,28 @@ class OWNetExplorer(OWWidget):
         self.optButton.setText("Optimize layout")
         
     def frSpecial(self):
-        if self.visualize == None:   #grafa se ni
+        if self.optimization == None:   #grafa se ni
             return
         
         steps = 100
         initTemp = 1000
         coolFactor = math.exp(math.log(10.0/10000.0) / steps)
         oldXY = []
-        for rec in self.visualize.network.coors:
+        for rec in self.optimization.network.coors:
             oldXY.append([rec[0], rec[1]])
         #print oldXY
-        initTemp = self.visualize.fruchtermanReingold(steps, initTemp, coolFactor, self.graph.hiddenNodes)
+        initTemp = self.optimization.fruchtermanReingold(steps, initTemp, coolFactor, self.graph.hiddenNodes)
         #print oldXY
         self.graph.updateDataSpecial(oldXY)
         self.graph.replot()
                 
     def frRadial(self):
-        if self.visualize == None:   #grafa se ni
+        if self.optimization == None:   #grafa se ni
             return
         
         #print "F-R Radial"
         k = 1.13850193174e-008
-        nodes = self.visualize.nVertices()
+        nodes = self.optimization.nVertices()
         t = k * nodes * nodes
         refreshRate = int(5.0 / t)
         if refreshRate <    1: refreshRate = 1;
@@ -1607,7 +1627,7 @@ class OWNetExplorer(OWWidget):
             centerNdx = selection[0]
             
         #print "center ndx: " + str(centerNdx)
-        initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
+        initTemp = self.optimization.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
         self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
         #self.graph.circles = [100, 200, 300]
         self.updateCanvas()
@@ -1615,20 +1635,20 @@ class OWNetExplorer(OWWidget):
         
     def circularOriginal(self):
         #print "Circular Original"
-        if self.visualize != None:
-            self.visualize.circularOriginal()
+        if self.optimization != None:
+            self.optimization.circularOriginal()
             self.updateCanvas()
            
     def circularRandom(self):
         #print "Circular Random"
-        if self.visualize != None:
-            self.visualize.circularRandom()
+        if self.optimization != None:
+            self.optimization.circularRandom()
             self.updateCanvas()
 
     def circularCrossingReduction(self):
         #print "Circular Crossing Reduction"
-        if self.visualize != None:
-            self.visualize.circularCrossingReduction()
+        if self.optimization != None:
+            self.optimization.circularCrossingReduction()
             self.updateCanvas()
             
     def pivotMDS(self):
@@ -1636,11 +1656,11 @@ class OWNetExplorer(OWWidget):
             self.information('Set distance matrix to input signal')
             return
         
-        if self.visualize == None:
+        if self.optimization == None:
             self.information('No network found')
             return
         
-        if self.vertexDistance.dim != self.visualize.graph.nVertices:
+        if self.vertexDistance.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             return
         
@@ -1648,8 +1668,8 @@ class OWNetExplorer(OWWidget):
         qApp.processEvents()
         mds = orngMDS.PivotMDS(self.vertexDistance, self.frSteps)
         x,y = mds.optimize()
-        self.visualize.graph.coors[0] = x
-        self.visualize.graph.coors[1] = y
+        self.optimization.graph.coors[0] = x
+        self.optimization.graph.coors[1] = y
         self.updateCanvas()
     
       
@@ -1658,7 +1678,7 @@ class OWNetExplorer(OWWidget):
     """
        
     def clickedAttLstBox(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.lastLabelColumns = set([self.attributes[i][0] for i in self.markerAttributes])
@@ -1667,7 +1687,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
   
     def clickedTooltipLstBox(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.lastTooltipColumns = set([self.attributes[i][0] for i in self.tooltipAttributes])
@@ -1676,7 +1696,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
         
     def clickedEdgeLabelListBox(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.lastEdgeLabelAttributes = set([self.edgeAttributes[i][0] for i in self.edgeLabelAttributes])
@@ -1685,7 +1705,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
 
     def setVertexColor(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.graph.setVertexColor(self.colorCombo.currentText())
@@ -1694,7 +1714,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
         
     def setEdgeColor(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.graph.setEdgeColor(self.edgeColorCombo.currentText())
@@ -1715,7 +1735,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
         
     def setMaxLinkSize(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.graph.maxEdgeSize = self.maxLinkSize
@@ -1723,7 +1743,7 @@ class OWNetExplorer(OWWidget):
         self.graph.replot()
     
     def setVertexSize(self):
-        if self.visualize == None:
+        if self.optimization == None:
             return
         
         self.graph.maxVertexSize = self.maxVertexSize
