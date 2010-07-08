@@ -71,6 +71,11 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
                 lambda self, brush: (setattr(self, "_backgroundBrush", brush), self.update()) and None,
                 doc="Background brush"
                 )
+    truncateText = pyqtProperty("bool",
+                lambda self: getattr(self, "_truncateText", False),
+                lambda self, val: (setattr(self, "_truncateText", val), self.updateContents()),
+                doc="Truncate text")
+    
     def __init__(self, tree, parent, *args, **kwargs):
         QGraphicsTextItem.__init__(self, *args)
         graph_node.__init__(self, **kwargs)
@@ -88,18 +93,21 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         
     def setHtml(self, html):
-        if qVersion() < "4.5":
-            html = html.replace("<hr>", "<hr width=20000>") #bug in Qt (need width = 20000)
+#        if qVersion() < "4.5":
+        html = html.replace("<hr>", "<hr width=20000>") #bug in Qt (need width = 20000)
         return QGraphicsTextItem.setHtml(self, "<body>" + html + "</body>") 
     
     def updateContents(self):
+        if getattr(self, "_rect", QRectF()).isValid() and not self.truncateText:
+            self.setTextWidth(self._rect.width())
+        else:
+            self.setTextWidth(-1)
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.droplet.setVisible(bool(self.branches))
-        if hasattr(self, "_rect"):
-            self.setTextWidth(self._rect.width())
         
     def setRect(self, rect):
         self.prepareGeometryChange()
+        rect = QRectF() if rect is None else rect
         self._rect = rect
         self.updateContents()
         self.update()
@@ -110,8 +118,17 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         return path
     
     def rect(self):
-        return QRectF(QPointF(0,0), self.document().size()) | getattr(self, "_rect", QRectF(0, 0, 1, 1))
-      
+        if self.truncateText and getattr(self, "_rect", QRectF()).isValid():
+            return self._rect
+        else:
+            return QRectF(QPointF(0,0), self.document().size()) | getattr(self, "_rect", QRectF(0, 0, 1, 1))
+        
+    def boundingRect(self):
+        if self.truncateText and getattr(self, "_rect", QRectF()).isValid():
+            return self._rect
+        else:
+            return QGraphicsTextItem.boundingRect(self)
+    
     @property  
     def branches(self):
         return [edge.node2 for edge in self.graph_edges() if edge.node1 is self]
@@ -345,7 +362,7 @@ class OWTreeViewer2D(OWWidget):
         self.LineWidth = 5; self.LineWidthMethod = 0
         self.NodeSize = 5
         self.MaxNodeWidth = 150
-        self.LimitNodeWidth = False
+        self.LimitNodeWidth = True
         self.NodeInfo = [0, 1]
 
         self.NodeColorMethod = 0
@@ -399,13 +416,22 @@ class OWTreeViewer2D(OWWidget):
 
         # NODE TAB
 #        # Node size options
-        w = OWGUI.widgetBox(NodeTab, orientation="horizontal")
-        cb = OWGUI.checkBox(w, self, "LimitNodeWidth", "Max node width", callback=self.toggleNodeSize)
-        sl = OWGUI.hSlider(w, self, 'MaxNodeWidth', #box='Max node width',
-                      minValue=50, maxValue=200, step=10,
-                      callback=self.toggleNodeSize, ticks=50)
-        cb.disables.append(sl)
-        cb.makeConsistent()
+
+        cb, sb = OWGUI.checkWithSpin(NodeTab, self, "Max node width:", 50, 200, "LimitNodeWidth", "MaxNodeWidth",
+                                     tooltip="Limit the width of tree nodes",
+                                     checkCallback=self.toggleNodeSize,
+                                     spinCallback=self.toggleNodeSize,
+                                     step=10)
+        b = OWGUI.checkBox(OWGUI.indentedBox(NodeTab), self, "TruncateText", "Truncate text", callback=self.toggleTruncateText)
+        cb.disables.append(b)
+        cb.makeConsistent() 
+#        w = OWGUI.widgetBox(NodeTab, orientation="horizontal")
+#        cb = OWGUI.checkBox(w, self, "LimitNodeWidth", "Max node width", callback=self.toggleNodeSize)
+#        sl = OWGUI.hSlider(w, self, 'MaxNodeWidth', #box='Max node width',
+#                      minValue=50, maxValue=200, step=10,
+#                      callback=self.toggleNodeSize, ticks=50)
+#        cb.disables.append(sl)
+#        cb.makeConsistent()
 
         # Node information
         OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
@@ -485,8 +511,13 @@ class OWTreeViewer2D(OWWidget):
             edge.setPen(QPen(Qt.gray, width, Qt.SolidLine, Qt.RoundCap))
         self.scene.update()
         
-    def toogleNodeSize(self):
+    def toggleNodeSize(self):
         pass
+    
+    def toggleTruncateText(self):
+        for n in self.scene.nodes():
+            n.truncateText = self.TruncateText
+        self.scene.fixPos(self.rootNode, 10, 10)
 
     def toggleNavigator(self):
         self.navWidget.setHidden(not self.navWidget.isHidden())

@@ -48,8 +48,13 @@ class ClassificationTreeNode(GraphicsNode):
 
     def updateContents(self):
         self.prepareGeometryChange()
-        GraphicsNode.updateContents(self)
+        if getattr(self, "_rect", QRectF()).isValid() and not self.truncateText:
+            self.setTextWidth(self._rect.width() - self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0)
+        else:
+            self.setTextWidth(-1)
+            
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
+        self.droplet.setVisible(bool(self.branches))
         self.pie.setPos(self.rect().right(), self.rect().center().y())
         fm = QFontMetrics(self.document().defaultFont())
         self.attr_text_w = fm.width(str(self.attr if self.attr else ""))
@@ -57,16 +62,33 @@ class ClassificationTreeNode(GraphicsNode):
         self.line_descent = fm.descent()
         
     def rect(self):
-        rect = QRectF(QPointF(0,0), self.document().size())
-        return rect.adjusted(0, 0, self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0, 0) | getattr(self, "_rect", QRectF(0,0,1,1))
+        if self.truncateText and getattr(self, "_rect", QRectF()).isValid():
+            return self._rect
+        else:
+            rect = QRectF(QPointF(0,0), self.document().size())
+            return rect.adjusted(0, 0, self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0, 0) | getattr(self, "_rect", QRectF(0,0,1,1))
     
+    def setRect(self, rect):
+        self.prepareGeometryChange()
+        rect = QRectF() if rect is None else rect 
+        self._rect = rect
+        if rect.isValid() and not self.truncateText:
+            self.setTextWidth(self._rect.width() - self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0)
+        else:
+            self.setTextWidth(-1)
+        self.updateContents()
+        self.update()
+        
     def boundingRect(self):
         if hasattr(self, "attr"):
             attr_rect = QRectF(QPointF(0, -self.attr_text_h), QSizeF(self.attr_text_w, self.attr_text_h))
         else:
             attr_rect = QRectF(0, 0, 1, 1)
         rect = self.rect().adjusted(-5, -5, 5, 5)
-        return rect | GraphicsNode.boundingRect(self) | attr_rect
+        if self.truncateText:
+            return rect | attr_rect 
+        else:
+            return rect | GraphicsNode.boundingRect(self) | attr_rect
 
     def rule(self):
         return self.parent.rule() + [(self.parent.tree.branchSelector.classVar, self.attr)] if self.parent else []
@@ -86,7 +108,11 @@ class ClassificationTreeNode(GraphicsNode):
         rect = self.rect()
         painter.drawRoundedRect(rect, self.borderRadius, self.borderRadius)
         painter.restore()
-        painter.setClipRect(rect | QRectF(QPointF(0, 0), self.document().size()))
+        if self.truncateText:
+#            self.setTextWidth(-1)`
+            painter.setClipRect(rect)
+        else:
+            painter.setClipRect(rect | QRectF(QPointF(0, 0), self.document().size()))
         return QGraphicsTextItem.paint(self, painter, option, widget)
 #        TextTreeNode.paint(self, painter, option, widget)
 
@@ -252,16 +278,12 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
                         'majp', 'tarp', 'inst']) if getattr(self, name))
             
         for n in self.scene.nodes():
-            if hasattr(n, "_rect"):
-                delattr(n, "_rect")
-            if not self.LimitNodeWidth:
-                n.setTextWidth(-1)
+            n.setRect(QRectF())
             self.updateNodeInfo(n, flags)
         if True:
             w = min(max([n.rect().width() for n in self.scene.nodes()] + [0]), self.MaxNodeWidth if self.LimitNodeWidth else sys.maxint)
             for n in self.scene.nodes():
                 n.setRect(QRectF(n.rect().x(), n.rect().y(), w, n.rect().height()))
-                n.setRect(n.rect() | QRectF(0, 0, w, 1))
         self.scene.fixPos(self.rootNode, 10, 10)
         
     def updateNodeInfo(self, node, flags=31):
@@ -299,7 +321,6 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.toggleNodeColor()
         
     def toggleNodeSize(self):
-        print "toggle"
         self.setNodeInfo()
         self.scene.update()
         self.sceneView.repaint()

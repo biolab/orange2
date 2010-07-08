@@ -178,16 +178,12 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
     def setNodeInfo(self, widget=None, id=None):
         flags = sum(2**i for i, name in enumerate(['maj', 'majp', 'tarp', 'error', 'inst']) if getattr(self, name)) 
         for n in self.scene.nodes():
-            if hasattr(n, "_rect"):
-                delattr(n, "_rect")
-            if not self.LimitNodeWidth:
-                n.setTextWidth(-1)
+            n.setRect(QRectF())
             self.updateNodeInfo(n, flags)
         if True:
             w = min(max([n.rect().width() for n in self.scene.nodes()] + [0]), self.MaxNodeWidth if self.LimitNodeWidth else sys.maxint)
             for n in self.scene.nodes():
                 n.setRect(QRectF(n.rect().x(), n.rect().y(), w, n.rect().height()))
-                n.setRect(n.rect() | QRectF(0, 0, w, 1))
         self.scene.fixPos(self.rootNode, 10, 10)
         self.scene.update()
         
