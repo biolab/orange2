@@ -11,6 +11,7 @@ set SOURCE_SNAPSHOT=orange-source-snapshot-%daystr.zip
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
+svn cleanup --non-interactive
 svn update --ignore-externals
 
 rem # build core
