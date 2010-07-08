@@ -206,6 +206,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\pathfinder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pathfinder.hpp"
+				>
+			</File>
+			<File
 				RelativePath="triangulate.cpp"
 				>
 			</File>

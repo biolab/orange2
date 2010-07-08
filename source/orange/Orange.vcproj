@@ -726,6 +726,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\pq.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pq.hpp"
+				>
+			</File>
+			<File
 				RelativePath="pqueue_i.hpp"
 				>
 			</File>
