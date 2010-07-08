@@ -104,8 +104,13 @@ class OWInteractionGraph(OWWidget):
 
         self.selectionButton = OWGUI.button(self.controlArea, self, "Show selection", callback = self.selectionClick, tooltip = "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
 
-        self.saveLCanvas = OWGUI.button(self.controlArea, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0)
-        self.saveRCanvas = OWGUI.button(self.controlArea, self, "Save right canvas", callback = self.saveToFileRCanvas, debuggingEnabled = 0)
+#        self.buttonBackground.layout().setDirection(QBoxLayout.TopToBottom)
+        
+        w = OWGUI.widgetBox(self.buttonBackground, orientation="horizontal", addToLayout=False, margin=0)
+        self.buttonBackground.layout().insertWidget(0, w)
+        
+        self.saveLCanvas = OWGUI.button(w, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0)
+        self.saveRCanvas = OWGUI.button(w, self, "Save right canvas", callback = self.saveToFileRCanvas, debuggingEnabled = 0)
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
