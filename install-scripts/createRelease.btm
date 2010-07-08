@@ -12,7 +12,7 @@ set ADDON_TEXT=orangeAddOn-text-%VERSION
 
 rem # update source(s) to revision HEAD
 cdd %TMPDIR
-svn cleanup --non-interactive
+svn cleanup
 svn update --ignore-externals
 
 rem # build core
