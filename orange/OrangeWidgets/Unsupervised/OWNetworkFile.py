@@ -194,9 +194,11 @@ class OWNetworkFile(OWWidget):
             # make new data and send it
             fName = os.path.split(fn)[1]
             if "." in fName:
-                data.name = string.join(string.split(fName, '.')[:-1], '.')
+                #data.name = string.join(string.split(fName, '.')[:-1], '.')
+                pass
             else:
-                data.name = fName
+                #data.name = fName
+                pass
                 
             self.graph = data
         else:

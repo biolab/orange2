@@ -10,8 +10,8 @@ MOVE_SELECTION = 100
 
 from OWGraph import *
 from numpy import *
-from orngScaleScatterPlotData import *
 from orngNetwork import Network
+from orngScaleScatterPlotData import *
 
 class NetworkVertex():
     def __init__(self):
@@ -64,8 +64,10 @@ class NetworkCurve(QwtPlotCurve):
       self.vertices[v].color = color
       self.vertices[v].pen = QPen(color, pen.width())
       
-  def setEdgeColor(self, index, color):
+  def setEdgeColor(self, index, color, nocolor=0):
       pen = self.edges[index].pen
+      if nocolor:
+        color.setAlpha(0)
       self.edges[index].pen = QPen(color, pen.width())
   
   def getSelectedVertices(self):
@@ -254,6 +256,9 @@ class OWNetworkCanvas(OWGraph):
       self.networkCurve = NetworkCurve(self)
       self.callbackMoveVertex = None
       self.callbackSelectVertex = None
+      self.minComponentEdgeWidth = 0
+      self.maxComponentEdgeWidth = 0
+      self.vertexDistance = None
       
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
@@ -677,6 +682,55 @@ class OWNetworkCanvas(OWGraph):
       
       self.removeDrawingCurves(removeLegendItems=0)
       self.tips.removeAll()
+      
+      if self.vertexDistance and self.minComponentEdgeWidth > 0 and self.maxComponentEdgeWidth > 0:          
+          components = self.visualizer.graph.getConnectedComponents()
+          matrix = self.vertexDistance.avgLinkage(components)
+          
+          edges = set()
+          for u in range(matrix.dim):
+              neighbours = matrix.getKNN(u, 2)
+              for v in neighbours:
+                  if v < u:
+                      edges.add((v, u))
+                  else:
+                      edges.add((u, v))
+          edges = list(edges)
+# show 2n strongest edges
+#          vals = matrix.getValues()
+#          vals = zip(vals, range(len(vals)))
+#          count = 0
+#          add = 0
+#          for i in range(matrix.dim):
+#              add += i + 1
+#              for j in range(i+1, matrix.dim):
+#                  v, ind = vals[count]
+#                  ind += add
+#                  vals[count] = (v, ind)
+#                  count += 1
+#          vals.sort(reverse=0)
+#          vals = vals[:2 * matrix.dim]
+#          edges = [(ind / matrix.dim, ind % matrix.dim) for v, ind in vals]
+#          print "number of component edges:", len(edges), "number of components:", len(components)
+          components_c = [(sum(self.visualizer.graph.coors[0][c]) / len(c), sum(self.visualizer.graph.coors[1][c]) / len(c)) for c in components]
+          weights = [1 - matrix[u,v] for u,v in edges]
+          max_weight = max(weights)
+          min_weight = min(weights)
+          span_weights = max_weight - min_weight
+        
+          for u,v in edges:
+              x = [components_c[u][0], components_c[v][0]]
+              y = [components_c[u][1], components_c[v][1]]
+              w = ((1 - matrix[u,v]) - min_weight) / span_weights * (self.maxComponentEdgeWidth - self.minComponentEdgeWidth) + self.minComponentEdgeWidth
+              
+              pen = QPen()
+              pen.setWidth(w)
+              pen.setBrush(QColor(50,200,255,15))
+              pen.setCapStyle(Qt.FlatCap)
+              pen.setJoinStyle(Qt.RoundJoin)
+              self.addCurve("component_edges", Qt.green, Qt.green, 0, style=QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData=x, yData=y, pen=pen, showFilledSymbols=False)
+      
+      
       self.networkCurve.setData(self.visualizer.network.coors[0], self.visualizer.network.coors[1])
       
       if self.insideview == 1:
@@ -714,6 +768,7 @@ class OWNetworkCanvas(OWGraph):
       self.networkCurve.showEdgeLabels = self.showEdgeLabels
       self.networkCurve.attach(self)
       self.drawPlotItems(replot=0)
+      
       #self.zoomExtent()
       
   def drawPlotItems(self, replot=1, vertices=[]):
@@ -925,7 +980,10 @@ class OWNetworkCanvas(OWGraph):
                   
               elif self.visualizer.graph.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
                   newColor = self.discEdgePalette[colorIndices[self.visualizer.graph.links[links_index][colorIndex].value]]
-                  self.networkCurve.setEdgeColor(index, newColor)
+                  if self.visualizer.graph.links[links_index][colorIndex].value == "0":
+                    self.networkCurve.setEdgeColor(index, newColor, nocolor=1)
+                  else:
+                    self.networkCurve.setEdgeColor(index, newColor)
                   
           else:
               newColor = self.discEdgePalette[0]
