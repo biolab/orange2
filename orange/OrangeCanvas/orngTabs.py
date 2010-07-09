@@ -226,7 +226,7 @@ class MyTreeWidget(QTreeWidget):
         p = QPointF(schema.canvasView.mapFromGlobal(self.mapToGlobal(e.pos()))) + QPointF(schema.canvasView.mapToScene(QPoint(0, 0)))
 
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
-        if dinwin and (dinwin != win or not inside):
+        if dinwin and (dinwin != schema or not inside):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
              dinwin.canvasView.scene().update()
