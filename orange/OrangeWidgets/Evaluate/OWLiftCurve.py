@@ -136,7 +136,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         if self.performanceLineCKey: #self.curve(self.performanceLineCKey):
             self.performanceLineCKey.setData(costx, costy)
             self.performanceLineCKey.setVisible(b)
-        self.update()
+        self.replot()
+#        self.update()
 
         nOnMinc = {}
         for (x, minc, threshold, cNum) in globalMinCostPoints:
@@ -169,7 +170,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         self.performanceLineSymbol.setSize(v, v)
         for marker in [item for item in self.itemList() if isinstance(item, QwtPlotMarker)]:
             marker.setSymbol(self.performanceLineSymbol)
-        self.update()
+        self.replot()
+#        self.update()
 
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
@@ -283,10 +285,11 @@ class OWLiftCurve(OWROC):
 
         # settings tab
         self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
-        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=3, maxValue=5, step=9, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point width', minValue=0, maxValue=9, step=1, callback=self.setPointWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='Lift curve width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
         OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='Lift curve convex hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
         OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal', tooltip='', callback=self.setShowDiagonal)
+        OWGUI.rubber(self.settingsTab)
 ##        self.SettingsTab.addStretch(100)
 
         OWGUI.rubber(self.controlArea)
