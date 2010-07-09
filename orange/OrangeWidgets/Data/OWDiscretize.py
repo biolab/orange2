@@ -568,6 +568,8 @@ class OWDiscretize(OWWidget):
         #self.controlArea.setFixedWidth(0)
 
         self.contAttrIcon =  self.createAttributeIconDict()[orange.VarTypes.Continuous]
+        
+        self.setAllIndividuals()
 
 
 
