@@ -9,7 +9,10 @@ import statc
 # miscellaneous functions (used across this module)
 
 def _modus(dist):
-    if dist:
+    # Check bool(dist) - False means no known cases
+    # Check dist.cases > 0 - We cant return some value from the domain without knowing if it is even present
+    #in the data. TOOD: What does this mean for k-means convergence?
+    if bool(dist) and dist.cases > 0:
         return dist.modus()
     else:
         return None
