@@ -68,6 +68,8 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     if margin != -1:
         b.layout().setMargin(margin)
 
+    if addSpace and isinstance(addSpace, bool):
+        separator(widget)
     if addSpace and isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
@@ -79,7 +81,9 @@ def indentedBox(widget, sep=20, orientation = True, addSpace=False):
     r = widgetBox(widget, orientation = "horizontal")
     separator(r, sep, 0)
 
-    if isinstance(addSpace, int):
+    if addSpace and isinstance(addSpace, bool):
+        separator(widget)
+    if addSpace and isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
         separator(widget)
@@ -478,8 +482,14 @@ def toolButton(widget, master, callback = None, width = None, height = None, too
     return btn
 
 
-def separator(widget, width=8, height=8):
+def separator(widget, width=0, height=0):
+#    if isinstance(widget.layout(), QVBoxLayout):
+#        return widget.layout().addSpacing(height)
+#    elif isinstance(widget.layout(), QHBoxLayout):
+#        return widget.layout().addSpacing(width)
+#    return None
     sep = QWidget(widget)
+#    sep.setStyleSheet("background: #000000;")
     if widget.layout(): widget.layout().addWidget(sep)
     sep.setFixedSize(width, height)
     return sep
@@ -1057,7 +1067,9 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     combo.box = hb
 
     if addSpace:
-        if isinstance(addSpace, int):
+        if isinstance(addSpace, bool):
+            separator(widget)
+        elif isinstance(addSpace, int):
             separator(widget, height=addSpace)
         else:
             separator(widget)
