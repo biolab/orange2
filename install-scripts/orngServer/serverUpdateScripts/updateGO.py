@@ -90,7 +90,8 @@ for org in u.GetAvailableOrganisms():
         
 try:
     import cPickle
-    tax = cPickle.load(open(os.path.join(tmpDir, "taxonomy.pickle"), "rb"))
+#    tax = cPickle.load(open(os.path.join(tmpDir, "taxonomy.pickle"), "rb"))
+    tax = cPickle.load(open(orngServerFiles.localpath_download("GO", "taxonomy.pickle"), "rb"))
 except Exception:
     tax = {}
 
@@ -98,6 +99,7 @@ except Exception:
 if any(tax.get(key, set()) != updatedTaxonomy.get(key, set()) for key in set(updatedTaxonomy)):
     tax.update(updatedTaxonomy)
     cPickle.dump(tax, open(os.path.join(tmpDir, "taxonomy.pickle"), "wb"))
+    print "Uploading", "taxonomy.pickle"
     serverFiles.upload("GO", "taxonomy.pickle", os.path.join(tmpDir, "taxonomy.pickle"), title="GO taxon IDs",
                        tags = ["GO", "taxon", "organism", "essential", "#version:%i" % obiGO.Taxonomy.version])
     serverFiles.unprotect("GO", "taxonomy.pickle")
