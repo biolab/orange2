@@ -2469,12 +2469,17 @@ PyObject *ExampleGenerator_translate(TPyOrange *self, PyObject *args, PyObject *
     PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
 
     PDomain domain;
-    if (PyArg_ParseTuple(args, "O&", cc_Domain, &domain))
+    if (PyArg_ParseTuple(args, "O&|i", cc_Domain, &domain))
       return WrapOrange(PExampleTable(mlnew TExampleTable(domain, weg)));
 
     PyObject *pargs, *guard = NULL;
-    if (args && (PyTuple_Size(args)==1))
+    int keepMeta = 0;
+    if (args && ((PyTuple_Size(args)==1) || ((PyTuple_Size(args)==2) && PyInt_Check(PyTuple_GET_ITEM(args, 1))))) {
       pargs = guard = PyTuple_GET_ITEM(args, 0);
+      if (PyTuple_Size(args)==2) {
+        keepMeta = PyInt_AsLong(PyTuple_GET_ITEM(args, 1));
+      }
+    }
     else
       pargs = args;
 
@@ -2489,6 +2494,10 @@ PyObject *ExampleGenerator_translate(TPyOrange *self, PyObject *args, PyObject *
       else {
         attributes.erase(vi);
         newDomain = mlnew TDomain(eg->domain->classVar, attributes);
+      }
+      
+      if (keepMeta) {
+        newDomain->metas = eg->domain->metas;
       }
 
       Py_XDECREF(guard);
