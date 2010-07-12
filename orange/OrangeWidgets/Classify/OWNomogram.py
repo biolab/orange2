@@ -71,7 +71,7 @@ class OWNomogram(OWWidget):
         self.diff_between_ordinal = 30
         self.fontSize = 9
         self.lineWidth = 1
-        self.histogram = 1
+        self.histogram = 0
         self.histogram_size = 10
         self.data = None
         self.cl = None
