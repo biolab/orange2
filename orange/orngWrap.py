@@ -245,7 +245,8 @@ class Preprocessor(object):
             wrappedLearner = learner
             name = getattr(learner, "name", "")
             def __call__(self, data, weightId=0, getData = False):
-                processed, procW = self.preprocessor.processData(data, weightId or 0)
+                t = self.preprocessor.processData(data, weightId or 0)
+                processed, procW = t if isinstance(t, tuple) else (t, 0)
                 classifier = self.wrappedLearner(processed, procW)
                 if getData:
                     return classifier, processed
