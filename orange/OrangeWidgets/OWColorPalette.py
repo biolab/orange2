@@ -136,8 +136,10 @@ class ColorPaletteDlg(OWBaseWidget):
         box = OWGUI.widgetBox(buttBox, "Pass-through colors", orientation = "horizontal")
         for i, (color, check) in enumerate(extendedPassThroughColors):
             self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)] = check
-            self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)+"Checkbox"] = OWGUI.checkBox(box, self, "exCont"+paletteName+"passThroughColor"+str(i), "", tooltip="Use color", callback = self.colorSchemaChange)
+            self.__dict__["exCont"+paletteName+"passThroughColor"+str(i)+"Checkbox"] = cb = OWGUI.checkBox(box, self, "exCont"+paletteName+"passThroughColor"+str(i), "", tooltip="Use color", callback = self.colorSchemaChange)
             self.__dict__["exCont"+paletteName+"color"+str(i)] = ColorButton(self, box, color = QColor(color))
+            if i < len(extendedPassThroughColors) - 1:
+                OWGUI.rubber(box)
         self.__dict__["exCont"+paletteName+"colorCount"] = len(extendedPassThroughColors)
         self.exContPaletteNames.append(paletteName)            
         
