@@ -49,20 +49,19 @@ class OWDataSampler(OWWidget):
         # GUI
         
         # Info Box
-        box1 = OWGUI.widgetBox(self.controlArea, "Information")
+        box1 = OWGUI.widgetBox(self.controlArea, "Information", addSpace=True)
         self.infoa = OWGUI.widgetLabel(box1, 'No data on input.')
         self.infob = OWGUI.widgetLabel(box1, ' ')
         self.infoc = OWGUI.widgetLabel(box1, ' ')
         
         # Options Box
-        box2 = OWGUI.widgetBox(self.controlArea, 'Options')
+        box2 = OWGUI.widgetBox(self.controlArea, 'Options', addSpace=True)
         OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)', callback=self.settingsChanged)
         OWGUI.checkWithSpin(box2, self, 'Set random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed', checkCallback=self.settingsChanged, spinCallback=self.settingsChanged)
-        OWGUI.separator(self.controlArea)
 
         # Sampling Type Box
         self.s = [None, None, None, None]
-        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling type")
+        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling type", addSpace=True)
         self.sBox.buttons = []
 
         # Random Sampling
@@ -98,15 +97,16 @@ class OWDataSampler(OWWidget):
         OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
 
         # Output Group Box
-        OWGUI.separator(self.controlArea)
         self.foldcombo = OWGUI.comboBox(self.controlArea, self, "outFold", 'Output Data for Fold / Group', 'Fold / group:', orientation = "horizontal", items = range(1,101), callback = self.foldChanged, sendSelectedValue = 1, valueType = int)
         self.foldcombo.setEnabled(False)
 
         # Select Data Button
-        OWGUI.separator(self.controlArea)
-        self.sampleButton = OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
+        OWGUI.rubber(self.controlArea)
+        self.sampleButton = OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process, addToLayout=False)
+        self.buttonBackground.layout().setDirection(QBoxLayout.TopToBottom)
+        self.buttonBackground.layout().insertWidget(0, self.sampleButton)
+        self.buttonBackground.show()
         self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
-        OWGUI.separator(self.controlArea)
 
         # CONNECTIONS
         # set connections for RadioButton (SelectType)
