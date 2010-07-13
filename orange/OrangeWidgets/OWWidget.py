@@ -32,16 +32,18 @@ class OWWidget(OWBaseWidget):
 
         self.space = self.controlArea
 
+        self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="horizontal", margin=2)
+        self.buttonBackground.hide()
+        
         if wantGraph and showSaveGraph:
-            self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="horizontal", margin=2)
+            self.buttonBackground.show()
             self.buttonBackground.layout().setSpacing(10)
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)
 
         self.__reportData = None
         if OWReport.report and not noReport and hasattr(self, "sendReport"):
-            if not hasattr(self, "buttonBackground"):
-                self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=6)
+            self.buttonBackground.show()
             self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
 
