@@ -31,7 +31,7 @@ class OWRank(OWWidget):
         self.reliefN = 20
         self.nIntervals = 4
         self.sortBy = 0
-        self.selectMethod = 3
+        self.selectMethod = 2
         self.nSelected = 5
         self.autoApply = True
         self.showDistributions = 1
@@ -48,7 +48,7 @@ class OWRank(OWWidget):
 
         labelWidth = 80
 
-        box = OWGUI.widgetBox(self.controlArea, "Measures", addSpace=True)
+        box = OWGUI.widgetBox(self.controlArea, "Scoring", addSpace=True)
         for meas, valueName in zip(self.measures, self.measuresAttrs):
             if valueName == "computeReliefF":
                 hbox = OWGUI.widgetBox(box, orientation = "horizontal")
@@ -66,30 +66,50 @@ class OWRank(OWWidget):
         OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ", items = ["No Sorting", "Attribute Name", "Number of Values"] + self.measures, orientation=0, valueType = int, callback=self.sortingChanged)
 
 
-        box = OWGUI.widgetBox(self.controlArea, "Discretization")
+        box = OWGUI.widgetBox(self.controlArea, "Discretization", addSpace=True)
         OWGUI.spin(box, self, "nIntervals", 2, 20, label="Intervals: ", orientation=0, callback=self.discretizationChanged, callbackOnReturn = True)
 
         box = OWGUI.widgetBox(self.controlArea, "Precision", addSpace=True)
         OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals: ", orientation=0, callback=self.decimalsChanged)
 
-        OWGUI.rubber(self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Score bars", orientation="horizontal", addSpace=True)
+        self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions", 'Enable', callback = self.cbShowDistributions)
+#        colBox = OWGUI.indentedBox(box, orientation = "horizontal")
+        OWGUI.rubber(box)
+        box = OWGUI.widgetBox(box, orientation="horizontal")
+        wl = OWGUI.widgetLabel(box, "Color: ")
+        OWGUI.separator(box)
+        self.colButton = OWGUI.toolButton(box, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
+        self.cbShowDistributions.disables.extend([wl, self.colButton])
+        self.cbShowDistributions.makeConsistent()
+#        OWGUI.rubber(box)
 
-        box = OWGUI.widgetBox(self.controlArea, "Distributions", addSpace=True)
-        self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions", 'Visualize values', callback = self.cbShowDistributions)
-        colBox = OWGUI.indentedBox(box, orientation = "horizontal")
-        OWGUI.widgetLabel(colBox, "Color: ")
-        self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
-        OWGUI.rubber(colBox)
-
-        selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select attributes", callback=self.selectMethodChanged)
-        OWGUI.spin(OWGUI.indentedBox(selMethBox), self, "nSelected", 1, 100, label="No. selected"+"  ", orientation=0, callback=self.nSelectedChanged)
-
+        
+        selMethBox = OWGUI.widgetBox(self.controlArea, "Select attributes", addSpace=True)
+        self.clearButton = OWGUI.button(selMethBox, self, "Clear", callback=self.clearSelection)
+        self.clearButton.setDisabled(True)
+        
+        buttonGrid = QGridLayout()
+        selMethRadio = OWGUI.radioButtonsInBox(selMethBox, self, "selectMethod", [], callback=self.selectMethodChanged)
+        b1 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "All", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
+        b2 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Manual", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
+        b3 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Best ranked", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
+#        brBox = OWGUI.widgetBox(selMethBox, orientation="horizontal", margin=0)
+#        OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Best ranked", insertInto=brBox, callback=self.selectMethodChanged)
+        spin = OWGUI.spin(OWGUI.widgetBox(selMethRadio, addToLayout=False), self, "nSelected", 1, 100, orientation=0, callback=self.nSelectedChanged)
+        buttonGrid.addWidget(b1, 0, 0)
+        buttonGrid.addWidget(b2, 1, 0)
+        buttonGrid.addWidget(b3, 2, 0)
+        buttonGrid.addWidget(spin, 2, 1)
+        selMethRadio.layout().addLayout(buttonGrid)
         OWGUI.separator(selMethBox)
 
         applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply)
         autoApplyCB = OWGUI.checkBox(selMethBox, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.apply)
 
+        OWGUI.rubber(self.controlArea)
+        
         self.table = QTableWidget()
         self.mainArea.layout().addWidget(self.table)
 
@@ -107,6 +127,8 @@ class OWRank(OWWidget):
 
         self.connect(self.table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.headerClick)
         self.connect(self.table, SIGNAL("clicked (const QModelIndex&)"), self.selectItem)
+        self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.onSelectionChanged)
+        
         self.resize(690,500)
         self.updateColor()
 
@@ -129,6 +151,7 @@ class OWRank(OWWidget):
         painter.fillRect(0,0,w,h, QBrush(self.distColor))
         painter.end()
         self.colButton.setIcon(QIcon(pixmap))
+        self.table.viewport().update()
 
 
     def resetInternals(self):
@@ -143,24 +166,32 @@ class OWRank(OWWidget):
 
         self.table.setRowCount(0)
 
+    def onSelectionChanged(self):
+        if not getattr(self, "_reselecting", False):
+            selected = sorted(set(item.row() for item in self.table.selectedItems()))
+            self.clearButton.setEnabled(bool(selected))
+            selected = [self.attributeOrder[row] for row in selected]
+            if set(selected) != set(self.selected):
+                self.selected = selected
+                self.selectMethod = 1
+            self.applyIf()
+
+    def clearSelection(self):
+        self.selected = [] 
+        self.reselect()
 
     def selectMethodChanged(self):
         if self.selectMethod == 0:
-            self.selected = []
-            self.reselect()
-        elif self.selectMethod == 1:
             self.selected = self.attributeOrder[:]
             self.reselect()
-        elif self.selectMethod == 3:
+        elif self.selectMethod == 2:
             self.selected = self.attributeOrder[:self.nSelected]
             self.reselect()
         self.applyIf()
 
-
     def nSelectedChanged(self):
-        self.selectMethod = 3
+        self.selectMethod = 2
         self.selectMethodChanged()
-
 
     def sendSelected(self):
         attrs = self.data and [attr for i, attr in enumerate(self.attributeOrder) if self.table.isRowSelected(i)]
@@ -203,7 +234,7 @@ class OWRank(OWWidget):
             if removed or sortedByThis:
                 self.reprint()
                 self.resendAttributes()
-                if sortedByThis and self.selectMethod == 3:
+                if sortedByThis and self.selectMethod == 2:
                     self.applyIf()
 
 
@@ -218,7 +249,7 @@ class OWRank(OWWidget):
             if removed or sortedByReliefF:
                 self.reprint()
                 self.resendAttributes()
-                if sortedByReliefF and self.selectMethod == 3:
+                if sortedByReliefF and self.selectMethod == 2:
                     self.applyIf()
 
     def loadReliefDefaults(self):
@@ -228,13 +259,15 @@ class OWRank(OWWidget):
 
 
     def selectItem(self, index):
-        row = index.row()
-        attr = self.attributeOrder[row]
-        if attr in self.selected:
-            self.selected.remove(attr)
-        else:
-            self.selected.append(attr)
-        self.applyIf()
+        pass
+#        row = index.row()
+#        attr = self.attributeOrder[row]
+#        if attr in self.selected:
+#            self.selected.remove(attr)
+#        else:
+#            self.selected.append(attr)
+#        self.selectMethod = 1
+#        self.applyIf()
 
     def headerClick(self, index):
         if index < 0: return
@@ -248,7 +281,7 @@ class OWRank(OWWidget):
     def sortingChanged(self):
         self.reprint()
         self.resendAttributes()
-        if self.selectMethod == 3:
+        if self.selectMethod == 2:
             self.applyIf()
 
 
@@ -418,21 +451,25 @@ class OWRank(OWWidget):
 
 
     def reselect(self):
-        self.table.clearSelection()
-
-        if not self.data:
-            return
-
-        for attr in self.selected:
-            self.table.selectRow(self.attributeOrder.index(attr))
-
-        if self.selectMethod == 2 or self.selectMethod == 3 and self.selected == self.attributeOrder[:self.nSelected]:
-            pass
-        elif self.selected == self.attributeOrder:
-            self.selectMethod = 1
-        else:
-            self.selectMethod = 2
-
+        self._reselecting = True
+        try:
+            self.table.clearSelection()
+    
+            if not self.data:
+                return
+    
+            for attr in self.selected:
+                self.table.selectRow(self.attributeOrder.index(attr))
+    
+            if self.selectMethod == 1 or self.selectMethod == 2 and self.selected == self.attributeOrder[:self.nSelected]:
+                pass
+            elif self.selected == self.attributeOrder:
+                self.selectMethod = 0
+            else:
+                self.selectMethod = 1
+        finally:
+            self._reselecting = False
+            self.onSelectionChanged()
 
     def resort(self):
         self.attributeOrder = self.usefulAttributes
@@ -451,7 +488,7 @@ class OWRank(OWWidget):
 
             self.attributeOrder = [attr for attr, meas in st]
 
-        if self.selectMethod == 3:
+        if self.selectMethod == 2:
             self.selected = self.attributeOrder[:self.nSelected]
 
 
