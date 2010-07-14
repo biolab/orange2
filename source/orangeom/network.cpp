@@ -921,7 +921,135 @@ int getWords(string const& s, vector<string> &container)
 }
 
 WRAPPER(ExampleTable)
-PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
+
+PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
+{
+  PyTRY
+
+	TNetwork *graph;
+	/*
+    TDomain *domain = new TDomain();
+	PDomain wdomain = domain;
+	TExampleTable *table;
+	PExampleTable wtable;*/
+	int directed = 0;
+	char *fn;
+
+	if (!PyArg_ParseTuple(args, "s|i:Network.readGML", &fn, &directed))
+		return NULL;
+	
+	struct GML_pair* list;
+    struct GML_stat* stat=(struct GML_stat*)malloc(sizeof(struct GML_stat));
+    stat->key_list = NULL;
+	
+	FILE* file = fopen (fn, "r");
+	
+	if (file == 0) { 
+		printf ("\n No such file: %s", fn);
+	} else {
+	    GML_init();
+		
+	    list = GML_parser(file, stat, 0);
+		
+	    if (stat->err.err_num != GML_OK) {
+			printf ("An error occured while reading line %d column %d of %s:\n", stat->err.line, stat->err.column, fn);
+		
+			switch (stat->err.err_num) {
+				case GML_UNEXPECTED:
+					printf ("UNEXPECTED CHARACTER");
+					break;
+		    
+				case GML_SYNTAX:
+					printf ("SYNTAX ERROR"); 
+					break;
+		    
+				case GML_PREMATURE_EOF:
+					printf ("PREMATURE EOF IN STRING");
+					break;
+		    
+				case GML_TOO_MANY_DIGITS:
+					printf ("NUMBER WITH TOO MANY DIGITS");
+					break;
+		    
+				case GML_OPEN_BRACKET:
+					printf ("OPEN BRACKETS LEFT AT EOF");
+					break;
+		    
+				case GML_TOO_MANY_BRACKETS:
+					printf ("TOO MANY CLOSING BRACKETS");
+					break;
+		
+				default:
+					break;
+			}	
+			printf ("\n");
+		}      
+	
+		while (list) {
+			if (strcmpi(list->key, "graph") == 0) {
+				int nVertices = 0;
+				map<int, int> nodes;
+				vector<vector<int>> edges;
+
+				struct GML_pair* graph_obj = list->value.list;
+				while (graph_obj) {
+					if (strcmpi(graph_obj->key, "node") == 0) {
+						long id;
+						char* label;
+						struct GML_pair* tmp = graph_obj->value.list;
+						while (tmp) {
+							if (strcmpi(tmp->key, "id") == 0)
+								id = tmp->value.integer;
+							if (strcmpi(tmp->key, "label") == 0)
+								label = tmp->value.string;
+							tmp = tmp->next;
+						}
+
+						nodes[id] = nVertices;
+						nVertices++;
+					}
+					if (strcmpi(graph_obj->key, "edge") == 0) {
+						long target;
+						long source;
+
+						struct GML_pair* tmp = graph_obj->value.list;
+						while (tmp) {
+							if (strcmpi(tmp->key, "source") == 0)
+								source = tmp->value.integer;
+							if (strcmpi(tmp->key, "target") == 0)
+								target = tmp->value.integer;
+							tmp = tmp->next;
+						}
+
+						vector<int> v;
+						v.push_back(source);
+						v.push_back(target);
+						edges.push_back(v);
+					}
+
+					graph_obj = graph_obj->next;
+				}
+
+				graph = mlnew TNetwork(nodes.size(), 1, directed == 0);
+				for (vector<vector<int>>::iterator it = edges.begin(); it!=edges.end(); ++it) {
+					int u = nodes[(*it)[0]];
+					int v = nodes[(*it)[1]];
+					double *w = graph->getOrCreateEdge(u, v);
+					*w = 1.0;
+				}
+			}
+
+			list = list->next;
+		}
+		GML_free_list (list, stat->key_list);
+		/*graph->items = wtable;*/
+		return WrapNewOrange(graph, self->ob_type); // WrapOrange(graph);
+	}
+	return NULL;
+  PyCATCH
+}
+
+PyObject *Network_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
   PyTRY
 
@@ -934,7 +1062,7 @@ PyObject *Network_readNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 	//cout << "readNetwork" << endl;
 	char *fn;
 
-	if (!PyArg_ParseTuple(args, "s|i:Network.readNetwork", &fn, &directed))
+	if (!PyArg_ParseTuple(args, "s|i:Network.readPajek", &fn, &directed))
 		return NULL;
 
 	//cout << "File: " << fn << endl;
@@ -1638,4 +1766,5 @@ PyObject *Network_parseNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 
   PyCATCH
 }
+
 #include "network.px"
