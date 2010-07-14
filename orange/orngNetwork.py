@@ -103,21 +103,25 @@ class Network(orangeom.Network):
 
         return 0
         
-    #@staticmethod
-    #def readNetwork(fileName, directed=0):
-    #    """Reads network from Pajek (.net) file."""
-    #    return Network(orangeom.Network().readNetwork(fileName, directed))
-    
     @staticmethod
     def read(fileName, directed=0):
-        """Reads network from Pajek (.net) file."""
+        """Read network. Supported network formats: from Pajek (.net) file, GML."""
         if type(fileName) == file:
             net = Network(2,0).parseNetwork(fileName.read(), directed)
             net.optimization = NetworkOptimization(net)
             return net
         else:
-            net = Network(2,0).readNetwork(fileName, directed)
-            net.optimization = NetworkOptimization(net)
+            root, ext = os.path.splitext(fileName)
+            net = None
+            if ext.lower() == ".net":
+                net = Network(2,0).readPajek(fileName, directed)
+            elif ext.lower() == ".gml":
+                net = Network(2,0).readGML(fileName, directed)
+            else:
+                print "Invalid file type %s" % fileName
+                
+            if net is not None:
+                net.optimization = NetworkOptimization(net)
             return net 
 
 class NetworkOptimization(orangeom.NetworkOptimization):
@@ -591,7 +595,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS, scalingRatio=0):
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS, scalingRatio=0, mdsFromCurrentPos=0):
         """Position the network components according to similarities among them."""
 
         if self.vertexDistance == None:
@@ -631,6 +635,18 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         
         #if self.mds == None: 
         self.mds = orngMDS.MDS(matrix)
+        
+        if mdsFromCurrentPos:
+            if avgLinkage:
+                for u, c in enumerate(self.mdsComponents):
+                    x = sum(self.graph.coors[0][c]) / len(c)
+                    y = sum(self.graph.coors[1][c]) / len(c)
+                    self.mds.points[u][0] = x
+                    self.mds.points[u][1] = y
+            else:
+                for u in range(self.graph.nVertices):
+                    self.mds.points[u][0] = self.graph.coors[0][u] 
+                    self.mds.points[u][1] = self.graph.coors[1][u]
             
         # set min stress difference between 0.01 and 0.00001
         self.minStressDelta = minStressDelta
@@ -660,8 +676,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         del self.scalingRatio
         return 0
 
-    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, scalingRatio=0):
-        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True, scalingRatio=scalingRatio)
+    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, scalingRatio=0, mdsFromCurrentPos=0):
+        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True, scalingRatio=scalingRatio, mdsFromCurrentPos=mdsFromCurrentPos)
 
     def saveNetwork(self, fn):
         print "This method is deprecated. You should use orngNetwork.Network.saveNetwork"
@@ -737,7 +753,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def readNetwork(self, fn, directed=0):
         print "This method is deprecated. You should use orngNetwork.Network.readNetwork"
         network = Network(1,directed)
-        net = network.readNetwork(fn, directed)
+        net = network.readPajek(fn, directed)
         self.setGraph(net)
         self.graph = net
         return net
