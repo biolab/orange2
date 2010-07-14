@@ -214,8 +214,8 @@ class ThresholdLearner_fixed(orange.Learner):
         return ThresholdClassifier(self.learner(examples, weightID), self.threshold)
 
 
-class Preprocessor(object):
-    def __init__(self, preprocessor = None):
+class PreprocessedLearner(object):
+    def __init__(self, preprocessor = None, learner = None):
         if isinstance(preprocessor, list):
             self.preprocessors = preprocessor
         elif preprocessor is not None:
@@ -223,6 +223,8 @@ class Preprocessor(object):
         else:
             self.preprocessors = []
         #self.preprocessors = [orange.Preprocessor_addClassNoise(proportion=0.8)]
+        if learner:
+            self.wrapLearner(learner)
         
     def processData(self, data, weightId = None):
         import orange
