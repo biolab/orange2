@@ -52,6 +52,8 @@
 #include "symmatrix.hpp"
 #include "stringvars.hpp"
 
+#include "gml_parser.hpp"
+
 #ifdef DARWIN
 #include <strings.h>
 #endif
