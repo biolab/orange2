@@ -986,21 +986,21 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 		}      
 	
 		while (list) {
-			if (strcmpi(list->key, "graph") == 0) {
+			if (strcmp(list->key, "graph") == 0) {
 				int nVertices = 0;
 				map<int, int> nodes;
-				vector<vector<int>> edges;
+				vector< vector<int> > edges;
 
 				struct GML_pair* graph_obj = list->value.list;
 				while (graph_obj) {
-					if (strcmpi(graph_obj->key, "node") == 0) {
+					if (strcmp(graph_obj->key, "node") == 0) {
 						long id;
 						char* label;
 						struct GML_pair* tmp = graph_obj->value.list;
 						while (tmp) {
-							if (strcmpi(tmp->key, "id") == 0)
+							if (strcmp(tmp->key, "id") == 0)
 								id = tmp->value.integer;
-							if (strcmpi(tmp->key, "label") == 0)
+							if (strcmp(tmp->key, "label") == 0)
 								label = tmp->value.string;
 							tmp = tmp->next;
 						}
@@ -1008,15 +1008,15 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 						nodes[id] = nVertices;
 						nVertices++;
 					}
-					if (strcmpi(graph_obj->key, "edge") == 0) {
+					if (strcmp(graph_obj->key, "edge") == 0) {
 						long target;
 						long source;
 
 						struct GML_pair* tmp = graph_obj->value.list;
 						while (tmp) {
-							if (strcmpi(tmp->key, "source") == 0)
+							if (strcmp(tmp->key, "source") == 0)
 								source = tmp->value.integer;
-							if (strcmpi(tmp->key, "target") == 0)
+							if (strcmp(tmp->key, "target") == 0)
 								target = tmp->value.integer;
 							tmp = tmp->next;
 						}
@@ -1031,7 +1031,7 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 				}
 
 				graph = mlnew TNetwork(nodes.size(), 1, directed == 0);
-				for (vector<vector<int>>::iterator it = edges.begin(); it!=edges.end(); ++it) {
+				for (vector< vector<int> >::iterator it = edges.begin(); it!=edges.end(); ++it) {
 					int u = nodes[(*it)[0]];
 					int v = nodes[(*it)[1]];
 					double *w = graph->getOrCreateEdge(u, v);
