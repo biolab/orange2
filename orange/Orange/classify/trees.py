@@ -1,0 +1,36 @@
+from orange import \
+     TreeLearner, \
+         TreeClassifier, \
+         C45Learner, \
+         C45Classifier, \
+         C45TreeNode, \
+         C45TreeNodeList, \
+         TreeDescender, \
+              TreeDescender_UnknownMergeAsBranchSizes, \
+              TreeDescender_UnknownMergeAsSelector, \
+              TreeDescender_UnknownToBranch, \
+              TreeDescender_UnknownToCommonBranch, \
+              TreeDescender_UnknownToCommonSelector, \
+         TreeExampleSplitter, \
+              TreeExampleSplitter_IgnoreUnknowns, \
+              TreeExampleSplitter_UnknownsAsBranchSizes, \
+              TreeExampleSplitter_UnknownsAsSelector, \
+              TreeExampleSplitter_UnknownsToAll, \
+              TreeExampleSplitter_UnknownsToBranch, \
+              TreeExampleSplitter_UnknownsToCommon, \
+              TreeExampleSplitter_UnknownsToRandom, \
+         TreeNode, \
+         TreeNodeList, \
+         TreePruner, \
+              TreePruner_SameMajority, \
+              TreePruner_m, \
+         TreeSplitConstructor, \
+              TreeSplitConstructor_Combined, \
+              TreeSplitConstructor_Measure, \
+                   TreeSplitConstructor_Attribute, \
+                   TreeSplitConstructor_ExhaustiveBinary, \
+                   TreeSplitConstructor_OneAgainstOthers, \
+                   TreeSplitConstructor_Threshold, \
+         TreeStopCriteria, \
+              TreeStopCriteria_Python, \
+              TreeStopCriteria_common
