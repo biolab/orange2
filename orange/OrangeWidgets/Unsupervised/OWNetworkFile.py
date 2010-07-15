@@ -80,6 +80,7 @@ class OWNetworkFile(OWWidget):
                 self.filecombo.addItem("(none)")
             else:
                 self.filecombo.addItem(os.path.split(file)[1])
+        self.filecombo.addItem("Browse documentation data sets...")
         
         self.datacombo.clear()
         if not self.recentDataFiles:
@@ -129,11 +130,12 @@ class OWNetworkFile(OWWidget):
             name = self.recentFiles[n]
             self.recentFiles.remove(name)
             self.recentFiles.insert(0, name)
-
+        elif n:
+            self.browseNetFile(1)
+            
         if len(self.recentFiles) > 0:
-            self.setFileLists()
-            fn = self.recentFiles[0]            
-            self.openFile(fn)
+            self.setFileLists()  
+            self.openFile(self.recentFiles[0])
     
     # user selected a data file from the combo box
     def selectEdgesFile(self, n):
@@ -306,14 +308,51 @@ class OWNetworkFile(OWWidget):
     def browseNetFile(self, inDemos=0):
         """user pressed the '...' button to manually select a file to load"""
         
-        #Display a FileDialog and select a file
-        if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-            if sys.platform == "darwin":
-                startfile = user.home
-            else:
-                startfile = "."
+        "Display a FileDialog and select a file"
+        if inDemos:
+            import os
+            try:
+                import orngConfiguration
+                startfile = orngConfiguration.datasetsPath
+            except:
+                startfile = ""
+                
+            if not startfile or not os.path.exists(startfile):
+                try:
+                    import win32api, win32con
+                    t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
+                    t = win32api.RegQueryValueEx(t, "")[0]
+                    startfile = t[:t.find("orange")] + "orange\\doc\\networks"
+                except:
+                    startfile = ""
+
+            if not startfile or not os.path.exists(startfile):
+                d = OWGUI.__file__
+                if d[-8:] == "OWGUI.py":
+                    startfile = d[:-22] + "doc/networks"
+                elif d[-9:] == "OWGUI.pyc":
+                    startfile = d[:-23] + "doc/networks"
+
+            if not startfile or not os.path.exists(startfile):
+                d = os.getcwd()
+                if d[-12:] == "OrangeCanvas":
+                    startfile = d[:-12]+"doc/networks"
+                else:
+                    if d[-1] not in ["/", "\\"]:
+                        d+= "/"
+                    startfile = d+"doc/networks"
+
+            if not os.path.exists(startfile):
+                QMessageBox.information( None, "File", "Cannot find the directory with example networks", QMessageBox.Ok + QMessageBox.Default)
+                return
         else:
-            startfile = self.recentFiles[0]
+            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+                if sys.platform == "darwin":
+                    startfile = user.home
+                else:
+                    startfile = "."
+            else:
+                startfile = self.recentFiles[0]
                 
         filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
         
