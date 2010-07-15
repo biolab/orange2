@@ -1,6 +1,6 @@
 """
 <name>Network File</name>
-<description>Reads data from a graf file (Pajek networks (.net) files).</description>
+<description>Reads data from a graf file (Pajek networks (.net) files and GML network files).</description>
 <icon>icons/NetworkFile.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3100</priority>
@@ -162,7 +162,7 @@ class OWNetworkFile(OWWidget):
         # read network file
         if fn != "(none)":
             fileExt = lower(os.path.splitext(fn)[1])
-            if not fileExt in (".net"):
+            if not fileExt in (".net", ".gml"):
                 self.graph = None
                 self.send("Network", None)
                 self.send("Items", None)
@@ -173,7 +173,7 @@ class OWNetworkFile(OWWidget):
                 return
             
             data = self.readNetFile(fn)
-                
+            
             if data == None:
                 self.graph = None
                 self.send("Network", None)
@@ -273,9 +273,9 @@ class OWNetworkFile(OWWidget):
     def addEdgesFile(self, fn):
         if fn == "(none)" or self.graph == None:
             self.infod.setText("No edges data file specified")
-            self.graph.setattr("links", None)
+            #self.graph.setattr("links", None)
             self.send("Network", self.graph)
-            self.send("Items", self.graph.items)
+            self.send("Items", None)
             return
         
         self.readEdgesFile(fn)
@@ -315,7 +315,7 @@ class OWNetworkFile(OWWidget):
         else:
             startfile = self.recentFiles[0]
                 
-        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nAll files (*.*)"))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open a Network File', startfile, "Pajek files (*.net)\nGML files (*.gml)\nAll files (*.*)"))
         
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
