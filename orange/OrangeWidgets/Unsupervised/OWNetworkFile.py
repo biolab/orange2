@@ -80,7 +80,7 @@ class OWNetworkFile(OWWidget):
                 self.filecombo.addItem("(none)")
             else:
                 self.filecombo.addItem(os.path.split(file)[1])
-        self.filecombo.addItem("Browse documentation data sets...")
+        self.filecombo.addItem("Browse documentation networks...")
         
         self.datacombo.clear()
         if not self.recentDataFiles:
