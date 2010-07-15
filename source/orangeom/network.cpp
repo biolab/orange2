@@ -932,10 +932,9 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 	PDomain wdomain = domain;
 	TExampleTable *table;
 	PExampleTable wtable;*/
-	int directed = 0;
 	char *fn;
 
-	if (!PyArg_ParseTuple(args, "s|i:Network.readGML", &fn, &directed))
+	if (!PyArg_ParseTuple(args, "s:Network.readGML", &fn))
 		return NULL;
 	
 	struct GML_pair* list;
@@ -988,6 +987,7 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 		while (list) {
 			if (strcmp(list->key, "graph") == 0) {
 				int nVertices = 0;
+				int directed = 0;
 				map<int, int> nodes;
 				vector< vector<int> > edges;
 
@@ -1026,11 +1026,14 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 						v.push_back(target);
 						edges.push_back(v);
 					}
+					if (strcmp(graph_obj->key, "directed") == 0) {
+						directed = graph_obj->value.integer;
+					}
 
 					graph_obj = graph_obj->next;
 				}
 
-				graph = mlnew TNetwork(nodes.size(), 1, directed == 0);
+				graph = mlnew TNetwork(nodes.size(), 1, directed == 1);
 				for (vector< vector<int> >::iterator it = edges.begin(); it!=edges.end(); ++it) {
 					int u = nodes[(*it)[0]];
 					int v = nodes[(*it)[1]];
