@@ -182,6 +182,14 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath=".\gml_parser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\gml_scanner.cpp"
+				>
+			</File>
+			<File
 				RelativePath="graphDrawing.cpp"
 				>
 			</File>
@@ -314,6 +322,14 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath=".\gml_parser.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\gml_scanner.hpp"
+				>
+			</File>
 			<File
 				RelativePath="mds.hpp"
 				>
