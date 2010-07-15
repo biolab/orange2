@@ -1,6 +1,13 @@
 import orange
 core = orange
 
+# Definitely ugly, but I see no other workaround.
+# When, e.g. data.io executes "from orange import ExampleTable"
+# orange gets imported again since it is not in sys.modules
+# before this entire file is executed
+import sys
+sys.modules["orange"] = orange
+
 import data
 import data.io
 import data.example
