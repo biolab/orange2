@@ -107,9 +107,14 @@ class Network(orangeom.Network):
     def read(fileName, directed=0):
         """Read network. Supported network formats: from Pajek (.net) file, GML."""
         if type(fileName) == file:
-            net = Network(2,0).parseNetwork(fileName.read(), directed)
-            net.optimization = NetworkOptimization(net)
-            return net
+            root, ext = os.path.splitext(fileName.name)
+            if ext.lower() == ".net":
+                net = Network(2,0).parseNetwork(fileName.read(), directed)
+                net.optimization = NetworkOptimization(net)
+                return net
+            else:
+                print "invalid network type", fileName.name
+                return None
         else:
             root, ext = os.path.splitext(fileName)
             net = None
