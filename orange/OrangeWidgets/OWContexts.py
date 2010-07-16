@@ -95,7 +95,9 @@ class ContextHandler:
     def moveContextUp(self, widget, index):
         localContexts = getattr(widget, self.localContextName)
         l = getattr(widget, self.localContextName)
-        l.insert(0, l.pop(index))
+        context = l.pop(index)
+        context.time = time.time()
+        l.insert(0, context)
 
     def addContext(self, widget, context):
         l = getattr(widget, self.localContextName)
@@ -105,9 +107,9 @@ class ContextHandler:
 
     def mergeBack(self, widget):
         if not self.syncWithGlobal:
-            self.globalContexts.extend(getattr(widget, self.localContextName))
+            self.globalContexts.extend([c for c in getattr(widget, self.localContextName) if c not in self.globalContexts])
             self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
-            self.globalContexts = self.globalContexts[:self.maxSavedContexts]
+            self.globalContexts[:] = self.globalContexts[:self.maxSavedContexts]
 
 
 class ContextField:
@@ -408,11 +410,11 @@ class DomainContextHandler(ContextHandler):
     # this is overloaded to get rid of the huge domains
     def mergeBack(self, widget):
         if not self.syncWithGlobal:
-            self.globalContexts.extend(getattr(widget, self.localContextName))
-        mp = self.maxAttributesToPickle
-        self.globalContexts = filter(lambda c: (c.attributes and len(c.attributes) or 0) + (c.metas and len(c.metas) or 0) < mp, self.globalContexts)
-        self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
-        self.globalContexts = self.globalContexts[:self.maxSavedContexts]
+            self.globalContexts.extend([c for c in getattr(widget, self.localContextName) if c not in self.globalContexts])
+            mp = self.maxAttributesToPickle
+            self.globalContexts[:] = filter(lambda c: (c.attributes and len(c.attributes) or 0) + (c.metas and len(c.metas) or 0) < mp, self.globalContexts)
+            self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
+            self.globalContexts[:] = self.globalContexts[:self.maxSavedContexts]
 
     
 class ClassValuesContextHandler(ContextHandler):
