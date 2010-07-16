@@ -1098,7 +1098,7 @@ class OWNetExplorer(OWWidget):
         if self.graph == None or self.graph.visualizer == None:
             return
         
-        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK networks (*.net)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Network File', '', 'PAJEK network (*.net)\nGML network (*.gml)')
         if filename:
             fn = ""
             head, tail = os.path.splitext(str(filename))
@@ -1107,7 +1107,7 @@ class OWNetExplorer(OWWidget):
             else:
                 fn = str(filename)
             
-            self.optimization.graph.saveNetwork(fn)
+            self.optimization.graph.save(fn)
                     
     def sendData(self):
         graph = self.graph.getSelectedGraph()
