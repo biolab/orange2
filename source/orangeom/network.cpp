@@ -927,11 +927,10 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
   PyTRY
 
 	TNetwork *graph;
-	/*
     TDomain *domain = new TDomain();
 	PDomain wdomain = domain;
 	TExampleTable *table;
-	PExampleTable wtable;*/
+	PExampleTable wtable;
 	char *fn;
 
 	if (!PyArg_ParseTuple(args, "s:Network.readGML", &fn))
@@ -990,11 +989,23 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 				int directed = 0;
 				map<int, int> nodes;
 				vector< vector<int> > edges;
+				string graphName = "";
+
+				TFloatVariable *indexVar = new TFloatVariable("index");
+				indexVar->numberOfDecimals = 0;
+				TFloatVariable *idVar = new TFloatVariable("id");
+				idVar->numberOfDecimals = 0;
+				domain->addVariable(indexVar);
+				domain->addVariable(idVar);
+				domain->addVariable(new TStringVariable("label"));
+				table = new TExampleTable(domain);
+				wtable = table;
 
 				struct GML_pair* graph_obj = list->value.list;
 				while (graph_obj) {
 					if (strcmp(graph_obj->key, "node") == 0) {
-						long id;
+						float index = nVertices;
+						float id;
 						char* label;
 						struct GML_pair* tmp = graph_obj->value.list;
 						while (tmp) {
@@ -1004,7 +1015,11 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 								label = tmp->value.string;
 							tmp = tmp->next;
 						}
-
+						TExample *example = new TExample(domain);
+						(*example)[0] = TValue(index);
+						(*example)[1] = TValue(id);
+						(*example)[2] = TValue(new TStringValue(label), STRINGVAR);
+						table->push_back(example);
 						nodes[id] = nVertices;
 						nVertices++;
 					}
@@ -1029,11 +1044,17 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 					if (strcmp(graph_obj->key, "directed") == 0) {
 						directed = graph_obj->value.integer;
 					}
+					if (strcmp(graph_obj->key, "label") == 0) {
+						graphName = graph_obj->value.string;
+					}
+
 
 					graph_obj = graph_obj->next;
 				}
 
 				graph = mlnew TNetwork(nodes.size(), 1, directed == 1);
+				graph->name = graphName;
+
 				for (vector< vector<int> >::iterator it = edges.begin(); it!=edges.end(); ++it) {
 					int u = nodes[(*it)[0]];
 					int v = nodes[(*it)[1]];
@@ -1045,7 +1066,7 @@ PyObject *Network_readGML(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "
 			list = list->next;
 		}
 		GML_free_list (list, stat->key_list);
-		/*graph->items = wtable;*/
+		graph->items = wtable;
 		return WrapNewOrange(graph, self->ob_type); // WrapOrange(graph);
 	}
 	return NULL;
