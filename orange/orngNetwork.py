@@ -25,54 +25,91 @@ class Network(orangeom.Network):
         self.saveNetwork(fileName)
         
     def saveNetwork(self, fileName):
-        """Saves network to Pajek (.net) file."""
-        name = ''
+        """Save network to file."""
+        
         try:
             root, ext = os.path.splitext(fileName)
             if ext == '':
                 fileName = root + '.net'
-            graphFile = file(fileName, 'w+')
+            graphFile = open(fileName, 'w+')
         except IOError:
             return 1
-
-        graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
-        if name == '':
-            graphFile.write('*Network ' + '"no name" \n\n')
+            
+        root, ext = os.path.splitext(fileName)
+        if ext.lower() == ".gml":
+            self.saveGML(graphFile)
         else:
-            graphFile.write('*Network ' + str(name) + ' \n\n')
+            self.savePajek(graphFile)
 
-        # print node descriptions
-        graphFile.write('*Vertices %8d %8d\n' % (self.nVertices, self.nEdgeTypes))
+    def saveGML(self, fp):
+        """Save network to GML (.gml) file format."""
+        
+        fp.write("graph\n[\n")
+        tabs = "\t"
+        fp.write("%slabel\t\"%s\"\n" % (tabs, self.name))
+        
         for v in range(self.nVertices):
-            graphFile.write('% 8d ' % (v + 1))
             try:
                 label = self.items[v]['label']
-                graphFile.write(str('"' + str(label) + '"') + ' \t')
             except:
-                graphFile.write(str('"' + str(v) + '"') + ' \t')
+                label = ""
+            
+            fp.write("\tnode\n\t[\n\t\tid\t%d\n\t\tlabel\t\"%s\"\n\t]\n" % (v, label))
+        
+        for u,v in self.getEdges():
+            fp.write("\tedge\n\t[\n\t\tsource\t%d\n\t\ttarget\t%d\n\t\tlabel\t\"%s\"\n\t]\n" % (u, v, ""))
+        
+        fp.write("]\n")
+        
+        if self.items != None and len(self.items) > 0:
+            (name, ext) = os.path.splitext(fp.name)
+            self.items.save(name + "_items.tab")
+            
+        if hasattr(self, 'links') and self.links != None and len(self.links) > 0:
+            (name, ext) = os.path.splitext(fp.name)
+            self.links.save(name + "_links.tab")
+        
+    def savePajek(self, fp):
+        """Save network to Pajek (.net) file format."""
+        name = ''
+        fp.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
+        if name == '':
+            fp.write('*Network ' + '"no name" \n\n')
+        else:
+            fp.write('*Network ' + str(name) + ' \n\n')
+
+        # print node descriptions
+        fp.write('*Vertices %8d %8d\n' % (self.nVertices, self.nEdgeTypes))
+        for v in range(self.nVertices):
+            fp.write('% 8d ' % (v + 1))
+            try:
+                label = self.items[v]['label']
+                fp.write(str('"' + str(label) + '"') + ' \t')
+            except:
+                fp.write(str('"' + str(v) + '"') + ' \t')
             
             if hasattr(self, 'coors'):
                 x = self.coors[0][v]
                 y = self.coors[1][v]
                 z = 0.5000
-                graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
-            graphFile.write('\n')
+                fp.write('%.4f    %.4f    %.4f\t' % (x, y, z))
+            fp.write('\n')
 
         # print edge descriptions
         # not directed edges
         if self.directed:
-            graphFile.write('*Arcs \n')
+            fp.write('*Arcs \n')
             for (i, j) in self.getEdges():
                 if len(self[i, j]) > 0:
                     if self.nEdgeTypes > 1:
                         edge_str = str(self[i, j])
                     else:
                         edge_str = "%f" % float(str(self[i, j]))
-                    graphFile.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
-                    graphFile.write('\n')
+                    fp.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
+                    fp.write('\n')
         # directed edges
         else:
-            graphFile.write('*Edges \n')
+            fp.write('*Edges \n')
             writtenEdges = {}
             for (i, j) in self.getEdges():
                 if len(self[i, j]) > 0:
@@ -87,18 +124,17 @@ class Network(orangeom.Network):
                         edge_str = str(self[i, j])
                     else:
                         edge_str = "%f" % float(str(self[i, j]))
-                    graphFile.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
-                    graphFile.write('\n')
+                    fp.write('%8d %8d %s' % (i + 1, j + 1, edge_str))                    
+                    fp.write('\n')
 
-        graphFile.write('\n')
-        graphFile.close()
+        fp.write('\n')
         
         if self.items != None and len(self.items) > 0:
-            (name, ext) = os.path.splitext(fileName)
+            (name, ext) = os.path.splitext(fp.name)
             self.items.save(name + "_items.tab")
             
         if hasattr(self, 'links') and self.links != None and len(self.links) > 0:
-            (name, ext) = os.path.splitext(fileName)
+            (name, ext) = os.path.splitext(fp.name)
             self.links.save(name + "_links.tab")
 
         return 0
@@ -121,7 +157,7 @@ class Network(orangeom.Network):
             if ext.lower() == ".net":
                 net = Network(2,0).readPajek(fileName, directed)
             elif ext.lower() == ".gml":
-                net = Network(2,0).readGML(fileName, directed)
+                net = Network(2,0).readGML(fileName)
             else:
                 print "Invalid file type %s" % fileName
                 
