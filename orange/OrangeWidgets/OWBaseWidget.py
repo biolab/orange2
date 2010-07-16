@@ -359,7 +359,7 @@ class OWBaseWidget(QDialog):
 
     # Get all settings
     # returns map with all settings
-    def getSettings(self, alsoContexts = True):
+    def getSettings(self, alsoContexts = True, globalContexts=False):
         settings = {}
         if hasattr(self, "settingsList"):
             for name in self.settingsList:
@@ -378,7 +378,7 @@ class OWBaseWidget(QDialog):
 # for some bugs related to, say, Select Attributes not handling the context
 # attributes properly, but I dare not add it without understanding what it does.
 # Here it is, if these contexts give us any further trouble.
-                if contextHandler.syncWithGlobal:
+                if contextHandler.syncWithGlobal or globalContexts:
                     settings[contextHandler.localContextName] = contextHandler.globalContexts 
                 else:
                     contexts = getattr(self, contextHandler.localContextName, None)
@@ -443,7 +443,7 @@ class OWBaseWidget(QDialog):
 
 
     def saveSettings(self, file = None):
-        settings = self.getSettings()
+        settings = self.getSettings(globalContexts=True)
         if settings:
             if file==None:
                 file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
