@@ -378,7 +378,7 @@ class OWBaseWidget(QDialog):
 # for some bugs related to, say, Select Attributes not handling the context
 # attributes properly, but I dare not add it without understanding what it does.
 # Here it is, if these contexts give us any further trouble.
-                if contextHandler.syncWithGlobal or globalContexts:
+                if (contextHandler.syncWithGlobal and contextHandler.globalContexts is getattr(self, contextHandler.localContextName)) or globalContexts:
                     settings[contextHandler.localContextName] = contextHandler.globalContexts 
                 else:
                     contexts = getattr(self, contextHandler.localContextName, None)
@@ -392,10 +392,14 @@ class OWBaseWidget(QDialog):
 
     def getSettingsFile(self, file):
         if file==None:
-            if os.path.exists(os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")):
-                file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
-            else:
-                return
+            file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
+            if not os.path.exists(file):
+                try:
+                    f = open(file, "wb")
+                    cPickle.dump({}, f)
+                    f.close()
+                except IOError:
+                    return 
         if type(file) == str:
             if os.path.exists(file):
                 return open(file, "r")
@@ -432,13 +436,13 @@ class OWBaseWidget(QDialog):
                         del settings[localName]
                         delattr(self, localName)
                         contextHandler.initLocalContext(self)
-
-                    if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
-                        contexts = settings.get(localName, False)
-                        if contexts != False:
-                            contextHandler.globalContexts = contexts
-                    else:
+                        
+                    if not hasattr(self, "_settingsFromSchema"): #When running stand alone widgets
                         if contextHandler.syncWithGlobal:
+                            contexts = settings.get(localName, None)
+                            if contexts is not None:
+                                contextHandler.globalContexts = contexts
+                        else:
                             setattr(self, localName, contextHandler.globalContexts)
 
 
