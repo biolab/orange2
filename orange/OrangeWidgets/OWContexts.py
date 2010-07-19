@@ -231,8 +231,17 @@ class DomainContextHandler(ContextHandler):
         excluded = {}
         addOrdinaryTo = []
         addMetaTo = []
-        attrItemsSet = set(context.attributes.items())
-        metaItemsSet = set(context.metas.items())
+        
+        def attrSet(attrs):
+            if isinstance(attrs, dict):
+                return set(attrs.items())
+            elif isinstance(attrs, bool):
+                return {}
+            else:
+                return set([])
+            
+        attrItemsSet = attrSet(context.attributes)
+        metaItemsSet = attrSet(context.metas)
         for field in self.fields:
             name, flags = field.name, field.flags
 
@@ -411,7 +420,7 @@ class DomainContextHandler(ContextHandler):
 
     # this is overloaded to get rid of the huge domains
     def mergeBack(self, widget):
-        if not self.syncWithGlobal or getattr(widget, self.localContextName) is not  self.globalContexts:
+        if not self.syncWithGlobal or getattr(widget, self.localContextName) is not self.globalContexts:
             self.globalContexts.extend([c for c in getattr(widget, self.localContextName) if c not in self.globalContexts])
             mp = self.maxAttributesToPickle
             self.globalContexts[:] = filter(lambda c: (c.attributes and len(c.attributes) or 0) + (c.metas and len(c.metas) or 0) < mp, self.globalContexts)
@@ -477,7 +486,7 @@ class ClassValuesContextHandler(ContextHandler):
 class PerfectDomainContextHandler(DomainContextHandler):
     def __init__(self, contextName = "", fields = [],
                  syncWithGlobal = True, **args):
-            DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, **args)
+            DomainContextHandler.__init__(self, contextName, fields, False, False, syncWithGlobal, **args)
 
         
     def encodeDomain(self, domain):
