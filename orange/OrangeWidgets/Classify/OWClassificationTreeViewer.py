@@ -72,7 +72,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.slider = OWGUI.hSlider(self.controlArea, self, "sliderValue", box = 'Expand/shrink to level', minValue = 1, maxValue = 9, step = 1, callback = self.sliderChanged)
 
         OWGUI.separator(self.controlArea)
-        self.targetCombo=OWGUI.comboBox(self.controlArea, self, "targetClass", items=[], box="Target class", callback=self.setTarget)
+        self.targetCombo=OWGUI.comboBox(self.controlArea, self, "targetClass", items=[], box="Target class", callback=self.setTarget, addSpace=True)
 
         self.infBox = OWGUI.widgetBox(self.controlArea, 'Tree size')
         self.infoa = OWGUI.widgetLabel(self.infBox, 'No tree.')

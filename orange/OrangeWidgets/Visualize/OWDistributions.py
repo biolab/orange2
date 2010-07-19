@@ -480,7 +480,9 @@ class OWDistributions(OWWidget):
 
         OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
 
-        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box='Line width', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
+#        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box='Line width', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
+        
+        OWGUI.rubber(self.SettingsTab)
 
         #add controls to self.controlArea widget
         self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Variable", valueType = str, sendSelectedValue = True, callback=self.setVariable)

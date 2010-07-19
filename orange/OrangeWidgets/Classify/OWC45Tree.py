@@ -71,6 +71,7 @@ class OWC45Tree(OWWidget):
 
         OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
 
+        OWGUI.rubber(self.controlArea)
         self.setLearner()
 
 

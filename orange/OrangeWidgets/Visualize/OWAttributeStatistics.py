@@ -24,7 +24,7 @@ class OWAttributeStatistics(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
 
-        self.callbackDeposit = []
+#        self.callbackDeposit = []
 
         #set default settings
         self.cwbias = 250 # canvas_width = widget_width - 300 pixels
@@ -45,7 +45,7 @@ class OWAttributeStatistics(OWWidget):
 
         #GUI
 
-        AttsBox = OWGUI.widgetBox(self.controlArea, 'Attributes')
+        AttsBox = OWGUI.widgetBox(self.controlArea, 'Attributes', addSpace=True)
         self.attributes = OWGUI.listBox(AttsBox, self, selectionMode = QListWidget.SingleSelection, callback = self.attributeHighlighted)
         
         OWGUI.comboBox(self.controlArea, self, "sorting", "Value sorting", items = ["No sorting", "Descending", "Ascending"], callback = self.attributeHighlighted, sendSelectedValue = 0, tooltip = "Should the list of attribute values for discrete attributes be sorted?")

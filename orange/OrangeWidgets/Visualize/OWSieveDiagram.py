@@ -73,6 +73,7 @@ class OWSieveDiagram(OWWidget):
         OWGUI.checkBox(hbox, self, "showCases", "Show data examples...", callback = self.updateGraph)
         OWGUI.checkBox(hbox, self, "showInColor", "...in color", callback = self.updateGraph)
         
+        OWGUI.separator(self.controlArea)
         self.optimizationDlg = OWSieveOptimization(self, self.signalManager)
         optimizationButtons = OWGUI.widgetBox(self.controlArea, "Dialogs", orientation = "horizontal")
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0, tooltip = "Find attribute groups with highest value dependency")

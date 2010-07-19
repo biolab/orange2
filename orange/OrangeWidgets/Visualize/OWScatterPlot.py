@@ -81,7 +81,7 @@ class OWScatterPlot(OWWidget):
         box = OWGUI.widgetBox(self.GeneralTab, "Point Color")
         self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same color)")
 
-        box = OWGUI.widgetBox(self.GeneralTab, "Additional Point Properties", addSpace = 1)
+        box = OWGUI.widgetBox(self.GeneralTab, "Additional Point Properties")
         # labelling
         self.attrLabel = ""
         self.attrLabelCombo = OWGUI.comboBox(box, self, "attrLabel", label = "Point label:", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, emptyString = "(No labels)", indent = 10)

@@ -75,6 +75,8 @@ class OWSVM(OWWidget):
         self.paramButton.setDisabled(True)
 
         OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
+        
+        OWGUI.rubber(self.controlArea)
         #self.adjustSize()
         self.loadSettings()
         self.changeKernel()

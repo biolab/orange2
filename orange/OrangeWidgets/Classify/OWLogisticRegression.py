@@ -43,7 +43,7 @@ class OWLogisticRegression(OWWidget):
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)
+        box = OWGUI.widgetBox(self.controlArea, "Attribute selection")
 
         stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
         ibox = OWGUI.indentedBox(box)
@@ -52,6 +52,8 @@ class OWLogisticRegression(OWWidget):
         limitAttSpin = OWGUI.checkWithSpin(ibox, self, "Limit number of attributes to ", 1, 100, "limitNumAttr", "numAttr", step=1, labelWidth=155, tooltip="Maximum number of attributes. Algorithm stops when it selects specified number of attributes.")
         stepwiseCb.disables += [addCritSpin, remCritSpin, limitAttSpin]
         stepwiseCb.makeConsistent()
+        
+        OWGUI.separator(self.controlArea)
 
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", box="Imputation of unknown values", items=self.imputationMethodsStr)
         OWGUI.separator(self.controlArea)

@@ -28,6 +28,8 @@ class OWMajority(OWWidget):
         OWGUI.separator(self.controlArea)
 
         OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
+        
+        OWGUI.rubber(self.controlArea)
 
         self.learner = orange.MajorityLearner()
         self.setLearner()
