@@ -1137,7 +1137,7 @@ class collapsableWidgetBox(QGroupBox):
         if self.value:
             self.master.__setattr__(self.value, self.isChecked())
             self.updateControls()
-            self.setFlat(1)
+#            self.setFlat(1)
         if self.callback != None:
             self.callback()
 
