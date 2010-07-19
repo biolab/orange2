@@ -231,10 +231,16 @@ class DomainContextHandler(ContextHandler):
         excluded = {}
         addOrdinaryTo = []
         addMetaTo = []
-        
+
+        def set_if_all_hashable(iter):
+            try:
+                return set(iter)
+            except TypeError:
+                return list(iter)
+            
         def attrSet(attrs):
             if isinstance(attrs, dict):
-                return set(attrs.items())
+                return set_if_all_hashable(attrs.items())
             elif isinstance(attrs, bool):
                 return {}
             else:
