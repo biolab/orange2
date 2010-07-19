@@ -106,7 +106,7 @@ class ContextHandler:
             del l[-1]
 
     def mergeBack(self, widget):
-        if not self.syncWithGlobal:
+        if not self.syncWithGlobal or getattr(widget, self.localContextName) is not  self.globalContexts:
             self.globalContexts.extend([c for c in getattr(widget, self.localContextName) if c not in self.globalContexts])
             self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
             self.globalContexts[:] = self.globalContexts[:self.maxSavedContexts]
@@ -231,6 +231,8 @@ class DomainContextHandler(ContextHandler):
         excluded = {}
         addOrdinaryTo = []
         addMetaTo = []
+        attrItemsSet = set(context.attributes.items())
+        metaItemsSet = set(context.metas.items())
         for field in self.fields:
             name, flags = field.name, field.flags
 
@@ -261,8 +263,8 @@ class DomainContextHandler(ContextHandler):
                 newLabels, newSelected = [], []
                 oldSelected = hasattr(field, "selected") and context.values.get(field.selected, []) or []
                 for i, saved in enumerate(value):
-                    if not flags & self.ExcludeOrdinaryAttributes and saved in context.attributes \
-                       or flags & self.IncludeMetaAttributes and saved in context.metas:
+                    if not flags & self.ExcludeOrdinaryAttributes and (saved in context.attributes or saved in attrItemsSet) \
+                       or flags & self.IncludeMetaAttributes and (saved in context.metas or saved in metaItemsSet):
                         if i in oldSelected:
                             newSelected.append(len(newLabels))
                         newLabels.append(saved)
@@ -409,7 +411,7 @@ class DomainContextHandler(ContextHandler):
 
     # this is overloaded to get rid of the huge domains
     def mergeBack(self, widget):
-        if not self.syncWithGlobal:
+        if not self.syncWithGlobal or getattr(widget, self.localContextName) is not  self.globalContexts:
             self.globalContexts.extend([c for c in getattr(widget, self.localContextName) if c not in self.globalContexts])
             mp = self.maxAttributesToPickle
             self.globalContexts[:] = filter(lambda c: (c.attributes and len(c.attributes) or 0) + (c.metas and len(c.metas) or 0) < mp, self.globalContexts)
