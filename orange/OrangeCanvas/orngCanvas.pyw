@@ -654,7 +654,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Loads settings from the widget's .ini file
     def loadSettings(self):
-        self.settings = {"widgetListType": 3, "iconSize": "40 x 40", "toolbarIconSize": 2, "toolboxWidth": 200, 'schemeIconSize': 1,
+        self.settings = {"widgetListType": 4, "iconSize": "40 x 40", "toolbarIconSize": 2, "toolboxWidth": 200, 'schemeIconSize': 1,
                        "snapToGrid": 1, "writeLogFile": 1, "dontAskBeforeClose": 1, "saveWidgetsPosition": 1,
 #                       "widgetSelectedColor": (0, 255, 0), "widgetActiveColor": (0, 0, 255), "lineColor": (0, 255, 0),
                        "reportsDir": self.defaultReportsDir, "saveSchemaDir": self.canvasSettingsDir, "saveApplicationDir": self.canvasSettingsDir,
