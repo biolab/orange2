@@ -48,10 +48,13 @@ class OWSave(OWWidget):
 
         vb = OWGUI.widgetBox(self.controlArea)
 
-        rfbox = OWGUI.widgetBox(vb, "Filename", orientation="horizontal")
+        rfbox = OWGUI.widgetBox(vb, "Filename", orientation="horizontal", addSpace=True)
         self.filecombo = OWGUI.comboBox(rfbox, self, "filename")
         self.filecombo.setMinimumWidth(200)
-        browse = OWGUI.button(rfbox, self, "...", callback = self.browseFile, width=25)
+#        browse = OWGUI.button(rfbox, self, "...", callback = self.browseFile, width=25)
+        button = OWGUI.button(rfbox, self, '...', callback = self.browseFile, disabled=0)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
 
         fbox = OWGUI.widgetBox(vb, "Save")
         self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile)

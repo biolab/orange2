@@ -27,6 +27,8 @@ class OWConcatenate(OWWidget):
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Union of attributes appearing in all tables")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Intersection of attributes in all tables")
         OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
+        
+        OWGUI.rubber(self.controlArea)
 
         self.adjustSize()
 

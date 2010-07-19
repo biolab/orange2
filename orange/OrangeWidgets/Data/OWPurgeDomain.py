@@ -11,7 +11,7 @@ import OWGUI
 class OWPurgeDomain(OWWidget):
 
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'PurgeDomain')
+        OWWidget.__init__(self, parent, signalManager, 'PurgeDomain', wantMainArea=False)
         self.settingsList=["removeValues", "removeAttributes", "removeClassAttribute", "removeClasses", "autoSend", "sortValues", "sortClasses"]
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
@@ -32,38 +32,38 @@ class OWPurgeDomain(OWWidget):
 
         self.removedAttrs = self.reducedAttrs = self.resortedAttrs = self.classAttr = "-"
 
-        boxAt = OWGUI.widgetBox(self.controlArea, "Attributes")
+        boxAt = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace=True)
         OWGUI.checkBox(boxAt, self, 'sortValues', 'Sort attribute values', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeAttributes", "Remove attributes with less than two values", callback = self.removeAttributesChanged)
-        boxH = OWGUI.widgetBox(boxAt, orientation="horizontal")
-        OWGUI.separator(boxH, width=30, height=0)
-        ruv = OWGUI.checkBox(boxH, self, "removeValues", "Remove unused attribute values", callback = self.optionsChanged)
+
+        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt), self, "removeValues", "Remove unused attribute values", callback = self.optionsChanged)
         rua.disables = [ruv]
+        rua.makeConsistent()
 
-        OWGUI.separator(self.controlArea)
 
-        boxAt = OWGUI.widgetBox(self.controlArea, "Classes")
+        boxAt = OWGUI.widgetBox(self.controlArea, "Classes", addSpace=True)
         OWGUI.checkBox(boxAt, self, 'sortClasses', 'Sort classes', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeClassAttribute", "Remove class attribute if there are less than two classes", callback = self.removeClassesChanged)
-        boxH = OWGUI.widgetBox(boxAt, orientation="horizontal")
-        OWGUI.separator(boxH, width=30, height=0)
-        ruv = OWGUI.checkBox(boxH, self, "removeClasses", "Remove unused class values", callback = self.optionsChanged)
+        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt), self, "removeClasses", "Remove unused class values", callback = self.optionsChanged)
         rua.disables = [ruv]
+        rua.makeConsistent()
 
-        OWGUI.separator(self.controlArea)
-        box2 = OWGUI.widgetBox(self.controlArea)
-        btSend = OWGUI.button(box2, self, "Send data", callback = self.process)
-        cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
 
-        OWGUI.setStopper(self, btSend, cbAutoSend, "dataChanged", self.process)
-
-        OWGUI.separator(self.controlArea, height=24)
-
-        box3 = OWGUI.widgetBox(self.controlArea, 'Statistics')
+        box3 = OWGUI.widgetBox(self.controlArea, 'Statistics', addSpace=True)
         OWGUI.label(box3, self, "Removed attributes: %(removedAttrs)s")
         OWGUI.label(box3, self, "Reduced attributes: %(reducedAttrs)s")
         OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
         OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
+        
+        box2 = OWGUI.widgetBox(self.controlArea, "Send")
+        btSend = OWGUI.button(box2, self, "Send data", callback = self.process)
+        cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
+
+        OWGUI.setStopper(self, btSend, cbAutoSend, "dataChanged", self.process)
+        
+        OWGUI.rubber(self.controlArea)
+
+#        OWGUI.separator(self.controlArea, height=24)
 
         #self.adjustSize()
 

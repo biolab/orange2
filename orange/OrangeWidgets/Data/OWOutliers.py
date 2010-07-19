@@ -49,6 +49,7 @@ class OWOutliers(OWWidget):
                        tooltip="Metrics to measure pairwise distance between data instances.",
                        callback=self.dataChange)
 
+        OWGUI.separator(self.controlArea)
         OWGUI.comboBox(self.controlArea, self, "k", box="Nearest Neighbours", items=itemsk,
                        tooltip="Neighbours considered when computing the distance.",
                        callback=self.applySettings)
@@ -62,7 +63,7 @@ class OWOutliers(OWWidget):
                        tooltip="Minimum Z-score of an outlier.",
                        callback=self.applySettings)
 
-        OWGUI.separator(self.controlArea)
+        OWGUI.rubber(self.controlArea)
         
         self.loadSettings()
       

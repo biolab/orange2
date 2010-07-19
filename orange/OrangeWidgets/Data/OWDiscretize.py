@@ -475,9 +475,7 @@ class OWDiscretize(OWWidget):
 
         box = self.classDiscBox = OWGUI.radioButtonsInBox(vbox, self, "classDiscretization", self.classDiscretizationMethods, "Class discretization", callback=[self.clearLineEditFocus, self.classMethodChanged])
         cinterBox = OWGUI.widgetBox(box)
-        OWGUI.widgetLabel(cinterBox, "Number of intervals")
-        OWGUI.separator(cinterBox, height=4)
-        self.intervalSlider=OWGUI.hSlider(OWGUI.indentedBox(cinterBox), self, "classIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.classMethodChanged])
+        self.intervalSlider=OWGUI.hSlider(OWGUI.indentedBox(cinterBox), self, "classIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.classMethodChanged], label="Number of intervals")
         hbox = OWGUI.widgetBox(box, orientation = 0)
         OWGUI.appendRadioButton(box, self, "discretization", "Custom" + "  ", insertInto = hbox)
         self.classCustomLineEdit = OWGUI.lineEdit(hbox, self, "customClassSplits", callback = self.classCustomChanged, focusInCallback = self.classCustomSelected)

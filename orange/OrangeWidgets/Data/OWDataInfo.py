@@ -23,7 +23,7 @@ class OWDataInfo(OWWidget):
         self.metaattrcount = 0
         self.classattr = "no"
         
-        box = OWGUI.widgetBox(self.controlArea, "Data Set Size")
+        box = OWGUI.widgetBox(self.controlArea, "Data Set Size", addSpace=True)
         OWGUI.label(box, self, '<table><tr><td width="150">Samples (rows):</td><td align="right" width="60">%(rowcount)7i</td></tr>\
                                 <tr><td>Attributes (columns):</td><td align="right">%(columncount)7i</td></tr></table>')
         

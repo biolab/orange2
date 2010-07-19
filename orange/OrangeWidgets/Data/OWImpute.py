@@ -41,7 +41,7 @@ class ImputeListItemDelegate(QItemDelegate):
 
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
-    contextHandlers = {"": PerfectDomainContextHandler("", ["methods"], matchValues = DomainContextHandler.MatchValuesAttributes)}
+    contextHandlers = {"": PerfectDomainContextHandler("", ["methods"], matchValues = DomainContextHandler.MatchValuesAttributes, syncWithGlobal=False)}
     indiShorts = ["", "leave", "avg", "model", "random", "remove", ""]
     defaultMethods = ["Don't Impute", "Average/Most frequent", "Model-based imputer", "Random values", "Remove examples with missing values"]
     
@@ -68,10 +68,11 @@ class OWImpute(OWWidget):
 
         self.loadSettings()
 
-        self.controlArea.layout().setSpacing(8)
-        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", self.defaultMethods, "Default imputation method", callback=self.sendIf)
+        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", self.defaultMethods,
+                                          "Default imputation method", callback=self.sendIf,
+                                          addSpace=True)
 
-        self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
+        self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", orientation="horizontal")#, addSpace=True)
 
         attrListBox = OWGUI.widgetBox(self.indibox)
         self.attrList = OWGUI.listBox(attrListBox, self, callback = self.individualSelected)
@@ -94,10 +95,12 @@ class OWImpute(OWWidget):
         OWGUI.rubber(indiMethBox)
         self.btAllToDefault = OWGUI.button(indiMethBox, self, "Set All to Default", callback = self.allToDefault)
 
-        box = OWGUI.widgetBox(self.controlArea, "Class Imputation")
+        OWGUI.separator(self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Class Imputation")#, addSpace=True)
         self.cbImputeClass = OWGUI.checkBox(box, self, "imputeClass", "Impute class values", callback=self.sendIf)
 
-        snbox = OWGUI.widgetBox(self.controlArea, self, "Send data and imputer")
+        OWGUI.separator(self.controlArea)
+        snbox = OWGUI.widgetBox(self.controlArea, "Send data and imputer")
         self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto, disables = [(-1, self.btApply)])
 
