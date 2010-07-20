@@ -90,6 +90,8 @@ class OWNetworkFromDistances(OWWidget):
         self.infob = OWGUI.widgetLabel(boxInfo, '')
         self.infoc = OWGUI.widgetLabel(boxInfo, '')
         
+        OWGUI.rubber(self.controlArea)
+        
         self.resize(700, 100)
         
     def enableAttributeSelection(self):

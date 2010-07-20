@@ -23,7 +23,7 @@ class OWNetworkFile(OWWidget):
     settingsList=["recentFiles", "recentDataFiles", "recentEdgesFiles"]
     
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Network File")
+        OWWidget.__init__(self, parent, signalManager, "Network File", wantMainArea=False)
 
         self.inputs = []
         self.outputs = [("Network", orngNetwork.Network), ("Items", ExampleTable)]
@@ -43,17 +43,23 @@ class OWNetworkFile(OWWidget):
         self.box = OWGUI.widgetBox(self.controlArea, box = "Graph File", orientation = "horizontal")
         self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseNetFile, disabled=0, width=25)
+        button = OWGUI.button(self.box, self, '...', callback = self.browseNetFile, disabled=0)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
         self.databox = OWGUI.widgetBox(self.controlArea, box = "Vertices Data File", orientation = "horizontal")
         self.datacombo = OWGUI.comboBox(self.databox, self, "dataname")
         self.datacombo.setMinimumWidth(250)
-        button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0, width=25)
+        button = OWGUI.button(self.databox, self, '...', callback = self.browseDataFile, disabled=0)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
         self.edgesbox = OWGUI.widgetBox(self.controlArea, box = "Edges Data File", orientation = "horizontal")
         self.edgescombo = OWGUI.comboBox(self.edgesbox, self, "edgesname")
         self.edgescombo.setMinimumWidth(250)
-        button = OWGUI.button(self.edgesbox, self, '...', callback = self.browseEdgesFile, disabled=0, width=25)
+        button = OWGUI.button(self.edgesbox, self, '...', callback = self.browseEdgesFile, disabled=0)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
         # info
         box = OWGUI.widgetBox(self.controlArea, "Info")
@@ -62,6 +68,7 @@ class OWNetworkFile(OWWidget):
         self.infoc = OWGUI.widgetLabel(box, ' ')
         self.infod = OWGUI.widgetLabel(box, ' ')
 
+        OWGUI.rubber(self.controlArea)
         self.resize(150,100)
         self.activateLoadedSettings()
 

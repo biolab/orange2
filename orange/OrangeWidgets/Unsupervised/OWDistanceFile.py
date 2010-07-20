@@ -103,7 +103,9 @@ class OWDistanceFile(OWWidget):
         self.filecombo = OWGUI.comboBox(hbox, self, "fileIndex", callback = self.loadFile)
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)
-        button.setMaximumWidth(25)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        
         self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self,
                         "takeAttributeNames", ["Use examples as items", 
                         "Use attribute names"], "Items from input data", 
@@ -124,6 +126,8 @@ class OWDistanceFile(OWWidget):
 #        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
 #        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
 #        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
+        
+        OWGUI.rubber(self.controlArea)
         
         self.adjustSize()
 

@@ -31,6 +31,8 @@ class OWDistanceFilter(OWWidget):
         self.subsetAttrCombo = OWGUI.comboBox(subsetBox, self, "subsetAttr", callback=self.filter)
         self.subsetAttrCombo.addItem("(none)")
         
+        OWGUI.rubber(self.controlArea)
+        
         self.resize(200, 50)
         
     def setSymMatrix(self, sm):

@@ -52,6 +52,8 @@ class OWExampleDistance(OWWidget):
             callback=self.setLabel, sendSelectedValue = 1)
 
         self.labelCombo.setDisabled(1)
+        
+        OWGUI.rubber(self.controlArea)
 
     def sendReport(self):
         self.reportSettings("Settings",

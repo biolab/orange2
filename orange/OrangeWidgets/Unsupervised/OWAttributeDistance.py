@@ -40,6 +40,8 @@ class OWAttributeDistance(OWWidget):
         OWGUI.widgetLabel(rb, "\n"+"Measures on continuous attributes\n   (discrete attributes are treated as ordinal)")
         for b in self.contMeasures:
             OWGUI.appendRadioButton(rb, self, "classInteractions", b)
+            
+        OWGUI.rubber(self.controlArea)
         self.resize(215,50)
 #        self.adjustSize()
 

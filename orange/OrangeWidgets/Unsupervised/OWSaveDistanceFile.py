@@ -31,6 +31,8 @@ class OWSaveDistanceFile(OWWidget):
         self.filecombo = OWGUI.comboBox(hbox, self, "fileIndex")
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
         fbox = OWGUI.widgetBox(self.controlArea, "Save")
         self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile)
@@ -39,7 +41,7 @@ class OWSaveDistanceFile(OWWidget):
         self.setFilelist()
         self.filecombo.setCurrentIndex(0)
         
-        button.setMaximumWidth(25)
+        OWGUI.rubber(self.controlArea)
         self.adjustSize()
             
     def setData(self, data):

@@ -29,6 +29,9 @@ class OWSymMatrixTransform(OWWidget):
         self.loadSettings()
         ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", self.normalizeMethods, "Normalization", callback = self.setNormalizeMode, addSpace=True)
         ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", self.inversionMethods, "Inversion", callback = self.setInvertMode)
+        
+        OWGUI.rubber(self.controlArea)
+        
         self.adjustSize()
 
     def sendReport(self):

@@ -121,7 +121,7 @@ class OWDistanceMap(OWWidget):
 
         # SETTINGS TAB
         tab = OWGUI.createTabPage(self.tabs, "Settings")
-        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)", addSpace=True)
+        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)")
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ',
                          labelWidth=38, minValue=1, maxValue=self.maxHSize,
                          step=1, precision=0,
@@ -134,10 +134,12 @@ class OWDistanceMap(OWWidget):
                          callback = [self.setSquares, self.drawDistanceMap])
         self.gridChkBox = OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap, disabled=lambda: min(self.CellWidth, self.CellHeight) <= c_smallcell)
 
+        OWGUI.separator(tab)
         OWGUI.qwtHSlider(tab, self, "Merge", box="Merge" ,label='Elements:', labelWidth=50,
                          minValue=1, maxValue=100, step=1,
-                         callback=self.createDistanceMap, ticks=0, addSpace=True)
+                         callback=self.createDistanceMap, ticks=0)
         
+        OWGUI.separator(tab)
         self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
                          items=[x[0] for x in self.sorting],
                          tooltip="Sorting method for items in distance matrix.",

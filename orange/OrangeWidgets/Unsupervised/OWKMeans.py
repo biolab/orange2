@@ -77,7 +77,7 @@ class OWKMeans(OWWidget):
         # GUI definition
         # settings
         
-        box = OWGUI.widgetBox(self.controlArea, "Clusters (k)")
+        box = OWGUI.widgetBox(self.controlArea, "Clusters (k)", addSpace=True)
         bg = OWGUI.radioButtonsInBox(box, self, "optimized", [], callback=self.setOptimization)
         fixedBox = OWGUI.widgetBox(box, orientation="horizontal")
         button = OWGUI.appendRadioButton(bg, self, "optimized", "Fixed", 
@@ -118,7 +118,7 @@ class OWKMeans(OWWidget):
                    min=1, max=100 if not orngDebugging.orngDebuggingEnabled else 5,
                    callback=self.update, callbackOnReturn=True)
 
-        box = OWGUI.widgetBox(self.controlArea, "Cluster IDs")
+        box = OWGUI.widgetBox(self.controlArea, "Cluster IDs", addSpace=True)
         cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
         box = OWGUI.indentedBox(box)
         form = QWidget()
@@ -147,7 +147,7 @@ class OWKMeans(OWWidget):
         cb.makeConsistent()
 #        OWGUI.separator(box)
         
-        box = OWGUI.widgetBox(self.controlArea, "Run", addSpace=True)
+        box = OWGUI.widgetBox(self.controlArea, "Run")
         cb = OWGUI.checkBox(box, self, "runAnyChange", "Run after any change")
         self.runButton = b = OWGUI.button(box, self, "Run Clustering", callback = self.run)
         OWGUI.setStopper(self, b, cb, "settingsChanged", callback=self.run)

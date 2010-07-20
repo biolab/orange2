@@ -42,7 +42,7 @@ class OWInteractionGraph(OWWidget):
     settingsList = ["onlyImportantInteractions"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Interaction graph")
+        OWWidget.__init__(self, parent, signalManager, "Interaction graph", noReport=True)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list)]
@@ -85,9 +85,9 @@ class OWInteractionGraph(OWWidget):
 
         #GUI
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.controlArea, "Selected Attributes" )
+        self.shownAttribsGroup = OWGUI.widgetBox(self.controlArea, "Selected Attributes")
         self.addRemoveGroup = OWGUI.widgetBox(self.controlArea, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.controlArea, "Unselected Attributes")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.controlArea, "Unselected Attributes", addSpace=True)
 
         self.shownAttribsLB = OWGUI.listBox(self.shownAttribsGroup, self, "selectedShown", "shownAttributes", selectionMode = QListWidget.ExtendedSelection)
 
@@ -98,23 +98,31 @@ class OWInteractionGraph(OWWidget):
 
         self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", selectionMode = QListWidget.ExtendedSelection)
 
-        settingsBox = OWGUI.widgetBox(self.controlArea, "Settings")
+        settingsBox = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
         self.mergeAttributesCB = OWGUI.checkBox(settingsBox, self, "mergeAttributes", 'Merge attributes', callback = self.mergeAttributesEvent, tooltip = "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with a right mouse click inside interaction rectangles in the left graph.\nA merged attribute is then created as a cartesian product of corresponding attributes \nand added to the list of attributes.")
         self.importantInteractionsCB = OWGUI.checkBox(settingsBox, self, "onlyImportantInteractions", 'Show only important interactions', callback = self.showImportantInteractions)
 
         self.selectionButton = OWGUI.button(self.controlArea, self, "Show selection", callback = self.selectionClick, tooltip = "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
 
-#        self.buttonBackground.layout().setDirection(QBoxLayout.TopToBottom)
+        import sip
+        sip.delete(self.buttonBackground.layout())
         
-        w = OWGUI.widgetBox(self.buttonBackground, orientation="horizontal", addToLayout=False, margin=0)
-        self.buttonBackground.layout().insertWidget(0, w)
+        layout = QGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
         
-        self.saveLCanvas = OWGUI.button(w, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0)
-        self.saveRCanvas = OWGUI.button(w, self, "Save right canvas", callback = self.saveToFileRCanvas, debuggingEnabled = 0)
+        self.saveLCanvas = OWGUI.button(None, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0, addToLayout=False)
+        self.saveRCanvas = OWGUI.button(None, self, "Save right canvas", callback = self.saveToFileRCanvas, debuggingEnabled = 0, addToLayout=False)
+        
+        if OWReport.report:
+            self.reportButton = OWGUI.button(None, self, "&Report", self.reportAndFinish, debuggingEnabled=0, addToLayout=False)
 
-        #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
-
+        layout.addWidget(self.saveLCanvas, 0, 0)
+        layout.addWidget(self.saveRCanvas, 0, 1)
+        
+        layout.addWidget(self.reportButton, 1, 0, 1, 2)
+        self.buttonBackground.setLayout(layout)
+        self.buttonBackground.show()
 
     def mergeAttributesEvent(self):
         self.updateNewData(self.originalData)
@@ -577,7 +585,7 @@ class OWInteractionGraph(OWWidget):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR)
         sizeDlg.exec_()
 
-    def sendReport(self):
+    def _sendReport(self):
         self.reportData(self.data)
         self.reportSettings("", [("Selected attributes", ", ".join(str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())))])
         self.reportSection("Pairwise interaction bars")
@@ -591,7 +599,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWInteractionGraph()
     ow.show()
-    ow.setData(data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\monks-1_learn.tab"))
+    ow.setData(data = orange.ExampleTable("../../doc/datasets/monks-1_learn.tab"))
     a.exec_()
 
     #save settings

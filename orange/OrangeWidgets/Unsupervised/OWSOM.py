@@ -22,7 +22,7 @@ class OWSOM(OWWidget):
     settingsList=["xdim", "ydim", "neighborhood", "topology", "alphaType", "iterations1", "iterations2",
                   "radius1", "radius2", "alpha1", "alpha2", "initialization", "eps"]
     def __init__(self ,parent=None , signalManager=None, name="SOM"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Classifier", orange.Classifier), ("Learner", orange.Learner), ("SOMMap", orngSOM.SOMMap)]
@@ -78,6 +78,8 @@ class OWSOM(OWWidget):
 ##        self.alpha2=self.alpha2
         OWGUI.button(self.controlArea, self,  "&Apply", callback=self.ApplySettings)
 
+        OWGUI.rubber(self.controlArea)
+        
         self.data = None        
         
         self.resize(100, 100)
