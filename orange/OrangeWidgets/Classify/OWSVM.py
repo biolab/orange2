@@ -49,7 +49,7 @@ class OWSVM(OWWidget):
         b.layout().addWidget(OWGUI.doubleSpin(b, self, "nu", 0.1, 1.0, 0.1, tooltip="Upper bound on the ratio of support vectors", addToLayout=False, callback=lambda *x: self.setType(1), alignment=Qt.AlignRight),
                              1, 2)
         
-        self.kernelBox=b = OWGUI.widgetBox(self.controlArea, "Kernel", addSpace=True)
+        self.kernelBox=b = OWGUI.widgetBox(self.controlArea, "Kernel") #, addSpace=True)
         self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=[u"Linear,   x∙y", u"Polynomial,   (g x∙y + c)^d",
                     u"RBF,   exp(-g|x-y|²)", u"Sigmoid,   tanh(g x∙y + c)"], callback=self.changeKernel)
 
@@ -59,6 +59,8 @@ class OWSVM(OWWidget):
         self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.0001, label="  c: ", orientation="horizontal", callback=self.changeKernel, alignment=Qt.AlignRight)
         self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel, alignment=Qt.AlignRight)
 
+        OWGUI.separator(self.controlArea)
+        
         self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace=True)
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
         eps = OWGUI.doubleSpin(b,self, "eps", 0.001, 0.5, 0.001, label=u"Numeric precision (ε)", labelWidth = 180, orientation="horizontal", alignment=Qt.AlignRight)
@@ -67,8 +69,6 @@ class OWSVM(OWWidget):
 ##        OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
 ##        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
         OWGUI.checkBox(b, self, "normalization", label="Normalize data", tooltip="Use data normalization")
-
-        OWGUI.separator(self.controlArea)
 
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy", debuggingEnabled=0)

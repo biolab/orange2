@@ -154,12 +154,12 @@ class singleClassCalibrationPlotGraph(OWGraph):
             self.classifierYesClassRugCKeys[cNum].setVisible(b)
             self.classifierNoClassRugCKeys[cNum].setVisible(b)
         self.updateLayout()
-        self.update()
+        self.replot()
 
     def setCalibrationCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
             self.classifierCalibrationCKeys[cNum].setPen(QPen(self.classifierColor[cNum], v))
-        self.update()
+        self.replot()
 
     def setShowClassifiers(self, list):
         self.showClassifiers = list

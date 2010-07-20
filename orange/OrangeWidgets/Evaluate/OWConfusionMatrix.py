@@ -32,14 +32,19 @@ class OWConfusionMatrix(OWWidget):
 
         self.learnerList = OWGUI.listBox(self.controlArea, self, "selectedLearner", "learnerNames", box = "Learners", callback = self.learnerChanged)
         self.learnerList.setMinimumHeight(100)
+        
         OWGUI.separator(self.controlArea)
 
         OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = self.quantities, box = "Show", callback=self.reprint)
 
-        box = OWGUI.widgetBox(self.controlArea, "Selection", addSpace=True)
+        OWGUI.separator(self.controlArea)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Selection") #, addSpace=True)
         OWGUI.button(box, self, "Correct", callback=self.selectCorrect)
         OWGUI.button(box, self, "Misclassified", callback=self.selectWrong)
         OWGUI.button(box, self, "None", callback=self.selectNone)
+        
+        OWGUI.separator(self.controlArea)
 
         box = OWGUI.widgetBox(self.controlArea, "Output")
         OWGUI.checkBox(box, self, "appendPredictions", "Append class predictions", callback = self.sendIf)
@@ -59,6 +64,8 @@ class OWConfusionMatrix(OWWidget):
         self.layout.setColumnStretch(1, 100)
         self.layout.setRowStretch(2, 100)
         self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.sendIf)
+        
+        print self.controlArea.layout().spacing()
 
         self.resize(700,450)
 

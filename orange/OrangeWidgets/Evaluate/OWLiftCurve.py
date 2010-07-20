@@ -292,7 +292,7 @@ class OWLiftCurve(OWROC):
         OWGUI.rubber(self.settingsTab)
 ##        self.SettingsTab.addStretch(100)
 
-        OWGUI.rubber(self.controlArea)
+#        OWGUI.rubber(self.controlArea)
         self.resize(770, 530)
 
     def sendReport(self):

@@ -92,6 +92,7 @@ class OWTestLearners(OWWidget):
         self.learners = {}              # set of learners (input)
         self.results = None             # from orngTest
 
+        self.controlArea.layout().setSpacing(8)
         # GUI
         self.sBtns = OWGUI.radioButtonsInBox(self.controlArea, self, "resampling", box="Sampling",
                                              btnLabels=self.resamplingMethods[:1],
@@ -136,26 +137,37 @@ class OWTestLearners(OWWidget):
         if self.resampling == 4:
             self.resampling = 3
 
-        OWGUI.separator(self.controlArea)
+#        OWGUI.separator(self.controlArea)
 
         # statistics
-        self.cbox = OWGUI.widgetBox(self.controlArea)
+        self.statLayout = QStackedLayout()
+#        self.cbox = OWGUI.widgetBox(self.controlArea, spacing=8, margin=0)
+#        self.cbox.layout().setSpacing(8)
+        self.cbox = OWGUI.widgetBox(self.controlArea, addToLayout=False)
         self.cStatLabels = [s.name for s in self.cStatistics]
         self.cstatLB = OWGUI.listBox(self.cbox, self, 'selectedCScores',
                                      'cStatLabels', box = "Performance scores",
                                      selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
-        OWGUI.separator(self.cbox)
-        self.targetCombo=OWGUI.comboBox(self.cbox, self, "targetClass", orientation=0,
+#        OWGUI.separator(self.cbox)
+        self.cbox.layout().addSpacing(8)
+        self.targetCombo = OWGUI.comboBox(self.cbox, self, "targetClass", orientation=0,
                                         callback=[self.changedTarget],
                                         box="Target class")
 
         self.rStatLabels = [s.name for s in self.rStatistics]
-        self.rstatLB = OWGUI.listBox(self.controlArea, self, 'selectedRScores',
-                                     'rStatLabels', box = "Performance scores",
+        self.rbox = OWGUI.widgetBox(self.controlArea, "Performance scores", addToLayout=False)
+        self.rstatLB = OWGUI.listBox(self.rbox, self, 'selectedRScores', 'rStatLabels',
                                      selectionMode = QListWidget.MultiSelection,
                                      callback=self.newscoreselection)
-        self.rstatLB.box.hide()
+        
+        self.statLayout.addWidget(self.cbox)
+        self.statLayout.addWidget(self.rbox)
+        self.controlArea.layout().addLayout(self.statLayout)
+        
+        self.statLayout.setCurrentWidget(self.cbox)
+        
+#        self.rstatLB.box.hide()
 
 
         # score table
@@ -353,12 +365,13 @@ class OWTestLearners(OWWidget):
         else:
             # new data has arrived
             self.data = orange.Filter_hasClassValue(self.data)
-            if self.isclassification():
-                self.rstatLB.box.hide()
-                self.cbox.show()
-            else:
-                self.cbox.hide()
-                self.rstatLB.box.show()
+            self.statLayout.setCurrentWidget(self.cbox if self.isclassification() else self.rbox)
+#            if self.isclassification():
+#                self.rstatLB.box.hide()
+#                self.cbox.show()
+#            else:
+#                self.cbox.hide()
+#                self.rstatLB.box.show()
             self.stat = [self.rStatistics, self.cStatistics][self.isclassification()]
             
             if self.learners:

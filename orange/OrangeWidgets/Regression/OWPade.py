@@ -42,15 +42,17 @@ class OWPade(OWWidget):
 
         self.loadSettings()
 
-        box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
+        box = OWGUI.widgetBox(self.controlArea, "Attributes") #, addSpace = True)
         lb = self.lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListWidget.MultiSelection, callback=self.dimensionsChanged)
         hbox = OWGUI.widgetBox(box, orientation=0)
         OWGUI.button(hbox, self, "All", callback=self.onAllAttributes)
         OWGUI.button(hbox, self, "None", callback=self.onNoAttributes)
         lb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         lb.setMinimumSize(200, 200)
+        
+        OWGUI.separator(self.controlArea)
 
-        box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = 24)
+        box = OWGUI.widgetBox(self.controlArea, "Method") #, addSpace = True)
         OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = self.methodNames)
 #        self.nNeighboursSpin = OWGUI.spin(box, self, "nNeighbours", 10, 200, 10, label = "Number of neighbours" + "  ", callback = self.methodChanged)
         #self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50)
@@ -64,10 +66,14 @@ class OWPade(OWWidget):
         threshCB.makeConsistent()
         OWGUI.checkBox(box, self, "useMQCNotation", label = "Use MQC notation")
 
-        box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", self.outputTypes, box="Output class", addSpace = True, callback=self.dimensionsChanged)
+        OWGUI.separator(self.controlArea)
+        
+        box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", self.outputTypes, box="Output class", callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
-
-        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)
+        
+        OWGUI.separator(self.controlArea)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes") #, addSpace = True)
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Qualitative constraint")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Derivatives of selected attributes")
         OWGUI.checkBox(box, self, "correlationsAsMeta", label="Absolute values of derivatives")
