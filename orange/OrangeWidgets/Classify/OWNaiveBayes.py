@@ -8,7 +8,7 @@
 
 from OWWidget import *
 import OWGUI, orange
-from orngWrap import Preprocessor
+from orngWrap import PreprocessedLearner
 from exceptions import Exception
 
 import warnings
@@ -20,7 +20,7 @@ class OWNaiveBayes(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", Preprocessor, self.setPreprocessor)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
 
         self.m_estimator = orange.ProbabilityEstimatorConstructor_m()

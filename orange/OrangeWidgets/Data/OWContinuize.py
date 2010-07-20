@@ -11,7 +11,7 @@
 # Turns discrete attributes into continuous
 #
 from OWWidget import *
-from orngWrap import Preprocessor
+from orngWrap import PreprocessedLearner
 import OWGUI
 
 class OWContinuize(OWWidget):
@@ -41,7 +41,7 @@ class OWContinuize(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Examples", ExampleTable), ("Preprocessor", Preprocessor)]
+        self.outputs = [("Examples", ExampleTable), ("Preprocessor", PreprocessedLearner)]
 
         self.multinomialTreatment = 0
         self.targetValue = 0
@@ -130,7 +130,7 @@ class OWContinuize(OWWidget):
 
     def sendPreprocessor(self):
         continuizer = self.constructContinuizer()
-        self.send("Preprocessor", Preprocessor(
+        self.send("Preprocessor", PreprocessedLearner(
             lambda data, weightId=0, tc=(self.targetValue if self.classTreatment else -1): \
                 orange.ExampleTable(continuizer(data, weightId, tc) if data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete else \
                                     continuizer(data, weightId), data)))

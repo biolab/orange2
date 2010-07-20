@@ -8,7 +8,7 @@
 
 from OWWidget import *
 import OWGUI, math, re
-from orngWrap import Preprocessor
+from orngWrap import PreprocessedLearner
 
 class OWPreprocessing(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler()}
@@ -17,7 +17,7 @@ class OWPreprocessing(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Preprocessing")
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Preprocessor", Preprocessor), ("Examples", ExampleTable)]
+        self.outputs = [("Preprocessor", PreprocessedLearner), ("Examples", ExampleTable)]
 
         OWGUI.button(self.controlArea, self, "Apply", callback=self.apply)
 
@@ -44,6 +44,6 @@ class OWPreprocessing(OWWidget):
         # modify an instance which has been passed to another widget which
         # might have a disabled connection and should not get any modifications
         # (and would even not get notified about the preprocessor having been changed)
-        self.preprocessor = Preprocessor()
+        self.preprocessor = PreprocessedLearner()
         self.send("Preprocessor", self.preprocessor)
         
