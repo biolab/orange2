@@ -434,13 +434,21 @@ class OWTreeViewer2D(OWWidget):
 #        cb.makeConsistent()
 
         # Node information
-        OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
-        findbox = OWGUI.widgetBox(self.controlArea, orientation = "horizontal")
-        self.centerRootButton=OWGUI.button(findbox, self, "Find Root",
-                                           callback=lambda :self.rootNode and self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y()))
-        self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected",
+        grid = QGridLayout()
+        
+        navButton = OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0, addToLayout=False)
+#        findbox = OWGUI.widgetBox(self.controlArea, orientation = "horizontal")
+        self.centerRootButton=OWGUI.button(self.controlArea, self, "Find Root", addToLayout=False,
+                                           callback=lambda :self.rootNode and \
+                                           self.sceneView.centerOn(self.rootNode.x(), self.rootNode.y()))
+        self.centerNodeButton=OWGUI.button(self.controlArea, self, "Find Selected", addToLayout=False,
                                            callback=lambda :self.selectedNode and \
-                                     self.sceneView.centerOn(self.selectedNode.scenePos()))
+                                           self.sceneView.centerOn(self.selectedNode.scenePos()))
+        grid.addWidget(navButton, 0, 0, 1, 2)
+        grid.addWidget(self.centerRootButton, 1, 0)
+        grid.addWidget(self.centerNodeButton, 1, 1)
+        self.leftWidgetPart.layout().insertLayout(1, grid)
+        
         self.NodeTab=NodeTab
         self.TreeTab=TreeTab
         self.GeneralTab=GeneralTab
