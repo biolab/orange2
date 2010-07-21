@@ -70,8 +70,8 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
 
     if addSpace and isinstance(addSpace, bool):
         separator(widget)
-    if addSpace and isinstance(addSpace, int):
-        separator(widget, 0, addSpace)
+    elif addSpace and isinstance(addSpace, int):
+        separator(widget, addSpace, addSpace)
     elif addSpace:
         separator(widget)
 
@@ -83,7 +83,7 @@ def indentedBox(widget, sep=20, orientation = True, addSpace=False):
 
     if addSpace and isinstance(addSpace, bool):
         separator(widget)
-    if addSpace and isinstance(addSpace, int):
+    elif addSpace and isinstance(addSpace, int):
         separator(widget, 0, addSpace)
     elif addSpace:
         separator(widget)
@@ -482,7 +482,7 @@ def toolButton(widget, master, callback = None, width = None, height = None, too
     return btn
 
 
-def separator(widget, width=0, height=0):
+def separator(widget, width=4, height=4):
 #    if isinstance(widget.layout(), QVBoxLayout):
 #        return widget.layout().addSpacing(height)
 #    elif isinstance(widget.layout(), QHBoxLayout):
