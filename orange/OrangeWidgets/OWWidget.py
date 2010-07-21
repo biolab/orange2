@@ -28,16 +28,15 @@ class OWWidget(OWBaseWidget):
             self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding), margin=0)
             self.mainArea.layout().setMargin(4)
             self.mainArea.updateGeometry()
-        self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=wantMainArea and 0 or 4)
+        self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=4 if wantMainArea else 1)
 
         self.space = self.controlArea
 
-        self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="horizontal", margin=2)
+        self.buttonBackground = OWGUI.widgetBox(self.leftWidgetPart, orientation="vertical", margin=4 if wantMainArea else 1)
         self.buttonBackground.hide()
         
         if wantGraph and showSaveGraph:
             self.buttonBackground.show()
-            self.buttonBackground.layout().setSpacing(10)
             self.graphButton = OWGUI.button(self.buttonBackground, self, "&Save Graph")
             self.graphButton.setAutoDefault(0)
 
