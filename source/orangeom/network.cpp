@@ -488,7 +488,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 		else if (PyOrGraphAsList_Check(pygraph))
 		{
 			//cout << "2" << endl;
-    		TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
+   		TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
 			TNetwork *network = mlnew TNetwork(graph);
 			
 			// set graphs attribut items of type ExampleTable to subgraph
@@ -1418,7 +1418,7 @@ PyObject *Network_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 								istringstream strI3(weights[i]);
 								strI3 >> i3;
 								*(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
-								if (directed == 1) {
+								if (!directed) {
 									*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
 								}
 								
@@ -1770,7 +1770,7 @@ PyObject *Network_parseNetwork(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 								istringstream strI3(weights[i]);
 								strI3 >> i3;
 								*(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
-								if (directed == 1) {
+								if (!directed) {
 									*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
 								}
 								
