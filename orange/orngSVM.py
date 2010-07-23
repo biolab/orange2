@@ -281,7 +281,7 @@ class RBFKernelWrapper(KernelWrapper):
         KernelWrapper.__init__(self, wrapped)
         self.gamma=gamma
     def __call__(self, example1, example2):
-        return math.exp(-math.pow(self.wrapped(example1, example2),2)/self.gamma)
+        return math.exp(-self.gamma*math.pow(self.wrapped(example1, example2),2))
 
 class PolyKernelWrapper(KernelWrapper):
     def __init__(self, wrapped, degree=3.0):
