@@ -91,7 +91,7 @@ ever setting <CODE>sourceVariable</CODE>.</DD>
 </DT>
 
 <DT>randomGenerator</DT>
-<DD>Local random number generator used by method <CODE>randomValue</CODE>.</DD>
+<DD>Local random number generator used by method <CODE>randomvalue</CODE>.</DD>
 
 <dt>defaultMetaId</dt>
 <dd>A proposed meta id to be used with that variable. By default it is set to 0; when the attribute is first <a href="Domain.htm#meta-attributes">registered with any domain</a>. It does not mean that the attribute should always have this same meta id. <code>defaultMetaId</code> is, for instance, used by the data loader for <a href="tabdelimited.htm">tab-delimited file format</a>, or by function <code>newmetaid</code>, if the variable is passed as an argument.</dd>
@@ -122,8 +122,8 @@ values</A>.</DD>
 So <CODE>for val in var</CODE> would iterate through all values
 of attribute <CODE>var</CODE>, when possible.</DD>
 
-<DT>randomValue()</DT>
-<DD><CODE>randomValue</CODE> returns a random value for the attribute, when possible. This function uses <CODE>randomGenerator</CODE>; if none has been assigned yet, a new is constructed with the initial seed 0, and stored for the future use.</DD>
+<DT>randomvalue()</DT>
+<DD><CODE>randomvalue</CODE> returns a random value for the attribute, when possible. This function uses <CODE>randomGenerator</CODE>; if none has been assigned yet, a new is constructed with the initial seed 0, and stored for the future use.</DD>
 
 <DT>computeValue(example)</DT>
 <DD>Calls <CODE>getValueFrom</CODE> through a mechanism that prevents deadlocks by circular calls.</DD>
