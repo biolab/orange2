@@ -201,77 +201,56 @@ void c45_writeExamples(FILE *file, PExampleGenerator rg)
 }
 
 
-
-/*  Divides the line onto atoms which are separated by commas and colons. Escape sequences are ignored, but \\
-    is replaced by \. If | is encountered, the rest of the line is ignored. A space can be a part of the atom,
-    multiple spaces are replaced by a single space. A dot can also be a part of the name; if dot is followed only
-    by white-space, it is recognized as an end-of-line sign and is not added to the name. */
-#define MAX_LINE_LENGTH 10240
+/*  Divides the line onto atoms which are separated by commas and colons. 
+    If | is encountered, the rest of the line is ignored.
+    A space can be a part of the atom, but spaces at the beginning and the end are stripped.
+    A dot can also be a part of the name; if dot is followed only
+    by white-space, it is recognized as an end-of-line sign and is not added to the atom.
+    
+    Line counting may be off (a bit)! It is not clear what to count - all lines including empty,
+    or data lines or ... Even worse, we'd need to handle Linux, Windows and Mac line endings.
+    This is not so important for C4.5 files, where line count does not matter much.
+    */
+#include "strings.hpp"
 bool readC45Atom(TFileExampleIteratorData &fei, vector<string> &atoms)
 {
   atoms.clear();
-
-  char line[MAX_LINE_LENGTH], *curr=line;
-
-  fei.line++;
-  if (!fgets(line, MAX_LINE_LENGTH, fei.file)) {
-    if (feof(fei.file))
-      return false;
-    raiseErrorWho("C45ExampleGenerator", "error while reading line %i of file '%s'", fei.line, fei.filename.c_str());
-  }
-
-  if (strlen(line)>=MAX_LINE_LENGTH-1)
-    raiseErrorWho("C45ExampleGenerator", "line %i of file '%s' too long", fei.line, fei.filename.c_str());
-
-  for(;*curr && (*curr<=' ');curr++); // skip whitespace
-
   string atom;
-  while (*curr) {
-    switch(*curr) {
+  bool stop = false;
+  while (!stop) {
+    char c = fgetc(fei.file);
+    switch(c) {
+       // note the fallthrough!
       case '|' :
-        if (atom.length())
-          atoms.push_back(atom);  // end of line
-        return atoms.size()>0;
-
-      case '\\':
-        if (*++curr)
-          atom += curr;
+        for(; (c!=13) && (c!=10) && (c!=(char)EOF); c = fgetc(fei.file));
+      case 10:
+        fei.line++;
+      case 13:
+        if (!atom.length() && !atoms.size())
+           break; // skip empty lines
+      case (char)EOF:
+        stop = true;
         break;
 
       case ',' :
       case ':' :
-        atoms.push_back(atom);
+        atoms.push_back(trim(atom));
         atom = string();
-        while( *++curr && (*curr<=' '));
-        break;
-
-      case 13:
-      case 10:
-      case '.':
-        if (*++curr<=' ') {
-          if (atom.length())
-            atoms.push_back(atom);
-          atom = string();
-          return atoms.size()>0;
-        }
-        else
-          atom+='.';
-        break;
-
-      case ' ':
-        atom+=*curr;
-        while(*++curr==' ');
         break;
 
       default:
-        if (*curr>' ')
-          atom += *curr;
-        curr++;
+        if (c > ' ')
+          atom += c;
     };
   }
-
   if (atom.length())
-    atoms.push_back(atom);
+    atoms.push_back(trim(atom));
+
+  if (atoms.size()) {
+    string &last = atoms.back();
+    if (last[last.length()-1]=='.')
+        last.erase(last.end()-1);
+  }
 
   return atoms.size()>0;
 }   
