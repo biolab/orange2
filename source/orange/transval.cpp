@@ -99,10 +99,7 @@ void TDiscrete2Continuous::transform(TValue &val)
   if (val.varType!=TValue::INTVAR)
     raiseError("invalid value type (non-int)");
   if (val.isSpecial()) {
-    if (zeroBased)
-      raiseError("unknown value");
-    else
-      val = TValue(0.0);
+      val = TValue(TValue::FLOATVAR, val.valueType);
   }
   else {
     if ((val.intV == value) != invert)
@@ -121,7 +118,7 @@ TOrdinal2Continuous::TOrdinal2Continuous(const float &f)
 void TOrdinal2Continuous::transform(TValue &val)
 {
   if (val.isSpecial())
-    return;
+    val = TValue(TValue::FLOATVAR, val.valueType);
   if (val.varType!=TValue::INTVAR)
     raiseError("invalid value type (discrete expected)");
 

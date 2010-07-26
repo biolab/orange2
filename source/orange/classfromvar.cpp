@@ -37,7 +37,7 @@ inline TValue processValue(PTransformValue &transformer, const TValue &val, cons
     distr->normalize();
     return TValue(distr, val.varType, val.valueType);
   }
-
+  
   return val;
 }
 
@@ -47,7 +47,7 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PDistribution dun)
   whichVar(acv),
   transformer(),
   distributionForUnknown(dun),
-  transformUnknowns(false),
+  transformUnknowns(true),
   lastDomainVersion(-1)
 {}
 
@@ -57,7 +57,7 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDist
   whichVar(awhichVar),
   transformer(),
   distributionForUnknown(dun),
-  transformUnknowns(false),
+  transformUnknowns(true),
   lastDomainVersion(-1)
 {}
 
@@ -67,6 +67,7 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDist
   whichVar(awhichVar),
   transformer(trans),
   distributionForUnknown(dun),
+  transformUnknowns(true),
   lastDomainVersion(-1)
 {}
 
@@ -75,7 +76,7 @@ TClassifierFromVar::TClassifierFromVar(const TClassifierFromVar &old)
   whichVar(old.whichVar),
   transformer(old.transformer),
   distributionForUnknown(old.distributionForUnknown),
-  transformUnknowns(false),
+  transformUnknowns(true),
   lastDomainVersion(-1)
 {};
 
@@ -171,7 +172,7 @@ TClassifierFromVarFD::TClassifierFromVarFD(PVariable acv, PDomain dom, const int
   position(p),
   transformer(atrans),
   distributionForUnknown(dun),
-  transformUnknowns(false)
+  transformUnknowns(true)
 { classVar = acv; }
 
 
@@ -180,7 +181,7 @@ TClassifierFromVarFD::TClassifierFromVarFD(const TClassifierFromVarFD &old)
   position(old.position),
   transformer(old.transformer),
   distributionForUnknown(old.distributionForUnknown),
-  transformUnknowns(false)
+  transformUnknowns(true)
 {};
 
 

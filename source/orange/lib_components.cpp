@@ -1402,56 +1402,56 @@ PyObject *ExamplesDistance__reduce__(PyObject *self)
 
 PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
 { PyTRY
-if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrExamplesDistanceConstructor_Type) {
-	PyErr_Format(PyExc_SystemError, "ExamplesDistanceConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
-	return PYNULL;
-}
+  if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrExamplesDistanceConstructor_Type) {
+	  PyErr_Format(PyExc_SystemError, "ExamplesDistanceConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+	  return PYNULL;
+  }
 
-NO_KEYWORDS
+  NO_KEYWORDS
 
-PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
-PExampleGenerator gen;
-int weightID = 0;
-PDomainDistributions dist;
-PDomainBasicAttrStat bstat;
-if (!PyArg_UnpackTuple(uargs, "ExamplesDistanceConstructor.call", 0, 4, args+0, args+1, args+2, args+3))
-return PYNULL;
+  PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
+  PExampleGenerator gen;
+  int weightID = 0;
+  PDomainDistributions dist;
+  PDomainBasicAttrStat bstat;
+  if (!PyArg_UnpackTuple(uargs, "ExamplesDistanceConstructor.call", 0, 4, args+0, args+1, args+2, args+3))
+  return PYNULL;
 
-PyObject **argp = args, **argc = args;
-for (int i=0; i<=3; i++, argp++)
-if (*argp)
-*argc++ = *argp;
+  PyObject **argp = args, **argc = args;
+  for (int i=0; i<=3; i++, argp++)
+  if (*argp)
+  *argc++ = *argp;
 
-for(argp = args; argp!=argc; argp++) {
-	if (PyOrDomainDistributions_Check(*argp))
-		if (dist)
-			PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (DomainDistribution given twice)", PYNULL)
-		else
-		dist = PyOrange_AsDomainDistributions(*argp);
-	else if (PyOrDomainBasicAttrStat_Check(*argp))
-		if (bstat)
-			PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (DomainBasicAttrStat given twice)", PYNULL)
-		else
-		bstat = PyOrange_AsDomainBasicAttrStat(*argp);
-	else {
-		PExampleGenerator gen2 = exampleGenFromParsedArgs(*argp);
-		if (!gen2)
-			PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments", PYNULL)
-		else if (gen)
-		PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (examples given twice)", PYNULL)
-		else {
-			gen = gen2;
-			if (argp+1 != argc) {
-				argp++;
-				if (!weightFromArg_byDomain(*argp, gen->domain, weightID))
-					return PYNULL;
-			}
-		}
-	}
-}
+  for(argp = args; argp!=argc; argp++) {
+	  if (PyOrDomainDistributions_Check(*argp))
+		  if (dist)
+			  PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (DomainDistribution given twice)", PYNULL)
+		  else
+		  dist = PyOrange_AsDomainDistributions(*argp);
+	  else if (PyOrDomainBasicAttrStat_Check(*argp))
+		  if (bstat)
+			  PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (DomainBasicAttrStat given twice)", PYNULL)
+		  else
+		  bstat = PyOrange_AsDomainBasicAttrStat(*argp);
+	  else {
+		  PExampleGenerator gen2 = exampleGenFromParsedArgs(*argp);
+		  if (!gen2)
+			  PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments", PYNULL)
+		  else if (gen)
+		  PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (examples given twice)", PYNULL)
+		  else {
+			  gen = gen2;
+			  if (argp+1 != argc) {
+				  argp++;
+				  if (!weightFromArg_byDomain(*argp, gen->domain, weightID))
+					  return PYNULL;
+			  }
+		  }
+	  }
+  }
 
-return WrapOrange(SELF_AS(TExamplesDistanceConstructor).call(gen, weightID, dist, bstat));
-PyCATCH
+  return WrapOrange(SELF_AS(TExamplesDistanceConstructor).call(gen, weightID, dist, bstat));
+  PyCATCH
 }
 
 
