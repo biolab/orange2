@@ -252,7 +252,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuReportID = self.menuFile.addAction("&Report", self.menuItemReport, Qt.CTRL + Qt.ALT + Qt.Key_R)
         self.menuFile.addSeparator()
         self.menuSaveID = self.menuFile.addAction(QIcon(self.file_save), "&Save", self.menuItemSave, QKeySequence.Save)
-        self.menuSaveAsID = self.menuFile.addAction("Save &As...", self.menuItemSaveAs)
+        self.menuSaveAsID = self.menuFile.addAction("Save &as...", self.menuItemSaveAs)
         if not RedR:
             self.menuFile.addAction("&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
             self.menuFile.addAction("&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
@@ -496,7 +496,7 @@ class OrangeCanvasDlg(QMainWindow):
                 shf.write("%s: %s\n" % (k, (widgetInfo.category, widgetInfo.name)))
 
     def menuItemDeleteWidgetSettings(self):
-        if QMessageBox.warning(self, 'Orange Canvas', 'If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schema.\nIf there are, clear the schema first.', QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+        if QMessageBox.warning(self, 'Orange Canvas', 'Delete all settings?\nNote that for a complete reset there should be no open schema with any widgets.', QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
             if os.path.exists(self.widgetSettingsDir):
                 for f in os.listdir(self.widgetSettingsDir):
                     if os.path.splitext(f)[1].lower() == ".ini":
