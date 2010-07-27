@@ -287,11 +287,12 @@ class SQLReader(object):
                 # for reasons unknown, domain rearranges the properties
                 example = orange.Example(self.domain)
                 for i in xrange(len(r)):
-                    val = str(r[i])
-                    var = example[attrNames[i]].variable
-                    if type(var) == orange.EnumVariable and val not in var.values:
-                        var.values.append(val)
-                    example[attrNames[i]] = str(r[i])
+                    if r[i] is not None:
+                        val = str(r[i])
+                        var = example[attrNames[i]].variable
+                        if type(var) == orange.EnumVariable and val not in var.values:
+                            var.values.append(val)
+                        example[attrNames[i]] = str(r[i])
                 self.exampleTable.append(example)
                 r = curs.fetchone()
             self._dirty = False
