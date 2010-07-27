@@ -678,7 +678,7 @@ class OWROC(OWWidget):
         self.pvalueList = []
 
         self.AveragingMethodNames = ['merge', 'vertical', 'threshold', None]
-        self.AveragingMethod = self.AveragingMethodNames[self.AveragingMethodIndex]
+        self.AveragingMethod = self.AveragingMethodNames[min(3, self.AveragingMethodIndex)]
 
         # GUI
         import sip
