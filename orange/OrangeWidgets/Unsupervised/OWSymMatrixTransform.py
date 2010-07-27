@@ -17,8 +17,8 @@ import copy
 class OWSymMatrixTransform(OWWidget):
     settingsList = ["normalizeMethod", "invertMethod"]
 
-    normalizeMethods = ["None", "To interval [0, 1]", "Sigmoid function, 1/(1+exp(-x))"]
-    inversionMethods = ["None", "-X", "1 - X", "Max - X", "1/X"]
+    normalizeMethods = ["No normalization", "To interval [0, 1]", "Sigmoid function, 1/(1+exp(-x))"]
+    inversionMethods = ["No inversion", "-X", "1 - X", "Max - X", "1/X"]
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, "Matrix Transformation", wantMainArea = 0, resizingEnabled = 0)
