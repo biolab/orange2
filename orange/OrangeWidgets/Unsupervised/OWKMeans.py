@@ -107,11 +107,11 @@ class OWKMeans(OWWidget):
 #        OWGUI.spin(box, self, "K", label="Number of clusters"+"  ", min=1, max=30, step=1,
 #                   callback = self.initializeClustering)
         OWGUI.comboBox(box, self, "distanceMeasure", label="Distance measures",
-                       items=[name for name, _ in self.distanceMeasures],
+                       items=[name for name, foo in self.distanceMeasures],
                        tooltip=None, indent=20,
                        callback = self.update)
         cb = OWGUI.comboBox(box, self, "initializationType", label="Initialization",
-                       items=[name for name, _ in self.initializations],
+                       items=[name for name, foo in self.initializations],
                        tooltip=None, indent=20,
                        callback = self.update)
         OWGUI.spin(cb.box, self, "restarts", label="Restarts", orientation="horizontal",
