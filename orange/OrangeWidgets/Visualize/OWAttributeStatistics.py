@@ -42,6 +42,7 @@ class OWAttributeStatistics(OWWidget):
         self.HighlightedAttribute = None
         #list inputs and outputs
         self.inputs = [("Examples", ExampleTable, self.setData, Default)]
+        self.outputs = [("Attribute Statistics", ExampleTable)]
 
         #GUI
 
@@ -96,8 +97,9 @@ class OWAttributeStatistics(OWWidget):
 
         self.attributes.clear()
         if data==None:
-            self.dataset = self.dist = None
+            self.dataset = self.dist = self.stat = None
             self.canvasview.hide()
+            self.send("Attribute Statistics", None)
         else:
             self.canvasview.show()
 
@@ -106,6 +108,19 @@ class OWAttributeStatistics(OWWidget):
 
             for a in self.dataset.domain:
                 self.attributes.addItem(QListWidgetItem(self.icons[a.varType], a.name))
+
+            self.stat = orange.DomainDistributions(data)
+            dt = orange.Domain(data.domain.variables)
+            id=orange.newmetaid()
+            dt.addmeta(id, orange.StringVariable("statistics"))
+            ndata = orange.ExampleTable(dt)
+            ndata.append([a.average() if a and a.variable.varType == orange.Variable.Continuous else "" for a in self.stat])
+            ndata.append([a.dev() if a and a.variable.varType == orange.Variable.Continuous else "" for a in self.stat])
+            ndata.append([a.modus() if a and a.variable.varType == orange.Variable.Discrete else "" for a in self.stat])
+            ndata[0][id] = "average"
+            ndata[1][id] = "variance"
+            ndata[2][id] = "modus"
+            self.send("Attribute Statistics", ndata)
 
         self.HighlightedAttribute = 0
         self.openContext("", data)
