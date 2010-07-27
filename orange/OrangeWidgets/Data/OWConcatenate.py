@@ -72,30 +72,38 @@ class OWConcatenate(OWWidget):
                             classVar = None
                             
                 if self.mergeAttributes: # intersection
-                    attributes = None
+                    attributes = metas = None
                     for additional in self.additional.values():
                         if attributes == None:
                             if classVar:
                                 attributes = additional.domain.attributes
                             else:
                                 attributes = additional.domain
+                            metas = dict((attr, id) for id, attr in additional.domain.getmetas().items())
                         else:
                             attributes = [attr for attr in attributes if attr in additional.domain and not attr == classVar]
+                            metas = dict((attr, id) for id, attr in additional.domain.getmetas().items() if attr in metas)
                     if attributes == None:
                         attributes = []
+                        metas = {}
                 else: # union
                     attributes = []
+                    metas = {}
                     for additional in self.additional.values():
                         for attr in additional.domain:
                             if attr not in attributes and attr != classVar:
                                 attributes.append(attr)
-                    
+                        for id, attr in additional.domain.getmetas().items():
+                            if not attr in metas:
+                                metas[attr] = id
                 if not attributes and not classVar:
                     self.error(1, "The output domain is empty.")
                     newTable = None
                 else:
                     self.error(1)
-                    newTable = orange.ExampleTable(orange.Domain(attributes, classVar))
+                    newDomain = orange.Domain(attributes, classVar)
+                    newDomain.addmetas(dict((x[1], x[0]) for x in metas.items())) 
+                    newTable = orange.ExampleTable(newDomain)
                     for additional in self.additional.values():
                         newTable.extend(additional)
 
