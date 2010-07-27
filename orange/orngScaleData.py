@@ -98,8 +98,8 @@ def discretizeDomain(data, removeUnusedValues = 1, numberOfIntervals = 2):
             warnings.warn("Could not discretize %s attribute. %s" % (attr.name, ex.message))
 
     if className: discAttrs.append(data.domain.classVar)
-    return data.select(discAttrs)
-
+    d2 = data.translate(discAttrs, True)
+    return d2
 
 
 class orngScaleData:
