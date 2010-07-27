@@ -196,7 +196,7 @@ class SchemaDoc(QWidget):
         ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outSignalName, inSignalName, enabled)
         if not ok:
             self.removeLink(outWidget, inWidget, outSignalName, inSignalName)
-            QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Something is really wrong; try restarting Orange Canvas.", QMessageBox.Ok + QMessageBox.Default )
+            QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Try restarting Orange Canvas.", QMessageBox.Ok + QMessageBox.Default, 0)
             return 0
         else:
             orngHistory.logAddLink(self.schemaID, outWidget, inWidget, outSignalName)
@@ -277,11 +277,13 @@ class SchemaDoc(QWidget):
             
         #self.canvasView.ensureVisible(newwidget)
 
-        if caption == "": caption = newwidget.caption
+        if caption == "":
+            caption = newwidget.caption
 
         if self.getWidgetByCaption(caption):
             i = 2
-            while self.getWidgetByCaption(caption + " (" + str(i) + ")"): i+=1
+            while self.getWidgetByCaption(caption + " (" + str(i) + ")"):
+                i+=1
             caption = caption + " (" + str(i) + ")"
         newwidget.updateText(caption)
         newwidget.instance.setWindowTitle(caption)
