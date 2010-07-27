@@ -362,7 +362,7 @@ class OWGraph(QwtPlot):
 
     def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = None, penAlpha = 255, brushAlpha = 255):
         curve = QwtPlotCurve(name)
-        curve.setRenderHint(QwtPlotItem.RenderAntialiased, antiAlias == 1 or self.useAntialiasing)
+        curve.setRenderHint(QwtPlotItem.RenderAntialiased, antiAlias or self.useAntialiasing)
         curve.setItemAttribute(QwtPlotItem.Legend, enableLegend)
         curve.setItemAttribute(QwtPlotItem.AutoScale, autoScale)
         if penAlpha != 255:
