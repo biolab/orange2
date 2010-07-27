@@ -239,7 +239,7 @@ class OWBaseWidget(QDialog):
             self.error(1235, "Unable to handle %s class." % (data.domain.classVar.varType == orange.VarTypes.Discrete and "discrete" or "continuous"))
             return 0
         if checkMissing and not orange.Preprocessor_dropMissingClasses(data):
-            self.error(1236, "Unable to handle data set with all missing classes")
+            self.error(1236, "Unable to handle data set with no known classes")
             return 0
         return 1
 
