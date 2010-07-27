@@ -48,7 +48,7 @@ class OWHierarchicalClustering(OWWidget):
         #OWWidget.__init__(self, parent, 'Hierarchical Clustering')
         OWWidget.__init__(self, parent, signalManager, 'Hierarchical Clustering', wantGraph=True)
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
-        self.outputs=[("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
+        self.outputs=[("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Centroids", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
                         ("Average linkage", orange.HierarchicalClustering.Average),
                         ("Ward's linkage", orange.HierarchicalClustering.Ward),
@@ -450,6 +450,24 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Selected Examples",self.selectedExamples)
             self.send("Unselected Examples", self.unselectedExamples)
 
+            clustFilter = orange.Filter_sameValue(position=aid)
+            self.centroids = orange.ExampleTable(self.selectedExamples.domain)
+            for i in range(len(maps)):
+                clustFilter.value = clustVar("Cluster %i" % i)
+                clusterEx = clustFilter(self.selectedExamples)
+                contstat = orange.DomainBasicAttrStat(clusterEx)
+                discstat = orange.DomainDistributions(clusterEx, 0, 0, 1)
+                ex = [cs.avg if cs else (ds.modus() if ds else "?") for cs, ds in zip(contstat, discstat)]
+                print self.centroids.domain
+                print ex
+                example = orange.Example(self.centroids.domain, ex)
+                if aid!=-1:
+                    example[aid] = i
+                else:
+                    example.setclass(i)
+                self.centroids.append(ex)
+            self.send("Centroids", self.centroids)    
+            
         elif self.matrixSource=="Data Distance":
             names=list(set([d.strain for d in self.selection]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, self.selection)]) for name in names]
