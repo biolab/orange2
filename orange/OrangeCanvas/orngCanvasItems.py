@@ -274,7 +274,7 @@ class CanvasWidget(QGraphicsRectItem):
                 try:
                     self.instance.saveSettings()
                 except:
-                    print "Unable to successfully save settings for %s widget" % (self.instance.captionTitle)
+                    print "Unable to save settings for %s widget" % (self.instance.captionTitle)
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
             self.instance.close()
