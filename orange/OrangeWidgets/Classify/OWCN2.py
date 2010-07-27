@@ -73,10 +73,13 @@ class OWCN2(OWWidget):
 
         b1 = QRadioButton("Laplace", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b1)
         g = OWGUI.widgetBox(self.ruleQualityBG, orientation = "horizontal");
-        b2 = QRadioButton("m-estimate", g); g.layout().addWidget(b2)
+        b2 = QRadioButton("m-estimate", g)
+        g.layout().addWidget(b2)
         self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
-        b3 = QRadioButton("EVC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b3)
-        b4 = QRadioButton("WRACC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b4)
+        b3 = QRadioButton("EVC", self.ruleQualityBG)
+        self.ruleQualityBG.layout().addWidget(b3)
+        b4 = QRadioButton("WRACC", self.ruleQualityBG)
+        self.ruleQualityBG.layout().addWidget(b4)
         self.ruleQualityBG.buttons = [b1, b2, b3, b4]
 
         for i, button in enumerate([b1, b2, b3, b4]):
