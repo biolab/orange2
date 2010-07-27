@@ -823,7 +823,7 @@ class AttrLineOrdered(AttrLine):
         #line objects
         if len(self.contValues) == 0:
             for at in self.attValues:
-                a = OWQCanvasFuncts.OWCanvasLine(canvas, lineWidth = at.lineWidth, show = 0)
+                a = OWQCanvasFuncts.OWCanvasLine(canvas, penWidth = at.lineWidth, show = 0)
                 self.contValues.append(a)
 
                 # for 1d cont space
