@@ -26,7 +26,6 @@ class IdentifierReplacer:
             return "_ex['%s']" % id
         return id
 
-
 class AttrComputer:
     def __init__(self, expression):
         self.expression = expression
@@ -36,7 +35,6 @@ class AttrComputer:
             return float(eval(self.expression, math.__dict__, {"_ex": ex}))
         except:
             return "?"
-
 
 class OWFeatureConstructor(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler()}
@@ -56,37 +54,26 @@ class OWFeatureConstructor(OWWidget):
         self.selectedAttr = 0
         self.selectedFunc = 0
         self.autosend = True
+        self.loadSettings()
 
         db = OWGUI.widgetBox(self.controlArea, "Attribute definitions", addSpace = True)
 
-        OWGUI.separator(db, 4)
-
         hb = OWGUI.widgetBox(db, None, "horizontal")
-
-        vb = OWGUI.widgetBox(hb, None, "vertical")
-        self.leAttrName = OWGUI.lineEdit(vb, self, "attrname", "New attribute")
-        OWGUI.rubber(vb)
-
-        OWGUI.separator(hb, 8, 8)
-
-        vb = OWGUI.widgetBox(hb, None, "vertical")
+        hbv = OWGUI.widgetBox(hb)
+        self.leAttrName = OWGUI.lineEdit(hbv, self, "attrname", "New attribute")
+        OWGUI.rubber(hbv)
+        vb = OWGUI.widgetBox(hb, None, "vertical", addSpace=True)
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
         self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
-        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + [m for m in math.__dict__.keys() if m[:2]!="__"], callback = self.funcListSelected)
+        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sorted(m for m in math.__dict__.keys() if m[:2]!="__"), callback = self.funcListSelected)
 
-        OWGUI.separator(hb, 8, 8)
-        OWGUI.button(hb, self, "Clear", callback = self.clearLineEdits)
-
-        OWGUI.separator(db)
-
-        hb = OWGUI.widgetBox(db, None, "horizontal")
+        hb = OWGUI.widgetBox(db, None, "horizontal", addSpace=True)
         OWGUI.button(hb, self, "Add", callback = self.addAttr)
         OWGUI.button(hb, self, "Update", callback = self.updateAttr)
         OWGUI.button(hb, self, "Remove", callback = self.removeAttr)
         OWGUI.button(hb, self, "Remove All", callback = self.removeAllAttr)
 
-        OWGUI.separator(db)
         self.lbDefinitions = OWGUI.listBox(db, self, "selectedDef", "defLabels", callback=self.selectAttr)
         self.lbDefinitions.setFixedHeight(160)
 
@@ -97,16 +84,13 @@ class OWFeatureConstructor(OWWidget):
 
         self.adjustSize()
 
-
     def settingsFromWidgetCallback(self, handler, context):
         context.definitions = self.definitions
-
 
     def settingsToWidgetCallback(self, handler, context):
         self.definitions = getattr(context, "definitions", [])
         self.defLabels = ["%s := %s" % t for t in self.definitions]
         self.selectedDef = []
-
 
     def setData(self, data):
         self.closeContext()
@@ -115,31 +99,45 @@ class OWFeatureConstructor(OWWidget):
         self.cbAttrs.addItem("(all attributes)")
         if self.data:
             self.cbAttrs.addItems([attr.name for attr in self.data.domain])
-
         self.removeAllAttr()
         self.openContext("", data)
         self.apply()
 
-
-    def clearLineEdits(self):
-        self.expression = self.attrname = ""
-
-
-    def addAttr(self):
+    def getAttrExpression(self, thisRow=-1):
         attrname = self.attrname.strip()
         if not attrname:
             self.leAttrName.setFocus()
             return
-
+        for row, (attr, expr) in enumerate(self.definitions):
+            if row!=thisRow and attr==attrname:
+                QMessageBox.critical(self, "Duplicate name", "Attribute with that name already exists.\nPlease choose a different name.")
+                self.leAttrName.setFocus()
+                return
         expression = self.expression.strip()
         if not expression:
             self.leExpression.setFocus()
             return
-        self.defLabels = self.defLabels + ["%s := %s" % (attrname, expression)]
-        self.definitions.append((attrname, expression))
+        return attrname, expression
+        
+    def addAttr(self):
+        attrexpr = self.getAttrExpression()
+        if not attrexpr:
+            return
+        self.defLabels = self.defLabels + ["%s := %s" % attrexpr] # should be like this to update the listbox
+        self.definitions.append(attrexpr)
         self.expression = self.attrname = ""
         self.applyIf()
 
+    def updateAttr(self):
+        if self.selectedDef:
+            selected = self.selectedDef[0]
+            attrexpr = self.getAttrExpression(selected)
+            if not attrexpr:
+                return
+             # should be like this to reset the listbox
+            self.defLabels = self.defLabels[:selected] + ["%s := %s" % attrexpr] + self.defLabels[selected+1:]
+            self.definitions[selected] = attrexpr
+            self.applyIf()
 
     def removeAttr(self):
         if self.selectedDef:
@@ -149,77 +147,58 @@ class OWFeatureConstructor(OWWidget):
                 del self.definitions[selected]
                 self.applyIf()
 
-
     def removeAllAttr(self):
         self.defLabels = []
         self.definitions = []
         self.selectedDef = []
-        self.clearLineEdits()
+        self.expression = ""
         self.applyIf()
 
-
-    def updateAttr(self):
-        if self.selectedDef:
-            selected = self.selectedDef[0]
-            if 0 <= selected < self.lbDefinitions.count():
-                self.defLabels = self.defLabels[:selected] + ["%s := %s" % (self.attrname, self.expression)] + self.defLabels[selected+1:]
-                self.definitions[selected] = (self.attrname, self.expression)
-                self.applyIf()
-
-
     def selectAttr(self):
-        selected = self.selectedDef[0]
-        if 0 <= selected < self.lbDefinitions.count():
-            self.attrname, self.expression = self.definitions[selected]
+        if self.selectedDef:
+            self.attrname, self.expression = self.definitions[self.selectedDef[0]]
         else:
             self.attrname = self.expression = ""
 
-
     def insertIntoExpression(self, what):
-        if self.leExpression.hasMarkedText():
-            self.leExpression.delChar()
-
+        # Doesn't work: clicking the listbox removes the selection
+        if self.leExpression.hasSelectedText():
+            self.leExpression.del_()
         cp = self.leExpression.cursorPosition()
         self.expression = self.expression[:cp] + what + self.expression[cp:]
         self.leExpression.setFocus()
 
-
     def attrListSelected(self):
         if self.selectedAttr:
-            attr = str(self.cbAttrs.text(self.selectedAttr))
+            attr = str(self.cbAttrs.itemText(self.selectedAttr))
             mo = re_identifier.match(attr)
             if not mo or mo.span()[1] != len(attr):
                 attr = '"%s"' % attr
-
             self.insertIntoExpression(attr)
             self.selectedAttr = 0
 
-
     def funcListSelected(self):
         if self.selectedFunc:
-            func = str(self.cbFuncs.text(self.selectedFunc))
+            print self.selectedFunc
+            func = str(self.cbFuncs.itemText(self.selectedFunc))
             if func in ["atan2", "fmod", "ldexp", "log", "pow"]:
                 self.insertIntoExpression(func + "(,)")
-                self.leExpression.cursorLeft(False, 2)
-            elif func == "pi":
+                self.leExpression.cursorBackward(False, 2)
+            elif func in ["e", "pi"]:
                 self.insertIntoExpression(func)
             else:
                 self.insertIntoExpression(func + "()")
-                self.leExpression.cursorLeft(False)
-
+                self.leExpression.cursorBackward(False)
             self.selectedFunc = 0
-
 
     def applyIf(self):
         self.dataChanged = True
         if self.autosend:
             self.apply()
 
-
     def enableAuto(self):
         if self.dataChanged:
             self.apply()
-
 
     def apply(self):
         self.dataChanged = False
