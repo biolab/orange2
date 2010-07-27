@@ -725,10 +725,10 @@ class AddOnRepositoryData(QDialog):
         
     def accept(self):
         if self.name.strip() == "":
-            QMessageBox.warning(self, "Wrong Input", "Name cannot be left empty!")
+            QMessageBox.warning(self, "Incorrect Input", "Name cannot be empty")
             return
         if self.url.strip() == "":
-            QMessageBox.warning(self, "Wrong Input", "URL cannot be left empty!")
+            QMessageBox.warning(self, "Incorrect Input", "URL cannot be empty")
             return
         QDialog.accept(self)
         
@@ -899,7 +899,7 @@ class AddOnManagerDialog(QDialog):
                     repo.refreshData(force=True)  #TODO: This can take some time - inform the user!
             except Exception, e:
                 repo.name, repo.url = oldname, oldurl
-                QMessageBox.critical(self, "Error", "Could not load this repository: %s."%e)
+                QMessageBox.critical(self, "Error", "Could not load repository %s."%e)
                 continue
             break
         self.refreshView()
