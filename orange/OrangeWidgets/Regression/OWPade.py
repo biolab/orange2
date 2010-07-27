@@ -86,7 +86,7 @@ class OWPade(OWWidget):
 
     def sendReport(self):
         self.reportSettings("Learning parameters", 
-                            [("Attributes derived by", ", ".join(self.attributes[i][0] for i in self.dimensions) or "none"),
+                            [("Class is derived by", ", ".join(self.attributes[i][0] for i in self.dimensions) or "none"),
                              ("Method", self.methodNames[self.method]),
                              ("Threshold", self.threshold if self.enableThreshold else "None"),
                            ])
