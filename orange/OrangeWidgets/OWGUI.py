@@ -348,33 +348,44 @@ def enterButton(parent, height, placeholder = True):
     button = QPushButton(parent)
     button.setFixedSize(height, height)
     button.setIcon(getEnterIcon())
-    if parent.layout(): parent.layout().addWidget(button)
+    if parent.layout():
+        parent.layout().addWidget(button)
     if not placeholder:
         return button
 
     button.hide()
     holder = QWidget(parent)
     holder.setFixedSize(height, height)
+    if parent.layout():
+        parent.layout().addWidget(holder)
     return button, holder
 
 
 class LineEditWFocusOut(QLineEdit):
-    def __init__(self, parent, master, callback, focusInCallback=None):
+    def __init__(self, parent, master, callback, focusInCallback=None, placeholder=False):
         QLineEdit.__init__(self, parent)
+        if parent.layout():
+            parent.layout().addWidget(self)
         self.callback = callback
         self.focusInCallback = focusInCallback
-        self.enterButton, self.placeHolder = enterButton(parent, self.sizeHint().height())
+        if placeholder:
+            self.enterButton, self.placeHolder = enterButton(parent, self.sizeHint().height(), placeholder)
+        else:
+            self.enterButton = enterButton(parent, self.sizeHint().height(), placeholder)
+            self.placeHolder = None
         QObject.connect(self.enterButton, SIGNAL("clicked()"), self.returnPressed)
         QObject.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
         QObject.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
 
     def markChanged(self, *e):
-        self.placeHolder.hide()
+        if self.placeHolder:
+            self.placeHolder.hide()
         self.enterButton.show()
 
     def markUnchanged(self, *e):
         self.enterButton.hide()
-        self.placeHolder.show()
+        if self.placeHolder:
+            self.placeHolder.show()
 
     def returnPressed(self):
         if self.enterButton.isVisible():
@@ -401,7 +412,7 @@ class LineEditWFocusOut(QLineEdit):
 
 def lineEdit(widget, master, value,
              label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None,
-             callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnType = False, focusInCallback = None, **args):
+             callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnType = False, focusInCallback = None, enterPlaceholder=False, **args):
     if box or label:
         b = widgetBox(widget, box, orientation)
         widgetLabel(b, label, labelWidth)
@@ -418,12 +429,13 @@ def lineEdit(widget, master, value,
             bi = widgetBox(b, "", 0)
         else:
             bi = b
-        wa = LineEditWFocusOut(bi, master, callback, focusInCallback)
+        wa = LineEditWFocusOut(bi, master, callback, focusInCallback, enterPlaceholder)
     else:
         wa = QLineEdit(b)
         wa.enterButton = None
+        if b and b.layout():
+            b.layout().addWidget(wa)
 
-    if b and b.layout(): b.layout().addWidget(wa)
     if value:
         wa.setText(unicode(getdeepattr(master, value)))
 
