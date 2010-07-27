@@ -5,7 +5,7 @@
  # called. This is done intentionally and with a very solid reason: it enables us
  # to do multiple changes without, for instance, the widget being redrawn every time.
  # Besides, it would probably lead to cycles or at least a great number of redundant calls. 
- # However, since setting attributes does not triger callbacks, setting the attributes
+ # However, since setting attributes does not trigger callbacks, setting the attributes
  # here would have not other effect than changing the widget's controls and leaving it
  # in undefined (possibly invalid) state. The reason why we do not have these problems
  # in "normal" use of settings is that the context independent settings are loaded only
@@ -13,7 +13,7 @@
  # the new data is sent and the widget "knows" it has to reconfigure.
  # The only solution would be to require all the widgets have a method for updating
  # everything from scratch according to settings. This would require a lot of work, which
- # could even be unfeasible. For instance, there are widget which get the data, compute
+ # could even not be feasible. For instance, there are widget which get the data, compute
  # something and discard the data. This is good since it is memory efficient, but it
  # may prohibit the widget from implementing the update-from-the-scratch method.  
  
