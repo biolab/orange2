@@ -21,7 +21,7 @@ class OWDataInfo(OWWidget):
         self.contattrcount = 0
         self.stringattrcount = 0
         self.metaattrcount = 0
-        self.classattr = "no"
+        self.classattr = "No"
         
         box = OWGUI.widgetBox(self.controlArea, "Data Set Size", addSpace=True)
         OWGUI.label(box, self, '<table><tr><td width="150">Samples (rows):</td><td align="right" width="60">%(rowcount)7i</td></tr>\
@@ -49,7 +49,7 @@ class OWDataInfo(OWWidget):
             self.contattrcount = len([attr for attr in data.domain.attributes if attr.varType == orange.VarTypes.Continuous])
             self.stringattrcount = len([attr for attr in data.domain.attributes if attr.varType == orange.VarTypes.String])
             self.metaattrcount = len(data.domain.getmetas())
-            self.classattr = "yes" if data.domain.classVar else "No"
+            self.classattr = "Yes" if data.domain.classVar else "No"
         else:
             self.rowcount = 0
             self.columncount = 0
@@ -57,7 +57,7 @@ class OWDataInfo(OWWidget):
             self.contattrcount = 0
             self.stringattrcount = 0
             self.metaattrcount = 0
-            self.classattr = "no"
+            self.classattr = "No"
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
