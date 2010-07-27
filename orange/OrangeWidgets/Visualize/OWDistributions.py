@@ -423,9 +423,10 @@ class OWDistributions(OWWidget):
         self.yPaxisTitle = ""
 
         # GUI
-        self.tabs = OWGUI.tabWidget(self.controlArea)
-        self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
-        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+#        self.tabs = OWGUI.tabWidget(self.controlArea)
+#        self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
+#        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        self.GeneralTab = self.SettingsTab = self.controlArea
 
         self.graph = OWDistributionGraph(self, self.mainArea)
         self.mainArea.layout().addWidget(self.graph)
@@ -435,6 +436,8 @@ class OWDistributions(OWWidget):
         
         self.loadSettings()
 
+        self.barSize = 50
+
         # inputs
         # data and graph temp variables
         self.inputs = [("Examples", ExampleTable, self.setData, Default)]
@@ -443,51 +446,57 @@ class OWDistributions(OWWidget):
         self.outcomenames = []
         self.probGraphValues = []
 
+        b = OWGUI.widgetBox(self.controlArea, "Variable", addSpace=True)
+        self.variablesQCB = OWGUI.comboBox(b, self, "attribute", valueType = str, sendSelectedValue = True, callback=self.setVariable)
+        OWGUI.widgetLabel(b, "Displayed outcomes")
+        self.outcomesQLB = OWGUI.listBox(b, self, "visibleOutcomes", "outcomes", selectionMode = QListWidget.MultiSelection, callback = self.outcomeSelectionChange)
 
         # GUI connections
         # options dialog connections
-        self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
-        self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
+#        b = OWGUI.widgetBox(self.SettingsTab, "Bars")
+#        OWGUI.spin(b, self, "numberOfBars", label="Number of bars", min=5, max=60, step=5, callback=self.setNumberOfBars, callbackOnReturn=True)
+#        self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
+#        self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
 
-        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box="Bar size", minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
+#        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box="Bar size", minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
+#        OWGUI.spin(b, self, "barSize", label="Bar size", min=30, max=100, step=5, callback=self.setBarSize, callbackOnReturn=True)
 
-        box = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
+        box = OWGUI.widgetBox(self.SettingsTab, "General graph settings", addSpace=True)
         box.setMinimumWidth(180)
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(box2, self, 'showMainTitle', 'Show main title', callback = self.setShowMainTitle)
-        OWGUI.lineEdit(box2, self, 'mainTitle', callback = self.setMainTitle)
+        OWGUI.checkBox(box2, self, 'showMainTitle', 'Main title', callback = self.setShowMainTitle)
+        OWGUI.lineEdit(box2, self, 'mainTitle', callback = self.setMainTitle, enterPlaceholder=True)
 
         box3 = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(box3, self, 'showXaxisTitle', 'Show X axis title', callback = self.setShowXaxisTitle)
-        OWGUI.lineEdit(box3, self, 'xaxisTitle', callback = self.setXaxisTitle)
+        OWGUI.checkBox(box3, self, 'showXaxisTitle', 'X axis title', callback = self.setShowXaxisTitle)
+        OWGUI.lineEdit(box3, self, 'xaxisTitle', callback = self.setXaxisTitle, enterPlaceholder=True)
 
         box4 = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(box4, self, 'showYaxisTitle', 'Show Y axis title', callback = self.setShowYaxisTitle)
-        OWGUI.lineEdit(box4, self, 'yaxisTitle', callback = self.setYaxisTitle)
+        OWGUI.checkBox(box4, self, 'showYaxisTitle', 'Y axis title', callback = self.setShowYaxisTitle)
+        OWGUI.lineEdit(box4, self, 'yaxisTitle', callback = self.setYaxisTitle, enterPlaceholder=True)
 
         OWGUI.checkBox(box, self, 'graph.showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
+        OWGUI.spin(box, self, "numberOfBars", label="Number of bars", min=5, max=60, step=5, callback=self.setNumberOfBars, callbackOnReturn=True)
 
         box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
+        self.targetQCB = OWGUI.comboBox(OWGUI.indentedBox(box5), self, "targetValue", label="Target value", valueType=int, callback=self.setTarget)
 
         box6 = OWGUI.widgetBox(box5, orientation = "horizontal")
 
-        self.showYPaxisCheck = OWGUI.checkBox(box6, self, 'showYPaxisTitle', 'Show axis title', callback = self.setShowYPaxisTitle)
-        self.yPaxisEdit = OWGUI.lineEdit(box6, self, 'yPaxisTitle', callback = self.setYPaxisTitle)
+        self.showYPaxisCheck = OWGUI.checkBox(box6, self, 'showYPaxisTitle', 'Axis title', callback = self.setShowYPaxisTitle)
+        self.yPaxisEdit = OWGUI.lineEdit(box6, self, 'yPaxisTitle', callback = self.setYPaxisTitle, enterPlaceholder=True)
         self.confIntCheck = OWGUI.checkBox(box5, self, 'showConfidenceIntervals', 'Show confidence intervals', callback = self.setShowConfidenceIntervals)
-        self.showProb.disables = [self.showYPaxisCheck, self.yPaxisEdit, self.confIntCheck]
+        self.cbSmooth = OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
+        self.showProb.disables = [self.showYPaxisCheck, self.yPaxisEdit, self.confIntCheck, self.targetQCB, self.cbSmooth]
         self.showProb.makeConsistent()
 
-        OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
 
 #        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box='Line width', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
         
         OWGUI.rubber(self.SettingsTab)
 
         #add controls to self.controlArea widget
-        self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Variable", valueType = str, sendSelectedValue = True, callback=self.setVariable)
-        self.targetQCB = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box="Target value", valueType=int, callback=self.setTarget)
-        self.outcomesQLB = OWGUI.listBox(self.GeneralTab, self, "visibleOutcomes", "outcomes", "Outcomes", selectionMode = QListWidget.MultiSelection, callback = self.outcomeSelectionChange)
 
         self.icons = self.createAttributeIconDict()
 
