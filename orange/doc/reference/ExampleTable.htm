@@ -374,7 +374,7 @@ Fold 0: train
 <XMP class=code>young = data.filter(age=["young", "presbyopic"], astigm="y")
 </XMP>
 
-<P>If you need to reverse the decision, you cannot simply add <CODE>negate=1</CODE> as in <CODE>select</CODE> method, since this would be interpreted simply as another attribute (<CODE>negate</CODE>) whose value needs to be 1 (e.g. <CODE>values[1]</CODE>, see documentation on <A href="Variable.htm"><CODE>Variable</CODE></A>). For negation, you should use somewhat less readable way to pass arguments to <CODE>filter</CODE> - you should pack them to a dictionary. For instance, to select examples that are not young and astigmatic, use</P>
+<P>If you need the reverse selection, you cannot simply add <CODE>negate=1</CODE> as in <CODE>select</CODE> method, since this would be interpreted simply as another attribute (<CODE>negate</CODE>) whose value needs to be 1 (e.g. <CODE>values[1]</CODE>, see documentation on <A href="Variable.htm"><CODE>Variable</CODE></A>). For negation, you should use somewhat less readable way to pass arguments to <CODE>filter</CODE> - you should pack them to a dictionary. For instance, to select examples that are not young and astigmatic, use</P>
 
 <XMP class=code>young = data.filter({"age": "young", "astigmatic": "yes"}, negate=1)
 </XMP>
@@ -401,8 +401,11 @@ Fold 0: train
 
 <dt>filterbool</dt>
 <dd>Returns a list of bools denoting which examples are accepted and which are not.</dd>
-w
-</DL>
+
+<dt>translate(domain), translate(attributes[, keepMetas])</dt>
+<dd>Returns a new example table in which examples belong to the specified domain or are described by the given set of attributes. If additional argument <code>keepMetas</code> is 1, the new domain will also include all meta attributes frmo the original domain.</dd>
+</dl>
+
 
 <H2>Other methods</H2>
 
