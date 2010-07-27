@@ -155,7 +155,6 @@ class OWDistanceFile(OWWidget):
         self.loadFile()
 
     def loadFile(self):
-        #print 'loading file'
         if self.fileIndex:
             fn = self.recentFiles[self.fileIndex]
             self.recentFiles.remove(fn)
