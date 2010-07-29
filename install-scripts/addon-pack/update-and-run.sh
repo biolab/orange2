@@ -6,7 +6,11 @@
 # This script issues an update of the packaging scripts and runs the packaging. 
 #
 
-cd `dirname $0`
-./update-scripts.sh
-./pack-addons.sh
-poweroff
+(
+  echo "=== `date` ==="
+  sleep 120
+  cd `dirname $0`
+  ./update-scripts.sh
+  ./pack-addons.sh
+  poweroff
+) >> /var/log/update-and-run.log
