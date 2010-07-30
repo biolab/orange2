@@ -26,7 +26,7 @@ def _orange__reduce(self):
     return type(self), (), dict(self.__dict__)
     
 def _orange__new(base=orange.Preprocessor):
-    """ Return a orange 'schizofrenic' __new__ class method.
+    """ Return an orange 'schizofrenic' __new__ class method.
     
     Arguments:
         - `base`: base orange class (default orange.Preprocessor)
@@ -432,17 +432,53 @@ class SampleEditor(OWBaseWidget):
                         fset=setSampler,
                         user=True)
     
+def _funcName(func):
+    return func.__name__
+    
 class PreprocessorItemDelegate(QStyledItemDelegate):
-    DISPLAY = {}
+        
+    #Preprocessor name replacement rules
+    REPLACE = {Preprocessor_discretize: "Discretize ({0.method})",
+               Preprocessor_removeContinuous: "Discretize (remove continuous)",
+               Preprocessor_continuize: "Continuize ({0.multinomialTreatment})",
+               Preprocessor_removeDiscrete: "Continuize (remove discrete)",
+               Preprocessor_impute: "Impute ({0.model})",
+               Preprocessor_imputeByLearner: "Impute ({0.learner})",
+               Preprocessor_dropMissing: "Remove missing",
+               Preprocessor_featureSelection: "Feature selection ({0.filter}, {0.limit})",
+               Preprocessor_sample: "Sample ({0.filter}, {0.limit})",
+               orange.EntropyDiscretization: "entropy",
+               orange.EquiNDiscretization: "freq, {0.numberOfIntervals}",
+               orange.EquiDistDiscretization: "width, {0.numberOfIntervals}",
+               orange.RandomLearner: "random",
+               orange.BayesLearner: "bayes  model",
+               orange.MajorityLearner: "average",
+               type(lambda : None): _funcName}
+    
+    import re
+    INSERT_RE = re.compile(r"{0\.(\w+)}")
+    
     def __init__(self, parent=None):
         QStyledItemDelegate.__init__(self, parent)
         
     def displayText(self, value, locale):
         try:
             p = value.toPyObject()
-            return str(type(p).__name__)
+            return self.format(p)
         except Exception, ex:
             return repr(ex)
+        
+    def format(self, obj):
+        def replace(match):
+            attr = match.groups()[0]
+            if hasattr(obj, attr):
+                return self.format(getattr(obj, attr))
+        
+        text = self.REPLACE.get(type(obj), str(obj))
+        if hasattr(text, "__call__"):
+            return text(obj)
+        else:
+            return self.INSERT_RE.sub(replace, text)
         
 class NamedTupleItemDelegate(QStyledItemDelegate):
     """ Item delegate for displaying the name of (name, [...]) structured tuples
