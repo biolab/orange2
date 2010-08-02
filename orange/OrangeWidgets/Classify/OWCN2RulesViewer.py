@@ -76,7 +76,7 @@ class OWCN2RulesViewer(OWWidget):
     settingsList=["RuleLen","RuleQ","Coverage","Commit","Rule","Sort","Dist","DistBar","Class"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer")
+        OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer", wantGraph=True)
 
         self.inputs=[("Rule Classifier", orange.RuleClassifier, self.setRuleClassifier)]
         self.outputs=[("Examples", ExampleTable), ("Attribute List", AttributeList)]
@@ -124,7 +124,8 @@ class OWCN2RulesViewer(OWWidget):
 
         OWGUI.rubber(self.controlArea)
 
-        OWGUI.button(self.controlArea,self,"&Save rules to file",callback=self.saveRules, debuggingEnabled = 0)
+#        OWGUI.button(self.controlArea, self, "&Save rules to file", callback=self.saveRules, debuggingEnabled = 0)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.save)
 
         self.examples=None
         self.text = []
@@ -370,15 +371,20 @@ class OWCN2RulesViewer(OWWidget):
             self.send("Examples",None)
             self.send("Attribute List", None)
 
+    def save(self, fileName = None):
+        from OWDlgs import OWChooseImageSizeDlg
+        dlg = OWChooseImageSizeDlg(self.canvas, [("Save as text file (.txt)", self.saveRules)])
+        dlg.exec_()
 
-    def saveRules(self):
-        fileName=str(QFileDialog.getSaveFileName(self, "Rules", "Rules.txt",".txt"))
-        try:
-            f=open(fileName,"w")
-        except :
-            return
+    def saveRules(self, filename=None):
+        if filename is None:
+            fileName = str(QFileDialog.getSaveFileName(self, "Rules", "Rules.txt",".txt"))
+            if not fileName:
+                return
+        
+        f = open(fileName,"wb")
         for r in self.rules:
-            f.write(orngCN2.ruleToString(r)+"\n")
+            f.write(orngCN2.ruleToString(r) + "\n")
 
     def keyPressEvent(self, key):
         if key.key()==Qt.Key_Control:

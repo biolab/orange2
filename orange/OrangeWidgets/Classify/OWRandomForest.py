@@ -10,6 +10,7 @@ from OWWidget import *
 import orngTree, OWGUI
 import orngEnsemble
 from exceptions import Exception
+from orngWrap import PreprocessedLearner
 
 class OWRandomForest(OWWidget):
     settingsList = ["name", "trees", "attributes", "attributesP", "preNodeInst", "preNodeInstP", "limitDepth", "limitDepthP", "rseed", "outtree" ]
@@ -17,7 +18,7 @@ class OWRandomForest(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Choosen Tree", orange.TreeClassifier) ]
 
         self.name = 'Random Forest'
@@ -116,7 +117,8 @@ class OWRandomForest(OWWidget):
         learner.learner.storeDistributions = 1
 
         if self.limitDepth: learner.learner.maxDepth = self.limitDepthP
-
+        if self.preprocessor:
+            learner = self.preprocessor.wrapLearner(learner)
         learner.name = self.name
         return learner
 
@@ -157,6 +159,10 @@ class OWRandomForest(OWWidget):
             self.streeEnabled(False)
 
         self.send("Random Forest Classifier", self.classifier)
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.doBoth()
 
     def doBoth(self):
         self.setLearner()

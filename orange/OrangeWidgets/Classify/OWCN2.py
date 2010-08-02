@@ -8,6 +8,8 @@
 from OWWidget import *
 import OWGUI, orange, orngCN2, sys
 
+from orngWrap import PreprocessedLearner
+
 class CN2ProgressBar(orange.ProgressCallback):
     def __init__(self, widget, start=0.0, end=0.0):
         self.start = start
@@ -25,7 +27,7 @@ class OWCN2(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2", wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Example Table", ExampleTable, self.dataset)]
+        self.inputs = [("Example Table", ExampleTable, self.dataset), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
         self.QualityButton = 0
         self.CoveringButton = 0
@@ -41,6 +43,7 @@ class OWCN2(OWWidget):
         self.loadSettings()
 
         self.data=None
+        self.preprocessor = None
 
         ##GUI
         labelWidth = 150
@@ -156,6 +159,8 @@ class OWCN2(OWWidget):
         if self.QualityButton == 2:
             self.learner=orngCN2.CN2EVCUnorderedLearner(width=self.BeamWidth, rule_sig=self.Alpha, att_sig=self.stepAlpha,
                                                         min_coverage = self.MinCoverage, max_rule_complexity = maxRuleLength)
+            if self.preprocessor:
+                self.learner = self.preprocessor.wrapLearner(self.learner)
             self.learner.name = self.name
 #            self.learner.progressCallback=CN2ProgressBar(self)
             self.send("Learner",self.learner)
@@ -163,7 +168,7 @@ class OWCN2(OWWidget):
             self.learner=orngCN2.CN2UnorderedLearner()
             self.learner.name = self.name
 #            self.learner.progressCallback=CN2ProgressBar(self)
-            self.send("Learner",self.learner)
+#            self.send("Learner",self.learner)
 
             ruleFinder=orange.RuleBeamFinder()
             if self.QualityButton==0:
@@ -185,6 +190,11 @@ class OWCN2(OWWidget):
                 self.learner.coverAndRemove=orange.RuleCovererAndRemover_Default()
             elif self.CoveringButton==1:
                 self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight)
+                
+            if self.preprocessor:
+                self.learner = self.preprocessor.wrapLearner(self.learner)
+            self.learner.name = self.name
+            self.send("Learner", self.learner)
 
         self.classifier=None
         self.error()
@@ -218,6 +228,10 @@ class OWCN2(OWWidget):
     def dataset(self, data):
         #self.data=data
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
+        self.setLearner()
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
         self.setLearner()
 
     def qualityButtonPressed(self, id=0):

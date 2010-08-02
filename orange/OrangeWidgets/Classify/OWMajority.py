@@ -9,6 +9,7 @@ from OWWidget import *
 import OWGUI
 from exceptions import Exception
 
+from orngWrap import PreprocessedLearner
 class OWMajority(OWWidget):
     settingsList = ["name"]
 
@@ -17,10 +18,13 @@ class OWMajority(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
         self.name = 'Majority'
+        
+        self.data = None
+        self.preprocessor = None
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
@@ -36,6 +40,8 @@ class OWMajority(OWWidget):
         self.resize(100,100)
 
     def setLearner(self):
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(orange.MajorityLearner())
         self.learner.name = self.name
         self.send("Learner", self.learner)
 
@@ -53,6 +59,11 @@ class OWMajority(OWWidget):
         else:
             self.classifier = None
         self.send("Classifier", self.classifier)
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.setLearner()
+        self.setData(self.data)
 
     def sendReport(self):
         self.reportData(self.data)

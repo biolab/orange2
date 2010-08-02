@@ -9,12 +9,13 @@
 import orange, orngSVM, OWGUI, sys
 from OWWidget import *
 from exceptions import SystemExit
+from orngWrap import PreprocessedLearner
 
 class OWSVM(OWWidget):
     settingsList=["C","nu","p","probability","gamma","degree", "coef0", "kernel_type", "name", "useNu", "normalization"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
-        self.inputs=[("Example Table", ExampleTable, self.setData)]
+        self.inputs=[("Example Table", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs=[("Learner", orange.Learner, Default),("Classifier", orange.Classifier, Default),("Support Vectors", ExampleTable)]
 
         self.kernel_type = 2
@@ -32,6 +33,7 @@ class OWSVM(OWWidget):
         self.normalization=1
         self.data = None
         self.selFlag=False
+        self.preprocessor = None
         self.name="SVM"
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
@@ -123,6 +125,10 @@ class OWSVM(OWWidget):
         self.data = self.isDataWithClass(data, checkMissing=True) and data or None
         self.paramButton.setDisabled(not self.data)
         self.applySettings()
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.applySettings()
 
     def applySettings(self):
         self.learner=orngSVM.SVMLearner()
@@ -137,24 +143,12 @@ class OWSVM(OWWidget):
         if self.useNu:
             self.learner.svm_type=orngSVM.SVMLearner.Nu_SVC
 
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(self.learner)
         self.classifier=None
         self.supportVectors=None
-        if self.nomogram and self.data and self.data.domain.classVar.varType==orange.VarTypes.Discrete and \
-                len(self.data.domain.classVar.values)==2 and self.kernel_type==0:
-            import orngLR_Jakulin
-            self.learner=orngSVM.BasicSVMLearner()
-            for attr in ("name", "shrinking"):
-                setattr(self.learner, attr, getattr(self, attr))
-            for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
-                setattr(self.learner, attr, float(getattr(self, attr)))
-            self.learner.kernel=self.kernel_type
-            self.learner.for_nomogram=1
-            self.classifier=orngLR_Jakulin.MarginMetaLearner(self.learner, folds=1)(self.data)
-            self.classifier.name=self.name
-            self.classifier.domain=self.data.domain
-            self.classifier.data=self.data
-            self.supportVectors=self.data.getitemsref(self.classifier.classifier.model["SVi"])
-        elif self.data:
+        
+        if self.data:
             if self.data.domain.classVar.varType==orange.VarTypes.Continuous:
                 self.learner.svm_type+=3
             self.classifier=self.learner(self.data)

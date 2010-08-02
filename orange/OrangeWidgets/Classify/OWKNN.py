@@ -8,6 +8,7 @@
 from OWWidget import *
 import OWGUI
 from exceptions import Exception
+from orngWrap import PreprocessedLearner
 
 class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
@@ -17,7 +18,7 @@ class OWKNN(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
@@ -86,12 +87,17 @@ class OWKNN(OWWidget):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.setLearner()
 
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.setLearner()
 
     def setLearner(self):
         distconst = self.metricsList[self.metrics][1]()
         distconst.ignoreUnknowns = self.ignoreUnknowns
         distconst.normalize = self.normalize
         self.learner = orange.kNNLearner(k = self.k, rankWeight = self.ranks, distanceConstructor = distconst)
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name
 
         self.send("Learner", self.learner)

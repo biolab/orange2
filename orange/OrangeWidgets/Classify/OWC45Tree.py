@@ -9,6 +9,7 @@ from OWWidget import *
 import OWGUI
 from exceptions import Exception
 
+from orngWrap import PreprocessedLearner
 class OWC45Tree(OWWidget):
     settingsList = ["name",
                     "infoGain", "subset", "probThresh",
@@ -21,7 +22,7 @@ class OWC45Tree(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]#, ("C45 Tree", orange.C45Classifier)]
 
         # Settings
@@ -93,6 +94,10 @@ class OWC45Tree(OWWidget):
     def setData(self,data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.setLearner()
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.setLearner()
 
 
     def setLearner(self):
@@ -110,6 +115,9 @@ class OWC45Tree(OWWidget):
                 QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found. See http://www.ailab.si/orange/doc/reference/C45Learner.htm', QMessageBox.Ok)
                 setattr(self, "__showMessageBox", False)
             return
+        
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(self.learner)
 
         self.learner.name = self.name
         self.send("Learner", self.learner)

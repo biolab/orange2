@@ -9,14 +9,16 @@ from OWWidget import *
 from orngLR import *
 import OWGUI
 
+from orngWrap import PreprocessedLearner
+
 class OWLogisticRegression(OWWidget):
     settingsList = ["univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
 
-        self.inputs = [("Examples", ExampleTable, self.setData)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Attributes", list)]
 
         from orngTree import TreeLearner
         imputeByModel = orange.ImputerConstructor_model()
@@ -89,6 +91,8 @@ class OWLogisticRegression(OWWidget):
                                          stepwiseLR = self.stepwiseLR, addCrit = self.addCrit/100., removeCrit = self.removeCrit/100.,
                                          numAttr = self.limitNumAttr and float(self.numAttr) or -1.0)
 
+        if self.preprocessor:
+            self.learner = self.preprocessor.wrapLearner(self.learner)
         self.learner.name = self.name
         self.send("Learner", self.learner)
         self.applyData()
@@ -119,6 +123,10 @@ class OWLogisticRegression(OWWidget):
     def setData(self, data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete, checkMissing=True) and data or None
         self.applyData()
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.applyLearner()
 
 
 if __name__=="__main__":
