@@ -12,6 +12,7 @@ from OWWidget import *
 import orngTest, orngStat, OWGUI
 import time
 import warnings
+from orngWrap import PreprocessedLearner
 warnings.filterwarnings("ignore", "'id' is not a builtin attribute",
                         orange.AttributeWarning)
 
@@ -69,7 +70,7 @@ class OWTestLearners(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
 
-        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Separate Test Data", ExampleTable, self.setTestData), ("Learner", orange.Learner, self.setLearner, Multiple)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Separate Test Data", ExampleTable, self.setTestData), ("Learner", orange.Learner, self.setLearner, Multiple), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
@@ -91,6 +92,7 @@ class OWTestLearners(OWWidget):
         self.testdata = None            # separate test data set
         self.learners = {}              # set of learners (input)
         self.results = None             # from orngTest
+        self.preprocessor = None
 
         self.controlArea.layout().setSpacing(8)
         # GUI
@@ -269,10 +271,13 @@ class OWTestLearners(OWWidget):
 #                                  [0]*(len(self.data) - min(n, len(self.data))))
         self.warning(0)
         for l in [self.learners[id] for id in ids]:
+            learner = l.learner
+            if self.preprocessor:
+                learner = self.preprocessor.wrapLearner(learner)
             try:
-                predictor = l.learner(new)
+                predictor = learner(new)
                 if predictor(new[0]).varType == new.domain.classVar.varType:
-                    learners.append(l.learner)
+                    learners.append(learner)
                 else:
                     l.scores = []
             except Exception, ex:
@@ -316,7 +321,11 @@ class OWTestLearners(OWWidget):
         if self.isclassification():
             cm = orngStat.computeConfusionMatrices(res, classIndex = self.targetClass)
 
+        if self.preprocessor: # Unwrap learners 
+            learners = [l.wrappedLearner for l in learners]
+            
         res.learners = learners
+        
         for l in [self.learners[id] for id in ids]:
             if l.learner in learners:
                 l.results = res
@@ -438,6 +447,12 @@ class OWTestLearners(OWWidget):
                 del self.learners[id]
             self.sendResults()
         self.paintscores()
+        
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        if self.learners:
+            self.score([l.id for l in self.learners.values()])
+            self.paintscores()
 
     # handle output signals
 
