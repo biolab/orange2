@@ -213,8 +213,15 @@ class ThresholdLearner_fixed(orange.Learner):
         
         return ThresholdClassifier(self.learner(examples, weightID), self.threshold)
 
-
 class PreprocessedLearner(object):
+    def __new__(cls, preprocessor = None, learner = None):
+        self = object.__new__(cls)
+        if learner is not None:
+            self.__init__(preprocessor)
+            return self.wrapLearner(learner)
+        else:
+            return self
+        
     def __init__(self, preprocessor = None, learner = None):
         if isinstance(preprocessor, list):
             self.preprocessors = preprocessor
@@ -254,4 +261,11 @@ class PreprocessedLearner(object):
                     return classifier, processed
                 else:
                     return classifier # super(WrappedLearner, self).__call__(processed, procW)
+                
+            def __reduce__(self):
+                return PreprocessedLearner, (self.preprocessor.preprocessors, self.wrappedLearner)
+            
+            def __getattr__(self, name):
+                return getattr(learner, name)
+            
         return WrappedLearner()
