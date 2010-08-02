@@ -9,14 +9,6 @@
 #include "pq.cpp"
 
 template <class Key>
-DNode<Key>::DNode(const int &v, const double &d)
-  : PQNode<Key>(-1, d),
-    m_v(v),
-    m_visited(false)
-{
-}
-
-template <class Key>
 SPFNode<Key>::SPFNode(const int &v, const double &d, const short int &state)
   : PQNode<Key>(-1, d),
     m_v(v),
@@ -31,9 +23,8 @@ BFSNode::BFSNode(const int &idx, const double &d, const int &len)
 {
 }
 
-TPathfinder::TPathfinder(int r, int q)
-  : m_r(r),
-    m_q(q)
+TPathfinder::TPathfinder()
+  : progressCallback(NULL)
 {
 }
 
@@ -41,7 +32,24 @@ TPathfinder::~TPathfinder()
 {
 }
 
-void TPathfinder::toPFNET(TGraph *g)
+void TPathfinder::toPFNET(int r, int q, TGraph *g, const string &method)
+{
+  // Set the parameters
+  m_r = r;
+  m_q = q;
+
+  // Needed for the progress callback
+  m_done = 0;
+  m_nodes = g->nVertices;
+
+  if (method == "sparse") {
+    toPFNET_sparse(g);
+  } else if (method == "dense") {
+    toPFNET_binary(g);
+  }
+}
+
+void TPathfinder::toPFNET_binary(TGraph *g)
 {
   int n = g->nVertices;
   int i = 1, nq = 0;
@@ -130,10 +138,7 @@ void TPathfinder::distances(const Vector &a, const Vector &b, Vector &result) co
 
 double TPathfinder::distance(const double &a, const double &b) const
 {
-    // FIXME
-    // I think there is some room for optimization here.
-    // The value for 'infinity' can be put much lower -
-    // calculating the maximum is much cheaper!!
+    // Check for infinity constant
     if (m_r >= 1 && m_r < INFINITY) 
     {
       return pow( pow(a, m_r) + pow(b, m_r), 1.0 / (double)m_r );
@@ -153,91 +158,6 @@ void TPathfinder::getCol(const Matrix &m, int i, Vector &col) const
   }
   
   col.swap(result);
-}
-
-void TPathfinder::toPFNET_dijkstra(TGraph *g)
-{
-  int n = g->nVertices;
-  if (m_q < n-1) {
-    BFS(g);
-    return;
-  }
-
-  vector<int> neighbours;
-  PQHeap<double> pq(n);                 // Priority queue, sorted by distance from the source vertex
-  vector<DijkstraNode*> nodes(n);       // Node storage
-  Matrix Dq (n, Vector(n, INFINITY));   // Resulting shortest distances
-  
-  DijkstraNode *v, *t, *z;              // Source node, current node and the current neighbour
-
-  // Some statistics
-  int nodesChecked = 0;
-  
-  // Create node objects
-  for (int j=0; j<n; j++) {
-     nodes[j] = new DijkstraNode(j, INFINITY);
-  }
-
-  for (int i=0; i<n; i++)
-  {    
-    for (int j=0; j<n; j++) {
-      nodes[j]->setKey(INFINITY);
-      nodes[j]->m_visited = false;
-    }
-    
-    v = nodes[i];
-    v->setKey(0);
-    v->m_visited = true;
-    
-    pq.insert(v);
-    
-    while (!pq.empty())
-    {
-      t = static_cast<DijkstraNode*>(pq.deleteMin());
-      g->getNeighboursFrom(t->m_v, neighbours);
-      
-      for (int k=0; k < neighbours.size(); k++) 
-      {
-        z = nodes[neighbours[k]];
-#ifdef STATISTICS
-        nodesChecked++;
-#endif
-        double newDist = distance(t->getKey(), *g->getEdge(t->m_v, z->m_v));
-        
-        // Visit the neighbour only if it is along the allowed number of links!
-        if (!z->m_visited) {
-          z->m_visited = true;
-          z->setKey(newDist);
-          pq.insert(z);
-        }
-        // If we find a shorter path, we can use it only if the path is along the allowed number of links!
-        else if (newDist < z->getKey()) {
-          pq.decreaseKey(z, newDist);
-        }
-      }
-    }
-    
-    // The result of each Dijkstra's calculation is a new line in the target matrix
-    for (int k=0; k<n; k++)
-    {
-      Dq[i][k] = nodes[k]->getKey();
-    }
-  }
-
-  // Comparing elements of D^q and W^2, wherever dij = wij, mark eij as a link in the PFNET
-  for (int j=0; j<n; j++) {
-    for (int k=0; k<n; k++) 
-    {  
-      double *w = g->getEdge(j,k);
-      
-      if (w != NULL && (Dq[j][k] != *w ))
-        g->removeEdge(j,k);
-    }
-  }
-
-#ifdef STATISTICS
-  cout << "Dijkstra: " << nodesChecked << " nodes checked" << endl;
-#endif
 }
 
 void TPathfinder::toPFNET_sparse(TGraph *g)
@@ -312,6 +232,7 @@ void TPathfinder::toPFNET_sparse(TGraph *g)
       for (int j=0; j<neighbours.size(); j++)
       {
         t = nodes[neighbours[j]];
+
 #ifdef STATISTICS
         nodesChecked++;
 #endif
@@ -340,6 +261,9 @@ void TPathfinder::toPFNET_sparse(TGraph *g)
     {
       nodes[dirty[j]]->m_state = OUTER;
     }
+
+    // We've finished one node
+    updateProgress();
   }
 
 #ifdef STATISTICS
@@ -399,6 +323,9 @@ void TPathfinder::BFS(TGraph *g)
     // Save all the calculated distances into the target matrix Dq
     for (int j=0; j<n; j++)
       Dq[i][j] = dist[j];
+
+    // We've finished one node
+    updateProgress();
   }
 
   for (int i=0; i<n; i++) {
@@ -412,76 +339,68 @@ void TPathfinder::BFS(TGraph *g)
   }
 }
 
+void TPathfinder::updateProgress()
+{
+  if (!progressCallback) 
+    return;
+
+  double complete = ++m_done / (double) m_nodes;
+  PyObject *arglist;
+  /* Time to call the callback */
+  arglist = Py_BuildValue("(d)", complete);
+  PyObject_CallObject(progressCallback, arglist);
+  Py_DECREF(arglist);
+}
+
 /*     ----------       Python interface     ---------       */
 
 #include "externs.px"
 #include "orange_api.hpp"
 WRAPPER(Orange);
-PyObject *Pathfinder_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON (Orange, "(r, q)")
+PyObject *Pathfinder_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON (Orange, "()")
 {
   PyTRY
-    int r=-1, q=-1;
   
-    if (PyArg_ParseTuple(args, "ii", &r, &q)) {
-      return WrapNewOrange(mlnew TPathfinder(r, q), type);
+    return WrapNewOrange(mlnew TPathfinder(), type);
+
+  PyCATCH;
+}
+
+PyObject *Pathfinder_setProgressCallback(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(function) -> None")
+{
+  PyTRY
+    CAST_TO(TPathfinder, pf);
+    
+    PyObject *cb;
+    if (PyArg_ParseTuple(args, "O:setProgressCallback", &cb)) {
+        if (!PyCallable_Check(cb)) {
+            PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+            return NULL;
+        }
+        Py_XINCREF(cb);                    /* Add a reference to new callback */
+        Py_XDECREF(pf->progressCallback);  /* Dispose of previous callback */
+        pf->setProgressCallback(cb);       /* Remember new callback */
     }
     
-    PyErr_Format(PyExc_TypeError, "Pathfinder.__new__: Wrong argument type");
-    return PYNULL;
-    
-  PyCATCH;
-}
-
-PyObject *Pathfinder_toPFNET(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "g -> None")
-{
-  PyTRY
-    CAST_TO(TPathfinder, pf);
-    
-    PyObject *pygraph;
-    TGraph *g;
-    
-    if (!PyArg_ParseTuple(args, "O:Graph", &pygraph))
-      return PYNULL;
-    
-    g = PyOrange_AsGraph(pygraph).getUnwrappedPtr();
-    pf->toPFNET(g);
-    
     RETURN_NONE;
   PyCATCH;
 }
 
-PyObject *Pathfinder_toPFNET_dijkstra(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "g -> None")
+PyObject *Pathfinder_simplify(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(r, q, graph) -> None")
 {
   PyTRY
     CAST_TO(TPathfinder, pf);
     
-    PyObject *pygraph;
+    PyObject *pyGraph;
     TGraph *g;
+    int r, q;
     
-    if (!PyArg_ParseTuple(args, "O:Graph", &pygraph))
+    if (!PyArg_ParseTuple(args, "iiO|s:simplify", &r, &q, &pyGraph))
       return PYNULL;
-    
-    g = PyOrange_AsGraph(pygraph).getUnwrappedPtr();
-    pf->toPFNET_dijkstra(g);
-    
-    RETURN_NONE;
-  PyCATCH;
-}
 
-PyObject *Pathfinder_toPFNET_sparse(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "g -> None")
-{
-  PyTRY
-    CAST_TO(TPathfinder, pf);
-    
-    PyObject *pygraph;
-    TGraph *g;
-    
-    if (!PyArg_ParseTuple(args, "O:Graph", &pygraph))
-      return PYNULL;
-    
-    g = PyOrange_AsGraph(pygraph).getUnwrappedPtr();
-    pf->toPFNET_sparse(g);
-    
+    g = PyOrange_AsGraph(pyGraph).getUnwrappedPtr();
+    pf->toPFNET(r, q, g, "sparse");
+  
     RETURN_NONE;
   PyCATCH;
 }

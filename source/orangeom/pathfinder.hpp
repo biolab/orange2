@@ -33,25 +33,6 @@ typedef vector< vector<double> > Matrix;
 typedef vector< double > Vector;
 
 /**
- * Class implementing the PQ element used for shortest path searching.
- */
-template <class Key>
-class DNode : public PQNode<Key> {
-public:
-    /**
-     * Class constructor
-     * 
-     * @param v: vertex index
-     * @param d: distance to the source vertex
-     */
-    DNode(const int &v, const double &d);
-    
-    bool m_visited;
-    int m_v;         // Vertex index
-};
-typedef DNode<double> DijkstraNode;
-
-/**
  * Class implementing the pq element used in sparse pf.
  */
 template <class Key>
@@ -93,32 +74,43 @@ public:
 
     /**
      * Class constructor.
-     *
-     * Parameters to be used when constructing PFNETs:
-     * @param r: Minkowski r-metric, r >= 1. Note: r should be passed as 
-     *           numeric_limits<int>::max() in order to be recognized as 'infinity'!
-     * @param q: The maximum number of intermediate links to be considered
      */
-    TPathfinder(int r, int q);
+    TPathfinder();
     
     /**
      * Class desctructor.
      */
     virtual ~TPathfinder();
-    
+  
+    /**
+     * Transforms the given graph g to a Pathfinder network with the given parameters.
+     *
+     * Parameters to be used when constructing PFNETs:
+     *  @param r: Minkowski r-metric, r >= 1. Note: r should be passed as 
+     *            numeric_limits<int>::max() in order to be recognized as 'infinity'!
+     *  @param q: The maximum number of intermediate links to be considered
+     *  @param g: Target graph.
+     *  @param method: The method to be used. Can be "sparse" or "dense".
+     *                 Note that only the sparse method is exported to Orange.
+     */
+    void toPFNET(int r, int q, TGraph *g, const string &method);
+
+    /**
+     * Sets the progress callback function.
+     */
+    inline void setProgressCallback(PyObject *cb) { progressCallback = cb; }
+
+    /**
+     * The progress callback function reference.
+     */
+    PyObject *progressCallback; // Progress callback function
+private:
     /**
      * Constructs a PFNET out of the given graph g.
      *   
      * @param g: The orange graph to be transformed
      */
-    void toPFNET(TGraph *g);
-    
-    /**
-     * Pathfinder procedure optimized for sparse networks.
-     *
-     * @param g: The orange graph to be transformed
-     */
-    void toPFNET_dijkstra(TGraph *g);
+    void toPFNET_binary(TGraph *g);
 
     /**
      * Pathfinder procedure optimized for sparse networks.
@@ -126,10 +118,7 @@ public:
      * @param g: The orange graph to be transformed
      */
     void toPFNET_sparse(TGraph *g);
-    
-    int m_r; //P Minkowski r-metric parameter
-    int m_q; //P Maximum number of intermediate links to be considered
-private:
+
     /**
      * Pathfinder procedure using an adapted BFS for q < |V|-1
      */
@@ -173,6 +162,16 @@ private:
      * @param col: the i-ith column
      */
     void getCol(const Matrix &m, int i, Vector &col) const;
+
+    /**
+     * Handles the progress callback update.
+     */
+    void updateProgress();
+
+    int m_r; // Minkowski r-metric parameter
+    int m_q; // Maximum number of intermediate links to be considered
+    int m_nodes; // Number of nodes of the current graph
+    int m_done;  // Number of nodes complete
 };
 
 #endif
