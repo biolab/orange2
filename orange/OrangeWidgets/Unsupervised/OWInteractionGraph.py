@@ -120,7 +120,8 @@ class OWInteractionGraph(OWWidget):
         layout.addWidget(self.saveLCanvas, 0, 0)
         layout.addWidget(self.saveRCanvas, 0, 1)
         
-        layout.addWidget(self.reportButton, 1, 0, 1, 2)
+        if hasattr(self, "reportButton"):
+            layout.addWidget(self.reportButton, 1, 0, 1, 2)
         self.buttonBackground.setLayout(layout)
         self.buttonBackground.show()
 
