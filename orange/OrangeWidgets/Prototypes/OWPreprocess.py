@@ -53,7 +53,7 @@ class Preprocessor_removeContinuous(Preprocessor_discretize):
     
     def __call__(self, data, weightId=None):
         attrs = [attr for attr in data.domain.attributes if attr.varType == orange.VarTypes.Discrete]
-        domain = orange.Domain(attrs, data.classVar)
+        domain = orange.Domain(attrs, data.domain.classVar)
         domain.addmetas(data.domain.getmetas())
         return orange.ExampleTable(domain, data)
                 
@@ -116,6 +116,9 @@ def bestP(attrMeasures, P=10):
 class Preprocessor_featureSelection(orange.Preprocessor):
     """ A preprocessor that runs feature selection using an feature scoring function.
     Arguments:
+        - `measure`: a scoring function (default: orange.MeasureAttribute_relief)
+        - `filter`: a filter function to use for selection (default Preprocessor_featureSelection.bestN
+        - `limit`: the number of selected features (default 10)
         
     """
     __new__ = _orange__new()
@@ -151,26 +154,16 @@ def selectPRandom(examples, P=10):
     """
     import random
     count = len(examples)
-    return random.select(examples, max(count * P / 100, 1))
+    return random.sample(examples, max(count * P / 100, 1))
 
 class Preprocessor_sample(orange.Preprocessor):
+    """ A preprocessor that samples a subset of the data:
+    Arguments:
+        - `filter`: a filter function to use for selection (default Preprocessor_sample.selectNRandom)
+        - `limit`: the limit for the filter function (default 10)
+    """
     __new__ = _orange__new()
     __reduce__ = _orange__reduce
-    
-#    @staticmethod
-#    def selectNRandom(examples, N=10):
-#        """ Select N random examples
-#        """
-#        import random
-#        return random.sample(examples, N)
-#    
-#    @staticmethod
-#    def selectPRandom(examples, P=10):
-#        """ Select P percent random examples
-#        """
-#        import random
-#        count = len(examples)
-#        return random.select(examples, max(count * P / 100, 1))
 
     selectNRandom = staticmethod(selectNRandom)
     selectPRandom = staticmethod(selectPRandom)
@@ -527,8 +520,8 @@ class OWPreprocess(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Preprocess")
         
-        self.inputs = [("Example Table", ExampleTable, self.setData), ("Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Wrapped Learner", orange.Learner), ("Preprocessed Example Table", ExampleTable), ("Preprocessor", orange.Preprocessor)]
+        self.inputs = [("Example Table", ExampleTable, self.setData)] #, ("Learner", orange.Learner, self.setLearner)]
+        self.outputs = [("Preprocessing", orngWrap.PreprocessedLearner), ("Preprocessed Example Table", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
         
         self.autoCommit = False
         self.changedFlag = False
@@ -633,6 +626,7 @@ class OWPreprocess(OWWidget):
             self.schemaList._list = self.allSchemas
             self.schemaList.reset()
             self.schemaListSelectionModel.select(self.schemaList.index(self.lastSelectedSchemaIndex), QItemSelectionModel.ClearAndSelect)
+            self.commit()
         except Exception, ex:
             print repr(ex)
             
@@ -730,11 +724,12 @@ class OWPreprocess(OWWidget):
         if self.data is not None:
             data = wrap.processData(self.data)
             self.send("Preprocessed Example Table", data)
-        if self.learner is not None:
-            learner = wrap.wrapLearner(self.learner)
-            self.send("Wrapped Learner", learner)
+#        if self.learner is not None:
+#            learner = wrap.wrapLearner(self.learner)
+#            self.send("Preprocessing", learner)
+        self.send("Preprocessing", wrap)
             
-        self.send("Preprocessor", Preprocessor_preprocessorList(list(self.preprocessorsList)))
+#        self.send("Preprocessor", Preprocessor_preprocessorList(list(self.preprocessorsList)))
         self.changedFlag = False
             
             
