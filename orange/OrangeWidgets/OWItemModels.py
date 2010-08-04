@@ -11,6 +11,13 @@ class PyListModel(QAbstractListModel):
         self._list = []
         self._flags = flags 
         self.extend(iterable)
+        
+    def wrap(self, list):
+        """ Wrap the list with this model. All changes to the model
+        are done in place on the passed list
+        """
+        self._list = list
+        self.reset()
     
     def index(self, row, column=0, parent=QModelIndex()):
         return QAbstractListModel.createIndex(self, row, column, parent)
@@ -26,6 +33,7 @@ class PyListModel(QAbstractListModel):
         return 0 if parent.isValid() else 1
     
     def data(self, index, role=Qt.DisplayRole):
+        row = index.row()
         if role == Qt.DisplayRole:
             return QVariant(self[index.row()])
         return QVariant()
@@ -94,7 +102,8 @@ class PyListModel(QAbstractListModel):
         
     def __setslice__(self, i, j, iterable):
         self._list[i:j] = iterable
-        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(i), self.index(j))
+        self.reset()
+#        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(i), self.index(j))
         
     def reverse(self):
         self._list.reverse()

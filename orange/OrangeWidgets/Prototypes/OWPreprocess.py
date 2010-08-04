@@ -16,6 +16,14 @@ from orange import Preprocessor_discretize, Preprocessor_imputeByLearner, Prepro
 
 import copy_reg
 
+def _gettype(obj):
+    """ Return type of obj. If obj is type return obj.
+    """
+    if isinstance(obj, type):
+        return obj
+    else:
+        return type(obj)
+
 def _orange__reduce(self):
     """ A default __reduce__ method for orange types.
     
@@ -83,8 +91,8 @@ class Preprocessor_removeDiscrete(Preprocessor_continuize):
     __new__ = _orange__new(Preprocessor_continuize)
     
     def __call__(self, data, weightId=None):
-        attrs = [attr for attr in data.attributes if attr.varType == orange.VarTypes.Continuous]
-        domain = orange.Domain(attrs, data.classVar)
+        attrs = [attr for attr in data.domain.attributes if attr.varType == orange.VarTypes.Continuous]
+        domain = orange.Domain(attrs, data.domain.classVar)
         domain.addmetas(data.domain.getmetas())
         return orange.ExampleTable(domain, data)
          
@@ -97,7 +105,7 @@ class Preprocessor_impute(orange.Preprocessor):
     __reduce__ = _orange__reduce
     
     def __init__(self, model=None, **kwargs):
-        self.model = orange.MajorityLearner if model is None else model
+        self.model = orange.MajorityLearner() if model is None else model
         
     def __call__(self, data, weightId=0):
         return orange.Preprocessor_imputeByLearner(data, learner=self.model)
@@ -127,10 +135,10 @@ class Preprocessor_featureSelection(orange.Preprocessor):
     bestN = staticmethod(bestN)
     bestP = staticmethod(bestP)
     
-    def __init__(self, measure=orange.MeasureAttribute_relief, filter=None, limit=10):
+    def __init__(self, measure=orange.MeasureAttribute_relief(), filter=None, limit=10):
         self.measure = measure
         self.filter = filter if filter is not None else self.bestN
-        self.limit = 10
+        self.limit = limit
     
     def attrScores(self, data):
         measures = [(self.measure(attr, data), attr) for attr in data.domain.attributes]
@@ -202,25 +210,41 @@ class Preprocessor_preprocessorList(orange.Preprocessor):
             return data
 
 ## Preprocessor item editor widgets
-class DiscretizeEditor(OWBaseWidget):
+class BaseEditor(OWBaseWidget):
+    def __init__(self, parent=None):
+        OWBaseWidget.__init__(self, parent)
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0,0,0,0)
+        
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            event.ignore()
+            
+class DiscretizeEditor(BaseEditor):
     DISCRETIZERS = [("Entropy-MDL discretization", orange.EntropyDiscretization, {}),
                     ("Equal frequency discretization", orange.EquiDistDiscretization, {"numberOfIntervals":3}),
                     ("Equal width discretization", orange.EquiNDiscretization, {"numberOfIntervals":3}),
                     ("Remove continuous attributes", type(None), {})]
     def __init__(self, parent=None):
-        OWBaseWidget.__init__(self, parent)
+        BaseEditor.__init__(self, parent)
         self.discInd = 0
         self.numberOfIntervals = 3
-        self.setLayout(QVBoxLayout())
 #        box = OWGUI.widgetBox(self, "Discretize")
         rb = OWGUI.radioButtonsInBox(self, self, "discInd", [], box="Discretize", callback=self.onChange)
         for label, _, _ in self.DISCRETIZERS[:-1]:
             OWGUI.appendRadioButton(rb, self, "discInd", label)
-        OWGUI.hSlider(OWGUI.indentedBox(rb), self, "numberOfIntervals", "Num. of intervals (for equal width/frequency)", callback=self.onChange)
+        self.sliderBox = OWGUI.widgetBox(OWGUI.indentedBox(rb), "Num. of intervals (for equal width/frequency)")
+        OWGUI.hSlider(self.sliderBox, self, "numberOfIntervals", callback=self.onChange)
         OWGUI.appendRadioButton(rb, self, "discInd", self.DISCRETIZERS[-1][0])
         OWGUI.rubber(rb)
         
+        self.updateSliderBox()
+        
+    def updateSliderBox(self):
+        self.sliderBox.setEnabled(self.discInd in [1, 2])
+        
     def onChange(self):
+        self.updateSliderBox()
         self.emit(SIGNAL("dataChanged"), self.data)
         
     def getDiscretizer(self):
@@ -232,22 +256,20 @@ class DiscretizeEditor(OWBaseWidget):
         return preprocessor
     
     def setDiscretizer(self, discretizer):
-        self.discType = None
-        self.discInd = 3
-        for i, (_, disc, kwargs) in enumerate(self.DISCRETIZERS):
-            if isinstance(discretizer.method, disc):
-                self.discType = disc
-                self.discInd = i
-                for key, val in kwargs.items():
-                    setattr(self, key, getattr(discretizer.method, key, val))
-                break
+        disc = dict([(val, i) for i, (_, val, _) in enumerate(self.DISCRETIZERS)])
+        self.discInd = disc.get(_gettype(discretizer.method), 3)
+        _, d, kwargs = self.DISCRETIZERS[self.discInd]
+        for key, val in kwargs.items():
+            setattr(self, key, getattr(discretizer.method, key, val))
+            
+        self.updateSliderBox()
         
     data = pyqtProperty(Preprocessor_discretize,
                         fget=getDiscretizer,
                         fset=setDiscretizer,
                         user=True)
     
-class ContinuizeEditor(OWBaseWidget):
+class ContinuizeEditor(BaseEditor):
     CONTINUIZERS = [("Most frequent is base", orange.DomainContinuizer.FrequentIsBase),
                     ("One attribute per value", orange.DomainContinuizer.NValues),
                     ("Ignore multinomial attributes", orange.DomainContinuizer.Ignore),
@@ -258,9 +280,8 @@ class ContinuizeEditor(OWBaseWidget):
     TREATMENT_TO_IND = dict([(val, i) for i, (_, val) in enumerate(CONTINUIZERS)])
     
     def __init__(self, parent=None):
-        OWBaseWidget.__init__(self, parent)
+        BaseEditor.__init__(self, parent)
         self.contInd = 0
-        self.setLayout(QVBoxLayout())
         
         b = OWGUI.radioButtonsInBox(self, self, "contInd", [name for name, _ in self.CONTINUIZERS], box="Continuize", callback=self.onChange)
         OWGUI.rubber(b)
@@ -276,27 +297,26 @@ class ContinuizeEditor(OWBaseWidget):
         return preprocessor
     
     def setContinuizer(self, continuizer):
-        if not isinstance(continuizer, Preprocessor_continuize):
+        if isinstance(continuizer, Preprocessor_removeDiscrete):
             self.contInd = 3 #Ignore all discrete
-            return
-        self.contInd = self.TREATMENT_TO_IND.get(continuizer.multinomialTreatment, 3)
+        elif isinstance(continuizer,Preprocessor_continuize):
+            self.contInd = self.TREATMENT_TO_IND.get(continuizer.multinomialTreatment, 3)
     
     data = pyqtProperty(Preprocessor_continuize,
                         fget=getContinuizer,
                         fset=setContinuizer,
                         user=True)
     
-class ImputeEditor(OWBaseWidget):
+class ImputeEditor(BaseEditor):
     IMPUTERS = [("Average/Most frequent", orange.MajorityLearner),
                 ("Model-based imputer", orange.BayesLearner),
                 ("Random values", orange.RandomLearner),
                 ("Remove examples with missing values", None)]
     
     def __init__(self, parent):
-        OWBaseWidget.__init__(self, parent)
+        BaseEditor.__init__(self, parent)
         
         self.methodInd = 0
-        self.setLayout(QVBoxLayout())
         b = OWGUI.radioButtonsInBox(self, self, "methodInd", [label for label, _ in self.IMPUTERS], box="Impute", callback=self.onChange)
         OWGUI.rubber(b)
         
@@ -317,7 +337,7 @@ class ImputeEditor(OWBaseWidget):
         if isinstance(imputer, Preprocessor_imputeByLearner):
             learner = imputer.learner
             dd = dict([(t, i) for i, (_, t) in enumerate(self.IMPUTERS)])
-            self.methodInd = dd.get(type(learner), 0)
+            self.methodInd = dd.get(_gettype(learner), 0)
         elif isinstance(imputer, orange.Preprocessor_dropMissing):
             self.methodInd = 3
             
@@ -326,39 +346,47 @@ class ImputeEditor(OWBaseWidget):
                         fset=setImputer,
                         user=True)
     
-class FeatureSelectEditor(OWBaseWidget):
+class FeatureSelectEditor(BaseEditor):
     MEASURES = [("ReliefF", orange.MeasureAttribute_relief),
                 ("Information Gain", orange.MeasureAttribute_info),
                 ("Gain ratio", orange.MeasureAttribute_gainRatio),
                 ("Gini Gain", orange.MeasureAttribute_gini),
-                ("Log Ods Ratio", orange.MeasureAttribute_logOddsRatio)]
+                ("Log Odds Ratio", orange.MeasureAttribute_logOddsRatio)]
     FILTERS = [Preprocessor_featureSelection.bestN,
                Preprocessor_featureSelection.bestP]
     
     def __init__(self, parent=None):
-        OWBaseWidget.__init__(self, parent)
+        BaseEditor.__init__(self, parent)
         
         self.measureInd = 0
         self.selectBy = 0
         self.bestN = 10
         self.bestP = 10
-        self.setLayout(QVBoxLayout())
-#        box = OWGUI.widgetBox(self, "Feature selection")
+        
         box = OWGUI.radioButtonsInBox(self, self, "selectBy", [], "Feature selection", callback=self.onChange)
         
         OWGUI.comboBox(box, self, "measureInd",  items= [name for (name, _) in self.MEASURES], label="Measure", callback=self.onChange)
         
         hbox1 = OWGUI.widgetBox(box, orientation="horizontal", margin=0)
         rb1 = OWGUI.appendRadioButton(box, self, "selectBy", "Best", insertInto=hbox1, callback=self.onChange)
-        self.spin1 = OWGUI.spin(OWGUI.widgetBox(hbox1), self, "bestN", 1, 1000, step=1, callback=self.onChange)
+        self.spin1 = OWGUI.spin(OWGUI.widgetBox(hbox1), self, "bestN", 1, 10000, step=1, controlWidth=75, callback=self.onChange, posttext="features")
+        OWGUI.rubber(hbox1)
+        
         hbox2 = OWGUI.widgetBox(box, orientation="horizontal", margin=0)
         rb2 = OWGUI.appendRadioButton(box, self, "selectBy", "Best", insertInto=hbox2, callback=self.onChange)
-        self.spin2 = OWGUI.spin(OWGUI.widgetBox(hbox2), self, "bestP", 1, 100, step=1, callback=self.onChange)
+        self.spin2 = OWGUI.spin(OWGUI.widgetBox(hbox2), self, "bestP", 1, 100, step=1, controlWidth=75, callback=self.onChange, posttext="% features")
+        OWGUI.rubber(hbox2)
+        
+        self.updateSpinStates()
+        
         OWGUI.rubber(box)
         
-    def onChange(self):
+    def updateSpinStates(self):
         self.spin1.setDisabled(bool(self.selectBy))
         self.spin2.setDisabled(not bool(self.selectBy))
+        
+    def onChange(self):
+        self.updateSpinStates()
         self.emit(SIGNAL("dataChanged"), self.data)
         
     def setFeatureSelection(self, fs):
@@ -372,6 +400,8 @@ class FeatureSelectEditor(OWBaseWidget):
             self.bestP = fs.limit
         else:
             self.bestN = fs.limit
+            
+        self.updateSpinStates()
     
     def getFeatureSelection(self):
         return Preprocessor_featureSelection(measure=self.MEASURES[self.measureInd][1],
@@ -383,29 +413,37 @@ class FeatureSelectEditor(OWBaseWidget):
                         fset=setFeatureSelection,
                         user=True)
         
-class SampleEditor(OWBaseWidget):
+class SampleEditor(BaseEditor):
     FILTERS = [Preprocessor_sample.selectNRandom,
                Preprocessor_sample.selectPRandom]
     def __init__(self, parent=None):
-        OWBaseWidget.__init__(self, parent)
+        BaseEditor.__init__(self, parent)
         self.methodInd = 0
         self.sampleN = 100
         self.sampleP = 25
         
-        self.setLayout(QVBoxLayout())
         box = OWGUI.radioButtonsInBox(self, self, "methodInd", [], box="Sample", callback=self.onChange)
         
         w1 = OWGUI.widgetBox(box, orientation="horizontal", margin=0)
-        rb1 = OWGUI.appendRadioButton(box, self, "methodInd", "", insertInto=w1)
-        sb1 = OWGUI.spin(w1, self, "sampleN", min=1, max=100000, step=1, callback=self.onChange, posttext="data instances")
+        rb1 = OWGUI.appendRadioButton(box, self, "methodInd", "Sample", insertInto=w1)
+        self.sb1 = OWGUI.spin(OWGUI.widgetBox(w1), self, "sampleN", min=1, max=100000, step=1, controlWidth=75, callback=self.onChange, posttext="data instances")
+        OWGUI.rubber(w1)
         
         w2 = OWGUI.widgetBox(box, orientation="horizontal", margin=0)
-        rb2 = OWGUI.appendRadioButton(box, self, "methodInd", "", insertInto=w2)
-        sb2 = OWGUI.spin(w2, self, "sampleP", min=1, max=100000, step=1, callback=self.onChange, posttext="% data instances")
+        rb2 = OWGUI.appendRadioButton(box, self, "methodInd", "Sample", insertInto=w2)
+        self.sb2 = OWGUI.spin(OWGUI.widgetBox(w2), self, "sampleP", min=1, max=100, step=1, controlWidth=75, callback=self.onChange, posttext="% data instances")
+        OWGUI.rubber(w2)
+        
+        self.updateSpinStates()
         
         OWGUI.rubber(box)
-    
+        
+    def updateSpinStates(self):
+        self.sb1.setEnabled(not self.methodInd)
+        self.sb2.setEnabled(self.methodInd)
+        
     def onChange(self):
+        self.updateSpinStates()
         self.emit(SIGNAL("dataChanged"), self.data)
         
     def getSampler(self):
@@ -419,6 +457,8 @@ class SampleEditor(OWBaseWidget):
             self.sampleN = sampler.limit
         else:
             self.sampleP = sampler.limit
+            
+        self.updateSpinStates()
             
     data = pyqtProperty(Preprocessor_sample,
                         fget=getSampler,
@@ -438,14 +478,19 @@ class PreprocessorItemDelegate(QStyledItemDelegate):
                Preprocessor_impute: "Impute ({0.model})",
                Preprocessor_imputeByLearner: "Impute ({0.learner})",
                Preprocessor_dropMissing: "Remove missing",
-               Preprocessor_featureSelection: "Feature selection ({0.filter}, {0.limit})",
+               Preprocessor_featureSelection: "Feature selection ({0.measure}, {0.filter}, {0.limit})",
                Preprocessor_sample: "Sample ({0.filter}, {0.limit})",
                orange.EntropyDiscretization: "entropy",
                orange.EquiNDiscretization: "freq, {0.numberOfIntervals}",
                orange.EquiDistDiscretization: "width, {0.numberOfIntervals}",
-               orange.RandomLearner: "random",
+               orange.RandomLearner: "random",  
                orange.BayesLearner: "bayes  model",
                orange.MajorityLearner: "average",
+               orange.MeasureAttribute_relief: "ReliefF",
+               orange.MeasureAttribute_info: "Info gain",
+               orange.MeasureAttribute_gainRatio: "Gain ratio",
+               orange.MeasureAttribute_gini: "Gini",
+               orange.MeasureAttribute_logOddsRatio: "Log Odds",
                type(lambda : None): _funcName}
     
     import re
@@ -467,7 +512,7 @@ class PreprocessorItemDelegate(QStyledItemDelegate):
             if hasattr(obj, attr):
                 return self.format(getattr(obj, attr))
         
-        text = self.REPLACE.get(type(obj), str(obj))
+        text = self.REPLACE.get(_gettype(obj), str(obj))
         if hasattr(text, "__call__"):
             return text(obj)
         else:
@@ -602,7 +647,7 @@ class OWPreprocess(OWWidget):
         self.addPreprocessorsMenuActions = actions = []
         for name, pp, kwargs in self.preprocessors:
             action = QAction(name, self)
-            self.connect(action, SIGNAL("triggered()"), lambda pp=pp:self.addPreprocessor(pp(**kwargs)))
+            self.connect(action, SIGNAL("triggered()"), lambda pp=pp, kwargs=kwargs:self.addPreprocessor(pp(**kwargs)))
             actions.append(action)
             
         box = OWGUI.widgetBox(self.controlArea, "Output")
@@ -623,9 +668,8 @@ class OWPreprocess(OWWidget):
         
     def activateLoadedSettings(self):
         try:
-            self.schemaList._list = self.allSchemas
-            self.schemaList.reset()
-            self.schemaListSelectionModel.select(self.schemaList.index(self.lastSelectedSchemaIndex), QItemSelectionModel.ClearAndSelect)
+            self.schemaList.wrap(self.allSchemas)
+            self.schemaListSelectionModel.select(self.schemaList.index(min(self.lastSelectedSchemaIndex, len(self.schemaList) - 1)), QItemSelectionModel.ClearAndSelect)
             self.commit()
         except Exception, ex:
             print repr(ex)
@@ -666,8 +710,8 @@ class OWPreprocess(OWWidget):
     def onSchemaSelection(self, index):
         self.updateSchemaAction.setEnabled(index.isValid())
         self.removeSchemaAction.setEnabled(index.isValid())
-        
         if index.isValid():
+            self.lastSelectedSchemaIndex = index.row()
             self.setActiveSchema(*index.data().toPyObject())
     
     def onAddSchema(self):
@@ -690,12 +734,10 @@ class OWPreprocess(OWWidget):
             del self.schemaList[row]
             newrow = min(max(row - 1, 0), len(self.schemaList) - 1)
             if newrow > -1:
-                self.schemaListSelectionModel.select(self.schemaList.index(row), QItemSelectionModel.ClearAndSelect)
+                self.schemaListSelectionModel.select(self.schemaList.index(newrow), QItemSelectionModel.ClearAndSelect)
                 
     def setActiveSchema(self, name, schema, selectedIndex):
-        print name, schema, selectedIndex
-        self.preprocessorsList._list = list(schema)
-        self.preprocessorsList.reset()
+        self.preprocessorsList[:] = list(schema)
         self.preprocessorsListSelectionModel.select(selectedIndex, QItemSelectionModel.ClearAndSelect)
         
     def showEditWidget(self, pp):
