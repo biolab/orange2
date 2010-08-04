@@ -181,6 +181,7 @@ class OWAssociationRulesViewer(OWWidget):
         self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding), margin = 0)
 
         mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
+        self.mainArea.layout().setAlignment(mainLeft, Qt.AlignLeft | Qt.AlignTop)
         OWGUI.separator(self.mainArea, 16, 0)
         mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
         mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))

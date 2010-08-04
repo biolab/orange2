@@ -41,6 +41,7 @@ class OWItemsets(OWWidget):
 
         OWGUI.button(self.space, self, "&Find Itemsets", self.findItemsets)
 
+        OWGUI.rubber(self.controlArea)
         self.adjustSize()
 
     def sendReport(self):

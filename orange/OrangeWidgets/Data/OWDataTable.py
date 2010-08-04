@@ -173,8 +173,8 @@ class OWDataTable(OWWidget):
 
         resizeColsBox = OWGUI.widgetBox(boxSettings, 0, "horizontal", 0)
         OWGUI.label(resizeColsBox, self, "Resize columns: ")
-        OWGUI.button(resizeColsBox, self, "+", self.increaseColWidth, tooltip = "Increase the width of the columns", width=30)
-        OWGUI.button(resizeColsBox, self, "-", self.decreaseColWidth, tooltip = "Decrease the width of the columns", width=30)
+        OWGUI.toolButton(resizeColsBox, self, self.increaseColWidth, tooltip = "Increase the width of the columns", width=20, height=20).setText("+")
+        OWGUI.toolButton(resizeColsBox, self, self.decreaseColWidth, tooltip = "Decrease the width of the columns", width=20, height=20).setText("-")
         OWGUI.rubber(resizeColsBox)
 
         self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Order of Examples", callback = self.btnResetSortClicked, tooltip = "Show examples in the same order as they appear in the file")

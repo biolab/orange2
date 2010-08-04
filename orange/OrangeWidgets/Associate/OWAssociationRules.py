@@ -44,6 +44,8 @@ class OWAssociationRules(OWWidget):
 
         OWGUI.button(self.space, self, "&Build rules", self.generateRules)
 
+        OWGUI.rubber(self.controlArea)
+        
         self.adjustSize()
 
     def sendReport(self):
