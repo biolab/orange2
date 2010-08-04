@@ -13,6 +13,8 @@ import OWGUI
 from OWWidget import *
 import sys
 
+from orngWrap import PreprocessedLearner
+
 class OWRegressionTree(OWWidget):
     settingsList=["Name","MinInstCheck", "MinInstVal", "MinNodeCheck", "MinNodeVal,"
                   "MaxMajCheck", "MaxMajVal", "PostMaj", "PostMPCheck", "PostMPVal", "Bin"]
@@ -33,8 +35,9 @@ class OWRegressionTree(OWWidget):
         self.loadSettings()
 
         self.data=None
+        self.preprocessor = None
 
-        self.inputs=[("Example Table",ExampleTable,self.dataset)]
+        self.inputs=[("Example Table",ExampleTable,self.dataset), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
         self.outputs=[("Learner",orange.Learner),("Regressor",orange.Classifier),("Regression Tree",orange.TreeClassifier)]
 
         ##
@@ -83,6 +86,8 @@ class OWRegressionTree(OWWidget):
                          mForPruning=self.PostMPCheck and self.PostMPVal,
                          minExamples=self.MinNodeCheck and self.MinNodeVal,
                          storeExamples=1)
+        if self.preprocessor:
+            learner = self.preprocessor.wrapLearner(learner) 
         learner.name=self.Name
         self.send("Learner",learner)
         self.error()
@@ -110,6 +115,10 @@ class OWRegressionTree(OWWidget):
 #            self.send("Learner",None)
 #            self.send("Regressor",None)
 #            self.send("Regression Tree", None)
+
+    def setPreprocessor(self, pp):
+        self.preprocessor = pp
+        self.setLearner()
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
