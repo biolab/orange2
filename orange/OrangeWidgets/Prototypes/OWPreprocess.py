@@ -210,6 +210,15 @@ class Preprocessor_preprocessorList(orange.Preprocessor):
             return data, weightId
         else:
             return data
+        
+def _pyqtProperty(type, **kwargs):
+    # check for Qt version, 4.4 supports only C++ classes 
+    if qVersion() >= "4.5":
+        return pyqtProperty(type, **kwargs)
+    else:
+        if "user" in kwargs:
+            del kwargs["user"]
+        return property(**kwargs)
 
 ## Preprocessor item editor widgets
 class BaseEditor(OWBaseWidget):
@@ -266,7 +275,7 @@ class DiscretizeEditor(BaseEditor):
             
         self.updateSliderBox()
         
-    data = pyqtProperty(Preprocessor_discretize,
+    data = _pyqtProperty(Preprocessor_discretize,
                         fget=getDiscretizer,
                         fset=setDiscretizer,
                         user=True)
@@ -304,7 +313,7 @@ class ContinuizeEditor(BaseEditor):
         elif isinstance(continuizer,Preprocessor_continuize):
             self.contInd = self.TREATMENT_TO_IND.get(continuizer.multinomialTreatment, 3)
     
-    data = pyqtProperty(Preprocessor_continuize,
+    data = _pyqtProperty(Preprocessor_continuize,
                         fget=getContinuizer,
                         fset=setContinuizer,
                         user=True)
@@ -343,7 +352,7 @@ class ImputeEditor(BaseEditor):
         elif isinstance(imputer, orange.Preprocessor_dropMissing):
             self.methodInd = 3
             
-    data = pyqtProperty(Preprocessor_imputeByLearner,
+    data = _pyqtProperty(Preprocessor_imputeByLearner,
                         fget=getImputer,
                         fset=setImputer,
                         user=True)
@@ -410,7 +419,7 @@ class FeatureSelectEditor(BaseEditor):
                                              filter=self.FILTERS[self.selectBy],
                                              limit=self.bestP if self.selectBy  else self.bestN)
     
-    data = pyqtProperty(Preprocessor_featureSelection,
+    data = _pyqtProperty(Preprocessor_featureSelection,
                         fget=getFeatureSelection,
                         fset=setFeatureSelection,
                         user=True)
@@ -462,7 +471,7 @@ class SampleEditor(BaseEditor):
             
         self.updateSpinStates()
             
-    data = pyqtProperty(Preprocessor_sample,
+    data = _pyqtProperty(Preprocessor_sample,
                         fget=getSampler,
                         fset=setSampler,
                         user=True)
