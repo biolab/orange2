@@ -10,6 +10,147 @@ from OWWidget import *
 import sys, traceback
 import OWGUI, orngNetwork
 
+import code
+
+#class PythonSyntaxHighlighter(QSyntaxHighlighter):
+#    def __init__(self, parent=None):
+#        self.keywordFormat = QTextCharFormat()
+#        self.keywordFormat.setForeground(QBrush(Qt.blue))
+#        self.stringFormat = QTextCharFormat()
+#        self.stringFormat.setForeground(QBrush(Qt.green))
+#        self.defFormat = QTextCharFormat()
+#        self.defFormat.setForeground(QBrush(Qt.black))
+#        self.keywords = ["def", "if", "else", "elif", "for", " while", "with", "try", "except",
+#                         "finally", "not", "in", "lambda", "None", "import", "class", "return"
+#                         "yield", "break", "continue", "raise", "or", "and"]
+#        self.rules = [(QRegExp(r"\b%s\b" % keyword), self.keywordFormat) for keyword in self.keywords] + \
+#                     [(QRegExp(r"(\bclass)|(\bdef)\s+[A-Za-z]+[A-Za-z0-9]+\s\("), self.defFormat)]
+#                     
+#        QSyntaxHighlighter.__init__(self, parent)
+#        
+#    def highlightBlock(self, text):
+#        for pattern, format in self.rules:
+#            exp = QRegExp(pattern)
+#            index = text.indexOf(exp)
+#            while index >= 0:
+#                length = exp.matchedLength()
+#                print index, length, format
+#                self.setFormat(index, length, format)
+#                index = text.indexOf(exp)
+
+class MyConsole(QPlainTextEdit, code.InteractiveConsole):
+    def __init__(self, locals = None, parent=None):
+        QPlainTextEdit.__init__(self, parent)
+        code.InteractiveConsole.__init__(self, locals)
+        self.history, self.historyInd = [""], 0
+        self.loop = self.interact()
+        self.loop.next()
+        
+    def setLocals(self, locals):
+        self.locals = locals
+        
+    def interact(self, banner=None):
+        try:
+            sys.ps1
+        except AttributeError:
+            sys.ps1 = ">>> "
+        try:
+            sys.ps2
+        except AttributeError:
+            sys.ps2 = "... "
+        cprt = 'Type "help", "copyright", "credits" or "license" for more information.'
+        if banner is None:
+            self.write("Python %s on %s\n%s\n(%s)\n" %
+                       (sys.version, sys.platform, cprt,
+                        self.__class__.__name__))
+        else:
+            self.write("%s\n" % str(banner))
+        more = 0
+        while 1:
+            try:
+                if more:
+                    prompt = sys.ps2
+                else:
+                    prompt = sys.ps1
+                self.new_prompt(prompt)
+                yield
+                try:
+                    line = self.raw_input(prompt)
+                except EOFError:
+                    self.write("\n")
+                    break
+                else:
+                    more = self.push(line)
+            except KeyboardInterrupt:
+                self.write("\nKeyboardInterrupt\n")
+                self.resetbuffer()
+                more = 0
+                
+    def raw_input(self, prompt):
+        input = str(self.document().lastBlock().previous().text())
+        return input[len(prompt):]
+        
+    def new_prompt(self, prompt):
+        self.write(prompt)
+        self.newPromptPos = self.textCursor().position()
+        
+    def write(self, data):
+        cursor = QTextCursor(self.document())
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(data)
+        
+    def push(self, line):
+        if self.history[0] != line:
+            self.history.insert(0, line)
+        self.historyInd = 0
+        more = 0
+        saved = sys.stdout, sys.stderr
+        try:
+            sys.stdout, sys.stderr = self, self
+            return code.InteractiveConsole.push(self, line)
+        except:
+            raise
+        finally:
+            sys.stdout, sys.stderr = saved
+            
+    def setLine(self, line):
+        cursor = QTextCursor(self.document())
+        cursor.movePosition(QTextCursor.End)
+        cursor.setPosition(self.newPromptPos, QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
+        cursor.insertText(line)
+        
+    def keyPressEvent(self, event):
+        print event.key()
+        if event.key() == Qt.Key_Return:
+            self.write("\n")
+            self.loop.next()
+        elif event.key() == Qt.Key_Up:
+            self.historyUp()
+        elif event.key() == Qt.Key_Down:
+            self.historyDown()
+        elif event.key() == Qt.Key_Tab:
+            self.complete()
+        elif event.key() in [Qt.Key_Left, Qt.Key_Backspace]:
+            if self.textCursor().position() > self.newPromptPos:
+                QPlainTextEdit.keyPressEvent(self, event)
+        else:
+            QPlainTextEdit.keyPressEvent(self, event)
+            
+#    def mousePressEvent(self, event):
+#        pos = event.pos()
+#        cursor = self.cursorForPosition(pos)
+#        if cursor.pos() > self.promptStart:
+#            pass
+            
+    def historyUp(self):
+        self.setLine(self.history[self.historyInd])
+        self.historyInd = min(self.historyInd + 1, len(self.history) - 1)
+        
+    def historyDown(self):
+        self.setLine(self.history[self.historyInd])
+        self.historyInd = max(self.historyInd - 1, 0)
+
 class OWPythonScript(OWWidget):
     
     settingsList = ["codeFile"] 
@@ -17,8 +158,8 @@ class OWPythonScript(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
-        self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inDistanceMatrix", orange.SymMatrix, self.setDistanceMatrix), ("inNetwork", orngNetwork.Network, self.setNetwork)]
-        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orngNetwork.Network)]
+        self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inDistanceMatrix", orange.SymMatrix, self.setDistanceMatrix), ("inNetwork", orngNetwork.Network, self.setNetwork), ("inLearner", orange.Learner, self.setLearner), ("inClassifier", orange.Classifier, self.setClassifier)]
+        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orngNetwork.Network), ("outLearner", orange.Learner), ("outClassifier", orange.Classifier)]
         
         self.inNetwork = None
         self.inExampleTable = None
@@ -28,7 +169,9 @@ class OWPythonScript(OWWidget):
         self.loadSettings()
         
         self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
-        OWGUI.label(self.infoBox, self, "Execute python script.\n\nInput variables:\n - inExampleTable\n - inDistanceMatrix\n - inNetwork\n\nOutput variables:\n - outExampleTable\n - outDistanceMatrix\n - outNetwork")
+        OWGUI.label(self.infoBox, self, "Execute python script.\n\nInput variables:\n - " + \
+                    "\n - ".join(t[0] for t in self.inputs) + "\n\nOutput variables:\n - " + \
+                    "\n - ".join(t[0] for t in self.outputs))
         
         self.controlBox = OWGUI.widgetBox(self.controlArea, 'File')
         OWGUI.button(self.controlBox, self, "Open...", callback=self.openScript)
@@ -45,12 +188,13 @@ class OWPythonScript(OWWidget):
         self.text = QPlainTextEdit(self)
         self.textBox.layout().addWidget(self.text)
         self.text.setFont(QFont("Monospace"))
+#        highlighter = PythonSyntaxHighlighter(self.text.document())
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
         
         self.consoleBox = OWGUI.widgetBox(self, 'Console')
         self.splitCanvas.addWidget(self.consoleBox)
-        self.console = QPlainTextEdit(self)
+        self.console = MyConsole(self.__dict__, self)
         self.consoleBox.layout().addWidget(self.console)
         self.console.setFont(QFont("Monospace"))
         self.consoleBox.setAlignment(Qt.AlignBottom)
@@ -69,6 +213,12 @@ class OWPythonScript(OWWidget):
         
     def setNetwork(self, net):
         self.inNetwork = net
+        
+    def setLearner(self, learner):
+        self.inLearner = learner
+        
+    def setClassifier(self, classifier):
+        self.inClassifier = classifier
     
     def openScript(self, filename=None):
         if filename == None:
@@ -96,31 +246,14 @@ class OWPythonScript(OWWidget):
             f = open(fn, 'w')
             f.write(self.text.toPlainText())
             f.close()
-    
+            
     def execute(self):
-        self.console.setPlainText('')
-
-        try:
-            code = self.text.toPlainText()
-            inExampleTable = self.inExampleTable
-            inDistanceMatrix = self.inDistanceMatrix
-            inNetwork = self.inNetwork
-            
-            outExampleTable = None
-            outDistanceMatrix = None
-            outNetwork = None
-            
-            exec(str(code))
-            
-            self.send("outExampleTable", outExampleTable)
-            self.send("outDistanceMatrix", outDistanceMatrix)
-            self.send("outNetwork", outNetwork)
-
-        except:
-            message = str(sys.exc_info()[0]) + "\n"
-            message += str(sys.exc_info()[1]) + "\n"
-            message += "LINE=" + str(traceback.tb_lineno(sys.exc_info()[2])) + "\n"
-            self.console.setPlainText(message)
+        self._script = str(self.text.toPlainText())
+        self.console.write("\nRunning script:\n")
+        self.console.push("exec(_script)")
+        self.console.new_prompt(sys.ps1)
+        for signal, cls in self.outputs:
+            self.send(signal, getattr(self, signal, None))
 
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
