@@ -98,6 +98,7 @@ class MyConsole(QPlainTextEdit, code.InteractiveConsole):
         cursor = QTextCursor(self.document())
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(data)
+        self.ensureCursorVisible()
         
     def push(self, line):
         if self.history[0] != line:
@@ -119,9 +120,9 @@ class MyConsole(QPlainTextEdit, code.InteractiveConsole):
         cursor.setPosition(self.newPromptPos, QTextCursor.KeepAnchor)
         cursor.removeSelectedText()
         cursor.insertText(line)
+        self.setTextCursor(cursor)
         
     def keyPressEvent(self, event):
-        print event.key()
         if event.key() == Qt.Key_Return:
             self.write("\n")
             self.loop.next()
@@ -140,8 +141,20 @@ class MyConsole(QPlainTextEdit, code.InteractiveConsole):
 #    def mousePressEvent(self, event):
 #        pos = event.pos()
 #        cursor = self.cursorForPosition(pos)
-#        if cursor.pos() > self.promptStart:
-#            pass
+#        if cursor.position() <= self.newPromptPos:
+#            self.cursorPosAtMousePress = cursor.position()
+#        QPlainTextEdit.mousePressEvent(self, event)
+#        
+#    def mouseReleaseEvent(self, event):
+#        pos = event.pos()
+#        cursor = self.cursorForPosition(pos)
+#        pos = cursor.position()
+#        QPlainTextEdit.mousePressEvent(self, event)
+#        if cursor.position() <= self.newPromptPos:
+#            cursor = QTextCursor(self.textCursor())
+#            cursor.setPosition(self.cursorPosAtMousePress)
+##            cursor.movePosition(QTextCursor.End)
+#            self.setTextCursor(cursor)
             
     def historyUp(self):
         self.setLine(self.history[self.historyInd])
@@ -150,6 +163,9 @@ class MyConsole(QPlainTextEdit, code.InteractiveConsole):
     def historyDown(self):
         self.setLine(self.history[self.historyInd])
         self.historyInd = max(self.historyInd - 1, 0)
+        
+    def complete(self):
+        pass
 
 class OWPythonScript(OWWidget):
     
