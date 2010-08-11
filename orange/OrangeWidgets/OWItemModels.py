@@ -115,8 +115,16 @@ class PyListModel(QAbstractListModel):
         
     def __repr__(self):
         return "PyListModel(%s)" % repr(self._list)
+    
+    def __nonzero__(self):
+        return len(self) != 0
+    
+    #for Python 3000
+    def __bool__(self):
+        return len(self) != 0
 
 import OWGUI
+import orange
 
 class VariableListModel(PyListModel):
     def data(self, index, role=Qt.DisplayRole):
@@ -132,7 +140,7 @@ class VariableListModel(PyListModel):
     def setData(self, index, value, role):
         i = index.row()
         if role == Qt.EditRole:    
-            self.__setitem__(self, i,  value.toPyObject()) 
+            self.__setitem__(i,  value.toPyObject()) 
         
 class VariableEditor(QWidget):
     def __init__(self, var, parent):
@@ -165,23 +173,54 @@ class EnumVariableEditor(VariableEditor):
     def __init__(self, var, parent):
         VariableEditor.__init__(self, var, parent)
         
+class FloatVariableEditor(QLineEdit):
+    
+    def setVariable(self, var):
+        print var
+        import sys
+        sys.stdout.flush()
+        self.setText(str(var.name))
+        
+    def getVariable(self):
+        return orange.FloatVariable(str(self.text()))
+
+    variable = pyqtProperty(orange.FloatVariable,
+                            fget=getVariable,
+                            fset=setVariable,
+                            user=True)
+    
+class StringVariableEditor(QLineEdit):
+    def setVariable(self, var):
+        self.setText(str(var.name))
+        
+    def getVariable(self):
+        return orange.StringVariable(str(self.text()))
+
+    variable = pyqtProperty(orange.FloatVariable,
+                            fget=getVariable,
+                            fset=setVariable,
+                            user=True)
+        
 class VariableDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         var = index.data(Qt.EditRole).toPyObject()
         if isinstance(var, orange.EnumVariable):
-            return EnumVariableEditor(var, parent)
-        elif isinstance(var, orange,FloatVariable):
-            return FloatVariable(var, parent)
+            return EnumVariableEditor(parent)
+        elif isinstance(var, orange.FloatVariable):
+            return FloatVariableEditor(parent)
         elif isinstance(var, orange.StringVariable):
-            return StringVariableEditor(var, parent)
+            return StringVariableEditor(parent)
 #        return VariableEditor(var, parent)
     
     def setEditorData(self, editor, index):
-        var = index.model(Qt.EditRole).toPyObject()
-        editor.setData(var)
+        var = index.data(Qt.EditRole).toPyObject()
+        editor.variable = var
         
     def setModelData(self, editor, model, index):
-        model.setData(editor.getVar(), Qt.EditRole)
+        model.setData(index, QVariant(editor.variable), Qt.EditRole)
+        
+#    def displayText(self, value, locale):
+#        return value.toPyObject().name
         
 class ListSingleSelectionModel(QItemSelectionModel):
     """ Item selection model for list item models with single selection.
@@ -247,4 +286,6 @@ class ModelActionsWidget(QWidget):
         
     def addAction(self, action, *args):
         return self.insertAction(-1, action, *args)
-        
+    
+class NumpyArrayModel(QAbstractItemModel):
+    pass
