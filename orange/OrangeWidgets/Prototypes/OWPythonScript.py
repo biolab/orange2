@@ -12,33 +12,77 @@ import OWGUI, orngNetwork
 
 import code
 
-#class PythonSyntaxHighlighter(QSyntaxHighlighter):
-#    def __init__(self, parent=None):
-#        self.keywordFormat = QTextCharFormat()
-#        self.keywordFormat.setForeground(QBrush(Qt.blue))
-#        self.stringFormat = QTextCharFormat()
-#        self.stringFormat.setForeground(QBrush(Qt.green))
-#        self.defFormat = QTextCharFormat()
-#        self.defFormat.setForeground(QBrush(Qt.black))
-#        self.keywords = ["def", "if", "else", "elif", "for", " while", "with", "try", "except",
-#                         "finally", "not", "in", "lambda", "None", "import", "class", "return"
-#                         "yield", "break", "continue", "raise", "or", "and"]
-#        self.rules = [(QRegExp(r"\b%s\b" % keyword), self.keywordFormat) for keyword in self.keywords] + \
-#                     [(QRegExp(r"(\bclass)|(\bdef)\s+[A-Za-z]+[A-Za-z0-9]+\s\("), self.defFormat)]
-#                     
-#        QSyntaxHighlighter.__init__(self, parent)
-#        
-#    def highlightBlock(self, text):
-#        for pattern, format in self.rules:
-#            exp = QRegExp(pattern)
-#            index = text.indexOf(exp)
-#            while index >= 0:
-#                length = exp.matchedLength()
-#                print index, length, format
-#                self.setFormat(index, length, format)
-#                index = text.indexOf(exp)
+class PythonSyntaxHighlighter(QSyntaxHighlighter):
+    def __init__(self, parent=None):
+        self.keywordFormat = QTextCharFormat()
+        self.keywordFormat.setForeground(QBrush(Qt.blue))
+        self.keywordFormat.setFontWeight(QFont.Bold)
+        self.stringFormat = QTextCharFormat()
+        self.stringFormat.setForeground(QBrush(Qt.green))
+        self.stringFormat.setFontWeight(QFont.Bold)
+        self.defFormat = QTextCharFormat()
+        self.defFormat.setForeground(QBrush(Qt.black))
+        self.defFormat.setFontWeight(QFont.Bold)
+        
+        self.keywords = ["def", "if", "else", "elif", "for", "while", "with", "try", "except",
+                         "finally", "not", "in", "lambda", "None", "import", "class", "return", "print",
+                         "yield", "break", "continue", "raise", "or", "and", "True", "False", "pass"]
+        self.rules = [(QRegExp(r"\b%s\b" % keyword), self.keywordFormat) for keyword in self.keywords] + \
+                     [(QRegExp(r"\bclass|\bdef\s+([A-Za-z]+[A-Za-z0-9]+)\s*\("), self.defFormat),
+                      (QRegExp(r"'.*'"), self.stringFormat),
+                      (QRegExp(r'".*"'), self.stringFormat)]
+                     
+        QSyntaxHighlighter.__init__(self, parent)
+        
+    def highlightBlock(self, text):
+        for pattern, format in self.rules:
+            exp = QRegExp(pattern)
+            index = exp.indexIn(text) #text.indexOf(exp)
+            while index >= 0:
+                length = exp.matchedLength()
+                if exp.numCaptures() > 0:
+                    self.setFormat(exp.pos(1), len(str(exp.cap(1))), format)
+#                    print exp.pos(1), str(exp.cap(1))
+                else:
+                    self.setFormat(exp.pos(0), len(str(exp.cap(0))), format)
+#                    print index, str(exp.cap(0))
+                index = exp.indexIn(text, index + length)
+                
+class PythonScriptEditor(QPlainTextEdit):
+    INDENT = 4
+    def lastLine(self):
+        text = str(self.toPlainText())
+        pos = self.textCursor().position()
+        index = text.rfind("\n", 0, pos)
+        text = text[index: pos].lstrip("\n")
+        return text
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            text = self.lastLine()
+            indent = len(text) - len(text.lstrip())
+            if text.strip() == "pass" or text.strip().startswith("return"):
+                indent = max(0, indent - self.INDENT)
+            elif text.strip().endswith(":"):
+                indent += self.INDENT
+            QPlainTextEdit.keyPressEvent(self, event)
+            self.insertPlainText(" " * indent)
+        elif event.key() == Qt.Key_Tab:
+            self.insertPlainText(" " * self.INDENT)
+        elif event.key() == Qt.Key_Backspace:
+            text = self.lastLine()
+            if text and not text.strip():
+                cursor = self.textCursor()
+                for i in range(min(self.INDENT, len(text))):
+                    cursor.deletePreviousChar()
+            else:
+                QPlainTextEdit.keyPressEvent(self, event)
+                
+        else:
+            QPlainTextEdit.keyPressEvent(self, event)
+        
 
-class MyConsole(QPlainTextEdit, code.InteractiveConsole):
+class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
     def __init__(self, locals = None, parent=None):
         QPlainTextEdit.__init__(self, parent)
         code.InteractiveConsole.__init__(self, locals)
@@ -201,16 +245,16 @@ class OWPythonScript(OWWidget):
         
         self.textBox = OWGUI.widgetBox(self, 'Python script')
         self.splitCanvas.addWidget(self.textBox)
-        self.text = QPlainTextEdit(self)
+        self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
         self.text.setFont(QFont("Monospace"))
-#        highlighter = PythonSyntaxHighlighter(self.text.document())
+        self.highlighter = PythonSyntaxHighlighter(self.text.document())
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
         
         self.consoleBox = OWGUI.widgetBox(self, 'Console')
         self.splitCanvas.addWidget(self.consoleBox)
-        self.console = MyConsole(self.__dict__, self)
+        self.console = PythonConsole(self.__dict__, self)
         self.consoleBox.layout().addWidget(self.console)
         self.console.setFont(QFont("Monospace"))
         self.consoleBox.setAlignment(Qt.AlignBottom)
