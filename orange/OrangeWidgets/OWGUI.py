@@ -424,6 +424,8 @@ def lineEdit(widget, master, value,
     if args.has_key("baseClass"):
         wa = args["baseClass"](b)
         wa.enterButton = None
+        if b and b.layout():
+            b.layout().addWidget(wa)
     elif focusInCallback or callback and not callbackOnType:
         if not hasHBox:
             bi = widgetBox(b, "", 0)
