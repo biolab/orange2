@@ -459,7 +459,9 @@ class CanvasOptionsDlg(QDialog):
         OWGUI.separator(canvasDlgSettings)
         
         items = [str(n) for n in QStyleFactory.keys()]
-        ind = items.index(self.settings.get("style", "WindowsXP"))
+        itemsLower = [s.lower() for s in items]
+        ind = itemsLower.index(self.settings.get("style", "Windows").lower())
+        self.settings["style"] = items[ind]
         OWGUI.comboBox(canvasDlgSettings, self.settings, "style", label = "Window style:", orientation = "horizontal", items = [str(n) for n in QStyleFactory.keys()], sendSelectedValue = 1, debuggingEnabled = 0)
         OWGUI.checkBox(canvasDlgSettings, self.settings, "useDefaultPalette", "Use style's standard palette", debuggingEnabled = 0)
         
