@@ -49,7 +49,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     else:
         b = QWidget(widget)
         if margin == -1: margin = 0
-    if addToLayout and widget.layout():
+    if addToLayout and widget.layout() is not None:
         widget.layout().addWidget(b)
 
     if isinstance(orientation, QLayout):
@@ -95,7 +95,7 @@ def widgetLabel(widget, label=None, labelWidth=None, addToLayout = 1):
         lbl = QLabel(label, widget)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-        if widget.layout() and addToLayout: widget.layout().addWidget(lbl)
+        if widget.layout() is not None and addToLayout: widget.layout().addWidget(lbl)
     else:
         lbl = None
 
@@ -107,7 +107,7 @@ __re_frmt = re.compile(r"(^|[^%])%\((?P<value>[a-zA-Z]\w*)\)")
 
 def label(widget, master, label, labelWidth = None):
     lbl = QLabel("", widget)
-    if widget.layout(): widget.layout().addWidget(lbl)
+    if widget.layout() is not None: widget.layout().addWidget(lbl)
 
     reprint = CallFrontLabel(lbl, label, master)
     for mo in __re_frmt.finditer(label):
@@ -187,7 +187,7 @@ def spin(widget, master, value, min, max, step=1,
 
     wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
     wa.setAlignment(alignment)
-    if bi.layout(): bi.layout().addWidget(wa)
+    if bi.layout() is not None: bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -281,7 +281,7 @@ def doubleSpin(widget, master, value, min, max, step=1,
 
     wa = bi.control = DoubleSpinBoxWFocusOut(min, max, step, bi)
     wa.setAlignment(alignment)
-    if addToLayout and bi.layout(): bi.layout().addWidget(wa)
+    if addToLayout and bi.layout() is not None: bi.layout().addWidget(wa)
     # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -323,7 +323,7 @@ def doubleSpin(widget, master, value, min, max, step=1,
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], addToLayout = 1, debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation=None)
     wa = QCheckBox(label, b)
-    if addToLayout and b.layout(): b.layout().addWidget(wa)
+    if addToLayout and b.layout() is not None: b.layout().addWidget(wa)
 
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
@@ -348,7 +348,7 @@ def enterButton(parent, height, placeholder = True):
     button = QPushButton(parent)
     button.setFixedSize(height, height)
     button.setIcon(getEnterIcon())
-    if parent.layout():
+    if parent.layout() is not None:
         parent.layout().addWidget(button)
     if not placeholder:
         return button
@@ -356,7 +356,7 @@ def enterButton(parent, height, placeholder = True):
     button.hide()
     holder = QWidget(parent)
     holder.setFixedSize(height, height)
-    if parent.layout():
+    if parent.layout() is not None:
         parent.layout().addWidget(holder)
     return button, holder
 
@@ -364,7 +364,7 @@ def enterButton(parent, height, placeholder = True):
 class LineEditWFocusOut(QLineEdit):
     def __init__(self, parent, master, callback, focusInCallback=None, placeholder=False):
         QLineEdit.__init__(self, parent)
-        if parent.layout():
+        if parent.layout() is not None:
             parent.layout().addWidget(self)
         self.callback = callback
         self.focusInCallback = focusInCallback
@@ -424,7 +424,7 @@ def lineEdit(widget, master, value,
     if args.has_key("baseClass"):
         wa = args["baseClass"](b)
         wa.enterButton = None
-        if b and b.layout():
+        if b and b.layout() is not None:
             b.layout().addWidget(wa)
     elif focusInCallback or callback and not callbackOnType:
         if not hasHBox:
@@ -435,7 +435,7 @@ def lineEdit(widget, master, value,
     else:
         wa = QLineEdit(b)
         wa.enterButton = None
-        if b and b.layout():
+        if b and b.layout() is not None:
             b.layout().addWidget(wa)
 
     if value:
@@ -458,7 +458,7 @@ def lineEdit(widget, master, value,
 
 def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, height = None, toggleButton = False, value = "", addToLayout = 1):
     btn = QPushButton(label, widget)
-    if addToLayout and widget.layout():
+    if addToLayout and widget.layout() is not None:
         widget.layout().addWidget(btn)
 
     if width:
@@ -485,7 +485,8 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
 
 def toolButton(widget, master, callback = None, width = None, height = None, tooltip = None, addToLayout = 1, debuggingEnabled = 1):
     btn = QToolButton(widget)
-    if addToLayout and widget.layout(): widget.layout().addWidget(btn)
+    if addToLayout and widget.layout() is not None:
+        widget.layout().addWidget(btn)
     if width != None: btn.setFixedWidth(width)
     if height!= None: btn.setFixedHeight(height)
     if tooltip != None: btn.setToolTip(tooltip)
@@ -504,7 +505,8 @@ def separator(widget, width=4, height=4):
 #    return None
     sep = QWidget(widget)
 #    sep.setStyleSheet("background: #000000;")
-    if widget.layout(): widget.layout().addWidget(sep)
+    if widget.layout() is not None:
+        widget.layout().addWidget(sep)
     sep.setFixedSize(width, height)
     return sep
 
@@ -542,7 +544,8 @@ def listBox(widget, master, value = None, labels = None, box = None, tooltip = N
     lb = OrangeListBox(master, value, enableDragDrop, dragDropCallback, dataValidityCallback, sizeHint, bg)
     lb.box = bg
     lb.setSelectionMode(selectionMode)
-    if bg.layout(): bg.layout().addWidget(lb)
+    if bg.layout() is not None:
+        bg.layout().addWidget(lb)
 
     if value != None:
         clist = getdeepattr(master, value)
@@ -608,7 +611,8 @@ def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = Non
         w = QRadioButton(unicode(i))
         w.setIcon(QIcon(label))
     #w.ogValue = value
-    if addToLayout and dest.layout(): dest.layout().addWidget(w)
+    if addToLayout and dest.layout() is not None:
+        dest.layout().addWidget(w)
     if not hasattr(bg, "group"):
         bg.group = QButtonGroup(bg)
     bg.group.addButton(w)
@@ -669,7 +673,8 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     if width != None:
         slider.setFixedWidth(width)
 
-    if sliderBox.layout(): sliderBox.layout().addWidget(slider)
+    if sliderBox.layout() is not None:
+        sliderBox.layout().addWidget(slider)
 
     if ticks:
         slider.setTickPosition(QSlider.TicksBelow)
@@ -677,7 +682,8 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
     if createLabel:
         label = QLabel(sliderBox)
-        if sliderBox.layout(): sliderBox.layout().addWidget(label)
+        if sliderBox.layout() is not None:
+            sliderBox.layout().addWidget(label)
         label.setText(labelFormat % minValue)
         width1 = label.sizeHint().width()
         label.setText(labelFormat % maxValue)
@@ -905,7 +911,7 @@ class SmallWidgetButton(QPushButton):
             QPushButton.__init__(self, QIcon(name), text, widget)
         else:
             QPushButton.__init__(self, text, widget)
-        if widget.layout():
+        if widget.layout() is not None:
             widget.layout().addWidget(self)
         if tooltip != None:
             self.setToolTip(tooltip)
@@ -958,7 +964,7 @@ class SmallWidgetLabel(QLabel):
             else:
                 name = os.path.join(iconDir, "arrow_down.png")
             self.setPixmap(QPixmap(name))
-        if widget.layout():
+        if widget.layout() is not None:
             widget.layout().addWidget(self)
         if tooltip != None:
             self.setToolTip(tooltip)
@@ -1091,7 +1097,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     if indent:
         hb = widgetBox(hb, orientation = "horizontal")
         hb.layout().addSpacing(indent)
-    if hb.layout() and addToLayout: hb.layout().addWidget(combo)
+    if hb.layout() is not None and addToLayout:
+        hb.layout().addWidget(combo)
 
     if items:
         combo.addItems([unicode(i) for i in items])
@@ -1134,7 +1141,7 @@ class collapsableWidgetBox(QGroupBox):
         if orientation == 'vertical': self.setLayout(QVBoxLayout())
         else:                         self.setLayout(QHBoxLayout())
 
-        if widget.layout():
+        if widget.layout() is not None:
             widget.layout().addWidget(self)
         if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
             self.setTitle(" " + box.strip() + " ")
@@ -1176,7 +1183,7 @@ class collapsableWidgetBox(QGroupBox):
 class widgetHider(QWidget):
     def __init__(self, widget, master, value, size = (19,19), widgets = [], tooltip = None):
         QWidget.__init__(self, widget)
-        if widget.layout():
+        if widget.layout() is not None:
             widget.layout().addWidget(self)
         self.value = value
         self.master = master
@@ -1843,7 +1850,7 @@ from orngMisc import progressBarMilestones
 
 def tabWidget(widget):
     w = QTabWidget(widget)
-    if widget.layout():
+    if widget.layout() is not None:
         widget.layout().addWidget(w)
     return w
 
@@ -1863,7 +1870,7 @@ def createTabPage(tabWidget, name, widgetToAdd = None, canScroll = False):
 
 def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     w = QTableWidget(rows, columns, widget)
-    if widget and addToLayout and widget.layout():
+    if widget and addToLayout and widget.layout() is not None:
         widget.layout().addWidget(w)
     if selectionMode != -1:
         w.setSelectionMode(selectionMode)   
