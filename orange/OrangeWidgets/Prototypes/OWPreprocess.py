@@ -12,7 +12,8 @@ import OWGUI, OWGUIEx
 import orange
 import orngWrap
 
-import sys, os 
+import sys, os
+import math
 
 from orange import Preprocessor_discretize, Preprocessor_imputeByLearner, Preprocessor_dropMissing
 
@@ -121,7 +122,7 @@ def bestP(attrMeasures, P=10):
     """ Return best P percent of attributes
     """
     count = len(attrMeasures)
-    return  attrMeasures[-max(count * 100 / P, 1):]
+    return  attrMeasures[-max(int(math.ceil(count * P / 100.0)), 1):]
 
 class Preprocessor_featureSelection(orange.Preprocessor):
     """ A preprocessor that runs feature selection using an feature scoring function.
@@ -148,7 +149,7 @@ class Preprocessor_featureSelection(orange.Preprocessor):
          
     def __call__(self, data, weightId=None):
         measures = self.attrScores(data)
-        attrs = [attr for _, attr in self.filter(measures)]
+        attrs = [attr for _, attr in self.filter(measures, self.limit)]
         domain = orange.Domain(attrs, data.domain.classVar)
         domain.addmetas(data.domain.getmetas())
         return orange.ExampleTable(domain, data)
@@ -164,7 +165,7 @@ def selectPRandom(examples, P=10):
     """
     import random
     count = len(examples)
-    return random.sample(examples, max(count * P / 100, 1))
+    return random.sample(examples, max(int(math.ceil(count * P / 100.0)), 1))
 
 class Preprocessor_sample(orange.Preprocessor):
     """ A preprocessor that samples a subset of the data:
