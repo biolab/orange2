@@ -18,7 +18,7 @@ class OWMajority(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
         self.name = 'Majority'

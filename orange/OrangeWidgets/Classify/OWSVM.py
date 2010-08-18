@@ -15,7 +15,7 @@ class OWSVM(OWWidget):
     settingsList=["C","nu","p","probability","gamma","degree", "coef0", "kernel_type", "name", "useNu", "normalization"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0, resizingEnabled = 0)
-        self.inputs=[("Example Table", ExampleTable, self.setData), ("Preprocessing", PreprocessedLearner, self.setPreprocessor)]
+        self.inputs=[("Example Table", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs=[("Learner", orange.Learner, Default),("Classifier", orange.Classifier, Default),("Support Vectors", ExampleTable)]
 
         self.kernel_type = 2
