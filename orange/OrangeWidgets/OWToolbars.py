@@ -26,7 +26,7 @@ dlg_zoom_extent = dir + "dlg_zoom_extent.png"
 def createButton(parent, text, action = None, icon = None, toggle = 0):
     btn = QToolButton(parent)
     btn.setMinimumSize(30,30)
-    if parent.layout():
+    if parent.layout() is not None:
         parent.layout().addWidget(btn)
     btn.setCheckable(toggle)
     if action:
@@ -64,7 +64,7 @@ class ZoomSelectToolbar(QGroupBox):
         self.setLayout(QHBoxLayout())
         self.layout().setMargin(6)
         self.layout().setSpacing(4)
-        if parent.layout():
+        if parent.layout() is not None:
             parent.layout().addWidget(self)
 
         self.graph = graph # save graph. used to send signals
@@ -140,7 +140,7 @@ class NavigateSelectToolbar(QWidget):
         self.layout().setSpacing(0)
         self.layout().setContentsMargins(0,25,0,0)
         
-        if parent.layout():
+        if parent.layout() is not None:
             parent.layout().addWidget(self)
 
         self.navigate = OWGUI.widgetBox(self, 0, orientation = "vertical", margin=2)
