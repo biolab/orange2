@@ -1937,9 +1937,9 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
     sortidx = nth(tempsort, 1)
     nnames = [ names[x] for x in sortidx ]
     
-    if not lowv:
+    if lowv == None:
         lowv = min(1, int(math.floor(min(ssums))))
-    if not highv:
+    if highv == None:
         highv = max(len(avranks), int(math.ceil(max(ssums))))
 
     cline = 0.4
@@ -1957,7 +1957,6 @@ def graph_ranks(filename, avranks, names, cd=None, cdmethod=None, lowv=None, hig
             a = rank - lowv
         else:
             a = highv - rank
-        
         return textspace+scalewidth/(highv-lowv)*a
 
     distanceh = 0.25
