@@ -203,6 +203,8 @@ public:
 	int	length;
 
 	TSparseExample(TExample *example, int weightID);
+  ~TSparseExample();
+  TSparseExample(const TSparseExample &);
 };
 
 
@@ -214,6 +216,7 @@ public:
 	vector<long> intDomain;				// domain mapped longint values
 
 	TSparseExamples(PExampleGenerator examples, int weightID);
+	~TSparseExamples();
 };
 
 
@@ -229,8 +232,9 @@ public:
 	vector<int> exampleIds;
 
 	TSparseItemsetNode(long avalue = -1);			//constructor
+	~TSparseItemsetNode();
 
-    TSparseItemsetNode *operator[] (long avalue);	//directly gets subnode
+  TSparseItemsetNode *operator[] (long avalue);	//directly gets subnode
 
 	TSparseItemsetNode* addNode(long avalue);		//adds new subnode
 	bool hasNode(long avalue);				//returns true if has subnode with given value
@@ -239,7 +243,8 @@ public:
 
 class TSparseItemsetTree : TOrange {							//item node used in TSparseItemsetTree
 public:
-	TSparseItemsetTree(TSparseExamples examples);			//constructor
+	TSparseItemsetTree(const TSparseExamples &examples);			//constructor
+	~TSparseItemsetTree();
 
 	int buildLevelOne(vector<long> intDomain);
 	long extendNextLevel(int maxDepth, long maxCount);

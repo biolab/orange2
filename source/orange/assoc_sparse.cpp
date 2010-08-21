@@ -43,10 +43,14 @@ TSparseExample::TSparseExample(TExample *example, int weightID){
 	  itemset = new long[length];
 	  length = 0;
 
-	  PITERATE(TVarList, vi2, example->domain->variables)
-		  if (   !(*example)[*vi2].isSpecial() 
-		      && (((*vi2)->varType != TValue::FLOATVAR) || (*example)[*vi2].floatV > 1e-6))
-			  itemset[length++] = example->domain->getVarNum(*vi2);
+    int vn = 0;
+	  PITERATE(TVarList, vi2, example->domain->variables) {
+		  if (   !(*example)[*vi2].isSpecial()
+		      && (((*vi2)->varType != TValue::FLOATVAR) || (*example)[*vi2].floatV > 1e-6)) {
+			  itemset[length++] = vn;
+			}
+			vn++;
+		}
   }
   else {
     length = 0;
@@ -55,6 +59,22 @@ TSparseExample::TSparseExample(TExample *example, int weightID){
       if ((*mi).first != weightID)
         itemset[length++] = (*mi).first;
     sort(itemset, itemset+length);
+  }
+}
+
+TSparseExample::~TSparseExample()
+{
+    delete itemset;
+    itemset = NULL;
+}
+
+TSparseExample::TSparseExample(const TSparseExample &other)
+: weight(other.weight),
+  itemset(new long[length]),
+  length(other.length)
+{
+  if (other.itemset) {
+      memcpy(itemset, other.itemset, length*sizeof(long));
   }
 }
 
@@ -93,6 +113,12 @@ TSparseExamples::TSparseExamples(PExampleGenerator examples, int weightID){
 	}
 }
 
+TSparseExamples::~TSparseExamples()
+{
+  for(vector<TSparseExample*>::const_iterator bi=transaction.begin(), be=transaction.end(); bi!=be; bi++)
+    delete *bi;
+}
+
 /****************************************************************************************
 TSparseItemsetNode
 *****************************************************************************************/
@@ -101,6 +127,12 @@ TSparseItemsetNode::TSparseItemsetNode(long avalue) {
 	weiSupp = 0.0;
 	value = avalue;
 };
+
+TSparseItemsetNode::~TSparseItemsetNode()
+{
+  ITERATE(TSparseISubNodes, ii, subNode)
+    delete ii->second;
+}
 
 TSparseItemsetNode *TSparseItemsetNode::operator[] (long avalue) {
 	return subNode[avalue];
@@ -125,10 +157,15 @@ TSparseItemsetTree
 *****************************************************************************************/
 
 // constructor
-TSparseItemsetTree::TSparseItemsetTree(TSparseExamples examples){
+TSparseItemsetTree::TSparseItemsetTree(const TSparseExamples &examples){
 	root = new TSparseItemsetNode();
 	domain = examples.domain;
 };
+
+TSparseItemsetTree::~TSparseItemsetTree()
+{
+  delete root;
+}
 
 // generates all itemsets with one element
 int TSparseItemsetTree::buildLevelOne(vector<long> intDomain) {
@@ -173,13 +210,16 @@ long TSparseItemsetTree::extendNextLevel(int maxDepth, long maxCount) {
 					if (allowExtend(cItemset, currDepth + 1)) {
 						currNode->addNode(cItemset[currDepth]);
 						count++;
-						if (count>maxCount) return count;
+						if (count>maxCount) {
+						  delete cItemset;
+						  return count;
+						}
 					}
-
 				}
 		else RITERATE(TSparseISubNodes,sni,currNode->subNode)		//adds subnodes to list
 			nodeQue.push_back(NodeDepth(sni->second, currDepth + 1));
 	}
+	delete cItemset;
 	return count;
 };
 
@@ -346,7 +386,7 @@ PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, floa
 		RITERATE(TSparseISubNodes,sni,currNode->subNode)		//adds subnodes to list
 			nodeQue.push_back(NodeDepth(sni->second, currDepth + 1));
 	}
-
+	delete itemset;
 	return rules;
 };
 
@@ -479,6 +519,7 @@ long TSparseItemsetTree::getItemsetRules(long itemset[], int iLength, float minC
 		}
 	}
 
+  delete leftItemset;
 	return count;
 };
 
