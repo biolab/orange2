@@ -75,8 +75,8 @@ class OWFile(OWWidget):
 #        OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
         
         hbox = OWGUI.indentedBox(box)
-        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=80, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=80, orientation="horizontal", tooltip="Default values: '~' or '*'")
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:", labelWidth=80, orientation="horizontal", tooltip="Default values: '~' or '*'")
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:", labelWidth=80, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
 
         smallWidget.layout().addSpacing(8)
         OWGUI.radioButtonsInBox(smallWidget, self, "createNewOn", box="New Attributes",
