@@ -149,7 +149,7 @@ printed out or referred to by user. The size of the list is also
 used to indicate the number of possible values for this
 attribute; changing the size, especially <B>shrinking the list
 can have disastrous effects and is therefore not really
-recommendable</B>. You've been warned.</P>
+recommendable</B>. Also, do not add values to the list by calling its <code>append</code> or <code>extend</code> method: call <code>EnumVariable.addValues</code> described below.</P>
 
 <P>It is also assumed that <CODE>values</CODE> is always defined
 (but can be empty), so you should never set <CODE>values</CODE>
@@ -165,6 +165,13 @@ integer that is to be interpreted as an index to
 <CODE>values</CODE>. The absence of base value ("sex" can be
 either "female" or "male", without an obvious base value) is
 indicated by <CODE>-1</CODE>.</DD> </DL>
+
+<p class=section>Methods</p>
+
+<DL class=attributes>
+<DT>addValue(string)</DT>
+<dd>Adds a value to values. Always call this function instead of appending to <code>values</code>.</dd>
+</dl>
 
 <A name="FloatVariable"></a>
 <H2>FloatVariable</H2>
