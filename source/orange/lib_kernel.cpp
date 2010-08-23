@@ -577,6 +577,15 @@ PyObject *EnumVariable_getitem_sq(PyObject *self, Py_ssize_t index)
   PyCATCH
 }
 
+PyObject *EnumVariable_addValue(PyObject *self, PyObject *arg) PYARGS(METH_O, "(string) -> None")
+{
+  PyTRY
+    if (!PyString_Check(arg))
+      PYERROR(PyExc_TypeError, "string argument expected", PYNULL);
+    PyOrange_AsEnumVariable(self)->addValue(PyString_AsString(arg));
+    RETURN_NONE;
+  PyCATCH
+}
 
 PyObject *FloatVariable_getitem_sq(PyObject *self, Py_ssize_t index)
 { PyTRY
