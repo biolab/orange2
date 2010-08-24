@@ -17,6 +17,8 @@ import orngStat
 import orngCI
 import itertools  
 import warnings
+import copy
+import bisect
 
 #def entropy_frequency_matrix(m):
 #    n = sum(sum(v) for v in m)
@@ -100,15 +102,51 @@ class Interaction:
     """
     Two-way attribute interactions (feature synergies).
     """
-    def __init__(self, data):
+    def __init__(self, data, p_values=False, samples=10000, permutations=100):
         self.data = data
         self.measure = orange.MeasureAttribute_info
         self.gain = dict([(a, self.measure(a, data)) for a in data.domain.attributes])
         self.class_entropy =  entropy(data.domain.classVar, data)
+        self.samples = samples
+        self.permutations = permutations
+        self.p_values = p_values
+        if p_values:
+            self.score_dist = self.compute_score_dist()
+    
+    def compute_score_dist(self):
+        """Distribution (list) of interaction scores obtained by permutation analysis"""
+        
+        def permute_class():
+            random.shuffle(classvalues)
+            for v, d in itertools.izip(classvalues, self.data):
+                d.setclass(v)
+                
+        orig_classvalues = [d.getclass() for d in self.data]
+        classvalues = copy.copy(orig_classvalues)
+        attributes = self.data.domain.attributes
+        samples_in_permutations = self.samples / self.permutations
+        self.permuted_scores = []
+        for _ in range(self.permutations):
+            permute_class()
+            scores = [self.get_score(random.choice(attributes), random.choice(attributes)) for _ in range(samples_in_permutations)]
+            self.permuted_scores.extend(scores)
+        self.permuted_scores_len = float(len(self.permuted_scores))
+        self.permuted_scores.sort()
+
+        # restore class values to original values
+        for v, d in itertools.izip(orig_classvalues, self.data):
+            d.setclass(v)
+            
+    def get_score(self, a1, a2):
+        return orngCI.FeatureByCartesianProduct(self.data, (a1, a2), measure=self.measure)[1] - self.gain[a1] - self.gain[a2]
+        
     def __call__(self, a1, a2):
         """Return two-attribute interaction and proportion of explained class entropy"""
-        score = orngCI.FeatureByCartesianProduct(self.data, (a1, a2), measure=self.measure)[1] - self.gain[a1] - self.gain[a2]
-        return score, score/self.class_entropy
+        score = self.get_score(a1, a2)
+        if self.p_values:
+            return score, score/self.class_entropy, 1.0 - bisect.bisect(self.permuted_scores, score)/self.permuted_scores_len
+        else:
+            return score, score/self.class_entropy
 
 #a1, a2 = data.domain.attributes[0], data.domain.attributes[1]
 #ab, quality = orngCI.FeatureByCartesianProduct(data, [a1, a2], measure=orange.MeasureAttribute_info)
