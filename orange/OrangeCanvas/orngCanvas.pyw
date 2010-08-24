@@ -20,6 +20,7 @@ product = "Red R" if RedR else "Orange"
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent=None, flags=0):
         QMainWindow.__init__(self, parent)
+#        self.setUnifiedTitleAndToolBarOnMac(True)
         self.debugMode = 1        # print extra output for debuging
         self.setWindowTitle("%s Canvas" % product)
         self.windows = []    # list of id for windows in Window menu
@@ -176,7 +177,6 @@ class OrangeCanvasDlg(QMainWindow):
                 if mb.exec_() == QMessageBox.Ok:
                     self.schema.loadDocument(os.path.join(self.canvasSettingsDir, "tempSchema.tmp"), freeze=1)
         
-        
         if self.schema.widgets == [] and len(sys.argv) > 1 and os.path.exists(sys.argv[-1]) and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
             self.schema.loadDocument(sys.argv[-1])
         
@@ -218,7 +218,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings["WidgetTabs"] = self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
         if not self.settings.get("showWidgetToolbar", True): 
             self.widgetsToolBar.hide()
-
 
 
     def readShortcuts(self):
@@ -343,6 +342,17 @@ class OrangeCanvasDlg(QMainWindow):
         self.schema.loadDocument(str(name), freeze = 0, importBlank = 1)
         self.addToRecentMenu(str(name))
     
+    def openSchema(self, filename):
+        if self.schema.isSchemaChanged() and self.schema.widgets:
+            ret = QMessageBox.warning(self, "Orange Canvas", "Changes to your present schema are not saved.\nSave them?",
+                                      QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
+            if ret == QMessageBox.Save:
+                self.schema.saveDocument()
+            elif ret == QMessageBox.Cancel:
+                return
+        self.schema.clear()
+        self.schema.loadDocument(filename)
+        
 
     def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
@@ -790,6 +800,19 @@ class MyStatusBar(QStatusBar):
 class OrangeQApplication(QApplication):
     def __init__(self, *args):
         QApplication.__init__(self, *args)
+        
+    #QFileOpenEvent are Mac OSX only
+    if sys.platform == "darwin":
+        def event(self, event):
+            if event.type() == QEvent.FileOpen:
+                file = str(event.file())
+                def send():
+                    if hasattr(qApp, "canvasDlg"):
+                        qApp.canvasDlg.openSchema(file)
+                    else:
+                        QTimer.singleShot(100, send)
+                send()
+            return QApplication.event(self, event)
         
 #    def notify(self, receiver, event):
 #        eventDict = {0: 'None', 1: 'Timer', 2: 'MouseButtonPress', 3: 'MouseButtonRelease', 4: 'MouseButtonDblClick', 5: 'MouseMove', 6: 'KeyPress', 7: 'KeyRelease', 8: 'FocusIn', 9: 'FocusOut', 10: 'Enter', 11: 'Leave', 12: 'Paint', 13: 'Move', 14: 'Resize', 17: 'Show', 18: 'Hide', 19: 'Close', 21: 'ParentChange', 24: 'WindowActivate', 25: 'WindowDeactivate', 26: 'ShowToParent', 27: 'HideToParent', 31: 'Wheel', 33: 'WindowTitleChange', 34: 'WindowIconChange', 35: 'ApplicationWindowIconChange', 36: 'ApplicationFontChange', 37: 'ApplicationLayoutDirectionChange', 38: 'ApplicationPaletteChange', 39: 'PaletteChange', 40: 'Clipboard', 43: 'MetaCall', 50: 'SockAct', 51: 'ShortcutOverride', 52: 'DeferredDelete', 60: 'DragEnter', 61: 'DragMove', 62: 'DragLeave', 63: 'Drop', 68: 'ChildAdded', 69: 'ChildPolished', 70: 'ChildInserted', 71: 'ChildRemoved', 74: 'PolishRequest', 75: 'Polish', 76: 'LayoutRequest', 77: 'UpdateRequest', 78: 'UpdateLater', 82: 'ContextMenu', 83: 'InputMethod', 86: 'AccessibilityPrepare', 87: 'TabletMove', 88: 'LocaleChange', 89: 'LanguageChange', 90: 'LayoutDirectionChange', 92: 'TabletPress', 93: 'TabletRelease', 94: 'OkRequest', 96: 'IconDrag', 97: 'FontChange', 98: 'EnabledChange', 99: 'ActivationChange', 100: 'StyleChange', 101: 'IconTextChange', 102: 'ModifiedChange', 103: 'WindowBlocked', 104: 'WindowUnblocked', 105: 'WindowStateChange', 109: 'MouseTrackingChange', 110: 'ToolTip', 111: 'WhatsThis', 112: 'StatusTip', 113: 'ActionChanged', 114: 'ActionAdded', 115: 'ActionRemoved', 116: 'FileOpen', 117: 'Shortcut', 118: 'WhatsThisClicked', 119: 'AccessibilityHelp', 120: 'ToolBarChange', 121: 'ApplicationActivate', 122: 'ApplicationDeactivate', 123: 'QueryWhatsThis', 124: 'EnterWhatsThisMode', 125: 'LeaveWhatsThisMode', 126: 'ZOrderChange', 127: 'HoverEnter', 128: 'HoverLeave', 129: 'HoverMove', 130: 'AccessibilityDescription', 131: 'ParentAboutToChange', 132: 'WinEventAct', 150: 'EnterEditFocus', 151: 'LeaveEditFocus', 153: 'MenubarUpdated', 155: 'GraphicsSceneMouseMove', 156: 'GraphicsSceneMousePress', 157: 'GraphicsSceneMouseRelease', 158: 'GraphicsSceneMouseDoubleClick', 159: 'GraphicsSceneContextMenu', 160: 'GraphicsSceneHoverEnter', 161: 'GraphicsSceneHoverMove', 162: 'GraphicsSceneHoverLeave', 163: 'GraphicsSceneHelp', 164: 'GraphicsSceneDragEnter', 165: 'GraphicsSceneDragMove', 166: 'GraphicsSceneDragLeave', 167: 'GraphicsSceneDrop', 168: 'GraphicsSceneWheel', 169: 'KeyboardLayoutChange', 170: 'DynamicPropertyChange', 171: 'TabletEnterProximity', 172: 'TabletLeaveProximity', 173: 'NonClientAreaMouseMove', 174: 'NonClientAreaMouseButtonPress', 175: 'NonClientAreaMouseButtonRelease', 176: 'NonClientAreaMouseButtonDblClick', 177: 'MacSizeChange', 178: 'ContentsRectChange', 181: 'GraphicsSceneResize', 182: 'GraphicsSceneMove', 183: 'CursorChange', 184: 'ToolTipChange', 186: 'GrabMouse', 187: 'UngrabMouse', 188: 'GrabKeyboard', 189: 'UngrabKeyboard'}

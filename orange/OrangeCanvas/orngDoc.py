@@ -33,6 +33,9 @@ class SchemaDoc(QWidget):
         self.schemaID = orngHistory.logNewSchema()
 
 
+    def isSchemaChanged(self):
+        return self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+        
     # we are about to close document
     # ask the user if he is sure
     def closeEvent(self,ce):
