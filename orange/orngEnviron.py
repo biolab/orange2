@@ -7,6 +7,9 @@ if os.name == "nt":
     paths = os.environ["PATH"].split(";")
     paths.sort(lambda x,y: -1 if "PyQt4" in x else (1 if "miktex" in y and os.path.exists(os.path.join(y, "QtCore4.dll")) else 0))
     os.environ["PATH"] = ";".join(paths)
+    
+if sys.platform == "darwin" and sys.prefix.startswith("/sw"):
+    sys.path.append(os.path.join(sys.prefix, "lib/qt4-mac/lib/python" + sys.version[:3] + "/site-packages")) 
 
 def __getDirectoryNames():
     """Return a dictionary with Orange directories."""
