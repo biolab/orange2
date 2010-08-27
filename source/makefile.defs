@@ -4,6 +4,7 @@
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
+PYTHONVER = $(shell python -c "import sys; print sys.version[:3]")
 
 
 DESTDIR = $(PYTHONSITEPKGS)/orange
@@ -28,7 +29,11 @@ LIBRARY_FILE = liborange.so
 NUMPY_INCLUDE = $(shell python -c "import numpy; print numpy.get_include();")
 
 ifeq ($(OS), Darwin)
-  export MACOSX_DEPLOYMENT_TARGET = 10.4
+  ifeq ($(PYTHONVER), 2.7)
+    export MACOSX_DEPLOYMENT_TARGET = $(shell python -c "import sysconfig; print sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')")
+  else
+  	export MACOSX_DEPLOYMENT_TARGET = 10.4
+  endif
   COMPILEOPTIONS = -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -O3 -I$(NUMPY_INCLUDE) $(CXXFLAGS)
   LINKOPTIONS = -dynamiclib -headerpad_max_install_names -undefined dynamic_lookup -lstdc++ -L$(OLD) -lorange_include $(LDFLAGS)
   LINKER = g++
