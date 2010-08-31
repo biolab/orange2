@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -24,7 +24,6 @@
 
 #include <stdio.h>
 #include "stdlib.h"
-#include <iostream>
 #include <set>
 #include <queue>
 #include <vector>
@@ -164,7 +163,7 @@ public:
   void getNeighbours_Undirected(const int &v, vector<int> &neighbours);
   void getNeighbours_Undirected(const int &v, const int &edgeType, vector<int> &neighbours);
 };
-  
+
 
 class ORANGE_API TGraphAsTree : public TGraph
 {

@@ -144,7 +144,6 @@ int svm_check_probability_model(const struct svm_model *model);
 /*##########################################
 ##########################################*/
 
-#include <iostream>
 #include "classify.hpp"
 #include "learn.hpp"
 #include "orange.hpp"

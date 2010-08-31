@@ -18,12 +18,11 @@
     along with Orange.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
+#include <iostream>
+#include <fstream>
 #include "getarg.hpp"
 #include "stladdon.hpp"
 #include "errors.hpp"
-#include <iostream>
-#include <fstream>
 #include <stdio.h>
 
 
@@ -79,7 +78,7 @@ TProgArguments::TProgArguments(const string &poss_options, const string &line, b
     string 'help f: m: u' specifies options 'help' and 'u' which have no parameters and 'f' and 'm' which
     have (one) parameter. */
 void TProgArguments::findPossibleOptions(const string &poss_options)
-{ 
+{
   string ops;
   string::const_iterator chi=poss_options.begin();
   for(;;) {
@@ -95,7 +94,7 @@ void TProgArguments::findPossibleOptions(const string &poss_options)
       while((chi!=poss_options.end()) && (*chi==' ')) chi++;
       if (chi==poss_options.end()) break;
       ops= *(chi++);
-    } 
+    }
 
     else ops+= *(chi++);
   }
@@ -133,7 +132,7 @@ void TProgArguments::process(const vector<string> &optionsList)
         if (possibleOptions.find(option)==possibleOptions.end())
           unrecognized.insert(pair<string, string>(option, par));
         else if (possibleOptions[option]) options.insert(pair<string, string>(option, par));
-        else 
+        else
           raiseError("option '%s' expects no arguments", option.c_str());
       }
     }
@@ -199,7 +198,7 @@ int string2atoms(const string &line, vector<string> &atoms)
 {
   if ((line[0]=='"') && (line[line.length()-1]=='"')) {
     char buff[1024], *curr=buff;
-    
+
     for(int i=1, llen = line.length(); i+1<llen;)
       if (line[i]=='"') {
         *(curr++)='"';
@@ -223,7 +222,7 @@ int string2atoms(const string &line, vector<string> &atoms)
   }
 
   return atoms.size();
-}     
+}
 
 
 string firstAtom(const string &line)

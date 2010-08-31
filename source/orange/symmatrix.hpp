@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -26,7 +26,6 @@
 #include <vector>
 #include <stdio.h>
 #include "stdlib.h"
-#include <iostream>
 #include <algorithm>
 
 using namespace std;

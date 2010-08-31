@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -20,8 +20,10 @@
 
 #include <algorithm>
 #include <limits>
-#include "graph.ppp"
 #include <iterator>
+#include <iostream>
+
+#include "graph.ppp"
 
 double _disconbuf = numeric_limits<double>::quiet_NaN();
 

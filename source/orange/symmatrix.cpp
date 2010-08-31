@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -21,7 +21,7 @@
 #include "symmatrix.ppp"
 
 int TSymMatrix::getindex(const int &i, const int &j, bool raiseExceptions) const
-{ 
+{
   if (i==j) {
     if ((i>=dim) || (i<0))
       raiseError("index out of range");

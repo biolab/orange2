@@ -3134,7 +3134,7 @@ PyObject *SymMatrix_getKNN(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, 
 	matrix->getknn(i, kNN, closest);
 
 	PyObject* components_list = PyList_New(0);
-	
+
 	for (i = 0; i < closest.size(); i++) {
 		PyObject *nel = Py_BuildValue("i", closest[i]);
 		PyList_Append(components_list, nel);
@@ -5386,7 +5386,7 @@ PyObject *Graph_getDiameter(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 PyObject *Graph_getClusters(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> list of clusters")
 {
   PyTRY
-    cout << "clustering C++" << endl;
+    //cout << "clustering C++" << endl;
 	  /*
 	  if (!PyArg_ParseTuple(args, ":NetworkOptimization.getClusters", ))
 		  return NULL;

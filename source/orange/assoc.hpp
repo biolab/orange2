@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+    	
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -21,8 +21,6 @@
 
 #ifndef _ASSOC_HPP
 #define _ASSOC_HPP
-
-#include <iostream>
 
 #include "stladdon.hpp"
 

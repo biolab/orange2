@@ -1560,7 +1560,6 @@ struct model *linear_load_model_alt(string &buffer)
 	return model_;
 }
 
-#include <iostream>
 struct NodeSort{
 	bool operator () (const feature_node &lhs, const feature_node &rhs){
 		return lhs.index < rhs.index;

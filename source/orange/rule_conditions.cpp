@@ -1,6 +1,6 @@
 /*
     This file is part of Orange.
-    
+
     Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
     Contact: janez.demsar@fri.uni-lj.si
 
@@ -18,6 +18,8 @@
     along with Orange.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <istream>
+#include <string>
 
 #include "stladdon.hpp"
 
@@ -40,7 +42,7 @@ TRuleCondAtom::TRuleCondAtom(int ana, int anv)
 
 
 bool TRuleCondAtom::operator()(PExample example)
-{ return    (example->operator[](attrIndex).isSpecial()) 
+{ return    (example->operator[](attrIndex).isSpecial())
          || (valueIndex>=0) && (example->operator[](attrIndex).intV!=valueIndex) ? 0 : 1; }
 
 
@@ -52,7 +54,7 @@ TRuleCondOneOf::TRuleCondOneOf(const vector<int> &attrs)
 
 bool TRuleCondOneOf::operator()(PExample example)
 { ITERATE(vector<int>, ai, attrIndices)
-    if (!example->operator[](*ai).isSpecial())  return true; 
+    if (!example->operator[](*ai).isSpecial())  return true;
   return false; }
 
 
@@ -92,7 +94,7 @@ TRuleCondCounted::TRuleCondCounted(PDomain domain, istream &istr, const vector<p
       else sscanf(string(atoms.front().begin()+2, atoms.front().end()).c_str(), "%i", &occurences);
     }
   }
-  
+
   vector<string>::iterator ii(atoms.begin()+1);
   for( ; ii!=atoms.end(); ii++) {
     string atom=*ii;
@@ -122,8 +124,8 @@ TRuleCondCounted::TRuleCondCounted(PDomain domain, istream &istr, const vector<p
 
 int TRuleCondCounted::count(PExample example)
 { int occs=0;
-  for(vector<TCondition<PExample> *>::iterator ci(atomConditions.begin()); ci!=atomConditions.end(); occs+=(**(ci++))(example)); 
-  return occs; 
+  for(vector<TCondition<PExample> *>::iterator ci(atomConditions.begin()); ci!=atomConditions.end(); occs+=(**(ci++))(example));
+  return occs;
 }
 
 
@@ -183,7 +185,7 @@ bool TRuleCondCounted::readConditionAtoms(istream &str, vector<string> &atoms)
 
   return atoms.size()>0;
   #undef MAX_LINE_LENGTH
-}      
+}
 
 
 /*~***************************************************************************************
@@ -192,7 +194,7 @@ A conjunction of count condition - defines one `type' of the rule
 
 TRuleCondConjunctions::TRuleCondConjunctions() {}
 
-TRuleCondConjunctions::TRuleCondConjunctions(PDomain domain, istream &istr, 
+TRuleCondConjunctions::TRuleCondConjunctions(PDomain domain, istream &istr,
                                              const vector<pair<string, vector<int> > > &sets)
 { while(!istr.eof()) {
     TRuleCondCounted *newRule=mlnew TRuleCondCounted(domain, istr, sets);
@@ -200,7 +202,7 @@ TRuleCondConjunctions::TRuleCondConjunctions(PDomain domain, istream &istr,
     else break;
   }
 }
-    
+
 
 /*~***************************************************************************************
 A disjunction of `types' of rules
@@ -280,7 +282,7 @@ bool TRuleCondDisjunctions::readSetAtoms(istream &str, vector<string> &atoms)
   if (atom.length()) atoms.push_back(atom);
 
   return atoms.size()>0;
-}      
+}
 #undef MAX_LINE_LENGTH
 
 
