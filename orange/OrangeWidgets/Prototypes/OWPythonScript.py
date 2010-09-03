@@ -23,14 +23,18 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
         self.defFormat = QTextCharFormat()
         self.defFormat.setForeground(QBrush(Qt.black))
         self.defFormat.setFontWeight(QFont.Bold)
+        self.commentFormat = QTextCharFormat()
+        self.commentFormat.setForeground(QBrush(Qt.lightGray))
         
         self.keywords = ["def", "if", "else", "elif", "for", "while", "with", "try", "except",
                          "finally", "not", "in", "lambda", "None", "import", "class", "return", "print",
-                         "yield", "break", "continue", "raise", "or", "and", "True", "False", "pass"]
+                         "yield", "break", "continue", "raise", "or", "and", "True", "False", "pass",
+                         "from", "as"]
         self.rules = [(QRegExp(r"\b%s\b" % keyword), self.keywordFormat) for keyword in self.keywords] + \
                      [(QRegExp(r"\bclass|\bdef\s+([A-Za-z]+[A-Za-z0-9]+)\s*\("), self.defFormat),
                       (QRegExp(r"'.*'"), self.stringFormat),
-                      (QRegExp(r'".*"'), self.stringFormat)]
+                      (QRegExp(r'".*"'), self.stringFormat),
+                      (QRegExp(r"#.*"), self.commentFormat)]
                      
         QSyntaxHighlighter.__init__(self, parent)
         
@@ -47,6 +51,23 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
                     self.setFormat(exp.pos(0), len(str(exp.cap(0))), format)
 #                    print index, str(exp.cap(0))
                 index = exp.indexIn(text, index + length)
+                
+        ## Multi line strings
+        start = QRegExp(r"(''')|" + r'(""")')
+        end = QRegExp(r"(''')|" + r'(""")')
+        self.setCurrentBlockState(0)
+        startIndex = 0
+        if self.previousBlockState() != 1:
+            startIndex = start.indexIn(text)
+        while startIndex >= 0:
+            endIndex = end.indexIn(text, startIndex + 3)
+            if endIndex == -1:
+                self.setCurrentBlockState(1)
+                commentLen = len(text) - startIndex
+            else:
+                commentLen = endIndex - startIndex + 3
+            self.setFormat(startIndex, commentLen, self.stringFormat)
+            startIndex = start.indexIn(text, startIndex + commentLen + 3)
                 
 class PythonScriptEditor(QPlainTextEdit):
     INDENT = 4
@@ -140,8 +161,9 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
         
     def write(self, data):
         cursor = QTextCursor(self.document())
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)
         cursor.insertText(data)
+        self.setTextCursor(cursor)
         self.ensureCursorVisible()
         
     def push(self, line):
@@ -247,7 +269,7 @@ class OWPythonScript(OWWidget):
         self.splitCanvas.addWidget(self.textBox)
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
-        self.text.setFont(QFont("Monospace"))
+        self.text.document().setDefaultFont(QFont("Monaco"))
         self.highlighter = PythonSyntaxHighlighter(self.text.document())
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
@@ -256,7 +278,7 @@ class OWPythonScript(OWWidget):
         self.splitCanvas.addWidget(self.consoleBox)
         self.console = PythonConsole(self.__dict__, self)
         self.consoleBox.layout().addWidget(self.console)
-        self.console.setFont(QFont("Monospace"))
+        self.console.document().setDefaultFont(QFont("Monaco"))
         self.consoleBox.setAlignment(Qt.AlignBottom)
         self.console.setTabStopWidth(4)
         
