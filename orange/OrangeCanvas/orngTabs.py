@@ -139,7 +139,7 @@ class WidgetButton(QFrame, WidgetButtonBase):
 
         if inside:
             if not widget:
-                widget = schema.addWidget(self.widgetInfo, p.x(), p.y())
+                widget = schema.addWidget(self.widgetInfo, p.x() - 24, p.y() - 24)
                 self.widgetDragging = schema, widget
 
             # in case we got an exception when creating a widget instance
@@ -159,7 +159,6 @@ class WidgetButton(QFrame, WidgetButtonBase):
         self.setFrameShape(QFrame.StyledPanel)
         self.layout().setMargin(self.layout().margin()-2)
 
-        
     def mouseReleaseEvent(self, e):
         self.layout().setMargin(self.layout().margin()+2)
         self.setFrameShape(QFrame.NoFrame)
@@ -169,7 +168,7 @@ class WidgetButton(QFrame, WidgetButtonBase):
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
-                dinwin.canvasView.scene().update()
+#                dinwin.canvasView.scene().update()
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
@@ -229,11 +228,11 @@ class MyTreeWidget(QTreeWidget):
         if dinwin and (dinwin != schema or not inside):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
-             dinwin.canvasView.scene().update()
+#             dinwin.canvasView.scene().update()
 
         if inside:
             if not widget and self.selectedItems() != [] and isinstance(self.selectedItems()[0], WidgetTreeItem):
-                widget = schema.addWidget(self.selectedItems()[0].widgetInfo, p.x(), p.y())
+                widget = schema.addWidget(self.selectedItems()[0].widgetInfo, p.x() - 24, p.y() - 24)
                 self.widgetDragging = schema, widget
 
             # in case we got an exception when creating a widget instance
@@ -242,7 +241,7 @@ class MyTreeWidget(QTreeWidget):
                 return
 
             widget.setCoords(p.x() - widget.rect().width()/2, p.y() - widget.rect().height()/2)
-            schema.canvasView.scene().update()
+#            schema.canvasView.scene().update()
 
             import orngCanvasItems
             items = schema.canvas.collidingItems(widget)
@@ -265,7 +264,7 @@ class MyTreeWidget(QTreeWidget):
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
-                dinwin.canvasView.scene().update()
+#                dinwin.canvasView.scene().update()
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
@@ -390,6 +389,8 @@ class WidgetTree(WidgetListBase, QDockWidget):
         # a widget container to hold the search area and the widget tree
         self.containerWidget = QWidget()
         containerBoxLayout = QBoxLayout(QBoxLayout.TopToBottom, self.containerWidget)
+        if sys.platform == "darwin":
+            containerBoxLayout.setContentsMargins(0,0,0,0)
         self.widgetSuggestEdit = OWGUIEx.lineEditHint(self, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, autoSizeListWidget = 1, callback = self.widgetSuggestCallback)
         self.widgetSuggestEdit.setItems([QListWidgetItem(action.icon(), action.widgetInfo.name) for action in self.actions])
         containerBoxLayout.insertWidget(0, self.widgetSuggestEdit)
@@ -476,6 +477,8 @@ class WidgetToolBox(WidgetListBase, QDockWidget):
         # a widget container to hold the search area and the widget tree
         self.containerWidget = QWidget()
         containerBoxLayout = QBoxLayout(QBoxLayout.TopToBottom, self.containerWidget)
+        if sys.platform == "darwin":
+            containerBoxLayout.setContentsMargins(0, 0, 0, 0)
         self.widgetSuggestEdit = OWGUIEx.lineEditHint(self, None, None, useRE = 0, caseSensitive = 0, matchAnywhere = 1, autoSizeListWidget = 1, callback = self.widgetSuggestCallback)
         self.widgetSuggestEdit.setItems([QListWidgetItem(action.icon(), action.widgetInfo.name) for action in self.actions])
         containerBoxLayout.insertWidget(0, self.widgetSuggestEdit)

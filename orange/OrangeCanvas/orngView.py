@@ -33,6 +33,7 @@ class SchemaView(QGraphicsView):
         self.linePopup.addSeparator()
         self.setAcceptDrops(1)
         self.viewport().setMouseTracking(True)
+        self.connect(self.scene(), SIGNAL("selectionChanged()"), self.onSelectionChanged)
 
     # ###########################################
     # drag and drop events. You can open a document by dropping it on the canvas
@@ -62,6 +63,16 @@ class SchemaView(QGraphicsView):
         else:
             ev.ignore()
 
+    def onSelectionChanged(self):
+        selected = self.scene().selectedItems()
+        one_selected = len(selected) == 1
+        n_selected = len(selected) > 0
+        self.doc.canvasDlg.widgetPopup.setEnabled(n_selected)
+        self.doc.canvasDlg.openActiveWidgetAction.setEnabled(one_selected)
+        self.doc.canvasDlg.renameActiveWidgetAction.setEnabled(one_selected)
+        self.doc.canvasDlg.removeActiveWidgetAction.setEnabled(n_selected)
+        self.doc.canvasDlg.helpActiveWidgetAction.setEnabled(one_selected)
+        
     # ###########################################
     # POPUP MENU - WIDGET actions
     # ###########################################
@@ -113,9 +124,9 @@ class SchemaView(QGraphicsView):
         for item in selectedWidgets:
             self.doc.removeWidget(item)
 
-        self.scene().update()
+#        self.scene().update()
         self.tempWidget = None
-        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+#        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
 
     # ###########################################
     # POPUP MENU - LINKS actions
@@ -138,7 +149,7 @@ class SchemaView(QGraphicsView):
              return
         self.deleteLine(self.selectedLine)
         self.selectedLine = None
-        self.scene().update()
+#        self.scene().update()
 
     def deleteLine(self, line):
         if line != None:
@@ -182,7 +193,7 @@ class SchemaView(QGraphicsView):
 
         # do we start drawing a connection line
         if ev.button() == Qt.LeftButton:
-            widgets = [item for item in self.doc.widgets if item.mouseInsideRightChannel(self.mouseDownPosition)] + [item for item in self.doc.widgets if item.mouseInsideLeftChannel(self.mouseDownPosition)]           
+            widgets = [item for item in self.doc.widgets if item.mouseInsideRightChannel(self.mouseDownPosition) or item.mouseInsideLeftChannel(self.mouseDownPosition)]# + [item for item in self.doc.widgets if item.mouseInsideLeftChannel(self.mouseDownPosition)]           
             if widgets:
                 self.tempWidget = widgets[0]
                 if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
@@ -197,11 +208,13 @@ class SchemaView(QGraphicsView):
                         for widget in self.doc.widgets:
                             widget.canConnect(self.tempWidget, widget)
                                                         
-                self.scene().update()
-                self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
-                return
+#                self.scene().update()
+#                self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+                return QGraphicsView.mousePressEvent(self, ev)
             
-        activeItem = self.scene().itemAt(self.mouseDownPosition)
+        items = self.scene().items(QRectF(self.mouseDownPosition, QSizeF(0 ,0)).adjusted(-2, -2, 2, 2))#, At(self.mouseDownPosition)
+        items = [item for item in items if type(item) in [orngCanvasItems.CanvasWidget, orngCanvasItems.CanvasLine]]
+        activeItem = items[0] if items else None
         if not activeItem:
             self.tempWidget = None
             self.widgetSelectionRect = QGraphicsRectItem(QRectF(self.mouseDownPosition, self.mouseDownPosition), None, self.scene())
@@ -216,14 +229,13 @@ class SchemaView(QGraphicsView):
             if type(activeItem) == orngCanvasItems.CanvasWidget:        # if we clicked on a widget
                 self.tempWidget = activeItem
 
-                # did we click inside the boxes to draw connections
                 if ev.button() == Qt.LeftButton:
                     self.bWidgetDragging = True
-                    if self.doc.ctrlPressed:
+                    if ev.modifiers() & Qt.ControlModifier: #self.doc.ctrlPressed:
                         activeItem.setSelected(not activeItem.isSelected())
                     elif activeItem.isSelected() == 0:
                         self.unselectAllWidgets()
-                        activeItem.setSelected(1)
+                        activeItem.setSelected(True)
 
                     for w in self.getSelectedWidgets():
                         w.savePosition()
@@ -231,9 +243,11 @@ class SchemaView(QGraphicsView):
 
                 # is we clicked the right mouse button we show the popup menu for widgets
                 elif ev.button() == Qt.RightButton:
-                    self.unselectAllWidgets()
-                    activeItem.setSelected(1)
+                    if not ev.modifiers() & Qt.ControlModifier:
+                        self.unselectAllWidgets() 
+                    activeItem.setSelected(True)
                     self.doc.canvasDlg.widgetPopup.popup(ev.globalPos())
+                    return # Don't call QGraphicsView.mousePressEvent. It unselects the active item
                 else:
                     self.unselectAllWidgets()
 
@@ -246,8 +260,6 @@ class SchemaView(QGraphicsView):
             else:
                 self.unselectAllWidgets()
 
-        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
-        self.scene().update()
         return QGraphicsView.mousePressEvent(self, ev)
 
 
@@ -271,7 +283,7 @@ class SchemaView(QGraphicsView):
             for widget in self.doc.widgets:
                 widget.setSelected(widget in widgets)
 
-        self.scene().update()
+#        self.scene().update()
         
         return QGraphicsView.mouseMoveEvent(self, ev)
 
@@ -353,9 +365,9 @@ class SchemaView(QGraphicsView):
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
                     
 
-        self.scene().update()
+#        self.scene().update()
         self.bWidgetDragging = False
-        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
+#        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
         return QGraphicsView.mouseReleaseEvent(self, ev)
 
     def mouseDoubleClickEvent(self, ev):
@@ -390,8 +402,8 @@ class SchemaView(QGraphicsView):
         for widget in self.doc.widgets:
             if widget.instance == widgetInstance:
                 widget.setProcessing(value)
-                self.repaint()
-                widget.update()
+#                self.repaint()
+#                widget.update()
                 return
 
     # ###########################################

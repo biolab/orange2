@@ -17,7 +17,13 @@ class TempCanvasLine(QGraphicsPathItem):
         self.endWidget = None
         self.widget = None
 
-        self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))        
+        self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))
+        
+        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
+            effect = QGraphicsDropShadowEffect(self.scene())
+            effect.setOffset(QPointF(0.0, 0.0))
+            effect.setBlurRadius(7)
+            self.setGraphicsEffect(effect)        
         
     def setStartWidget(self, widget):
         self.startWidget = widget
@@ -65,66 +71,58 @@ class TempCanvasLine(QGraphicsPathItem):
                 newPos = self.widget.getLeftEdgePoint()
         
         path = QPainterPath(pos)
-        path.cubicTo(pos.x()+60, pos.y(), newPos.x()-60, newPos.y(), newPos.x(),newPos.y())
+        if self.startWidget != None:
+            path.cubicTo(pos.x()+60, pos.y(), newPos.x()-60, newPos.y(), newPos.x(),newPos.y())
+        else:
+            path.cubicTo(pos.x()-60, pos.y(), newPos.x()+60, newPos.y(), newPos.x(),newPos.y())
         self.setPath(path)
 #        self.setLine(pos.x(), pos.y(), newPos.x(), newPos.y())
         
     def remove(self):
         self.hide()
 
-    # draw the line
-#    def paint(self, painter, option, widget):
-#        print "P"
-#        start = self.line().p1()
-#        end = self.line().p2()
-
-#        path = QPainterPath(p1)
-#        path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
-
-#        painter.setPen(QPen(QColor(200, 200, 200), 4, Qt.SolidLine, Qt.RoundCap))
-#        painter.drawLine(start, end)
-#        painter.drawPath(path)
-#        painter.setPen(QPen(QColor(160, 160, 160), 2, Qt.SolidLine, Qt.RoundCap))
-#        painter.drawLine(start, end)
-#        painter.drawPath(path)
-
-    # we don't print temp lines
-    def printShape(self, painter):
-        pass
-
-
-    # redraw the line
-##    def repaintLine(self, canvasView):
-##        p1 = self.startPoint()
-##        p2 = self.endPoint()
-##        #canvasView.repaint(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
-##        #canvasView.repaint(QRect(min(p1.x(), p2.x()), min(p1.y(), p2.y()), abs(p1.x()-p2.x()),abs(p1.y()-p2.y())))
-
 # #######################################
 # # CANVAS LINE
 # #######################################
+        
 class CanvasLine(QGraphicsPathItem):
-    def __init__(self, signalManager, canvasDlg, view, outWidget, inWidget, canvas, *args):
-        QGraphicsLineItem.__init__(self, None, canvas)
-        self.signalManager = signalManager
-        self.canvasDlg = canvasDlg
+    def __init__(self, signalManager, canvasDlg, view, outWidget, inWidget, scene, *args):
         self.outWidget = outWidget
         self.inWidget = inWidget
+        
+        QGraphicsPathItem.__init__(self, None, None)
+        self.signalManager = signalManager
+        self.canvasDlg = canvasDlg
         self.view = view
         self.setZValue(-10)
+        
         self.caption = ""
+        self.captionItem = QGraphicsTextItem(self)
+        self.captionItem.setDefaultTextColor(QColor(80, 80, 192))
+        self.captionItem.setHtml("<center>%s</center>" % self.caption)
+        self.captionItem.setAcceptHoverEvents(False)
+        self.captionItem.setVisible(bool(self.canvasDlg.settings["showSignalNames"]))
+        self.captionItem.setAcceptedMouseButtons(Qt.NoButton)
+        
         self.updateTooltip()
         
         # this might seem unnecessary, but the pen size 20 is used for collision detection, when we want to see whether to to show the line menu or not 
         self.setPen(QPen(QColor(200, 200, 200), 20, Qt.SolidLine))
         self.setAcceptHoverEvents(True)
         self.hoverState = False
+        if qVersion() >= "4.6" and canvasDlg.settings["enableCanvasDropShadows"]:
+            effect = QGraphicsDropShadowEffect(self.scene())
+            effect.setOffset(QPointF(0.0, 0.0))
+            effect.setBlurRadius(7)
+            self.setGraphicsEffect(effect)
+        if scene is not None:
+            scene.addItem(self)
+            
 
-    def remove(self):
+    def remove(self):        
         self.hide()
         self.setToolTip("")
-        #self.view.repaint(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
-
+        
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
         if not signals: return 0
@@ -136,26 +134,36 @@ class CanvasLine(QGraphicsPathItem):
             if inWidgetInstance == self.inWidget.instance:
                 signals.append((outName, inName))
         return signals
-
-    def paint(self, painter, option, widget = None):
+    
+    def updatePainterPath(self):
         p1 = self.outWidget.getRightEdgePoint()
         p2 = self.inWidget.getLeftEdgePoint()
-#        self.setLine(p1.x(), p1.y(), p2.x(), p2.y())
-        
         path = QPainterPath(p1)
-        path.cubicTo(p1.x()+60, p1.y(), p2.x()-60, p2.y(), p2.x(),p2.y())
+        path.cubicTo(p1.x() + 60, p1.y(), p2.x() - 60, p2.y(), p2.x(), p2.y())
         self.setPath(path)
-        painter.setPen(QPen(QColor(200, 200, 200), 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
-#        painter.drawLine(p1, p2)
-        painter.drawPath(path)
-        painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
-#        painter.drawLine(p1, p2)
-        painter.drawPath(path)
+        metrics = QFontMetrics(self.captionItem.font())
+        oddLineOffset = -metrics.lineSpacing() / 2 * (len(self.caption.strip().splitlines()) % 2)
+        mid = self.path().pointAtPercent(0.5)
+        rect = self.captionItem.boundingRect()
+        self.captionItem.setPos(mid + QPointF(-rect.width() / 2.0, -rect.height() / 2.0 + oddLineOffset))
+        self.update()
+        
+    def shape(self):
+        stroke = QPainterPathStroker()
+        stroke.setWidth(6)
+        return stroke.createStroke(self.path())
+    
+    def boundingRect(self):
+        rect = QGraphicsPathItem.boundingRect(self)
+        textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+        textRect.moveTo(self.captionItem.pos())
+        return rect.united(textRect)
 
-        if self.canvasDlg.settings["showSignalNames"]:
-            painter.setPen(QColor(80, 80, 192))
-            mid = (p1+p2-QPointF(200, 30))/2 
-            painter.drawText(mid.x(), mid.y(), 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
+    def paint(self, painter, option, widget = None):
+        painter.setPen(QPen(QColor(200, 200, 200), 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.drawPath(self.path())
+        painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.drawPath(self.path())
 
     def updateTooltip(self):
         status = self.getEnabled() == 0 and " (Disabled)" or ""
@@ -167,8 +175,8 @@ class CanvasLine(QGraphicsPathItem):
 
         # print the text with the signals
         self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
-#        l = self.line()
-#        self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
+        self.captionItem.setHtml("<center>%s</center>" % self.caption.replace("\n", "<br/>"))
+        self.updatePainterPath()
 
     def hoverEnterEvent(self, event):
         self.hoverState = True
@@ -177,15 +185,19 @@ class CanvasLine(QGraphicsPathItem):
     def hoverLeaveEvent(self, event):
         self.hoverState = False
         self.update()
+        
 
 # #######################################
 # # CANVAS WIDGET
 # #######################################
 class CanvasWidget(QGraphicsRectItem):
-    def __init__(self, signalManager, canvas, view, widgetInfo, defaultPic, canvasDlg, widgetSettings = {}):
+    def __init__(self, signalManager, scene, view, widgetInfo, defaultPic, canvasDlg, widgetSettings = {}):
         # import widget class and create a class instance
         m = __import__(widgetInfo.fileName)
-        self.instance = m.__dict__[widgetInfo.fileName].__new__(m.__dict__[widgetInfo.fileName], _owInfo = canvasDlg.settings["owInfo"], _owWarning = canvasDlg.settings["owWarning"], _owError = canvasDlg.settings["owError"], _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"], _category = widgetInfo.category, _settingsFromSchema = widgetSettings)
+        self.instance = m.__dict__[widgetInfo.fileName].__new__(m.__dict__[widgetInfo.fileName], _owInfo=canvasDlg.settings["owInfo"],
+                                                                _owWarning = canvasDlg.settings["owWarning"], _owError=canvasDlg.settings["owError"],
+                                                                _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"],
+                                                                _category = widgetInfo.category, _settingsFromSchema = widgetSettings)
         self.instance.__init__(signalManager=signalManager)
         self.instance.__dict__["widgetInfo"] = widgetInfo
         self.isProcessing = 0   # is this widget currently processing signals
@@ -198,7 +210,7 @@ class CanvasWidget(QGraphicsRectItem):
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
         self.icon = canvasDlg.getWidgetIcon(widgetInfo)
-                
+        
         self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(view.processingHandler)
         self.instance.setWidgetStateHandler(self.updateWidgetState)
@@ -206,10 +218,9 @@ class CanvasWidget(QGraphicsRectItem):
         self.instance.setWidgetIcon(canvasDlg.getFullWidgetIconName(widgetInfo))
         #self.instance.updateStatusBarState()
 
-        QGraphicsRectItem.__init__(self, None, canvas)
+        QGraphicsRectItem.__init__(self, None, None)
         self.signalManager = signalManager
         self.widgetInfo = widgetInfo
-        self.canvas = canvas
         self.view = view
         self.canvasDlg = canvasDlg
         canvasPicsDir  = os.path.join(canvasDlg.canvasDir, "icons")
@@ -226,25 +237,44 @@ class CanvasWidget(QGraphicsRectItem):
         
         self.oldPos = self.pos()
         
-        self.infoIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Info"], None, canvas)
-        self.warningIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Warning"], None, canvas)
-        self.errorIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Error"], None, canvas)
+        self.infoIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Info"], self)
+        self.warningIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Warning"], self)
+        self.errorIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Error"], self)
         self.infoIcon.hide()
         self.warningIcon.hide()
         self.errorIcon.hide()
-
+        
+        self.captionItem = QGraphicsTextItem(self)
+        self.captionItem.setHtml("<center>%s</center>" % self.caption)
+        self.captionItem.document().setTextWidth(200)
+        
+        self.captionItem.setPos(-self.captionItem.boundingRect().width()/2.0 + self.widgetSize.width() / 2.0, self.widgetSize.height() + 2)
+        self.captionItem.setAcceptHoverEvents(False)
+        
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
             self.instance.restoreWidgetPosition()
             
         self.setAcceptHoverEvents(True)
         self.hoverState = False
-
+        self.setFlags(QGraphicsItem.ItemIsSelectable)# | QGraphicsItem.ItemIsMovable)
+        
+        if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
+            effect = QGraphicsDropShadowEffect()
+            effect.setOffset(QPointF(1.1, 3.1))
+            effect.setBlurRadius(7)
+            self.setGraphicsEffect(effect)
+            
+        if scene is not None:
+            scene.addItem(self)
+            
+        self.update()
 
     def resetWidgetSize(self):
         size = self.canvasDlg.schemeIconSizeList[self.canvasDlg.settings['schemeIconSize']]
         self.setRect(0,0, size, size)
         self.widgetSize = QSizeF(size, size)
+        self.update()
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
@@ -295,7 +325,9 @@ class CanvasWidget(QGraphicsRectItem):
 
     def updateText(self, text):
         self.caption = str(text)
+        self.captionItem.setHtml("<center>%s</center>" % self.caption)
         self.updateTooltip()
+        self.update()
 
     def updateWidgetState(self):
         widgetState = self.instance.widgetState
@@ -304,11 +336,11 @@ class CanvasWidget(QGraphicsRectItem):
         self.warningIcon.hide()
         self.errorIcon.hide()
 
-        yPos = self.y() - 21 - self.progressBarShown * 20
+        yPos = - 21 - self.progressBarShown * 20
         iconNum = sum([widgetState.get("Info", {}).values() != [],  widgetState.get("Warning", {}).values() != [], widgetState.get("Error", {}).values() != []])
 
         if self.canvasDlg.settings["ocShow"]:        # if show icons is enabled in canvas options dialog
-            startX = self.x() + (self.rect().width()/2) - ((iconNum*(self.canvasDlg.widgetIcons["Info"].width()+2))/2)
+            startX = (self.rect().width()/2) - ((iconNum*(self.canvasDlg.widgetIcons["Info"].width()+2))/2)
             off  = 0
             if len(widgetState.get("Info", {}).values()) > 0 and self.canvasDlg.settings["ocInfo"]:
                 off  = self.updateWidgetStateIcon(self.infoIcon, startX, yPos, widgetState["Info"])
@@ -324,38 +356,23 @@ class CanvasWidget(QGraphicsRectItem):
         icon.setToolTip(reduce(lambda x,y: x+'<br>'+y, stateDict.values()))
         return icon.pixmap().width() + 3
 
-    def isSelected(self):
-        return self.selected
-
-    def setSelected(self, selected):
-        self.selected = selected
-        #self.repaintWidget()
-
     # set coordinates of the widget
     def setCoords(self, x, y):
         if self.canvasDlg.settings["snapToGrid"]:
             x = round(x/10)*10
             y = round(y/10)*10
         self.setPos(x, y)
+        for line in self.inLines + self.outLines:
+            line.updatePainterPath()
         self.updateWidgetState()
 
     # we have to increase the default bounding rect so that we also repaint the name of the widget and input/output boxes
     def boundingRect(self):
-        # get the width of the widget's caption
-        pixmap = QPixmap(200,40)
-        painter = QPainter()
-        painter.begin(pixmap)
-        width = max(0, painter.boundingRect(QRectF(0,0,200,40), Qt.AlignLeft, self.caption).width() - 60) / 2
-        painter.end()
-        
-        #rect = QRectF(-10-width, -4, +10+width, +25)
-        rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-10-width, -4, +10+width, +25)
-        if self.progressBarShown:
-            rect.setTop(rect.top()-20)
-        widgetState = self.instance.widgetState
-        if widgetState.get("Info", {}).values() + widgetState.get("Warning", {}).values() + widgetState.get("Error", {}).values() != []:
-            rect.setTop(rect.top()-21)
-        return rect
+        rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-11, -6, 11, 6)#.adjusted(-100, -100, 100, 100) #(-10-width, -4, +10+width, +25)
+        rect.setTop(rect.top() - 20 - 21) ## Room for progress bar and warning, error, info icons
+        textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+        textRect.moveTo(self.captionItem.pos())
+        return rect.united(textRect) 
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
@@ -424,26 +441,17 @@ class CanvasWidget(QGraphicsRectItem):
 
     # draw the widget
     def paint(self, painter, option, widget = None):
-#        if self.isProcessing:
-#            color = self.canvasDlg.widgetActiveColor
-#        elif self.selected:
-#            if (self.view.findItemTypeCount(self.canvas.collidingItems(self), CanvasWidget) > 0):       # the position is invalid if it is already occupied by a widget 
-#                color = Qt.red
-#            else:                    color = self.canvasDlg.widgetSelectedColor
-
-        if self.isProcessing or self.selected:
+        if self.isProcessing or self.isSelected():
             painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
             painter.setBrush(QBrush(QColor(217, 232, 252, 192)))
-            painter.drawRoundedRect(-10, -6, self.widgetSize.width()+20, self.widgetSize.height()+10, 5, 5)
+            painter.drawRoundedRect(-10, -5, self.widgetSize.width()+20, self.widgetSize.height()+10, 5, 5)
 
 
         if self.widgetInfo.inputs != []:
             painter.drawPixmap(-self.edgeSize.width()+1, (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
         if self.widgetInfo.outputs != []:
             painter.drawPixmap(self.widgetSize.width()-2, (self.widgetSize.height()-self.edgeSize.height())/2, self.shownRightEdge)
-
-#        painter.drawPixmap(0, 0, self.imageFrame.pixmap(self.widgetSize.width(), self.widgetSize.height()))
-        #painter.drawPixmap(0, 0, self.image)
+            
         if self.hoverState:
             color = QColor(125, 162, 206)
             painter.setPen(Qt.NoPen)
@@ -451,13 +459,6 @@ class CanvasWidget(QGraphicsRectItem):
             painter.drawRoundedRect(-2, -2, self.widgetSize.width() + 4, self.widgetSize.height() + 4, 5, 5)
             
         painter.drawPixmap(0,0, self.icon.pixmap(self.widgetSize.width(), self.widgetSize.height()))
-
-        # draw the label
-        painter.setPen(QPen(QColor(0,0,0)))
-        midX, midY = self.widgetSize.width()/2., self.widgetSize.height() + 5
-        painter.drawText(midX-200/2, midY, 200, 20, Qt.AlignTop | Qt.AlignHCenter, self.caption)
-        
-        #painter.drawRect(self.boundingRect())
         
         yPos = -22
         if self.progressBarValue >= 0 and self.progressBarValue <= 100:
@@ -483,7 +484,7 @@ class CanvasWidget(QGraphicsRectItem):
         elif line in self.outLines:
             self.outLines.remove(line)
         else:
-            print "Orange Canvas: Erorr. Unable to remove line"
+            print "Orange Canvas: Error. Unable to remove line"
 
         self.updateTooltip()
 
@@ -528,21 +529,21 @@ class CanvasWidget(QGraphicsRectItem):
         self.progressBarValue = value
         if value < 0 or value > 100:
             self.updateWidgetState()
-        self.canvas.update()
+        self.update()
 
     def setProcessing(self, value):
         self.isProcessing = value
-        self.canvas.update()
-        qApp.processEvents()
-##        self.repaintWidget()
+        self.update()
 
     def hoverEnterEvent(self, event):
         self.hoverState = True
         self.update()
+        return QGraphicsRectItem.hoverEnterEvent(self, event)
         
     def hoverLeaveEvent(self, event):
         self.hoverState = False
         self.update()
+        return QGraphicsRectItem.hoverLeaveEvent(self, event)        
 
 class MyCanvasText(QGraphicsSimpleTextItem):
     def __init__(self, canvas, text, x, y, flags=Qt.AlignLeft, bold=0, show=1):

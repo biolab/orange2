@@ -440,6 +440,7 @@ class CanvasOptionsDlg(QDialog):
         # GENERAL TAB
         generalBox = OWGUI.widgetBox(GeneralTab, "General Options")
         self.snapToGridCB = OWGUI.checkBox(generalBox, self.settings, "snapToGrid", "Snap widgets to grid", debuggingEnabled = 0)
+        self.enableCanvasDropShadowsCB = OWGUI.checkBox(generalBox, self.settings, "enableCanvasDropShadows", "Enable drop shadows in canvas", debuggingEnabled = 0)
         self.writeLogFileCB  = OWGUI.checkBox(generalBox, self.settings, "writeLogFile", "Save content of the Output window to a log file", debuggingEnabled = 0)
         self.showSignalNamesCB = OWGUI.checkBox(generalBox, self.settings, "showSignalNames", "Show signal names between widgets", debuggingEnabled = 0)
         self.dontAskBeforeCloseCB= OWGUI.checkBox(generalBox, self.settings, "dontAskBeforeClose", "Don't ask to save schema before closing", debuggingEnabled = 0)
