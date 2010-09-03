@@ -8,6 +8,12 @@ import os, sys, math
 ERROR = 0
 WARNING = 1
 
+def _graphicsEffect(item):
+    if hasattr(item, "graphicsEffect"):
+        return item.graphicsEffect()
+    else:
+        return None
+    
 class TempCanvasLine(QGraphicsPathItem):
     def __init__(self, canvasDlg, canvas):
         QGraphicsLineItem.__init__(self, None, canvas)
@@ -117,7 +123,6 @@ class CanvasLine(QGraphicsPathItem):
             self.setGraphicsEffect(effect)
         if scene is not None:
             scene.addItem(self)
-            
 
     def remove(self):        
         self.hide()
@@ -155,9 +160,12 @@ class CanvasLine(QGraphicsPathItem):
     
     def boundingRect(self):
         rect = QGraphicsPathItem.boundingRect(self)
-        textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-        textRect.moveTo(self.captionItem.pos())
-        return rect.united(textRect)
+        if _graphicsEffect(self):
+            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+            textRect.moveTo(self.captionItem.pos())
+            return rect.united(textRect)
+        else:
+            return rect
 
     def paint(self, painter, option, widget = None):
         painter.setPen(QPen(QColor(200, 200, 200), 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
@@ -246,7 +254,7 @@ class CanvasWidget(QGraphicsRectItem):
         
         self.captionItem = QGraphicsTextItem(self)
         self.captionItem.setHtml("<center>%s</center>" % self.caption)
-        self.captionItem.document().setTextWidth(200)
+        self.captionItem.document().setTextWidth(min(self.captionItem.document().idealWidth(), 200))
         
         self.captionItem.setPos(-self.captionItem.boundingRect().width()/2.0 + self.widgetSize.width() / 2.0, self.widgetSize.height() + 2)
         self.captionItem.setAcceptHoverEvents(False)
@@ -267,8 +275,6 @@ class CanvasWidget(QGraphicsRectItem):
             
         if scene is not None:
             scene.addItem(self)
-            
-        self.update()
 
     def resetWidgetSize(self):
         size = self.canvasDlg.schemeIconSizeList[self.canvasDlg.settings['schemeIconSize']]
@@ -325,7 +331,12 @@ class CanvasWidget(QGraphicsRectItem):
 
     def updateText(self, text):
         self.caption = str(text)
+        self.prepareGeometryChange()
         self.captionItem.setHtml("<center>%s</center>" % self.caption)
+        self.captionItem.document().adjustSize()
+        self.captionItem.document().setTextWidth(min(self.captionItem.document().idealWidth(), 200))
+        
+        self.captionItem.setPos(-self.captionItem.boundingRect().width()/2.0 + self.widgetSize.width() / 2.0, self.widgetSize.height() + 2)
         self.updateTooltip()
         self.update()
 
@@ -362,17 +373,24 @@ class CanvasWidget(QGraphicsRectItem):
             x = round(x/10)*10
             y = round(y/10)*10
         self.setPos(x, y)
+        self.updateWidgetState()
+        
+    def setPos(self, *args):
+        QGraphicsRectItem.setPos(self, *args)
         for line in self.inLines + self.outLines:
             line.updatePainterPath()
-        self.updateWidgetState()
+            
 
     # we have to increase the default bounding rect so that we also repaint the name of the widget and input/output boxes
     def boundingRect(self):
         rect = QRectF(QPointF(0, 0), self.widgetSize).adjusted(-11, -6, 11, 6)#.adjusted(-100, -100, 100, 100) #(-10-width, -4, +10+width, +25)
         rect.setTop(rect.top() - 20 - 21) ## Room for progress bar and warning, error, info icons
-        textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
-        textRect.moveTo(self.captionItem.pos())
-        return rect.united(textRect) 
+        if _graphicsEffect(self):
+            textRect = self.captionItem.boundingRect() ## Should work without this but for some reason if using graphics effects the text gets clipped
+            textRect.moveTo(self.captionItem.pos())
+            return rect.united(textRect)
+        else:
+            return rect 
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
@@ -441,11 +459,10 @@ class CanvasWidget(QGraphicsRectItem):
 
     # draw the widget
     def paint(self, painter, option, widget = None):
-        if self.isProcessing or self.isSelected():
+        if self.isProcessing or self.isSelected() or getattr(self, "invalidPosition", False):
             painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
             painter.setBrush(QBrush(QColor(217, 232, 252, 192)))
             painter.drawRoundedRect(-10, -5, self.widgetSize.width()+20, self.widgetSize.height()+10, 5, 5)
-
 
         if self.widgetInfo.inputs != []:
             painter.drawPixmap(-self.edgeSize.width()+1, (self.widgetSize.height()-self.edgeSize.height())/2, self.shownLeftEdge)
