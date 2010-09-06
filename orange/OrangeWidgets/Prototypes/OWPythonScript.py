@@ -265,11 +265,12 @@ class OWPythonScript(OWWidget):
         self.splitCanvas = QSplitter(Qt.Vertical, self.mainArea)
         self.mainArea.layout().addWidget(self.splitCanvas)
         
+        defaultFont = "Monaco" if sys.platform == "darwin" else "Courier"
         self.textBox = OWGUI.widgetBox(self, 'Python script')
         self.splitCanvas.addWidget(self.textBox)
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
-        self.text.document().setDefaultFont(QFont("Monaco"))
+        self.text.document().setDefaultFont(QFont(defaultFont))
         self.highlighter = PythonSyntaxHighlighter(self.text.document())
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
@@ -278,7 +279,7 @@ class OWPythonScript(OWWidget):
         self.splitCanvas.addWidget(self.consoleBox)
         self.console = PythonConsole(self.__dict__, self)
         self.consoleBox.layout().addWidget(self.console)
-        self.console.document().setDefaultFont(QFont("Monaco"))
+        self.console.document().setDefaultFont(QFont(defaultFont))
         self.consoleBox.setAlignment(Qt.AlignBottom)
         self.console.setTabStopWidth(4)
         
