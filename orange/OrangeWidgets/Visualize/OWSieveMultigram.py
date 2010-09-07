@@ -70,7 +70,7 @@ class OWSieveMultigram(OWVisWidget):
     # receive new data and update all fields
     def setData(self, data):
         self.closeContext()
-        self.information()
+        self.information(0)
         self.error([0, 1])
         self.data = None
         if data: 
@@ -84,7 +84,7 @@ class OWSieveMultigram(OWVisWidget):
             
         if data and data.domain.hasContinuousAttributes():
             data = discretizeDomain(data, 1)
-            self.information("Continuous attributes were discretized using entropy discretization.")
+            self.information(0, "Continuous attributes were discretized using entropy discretization.")
 
         self.data = data
         self.computeProbabilities()
