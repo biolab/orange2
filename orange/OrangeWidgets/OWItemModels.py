@@ -163,7 +163,7 @@ class VariableEditor(QWidget):
         self.connect(self.name_le, SIGNAL("editingFinished()"), self.edited)
     
     def edited(self, *args):
-         self.emit(SIGNAL("edited()"))
+        self.emit(SIGNAL("edited()"))
          
     def setData(self, type, name):
         self.type_cb.setCurrentIndex(self._attr.keys().index(type))
@@ -176,18 +176,11 @@ class EnumVariableEditor(VariableEditor):
 class FloatVariableEditor(QLineEdit):
     
     def setVariable(self, var):
-        print var
-        import sys
-        sys.stdout.flush()
         self.setText(str(var.name))
         
     def getVariable(self):
         return orange.FloatVariable(str(self.text()))
 
-    variable = pyqtProperty(orange.FloatVariable,
-                            fget=getVariable,
-                            fset=setVariable,
-                            user=True)
     
 class StringVariableEditor(QLineEdit):
     def setVariable(self, var):
@@ -195,11 +188,6 @@ class StringVariableEditor(QLineEdit):
         
     def getVariable(self):
         return orange.StringVariable(str(self.text()))
-
-    variable = pyqtProperty(orange.FloatVariable,
-                            fget=getVariable,
-                            fset=setVariable,
-                            user=True)
         
 class VariableDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
@@ -287,5 +275,3 @@ class ModelActionsWidget(QWidget):
     def addAction(self, action, *args):
         return self.insertAction(-1, action, *args)
     
-class NumpyArrayModel(QAbstractItemModel):
-    pass
