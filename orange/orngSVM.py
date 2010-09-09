@@ -318,11 +318,51 @@ class SparseLinKernel(object):
 class BagOfWords(object):
     """Computes a BOW kernel function (sum_i(example1[i]*example2[i])) using the examples meta attributes (need to be floats)"""
     def __call__(self, example1, example2):
-        s=Set(example1.getmetas().keys()).intersection(Set(example2.getmetas().keys()))
+        s=set(example1.getmetas().keys()).intersection(set(example2.getmetas().keys()))
         sum=0
         for key in s:
             sum+=float(example2[key])*float(example1[key])
         return sum
+    
+class MeasureAttribute_SVMWeights(orange.MeasureAttribute):
+    """ Measure attribute relevance by training an multi-class linear SVM classifier on provided
+    examples and using a squared sum of weights (of each binary classifier) as the returned measure.
+    
+    Attributes:
+        - `learner`: Learner used for weight esstimation (default LinearLearner(solver_type=orngSVM.LinearLearner.L2Loss_SVM_Dual))
+        
+    Example::
+        >>> measure = MeasureAttribute_SVMWeights()
+        >>> for attr in data.domain.attributes:
+        ...   print "%15s: %.3f" % (attr.name, measure(attr, data))  
+    """
+    def __new__(cls, attr=None, examples=None, weightId=None, **kwargs):
+        self = orange.MeasureAttribute.__new__(cls, **kwargs)
+        if examples is not None and attr is not None:
+            self.__init__(**kwargs)
+            return self.__call__(attr, examples, weightId)
+        else:
+            return self
+        
+    def __reduce__(self):
+        return MeasureAttribute_SVMWeights, (), {"learner": self.learner}
+    
+    def __init__(self, learner=None, **kwargs):
+        self.learner = LinearLearner(solver_type=LinearLearner.L2Loss_SVM_Dual) if learner is None else learner
+        self._cached_examples = None
+        
+    def __call__(self, attr, examples, weightId=None):
+        if examples is self._cached_examples:
+            weights = self._cached_weights
+        else:
+            classifier = self.learner(examples, weightId)
+            self._cached_examples = examples
+            import numpy
+            weights = numpy.array(classifier.weights)
+            weights = numpy.sum(weights ** 2, axis=0)
+            weights = dict(zip(examples.domain.attributes, weights))
+            self._cached_weights = weights
+        return weights.get(attr, 0.0)
 
 class RFE(object):
     """ Recursive feature elimination using linear svm derived attribute weights.

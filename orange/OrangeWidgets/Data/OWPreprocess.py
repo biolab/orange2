@@ -11,13 +11,12 @@ import OWGUI, OWGUIEx
 
 import orange
 import orngWrap
+import orngSVM
 
 import sys, os
 import math
 
 from orange import Preprocessor_discretize, Preprocessor_imputeByLearner, Preprocessor_dropMissing
-
-import copy_reg
 
 def _gettype(obj):
     """ Return type of obj. If obj is type return obj.
@@ -153,6 +152,22 @@ class Preprocessor_featureSelection(orange.Preprocessor):
         domain = orange.Domain(attrs, data.domain.classVar)
         domain.addmetas(data.domain.getmetas())
         return orange.ExampleTable(domain, data)
+    
+class Preprocessor_RFE(Preprocessor_featureSelection):
+    """ A preprocessor that runs RFE(Recursive feature elimination) using linear SVM derived attribute weights.
+    Arguments:
+        - `limit`: The number of selected fetures (default 10)
+        
+    """
+    __new__ = _orange__new(Preprocessor_featureSelection)
+    __reduce__ = _orange__reduce
+    def __init__(self, limit=10):
+        self.limit = limit
+        
+    def __call__(self, data, weightId=None):
+        from orngSVM import RFE
+        rfe = RFE()
+        return rfe(data, self.limit)
     
 def selectNRandom(examples, N=10):
     """ Select N random examples
@@ -363,7 +378,9 @@ class FeatureSelectEditor(BaseEditor):
                 ("Information Gain", orange.MeasureAttribute_info),
                 ("Gain ratio", orange.MeasureAttribute_gainRatio),
                 ("Gini Gain", orange.MeasureAttribute_gini),
-                ("Log Odds Ratio", orange.MeasureAttribute_logOddsRatio)]
+                ("Log Odds Ratio", orange.MeasureAttribute_logOddsRatio),
+                ("Linear SVM weights", orngSVM.MeasureAttribute_SVMWeights)]
+    
     FILTERS = [Preprocessor_featureSelection.bestN,
                Preprocessor_featureSelection.bestP]
     
@@ -503,6 +520,7 @@ class PreprocessorItemDelegate(QStyledItemDelegate):
                orange.MeasureAttribute_gainRatio: "Gain ratio",
                orange.MeasureAttribute_gini: "Gini",
                orange.MeasureAttribute_logOddsRatio: "Log Odds",
+               orngSVM.MeasureAttribute_SVMWeights: "Linear SVM weights",
                type(lambda : None): _funcName}
     
     import re
