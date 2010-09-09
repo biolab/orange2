@@ -192,31 +192,31 @@ class SchemaView(QGraphicsView):
             self.widgetSelectionRect = None
 
         # do we start drawing a connection line
-        if ev.button() == Qt.LeftButton:
-            widgets = [item for item in self.doc.widgets if item.mouseInsideRightChannel(self.mouseDownPosition) or item.mouseInsideLeftChannel(self.mouseDownPosition)]# + [item for item in self.doc.widgets if item.mouseInsideLeftChannel(self.mouseDownPosition)]           
-            if widgets:
-                self.tempWidget = widgets[0]
-                if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
-                    self.unselectAllWidgets()
-                    self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
-                    if self.tempWidget.getDistToLeftEdgePoint(self.mouseDownPosition) < self.tempWidget.getDistToRightEdgePoint(self.mouseDownPosition):
-                        self.tempLine.setEndWidget(self.tempWidget)
-                        for widget in self.doc.widgets:
-                            widget.canConnect(widget, self.tempWidget)
-                    else:
-                        self.tempLine.setStartWidget(self.tempWidget)
-                        for widget in self.doc.widgets:
-                            widget.canConnect(self.tempWidget, widget)
-                                                        
-#                self.scene().update()
-#                self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
-                return QGraphicsView.mousePressEvent(self, ev)
-            
+#        if ev.button() == Qt.LeftButton:
+#            widgets = [item for item in self.doc.widgets if item.mouseInsideRightChannel(self.mouseDownPosition) or item.mouseInsideLeftChannel(self.mouseDownPosition)]# + [item for item in self.doc.widgets if item.mouseInsideLeftChannel(self.mouseDownPosition)]
+#            print widgets
+#            if widgets:
+#                self.tempWidget = widgets[0]
+#                if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
+#                    self.unselectAllWidgets()
+#                    self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
+#                    if self.tempWidget.getDistToLeftEdgePoint(self.mouseDownPosition) < self.tempWidget.getDistToRightEdgePoint(self.mouseDownPosition):
+#                        self.tempLine.setEndWidget(self.tempWidget)
+#                        for widget in self.doc.widgets:
+#                            widget.canConnect(widget, self.tempWidget)
+#                    else:
+#                        self.tempLine.setStartWidget(self.tempWidget)
+#                        for widget in self.doc.widgets:
+#                            widget.canConnect(self.tempWidget, widget)
+#                                                    
+#                return #QGraphicsView.mousePressEvent(self, ev)
+                        
         items = self.scene().items(QRectF(self.mouseDownPosition, QSizeF(0 ,0)).adjusted(-2, -2, 2, 2))#, At(self.mouseDownPosition)
         items = [item for item in items if type(item) in [orngCanvasItems.CanvasWidget, orngCanvasItems.CanvasLine]]
         activeItem = items[0] if items else None
         if not activeItem:
             self.tempWidget = None
+            self.tempLine = None
             self.widgetSelectionRect = QGraphicsRectItem(QRectF(self.mouseDownPosition, self.mouseDownPosition), None, self.scene())
             self.widgetSelectionRect.setPen(QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap))
             self.widgetSelectionRect.setBrush(QBrush(QColor(168, 202, 236, 192)))
@@ -226,6 +226,7 @@ class SchemaView(QGraphicsView):
 
         # we clicked on a widget or on a line
         else:
+            self.tempLine = None
             if type(activeItem) == orngCanvasItems.CanvasWidget:        # if we clicked on a widget
                 self.tempWidget = activeItem
 
@@ -257,6 +258,23 @@ class SchemaView(QGraphicsView):
                 self.selectedLine = activeItem
                 self.lineEnabledAction.setChecked(self.selectedLine.getEnabled())
                 self.linePopup.popup(ev.globalPos())
+            elif type(activeItem) == orngCanvasItems.CanvasLine and ev.button() == Qt.LeftButton:
+                widgets = [item for item in self.doc.widgets if item.mouseInsideRightChannel(self.mouseDownPosition) or item.mouseInsideLeftChannel(self.mouseDownPosition)]# + [item for item in self.doc.widgets if item.mouseInsideLeftChannel(self.mouseDownPosition)]
+                if widgets:
+                    self.tempWidget = widgets[0]
+                    if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
+                        self.unselectAllWidgets()
+                        self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
+                        if self.tempWidget.getDistToLeftEdgePoint(self.mouseDownPosition) < self.tempWidget.getDistToRightEdgePoint(self.mouseDownPosition):
+                            self.tempLine.setEndWidget(self.tempWidget)
+                            for widget in self.doc.widgets:
+                                widget.canConnect(widget, self.tempWidget)
+                        else:
+                            self.tempLine.setStartWidget(self.tempWidget)
+                            for widget in self.doc.widgets:
+                                widget.canConnect(self.tempWidget, widget)
+                                                        
+                    return #QGraphicsView.mousePressEvent(self, ev)
             else:
                 self.unselectAllWidgets()
 
@@ -309,12 +327,11 @@ class SchemaView(QGraphicsView):
                 item.setAllLinesFinished(True)
                 orngHistory.logChangeWidgetPosition(self.doc.schemaID, id(item), (item.widgetInfo.category, item.widgetInfo.name), item.x(), item.y())
 
-
         # if we are drawing line
         elif self.tempLine:
             # show again the empty input/output boxes
             for widget in self.doc.widgets:
-              widget.resetLeftRightEdges()      
+                widget.resetLeftRightEdges()
             
             start = self.tempLine.startWidget or self.tempLine.widget
             end = self.tempLine.endWidget or self.tempLine.widget
@@ -324,7 +341,7 @@ class SchemaView(QGraphicsView):
             # we must check if we have really connected some output to input
             if start and end and start != end:
                 if self.doc.signalManager.signalProcessingInProgress:
-                     QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
+                    QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
                     self.doc.addLine(start, end)
             else:
