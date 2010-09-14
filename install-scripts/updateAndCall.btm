@@ -1,4 +1,4 @@
-net use o: \\estelle.fri.uni-lj.si\download
+net use o: \\ailab.si\download
 cdd e:\orange\scripts
 svn update -N
 svn export http://www.ailab.si/svn/orange/trunk/orange/doc/LICENSES license.txt
