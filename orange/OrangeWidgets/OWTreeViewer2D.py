@@ -93,8 +93,8 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         
     def setHtml(self, html):
-#        if qVersion() < "4.5":
-        html = html.replace("<hr>", "<hr width=20000>") #bug in Qt (need width = 20000)
+        if qVersion() < "4.5":
+            html = html.replace("<hr>", "<hr width=200>") #bug in Qt4.4 (need width = 200)
         return QGraphicsTextItem.setHtml(self, "<body>" + html + "</body>") 
     
     def updateContents(self):
@@ -102,6 +102,7 @@ class TextTreeNode(QGraphicsTextItem, graph_node):
             self.setTextWidth(self._rect.width())
         else:
             self.setTextWidth(-1)
+            self.setTextWidth(self.document().idealWidth())
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.droplet.setVisible(bool(self.branches))
         

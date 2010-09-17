@@ -52,7 +52,7 @@ class ClassificationTreeNode(GraphicsNode):
             self.setTextWidth(self._rect.width() - self.pie.boundingRect().width() / 2 if hasattr(self, "pie") else 0)
         else:
             self.setTextWidth(-1)
-            
+            self.setTextWidth(self.document().idealWidth())
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
         self.droplet.setVisible(bool(self.branches))
         self.pie.setPos(self.rect().right(), self.rect().center().y())
