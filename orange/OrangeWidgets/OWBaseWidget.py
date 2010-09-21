@@ -7,6 +7,17 @@ import orngEnviron
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+# Define  pyqtConfigure not available in PyQt4 versions prior to 4.6
+if not hasattr(QObject, "pyqtConfigure"):
+    def pyqtConfigure(obj, **kwargs):
+        meta = obj.metaObject()
+        for name, val in kwargs.items():
+            if meta.indexOfProperty(name) >= 0:
+                obj.setProperty(name, QVariant(val))
+            elif meta.indexOfSignal(meta.normalizedSignature(name)):
+                obj.connect(obj, SIGNAL(name), val)
+    QObject.pyqtConfigure = pyqtConfigure
+
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
