@@ -20,7 +20,6 @@ product = "Red R" if RedR else "Orange"
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self, app, parent=None, flags=0):
         QMainWindow.__init__(self, parent)
-#        self.setUnifiedTitleAndToolBarOnMac(True)
         self.debugMode = 1        # print extra output for debuging
         self.setWindowTitle("%s Canvas" % product)
         self.windows = []    # list of id for windows in Window menu
@@ -200,7 +199,7 @@ class OrangeCanvasDlg(QMainWindow):
             elif isinstance(self.widgetsToolBar, orngTabs.WidgetTree):
                 self.settings["toolboxWidth"] = self.widgetsToolBar.treeWidget.width()
                 self.removeDockWidget(self.widgetsToolBar)
-
+            
         if self.settings["widgetListType"] == 0:
             self.tabs = self.widgetsToolBar = orngTabs.WidgetToolBox(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
@@ -208,10 +207,15 @@ class OrangeCanvasDlg(QMainWindow):
             self.tabs = self.widgetsToolBar = orngTabs.WidgetTree(self, self.widgetRegistry)
             self.addDockWidget(Qt.LeftDockWidgetArea, self.widgetsToolBar)
         else:
+            if sys.platform == "darwin":
+                self.setUnifiedTitleAndToolBarOnMac(False)   
             self.widgetsToolBar = self.addToolBar("Widgets")
             self.insertToolBarBreak(self.widgetsToolBar)
             self.tabs = orngTabs.WidgetTabs(self, self.widgetRegistry, self.widgetsToolBar)
             self.widgetsToolBar.addWidget(self.tabs)
+            
+        if sys.platform == "darwin":
+            self.setUnifiedTitleAndToolBarOnMac(self.settings["widgetListType"] in [0, 1, 2] and self.settings["style"].lower() == "macintosh (aqua)")
 
         # find widgets and create tab with buttons
         self.settings["WidgetTabs"] = self.tabs.createWidgetTabs(self.settings["WidgetTabs"], self.widgetRegistry, self.widgetDir, self.picsDir, self.defaultPic)
@@ -684,7 +688,7 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("style"):
             items = [str(n) for n in QStyleFactory.keys()]
             lowerItems = [str(n).lower() for n in QStyleFactory.keys()]
-            if sys.platform == "darwin":
+            if sys.platform == "darwin" and qVersion() < "4.6": #On Mac OSX full aqua style isn't supported until Qt 4.6
                 currStyle = "cleanlooks"
             else:
                 currStyle = str(qApp.style().objectName()).lower()
