@@ -1,5 +1,5 @@
 # coding=utf-8
-import os, sys, user
+import os, sys
 from zipfile import ZipFile
 import urllib
 
@@ -8,8 +8,11 @@ if os.name == "nt":
     paths.sort(lambda x,y: -1 if "PyQt4" in x else (1 if "miktex" in y and os.path.exists(os.path.join(y, "QtCore4.dll")) else 0))
     os.environ["PATH"] = ";".join(paths)
     
-if sys.platform == "darwin" and sys.prefix.startswith("/sw"):
-    sys.path.append(os.path.join(sys.prefix, "lib/qt4-mac/lib/python" + sys.version[:3] + "/site-packages")) 
+if sys.platform == "darwin":
+    ## PyQt4 installed from fink is installed in %{FINK_ROOT}lib/qt4-mac/lib/python${PYVERSION}/site-packages"
+    posible_fink_pyqt4_path = os.path.join(sys.prefix, "lib/qt4-mac/lib/python" + sys.version[:3] + "/site-packages")
+    if os.path.exists(posible_fink_pyqt4_path):
+        sys.path.append(posible_fink_pyqt4_path) 
 
 def __getDirectoryNames():
     """Return a dictionary with Orange directories."""
@@ -38,11 +41,12 @@ def __getDirectoryNames():
     if not os.path.isdir(picsDir):
         picsDir = ""
 
-    home = user.home
+    home = os.path.expanduser("~")
+    
     if home[-1] == ":":
         home += "\\"
     if os.name == "nt":
-        applicationDir = os.path.join(home, "Application Data")
+        applicationDir = os.environ["APPDATA"] #os.path.join(home, "Application Data")
         if not os.path.isdir(applicationDir):
             try: os.makedirs(applicationDir)
             except: pass
@@ -63,9 +67,7 @@ def __getDirectoryNames():
 
     orangeSettingsDir = outputDir
     if sys.platform == "darwin":
-        bufferDir = os.path.join(home, "Library")
-        bufferDir = os.path.join(bufferDir, "Caches")
-        bufferDir = os.path.join(bufferDir, orangeVer)
+        bufferDir = os.path.join(home, "Library", "Caches", orangeVer)
     else:
         bufferDir = os.path.join(outputDir, "buffer")
     canvasSettingsDir = os.path.join(outputDir, "OrangeCanvasQt4") if canvasDir <> None else None
