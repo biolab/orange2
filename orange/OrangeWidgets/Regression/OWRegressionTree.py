@@ -81,7 +81,7 @@ class OWRegressionTree(OWWidget):
         
 
     def setLearner(self):
-        learner=orngTree.TreeLearner(mesure="retis",
+        learner=orngTree.TreeLearner(measure="retis",
                          binarization=self.Bin,
                          mForPruning=self.PostMPCheck and self.PostMPVal,
                          minExamples=self.MinNodeCheck and self.MinNodeVal,
