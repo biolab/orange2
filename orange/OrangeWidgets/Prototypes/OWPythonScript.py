@@ -204,24 +204,6 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
         else:
             QPlainTextEdit.keyPressEvent(self, event)
             
-#    def mousePressEvent(self, event):
-#        pos = event.pos()
-#        cursor = self.cursorForPosition(pos)
-#        if cursor.position() <= self.newPromptPos:
-#            self.cursorPosAtMousePress = cursor.position()
-#        QPlainTextEdit.mousePressEvent(self, event)
-#        
-#    def mouseReleaseEvent(self, event):
-#        pos = event.pos()
-#        cursor = self.cursorForPosition(pos)
-#        pos = cursor.position()
-#        QPlainTextEdit.mousePressEvent(self, event)
-#        if cursor.position() <= self.newPromptPos:
-#            cursor = QTextCursor(self.textCursor())
-#            cursor.setPosition(self.cursorPosAtMousePress)
-##            cursor.movePosition(QTextCursor.End)
-#            self.setTextCursor(cursor)
-            
     def historyUp(self):
         self.setLine(self.history[self.historyInd])
         self.historyInd = min(self.historyInd + 1, len(self.history) - 1)
@@ -232,30 +214,120 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
         
     def complete(self):
         pass
+    
+from OWItemModels import PyListModel, ModelActionsWidget
 
+class Script(object):
+    Modified = 1
+    MissingFromFilesystem = 2 
+    def __init__(self, name, script, flags=0, sourceFileName=None):
+        self.name = name
+        self.script = script
+        self.flags = flags
+        self.sourceFileName = sourceFileName
+        self.modifiedScript = None
+
+class ScriptItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent):
+        QStyledItemDelegate.__init__(self, parent)
+        
+    def displayText(self, variant, locale):
+        script = variant.toPyObject()
+        return QString(script.name)
+    
+    def paint(self, painter, option, index):
+        script = index.data(Qt.DisplayRole).toPyObject()
+        if script.flags & Script.Modified:
+            painter.save()
+            painter.setBrush(QBrush(Qt.red))
+            painter.drawRect(option.rect)
+            painter.restore()
+        QStyledItemDelegate.paint(self, painter, option, index)
+        
+    def createEditor(self, parent, option, index):
+        return QLineEdit(parent)
+    
+    def setEditorData(self, editor, index):
+        script = index.data(Qt.DisplayRole).toPyObject()
+        editor.setText(script.name)
+        
+    def setModelData(self, editor, model, index):
+        model[index.row()].name = str(editor.text())
+        
 class OWPythonScript(OWWidget):
     
-    settingsList = ["codeFile"] 
+    settingsList = ["codeFile", "libraryListSource", "currentScriptIndex"]
                     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
-        self.inputs = [("inExampleTable", ExampleTable, self.setExampleTable), ("inDistanceMatrix", orange.SymMatrix, self.setDistanceMatrix), ("inNetwork", orngNetwork.Network, self.setNetwork), ("inLearner", orange.Learner, self.setLearner), ("inClassifier", orange.Classifier, self.setClassifier)]
-        self.outputs = [("outExampleTable", ExampleTable), ("outDistanceMatrix", orange.SymMatrix), ("outNetwork", orngNetwork.Network), ("outLearner", orange.Learner), ("outClassifier", orange.Classifier)]
+        self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", orngNetwork.Network, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
+        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", orngNetwork.Network), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier)]
         
         self.inNetwork = None
         self.inExampleTable = None
         self.inDistanceMatrix = None
         self.codeFile = ''
-        
+        self.libraryListSource = [Script("Hello world", "print 'Hello world'\n")]
+        self.currentScriptIndex = 0
         self.loadSettings()
         
-        self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
-        OWGUI.label(self.infoBox, self, "Execute python script.\n\nInput variables:\n - " + \
-                    "\n - ".join(t[0] for t in self.inputs) + "\n\nOutput variables:\n - " + \
-                    "\n - ".join(t[0] for t in self.outputs))
+        for s in self.libraryListSource:
+            s.flags = 0
         
-        self.controlBox = OWGUI.widgetBox(self.controlArea, 'File')
+        self._cachedDocuments = {}
+        
+        self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
+        OWGUI.label(self.infoBox, self, "<p>Execute python script.</p><p>Input variables:<ul><li> " + \
+                    "<li>".join(t[0] for t in self.inputs) + "</ul></p><p>Output variables:<ul><li>" + \
+                    "<li>".join(t[0] for t in self.outputs) + "</ul></p>")
+        
+        self.libraryList = PyListModel([], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+#        self.libraryList.append(Script("Hello world", "print 'Hello world'\n"))
+        self.libraryList.wrap(self.libraryListSource)
+        
+        self.controlBox = OWGUI.widgetBox(self.controlArea, 'Library')
+        self.libraryView = QListView()
+        self.libraryView.pyqtConfigure(editTriggers=QListView.DoubleClicked | QListView.SelectedClicked)
+        self.libraryView.setItemDelegate(ScriptItemDelegate(self))
+        self.libraryView.setModel(self.libraryList)
+        self.connect(self.libraryView.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.onSelectedScriptChanged)
+        self.controlBox.layout().addWidget(self.libraryView)
+        w = ModelActionsWidget()
+        
+        action = QAction("+", self)
+        action.pyqtConfigure(toolTip="Add a new script to the library")
+        self.connect(action, SIGNAL("triggered()"), self.onAddScript)
+        new_empty = QAction("Add a new empty script", action)
+        new_from_file = QAction("Add a new script from a file", action)
+        self.connect(new_empty, SIGNAL("triggered()"), self.onAddScript)
+        self.connect(new_from_file, SIGNAL("triggered()"), self.onAddScriptFromFile)
+        menu = QMenu(w)
+        menu.addAction(new_empty)
+        menu.addAction(new_from_file)
+        action.setMenu(menu)
+        w.addAction(action)
+        
+        action = QAction("Update", self)
+        action.pyqtConfigure(toolTip="Save changes in the editor to library")
+        self.connect(action, SIGNAL("triggered()"), self.commitChangesToLibrary)
+        b = w.addAction(action)
+        b.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        
+        self.removeAction = action = QAction("-", self)
+        action.pyqtConfigure(toolTip="Remove script from library")
+        self.connect(action, SIGNAL("triggered()"), self.onRemoveScript)
+        w.addAction(action)
+        
+        self.saveAction = action = QAction("&Save", self)
+        action.pyqtConfigure(toolTip="Save script to file", triggered=self.onSaveScriptToFile)
+        action.setShortcut(QKeySequence("Control+S"))
+        self.connect(action, SIGNAL("triggerd()"), self.saveScript)
+        
+        w.layout().addStretch(10)
+        self.controlBox.layout().addSpacing(0)
+        self.controlBox.layout().addWidget(w)
+                    
         OWGUI.button(self.controlBox, self, "Open...", callback=self.openScript)
         OWGUI.button(self.controlBox, self, "Save...", callback=self.saveScript)
         
@@ -265,15 +337,16 @@ class OWPythonScript(OWWidget):
         self.splitCanvas = QSplitter(Qt.Vertical, self.mainArea)
         self.mainArea.layout().addWidget(self.splitCanvas)
         
-        defaultFont = "Monaco" if sys.platform == "darwin" else "Courier"
+        self.defaultFont = defaultFont = "Monaco" if sys.platform == "darwin" else "Courier"
         self.textBox = OWGUI.widgetBox(self, 'Python script')
         self.splitCanvas.addWidget(self.textBox)
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
-        self.text.document().setDefaultFont(QFont(defaultFont))
-        self.highlighter = PythonSyntaxHighlighter(self.text.document())
+        
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
+        
+        self.connect(self.text, SIGNAL("modificationChanged(bool)"), self.onModificationChanged)
         
         self.consoleBox = OWGUI.widgetBox(self, 'Console')
         self.splitCanvas.addWidget(self.consoleBox)
@@ -302,7 +375,79 @@ class OWPythonScript(OWWidget):
         
     def setClassifier(self, classifier):
         self.inClassifier = classifier
+        
+    def selectedScriptIndex(self):
+        rows = self.libraryView.selectionModel().selectedRows()
+        if rows:
+            return  [i.row() for i in rows][0]
+        else:
+            return None
+        
+    def setSelectedScript(self, index):
+        selection = self.libraryView.selectionModel()
+        selection.select(self.libraryList.index(index), QItemSelectionModel.ClearAndSelect)
+        
+    def onAddScript(self, *args):
+        self.libraryList.append(Script("New script", "", 0))
+        self.setSelectedScript(len(self.libraryList) - 1)
+        
+    def onAddScriptFromFile(self, *args):
+        file = QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)')
+        if file:
+            file = str(file)
+            name = os.path.basename(file)
+            self.libraryList.append(Script(name, open(file, "rb").read(), 0))
+            self.setSelectedScript(len(self.libraryList) - 1)
     
+    def onRemoveScript(self, *args):
+        index = self.selectedScriptIndex()
+        if index is not None:
+            del self.libraryList[index]
+    
+    def onSaveScriptToFile(self, *args):
+        index = self.selectedScriptIndex()
+        if index is not None:
+            self.saveScript()
+            
+    def onSelectedScriptChanged(self, selected, deselected):
+        ind = [i.row() for i in selected.indexes()]
+        if ind:
+            current = ind[0] 
+            self.text.setDocument(self.documentForScript(current))
+            
+    def documentForScript(self, script=0):
+        if type(script) != Script:
+            script = self.libraryList[script]
+        if script not in self._cachedDocuments:
+            doc = QTextDocument(self)
+            doc.setDocumentLayout(QPlainTextDocumentLayout(doc))
+            doc.setPlainText(script.script)
+            doc.setDefaultFont(QFont(self.defaultFont))
+            doc.highlighter = PythonSyntaxHighlighter(doc)
+            self.connect(doc, SIGNAL("modificationChanged(bool)"), self.onModificationChanged)
+            doc.setModified(False)
+            self._cachedDocuments[script] = doc
+        return self._cachedDocuments[script]
+    
+    def commitChangesToLibrary(self, *args):
+        ind = self.selectedScriptIndex()
+        if index is not None:
+            self.libraryList[ind].script = self.text.toPlainText()
+            self.text.document().setModified(False)
+            self.libraryList.emitDataChanged(ind)
+            
+    def onModificationChanged(self, modified):
+        index = self.selectedScriptIndex()
+        if index is not None:
+            self.libraryList[index].flags = Script.Modified if modified else 0
+            self.libraryList.emitDataChanged(index)
+        
+    def updateSelecetdScriptState(self):
+        index = self.selectedScriptIndex()
+        if index is not None:
+            script = self.libraryList[index]
+            self.libraryList[index] = Script(script.name, self.text.toPlainText(), 0)
+            
     def openScript(self, filename=None):
         if filename == None:
             self.codeFile = str(QFileDialog.getOpenFileName(self, 'Open Python Script', self.codeFile, 'Python files (*.py)\nAll files(*.*)'))    
@@ -343,3 +488,4 @@ if __name__=="__main__":
     ow = OWPythonScript()
     ow.show()
     appl.exec_()
+    ow.saveSettings()

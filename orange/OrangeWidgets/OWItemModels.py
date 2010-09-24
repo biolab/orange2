@@ -122,6 +122,13 @@ class PyListModel(QAbstractListModel):
     #for Python 3000
     def __bool__(self):
         return len(self) != 0
+    
+    def emitDataChanged(self, indexList):
+        if isinstance(indexList, int):
+            indexList = [indexList]
+        for ind in indexList:
+            self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(ind), self.index(ind))
+            
 
 import OWGUI
 import orange
