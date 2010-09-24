@@ -1,5 +1,5 @@
 """<name>Generate data</name>
-<description>Generate artificial dataset with a simple 'paint' like interface</description>
+<description>Generate artificial data sets with a simple 'Paint' like interface</description>
 <contact>ales.erjavec(@at@)fri.uni-lj.si</contact>
 <icon>icons/GenerateData.png</icon>
 """
@@ -8,8 +8,17 @@ import orange
 
 from OWWidget import *
 from OWGraph import *
+import OWToolbars
 
 from OWItemModels import VariableListModel, VariableDelegate, PyListModel
+
+dir = OWToolbars.dir
+icon_magnet = os.path.join(dir, "magnet.svg")
+icon_jitter = os.path.join(dir, "jitter.svg")
+icon_brush = os.path.join(dir, "brush.svg")
+icon_put = os.path.join(dir, "put.svg")
+icon_select = os.path.join(dir, "select-transparent_42px.png")
+icon_lasso = os.path.join(dir, "lasso-transparent_42px.png")
 
 class DataGeneratorGraph(OWGraph):
     def setData(self, data, attr1, attr2):
@@ -29,7 +38,6 @@ class DataGeneratorGraph(OWGraph):
         clsValues, hasCls = (self.data.domain.classVar.values, True) if self.data.domain.classVar else ([0], False)
         
         palette = ColorPaletteGenerator(len(clsValues))
-#        data, c, w = data.toNumpy()
         for i, cls in enumerate(clsValues):
             x = [float(ex[self.attr1]) for ex in data if ex.getclass() == cls]
             y = [float(ex[self.attr2]) for ex in data if ex.getclass() == cls]
@@ -210,11 +218,11 @@ class GraphSelections(QObject):
         
     def testSelection(self, data):
         data = numpy.asarray(data)
-        region = QPainterPath()
+        path = QPainterPath()
         for region in self.selection:
-            region = region.united(self.toPath(region))
+            path = path.united(self.toPath(region))
         def test(point):
-            return region.contains(QPointF(point[0], point[1]))
+            return path.contains(QPointF(point[0], point[1]))
         test = numpy.apply_along_axis(test, 1, data)
         return test
     
@@ -225,10 +233,10 @@ class GraphSelections(QObject):
         return bool(self.selection)
     
     def path(self):
-        region = QPainterPath()
+        path = QPainterPath()
         for region in self.selection:
-            region = region.united(self.toPath(region))
-        return region
+            path = path.united(self.toPath(region))
+        return path
     
     def qTransform(self):
         graph = self.parent()
@@ -244,15 +252,31 @@ class GraphSelections(QObject):
         return QTransform(sx, 0.0, 0.0, sy, dx, dy)
     
 class SelectTool(DataTool):
+    class optionsWidget(QFrame):
+        actions = [("Move", ""),
+                   ("Delete selected", "")]
+        def __init__(self, tool, parent=None):
+            QFrame.__init__(self, parent)
+            self.tool = tool
+            layout = QHBoxLayout()
+            delete = QToolButton(self)
+            delete.pyqtConfigure(text="Delete", toolTip="Delete selected instances")
+            self.connect(delete, SIGNAL("clicked()"), self.tool.deleteSelected)
+            
+            layout.addWidget(delete)
+            self.setLayout(layout)
+        
+            
     def __init__(self, graph, parent=None):
         DataTool.__init__(self, graph, parent)
         self.selection = GraphSelections(graph)
-        self.pen = QPen(Qt.red, 1, Qt.DashDotLine)
+        self.pen = QPen(Qt.black, 1, Qt.DashDotLine)
         self.pen.setCosmetic(True)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.pen.setCapStyle(Qt.RoundCap)
         self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), self.onMoveStarted)
         self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), self.onMove)
+        
         
     def setGraph(self, graph):
         DataTool.setGraph(self, graph)
@@ -317,6 +341,15 @@ class SelectTool(DataTool):
             ex[attr2] = y + diff.y()
         self.graph.updateGraph()
         
+    def deleteSelected(self, *args):
+        data = self.graph.data
+        attr1, attr2 = self.graph.attr1, self.graph.attr2
+        path = self.selection.path()
+        selected = [i for i, ex in enumerate(data) if path.contains(QPointF(float(ex[attr1]) , float(ex[attr2])))]
+        for i in reversed(selected):
+            del data[i]
+        self.graph.updateGraph() 
+        
 class GraphLassoSelections(GraphSelections):
     def start(self, event):
         pos = self.getPos(event)
@@ -352,7 +385,7 @@ class LassoTool(SelectTool):
     def __init__(self, graph, parent=None):
         DataTool.__init__(self, graph, parent)
         self.selection = GraphLassoSelections(graph)
-        self.pen = QPen(Qt.red, 1, Qt.DashDotLine)
+        self.pen = QPen(Qt.black, 1, Qt.DashDotLine)
         self.pen.setCosmetic(True)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.pen.setCapStyle(Qt.RoundCap)
@@ -515,18 +548,18 @@ class JitterTool(BrushTool):
             advance = 0.005
             dx = -(x1 - x)/dist * attraction / max(distsq, rx) * advance
             dy = -(y1 - y)/dist * attraction / max(distsq, ry) * advance
-            ex[attr1] = x1 - random.normalvariate(0, dx*self.density)
-            ex[attr2] = y1 - random.normalvariate(0, dy*self.density)
+            ex[attr1] = x1 - random.normalvariate(0, dx) #*self.density)
+            ex[attr2] = y1 - random.normalvariate(0, dy) #*self.density)
         self.graph.updateGraph()
         
 class OWDataGenerator(OWWidget):
-    TOOLS = [("Brush", "Create multiple instances", BrushTool, "GenerateDataBrushTool.png"),
-             ("Put", "Put individual instances", PutInstanceTool, "GenerateDataPutTool.png"),
-             ("Select", "Select and move instances", SelectTool, "GenerateDataSelectTool.png"),
-             ("Lasso", "Select and move instances", LassoTool, "GenerateDataLassoTool.png"),
-             ("Jitter", "Jitter instances", JitterTool, "GenerateDataJitterTool.png"),
-             ("Magnet", "Move (drag) multiple instances", MagnetTool, "GenerateDataMagnetTool.png"),
-             ("Zoom", "Zoom", ZoomTool, "system-search.svg") #"GenerateDataZoomTool.png")
+    TOOLS = [("Brush", "Create multiple instances", BrushTool,  icon_brush),
+             ("Put", "Put individual instances", PutInstanceTool, icon_put),
+             ("Select", "Select and move instances", SelectTool, icon_select),
+             ("Lasso", "Select and move instances", LassoTool, icon_lasso),
+             ("Jitter", "Jitter instances", JitterTool, icon_jitter),
+             ("Magnet", "Move (drag) multiple instances", MagnetTool, icon_magnet),
+             ("Zoom", "Zoom", ZoomTool, OWToolbars.dlg_zoom) #"GenerateDataZoomTool.png")
              ]
     def __init__(self, parent=None, signalManager=None, name="Data Generator"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
@@ -583,10 +616,15 @@ class OWDataGenerator(OWWidget):
             action = QAction(name, self)
             action.setToolTip(tooltip)
             action.setCheckable(True)
+            if os.path.exists(icon):
+                action.setIcon(QIcon(icon))
             self.connect(action, SIGNAL("triggered()"), lambda tool=tool: self.onToolAction(tool))
             button = QToolButton()
             button.setDefaultAction(action)
-            toolbox.layout().addWidget(button, i / 2, i % 2)
+            button.setIconSize(QSize(24, 24))
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+            toolbox.layout().addWidget(button, i / 3, i % 3)
             self.toolActions.addAction(action)
             
         self.optionsLayout = QStackedLayout()
