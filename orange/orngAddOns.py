@@ -438,7 +438,10 @@ function setElColors(t, id, color) {
 </td>
 """ % (i, docFile, iconFile, i, i, i, docFile, w.name)
                 else:
-                    open(os.path.join(self.directoryDocumentation(), "widgets", docFile+".skeleton"), 'w').write(self.widgetDocSkeleton(w, prototype=p))
+                    skeletonFileName = os.path.join(self.directoryDocumentation(), "widgets", docFile+".skeleton")
+                    if not os.path.isdir(os.path.dirname(skeletonFileName)):
+                        os.mkdir(os.path.dirname(skeletonFileName))
+                    open(skeletonFileName, 'w').write(self.widgetDocSkeleton(w, prototype=p))
                     html += """  <td id="cid%d" class="left-nodoc">
       <div class="rnd11"></div>
       <img style="z-index:2" src="%s" title="Widget: Text File" width="28" height="28" /><img style="margin-left:-28px; z-index:1" src="icons/background_32.png" width="28" height="28" />
