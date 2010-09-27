@@ -47,8 +47,12 @@ import socket
 timeout = 120
 socket.setdefaulttimeout(timeout)
 
-import urllib2_file
 import urllib2
+import base64
+
+import urllib2_file #switch to poster in the future
+#import poster.streaminghttp as psh
+#import poster.encode
 
 import os
 import shutil
@@ -56,7 +60,7 @@ import glob
 import datetime
 import tempfile
 
-#defserver = "localhost/"
+#defserver = "localhost:9999/"
 defserver = "asterix.fri.uni-lj.si/orngServerFiles/"
 
 def _parseFileInfo(fir, separ="|||||"):
@@ -132,14 +136,12 @@ class ServerFiles(object):
         self.access_code = access_code
         self.searchinfo = None
 
-    def installOpener(self):
-        #import time; t = time.time()
-        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        passman.add_password("orngFileServer", self.secureroot, str(self.username), str(self.password))
-        authhandler = urllib2.HTTPBasicAuthHandler(passman)
-        opener = urllib2.build_opener(authhandler)
-        urllib2.install_opener(opener)
-        #print "TIME", time.time() - t
+    def getOpener(self):
+        #commented lines are for poster 0.6
+        #handlers = [psh.StreamingHTTPHandler, psh.StreamingHTTPRedirectHandler, psh.StreamingHTTPSHandler]
+        #opener = urllib2.build_opener(*handlers)
+        opener = urllib2.build_opener()
+        return opener
  
     def upload(self, domain, filename, file, title="", tags=[]):
         """Upload the file to the server.
@@ -148,11 +150,11 @@ class ServerFiles(object):
             file = open(file, 'rb')
 
         data = {'filename': filename, 'domain': domain, 'title':title, 'tags': ";".join(tags), 'data':  file}
-        return self._secopen('upload', data)
+        return self._open('upload', data)
 
     def create_domain(self, domain):
         """Create the domain in the server repository."""
-        return self._secopen('createdomain', { 'domain': domain })
+        return self._open('createdomain', { 'domain': domain })
 
     def remove_domain(self, domain, force=False):
         """Remove the domain from the server repository. If force=True
@@ -160,33 +162,29 @@ class ServerFiles(object):
         data = { 'domain': domain }
         if force:
             data['force'] = True
-        return self._secopen('removedomain', data)
+        return self._open('removedomain', data)
 
     def remove(self, domain, filename):
         """Remove a file from the server repository."""
-        return self._secopen('remove', { 'domain': domain, 'filename': filename })
+        return self._open('remove', { 'domain': domain, 'filename': filename })
 
     def unprotect(self, domain, filename):
         """Unprotect a file in the server repository."""
-        return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': '0' })
+        return self._open('protect', { 'domain': domain, 'filename': filename, 'access_code': '0' })
 
     def protect(self, domain, filename, access_code="1"):
         """Protect a file in the server repository."""
-        return self._secopen('protect', { 'domain': domain, 'filename': filename, 'access_code': access_code })
+        return self._open('protect', { 'domain': domain, 'filename': filename, 'access_code': access_code })
 
     def protection(self, domain, filename):
         """Return 1 if the file in the server is protected, else return 0."""
-        return self._secopen('protection', { 'domain': domain, 'filename': filename })
+        return self._open('protection', { 'domain': domain, 'filename': filename })
+    
+    def listfiles(self, domain):
+        return _parseList(self._open('list', { 'domain': domain }))
 
-    def listfiles(self, *args, **kwargs):
-        """List all files from the server repositotory that reside in specific domain."""
-        if self._authen(): return self.seclist(*args, **kwargs)
-        else: return self.publist(*args, **kwargs)
-
-    def listdomains(self, *args, **kwargs):
-        """List the domains from the server repository."""
-        if self._authen(): return self.seclistdomains(*args, **kwargs)
-        else: return self.publistdomains(*args, **kwargs)
+    def listdomains(self):
+        return _parseList(self._open('listdomains', {}))
 
     def downloadFH(self, *args, **kwargs):
         """Return open file handle of requested file from the server repository given the domain and the filename."""
@@ -242,43 +240,23 @@ class ServerFiles(object):
             self.searchinfo = self._searchinfo()
         return _search(self.searchinfo, sstrings, **kwargs)
 
-    def info(self, *args, **kwargs):
-        if self._authen(): return self.secinfo(*args, **kwargs)
-        else: return self.pubinfo(*args, **kwargs)
+    def info(self, domain, filename):
+        return _parseFileInfo(self._open('info', { 'domain': domain, 'filename': filename }))
 
-    def pubinfo(self, domain, filename):
-        return _parseFileInfo(self._pubopen('info', { 'domain': domain, 'filename': filename }))
+    def downloadFH(self, domain, filename):
+        return self._handle('download', { 'domain': domain, 'filename': filename })
 
-    def pubdownloadFH(self, domain, filename):
-        return self._pubhandle('download', { 'domain': domain, 'filename': filename })
+    def list(self, domain):
+        return _parseList(self._open('list', { 'domain': domain }))
 
-    def publist(self, domain):
-        return _parseList(self._pubopen('list', { 'domain': domain }))
+    def listdomains(self):
+        return _parseList(self._open('listdomains', {}))
 
-    def secinfo(self, domain, filename):
-        return _parseFileInfo(self._secopen('info', { 'domain': domain, 'filename': filename }))
+    def allinfo(self, domain):
+        return _parseAllFileInfo(self._open('allinfo', { 'domain': domain }))
 
-    def secdownloadFH(self, domain, filename):
-        return self._sechandle('download', { 'domain': domain, 'filename': filename })
-
-    def seclist(self, domain):
-        return _parseList(self._secopen('list', { 'domain': domain }))
-
-    def seclistdomains(self):
-        return _parseList(self._secopen('listdomains', {}))
-
-    def publistdomains(self):
-        return _parseList(self._pubopen('listdomains', {}))
-
-    def allinfo(self, *args, **kwargs):
-        if self._authen(): return self.secallinfo(*args, **kwargs)
-        else: return self.puballinfo(*args, **kwargs)
-
-    def puballinfo(self, domain):
-        return _parseAllFileInfo(self._pubopen('allinfo', { 'domain': domain }))
-
-    def secallinfo(self, domain):
-        return _parseAllFileInfo(self._secopen('allinfo', { 'domain': domain }))
+    def index(self):
+        return self._open('index', {})
 
     def _authen(self):
         """
@@ -289,42 +267,47 @@ class ServerFiles(object):
         else:
             return False
 
-
     def _server_request(self, root, command, data, repeat=2):
         def do():
-            self.installOpener()
-            if data:
-                return urllib2.urlopen(root + command, data)
-            else:
-                return urllib2.urlopen(root + command)
+            opener = self.getOpener()
+            #the next lines work for poster 0.6.0
+            #datagen, headers = poster.encode.multipart_encode(data)
+            #request = urllib2.Request(root+command, datagen, headers)
 
+            if data:
+                request = urllib2.Request(root+command, data)
+            else:
+                request = urllib2.Request(root+command)
+
+            #directy add authorization headers
+            if self._authen():
+                auth = base64.encodestring('%s:%s' % (self.username, self.password))[:-1] 
+                request.add_header('Authorization', 'Basic %s' % auth ) # Add Auth header to request
+            
+            return opener.open(request)
         if repeat <= 0:
-            do()
+            return do()
         else:
             try:
                 return do()
             except:
                 return self._server_request(root, command, data, repeat=repeat-1)
-
-    def _sechandle(self, command, data):
-        return self._server_request(self.secureroot, command, data)
- 
-    def _pubhandle(self, command, data):
+    
+    def _handle(self, command, data):
         data2 = self.addAccessCode(data)
-        return self._server_request(self.publicroot, command, data2)
+        addr = self.publicroot
+        if self._authen():
+            addr = self.secureroot
+        return self._server_request(addr, command, data)
 
-    def _secopen(self, command, data):
-        return self._sechandle(command, data).read()
+    def _open(self, command, data):
+        return self._handle(command, data).read()
 
     def addAccessCode(self, data):
         if self.access_code != None:
             data = data.copy()
             data["access_code"] = self.access_code
         return data
-
-    def _pubopen(self, command, data):
-        return self._pubhandle(command, data).read()
-
 
 def download(domain, filename, serverfiles=None, callback=None, extract=True, verbose=True):
     """Download a file from a server placing it in a local repository."""
@@ -665,9 +648,15 @@ def example(myusername, mypassword):
     for l in locallist:
         print info('test', l)
 
+    s = ServerFiles()
+
+    print "testing connection - public"
+    print "AN", s.index()
+
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
     
+    """
     print "Server search 1"
     import time
     t = time.time()
@@ -677,6 +666,10 @@ def example(myusername, mypassword):
     t = time.time()
     print s.search(["human", "ke"])
     print time.time() - t 
+    """
+
+    print "testing connection - private"
+    print "AN", s.index()
 
     #create domain
     try: 
@@ -685,10 +678,14 @@ def example(myusername, mypassword):
         print "Failed to create the domain"
         pass
 
+    files = s.listfiles('test')
+    print "Files in test", files
+
+    print "uploading"
+
     #upload this file - save it by a different name
     s.upload('test', 'osf-test.py', 'orngServerFiles.py', title="NT", tags=["fkdl","fdl"])
     #make it public
-
     s.unprotect('test', 'osf-test.py')
 
     #login anonymously
@@ -704,7 +701,6 @@ def example(myusername, mypassword):
         print "INFO", fi
         print s.downloadFH('test', f).read()[:100] #show first 100 characters
         print "--------------------------------------"
-        s.download('test', f, 'a.mkv')
 
     #login as an authenticated user
     s = ServerFiles(username=myusername, password=mypassword)
@@ -714,9 +710,9 @@ def example(myusername, mypassword):
     s.remove('test', 'osf-test.py')
 
     s = ServerFiles()
-    print s.allinfo("demo2")
 
     print s.listdomains()
+
 
 if __name__ == '__main__':
     example(sys.argv[1], sys.argv[2])
