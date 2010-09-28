@@ -343,7 +343,6 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
                     index = self.map.examples.domain.index(attr)
                     vals = [n.vector[index] for n in self.map.map]
                     minval, maxval = min(vals), max(vals)
-                    print minval, maxval
                     return lambda val: OWColorPalette.ColorPaletteBW()[min(max(1 - (val - minval) / (maxval - minval or 1), 0.0), 1.0)]
                 else:
                     index = self.map.examples.domain.index(attr)
