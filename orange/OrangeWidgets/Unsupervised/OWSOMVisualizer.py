@@ -18,6 +18,25 @@ BaseColor=QColor(0, 0, 200)
 from orngMisc import ColorPalette
 from functools import partial
 
+class ColorPaletteBW(ColorPalette):
+    def __init__(self, *args, **kwargs):
+        ColorPalette.__init__(self, [(0, 0, 0,), (255, 255, 255)], *args, **kwargs)
+        
+class ColorPaletteHSV(ColorPalette):
+    def __init__(self, num_of_colors):
+        ColorPalette.__init__(self, OWColorPalette.defaultRGBColors)
+        self.num_of_colors = num_of_colors
+        
+    def get_rgb(self, value, gamma=None):
+        if isinstance(value, int):
+            return self.colors[value]
+        else:
+            raise ValueError("int expected for discrete color palette")
+        
+class ColorPaletteGR(ColorPalette):
+    def __init__(self, *args, **kwargs):
+        ColorPalette.__init__(self, [(0, 255, 0), (255, 0, 0)], *args, **kwargs)
+        
 class GraphicsSOMItem(QGraphicsPolygonItem):
     startAngle=0
     segment=6
@@ -32,7 +51,6 @@ class GraphicsSOMItem(QGraphicsPolygonItem):
         self.histogramItem = None
         self.setSize(10)
         self.setZValue(0)
-#        self.setFlags(QGraphicsItem.ItemIsSelectable)
 
     def areaPoints(self):
         return self.outlinePoints
@@ -279,7 +297,6 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
         self.map = map
         size=self.objSize*2-1
         x,y=size, size
-##            self.resize(1,1)    # crashes at update without this line !!!
         for n in self.map.map:
             r=GraphicsSOMRectangle(self)
             r.setSize(size)
@@ -312,6 +329,8 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
         
     @property
     def colorSchema(self):
+        """ Color schema for component planes
+        """
         if hasattr(self, "_colorSchema"):
             return self._colorSchema
         else:
@@ -320,9 +339,12 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
                     return lambda val: QColor(Qt.white)
                 elif type(attr) == int:
                     attr = self.map.examples.domain[attr]
-                
-                if attr.varType == orange.VarTypes.Discrete and False:
-                    return lambda val: OWColorPalette.ColorPaletteHSV(self.map.examples.domain[attr].values)[val]
+                if attr.varType == orange.VarTypes.Discrete:
+                    index = self.map.examples.domain.index(attr)
+                    vals = [n.vector[index] for n in self.map.map]
+                    minval, maxval = min(vals), max(vals)
+                    print minval, maxval
+                    return lambda val: OWColorPalette.ColorPaletteBW()[min(max(1 - (val - minval) / (maxval - minval or 1), 0.0), 1.0)]
                 else:
                     index = self.map.examples.domain.index(attr)
                     vals = [n.vector[index] for n in self.map.map]
@@ -335,6 +357,8 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
         
     @property
     def histogramColorSchema(self):
+        """ Color schema for histograms
+        """
         if hasattr(self, "_histogramColorSchema"):
             def colorSchema(attr):
                 if attr is None:
@@ -347,9 +371,14 @@ class SOMMapItem(QAbstractGraphicsShapeItem):
                 else:
                     index = self.map.examples.domain.index(attr)
                     arr, c, w = self.histogramData.toNumpyMA()
-                    vals = arr[:,index]
-                    minval, maxval = min(vals), max(vals)
-                    return lambda val: self._histogramColorSchema(1 - (val - minval) / (maxval - minval or 1))
+                    if index == arr.shape[1]:
+                        vals = c
+                    else:
+                        vals = arr[:,index]
+                    minval, maxval = numpy.min(vals), numpy.max(vals)
+                    def f(val):
+                        return self._histogramColorSchema((val - minval) / (maxval - minval or 1))
+                    return f
             return colorSchema
         else:
             def colorSchema(attr):
@@ -710,7 +739,8 @@ class SOMGraphicsWidget(QGraphicsWidget):
         self.setLayout(QGraphicsLinearLayout())
         self.legendLayout = QGraphicsLinearLayout(Qt.Vertical)
         self.layout().addItem(self.legendLayout)
-#        self.setGraphicsEffect(QGraphicsDropShadowEffect(offset=QPointF(1,2), blurRadius=5))
+        self.componentLegendItem = None
+        self.histLegendItem = None
         
     def clear(self):
         for i in range(self.layout().count()):
@@ -727,15 +757,14 @@ class SOMGraphicsWidget(QGraphicsWidget):
     def setComponentPlane(self, attr):
         self.componentPlane = attr
         self.somItem.setComponentPlane(attr)
-        if self.legendLayout.count() > 0:
-            item = self.legendLayout.itemAt(0)
-            item.scene().removeItem(item)
-            self.legendLayout.removeAt(0)
+        if self.componentLegendItem is not None:
+            self.scene().removeItem(self.componentLegendItem)
+            self.componentLegendItem = None
         if attr is not None:
-            self.legendItem = LegendItem(attr, parent=self)
-            self.legendItem.setOrientation(Qt.Vertical)
-            self.legendLayout.addItem(self.legendItem)
-            self.legendItem.setScale(self.somItem.componentRange(attr))
+            self.componentLegendItem = LegendItem(attr, parent=self)
+            self.componentLegendItem.setOrientation(Qt.Vertical)
+            self.legendLayout.insertItem(0, self.componentLegendItem)
+            self.componentLegendItem.setScale(self.somItem.componentRange(attr))
         
     def setHistogramData(self, data):
         self.histogramData = data
@@ -744,7 +773,7 @@ class SOMGraphicsWidget(QGraphicsWidget):
     def setHistogramConstructor(self, constructor):
         self.histogramConstructor = constructor 
         self.somItem.setHistogramConstructor(constructor)
-        if getattr(self, "histLegendItem", None) is not None:
+        if self.histLegendItem is not None:
             self.scene().removeItem(self.histLegendItem)
             self.histLegendItem = None
         if constructor and getattr(constructor, "legendItemConstructor", None) is not None:
@@ -781,10 +810,6 @@ class SOMGraphicsUMatrix(SOMGraphicsWidget):
             self.scene().removeItem(self.somItem)
             self.somItem = None
         self.somItem = SOMUMatrixItem(som, parent=self)
-#        item = self.layout().itemAt(0)
-#        if item:
-#            self.layout().removeItem(item)
-#            item.scene().removeItem(item)
         self.layout().insertItem(0, LayoutItemWrapper(self.somItem))
         
     def setComponentPlane(self, *args):
@@ -837,9 +862,26 @@ class SceneSelectionManager(QObject):
             return None
             
 class SOMScene(QGraphicsScene):
+    def __init__(self, parent=None):
+        QGraphicsScene.__init__(self, parent)
+        self.histogramData = None
+        self.histogramConstructor = None
+        self.histogramColorSchema = None
+        self.componentColorSchema = None
+        self.componentPlane = None
+        self.somWidget = None
+        
+    def clear(self):
+        QGraphicsScene.clear(self)
+        self.histogramData = None
+        self.histogramConstructor = None
+        self.histogramColorSchema = None
+        self.componentColorSchema = None
+        self.componentPlane = None
+        self.somWidget = None
+        
     def setSom(self, map):
         self.clear()
-        
         self.map = map
         
         self.emit(SIGNAL("som_changed()"))
@@ -847,47 +889,57 @@ class SOMScene(QGraphicsScene):
         self.selectionManager = SceneSelectionManager(self)
         self.connect(self.selectionManager, SIGNAL("selectionGeometryChanged()"), self.onSelectionAreaChange)
         
+    def setComponentPlane(self, attr):
+        if type(self.somWidget) != SOMGraphicsWidget:
+            self.clear()
+            self.somWidget = SOMGraphicsWidget(None)
+            self.somWidget.setSOM(self.map)
+            self.somWidget.setComponentPlane(attr)
+            self.addItem(self.somWidget)
+            self.componentPlane = None
+            self.histogramData = None
+            self.histogramConstructor = None
+            
+        if attr is not self.componentPlane:
+            self.componentPlane = attr
+            for item in self.somWidgets():
+                item.setComponentPlane(attr)
+                
+    def setUMatrix(self):
+        if type(self.somWidget) != SOMGraphicsUMatrix:
+            self.clear()
+            self.somWidget = SOMGraphicsUMatrix(None)
+            self.somWidget.setSOM(self.map)
+            self.addItem(self.somWidget)
+        
     def somWidgets(self):
         for item in self.items():
             if isinstance(item, SOMGraphicsWidget):
                 yield item
         
     def setHistogramData(self, data):
-        self.data = data
-        for item in self.somWidgets():
-            item.setHistogramData(data)
+        if data is not self.histogramData:
+            self.histogramData = data
+            for item in self.somWidgets():
+                item.setHistogramData(data)
                 
     def setHistogramConstructor(self, constructor):
-        for item in self.somWidgets():
-            item.setHistogramConstructor(constructor)
+        if self.histogramConstructor is not constructor:
+            self.histogramConstructor = constructor
+            for item in self.somWidgets():
+                item.setHistogramConstructor(constructor)
             
     def setHistogramColorSchema(self, schema):
-        for item in self.somWidgets():
-            item.setHistogramColorSchema(schema)
+        if schema is not self.histogramColorSchema:
+            self.histogramColorSchema = schema
+            for item in self.somWidgets():
+                item.setHistogramColorSchema(schema)
             
-    def setGridMode(self, mode):
-        return
-        for item in self.somWidgets():
-            item.setGridMode(mode)
-            
-    def setColorSchema(self, schema):
-        for item in self.somWidgets():
-            item.setColorSchema(schema)
-
-    def setComponentPlane(self, attr):
-        self.clear()
-        self.somWidget = SOMGraphicsWidget(None)
-        self.somWidget.setSOM(self.map)
-        self.somWidget.setComponentPlane(attr)
-        self.addItem(self.somWidget)
-        
-    def setUMatrix(self):
-        self.clear()
-        
-        self.somWidget = SOMGraphicsUMatrix(None)
-        self.somWidget.setSOM(self.map)
-        
-        self.addItem(self.somWidget)
+    def setComponentColorSchema(self, schema):
+        if schema is not self.componentColorSchema:
+            self.componentColorSchema = schema
+            for item in self.somWidgets():
+                item.setComponentColorSchema(schema)
         
     def setNodePen(self, pen):
         for item in self.somWidgets():
@@ -905,7 +957,8 @@ class SOMScene(QGraphicsScene):
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.LeftButton:
             self.selectionManager.update(event)
-            self.selectionRectItem.setRect(self.selectionManager.lastSelectionRect())
+            if self.selectionRectItem:
+                self.selectionRectItem.setRect(self.selectionManager.lastSelectionRect())
     
     def mouseReleaseEvent(self, event):
         if event.button() & Qt.LeftButton:
@@ -970,7 +1023,6 @@ class OWSOMVisualizer(OWWidget):
         self.connect(self.scene, SIGNAL("selectionChanged()"), self.commitIf)
         
         self.loadSettings()
-#        call = lambda:self.scene.redrawSom()
 
         histTab = mainTab = self.controlArea
 
@@ -1035,8 +1087,11 @@ class OWSOMVisualizer(OWWidget):
         self.componentCombo.setEnabled(self.drawMode == 2)
         if not self.somMap:
             return
-        if self.drawMode in [0 ,2]:
-            self.scene.setComponentPlane(self.component if self.drawMode == 2 else None)
+        self.error(0)
+        if self.drawMode == 0:
+            self.scene.setComponentPlane(None)
+        elif self.drawMode == 2:
+            self.scene.setComponentPlane(self.component)
         elif self.drawMode == 1:
             self.scene.setUMatrix()
         if self.histogram:
@@ -1055,6 +1110,8 @@ class OWSOMVisualizer(OWWidget):
             self.coloringStackedLayout.setCurrentWidget(self.contTab)
         
     def onHistogramAttrSelection(self):
+        if not self.somMap:
+            return 
         if self.somMap.examples.domain.variables[self.attribute].varType == orange.VarTypes.Discrete:
             self.coloringStackedLayout.setCurrentWidget(self.discTab)
         else:
@@ -1066,19 +1123,20 @@ class OWSOMVisualizer(OWWidget):
         if self.somMap and self.histogram:
             if self.inputSet and self.examples is not None and self.examples.domain == self.somMap.examples.domain:
                 self.scene.setHistogramData(self.examples)
+                attr = self.examples.domain.variables[self.attribute]
             else:
                 self.scene.setHistogramData(self.somMap.examples)
+                attr = self.somMap.examples.domain.variables[self.attribute]
                 
-            attr = self.somMap.examples.domain.variables[self.attribute]
             if attr.varType == orange.VarTypes.Discrete:
                 hist = [PieChart, MajorityChart, MajorityProbChart]
                 hist = hist[self.discHistMode]
-                visible, schema = True, None 
+                visible, schema = True, None
             else:
                 hist = [ContChart, AverageValue]
                 hist = hist[self.contHistMode]
                 visible = self.contHistMode == 1
-                schema = ColorPalette([(255, 0, 0), (0, 255, 0)]) if self.contHistMode == 1 else None
+                schema = ColorPalette([(0, 255, 0), (255, 0, 0)]) if self.contHistMode == 1 else None
                 
             def partial__init__(self, *args, **kwargs):
                 hist.__init__(self, attr, *args)
@@ -1130,14 +1188,15 @@ class OWSOMVisualizer(OWWidget):
         self.attributeCombo.clear()
         
         self.targetValue = 0
-        self.scene.component = 0
         self.attribute = 0
+        self.component = 0
         for v in somMap.examples.domain.attributes:
             self.componentCombo.addItem(v.name)
         for v in somMap.examples.domain.variables:
             self.attributeCombo.addItem(v.name)
 
         self.openContext("", somMap.examples)
+        self.component = min(self.component, len(somMap.examples.domain.attributes) - 1)
         self.setDiscCont()
         self.scene.setSom(somMap)
         self.update()
@@ -1164,16 +1223,21 @@ class OWSOMVisualizer(OWWidget):
         self.send("Examples", None)
         
     def invertSelection(self):
-        for widget in self.scene.somWidgets():
-            for node in widget.somItem.nodes():
-                node.setSelected(not node.isSelected())
+        self._invertingSelection = True
+        try:
+            for widget in self.scene.somWidgets():
+                for node in widget.somItem.nodes():
+                    node.setSelected(not node.isSelected())
+        finally:
+            del self._invertingSelection
+            self.commitIf()
     
     def updateSelection(self, nodeList):
         self.selectionList = nodeList
         self.commitIf()
         
     def commitIf(self):
-        if self.commitOnChange:
+        if self.commitOnChange and not getattr(self, "_invertingSelection", False):
             self.commit()
         else:
             self.selectionChanged = True
@@ -1182,11 +1246,7 @@ class OWSOMVisualizer(OWWidget):
         if not self.somMap:
             return
         ex = orange.ExampleTable(self.somMap.examples.domain)
-#        for n in self.selectionList:
-#            if self.inputSet == 0 and n.examples:
-#                ex.extend(n.examples)
-#            elif self.inputSet == 1 and getattr(n, "mappedExamples", False):
-#                ex.extend(n.mappedExamples)
+        
         for n in self.scene.selectedItems():
             if isinstance(n, GraphicsSOMItem) and n.node and hasattr(n.node, "mappedExamples"):
                 ex.extend(n.node.mappedExamples)
@@ -1203,7 +1263,7 @@ class OWSOMVisualizer(OWWidget):
         
 if __name__=="__main__":
     ap = QApplication(sys.argv)
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+    data = orange.ExampleTable("../../doc/datasets/housing.tab")
 #    l=orngSOM.SOMLearner(batch_train=False)
     l = orngSOM.SOMLearner(batch_train=True, initialize=orngSOM.InitializeLinear)
 #    l = orngSOM.SOMLearner(batch_train=True, initialize=orngSOM.InitializeRandom)
