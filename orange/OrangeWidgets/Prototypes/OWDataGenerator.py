@@ -10,7 +10,9 @@ from OWWidget import *
 from OWGraph import *
 import OWToolbars
 
-from OWItemModels import VariableListModel, VariableDelegate, PyListModel
+from OWItemModels import VariableListModel, VariableDelegate, PyListModel, ModelActionsWidget
+from Image import NONE
+import OWColorPalette
 
 dir = OWToolbars.dir
 icon_magnet = os.path.join(dir, "magnet.svg")
@@ -19,6 +21,7 @@ icon_brush = os.path.join(dir, "brush.svg")
 icon_put = os.path.join(dir, "put.svg")
 icon_select = os.path.join(dir, "select-transparent_42px.png")
 icon_lasso = os.path.join(dir, "lasso-transparent_42px.png")
+#icon_remove = os.path.join(dir, "remove.svg")
 
 class DataGeneratorGraph(OWGraph):
     def setData(self, data, attr1, attr2):
@@ -552,6 +555,44 @@ class JitterTool(BrushTool):
             ex[attr2] = y1 - random.normalvariate(0, dy) #*self.density)
         self.graph.updateGraph()
         
+class EnumVariableModel(PyListModel):
+    def __init__(self, var, parent=None, **kwargs):
+        PyListModel.__init__(self, [], parent, **kwargs)
+        self.wrap(var.values)
+        self.colorPalette = OWColorPalette.ColorPaletteHSV(len(self))
+        self.connect(self, SIGNAL("columnsInserted(QModelIndex, int, int)"), self.updateColors)
+        self.connect(self, SIGNAL("columnsRemoved(QModelIndex, int, int)"), self.updateColors)
+
+    def __delitem__(self, index):
+        raise TypeErorr("Cannot delete EnumVariable value")
+    
+    def __delslice__(self, i, j):
+        raise TypeErorr("Cannot delete EnumVariable values")
+    
+    def __setitem__(self, index, item):
+        self._list[index] = str(item)
+        
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.DecorationRole:
+            i = index.row()
+            return QVariant(self.itemQIcon(i))
+        else:
+            return PyListModel.data(self, index, role)
+        
+    def updateColors(self, index, start, end):
+        self.colorPalette = OWColorPalette.ColorPaletteHSV(len(self))
+        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(0), self.index(len(self) - 1))
+        
+    def itemQIcon(self, i):
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(QColor(255, 255, 255, 0))
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setBrush(self.colorPalette[i])
+        painter.drawEllipse(QRectF(15, 15, 39, 39))
+        painter.end()
+        return QIcon(pixmap)
+   
 class OWDataGenerator(OWWidget):
     TOOLS = [("Brush", "Create multiple instances", BrushTool,  icon_brush),
              ("Put", "Put individual instances", PutInstanceTool, icon_put),
@@ -601,13 +642,38 @@ class OWDataGenerator(OWWidget):
         
         self.classVariable = orange.EnumVariable("Class label", values=["Class 1", "Class 2"], baseValue=0)
         
-        cb = OWGUI.comboBox(self.controlArea, self, "classIndex", "Class Label")
-        self.classValuesModel = PyListModel([], self)
+#        cb = OWGUI.comboBox(self.controlArea, self, "classIndex", "Class Label")
+        w = OWGUI.widgetBox(self.controlArea, "Class Label")
+        
+        self.classValuesView = listView = QListView()
+        listView.setSelectionMode(QListView.SingleSelection)
+        
+        self.classValuesModel = EnumVariableModel(self.classVariable, self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled| Qt.ItemIsEditable)
         self.classValuesModel.wrap(self.classVariable.values)
-        cb.setModel(self.classValuesModel)
-        self.connect(cb, SIGNAL("currentIndexChanged(int)"), lambda base: setattr(self.classVariable, "baseValue", base))
-        cb.box.layout().addSpacing(4)
-        OWGUI.button(cb.box, self, "Add new class label", callback=self.onAddClassLabel)
+        
+        listView.setModel(self.classValuesModel)
+        listView.selectionModel().select(self.classValuesModel.index(0), QItemSelectionModel.ClearAndSelect)
+        self.connect(listView.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.onClassLabelSelection)
+        listView.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
+        w.layout().addWidget(listView)
+        
+        addClassLabel = QAction("+", self)
+        addClassLabel.pyqtConfigure(toolTip="Add class label", icon=QIcon(icon_put))
+        self.connect(addClassLabel, SIGNAL("triggered()"), self.addNewClassLabel)
+        
+#        removeClassLabel = QAction("-", self)
+#        removeClassLabel.pyqtConfigure(toolTip="Remove class label", icon=QIcon(icon_remove))
+#        self.connect(removeClassLabel, SIGNAL("triggered()"), self.removeSelectedClassLabel)
+        
+        actionsWidget = ModelActionsWidget([addClassLabel], self) # ModelActionsWidget([addClassLabel, removeClassLabel], self)
+        actionsWidget.layout().addStretch(10)
+        actionsWidget.setStyleSheet("QToolButton { qproperty-iconSize: 12px }")
+        
+        w.layout().addWidget(actionsWidget)
+#        bc.setModel(self.classValuesModel)
+#        self.connect(cb, SIGNAL("currentIndexChanged(int)"), lambda base: setattr(self.classVariable, "baseValue", base))
+#        cb.box.layout().addSpacing(4)
+#        OWGUI.button(cb.box, self, "Add new class label", callback=self.onAddClassLabel)
         
         toolbox = OWGUI.widgetBox(self.controlArea, "Tools", orientation=QGridLayout())
         self.toolActions = QActionGroup(self)
@@ -626,6 +692,10 @@ class OWDataGenerator(OWWidget):
             button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
             toolbox.layout().addWidget(button, i / 3, i % 3)
             self.toolActions.addAction(action)
+            
+        for column in range(3):
+            toolbox.layout().setColumnMinimumWidth(column, 10)
+            toolbox.layout().setColumnStretch(column, 1)
             
         self.optionsLayout = QStackedLayout()
         self.toolsStackCache = {}
@@ -651,13 +721,34 @@ class OWDataGenerator(OWWidget):
         
         self.resize(800, 600)
         
+    def addNewClassLabel(self):
+        self.classValuesModel.append("Class %i" % (len(self.classValuesModel) + 1))
+        
+    def removeSelectedClassLabel(self):
+        index = self.selectedClassLabelIndex()
+        if index is not None:
+            self.graph.data
+        
+    def selectedClassLabelIndex(self):
+        rows = [i.row() for i in self.classValuesView.selectionModel().selectedRows()]
+        if rows:
+            return rows[0]
+        else:
+            return None
+        
+    def onClassLabelSelection(self, selected, unselected):
+        index = self.selectedClassLabelIndex()
+        if index is not None:
+            self.classVariable.baseValue = index
+        
     def onAddFeature(self):
         self.variablesModel.append(orange.FloatVariable("New feature"))
         self.varListView.edit(self.variablesModel.index(len(self.variablesModel) - 1))
         
     def onRemoveFeature(self):
-        pass
-    
+        raise NotImplemented
+  
+            
     def onVariableSelectionChange(self, selected, deselected):
         self.selected
     
@@ -683,31 +774,8 @@ class OWDataGenerator(OWWidget):
                 self.data = orange.ExampleTable(self.domain, self.data)
             else:
                 self.data = orange.ExampleTable(self.domain)
-#            print list(self.data)
             self.graph.setData(self.data, 0, 1)
-            
-    def onAddClassLabel(self):
-        dialog = QDialog()
-        dialog.setWindowTitle("New class label")
-        form = QFormLayout()
-        lineEdit = QLineEdit()
-        form.addRow("Class label", lineEdit)
-        self.connect(lineEdit, SIGNAL("editingFinished"), dialog.accept)
-        blayout = QHBoxLayout()
-        b1 = QPushButton("Ok")
-        b2 = QPushButton("Cancel")
-        self.connect(b1, SIGNAL("clicked()"), dialog.accept)
-        self.connect(b2, SIGNAL("clicked()"), dialog.reject)
-        blayout.addStretch(10)
-        blayout.addWidget(b1)
-        blayout.addWidget(b2)
-        form.addRow(blayout)
-        dialog.setLayout(form)
-        if dialog.exec_() == QDialog.Accepted:
-            label = str(lineEdit.text())
-            if label:
-                self.classValuesModel.append(label)
-        
+    
     def commit(self):
         if self.addClassAsMeta:
             domain = orange.Domain(self.graph.data.domain.attributes, None)
