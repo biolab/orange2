@@ -15,13 +15,14 @@ from Image import NONE
 import OWColorPalette
 
 dir = OWToolbars.dir
-icon_magnet = os.path.join(dir, "magnet.svg")
-icon_jitter = os.path.join(dir, "jitter.svg")
-icon_brush = os.path.join(dir, "brush.svg")
-icon_put = os.path.join(dir, "put.svg")
+icon_magnet = os.path.join(dir, "magnet_64px.png")
+icon_jitter = os.path.join(dir, "jitter_64px.png")
+icon_brush = os.path.join(dir, "brush_64px.png")
+icon_put = os.path.join(dir, "put_64px.png")
 icon_select = os.path.join(dir, "select-transparent_42px.png")
 icon_lasso = os.path.join(dir, "lasso-transparent_42px.png")
 #icon_remove = os.path.join(dir, "remove.svg")
+
 
 class DataGeneratorGraph(OWGraph):
     def setData(self, data, attr1, attr2):
