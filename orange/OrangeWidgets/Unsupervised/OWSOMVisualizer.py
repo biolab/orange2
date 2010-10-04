@@ -211,7 +211,7 @@ class MajorityProbChart(MajorityChart):
         MajorityChart.__init__(self, *args, **kwargs)
         index = int(numpy.argmax(list(self.distribution)))
         val = self.distribution[self.majorityValue]
-        prob = float(val) / sum(self.distribution)
+        prob = float(val) / (sum(self.distribution) or 1)
 #        colorSchema = self.colorSchema(self.distribution.variable)
         color = self.colorSchema(index)
         color = color.lighter(200 - 100 * prob)
@@ -616,6 +616,8 @@ class LegendRect(QGraphicsWidget):
             self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
         else:
             self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
+        self.setColorSchema(self.colorSchema)
+            
 
     def paint(self, painter, option, widget=0):
         size = self.geometry().size()
@@ -630,6 +632,13 @@ class LegendRect(QGraphicsWidget):
         self.gradient.setStops([(x, color(self.colorSchema(x))) for x in space])
         if hasattr(self.gradient, "setCoordinateMode"):
             self.gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+        else:
+            if self.orientation == Qt.Vertical:
+                self.gradient.setStart(self.geometry().topRight())
+                self.gradient.setFinalStop(self.geometry().bottomRight())
+            else:
+                self.gradient.setStart(self.geometry().topRight())
+                self.gradient.setFinalStop(self.geometry().topLeft())
         
     def sizeHint(self, which, *args):
         if self.orientation == Qt.Horizontal:
@@ -638,7 +647,9 @@ class LegendRect(QGraphicsWidget):
             return QSizeF(20, 100)
     
     def setGeometry(self, rect):
-        QGraphicsWidget.setGeometry(self, rect)   
+        QGraphicsWidget.setGeometry(self, rect)
+        if getattr(self, "colorSchema", None) is not None:
+            self.setColorSchema(self.colorSchema) # reset the colorSchema for the new geometry
         
 class LegendItem(QGraphicsWidget):
     schema = ColorPalette([(255, 255, 255), (0, 0, 0)])
@@ -974,15 +985,15 @@ class SOMScene(QGraphicsScene):
             item.somItem.updateToolTips(*args, **kwargs)
     
 class OWSOMVisualizer(OWWidget):
-    settingsList = ["drawMode","objSize","commitOnChange", "backgroundMode", "backgroundCheck", "includeCodebook", "showToolTips"]
+    settingsList = ["drawMode", "showNodeOutlines", "objSize","commitOnChange", "backgroundMode", "backgroundCheck", "includeCodebook", "showToolTips"]
     contextHandlers = {"":DomainContextHandler("", [ContextField("attribute", DomainContextHandler.Optional),
                                                   ContextField("discHistMode", DomainContextHandler.Optional),
                                                   ContextField("contHistMode", DomainContextHandler.Optional),
                                                   ContextField("targetValue", DomainContextHandler.Optional),
                                                   ContextField("histogram", DomainContextHandler.Optional),
                                                   ContextField("inputSet", DomainContextHandler.Optional),
-                                                  ContextField("scene.component", DomainContextHandler.Optional),
-                                                  ContextField("scene.includeCodebook", DomainContextHandler.Optional)])}
+                                                  ContextField("component", DomainContextHandler.Optional),
+                                                  ContextField("includeCodebook", DomainContextHandler.Optional)])}
     
     drawModes = ["None", "U-Matrix", "Component planes"]
     
