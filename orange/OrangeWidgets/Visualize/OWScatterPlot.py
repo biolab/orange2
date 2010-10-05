@@ -361,8 +361,13 @@ class OWScatterPlot(OWWidget):
                 brush = QBrush(curve.symbol().brush())
                 brush.setColor(brushColor)
                 penColor.setAlpha(self.graph.alphaValue)
-                curve.symbol().setBrush(brush)
-                curve.symbol().setPen(QPen(penColor))
+                symbol = curve.symbol()
+                symbol.setBrush(brush)
+                symbol.setPen(QPen(penColor))
+                if QWT_VERSION_STR >= "5.2" and not curve.testItemAttribute(QwtPlotItem.Legend): # if curve has a legend it is duplicated for all symbols
+                    curve.setSymbol(symbol)
+#                curve.symbol().setBrush(brush)
+#                curve.symbol().setPen(QPen(penColor))
         self.graph.replot()
 
     def pointSizeChange(self):
@@ -371,7 +376,11 @@ class OWScatterPlot(OWWidget):
         else:
             for curve in self.graph.itemList():
                 if isinstance(curve, QwtPlotCurve):
-                    curve.symbol().setSize(self.graph.pointWidth)
+                    symbol = curve.symbol()
+                    symbol.setSize(self.graph.pointWidth)
+                    if QWT_VERSION_STR >= "5.2" and not curve.testItemAttribute(QwtPlotItem.Legend):
+                        curve.setSymbol(symbol)
+                        
             self.graph.replot()
 
     def setShowGridlines(self):
