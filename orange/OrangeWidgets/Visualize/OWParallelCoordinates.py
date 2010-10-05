@@ -67,7 +67,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
-        self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
+        self.connect(self.shownAttribsLB, SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.flipAttribute)
 
         self.optimizationDlg = ParallelOptimization(self, signalManager = self.signalManager)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization Dialog", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
@@ -628,7 +628,8 @@ if __name__=="__main__":
     ow=OWParallelCoordinates()
     ow.show()
     ow.graph.discPalette = ColorPaletteGenerator(rgbColors = [(127, 201, 127), (190, 174, 212), (253, 192, 134)])
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
+    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+#    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
     #data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
     ow.setData(data)
     ow.handleNewSignals()
