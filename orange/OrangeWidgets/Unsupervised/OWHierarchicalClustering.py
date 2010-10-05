@@ -412,10 +412,11 @@ class OWHierarchicalClustering(OWWidget):
         items = getattr(self.matrix, "items")
         if self.matrixSource == "Example Distance":
             unselected = [item for item in items if item not in self.selection]
+            c=[i for i in range(len(maps)) for j in maps[i]]
+            aid = None
             if self.ClassifySelected:
                 clustVar=orange.EnumVariable(str(self.ClassifyName) ,
                             values=["Cluster " + str(i) for i in range(len(maps))] + ["Other"])
-                c=[i for i in range(len(maps)) for j in maps[i]]
                 origDomain = items.domain
                 if self.addIdAs == 0:
                     domain=orange.Domain(origDomain.attributes,clustVar)
@@ -450,20 +451,17 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Selected Examples",self.selectedExamples)
             self.send("Unselected Examples", self.unselectedExamples)
 
-            clustFilter = orange.Filter_sameValue(position=aid)
             self.centroids = orange.ExampleTable(self.selectedExamples.domain)
             for i in range(len(maps)):
-                clustFilter.value = clustVar("Cluster %i" % i)
-                clusterEx = clustFilter(self.selectedExamples)
+                clusterEx = [ex for cluster, ex in zip(c, self.selectedExamples) if cluster == i]
+                clusterEx = orange.ExampleTable(clusterEx)
                 contstat = orange.DomainBasicAttrStat(clusterEx)
                 discstat = orange.DomainDistributions(clusterEx, 0, 0, 1)
                 ex = [cs.avg if cs else (ds.modus() if ds else "?") for cs, ds in zip(contstat, discstat)]
-                print self.centroids.domain
-                print ex
                 example = orange.Example(self.centroids.domain, ex)
-                if aid!=-1:
+                if aid is not None and aid!=-1:
                     example[aid] = i
-                else:
+                elif aid is not None:
                     example.setclass(i)
                 self.centroids.append(ex)
             self.send("Centroids", self.centroids)    
@@ -517,7 +515,6 @@ class Dendrogram(QGraphicsScene):
         self.otherObj=[]
         self.cutOffLine=QGraphicsLineItem(None, self)
         self.cutOffLine.setPen( QPen(QColor("black"),2))
-        self.bubbleRect=BubbleRect(None)
         #self.setDoubleBuffering(True)
         self.holdoff=False
         self.treeAreaWidth = 0
@@ -556,9 +553,6 @@ class Dendrogram(QGraphicsScene):
 
         self.header.drawScale(self.treeAreaWidth, root.height)
         
-        self.bubbleRect=BubbleRect(None)
-        self.addItem(self.bubbleRect)
-        self.otherObj.append(self.bubbleRect)
 #        fix=max([a.boundingRect().width() for a in self.textObj])
 #        self.setSceneRect(0, 0, leftMargin+self.treeAreaWidth+fix+rightMargin, 2*topMargin+self.gTextPos)
         self.setSceneRect(self.itemsBoundingRect().adjusted(-5, -5, 5, 5))
@@ -754,34 +748,24 @@ class Dendrogram(QGraphicsScene):
             return
         if self.parent.SelectionMode and self.cutOffLineDragged:
             self.cutOffLineDragged=False
-            self.bubbleRect.hide()
             self.setCutOffLine(e.scenePos().x())
 
     def mouseMoveEvent(self, e):
-##        print "mouse move"
         if not self.rootCluster:
             return
+        toolTipRect = QRect(-1, -1, 2, 2)
         if self.parent.SelectionMode==1 and self.cutOffLineDragged:
             self.setCutOffLine(e.scenePos().x())
             if not self.parent.DisableBubble:
-                self.bubbleRect.setText("Cut off height: \n %f" % self.cutOffHeight)
-                self.bubbleRect.setPos(e.scenePos().x(), e.scenePos().y())
-                self.bubbleRect.show()
-            self.update()
+                QToolTip.showText(e.screenPos(), "Cut off height: \n %f" % self.cutOffHeight, e.widget(), toolTipRect)
             return
         objList=self.items(e.scenePos())
         self.highlight(objList)
         if not self.parent.DisableBubble and self.highlighted:
             cluster=self.highlighted.cluster
             text= "Items: %i \nCluster height: %f" % (len(cluster), cluster.height)
-            self.bubbleRect.setText(text)
-            self.bubbleRect.setPos(e.scenePos().x(),e.scenePos().y())
-            self.bubbleRect.show()
-            self.update()
-        else:
-            self.bubbleRect.hide()
-            self.update()
-##        print objList
+            QToolTip.showText(e.screenPos(), text, e.widget(), toolTipRect)
+
         if objList and objList[0].__class__==MyCanvasText and not self.parent.DisableBubble:
             head="Items: %i" %len(objList[0].cluster)
             body=""
@@ -790,12 +774,7 @@ class Dendrogram(QGraphicsScene):
                 if len(bodyItems)>20:
                     bodyItems=bodyItems[:20]+["..."]
                 body="\n"+"\n".join(bodyItems)
-            self.bubbleRect.setText(head+body)
-            self.bubbleRect.setPos(e.scenePos().x(),e.scenePos().y())
-##            print head+body
-            if body!="":
-                self.bubbleRect.show()
-            self.update()
+            QToolTip.showText(e.screenPos(), head+body, e.widget(), toolTipRect)
 
     def cutOffSelection(self, node, height):
         if not node:
@@ -916,6 +895,7 @@ class MyCanvasRect(QGraphicsRectItem):
         self.left = None
         self.right = None
         self.cluster = None
+        
     def highlight(self, pen):
         if self.pen()==pen:
             return
@@ -957,24 +937,6 @@ class SelectionPoly(QGraphicsPolygonItem):
 
     def clearGraphics(self):
         self.scene().removeItem(self)
-
-class BubbleRect(QGraphicsRectItem):
-    def __init__(self, *args):
-        QGraphicsRectItem.__init__(self, *args)
-        self.setBrush(QBrush(Qt.white))
-        self.text=QGraphicsTextItem(self)
-        self.text.setPos(5, 5)
-        self.setZValue(30)
-
-    def setText(self, text):
-        self.text.setPlainText(text)
-        self.setRect(0, 0, self.text.boundingRect().width()+6,self.text.boundingRect().height()+6)
-
-    def setPos(self, x, y):
-        if self.scene().sceneRect().contains(x+self.rect().width(),y):
-            QGraphicsRectItem.setPos(self, x+5, y+5)
-        else:
-            QGraphicsRectItem.setPos(self, x-self.rect().width()-5, y+5)
 
 
 if __name__=="__main__":
