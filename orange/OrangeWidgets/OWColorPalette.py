@@ -650,7 +650,7 @@ class PaletteView(QGraphicsView):
         self.setFixedHeight(colorButtonSize)
         self.setMinimumWidth(colorButtonSize)
         
-        if parent and parent.layout():
+        if parent and parent.layout() is not None:
             parent.layout().addWidget(self)
     
     def resizeEvent(self, ev):
@@ -741,7 +741,7 @@ class ColorButton(QWidget):
         self.parent = parent
         self.master = master
 
-        if self.parent and self.parent.layout():
+        if self.parent and self.parent.layout() is not None:
             self.parent.layout().addWidget(self)
 
         self.setLayout(QHBoxLayout())
