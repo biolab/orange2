@@ -19,15 +19,15 @@ inf = 100000
 #        return learner
 
 class BoostedLearner(orange.Learner):
-    def __new__(cls, data=None, weightId=None, **kwargs):
+    def __new__(cls, learner, examples=None, weightId=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
-        if data is not None:
-            self.__init__(self, **kwargs)
-            return self.__call__(data, weightId)
+        if examples is not None:
+            self.__init__(self, learner, **kwargs)
+            return self.__call__(examples, weightId)
         else:
             return self
             
-    def __init__(self, learner=None, t=10, name='AdaBoost.M1'):
+    def __init__(self, learner, t=10, name='AdaBoost.M1'):
         self.t = t
         self.name = name
         self.learner = learner
@@ -102,15 +102,15 @@ class BoostedClassifier(orange.Classifier):
 #        return learner
 
 class BaggedLearner(orange.Learner):
-    def __new__(cls, data=None, weightId=None, **kwargs):
+    def __new__(cls, learner, examples=None, weightId=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
-        if data is not None:
-            self.__init__(self, **kwargs)
-            return self.__call__(data, weightId)
+        if examples is not None:
+            self.__init__(self, learner, **kwargs)
+            return self.__call__(examples, weightId)
         else:
             return self
         
-    def __init__(self, learner=None, t=10, name='Bagging'):
+    def __init__(self, learner, t=10, name='Bagging'):
         self.t = t
         self.name = name
         self.learner = learner

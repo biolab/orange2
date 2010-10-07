@@ -52,7 +52,7 @@ class OWEnsemble(OWWidget):
     def commit(self):
         wrapped = None
         if self.learner:
-            wrapped = self.METHODS[self.method][1](learner=self.learner, t=self.t)
+            wrapped = self.METHODS[self.method][1](self.learner, t=self.t)
             self.send("Learner", wrapped)
             
         if self.data and wrapped:
