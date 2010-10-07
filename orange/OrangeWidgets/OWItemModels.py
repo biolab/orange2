@@ -44,6 +44,7 @@ class PyListModel(QAbstractListModel):
     def setData(self, index, value, role=Qt.EditRole):
         obj = value.toPyObject()
         self[index.row()] = obj
+        return True
         
     def flags(self, index):
         return Qt.ItemFlags(self._flags)
@@ -266,7 +267,7 @@ class ModelActionsWidget(QWidget):
             
     def actionButton(self, action):
         if isinstance(action, QAction):
-            button = QToolButton()
+            button = QToolButton(self)
             button.setDefaultAction(action)
             return button
         elif isinstance(action, QAbstractButton):
@@ -281,4 +282,5 @@ class ModelActionsWidget(QWidget):
         
     def addAction(self, action, *args):
         return self.insertAction(-1, action, *args)
+
     
