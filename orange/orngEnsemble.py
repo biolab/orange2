@@ -11,15 +11,23 @@ def sum(x):
 
 inf = 100000
 
-def BoostedLearner(learner, examples=None, t=10, name='AdaBoost.M1'):
-    learner = BoostedLearnerClass(learner, t, name)
-    if examples:
-        return learner(examples)
-    else:
-        return learner
+#def BoostedLearner(learner, examples=None, t=10, name='AdaBoost.M1'):
+#    learner = BoostedLearnerClass(learner, t, name)
+#    if examples:
+#        return learner(examples)
+#    else:
+#        return learner
 
-class BoostedLearnerClass(orange.Learner):
-    def __init__(self, learner, t, name):
+class BoostedLearner(orange.Learner):
+    def __new__(cls, data=None, weightId=None, **kwargs):
+        self = orange.Learner.__new__(cls, **kwargs)
+        if data is not None:
+            self.__init__(self, **kwargs)
+            return self.__call__(data, weightId)
+        else:
+            return self
+            
+    def __init__(self, learner=None, t=10, name='AdaBoost.M1'):
         self.t = t
         self.name = name
         self.learner = learner
@@ -50,7 +58,7 @@ class BoostedLearnerClass(orange.Learner):
                 if epsilon >= 0.499 and len(classifiers)>1:
                     del classifiers[-1]
                 instances.removeMetaAttribute(weight)
-                return BoostedClassifier(classifiers = classifiers, name=self.name, classvar=instances.domain.classVar)
+                return BoostedClassifier(classifiers = classifiers, name=self.name, classVar=instances.domain.classVar)
             beta = epsilon/(1-epsilon)
             for e in range(n):
                 if corr[e]:
@@ -60,18 +68,18 @@ class BoostedLearnerClass(orange.Learner):
                 instances[e].setweight(weight, instances[e].getweight(weight)*f)
 
         instances.removeMetaAttribute(weight)
-        return BoostedClassifier(classifiers = classifiers, name=self.name, classvar=instances.domain.classVar)
+        return BoostedClassifier(classifiers = classifiers, name=self.name, classVar=instances.domain.classVar)
 
 class BoostedClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
-        votes = [0.] * len(self.classvar.values)
+        votes = [0.] * len(self.classVar.values)
         for c, e in self.classifiers:
             votes[int(c(example))] += e
         index = orngMisc.selectBestIndex(votes)
-        value = orange.Value(self.classvar, index)
+        value = orange.Value(self.classVar, index)
         if resultType == orange.GetValue:
             return value
         sv = sum(votes)
@@ -81,19 +89,28 @@ class BoostedClassifier(orange.Classifier):
             return votes
         else:
             return (value, votes)
+                
         
 ########################################################################
 # Bagging
 
-def BaggedLearner(learner=None, t=10, name='Bagging', examples=None):
-    learner = BaggedLearnerClass(learner, t, name)
-    if examples:
-        return learner(examples)
-    else:
-        return learner
+#def BaggedLearner(learner=None, t=10, name='Bagging', examples=None):
+#    learner = BaggedLearnerClass(learner, t, name)
+#    if examples:
+#        return learner(examples)
+#    else:
+#        return learner
 
-class BaggedLearnerClass(orange.Learner):
-    def __init__(self, learner, t, name):
+class BaggedLearner(orange.Learner):
+    def __new__(cls, data=None, weightId=None, **kwargs):
+        self = orange.Learner.__new__(cls, **kwargs)
+        if data is not None:
+            self.__init__(self, **kwargs)
+            return self.__call__(data, weightId)
+        else:
+            return self
+        
+    def __init__(self, learner=None, t=10, name='Bagging'):
         self.t = t
         self.name = name
         self.learner = learner
@@ -111,26 +128,45 @@ class BaggedLearnerClass(orange.Learner):
             examples = orange.ExampleTable(examples)
             data = examples.getitems(selection)
             classifiers.append(self.learner(data, weight))
-        return BaggedClassifier(classifiers = classifiers, name=self.name, classvar=examples.domain.classVar)
+        return BaggedClassifier(classifiers = classifiers, name=self.name, classVar=examples.domain.classVar)
 
 class BaggedClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
-        freq = [0.] * len(self.classvar.values)
-        for c in self.classifiers:
-            freq[int(c(example))] += 1
-        index = freq.index(max(freq))
-        value = orange.Value(self.classvar, index)
-        if resultType == orange.GetValue:
-            return value
-        for i in range(len(freq)):
-            freq[i] = freq[i]/len(self.classifiers)
-        if resultType == orange.GetProbabilities:
-            return freq
-        else:
-            return (value, freq)
+        if self.classVar.varType == orange.VarTypes.Discrete:
+            freq = [0.] * len(self.classVar.values)
+            for c in self.classifiers:
+                freq[int(c(example))] += 1
+            index = freq.index(max(freq))
+            value = orange.Value(self.classVar, index)
+            if resultType == orange.GetValue:
+                return value
+            for i in range(len(freq)):
+                freq[i] = freq[i]/len(self.classifiers)
+            if resultType == orange.GetProbabilities:
+                return freq
+            else:
+                return (value, freq)
+        elif self.classVar.varType == orange.VarTypes.Continuous:
+            votes = [c(example, orange.GetBoth if resultType==orange.GetProbabilities else resultType) for c in self.classifiers]
+            wsum = float(len(self.classifiers))
+            if resultType in [orange.GetBoth, orange.GetProbabilities]:
+                pred = sum([float(c) for c, p in votes]) / wsum
+#                prob = sum([float(p.modus()) for c, p in votes]) / wsum
+                from collections import defaultdict
+                prob = defaultdict(float)
+                for c, p in votes:
+                    try:
+                        prob[float(c)] += p[c] / wsum
+                    except IndexError: # p[c] sometimes fails with index error
+                        prob[float(c)] += 1.0 / wsum
+                prob = orange.ContDistribution(prob)
+                return self.classVar(pred), prob if resultType == orange.GetBoth else prob
+            elif resultType == orange.GetValue:
+                pred = sum([float(c) for c in votes]) / wsum
+                return self.classVar(pred)
 
 ########################################################################
 # Random Forests

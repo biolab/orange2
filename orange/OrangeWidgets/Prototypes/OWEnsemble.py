@@ -10,12 +10,9 @@ import orngEnsemble
 
 import os, sys
 
-"""
-Rect{
-    title: "Settings" {
-"""
+
 class OWEnsemble(OWWidget):
-    settingsList = []
+    settingsList = ["method", "t"]
     
     METHODS = [("Boosting", orngEnsemble.BoostedLearner),
                ("Bagging", orngEnsemble.BaggedLearner)]
@@ -39,6 +36,8 @@ class OWEnsemble(OWWidget):
         self.data = None
         self.learner = None
         
+        self.resize(100, 100)
+        
     def setLearner(self, learner=None):
         self.learner = learner
         self.commit()
@@ -53,7 +52,7 @@ class OWEnsemble(OWWidget):
     def commit(self):
         wrapped = None
         if self.learner:
-            wrapped = self.METHODS[self.method][1](self.learner, t=self.t)
+            wrapped = self.METHODS[self.method][1](learner=self.learner, t=self.t)
             self.send("Learner", wrapped)
             
         if self.data and wrapped:
