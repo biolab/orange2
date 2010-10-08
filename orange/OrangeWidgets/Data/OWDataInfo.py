@@ -39,6 +39,7 @@ class OWDataInfo(OWWidget):
 #                                <tr><td>Class attribute:</td><td align="right">%(classattr)7s</td></tr></table>')
 #        
         OWGUI.rubber(self.controlArea)
+        self.resize(200, 200)
         
         
     def data(self, data):
