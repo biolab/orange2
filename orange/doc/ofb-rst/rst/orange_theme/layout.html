@@ -14,6 +14,11 @@
 {% endif %}
 {% endblock %}
 
+{% block extrahead %}
+<!--orange style--><link rel="stylesheet" href= "{{ pathto('_static/' + style, 1) }}" type="text/css">
+<!--orange style--><link rel="stylesheet" href= "{{ pathto('_static/pygments.css', 1) }}" type="text/css">
+{% endblock %}
+
 {% block relbar1 %} {{ super() }} {% endblock %}
 {% block relbar2 %} {{ super() }} {% endblock %}
 

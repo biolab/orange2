@@ -282,6 +282,7 @@ H3 {
 
 H1, H2, H3 {
     text-align: left;
+    clear: none;
 }
 
 P.section { font-weight: bold }
