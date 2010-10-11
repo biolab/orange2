@@ -28,7 +28,7 @@ body {
 
 div#container
 {
-    margin-left: 230px;
+    margin-left: auto;
     margin-right: auto;
     width: 830px;
     text-align: left;
@@ -147,7 +147,6 @@ div.document {
 
 div.body p, div.body dd, div.body li {
     text-align: justify;
-    line-height: 100%;
 }
 
 
@@ -346,11 +345,12 @@ div.sphinxsidebar {
 
 div.sphinxsidebar ul {
     list-style: none;
+    padding-left: 15px;
 }
 
 div.sphinxsidebar ul ul,
 div.sphinxsidebar ul.want-points {
-    margin-left: 20px;
+    margin-left: 5px;
     list-style: square;
 }
 
