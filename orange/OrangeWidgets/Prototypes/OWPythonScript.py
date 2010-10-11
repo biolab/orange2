@@ -266,9 +266,12 @@ class OWPythonScript(OWWidget):
         self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", orngNetwork.Network, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
         self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", orngNetwork.Network), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier)]
         
-        self.inNetwork = None
-        self.inExampleTable = None
-        self.inDistanceMatrix = None
+        self.in_data = None
+        self.in_network = None
+        self.in_distance = None
+        self.in_learner = None
+        self.in_classifier = None
+        
         self.codeFile = ''
         self.libraryListSource = [Script("Hello world", "print 'Hello world'\n")]
         self.currentScriptIndex = 0
@@ -281,10 +284,9 @@ class OWPythonScript(OWWidget):
         self._cachedDocuments = {}
         
         self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
-        OWGUI.label(self.infoBox, self, "<p>Execute python script.</p><p>Input variables:<ul><li> " + \
+        label = OWGUI.label(self.infoBox, self, "<p>Execute python script.</p><p>Input variables:<ul><li> " + \
                     "<li>".join(t[0] for t in self.inputs) + "</ul></p><p>Output variables:<ul><li>" + \
                     "<li>".join(t[0] for t in self.outputs) + "</ul></p>")
-        
         self.libraryList = PyListModel([], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
 #        self.libraryList.append(Script("Hello world", "print 'Hello world'\n"))
         self.libraryList.wrap(self.libraryListSource)
@@ -396,19 +398,19 @@ class OWPythonScript(OWWidget):
         self.resize(800,600)
         
     def setExampleTable(self, et):
-        self.inExampleTable = et
+        self.in_data = et
         
     def setDistanceMatrix(self, dm):
-        self.inDistanceMatrix = dm
+        self.in_distance = dm
         
     def setNetwork(self, net):
-        self.inNetwork = net
+        self.in_network = net
         
     def setLearner(self, learner):
-        self.inLearner = learner
+        self.in_learner = learner
         
     def setClassifier(self, classifier):
-        self.inClassifier = classifier
+        self.in_classifier = classifier
         
     def selectedScriptIndex(self):
         rows = self.libraryView.selectionModel().selectedRows()
