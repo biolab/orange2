@@ -97,7 +97,7 @@ html_theme = 'orange_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 if html_theme == "orange_theme":
-    html_theme_options = {"orangeheaderfooter":"true"}
+    html_theme_options = {"orangeheaderfooter":"false"}
     
 
 # Add any paths that contain custom themes here, relative to this directory.
