@@ -373,7 +373,7 @@ class OWCN2RulesViewer(OWWidget):
 
     def save(self, fileName = None):
         from OWDlgs import OWChooseImageSizeDlg
-        dlg = OWChooseImageSizeDlg(self.canvas, [("Save as text file (.txt)", self.saveRules)])
+        dlg = OWChooseImageSizeDlg(self.canvas, [("Save as text file (.txt)", self.saveRules)], parent=self)
         dlg.exec_()
 
     def saveRules(self, filename=None):

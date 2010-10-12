@@ -578,12 +578,12 @@ class OWInteractionGraph(OWWidget):
     # SAVING GRAPHS
     ##################################################
     def saveToFileLCanvas(self):
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasL)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasL, parent=self)
         sizeDlg.exec_()
 
 
     def saveToFileRCanvas(self):
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvasR, parent=self)
         sizeDlg.exec_()
 
     def _sendReport(self):

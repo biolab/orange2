@@ -8,8 +8,8 @@ import OWQCanvasFuncts
 
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
-    def __init__(self, graph, extraButtons = [], defaultName="graph"):
-        OWBaseWidget.__init__(self, None, None, "Image settings", modal = TRUE, resizingEnabled = 0)
+    def __init__(self, graph, extraButtons = [], defaultName="graph", parent=None):
+        OWBaseWidget.__init__(self, parent, None, "Image settings", modal = TRUE, resizingEnabled = 0)
 
         self.graph = graph
         self.selectedSize = 0

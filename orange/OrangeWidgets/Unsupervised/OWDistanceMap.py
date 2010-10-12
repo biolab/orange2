@@ -248,7 +248,7 @@ class OWDistanceMap(OWWidget):
         self.errorText.setPos(10,10)
         
 #        OWGUI.button(self.controlArea, self, "&Save Graph", lambda:OWChooseImageSizeDlg(self.scene).exec_(), debuggingEnabled = 0)
-        self.connect(self.graphButton, SIGNAL("clicked()"), lambda:OWChooseImageSizeDlg(self.scene).exec_())
+        self.connect(self.graphButton, SIGNAL("clicked()"), lambda:OWChooseImageSizeDlg(self.scene, parent=self).exec_())
 
 
         #restore color schemas from settings

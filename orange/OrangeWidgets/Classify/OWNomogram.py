@@ -695,7 +695,7 @@ class OWNomogram(OWWidget):
             import OWDlgs
         except:
             print "Missing file 'OWDlgs.py'. This file should be in OrangeWidgets folder. Unable to print/save image."
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(scene_confed)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(scene_confed, parent=self)
         sizeDlg.exec_()
 
         # set all items back to original canvases            

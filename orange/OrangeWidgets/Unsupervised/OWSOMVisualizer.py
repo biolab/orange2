@@ -1268,7 +1268,7 @@ class OWSOMVisualizer(OWWidget):
         self.selectionChanged = False
 
     def saveGraph(self):
-        sizeDlg = OWChooseImageSizeDlg(self.scene)
+        sizeDlg = OWChooseImageSizeDlg(self.scene, parent=self)
         sizeDlg.exec_()
         
 if __name__=="__main__":

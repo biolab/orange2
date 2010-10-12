@@ -472,7 +472,7 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Structured Data Files",data)
             
     def saveGraph(self):
-       sizeDlg = OWChooseImageSizeDlg(self.dendrogram)
+       sizeDlg = OWChooseImageSizeDlg(self.dendrogram, parent=self)
        sizeDlg.exec_()
 
 leftMargin=10
