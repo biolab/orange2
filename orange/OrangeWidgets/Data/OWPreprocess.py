@@ -69,7 +69,7 @@ class Preprocessor_removeContinuous(Preprocessor_discretize):
                 
 class Preprocessor_continuize(orange.Preprocessor):
     """ A preprocessor that continuizes a discrete domain (and optionaly normalizes it).
-    See DomainContinuizer_ for list of accepted arguments.  
+    See DomainContinuizer for list of accepted arguments.  
     """
     __new__ = _orange__new()
     __reduce__ = _orange__reduce
@@ -156,18 +156,21 @@ class Preprocessor_featureSelection(orange.Preprocessor):
 class Preprocessor_RFE(Preprocessor_featureSelection):
     """ A preprocessor that runs RFE(Recursive feature elimination) using linear SVM derived attribute weights.
     Arguments:
-        - `limit`: The number of selected fetures (default 10)
+        - `filter`: a filter function to use for selection (default Preprocessor_featureSelection.bestN
+        - `limit`: The number of selected features (default 10)
         
     """
     __new__ = _orange__new(Preprocessor_featureSelection)
     __reduce__ = _orange__reduce
-    def __init__(self, limit=10):
+    def __init__(self, filter=None, limit=10):
         self.limit = limit
+        self.filter = filter if filter is not None else self.bestN
         
     def __call__(self, data, weightId=None):
         from orngSVM import RFE
         rfe = RFE()
-        return rfe(data, self.limit)
+        filterd = self.filter(range(len(self.data)), self.limit)
+        return rfe(data, len(filterd))
     
 def selectNRandom(examples, N=10):
     """ Select N random examples
@@ -261,7 +264,7 @@ class DiscretizeEditor(BaseEditor):
         for label, _, _ in self.DISCRETIZERS[:-1]:
             OWGUI.appendRadioButton(rb, self, "discInd", label)
         self.sliderBox = OWGUI.widgetBox(OWGUI.indentedBox(rb), "Num. of intervals (for equal width/frequency)")
-        OWGUI.hSlider(self.sliderBox, self, "numberOfIntervals", callback=self.onChange)
+        OWGUI.hSlider(self.sliderBox, self, "numberOfIntervals", callback=self.onChange, minValue=1)
         OWGUI.appendRadioButton(rb, self, "discInd", self.DISCRETIZERS[-1][0])
         OWGUI.rubber(rb)
         
@@ -548,28 +551,52 @@ class PreprocessorItemDelegate(QStyledItemDelegate):
         else:
             return self.INSERT_RE.sub(replace, text)
         
-class NamedTupleItemDelegate(QStyledItemDelegate):
-    """ Item delegate for displaying the name of (name, [...]) structured tuples
+class PreprocessorSchema(object):
+    """ Preprocessor schema holds a saved a named preprocessor list for display.
     """
+    def __init__(self, name="New schema", preprocessors=[], selectedPreprocessor=0, modified=False):
+        self.name = name
+        self.preprocessors = preprocessors
+        self.selectedPreprocessor = selectedPreprocessor
+        self.modified = modified
+        
+class PreprocessorSchemaDelegate(QStyledItemDelegate):
+    @classmethod
+    def asSchema(cls, obj):
+        if isinstance(obj, PreprocessorSchema):
+            return obj
+        elif isinstance(obj, tuple):
+            return PreprocessorSchema(*obj)
+        
     def displayText(self, value, locale):
+        schema = self.asSchema(value.toPyObject())
         try:
-            obj = value.toPyObject()
-            return str(obj[0])
-        except Exception, ex:
-            return repr(ex)
+            if schema.modified:
+                return QString("*" + schema.name)
+            else:
+                return QString(schema.name)
+        except Exception:
+            return QString("Invalid schema")
+        
+    def paint(self, painter, option, index):
+        schema = self.asSchema(index.data(Qt.DisplayRole).toPyObject())
+        if getattr(schema, "modified", False):
+            option = QStyleOptionViewItemV4(option)
+            option.palette.setColor(QPalette.Text, QColor(Qt.red))
+            option.palette.setColor(QPalette.Highlight, QColor(Qt.darkRed))
+        QStyledItemDelegate.paint(self, painter, option, index)
         
     def createEditor(self, parent, option, index):
         return QLineEdit(parent)
     
     def setEditorData(self, editor, index):
-        t = index.data().toPyObject()
-        editor.setText(t[0])
+        schema = self.asSchema(index.data().toPyObject())
+        editor.setText(schema.name)
         
     def setModelData(self, editor, model, index):
-        t = tuple(index.data().toPyObject())
-        name = editor.text()
-        model.setData(index, QVariant((name,) + t[1:]))
-                
+        schema = self.asSchema(index.data().toPyObject())
+        schema.name = editor.text()
+        model.setData(index, QVariant(schema))
 
 class OWPreprocess(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler("", [""])}
@@ -592,16 +619,16 @@ class OWPreprocess(OWWidget):
                Preprocessor_sample: SampleEditor,
                type(None): QWidget}
     
-    def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Preprocess")
+    def __init__(self, parent=None, signalManager=None, name="Preprocess"):
+        OWWidget.__init__(self, parent, signalManager, name)
         
         self.inputs = [("Example Table", ExampleTable, self.setData)] #, ("Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Preprocessing", orngWrap.PreprocessedLearner), ("Preprocessed Example Table", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
+        self.outputs = [("Preprocess", orngWrap.PreprocessedLearner), ("Preprocessed Example Table", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
         
         self.autoCommit = False
         self.changedFlag = False
         
-        ## [(name, [list of preprocessors], selected preprocessor index), ...]
+#        self.allSchemas = [PreprocessorSchema("Default" , [Preprocessor_discretize(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()])]
         self.allSchemas = [("Default" , [Preprocessor_discretize(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()], 0)]
         
         self.lastSelectedSchemaIndex = 0
@@ -609,7 +636,9 @@ class OWPreprocess(OWWidget):
         self.preprocessorsList =  PyListModel([], self)
         
         box = OWGUI.widgetBox(self.controlArea, "Preprocessors", addSpace=True)
+        box.layout().setSpacing(1)
         
+        self.setStyleSheet("QListView::item { margin: 1px;}")
         self.preprocessorsListView = QListView()
         self.preprocessorsListSelectionModel = ListSingleSelectionModel(self.preprocessorsList, self)
         self.preprocessorsListView.setItemDelegate(PreprocessorItemDelegate(self))
@@ -624,7 +653,9 @@ class OWPreprocess(OWWidget):
         box.layout().addWidget(self.preprocessorsListView)
         
         self.addPreprocessorAction = QAction("+",self)
+        self.addPreprocessorAction.pyqtConfigure(toolTip="Add a new preprocessor to the list")
         self.removePreprocessorAction = QAction("-", self)
+        self.removePreprocessorAction.pyqtConfigure(toolTip="Remove selected preprocessor from the list")
         self.removePreprocessorAction.setEnabled(False)
         
         self.connect(self.preprocessorsListSelectionModel, SIGNAL("selectedIndexChanged(QModelIndex)"), lambda index:self.removePreprocessorAction.setEnabled(index.isValid()))
@@ -645,7 +676,7 @@ class OWPreprocess(OWWidget):
         
         self.schemaList = PyListModel([], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEditable| Qt.ItemIsEnabled)
         self.schemaListView = QListView()
-        self.schemaListView.setItemDelegate(NamedTupleItemDelegate(self))
+        self.schemaListView.setItemDelegate(PreprocessorSchemaDelegate(self))
         self.schemaListView.setModel(self.schemaList)
         box.layout().addWidget(self.schemaListView)
         
@@ -656,8 +687,11 @@ class OWPreprocess(OWWidget):
         self.connect(self.schemaListSelectionModel, SIGNAL("selectedIndexChanged(QModelIndex)"), self.onSchemaSelection)
         
         self.addSchemaAction = QAction("+", self)
+        self.addSchemaAction.pyqtConfigure(toolTip="Add a new preprocessor schema")
         self.updateSchemaAction = QAction("Update", self)
+        self.updateSchemaAction.pyqtConfigure(toolTip="Save changes made in the current schema")
         self.removeSchemaAction = QAction("-", self)
+        self.removeSchemaAction.pyqtConfigure(toolTip="Remove selected schema")
         
         self.updateSchemaAction.setEnabled(False)
         self.removeSchemaAction.setEnabled(False)
@@ -698,6 +732,9 @@ class OWPreprocess(OWWidget):
         
     def activateLoadedSettings(self):
         try:
+            self.allSchemas = [PreprocessorSchemaDelegate.asSchema(obj) for obj in self.allSchemas]
+            for s in self.allSchemas:
+                s.modified = False
             self.schemaList.wrap(self.allSchemas)
             self.schemaListSelectionModel.select(self.schemaList.index(min(self.lastSelectedSchemaIndex, len(self.schemaList) - 1)), QItemSelectionModel.ClearAndSelect)
             self.commit()
@@ -716,6 +753,8 @@ class OWPreprocess(OWWidget):
         self.preprocessorsList.append(prep)
         self.preprocessorsListSelectionModel.select(self.preprocessorsList.index(len(self.preprocessorsList)-1),
                                                     QItemSelectionModel.ClearAndSelect)
+        self.commitIf()
+        self.setSchemaModified(True)
     
     def onAddPreprocessor(self):
         action = QMenu.exec_(self.addPreprocessorsMenuActions, QCursor.pos())
@@ -728,6 +767,8 @@ class OWPreprocess(OWWidget):
             newrow = min(max(row - 1, 0), len(self.preprocessorsList) - 1)
             if newrow > -1:
                 self.preprocessorsListSelectionModel.select(self.preprocessorsList.index(newrow), QItemSelectionModel.ClearAndSelect)
+            self.commitIf()
+            self.setSchemaModified(True)
             
     def onPreprocessorSelection(self, index):
         if index.isValid():
@@ -742,20 +783,21 @@ class OWPreprocess(OWWidget):
         self.removeSchemaAction.setEnabled(index.isValid())
         if index.isValid():
             self.lastSelectedSchemaIndex = index.row()
-            self.setActiveSchema(*index.data().toPyObject())
+            self.setActiveSchema(index.data().toPyObject())
     
     def onAddSchema(self):
         schema = list(self.preprocessorsList)
-        self.schemaList.append(("New schema", schema, self.preprocessorsListSelectionModel.selectedRow().row()))
+        self.schemaList.append(PreprocessorSchema("New schema", schema, self.preprocessorsListSelectionModel.selectedRow().row()))
         index = self.schemaList.index(len(self.schemaList) - 1)
         self.schemaListSelectionModel.setCurrentIndex(index, QItemSelectionModel.ClearAndSelect)
         self.schemaListView.edit(index)
     
     def onUpdateSchema(self):
         index = self.schemaListSelectionModel.selectedRow()
-        i = index.row()
-        name, old, index = self.schemaList[i]
-        self.schemaList[i] = (name, list(self.preprocessorsList), self.preprocessorsListSelectionModel.selectedRow().row())
+        if index.isValid():
+            row = index.row()
+            schema = self.schemaList[row]
+            self.schemaList[row] = PreprocessorSchema(schema.name, list(self.preprocessorsList), self.preprocessorsListSelectionModel.selectedRow().row())
     
     def onRemoveSchema(self):
         index = self.schemaListSelectionModel.selectedRow()
@@ -766,9 +808,13 @@ class OWPreprocess(OWWidget):
             if newrow > -1:
                 self.schemaListSelectionModel.select(self.schemaList.index(newrow), QItemSelectionModel.ClearAndSelect)
                 
-    def setActiveSchema(self, name, schema, selectedIndex):
-        self.preprocessorsList[:] = list(schema)
-        self.preprocessorsListSelectionModel.select(selectedIndex, QItemSelectionModel.ClearAndSelect)
+    def setActiveSchema(self, schema):
+        if schema.modified and hasattr(schema, "_tmp_preprocessors"):
+            self.preprocessorsList[:] = list(schema._tmp_preprocessors)
+        else:
+            self.preprocessorsList[:] = list(schema.preprocessors)
+        self.preprocessorsListSelectionModel.select(schema.selectedPreprocessor, QItemSelectionModel.ClearAndSelect)
+        self.commitIf()
         
     def showEditWidget(self, pp):
         w = self.stackedEditorsCache.get(type(pp), None)
@@ -783,7 +829,18 @@ class OWPreprocess(OWWidget):
         
     def setEditedPreprocessor(self, pp):
         self.preprocessorsList[self.preprocessorsListSelectionModel.selectedRow().row()] = pp
-        self.onUpdateSchema()
+        
+        self.setSchemaModified(True)
+        self.commitIf()
+#        self.onUpdateSchema()
+        
+    def setSchemaModified(self, state):
+        index = self.schemaListSelectionModel.selectedRow()
+        if index.isValid():
+            row = index.row()
+            self.schemaList[row].modified = True
+            self.schemaList[row]._tmp_preprocessors = list(self.preprocessorsList)
+            self.schemaList.emitDataChanged([row])
         
     def commitIf(self):
         if self.autoCommit:
@@ -796,15 +853,10 @@ class OWPreprocess(OWWidget):
         if self.data is not None:
             data = wrap.processData(self.data)
             self.send("Preprocessed Example Table", data)
-#        if self.learner is not None:
-#            learner = wrap.wrapLearner(self.learner)
-#            self.send("Preprocessing", learner)
-        self.send("Preprocessing", wrap)
+        self.send("Preprocess", wrap)
             
 #        self.send("Preprocessor", Preprocessor_preprocessorList(list(self.preprocessorsList)))
         self.changedFlag = False
-            
-            
         
 
 if __name__ == "__main__":
@@ -814,5 +866,4 @@ if __name__ == "__main__":
     w.show()
     app.exec_()
     w.saveSettings()
-        
-        
+    
