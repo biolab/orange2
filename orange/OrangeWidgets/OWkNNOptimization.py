@@ -589,7 +589,7 @@ class OWVizRank(VizRank, OWWidget):
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
-        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
+        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph, parent=self)
         self.sizeDlg.printButton.setEnabled(0)
         self.sizeDlg.saveMatplotlibButton.setEnabled(0)
         self.sizeDlg.disconnect(self.sizeDlg.saveImageButton, SIGNAL("clicked()"), self.sizeDlg.saveImage)

@@ -618,12 +618,12 @@ class OWTreeViewer2D(OWWidget):
 
     def saveGraph(self, fileName = None):
         from OWDlgs import OWChooseImageSizeDlg
-        dlg = OWChooseImageSizeDlg(self.scene, [("Save as Dot Tree File (.dot)", self.saveDot)])
+        dlg = OWChooseImageSizeDlg(self.scene, [("Save as Dot Tree File (.dot)", self.saveDot)], parent=self)
         dlg.exec_()
         
     def saveDot(self, filename=None):
         if filename==None:
-            filename = str(QFileDialog.getSaveFileName(None, "Save to ...", "tree.dot", "Dot Tree File (.DOT)"))
+            filename = str(QFileDialog.getSaveFileName(self, "Save to ...", "tree.dot", "Dot Tree File (.DOT)"))
             if not filename:
                 return
         orngTree.printDot(self.tree, filename)

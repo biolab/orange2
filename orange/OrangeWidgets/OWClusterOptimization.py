@@ -685,7 +685,7 @@ class ClusterOptimization(OWBaseWidget):
         if not ok: return
         self.bestGraphsCount = int(str(text))
 
-        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
+        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph, parent=self)
         self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
         self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
         self.sizeDlg.exec_()
