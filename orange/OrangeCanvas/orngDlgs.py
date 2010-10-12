@@ -867,7 +867,7 @@ class AddOnManagerDialog(QDialog):
     def accept(self):
         import orngAddOns
         if len(self.addOnsToAdd) + len(self.addOnsToRemove) > 0:
-            summary = AddOnManagerSummary(self.addOnsToAdd, self.addOnsToRemove)
+            summary = AddOnManagerSummary(self.addOnsToAdd, self.addOnsToRemove, self)
             if summary.exec_() == QDialog.Rejected:
                 return
         orngAddOns.availableRepositories = self.repositories

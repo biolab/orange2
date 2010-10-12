@@ -105,7 +105,7 @@ class SchemaDoc(QWidget):
             QMessageBox.critical( self, "Failed to Connect", "Circular connections are not allowed in Orange Canvas.", QMessageBox.Ok)
             return None
 
-        dialog = SignalDialog(self.canvasDlg, None)
+        dialog = SignalDialog(self.canvasDlg, self.canvasDlg)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
         if connectStatus == 0:
@@ -143,7 +143,7 @@ class SchemaDoc(QWidget):
                 signals = line.getSignals()
 
         if newSignals == None:
-            dialog = SignalDialog(self.canvasDlg, None)
+            dialog = SignalDialog(self.canvasDlg, self.canvasDlg)
             dialog.setOutInWidgets(outWidget, inWidget)
             for (outName, inName) in signals:
                 #print "<extra>orngDoc.py - SignalDialog.addLink() - adding signal to dialog: ", outName, inName
