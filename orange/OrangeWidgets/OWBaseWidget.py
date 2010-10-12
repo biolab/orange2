@@ -138,7 +138,7 @@ class OWBaseWidget(QDialog):
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
         if savePosition:
-            self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
+            self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown", "savedWidgetGeometry"]
 
         if resizingEnabled: QDialog.__init__(self, parent, Qt.Window)
         else:               QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)# | Qt.WindowMinimizeButtonHint)
@@ -268,17 +268,45 @@ class OWBaseWidget(QDialog):
     # this function is called at the end of the widget's __init__ when the widgets is saving its position and size parameters
     def restoreWidgetPosition(self):
         if self.savePosition:
-            space = qApp.desktop().availableGeometry(self)
-            if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
-#                print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition, "to", max(self.widgetXPosition, 0), max(self.widgetYPosition, 0)
-                self.move(max(self.widgetXPosition, space.x()), max(self.widgetYPosition, space.y()))
-            if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
-                self.resize(min(self.widgetWidth, space.width()), min(self.widgetHeight, space.height()))
-            frame = self.frameGeometry()
-            area = lambda rect: rect.width() * rect.height()
-            if area(frame.intersected(space)) < area(frame):
-                self.move(max(min(space.right() - frame.width(), frame.x()), space.x()), 
-                          max(min(space.height() - frame.height(), frame.y()), space.y()))
+            geometry = getattr(self, "savedWidgetGeometry", None)
+            restored = False
+            if geometry is not None:
+               restored =  self.restoreGeometry(QByteArray(geometry))
+               
+            if restored:
+                space = qApp.desktop().availableGeometry(self)
+                frame, geometry = self.frameGeometry(), self.geometry()
+                
+                #Fix the widget size to fit inside the available space
+                width = min(space.width() - (frame.width() - geometry.width()), geometry.width())
+                height = min(space.height() - (frame.height() - geometry.height()), geometry.height())
+                self.resize(width, height)
+                
+                #Move the widget to the center of available space if it is currently outside it
+                if not space.contains(self.frameGeometry()):
+                    x = max(0, space.width() / 2 - width / 2)
+                    y = max(0, space.height() / 2 - height / 2)
+            
+                    self.move(x, y)
+            
+#            geometry.move(frameOffset) #Make sure the title bar is shown 
+#            self.setGeometry(geometry.intersected(space.adjusted(-frameOffset.x(), -frameOffset.y(), 0, 0)))
+            
+            
+#            if self.isWindow():
+#                frame = self.frameGeometry()
+#                if space.topLeft() != QPoint(0, 0):
+#                    self.move(self.geometry().topLeft() - frame.topLeft())
+#            if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
+##                print self.captionTitle, "restoring position", self.widgetXPosition, self.widgetYPosition, "to", max(self.widgetXPosition, 0), max(self.widgetYPosition, 0)
+#                self.move(max(self.widgetXPosition, space.x()), max(self.widgetYPosition, space.y()))
+#            if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
+#                self.resize(min(self.widgetWidth, space.width()), min(self.widgetHeight, space.height()))
+#            frame = self.frameGeometry()
+#            area = lambda rect: rect.width() * rect.height()
+#            if area(frame.intersected(space)) < area(frame):
+#                self.move(max(min(space.right() - frame.width(), frame.x()), space.x()), 
+#                          max(min(space.height() - frame.height(), frame.y()), space.y()))
 
     # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
     def restoreWidgetStatus(self):
@@ -292,6 +320,7 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetWidth = self.width()
             self.widgetHeight = self.height()
+            self.savedWidgetGeometry = str(self.saveGeometry())
 
 
     # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
@@ -301,25 +330,38 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetXPosition = self.frameGeometry().x()
             self.widgetYPosition = self.frameGeometry().y()
+            self.savedWidgetGeometry = str(self.saveGeometry())
 
     # set widget state to hidden
     def hideEvent(self, ev):
-        QDialog.hideEvent(self, ev)
         if self.savePosition:
             self.widgetShown = 0
+            self.widgetXPosition = self.frameGeometry().x()
+            self.widgetYPosition = self.frameGeometry().y()
+            self.savedWidgetGeometry = str(self.saveGeometry())
+        QDialog.hideEvent(self, ev)
 
     # override the default show function.
     # after show() we must call processEvents because show puts some LayoutRequests in queue
     # and we must process them immediately otherwise the width(), height(), ... of elements in the widget will be wrong
-    def show(self):
-        QDialog.show(self)
-        qApp.processEvents()
+#    def show(self):
+#        QDialog.show(self)
+#        qApp.processEvents()
 
     # set widget state to shown
-    def showEvent(self, ev):
+    def showEvent(self, ev):    
         QDialog.showEvent(self, ev)
         if self.savePosition:
             self.widgetShown = 1
+            
+        self.restoreWidgetPosition()
+        
+    def closeEvent(self, ev):
+        if self.savePosition:
+            self.widgetXPosition = self.frameGeometry().x()
+            self.widgetYPosition = self.frameGeometry().y()
+            self.savedWidgetGeometry = str(self.saveGeometry())
+        QDialog.closeEvent(self, ev)
 
     def setCaption(self, caption):
         if self.parent != None and isinstance(self.parent, QTabWidget):
@@ -330,13 +372,9 @@ class OWBaseWidget(QDialog):
 
     # put this widget on top of all windows
     def reshow(self):
-#        x,y = getattr(self, "widgetXPosition", None), getattr(self, "widgetYPosition", None)
-        self.hide()
-#        if x != None and y != None:
-#            self.move(x,y)
-        self.restoreWidgetPosition()
         self.show()
-        #self.raise_()
+        self.raise_()
+        self.activateWindow()
 
 
     def send(self, signalName, value, id = None):

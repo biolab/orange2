@@ -147,25 +147,39 @@ class OrangeCanvasDlg(QMainWindow):
         self.initMenu()
         self.readRecentFiles()
 
-        width, height = self.settings.get("canvasWidth", 700), self.settings.get("canvasHeight", 600)
-        self.resize(width, height)
+        state = self.settings.get("CanvasMainWindowGeometry", None)
+        if state is not None:
+            state = self.restoreGeometry(QByteArray(state))
+            width, height = self.width(), self.height()
+        
+        if not state:
+            width, height = self.settings.get("canvasWidth", 700), self.settings.get("canvasHeight", 600)
 
         # center window in the desktop
-        # in newer versions of Qt we can also find the center of a primary screen
-        # on multiheaded desktops
-        desktop = app.desktop()
-        deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
-        deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
-        h = max(0, deskH / 2 - height / 2)  # if the window is too small, resize the window to desktop size
-        w = max(0, deskW / 2 - width / 2)
-        self.move(w, h)
+        # on multiheaded desktops it it does not fit
+        
+        desktop = qApp.desktop()
+        space = desktop.availableGeometry(self)
+        geometry, frame = self.geometry(), self.frameGeometry()
+        
+        #Fit the frame size to fit in space
+        width = min(space.width() - (frame.width() - geometry.width()), geometry.width())
+        height = min(space.height() - (frame.height() - geometry.height()), geometry.height())
+        
+        self.resize(width, height)
+        
+        #move to center if frame not fully contained in space TODO: move to side of the space not the center
+        if not space.contains(self.frameGeometry()):
+            x = max(0, space.width() / 2 - width / 2)
+            y = max(0, space.height() / 2 - height / 2)
+            
+            self.move(x, y)
 
         self.helpWindow = orngHelp.HelpWindow(self)
         self.reportWindow = OWReport.ReportWindow()
         self.reportWindow.widgets = self.schema.widgets
         self.reportWindow.saveDir = self.settings["reportsDir"]
         
-        self.show()
 
         # did Orange crash the last time we used it? If yes, you will find a temSchema.tmp file
         if not RedR:
@@ -356,7 +370,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.schema.clear()
         self.schema.loadDocument(filename)
         
-
     def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
@@ -396,7 +409,7 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemPrinter(self):
         try:
             import OWDlgs
-            sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.schema.canvas, defaultName=self.schema.schemaName or "schema")
+            sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.schema.canvas, defaultName=self.schema.schemaName or "schema", parent=self)
             sizeDlg.exec_()
         except:
             print "Missing file 'OWDlgs.py'. This file should be in OrangeWidgets folder. Unable to print/save image."
@@ -468,9 +481,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.schema.dumpWidgetVariables()
 
     def menuItemShowOutputWindow(self):
-        self.output.hide()
         self.output.show()
-        #self.output.setFocus()
+        self.output.raise_()
+        self.output.activateWindow()
 
     def menuItemClearOutputWindow(self):
         self.output.textOutput.clear()
@@ -501,7 +514,7 @@ class OrangeCanvasDlg(QMainWindow):
 
 
     def menuItemEditWidgetShortcuts(self):
-        dlg = orngDlgs.WidgetShortcutDlg(self)
+        dlg = orngDlgs.WidgetShortcutDlg(self, self)
         if dlg.exec_() == QDialog.Accepted:
             self.widgetShortcuts = dict([(y, x) for x, y in dlg.invDict.items()])
             shf = file(os.path.join(self.canvasSettingsDir, "shortcuts.txt"), "wt")
@@ -541,7 +554,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.updateDlg = updateOrange.updateOrangeDlg(None)#, Qt.WA_DeleteOnClose)
 
     def menuItemAboutOrange(self):
-        dlg = orngDlgs.AboutDlg()
+        dlg = orngDlgs.AboutDlg(self)
         dlg.exec_()
 
 
@@ -555,7 +568,7 @@ class OrangeCanvasDlg(QMainWindow):
 
 
     def menuItemCanvasOptions(self):
-        dlg = orngDlgs.CanvasOptionsDlg(self, None)
+        dlg = orngDlgs.CanvasOptionsDlg(self, self)
 
         if dlg.exec_() == QDialog.Accepted:
             if self.settings["snapToGrid"] != dlg.settings["snapToGrid"]:
@@ -618,7 +631,7 @@ class OrangeCanvasDlg(QMainWindow):
                 orngTabs.constructCategoriesPopup(self)
 
     def menuItemAddOns(self):
-        dlg = orngDlgs.AddOnManagerDialog(self, None)
+        dlg = orngDlgs.AddOnManagerDialog(self, self)
         if dlg.exec_() == QDialog.Accepted:
             for (id, addOn) in dlg.addOnsToRemove.items():
                 try:
@@ -727,8 +740,13 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.reportWindow.removeTemp()
         
+        size = self.geometry().size()
+        self.settings["canvasWidth"] = size.width()
+        self.settings["canvasHeight"] = size.height()
+        self.settings["CanvasMainWindowGeometry"] = str(self.saveGeometry())
+        
         self.saveSettings()
-
+        
 
     def setCaption(self, caption=""):
         if caption:
