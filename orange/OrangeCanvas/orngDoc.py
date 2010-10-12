@@ -737,7 +737,7 @@ if __name__ == "__main__":
 
     def keyPressEvent(self, e):
         self.ctrlPressed = int(e.modifiers()) & Qt.ControlModifier != 0
-        if e.key() > 127:
+        if e.key() > 127 or e.key() < 0:
             #e.ignore()
             QWidget.keyPressEvent(self, e)
             return
