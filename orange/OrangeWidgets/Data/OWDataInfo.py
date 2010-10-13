@@ -41,6 +41,8 @@ class OWDataInfo(OWWidget):
         OWGUI.rubber(self.controlArea)
         self.resize(200, 200)
         
+        self.loadSettings()
+        
         
     def data(self, data):
         if data:
