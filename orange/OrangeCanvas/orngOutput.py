@@ -10,6 +10,12 @@ from time import localtime
 import traceback
 import os.path, os
 
+try:
+    __IPYTHON__  #We are running orange from ipython - it already has redirected sys.stdout
+    __DISABLE_OUTPUT__ = True
+except NameError:
+    __DISABLE_OUTPUT__ = False
+    
 class OutputWindow(QDialog):
     def __init__(self, canvasDlg, *args):
         QDialog.__init__(self, None, Qt.Window)
@@ -34,8 +40,8 @@ class OutputWindow(QDialog):
         w = h = 500
         if canvasDlg.settings.has_key("outputWindowPos"):
             desktop = qApp.desktop()
-            deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
-            deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
+            deskH = desktop.availableGeometry(self).height()
+            deskW = desktop.availableGeometry(self).width()
             w, h, x, y = canvasDlg.settings["outputWindowPos"]
             if x >= 0 and y >= 0 and deskH >= y+h and deskW >= x+w: 
                 self.move(QPoint(x, y))
@@ -74,10 +80,14 @@ class OutputWindow(QDialog):
             self.hide()
 
     def catchException(self, catch):
+        if __DISABLE_OUTPUT__:
+            return
         if catch: sys.excepthook = self.exceptionHandler
         else:     sys.excepthook = self.defaultExceptionHandler
 
     def catchOutput(self, catch):
+        if __DISABLE_OUTPUT__:
+            return 
         if catch:    sys.stdout = self
         else:         sys.stdout = self.defaultSysOutHandler
 
