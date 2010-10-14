@@ -1,4 +1,4 @@
-@import url("basic.css");
+@import url("default.css");
 
 a, a:link, a:visited, a:hover, a:focus, a.active {
 	color: #2f31ff; /*#f95503;*/ /*#0e6cde; */
@@ -142,6 +142,9 @@ div.related:first-child {
 div.document {
     background-color: #ffffff;
     color: #000000;
+}
+
+div.bodywrapper {
     margin-left: 230px;
 }
 
@@ -285,6 +288,22 @@ H1, H2, H3 {
     clear: none;
 }
 
+div.body h1, div.body h2, div.body h3 {
+    text-aligh:left;
+    padding: 0 0 0 0;
+    border-bottom: 2px #fffff solid;
+    font-family: Verdana;
+	font-size: 11px;
+	font-weight: bold;
+	width: 204px;
+	vertical-align: middle;
+}
+
+div.body h1 {
+   	border-bottom: 2px #fe6612 solid;
+}
+
+
 P.section { font-weight: bold }
 
 DL.attributes DT { font-family: monospace; font-weight: bold; margin-top: 1em }
@@ -325,6 +344,10 @@ div.document {
     padding-left: 5px
 }
 
+div.documentwrapper {
+    float: none;
+}
+
 div.footer {
     text-align: right;
 }
@@ -341,7 +364,6 @@ div.sphinxsidebar {
     font-size: 90%;
     margin-left: 0;
     text-align: left;
-    border-right: 1px solid #FFECE3;
 }
 
 div.sphinxsidebar ul {
@@ -370,8 +392,27 @@ div.sphinxsidebar input {
     font-size: 1em;
 }
 
+div.sphinxsidebar h3 a{
+    color: #2F31FF;
+}
+
 img {
     border: 0;
+}
+
+div#sidebarbutton {
+    background-color: #EEEEEE;
+    color: black;
+    border-left: 1px solid #FFECE3;
+    border-right: 1px solid #FFECE3;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding-top: 1px;
+    width: 10px;
+}
+
+div #sidebarbutton:hover {
+	background-color: #CCCCCC;
 }
 
 
