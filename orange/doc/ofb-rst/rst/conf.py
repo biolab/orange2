@@ -99,7 +99,7 @@ html_theme = 'orange_theme'
 html_theme_options = {"collapsiblesidebar": "true"}
 
 if html_theme == "orange_theme":
-    html_theme_options.update({"orangeheaderfooter": "true"})
+    html_theme_options.update({"orangeheaderfooter": "false"})
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ["./"]
