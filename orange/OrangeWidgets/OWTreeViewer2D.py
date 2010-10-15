@@ -226,6 +226,7 @@ class TreeGraphicsView(QGraphicsView):
 #        except Exception, ex:
 #            print ex
         self.viewport().setMouseTracking(True)
+        self.setFocusPolicy(Qt.WheelFocus)
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.TextAntialiasing)
         self.setRenderHint(QPainter.HighQualityAntialiasing)

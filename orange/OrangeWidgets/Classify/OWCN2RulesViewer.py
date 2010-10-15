@@ -20,6 +20,7 @@ class MyCanvasView(QGraphicsView):
         self.brush=QBrush(QColor("lightGray").light(112))
         self.lastIndex=-1
         self.flag=False
+        self.setFocusPolicy(Qt.WheelFocus)
 
     def mouseMoveEvent(self,e):
         self.flag=True

@@ -487,6 +487,7 @@ class DendrogramView(QGraphicsView):
         apply(QGraphicsView.__init__, (self,)+args)
         self.viewport().setMouseTracking(True)
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.setFocusPolicy(Qt.WheelFocus)
 
     def resizeEvent(self, e):
         QGraphicsView.resizeEvent(self,e)

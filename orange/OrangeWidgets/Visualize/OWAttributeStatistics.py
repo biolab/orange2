@@ -60,6 +60,7 @@ class OWAttributeStatistics(OWWidget):
         self.canvas.canvasW, self.canvas.canvasH = self.cw, self.ch
         self.canvasview = QGraphicsView(self.canvas, self.mainArea)
         self.canvasview.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.canvasview.setFocusPolicy(Qt.WheelFocus)
         self.mainArea.layout().addWidget( self.canvasview )
 
         self.icons = self.createAttributeIconDict()
@@ -128,7 +129,7 @@ class OWAttributeStatistics(OWWidget):
 
 
     def saveToFileCanvas(self):
-        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg = OWChooseImageSizeDlg(self.canvas, parent=self)
         sizeDlg.exec_()
 
     def sendReport(self):

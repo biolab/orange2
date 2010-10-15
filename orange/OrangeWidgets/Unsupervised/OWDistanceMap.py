@@ -34,6 +34,7 @@ class EventfulGraphicsView(QGraphicsView):
         self.master = master
 #        self.setRenderHints(QPainter.Antialiasing)
         self.viewport().setMouseTracking(True)
+        self.setFocusPolicy(Qt.WheelFocus)
 
 class EventfulGraphicsScene(QGraphicsScene):
     def __init__(self, master):

@@ -22,6 +22,7 @@ class IntGraphView(QGraphicsView):
         QGraphicsView.__init__(self, *args)
         self.parent = parent
         self.name = name
+        self.setFocusPolicy(Qt.WheelFocus)
 
     def sizeHint(self):
         return QSize(200,200)

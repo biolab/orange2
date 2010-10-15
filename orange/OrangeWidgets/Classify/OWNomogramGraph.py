@@ -1372,6 +1372,7 @@ class OWNomogramHeader(QGraphicsView):
         QGraphicsView.__init__(self,canvas, mainArea)
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
+        self.setFocusPolicy(Qt.WheelFocus)
         self.mouseOverObject = None
 
     def resizeEvent(self, event):
@@ -1403,6 +1404,7 @@ class OWNomogramGraph(QGraphicsView):
         self.mouseOverObject = None
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
+        self.setFocusPolicy(Qt.WheelFocus)
         self.bDragging = False
         self.resizing = False
 
