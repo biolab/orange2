@@ -182,10 +182,14 @@ class VizRank:
         # 1 - set to N / c
         self.kValueFormula = 1
         self.autoSetTheKValue = 1       # automatically set the value k
+        
+        self.saveEvaluationResults = 0
+        self.evaluationResults = {}
 
 
     def clearResults(self):
         self.results = []
+        self.evaluationResults = {}
         self.evaluationData = {}    # clear all previous data about tested permutations and stuff
         self.evaluationData["triedCombinations"] = {}
 
@@ -496,7 +500,10 @@ class VizRank:
         s = sum([currentClassDistribution[index] for index in classes])
 
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
-
+        
+        if self.saveEvaluationResults:
+            self.evaluationResults[val/max(1, float(s))] = results
+        
         return val/max(1, float(s)), (acc, prediction, list(currentClassDistribution))
 
 
