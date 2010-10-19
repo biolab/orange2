@@ -32,64 +32,164 @@ else:
     extra_link_args = []
     
 define_macros=[('NDEBUG', '1'),
-               ('HAVE_STRFTIME', None)],
-
-
-#re_defvectors = re.compile(r"^\tpython \.\./pyxtract/defvectors\.py.*$")
-#re_pyprops = re.compile(r"^\tpython \.\./pyxtract/pyprops\.py.*$")
-#re_pyextract = re.compile(r"\tpython \.\./pyxtract/pyxtract\.py.*$")
-
-class LibShared(Extension):
-    def __init__(self, name, *args, **kwargs):
-        Extension.__init__(self, name, *args, **kwargs)
+               ('HAVE_STRFTIME', None)]
         
 class LibStatic(Extension):
     pass
+
+class PyXtractExtension(Extension):
+    def __init__(self, *args, **kwargs):
+        for name, default in [("extra_pyxtract_cmds", []), ("lib_type", "dynamic")]:
+            setattr(self, name, kwargs.get(name, default))
+            if name in kwargs:    
+                del kwargs[name]
+            
+        Extension.__init__(self, *args, **kwargs)
         
-class pyextract_build_ext(build_ext):
+class PyXtractSharedExtension(PyXtractExtension):
+    pass
+        
+class pyxtract_build_ext(build_ext):
     
-    def run_pyextract(self, ext, dir):
+    def run_pyxtract(self, ext, dir):
         original_dir = os.path.realpath(os.path.curdir)
-        log.info("running pyextract for %s" % ext.name)
+        log.info("running pyxtract for %s" % ext.name)
         try:
             os.chdir(dir)
             ## we use the commands which are used for building under windows
+            pyxtract_cmds = [cmd.split() for cmd in getattr(ext, "extra_pyxtract_cmds", [])]
             if os.path.exists("_pyxtract.bat"): 
-                pyextract_cmds = open("_pyxtract.bat").read().strip().splitlines()
-                for cmd in pyextract_cmds:
-#                    print " ".join([sys.executable] + cmd.split()[1:])
-                    check_call([sys.executable] + cmd.split()[1:])
-                    ext.include_dirs.append(os.path.join(dir, "ppp"))
-                    ext.include_dirs.append(os.path.join(dir, "px"))
+                pyxtract_cmds.extend([cmd.split()[1:] for cmd in open("_pyxtract.bat").read().strip().splitlines()])
+            for cmd in pyxtract_cmds:
+                log.info(" ".join([sys.executable] + cmd))
+                check_call([sys.executable] + cmd)
+            if pyxtract_cmds:
+                ext.include_dirs.append(os.path.join(dir, "ppp"))
+                ext.include_dirs.append(os.path.join(dir, "px"))
 
         finally:
             os.chdir(original_dir)
         
     def finalize_options(self):
         build_ext.finalize_options(self)
-        self.library_dirs.append(self.build_lib) # add the build lib dir (for liborange_include
+        self.library_dirs.append(self.build_lib) # add the build lib dir (for liborange_include)
         
-    def build_extension(self, ext):
-        dir = os.path.commonprefix([os.path.split(s)[0] for s in ext.sources])
-        self.run_pyextract(ext, dir)
-        
+    def build_extension(self, ext):        
         if isinstance(ext, LibStatic):
             self.build_static(ext)
-        elif isinstance(ext, LibShared):
-            build_ext.build_extension(self, ext)
-            # Make lib{name}.so link to {name}.so
-            from distutils.file_util import copy_file
-            build_dir = self.build_lib
-            ext_path = self.get_ext_fullpath(ext.name)
-            ext_path, ext_filename = os.path.split(ext_path)
-            try:
-#                copy_file(os.path.join(ext_path, ext_filename), os.path.join(ext_path, "lib"+ext_filename), link="sym")
-                copy_file(ext_filename, os.path.join(ext_path, "lib"+ext_filename), link="sym")
-            except OSError:
-                pass
+        elif isinstance(ext, PyXtractExtension):
+            self.build_pyxtract(ext)
         else:
             build_ext.build_extension(self, ext)
             
+        if isinstance(ext, PyXtractSharedExtension):
+            # Make lib{name}.so link to {name}.so
+            from distutils.file_util import copy_file
+            ext_path = self.get_ext_fullpath(ext.name)
+            ext_path, ext_filename = os.path.split(ext_path)
+            realpath = os.path.realpath(os.curdir)
+            try:
+                os.chdir(ext_path)
+#                copy_file(os.path.join(ext_path, ext_filename), os.path.join(ext_path, "lib"+ext_filename), link="sym")
+                lib_filename = self.compiler.library_filename(ext.name, lib_type=ext.lib_type if sys.platform != "darwin" else "shared")
+                copy_file(ext_filename, lib_filename, link="sym")
+#                copy_file(ext_filename, lib_filename, link="sym")
+            except OSError, ex:
+                log.info("failed to create shared library for %s: %s" % (ext.name, str(ex)))
+            finally:
+                os.chdir(realpath)
+            
+    def build_pyxtract(self, ext):
+        ## mostly copied from build_extension, changed
+        sources = ext.sources
+        if sources is None or type(sources) not in (ListType, TupleType):
+            raise DistutilsSetupError, \
+                  ("in 'ext_modules' option (extension '%s'), " +
+                   "'sources' must be present and must be " +
+                   "a list of source filenames") % ext.name
+        sources = list(sources)
+        
+        ext_path = self.get_ext_fullpath(ext.name)
+#        output_dir, _ = os.path.split(ext_path)
+#        lib_filename = self.compiler.library_filename(ext.name, lib_type='static', output_dir=output_dir)
+        
+        depends = sources + ext.depends
+        if not (self.force or newer_group(depends, ext_path, 'newer')):
+            log.debug("skipping '%s' extension (up-to-date)", ext.name)
+            return
+        else:
+            log.info("building '%s' extension", ext.name)
+
+        # First, scan the sources for SWIG definition files (.i), run
+        # SWIG on 'em to create .c files, and modify the sources list
+        # accordingly.
+        sources = self.swig_sources(sources, ext)
+        
+        # Run pyxtract in dir this adds ppp and px dirs to include_dirs
+        dir = os.path.commonprefix([os.path.split(s)[0] for s in ext.sources])
+        self.run_pyxtract(ext, dir)
+
+        # Next, compile the source code to object files.
+
+        # XXX not honouring 'define_macros' or 'undef_macros' -- the
+        # CCompiler API needs to change to accommodate this, and I
+        # want to do one thing at a time!
+
+        # Two possible sources for extra compiler arguments:
+        #   - 'extra_compile_args' in Extension object
+        #   - CFLAGS environment variable (not particularly
+        #     elegant, but people seem to expect it and I
+        #     guess it's useful)
+        # The environment variable should take precedence, and
+        # any sensible compiler will give precedence to later
+        # command line args.  Hence we combine them in order:
+        extra_args = ext.extra_compile_args or []
+
+        macros = ext.define_macros[:]
+        for undef in ext.undef_macros:
+            macros.append((undef,))
+
+        objects = self.compiler.compile(sources,
+                                         output_dir=self.build_temp,
+                                         macros=macros,
+                                         include_dirs=ext.include_dirs,
+                                         debug=self.debug,
+                                         extra_postargs=extra_args,
+                                         depends=ext.depends)
+
+        # XXX -- this is a Vile HACK!
+        #
+        # The setup.py script for Python on Unix needs to be able to
+        # get this list so it can perform all the clean up needed to
+        # avoid keeping object files around when cleaning out a failed
+        # build of an extension module.  Since Distutils does not
+        # track dependencies, we have to get rid of intermediates to
+        # ensure all the intermediates will be properly re-built.
+        #
+        self._built_objects = objects[:]
+
+        # Now link the object files together into a "shared object" --
+        # of course, first we have to figure out all the other things
+        # that go into the mix.
+        if ext.extra_objects:
+            objects.extend(ext.extra_objects)
+        extra_args = ext.extra_link_args or []
+
+        # Detect target language, if not provided
+        language = ext.language or self.compiler.detect_language(sources)
+
+        self.compiler.link_shared_object(
+            objects, ext_path,
+            libraries=self.get_libraries(ext),
+            library_dirs=ext.library_dirs,
+            runtime_library_dirs=ext.runtime_library_dirs,
+            extra_postargs=extra_args,
+            export_symbols=self.get_export_symbols(ext),
+            debug=self.debug,
+            build_temp=self.build_temp,
+            target_lang=language)
+        
+        
     def build_static(self, ext):
         ## mostly copied from build_extension, changed
         sources = ext.sources
@@ -164,6 +264,12 @@ class pyextract_build_ext(build_ext):
 
         # Detect target language, if not provided
         language = ext.language or self.compiler.detect_language(sources)
+        
+        #first remove old library (ar only appends the contents if archive already exists
+        try:
+            os.remove(lib_filename)
+        except OSError, ex:
+            log.debug("failed to remove obsolete static library %s: %s" %(ext.name, str(ex)))
 
         self.compiler.create_static_lib(
             objects, ext.name, output_dir,
@@ -178,25 +284,32 @@ include_ext = LibStatic("orange_include", get_source_files("source/include/"), i
 
 libraries = ["stdc++", "orange_include"]
 
-orange_ext = LibShared("orange", get_source_files("source/orange/") + get_source_files("source/orange/blas/", "c"),
-                       include_dirs=include_dirs,
-                       extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
-                       extra_link_args = extra_link_args,
-                       libraries=libraries)
+orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/") + get_source_files("source/orange/blas/", "c"),
+                                      include_dirs=include_dirs,
+                                      extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
+                                      extra_link_args = extra_link_args,
+                                      libraries=libraries,
+                                      extra_pyxtract_cmds = ["../pyxtract/defvectors.py"],
+#                                      depends=["orange/ppp/lists"]
+                                      )
 
-orangeom_ext = Extension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
-                         include_dirs=include_dirs + ["source/orange/"],
-                         extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
-                         extra_link_args = extra_link_args,
-                         libraries=libraries# + ["orange"]
-                         )
+orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
+                                  include_dirs=include_dirs + ["source/orange/"],
+                                  extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
+                                  extra_link_args = extra_link_args,
+                                  libraries=libraries,# + ["orange"]
+#                                  depends=["orange/ppp/lists",
+#                                           "orange/ppp/stamp"]
+                                  )
 
-orangene_ext = Extension("orangene", get_source_files("source/orangene/"), 
-                         include_dirs=include_dirs + ["source/orange/"], 
-                         extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
-                         extra_link_args = extra_link_args,
-                         libraries=libraries #+ ["orange"]
-                         )
+orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/"), 
+                                  include_dirs=include_dirs + ["source/orange/"], 
+                                  extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
+                                  extra_link_args = extra_link_args,
+                                  libraries=libraries,# + ["orange"]
+#                                  depends=["orange/ppp/lists",
+#                                           "orange/ppp/stamp"]
+                                  )
 
 corn_ext = Extension("corn", get_source_files("source/corn/"), 
                      include_dirs=include_dirs + ["source/orange/"], 
@@ -215,7 +328,7 @@ statc_ext = Extension("statc", get_source_files("source/statc/"),
 
 pkg_re = re.compile("Orange/(.+?)/__init__.py")
 packages = ["Orange"] + ["Orange." + pkg_re.findall(p)[0] for p in glob.glob("Orange/*/__init__.py")]
-setup(cmdclass={"build_ext": pyextract_build_ext},
+setup(cmdclass={"build_ext": pyxtract_build_ext},
       name ="orange",
       version = "2.0b",
       description = "Orange data mining library for python.",
