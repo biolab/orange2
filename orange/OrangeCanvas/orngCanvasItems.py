@@ -206,7 +206,7 @@ class CanvasWidget(QGraphicsRectItem):
                                                                 _owWarning = canvasDlg.settings["owWarning"], _owError=canvasDlg.settings["owError"],
                                                                 _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"],
                                                                 _category = widgetInfo.category, _settingsFromSchema = widgetSettings)
-        self.instance.__init__(parent=getattr(qApp, "canvasDlg", None), signalManager=signalManager)
+        self.instance.__init__(signalManager=signalManager)
         self.instance.__dict__["widgetInfo"] = widgetInfo
         self.isProcessing = 0   # is this widget currently processing signals
         self.progressBarShown = 0
