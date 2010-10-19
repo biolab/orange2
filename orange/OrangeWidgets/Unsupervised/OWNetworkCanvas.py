@@ -885,6 +885,7 @@ class OWNetworkCanvas(OWGraph):
               #    continue 
               
               if lbl:
+                  vertex.label = lbl
                   mkey = self.addMarker(lbl, float(x1), float(y1), alignment=Qt.AlignBottom, size=self.fontSize)
                   self.markerKeys[vertex.index] = mkey    
                    
