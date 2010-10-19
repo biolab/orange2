@@ -1,0 +1,7 @@
+include *.py *.txt *.c
+
+recursive-include Orange *
+recursive-include OrangeWidgets *
+recursive-include OrangeCanvas *
+recursive-include doc *
+recursive-include source *
