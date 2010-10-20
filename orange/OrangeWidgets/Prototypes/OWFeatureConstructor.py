@@ -8,6 +8,7 @@
 
 from OWWidget import *
 import OWGUI, math, re
+import random
 
 re_identifier = re.compile(r'([a-zA-Z_]\w*)|("[^"]+")')
 
@@ -27,13 +28,24 @@ class IdentifierReplacer:
         return id
 
 class AttrComputer:
+    FUNCTIONS = dict(math.__dict__.items() +\
+                      {"normalvariate": random.normalvariate,
+                      "expovariate": random.expovariate,
+                      "gammavariate": random.gammavariate,
+                      "betavariate": random.betavariate,
+                      "lognormvariate": random.lognormvariate,
+                      "paretovariate": random.paretovariate,
+                      "vonmisesvariate": random.vonmisesvariate,
+                      "weibullvariate": random.weibullvariate,
+                      "triangular": random.triangular,
+                      "uniform": random.uniform}.items())
     def __init__(self, expression):
         self.expression = expression
 
     def __call__(self, ex, weight):
         try:
-            return float(eval(self.expression, math.__dict__, {"_ex": ex}))
-        except:
+            return float(eval(self.expression, self.FUNCTIONS, {"_ex": ex}))
+        except Exception, ex:
             return "?"
 
 class OWFeatureConstructor(OWWidget):
@@ -66,7 +78,7 @@ class OWFeatureConstructor(OWWidget):
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
         self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
-        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sorted(m for m in math.__dict__.keys() if m[:2]!="__"), callback = self.funcListSelected)
+        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sorted(m for m in AttrComputer.FUNCTIONS.keys() if m[:2]!="__"), callback = self.funcListSelected)
 
         hb = OWGUI.widgetBox(db, None, "horizontal", addSpace=True)
         OWGUI.button(hb, self, "Add", callback = self.addAttr)
