@@ -88,10 +88,12 @@ class pyxtract_build_ext(build_ext):
             ext_path = self.get_ext_fullpath(ext.name)
             ext_path, ext_filename = os.path.split(ext_path)
             realpath = os.path.realpath(os.curdir)
+            print realpath, ext_path
             try:
                 os.chdir(ext_path)
 #                copy_file(os.path.join(ext_path, ext_filename), os.path.join(ext_path, "lib"+ext_filename), link="sym")
-                lib_filename = self.compiler.library_filename(ext.name, lib_type=ext.lib_type if sys.platform != "darwin" else "shared")
+                lib_filename = self.compiler.library_filename(ext.name, lib_type="shared")
+                print realpath, ext_path, lib_filename
                 copy_file(ext_filename, lib_filename, link="sym")
 #                copy_file(ext_filename, lib_filename, link="sym")
             except OSError, ex:
@@ -276,6 +278,36 @@ class pyxtract_build_ext(build_ext):
             debug=self.debug,
             target_lang=language)
         
+    if not hasattr(build_ext, "get_ext_fullpath"):
+        #On mac OS X python 2.6.1 distutils does not have this method
+        def get_ext_fullpath(self, ext_name):
+            """Returns the path of the filename for a given extension.
+            
+            The file is located in `build_lib` or directly in the package
+            (inplace option).
+            """
+            import string
+            # makes sure the extension name is only using dots
+            all_dots = string.maketrans('/' + os.sep, '..')
+            ext_name = ext_name.translate(all_dots)
+            fullname = self.get_ext_fullname(ext_name)
+            modpath = fullname.split('.')
+            filename = self.get_ext_filename(ext_name)
+            filename = os.path.split(filename)[-1]
+            if not self.inplace:
+                # no further work needed
+                # returning :
+                #   build_dir/package/path/filename
+                filename = os.path.join(*modpath[:-1] + [filename])
+                return os.path.join(self.build_lib, filename)
+            # the inplace option requires to find the package directory
+            # using the build_py command for that
+            package = '.'.join(modpath[0:-1])
+            build_py = self.get_finalized_command('build_py')
+            package_dir = os.path.abspath(build_py.get_package_dir(package))
+            # returning
+            #   package_dir/filename
+            return os.path.join(package_dir, filename)
 
 def get_source_files(path, ext="cpp"):
     return glob.glob(os.path.join(path, "*." + ext))
@@ -329,12 +361,15 @@ statc_ext = Extension("statc", get_source_files("source/statc/"),
 pkg_re = re.compile("Orange/(.+?)/__init__.py")
 packages = ["Orange"] + ["Orange." + pkg_re.findall(p)[0] for p in glob.glob("Orange/*/__init__.py")]
 setup(cmdclass={"build_ext": pyxtract_build_ext},
-      name ="orange",
-      version = "2.0b",
+      name ="Orange",
+      version = "2.0.0b",
       description = "Orange data mining library for python.",
       author = "Bioinformatics Laboratory, FRI UL",
       author_email = "orange@fri.uni-lj.si",
-      url = "www.ailab.si/orange",
+      maintainer = "Ales Erjavec",
+      maintainer_email = "ales.erjavec@fri.uni-lj.si",
+      url = "http://www.ailab.si/orange",
+      download_url = "http://www.ailab.si/svn/orange/trunk",
       packages = packages + [".",
                              "OrangeCanvas", 
                              "OrangeWidgets", 
@@ -347,7 +382,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext},
                              "OrangeWidgets.Unsupervised",
                              "OrangeWidgets.Visualize",
                              ],
-      package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw"],
+      package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
                       "OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
                       "OrangeWidgets.Associate": ["icons/*.png"],
                       "OrangeWidgets.Classify": ["icons/*.png"],
@@ -356,13 +391,39 @@ setup(cmdclass={"build_ext": pyxtract_build_ext},
                       "OrangeWidgets.Prototypes": ["icons/*.png"],
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
-                      "OrangeWidgets.Visualize": ["icons/*.png"]
+                      "OrangeWidgets.Visualize": ["icons/*.png"],
+                      "doc": ["*.html", "*.htm", "*.txt", "*.py", "*.css", "datasets/*.tab", ]
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
       scripts = ["orange-canvas"],
-      long_description="""Orange data mining library for python.""",
-      classifiers = []
+      keywords = ["data mining", "machine learning", "artificial intelligence"],
+      classifiers = ["Development Status :: 4 - Beta",
+                     "Programming Language :: Python",
+                     "Environment :: Console",
+                     "License :: OSI Approved :: GNU General Public License (GPL)",
+                     "Operating System :: POSIX",
+                     "Operating System :: Microsoft :: Windows",
+                     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+                     "Topic :: Scientific/Engineering :: Visualization",
+                     "Intended Audience :: Education",
+                     "Intended Audience :: Science/Research"
+                     ],
+      long_description="""\
+Orange data mining library
+==========================
+
+Orange is also a scriptable environment for fast prototyping of new
+algorithms and testing schemes. It is a collection of Python-based modules
+that sit over the core library and implement some functionality for
+which execution time is not crucial and which is easier done in Python
+than in C++. This includes a variety of tasks such as pretty-print of
+decision trees, attribute subset, bagging and boosting, and alike.
+
+Orange also includes a set of graphical widgets that use methods from core
+library and Orange modules. Through visual programming, widgets can be assembled
+together into an application by a visual programming tool called Orange Canvas.
+"""
       )
       
 
