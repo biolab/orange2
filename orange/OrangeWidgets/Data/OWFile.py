@@ -69,6 +69,10 @@ class OWFile(OWWidget):
         self.infob = OWGUI.widgetLabel(box, ' ')
         self.warnings = OWGUI.widgetLabel(box, ' ')
         
+        #Set word wrap so long warnings won't expand the widget
+        self.warnings.setWordWrap(True)
+        self.warnings.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
+        
         smallWidget = OWGUI.collapsableWidgetBox(self.controlArea, "Advanced settings", self, "showAdvanced", callback=self.adjustSize0)
         
         box = OWGUI.widgetBox(smallWidget, "Missing Value Symbols")
@@ -100,8 +104,6 @@ class OWFile(OWWidget):
             self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
-        
-        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
     def adjustSize0(self):
         qApp.processEvents()
