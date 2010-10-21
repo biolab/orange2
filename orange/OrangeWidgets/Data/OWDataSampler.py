@@ -66,25 +66,28 @@ class OWDataSampler(OWWidget):
 
         # Random Sampling
         self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Random sampling')
+        
+        # indent 
+        indent = sep=OWGUI.checkButtonOffsetHint(self.s[0])
         # repeat checkbox
-        self.h1Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        self.h1Box = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.checkBox(self.h1Box, self, 'Repeat', 'With replacement', callback=self.settingsChanged)
 
         # specified number of elements checkbox
-        self.h2Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        self.h2Box = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=[self.uCases, self.settingsChanged], spinCallback=self.settingsChanged)
         OWGUI.rubber(self.h2Box)
         
         # percentage slider
-        self.h3Box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        self.h3Box = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.widgetLabel(self.h3Box, "Sample size:")
-        self.slidebox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        self.slidebox = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%", callback=self.settingsChanged)
 
         # Cross Validation
         self.s[1] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Cross validation')
         
-        box = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        box = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=[self.changeCombo, self.settingsChanged])
         OWGUI.rubber(box)
 
@@ -93,7 +96,7 @@ class OWDataSampler(OWWidget):
 
         # Multiple Groups
         self.s[3] = OWGUI.appendRadioButton(self.sBox, self, "SelectType", 'Multiple subsets')
-        gbox = OWGUI.indentedBox(self.sBox, orientation = "horizontal")
+        gbox = OWGUI.indentedBox(self.sBox, sep=indent, orientation = "horizontal")
         OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
 
         # Output Group Box

@@ -103,7 +103,7 @@ class OWNomogram(OWWidget):
                                 addSpace=True,
                                 callback=[lambda:self.verticalSpacingContLabel.setDisabled(not self.contType), self.showNomogram])
 
-        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+        self.verticalSpacingContLabel = OWGUI.spin(OWGUI.indentedBox(self.ContRadio, sep=OWGUI.checkButtonOffsetHint(self.ContRadio.buttons[-1])), self, 'verticalSpacingContinuous', 15, 200, label = "Height", orientation=0, tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
         self.verticalSpacingContLabel.setDisabled(not self.contType)
 
         self.yAxisRadio = OWGUI.radioButtonsInBox(self.controlArea, self, 'yAxis', ['Point scale', 'Log odds ratios'], 'Scale',

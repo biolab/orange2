@@ -64,9 +64,14 @@ class OWContinuize(OWWidget):
 
         bgClassTreatment = OWGUI.widgetBox(self.controlArea, "Discrete class attribute")
         self.ctreat = OWGUI.radioButtonsInBox(bgClassTreatment, self, "classTreatment", btnLabels=[x[0] for x in self.classTreats], callback=self.sendDataIf)
-        hbox = OWGUI.widgetBox(bgClassTreatment, orientation = "horizontal")
-        OWGUI.separator(hbox, 19, 4)
+#        hbox = OWGUI.widgetBox(bgClassTreatment, orientation = "horizontal")
+#        OWGUI.separator(hbox, 19, 4)
+        hbox = OWGUI.indentedBox(bgClassTreatment, sep=OWGUI.checkButtonOffsetHint(self.ctreat.buttons[-1]), orientation="horizontal")
         self.cbTargetValue = OWGUI.comboBox(hbox, self, "targetValue", label="Target Value ", items=[], orientation="horizontal", callback=self.cbTargetSelected)
+        def setEnabled(*args):
+            self.cbTargetValue.setEnabled(self.classTreatment == 3)
+        self.connect(self.ctreat.group, SIGNAL("buttonClicked(int)"), setEnabled)
+        setEnabled() 
 
         self.controlArea.layout().addSpacing(4)
 
@@ -163,7 +168,8 @@ if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWContinuize()
     #data = orange.ExampleTable("d:\\ai\\orange\\test\\iris")
-    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+#    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    data = orange.ExampleTable("../../doc/datasets/iris.tab")
     ow.setData(data)
     ow.show()
     a.exec_()

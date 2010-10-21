@@ -168,8 +168,8 @@ class OWSelectData(OWWidget):
 
         boxSettings = OWGUI.widgetBox(self, 'Commit', addToLayout = 0)
         grid.addWidget(boxSettings, 3,2)
-        OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
-        self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
+        cb = OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
+        self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(cb)), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Commit on change", box=None)
         btnUpdate = OWGUI.button(boxSettings, self, "Commit", self.setOutput)
 

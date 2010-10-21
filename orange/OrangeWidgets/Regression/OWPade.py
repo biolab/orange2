@@ -69,7 +69,7 @@ class OWPade(OWWidget):
         OWGUI.separator(self.controlArea)
         
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", self.outputTypes, box="Output class", callback=self.dimensionsChanged)
-        self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
+        self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(box.buttons[-1])), self, "outputAttr", callback=self.outputDiffChanged)
         
         OWGUI.separator(self.controlArea)
         
@@ -80,6 +80,9 @@ class OWPade(OWWidget):
         OWGUI.checkBox(box, self, "originalAsMeta", label="Original class attribute")
 
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
+        
+        self.contAttributes = []
+        self.dimensions = []
 
         #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
         #self.setFixedWidth(self.sizeHint().width())

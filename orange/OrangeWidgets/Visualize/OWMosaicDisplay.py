@@ -195,8 +195,8 @@ class OWMosaicDisplay(OWWidget):
         self.box8 = OWGUI.widgetBox(self.SettingsTab, "Boxes in Cells", addSpace = 1)
         OWGUI.hSlider(self.box8, self, 'boxSize', label = "Size: ", minValue=1, maxValue=15, step=1, callback = self.updateGraph, tooltip = "What is the size of the boxes on the left and right edge of each cell?")
         OWGUI.checkBox(self.box8, self, 'showSubsetDataBoxes', 'Show class distribution of subset data', callback = self.updateGraph, tooltip = "Show small boxes at right (or bottom) edge of cells to represent class distribution of examples from example subset input.")
-        OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use boxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
-        indBox = OWGUI.indentedBox(self.box8)
+        cb = OWGUI.checkBox(self.box8, self, 'useBoxes', 'Use boxes on left to show...', callback = self.updateGraph, tooltip = "Show small boxes at left (or top) edge of cells to represent additional information.")
+        indBox = OWGUI.indentedBox(self.box8, sep=OWGUI.checkButtonOffsetHint(cb))
         OWGUI.comboBox(indBox, self, 'showAprioriDistributionBoxes', items = self.subboxesOpts, tooltip = "Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).", callback = self.updateGraph)
 
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", addSpace = 1)
@@ -787,7 +787,7 @@ class OWMosaicDisplay(OWWidget):
             xOffset += distance + self.names[i].boundingRect().width()
 
     def saveToFileCanvas(self):
-        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvas)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvas, parent=self)
         sizeDlg.exec_()
 
     def setColors(self):
@@ -923,7 +923,8 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow = OWMosaicDisplay()
     ow.show()
-    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
+#    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
+    data = orange.ExampleTable("../../doc/datasets/zoo.tab")
     ow.setData(data)
     ow.handleNewSignals()
 #    for d in ["zoo.tab", "iris.tab", "zoo.tab"]:

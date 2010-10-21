@@ -480,7 +480,7 @@ class OWDistributions(OWWidget):
 
         box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
-        self.targetQCB = OWGUI.comboBox(OWGUI.indentedBox(box5), self, "targetValue", label="Target value", valueType=int, callback=self.setTarget)
+        self.targetQCB = OWGUI.comboBox(OWGUI.indentedBox(box5, sep=OWGUI.checkButtonOffsetHint(self.showProb)), self, "targetValue", label="Target value", valueType=int, callback=self.setTarget)
 
         box6 = OWGUI.widgetBox(box5, orientation = "horizontal")
 

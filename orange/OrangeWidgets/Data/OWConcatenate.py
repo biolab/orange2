@@ -34,9 +34,10 @@ class OWConcatenate(OWWidget):
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Intersection of attributes in all tables")
         OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
 
+        OWGUI.separator(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Data source IDs")
         cb = OWGUI.checkBox(box, self, "dataSourceSelected", "Append data source IDs")
-        self.classificationBox = ib = OWGUI.widgetBox(box)
+        self.classificationBox = ib = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(cb))
         le = OWGUI.lineEdit(ib, self, "dataSourceName", "Name" + "  ", orientation='horizontal', valueType = str)
         OWGUI.separator(ib, height = 4)
         aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 'horizontal', items = ["Class attribute", "Attribute", "Meta attribute"])
@@ -179,4 +180,13 @@ class OWConcatenate(OWWidget):
         if not self.additional:
             self.reportData(None, "Additional table")
         self.reportData(self.dataReport, "Merged data")
+        
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    w = OWConcatenate()
+    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+    w.setData(data)
+    w.setMoreData(data, 0)
+    w.show()
+    app.exec_()
 

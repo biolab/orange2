@@ -95,6 +95,7 @@ class OWNaiveBayes(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Apply", orientation=1)
         applyButton = OWGUI.button(box, self, "&Apply", callback=self.applyLearner)
 
+        OWGUI.rubber(self.controlArea)
         self.refreshControls()
         self.applyLearner()
 

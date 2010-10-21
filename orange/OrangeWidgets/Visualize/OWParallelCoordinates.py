@@ -98,8 +98,10 @@ class OWParallelCoordinates(OWVisWidget):
         box = OWGUI.widgetBox(self.SettingsTab, "Axis Distance")
         resizeColsBox = OWGUI.widgetBox(box, 0, "horizontal", 0)
         OWGUI.label(resizeColsBox, self, "Increase/decrease distance: ")
-        OWGUI.button(resizeColsBox, self, "+", self.increaseAxesDistance, tooltip = "Increase the distance between the axes", width=30, height = 20)
-        OWGUI.button(resizeColsBox, self, "-", self.decreaseAxesDistance, tooltip = "Decrease the distance between the axes", width=30, height = 20)
+        b = OWGUI.toolButton(resizeColsBox, self, self.increaseAxesDistance, tooltip = "Increase the distance between the axes", width=30, height = 20)
+        b.setText("+")
+        b = OWGUI.toolButton(resizeColsBox, self, self.decreaseAxesDistance, tooltip = "Decrease the distance between the axes", width=30, height = 20)
+        b.setText("-")
         OWGUI.rubber(resizeColsBox)
         OWGUI.checkBox(box, self, "graph.autoUpdateAxes", "Auto scale X axis", tooltip = "Auto scale X axis to show all visualized attributes", callback = self.updateGraph)
 

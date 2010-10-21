@@ -166,7 +166,7 @@ class OWDataTable(OWWidget):
         self.cbShowAttLbls = OWGUI.checkBox(boxSettings, self, "showAttributeLabels", 'Show attribute labels (if any)', callback = self.cbShowAttLabelsClicked)
         self.cbShowAttLbls.setEnabled(True)
         self.cbShowDistributions = OWGUI.checkBox(boxSettings, self, "showDistributions", 'Visualize continuous values', callback = self.cbShowDistributions)
-        colBox = OWGUI.indentedBox(boxSettings, orientation = "horizontal")
+        colBox = OWGUI.indentedBox(boxSettings, sep=OWGUI.checkButtonOffsetHint(self.cbShowDistributions), orientation = "horizontal")
         OWGUI.widgetLabel(colBox, "Color: ")
         self.colButton = OWGUI.toolButton(colBox, self, self.changeColor, width=20, height=20, debuggingEnabled = 0)
         OWGUI.rubber(colBox)

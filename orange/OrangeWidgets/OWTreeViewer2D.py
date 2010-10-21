@@ -424,7 +424,7 @@ class OWTreeViewer2D(OWWidget):
                                      checkCallback=self.toggleNodeSize,
                                      spinCallback=self.toggleNodeSize,
                                      step=10)
-        b = OWGUI.checkBox(OWGUI.indentedBox(NodeTab), self, "TruncateText", "Truncate text", callback=self.toggleTruncateText)
+        b = OWGUI.checkBox(OWGUI.indentedBox(NodeTab, sep=OWGUI.checkButtonOffsetHint(cb)), self, "TruncateText", "Truncate text", callback=self.toggleTruncateText)
         cb.disables.append(b)
         cb.makeConsistent() 
 #        w = OWGUI.widgetBox(NodeTab, orientation="horizontal")

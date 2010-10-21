@@ -36,7 +36,7 @@ class OWPurgeDomain(OWWidget):
         OWGUI.checkBox(boxAt, self, 'sortValues', 'Sort attribute values', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeAttributes", "Remove attributes with less than two values", callback = self.removeAttributesChanged)
 
-        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt), self, "removeValues", "Remove unused attribute values", callback = self.optionsChanged)
+        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt, sep=OWGUI.checkButtonOffsetHint(rua)), self, "removeValues", "Remove unused attribute values", callback = self.optionsChanged)
         rua.disables = [ruv]
         rua.makeConsistent()
 
@@ -44,7 +44,7 @@ class OWPurgeDomain(OWWidget):
         boxAt = OWGUI.widgetBox(self.controlArea, "Classes", addSpace=True)
         OWGUI.checkBox(boxAt, self, 'sortClasses', 'Sort classes', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeClassAttribute", "Remove class attribute if there are less than two classes", callback = self.removeClassesChanged)
-        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt), self, "removeClasses", "Remove unused class values", callback = self.optionsChanged)
+        ruv = OWGUI.checkBox(OWGUI.indentedBox(boxAt, sep=OWGUI.checkButtonOffsetHint(rua)), self, "removeClasses", "Remove unused class values", callback = self.optionsChanged)
         rua.disables = [ruv]
         rua.makeConsistent()
 

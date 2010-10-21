@@ -356,7 +356,7 @@ class OWSieveDiagram(OWWidget):
             temp += dist
 
     def saveToFileCanvas(self):
-        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg = OWChooseImageSizeDlg(self.canvas, parent=self)
         sizeDlg.exec_()
 
     def closeEvent(self, ce):

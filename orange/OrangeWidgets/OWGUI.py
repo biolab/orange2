@@ -1908,4 +1908,11 @@ class VisibleHeaderSectionContextEventFilter(QObject):
             return True
         
         return False
+    
+def checkButtonOffsetHint(button, style=None):
+    option = QStyleOptionButton()
+    option.initFrom(button)
+    if style is None:
+        style = button.style()
+    return style.subElementRect(QStyle.SE_CheckBoxIndicator, option, button).width() - 3 #TODO: the '3' constant might be platform specific. Check other systems!
                 

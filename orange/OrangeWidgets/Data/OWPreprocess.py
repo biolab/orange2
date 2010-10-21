@@ -263,7 +263,7 @@ class DiscretizeEditor(BaseEditor):
         rb = OWGUI.radioButtonsInBox(self, self, "discInd", [], box="Discretize", callback=self.onChange)
         for label, _, _ in self.DISCRETIZERS[:-1]:
             OWGUI.appendRadioButton(rb, self, "discInd", label)
-        self.sliderBox = OWGUI.widgetBox(OWGUI.indentedBox(rb), "Num. of intervals (for equal width/frequency)")
+        self.sliderBox = OWGUI.widgetBox(OWGUI.indentedBox(rb, sep=OWGUI.checkButtonOffsetHint(rb.buttons[-1])), "Num. of intervals (for equal width/frequency)")
         OWGUI.hSlider(self.sliderBox, self, "numberOfIntervals", callback=self.onChange, minValue=1)
         OWGUI.appendRadioButton(rb, self, "discInd", self.DISCRETIZERS[-1][0])
         OWGUI.rubber(rb)
