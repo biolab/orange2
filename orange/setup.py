@@ -397,6 +397,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext},
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
       scripts = ["orange-canvas"],
+      license = "GNU General Public License (GPL)",
       keywords = ["data mining", "machine learning", "artificial intelligence"],
       classifiers = ["Development Status :: 4 - Beta",
                      "Programming Language :: Python",
@@ -413,7 +414,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext},
 Orange data mining library
 ==========================
 
-Orange is also a scriptable environment for fast prototyping of new
+Orange is a scriptable environment for fast prototyping of new
 algorithms and testing schemes. It is a collection of Python-based modules
 that sit over the core library and implement some functionality for
 which execution time is not crucial and which is easier done in Python

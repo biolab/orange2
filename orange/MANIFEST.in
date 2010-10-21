@@ -5,3 +5,5 @@ recursive-include OrangeWidgets *
 recursive-include OrangeCanvas *
 recursive-include doc *
 recursive-include source *
+prune source/*/px
+prune source/*/ppp
