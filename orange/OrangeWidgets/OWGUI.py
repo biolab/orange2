@@ -78,7 +78,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     return b
 
 def indentedBox(widget, sep=20, orientation = True, addSpace=False):
-    r = widgetBox(widget, orientation = "horizontal")
+    r = widgetBox(widget, orientation = "horizontal", spacing=0)
     separator(r, sep, 0)
 
     if addSpace and isinstance(addSpace, bool):
@@ -1914,5 +1914,14 @@ def checkButtonOffsetHint(button, style=None):
     option.initFrom(button)
     if style is None:
         style = button.style()
-    return style.subElementRect(QStyle.SE_CheckBoxIndicator, option, button).width() - 3 #TODO: the '3' constant might be platform specific. Check other systems!
+    if isinstance(button, QCheckBox):
+        pm_spacing = QStyle.PM_CheckBoxLabelSpacing
+        pm_indicator_width = QStyle.PM_IndicatorWidth
+    else:
+        pm_spacing = QStyle.PM_RadioButtonLabelSpacing
+        pm_indicator_width = QStyle.PM_ExclusiveIndicatorWidth
+    space = style.pixelMetric(pm_spacing, option, button)
+    width = style.pixelMetric(pm_indicator_width, option, button)
+    style_correction = {"macintosh (aqua)": -2, "macintosh(aqua)": -2, "plastique": 1, "cde": 1, "motif": 1} #TODO: add other styles (Maybe load corrections from .cfg file?)
+    return space + width + style_correction.get(str(qApp.style().objectName()).lower(), 0)
                 
