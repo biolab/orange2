@@ -27,7 +27,7 @@ class SchemaDoc(QWidget):
         self.setLayout(QVBoxLayout())
         #self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvas = QGraphicsScene()
-        oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 1.0, 1.0)) # inital item so sceneRect always contains QPoint(0, 0)
+        oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 300.0, 300.0)) # inital item so sceneRect always contains QPoint(0, 0)
         self.canvas.sceneRect() # call scene rect so int calculates the rect 
         self.canvas.removeItem(oneItem)
         

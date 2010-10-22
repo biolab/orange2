@@ -172,10 +172,14 @@ class SchemaView(QGraphicsView):
             item.setSelected(0)
 
     def getItemsAtPos(self, pos, itemType = None):
-        if type(pos) == QPointF:
-            pos = QGraphicsRectItem(QRectF(pos, QSizeF(1,1)))
-        items = self.scene().collidingItems(pos)
-        if itemType != None:
+        if isinstance(pos, QGraphicsItem):
+            items = self.scene().collidingItems(pos)
+        else:
+            items = self.scene().items(pos)
+#        if type(pos) == QPointF:
+#            pos = QGraphicsRectItem(QRectF(pos, QSizeF(1,1)))
+#        items = self.scene().collidingItems(pos)
+        if itemType is not None:
             items = [item for item in items if type(item) == itemType]
         return items
 
@@ -217,7 +221,8 @@ class SchemaView(QGraphicsView):
         activeItem = items[0] if items else None
         if not activeItem:
             self.tempWidget = None
-            self.widgetSelectionRect = QGraphicsRectItem(QRectF(self.mouseDownPosition, self.mouseDownPosition), None, self.scene())
+            rect = self.maxSelectionRect(QRectF(self.mouseDownPosition, self.mouseDownPosition))
+            self.widgetSelectionRect = QGraphicsRectItem(rect, None, self.scene())
             self.widgetSelectionRect.setPen(QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap))
             self.widgetSelectionRect.setBrush(QBrush(QColor(168, 202, 236, 192)))
             self.widgetSelectionRect.setZValue(-100)
@@ -266,17 +271,20 @@ class SchemaView(QGraphicsView):
     # mouse button was pressed and mouse is moving ######################
     def mouseMoveEvent(self, ev):
         point = self.mapToScene(ev.pos())
-
         if self.bWidgetDragging:
             for item in self.getSelectedWidgets():
                 newPos = item.oldPos + (point-self.mouseDownPosition)
                 item.setCoords(newPos.x(), newPos.y())
+            self.ensureVisible(QRectF(point, point + QPointF(1, 1)))
 
         elif self.tempLine:
             self.tempLine.updateLinePos(point)
+            self.ensureVisible(QRectF(point, point + QPointF(1, 1)))
 
         elif self.widgetSelectionRect:
-            self.widgetSelectionRect.setRect(QRectF(self.mouseDownPosition, point).normalized())            
+            selectionRect = self.maxSelectionRect(QRectF(self.mouseDownPosition, point).normalized())
+            self.widgetSelectionRect.setRect(selectionRect)
+            self.ensureVisible(QRectF(point, point + QPointF(1, 1)))
 
             # select widgets in rectangle
             widgets = self.getItemsAtPos(self.widgetSelectionRect, orngCanvasItems.CanvasWidget)
@@ -284,7 +292,6 @@ class SchemaView(QGraphicsView):
                 widget.setSelected(widget in widgets)
 
 #        self.scene().update()
-        
         return QGraphicsView.mouseMoveEvent(self, ev)
 
 
@@ -293,6 +300,7 @@ class SchemaView(QGraphicsView):
         point = self.mapToScene(ev.pos())
         if self.widgetSelectionRect:
             self.widgetSelectionRect.hide()
+            self.scene().removeItem(self.widgetSelectionRect)
             self.widgetSelectionRect = None
 
         # if we are moving a widget
@@ -364,7 +372,7 @@ class SchemaView(QGraphicsView):
                     newWidget = self.doc.addWidget(action.widgetInfo, point.x(), point.y())
                     
 
-#        self.scene().update()
+        self.scene().update()
         self.bWidgetDragging = False
 #        self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
         return QGraphicsView.mouseReleaseEvent(self, ev)
@@ -418,5 +426,14 @@ class SchemaView(QGraphicsView):
     # return number of items in "items" of type "type"
     def findItemTypeCount(self, items, Type):
         return sum([type(item) == Type for item in items])
-
+    
+    def maxSelectionRect(self, rect, penWidth=1):
+        b_rect = self.scene().sceneRect() #.adjusted(-5, -5, 5, 5)
+        minSize = self.viewport().size()
+        minGeom = self.mapToScene(QRect(QPoint(0, 0), minSize)).boundingRect()
+        sceneRect = minGeom.united(b_rect)
+        return rect.intersected(sceneRect).adjusted(penWidth, penWidth, -penWidth, -penWidth)
+#        
+#    def resizeEvent(self, event):
+#        self.updateSceneRect()
 
