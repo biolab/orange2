@@ -77,21 +77,23 @@ class OWKMeans(OWWidget):
         # GUI definition
         # settings
         
-        box = OWGUI.widgetBox(self.controlArea, "Clusters (k)", addSpace=True)
+        box = OWGUI.widgetBox(self.controlArea, "Clusters (k)", addSpace=True, spacing=0)
+        left, top, right, bottom = box.getContentsMargins()
+#        box.setContentsMargins(left, 0, right, 0)
         bg = OWGUI.radioButtonsInBox(box, self, "optimized", [], callback=self.setOptimization)
-        fixedBox = OWGUI.widgetBox(box, orientation="horizontal")
+        fixedBox = OWGUI.widgetBox(box, orientation="horizontal", margin=0, spacing=bg.layout().spacing())
         button = OWGUI.appendRadioButton(bg, self, "optimized", "Fixed", 
                                          insertInto=fixedBox, tooltip="Fixed number of clusters")
+        button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        fixedBox.layout().setAlignment(button, Qt.AlignLeft)
         self.fixedSpinBox = OWGUI.spin(OWGUI.widgetBox(fixedBox), self, "K", min=2, max=30, tooltip="Fixed number of clusters",
                                        callback=self.update, callbackOnReturn=True)
-        OWGUI.rubber(fixedBox)
         
-        optimizedBox = OWGUI.widgetBox(box)
+        optimizedBox = OWGUI.widgetBox(box, margin=0, spacing=bg.layout().spacing())
         button = OWGUI.appendRadioButton(bg, self, "optimized", "Optimized", insertInto=optimizedBox)
-        option = QStyleOptionButton()
-        option.initFrom(button)
-        box = OWGUI.indentedBox(optimizedBox, qApp.style().subElementRect(QStyle.SE_CheckBoxIndicator,
-                                                                           option, button).width() - 3)
+        
+        box = OWGUI.indentedBox(optimizedBox, sep=OWGUI.checkButtonOffsetHint(button))
+        box.layout().setSpacing(0)
         self.optimizationBox = box
         OWGUI.spin(box, self, "optimizationFrom", label="From", min=2, max=99,
                    tooltip="Minimum number of clusters to try", callback=self.updateOptimizationFrom, callbackOnReturn=True)
@@ -120,7 +122,7 @@ class OWKMeans(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Cluster IDs", addSpace=True)
         cb = OWGUI.checkBox(box, self, "classifySelected", "Append cluster indices")
-        box = OWGUI.indentedBox(box)
+        box = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(cb))
         form = QWidget()
         le = OWGUI.lineEdit(form, self, "classifyName", None, #"Name" + "  ",
                             orientation="horizontal", #controlWidth=100, 
@@ -142,6 +144,9 @@ class OWKMeans(OWWidget):
 #        le.setFixedWidth(cc.sizeHint().width())
         form.setLayout(layout)
         box.layout().addWidget(form)
+        left, top, right, bottom = layout.getContentsMargins()
+        layout.setContentsMargins(0, top, right, bottom)
+        
         cb.disables.append(box)
 #        cb.disables.append(cc.box)
         cb.makeConsistent()
@@ -169,11 +174,10 @@ class OWKMeans(OWWidget):
         self.table.setItemDelegateForColumn(2, OWGUI.TableBarItem(self, self.table))
         self.table.setItemDelegateForColumn(1, OWGUI.IndicatorItemDelegate(self))
         self.table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.table.hide()
         
         self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.tableItemSelected)
         
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.mainArea.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         
         
@@ -188,31 +192,35 @@ class OWKMeans(OWWidget):
         s = self.sizeHint()
         self.resize(s)
         
+    def hideOptResults(self):
+        self.mainArea.hide()
+        QTimer.singleShot(100, self.adjustSize)
+        
+        
+    def showOptResults(self):
+        self.mainArea.show()
+        QTimer.singleShot(100, self.adjustSize)
+        
     def sizeHint(self):
         s = self.leftWidgetPart.sizeHint()
         if self.optimized and not self.mainArea.isHidden():
             s.setWidth(s.width() + self.mainArea.sizeHint().width() + self.childrenRect().x() * 4)
         return s
-            
         
     def updateOptimizationGui(self):
-        state = [True, False, False] if self.optimized else [False, True, True]
-        for s, func in zip(state, [self.fixedSpinBox.setDisabled,
-                                self.optimizationBox.setDisabled,
-                                self.mainArea.setHidden]):
-            func(s)
-            
-        qApp.processEvents()
-        self.adjustSize()
+        self.fixedSpinBox.setDisabled(bool(self.optimized))
+        self.optimizationBox.setDisabled(not bool(self.optimized))
+        if self.optimized:
+            self.showOptResults()
+        else:
+            self.hideOptResults()
             
     def updateOptimizationFrom(self):
-#        self.optimizationFrom = min([self.optimizationFrom, self.optimizationTo - 1])
         self.optimizationTo = max([self.optimizationFrom + 1, self.optimizationTo])
         self.update()
         
     def updateOptimizationTo(self):
         self.optimizationFrom = min([self.optimizationFrom, self.optimizationTo - 1])
-#        self.optimizationTo = max([self.optimizationFrom + 1, self.optimizationTo])
         self.update()
         
     def setOptimization(self):
