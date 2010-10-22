@@ -64,10 +64,11 @@ class ExampleTableModel(QAbstractItemModel):
         row, col = self.sorted_map[index.row()], index.column()
         example, attr = self.examples[row], self.all_attrs[col]
         val = example[attr]
+        domain = self.examples.domain
         if role == Qt.DisplayRole:
                 return QVariant(str(val))
         elif role == Qt.BackgroundRole:
-            if attr == self.classVar:
+            if attr == self.classVar and col == len(domain.attributes) and domain.classVar: #check if attr is actual class or a duplication in the meta attributes
                 return QVariant(self.clsColor)
             elif attr in self.metas:
                 return QVariant(self.metaColor)
