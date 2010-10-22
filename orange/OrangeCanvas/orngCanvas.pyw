@@ -101,6 +101,7 @@ class OrangeCanvasDlg(QMainWindow):
         # create toolbar
         self.toolbar = self.addToolBar("Toolbar")
         self.toolbar.setOrientation(Qt.Horizontal)
+#        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         if not self.settings.get("showToolbar", True): self.toolbar.hide()
         
         # create a schema
@@ -121,6 +122,7 @@ class OrangeCanvasDlg(QMainWindow):
         items = ["Tool box", "Tree view", "Tree view (no icons)", "Tabs without labels", "Tabs with labels"]
         ind = max(len(items) - 1, self.settings["widgetListType"])
         self.widgetListTypeCB = OWGUI.comboBox(w, self.settings, "widgetListType", label="Style:", orientation="horizontal", items=items, callback=self.createWidgetsToolbar, debuggingEnabled=0)
+        self.widgetListTypeCB.setFocusPolicy(Qt.TabFocus)
         self.toolbar.addWidget(w)
         
         self.toolbar.addSeparator()
@@ -129,7 +131,9 @@ class OrangeCanvasDlg(QMainWindow):
         w.setLayout(QHBoxLayout())
         items = ["%d x %d" % (v, v) for v in self.toolbarIconSizeList]
         self.settings["toolbarIconSize"] = min(len(items) - 1, self.settings["toolbarIconSize"])
-        OWGUI.comboBoxWithCaption(w, self.settings, "toolbarIconSize", "Icon size:", items=items, tooltip="Set the size of the widget icons in the toolbar, tool box, and tree view area", callback=self.createWidgetsToolbar, debuggingEnabled=0)
+        cb = OWGUI.comboBoxWithCaption(w, self.settings, "toolbarIconSize", "Icon size:", items=items, tooltip="Set the size of the widget icons in the toolbar, tool box, and tree view area", callback=self.createWidgetsToolbar, debuggingEnabled=0)
+        cb.setFocusPolicy(Qt.TabFocus)
+        
         self.toolbar.addWidget(w)
         
         self.addToolBarBreak()
@@ -659,7 +663,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def updateStyle(self):
         QApplication.setStyle(QStyleFactory.create(self.settings["style"]))
-        qApp.setStyleSheet(" QDialogButtonBox { button-layout: 0; }")       # we want buttons to go in the "windows" direction (Yes, No, Cancel)
+#        qApp.setStyleSheet(" QDialogButtonBox { button-layout: 0; }")       # we want buttons to go in the "windows" direction (Yes, No, Cancel)
         if self.settings["useDefaultPalette"]:
             QApplication.setPalette(qApp.style().standardPalette())
         else:
