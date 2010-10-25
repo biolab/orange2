@@ -13,7 +13,7 @@ from distutils.dep_util import newer_group
 from distutils.file_util import copy_file
 from distutils import log
 
-from distutils.sysconfig import get_python_inc, get_config_vars
+from distutils.sysconfig import get_python_inc, get_config_var
 import numpy
 numpy_include_dir = numpy.get_include();
 python_include_dir = get_python_inc(plat_specific=1)
@@ -321,9 +321,7 @@ class install_shared(install_lib):
                         lib_name, path = ext.install_shared_link
                         lib_name = os.path.join(sys.prefix, "lib", lib_name)
                         lib_link = os.path.join(self.install_dir, path)
-                        copy_file(lib_link, lib_name)
-#                        log.info(" ".join(["ln", "-s", lib_link, lib_name]))
-#                        check_call(["ln", "-s", lib_link, lib_name])
+                        copy_file(lib_link, lib_name, link="sym")
                     except Exception, ex:
                         log.info("Failed to link shared library %s to %s: %s" %(lib_name, lib_link, str(ex)))
                         
@@ -351,8 +349,7 @@ if sys.platform == "darwin":
     else:
         shared_libs = libraries + ["orange"]
 else:
-    shared_libs = libraries
-        
+    shared_libs = libraries + ["orange"]
     
 orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
                                   include_dirs=include_dirs + ["source/orange/"],
