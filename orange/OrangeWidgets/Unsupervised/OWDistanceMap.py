@@ -5,7 +5,7 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1200</priority>
 """
-
+from __future__ import with_statement
 import orange, math, sys
 import OWGUI, OWToolbars
 from OWWidget import *
@@ -14,6 +14,7 @@ from ColorPalette import *
 from OWDlgs import OWChooseImageSizeDlg
 import OWColorPalette
 import OWToolbars
+from OWHierarchicalClustering import recursion_limit
 
 #####################################################################
 # parameters that determine the canvas layout
@@ -484,8 +485,11 @@ class OWDistanceMap(OWWidget):
 
         if self.rootCluster and self.order:
             from OWClustering import HierarchicalClusterItem
-            clusterTop = HierarchicalClusterItem(self.rootCluster, None, self.scene)
-            clusterLeft = HierarchicalClusterItem(self.rootCluster, None, self.scene)
+            with recursion_limit(len(self.rootCluster) * 3 + 20 + sys.getrecursionlimit()): #extend the recursion limit
+                clusterTop = HierarchicalClusterItem(self.rootCluster, None, None)
+                clusterLeft = HierarchicalClusterItem(self.rootCluster, None, None)
+                self.scene.addItem(clusterTop)
+                self.scene.addItem(clusterLeft)
             clusterHeight = 100.0
             
             clusterTop.setSize(width, -clusterHeight)
