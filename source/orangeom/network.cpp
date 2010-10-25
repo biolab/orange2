@@ -1374,11 +1374,10 @@ PyObject *Network_readPajek(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 									double i3 = 0;
 									istringstream strI3(weights[i]);
   									strI3 >> i3;
-									/**(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
-
-									if (directed == 1) {
+									*(graph->getOrCreateEdge(i1 - 1, i2 - 1) + i) = i3;
+									if (!directed) {
 										*(graph->getOrCreateEdge(i2 - 1, i1 - 1) + i) = i3;
-									}*/
+									}
 								}
 							}
 						}
