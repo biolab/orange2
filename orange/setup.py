@@ -1,5 +1,6 @@
 from distutils.core import setup, Extension
 from distutils.command.build_ext import build_ext
+from distutils.command.install_lib import install_lib
 
 import os, sys, re
 import glob
@@ -9,9 +10,10 @@ from subprocess import check_call
 from types import *
 
 from distutils.dep_util import newer_group
+from distutils.file_util import copy_file
 from distutils import log
 
-from distutils.sysconfig import get_python_inc
+from distutils.sysconfig import get_python_inc, get_config_vars
 import numpy
 numpy_include_dir = numpy.get_include();
 python_include_dir = get_python_inc(plat_specific=1)
@@ -84,16 +86,16 @@ class pyxtract_build_ext(build_ext):
             
         if isinstance(ext, PyXtractSharedExtension):
             # Make lib{name}.so link to {name}.so
-            from distutils.file_util import copy_file
             ext_path = self.get_ext_fullpath(ext.name)
             ext_path, ext_filename = os.path.split(ext_path)
             realpath = os.path.realpath(os.curdir)
-            print realpath, ext_path
+#            print realpath, ext_path
             try:
                 os.chdir(ext_path)
 #                copy_file(os.path.join(ext_path, ext_filename), os.path.join(ext_path, "lib"+ext_filename), link="sym")
                 lib_filename = self.compiler.library_filename(ext.name, lib_type="shared")
-                print realpath, ext_path, lib_filename
+                ext.install_shared_link = (lib_filename, self.get_ext_filename(ext.name)) # store (lib_name, path) tuple to install shared library link to /usr/lib in the install_lib command
+#                print realpath, ext_path, lib_filename
                 copy_file(ext_filename, lib_filename, link="sym")
 #                copy_file(ext_filename, lib_filename, link="sym")
             except OSError, ex:
@@ -308,7 +310,24 @@ class pyxtract_build_ext(build_ext):
             # returning
             #   package_dir/filename
             return os.path.join(package_dir, filename)
-
+        
+class install_shared(install_lib):
+    def run(self):
+        install_lib.run(self)
+        if sys.platform == "linux2":
+            for ext in self.distribution.ext_modules:
+                if isinstance(ext, PyXtractSharedExtension): # link symlink shared extentions to ${sys.prefix}/lib TODO: should --user installs link to ~/.local/lib
+                    try:
+                        lib_name, path = ext.install_shared_link
+                        lib_name = os.path.join(sys.prefix, "lib", lib_name)
+                        lib_link = os.path.join(self.install_dir, path)
+                        copy_file(lib_link, lib_name)
+#                        log.info(" ".join(["ln", "-s", lib_link, lib_name]))
+#                        check_call(["ln", "-s", lib_link, lib_name])
+                    except Exception, ex:
+                        log.info("Failed to link shared library %s to %s: %s" %(lib_name, lib_link, str(ex)))
+                        
+            
 def get_source_files(path, ext="cpp"):
     return glob.glob(os.path.join(path, "*." + ext))
 
@@ -325,11 +344,21 @@ orange_ext = PyXtractSharedExtension("orange", get_source_files("source/orange/"
 #                                      depends=["orange/ppp/lists"]
                                       )
 
+if sys.platform == "darwin":
+    build_shared_cmd = get_config_var("BLDSHARED")
+    if "-bundle" in build_shared_cmd.split(): #dont link liborange.so with orangeom and orangene - MacOS X treats loadable modules and shared libraries different
+        shared_libs = libraries
+    else:
+        shared_libs = libraries + ["orange"]
+else:
+    shared_libs = libraries
+        
+    
 orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
                                   include_dirs=include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
                                   extra_link_args = extra_link_args,
-                                  libraries=libraries,# + ["orange"]
+                                  libraries=shared_libs,
 #                                  depends=["orange/ppp/lists",
 #                                           "orange/ppp/stamp"]
                                   )
@@ -338,7 +367,7 @@ orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/"
                                   include_dirs=include_dirs + ["source/orange/"], 
                                   extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
                                   extra_link_args = extra_link_args,
-                                  libraries=libraries,# + ["orange"]
+                                  libraries=shared_libs,
 #                                  depends=["orange/ppp/lists",
 #                                           "orange/ppp/stamp"]
                                   )
@@ -347,20 +376,20 @@ corn_ext = Extension("corn", get_source_files("source/corn/"),
                      include_dirs=include_dirs + ["source/orange/"], 
                      extra_compile_args = extra_compile_args + ["-DCORN_EXPORTS"],
                      extra_link_args = extra_link_args,
-                     libraries=libraries #+ ["orange"])
+                     libraries=libraries
                      )
 
 statc_ext = Extension("statc", get_source_files("source/statc/"), 
                       include_dirs=include_dirs + ["source/orange/"], 
                       extra_compile_args = extra_compile_args + ["-DSTATC_EXPORTS"],
                       extra_link_args = extra_link_args,
-                      libraries=libraries #+ ["orange"]
+                      libraries=libraries
                       )
  
 
 pkg_re = re.compile("Orange/(.+?)/__init__.py")
 packages = ["Orange"] + ["Orange." + pkg_re.findall(p)[0] for p in glob.glob("Orange/*/__init__.py")]
-setup(cmdclass={"build_ext": pyxtract_build_ext},
+setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
       name ="Orange",
       version = "2.0.0b",
       description = "Orange data mining library for python.",
@@ -401,7 +430,6 @@ setup(cmdclass={"build_ext": pyxtract_build_ext},
       keywords = ["data mining", "machine learning", "artificial intelligence"],
       classifiers = ["Development Status :: 4 - Beta",
                      "Programming Language :: Python",
-                     "Environment :: Console",
                      "License :: OSI Approved :: GNU General Public License (GPL)",
                      "Operating System :: POSIX",
                      "Operating System :: Microsoft :: Windows",
