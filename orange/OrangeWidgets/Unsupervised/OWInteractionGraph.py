@@ -109,7 +109,8 @@ class OWInteractionGraph(OWWidget):
         sip.delete(self.buttonBackground.layout())
         
         layout = QGridLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(*self.controlArea.layout().getContentsMargins())
+#        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
         
         self.saveLCanvas = OWGUI.button(None, self, "Save left canvas", callback = self.saveToFileLCanvas, debuggingEnabled = 0, addToLayout=False)

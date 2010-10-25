@@ -437,6 +437,7 @@ class OWTreeViewer2D(OWWidget):
 
         # Node information
         grid = QGridLayout()
+        grid.setContentsMargins(*self.controlArea.layout().getContentsMargins())
         
         navButton = OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0, addToLayout=False)
 #        findbox = OWGUI.widgetBox(self.controlArea, orientation = "horizontal")
