@@ -30,10 +30,23 @@ class ProgressBarRedirect(QObject):
     def __init__(self, parent, redirect):
         QObject.__init__(self, parent)
         self.redirect = redirect
+        self._delay = False
         
     @pyqtSignature("advance()")
     def advance(self):
-        self.redirect.advance()
+        # delay OWBaseWidget.progressBarSet call, because it calls qApp.processEvents
+        #which can result in 'event queue climbing' and max. recursion error if GUI thread
+        #gets another advance signal before it finishes with this one
+        if not self._delay:
+            try:
+                self._delay = True
+                self.redirect.advance()
+            finally:
+                self._delay = False
+        else:
+            QTimer.singleShot(100, self.advance)
+            
+        
         
 class CallWrapper(QObject):
     def __init__(self, call):
