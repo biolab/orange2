@@ -1,4 +1,4 @@
-import orngOrangeFoldersQt4
+#import orngOrangeFoldersQt4
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import os, re, urllib, sys
@@ -133,7 +133,7 @@ class FoldersDlg(QDialog):
 
 class updateOrangeDlg(QMainWindow):
     def __init__(self,*args):
-        apply(QMainWindow.__init__,(self,) + args)
+        QMainWindow.__init__(self, *args)
         self.resize(600,600)
         self.setWindowTitle("Orange Update")
 
