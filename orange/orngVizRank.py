@@ -275,7 +275,7 @@ class VizRank:
         if self.graph.dataHasDiscreteClass and self.qualityMeasure == BRIER_SCORE: return min
         else: return max
 
-    def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}):
+    def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}, results=None):
         self.insertItem(self.findTargetIndex(accuracy), accuracy, other_results, lenTable, attrList, tryIndex, generalDict)
 
     # use bisection to find correct index
@@ -502,7 +502,7 @@ class VizRank:
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
         
         if self.saveEvaluationResults:
-            self.evaluationResults[val/max(1, float(s))] = results
+            self.evaluationResults = results
         
         return val/max(1, float(s)), (acc, prediction, list(currentClassDistribution))
 
@@ -843,7 +843,8 @@ class VizRank:
                     table = self.graph.createProjectionAsExampleTable([attr1, attr2])
                     if len(table) < self.minNumOfExamples: continue
                     accuracy, other_results = self.evaluateProjection(table)
-                    self.addResult(accuracy, other_results, len(table), [self.graph.dataDomain[attr1].name, self.graph.dataDomain[attr2].name], self.evaluatedProjectionsCount, {})
+                    generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                    self.addResult(accuracy, other_results, len(table), [self.graph.dataDomain[attr1].name, self.graph.dataDomain[attr2].name], self.evaluatedProjectionsCount, generalDict=generalDict)
 
                     if self.__class__ != VizRank:
                         self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
@@ -888,7 +889,8 @@ class VizRank:
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
                         accuracy, other_results = self.evaluateProjection(table)
-                        self.addResult(accuracy, other_results, len(table), attrNames, self.evaluatedProjectionsCount, generalDict = {"XAnchors": list(xanchors), "YAnchors": list(yanchors)})
+                        generalDict = {"XAnchors": list(xanchors), "YAnchors": list(yanchors), "Results": self.evaluationResults} if self.saveEvaluationResults else {"XAnchors": list(xanchors), "YAnchors": list(yanchors)}
+                        self.addResult(accuracy, other_results, len(table), attrNames, self.evaluatedProjectionsCount, generalDict = generalDict)
                         if self.isEvaluationCanceled(): return self.evaluatedProjectionsCount
                         if self.__class__ != VizRank:
                             self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount)))
@@ -913,7 +915,8 @@ class VizRank:
 
                                 # save the permutation
                                 if self.storeEachPermutation:
-                                    self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], self.evaluatedProjectionsCount, {})
+                                    generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                                    self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], self.evaluatedProjectionsCount, generalDict)
                                 else:
                                     tempList.append((accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation]))
 
@@ -924,7 +927,8 @@ class VizRank:
 
                             if not self.storeEachPermutation and len(tempList) > 0:   # return only the best attribute placements
                                 (acc, other_results, lenTable, attrList) = maxFunct(tempList)
-                                self.addResult(acc, other_results, lenTable, attrList, self.evaluatedProjectionsCount)
+                                generalDict = {"Results": self.evaluationResults} if self.saveEvaluationResults else {}
+                                self.addResult(acc, other_results, lenTable, attrList, self.evaluatedProjectionsCount, generalDict=generalDict)
 
                         if self.isEvaluationCanceled():
                             return self.evaluatedProjectionsCount
