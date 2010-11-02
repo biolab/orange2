@@ -24,6 +24,16 @@ class Network(orangeom.Network):
         self.optimization = NetworkOptimization(self)
         self.clustering = NetworkClustering(self)
         
+    def getDistanceMatrixThreshold(self, matrix, ratio):
+        """Return lower and upper distance threshold values for given ratio of edges"""
+        values = []
+        for i in range(matrix.dim):
+            for j in range(i):
+                values.append((matrix[i,j], i, j))
+                
+        values.sort()
+        return values[0][0], values[int(ratio*len(values))][0]
+        
     def save(self, fileName):
         """Saves network to Pajek (.net) file."""
         self.saveNetwork(fileName)
@@ -816,7 +826,7 @@ class NetworkClustering():
         vertices = range(self.net.nVertices)
         labels = range(self.net.nVertices)
         lblhistory = []
-        consecutiveStop = 0
+        #consecutiveStop = 0
         for i in range(1000):
             random.shuffle(vertices)
             stop = 1
@@ -835,11 +845,20 @@ class NetworkClustering():
                 labels[v] = lbl
                 
             lblhistory.append([str(l) for l in labels])
-            # break if stopping criterion is reached 3 times successively
-            if stop: consecutiveStop += 1
-            else: consecutiveStop = 0
-            if consecutiveStop > 2: break
-        
+            # if stopping condition might be satisfied, check it
+            if stop:
+                for v in vertices:
+                    nbh = self.net.getNeighbours(v)
+                    if len(nbh) == 0: continue
+                    lbls = [labels[u] for u in nbh]
+                    lbls = [(len(list(c)), l) for l, c in itertools.groupby(lbls)]
+                    m = max(lbls)[0]
+                    mlbls = [l for c, l in lbls if c >= m]
+                    if labels[v] not in mlbls: 
+                        stop = 0
+                        break
+                if stop: break
+                    
         if results2items and not resultHistory2items:
             attrs = [orange.EnumVariable('clustering label propagation', values=list(set([l for l in lblhistory[-1]])))]
             dom = orange.Domain(attrs, 0)
@@ -849,7 +868,7 @@ class NetworkClustering():
             attrs = [orange.EnumVariable('c'+ str(i), values=list(set([l for l in lblhistory[0]]))) for i,labels in enumerate(lblhistory)]
             dom = orange.Domain(attrs, 0)
             # transpose history
-            data = map(lambda *row: list(row), *lblhistory)
+            data = map(list, zip(*lblhistory))
             data = orange.ExampleTable(dom, data)
             self.net.items = data if self.net.items == None else orange.ExampleTable([self.net.items, data])
 
