@@ -14,7 +14,7 @@ from OWWidget import *
 
 class OWNetClustering(OWWidget):
     
-    settingsList = ['method, iterationHistory']
+    settingsList = ['method', 'iterationHistory']
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network Clustering')
