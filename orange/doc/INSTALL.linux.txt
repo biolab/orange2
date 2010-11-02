@@ -24,7 +24,7 @@ If you only need the scripting interface, accessible through python,
 the dependencies are easier to fulfil. Only the common building tools and 
 python extensions for imaging, graphs and computation with matrices are needed.
 
-sudo apt-get install make g++ python-dev python-numarray-ext python-numpy-ext python-numeric-ext python-matplotlib python-imaging
+sudo apt-get install make g++ python-dev python-numpy-ext python-matplotlib python-imaging
 
 This suffices for Orange scripting version to work.
 
@@ -69,7 +69,6 @@ sudo mkdir /usr/lib/python2.6/dist-packages/orange
 tar -cf - --exclude='.svn' * | sudo tar --no-same-owner -xf - -C /usr/lib/python2.6/dist-packages/orange
 
 sudo sh -c "echo '/usr/lib/python2.6/dist-packages/orange' > /usr/lib/python2.6/dist-packages/orange.pth"
-sudo ln -s /usr/lib/python2.6/dist-packages/orange/liborange.so /usr/lib/liborange.so
 
 4. RUNNING
 
