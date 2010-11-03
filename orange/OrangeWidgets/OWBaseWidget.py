@@ -325,12 +325,13 @@ class OWBaseWidget(QDialog):
 
     # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
     # variables into settings and last widget position is restored after restart
-    def moveEvent(self, ev):
-        QDialog.moveEvent(self, ev)
-        if self.savePosition:
-            self.widgetXPosition = self.frameGeometry().x()
-            self.widgetYPosition = self.frameGeometry().y()
-            self.savedWidgetGeometry = str(self.saveGeometry())
+    # Commented out because of Ubuntu (on call to restoreGeometry calls move event saving pos (0, 0)
+#    def moveEvent(self, ev):
+#        QDialog.moveEvent(self, ev)
+#        if self.savePosition:
+#            self.widgetXPosition = self.frameGeometry().x()
+#            self.widgetYPosition = self.frameGeometry().y()
+#            self.savedWidgetGeometry = str(self.saveGeometry())
 
     # set widget state to hidden
     def hideEvent(self, ev):
