@@ -105,14 +105,17 @@ class Interaction:
     def __init__(self, data, p_values=False, samples=10000, permutations=100):
         self.data = data
         self.measure = orange.MeasureAttribute_info
-        self.gain = dict([(a, self.measure(a, data)) for a in data.domain.attributes])
+        self.gain = self.gains()
         self.class_entropy =  entropy(data.domain.classVar, data)
         self.samples = samples
         self.permutations = permutations
         self.p_values = p_values
         if p_values:
             self.score_dist = self.compute_score_dist()
-    
+
+    def gains(self):
+        return dict([(a, self.measure(a, self.data)) for a in self.data.domain.attributes])
+
     def compute_score_dist(self):
         """Distribution (list) of interaction scores obtained by permutation analysis"""
         
@@ -126,9 +129,11 @@ class Interaction:
         attributes = self.data.domain.attributes
         samples_in_permutations = self.samples / self.permutations
         self.permuted_scores = []
+        orig_gain = self.gain
         for _ in range(self.permutations):
             permute_class()
-            scores = [self.get_score(random.choice(attributes), random.choice(attributes)) for _ in range(samples_in_permutations)]
+            self.gain = self.gains() #recompute univariate gains for permuted classes
+            scores = [self.get_score(*random.sample(attributes, 2)) for _ in range(samples_in_permutations)]
             self.permuted_scores.extend(scores)
         self.permuted_scores_len = float(len(self.permuted_scores))
         self.permuted_scores.sort()
@@ -136,6 +141,7 @@ class Interaction:
         # restore class values to original values
         for v, d in itertools.izip(orig_classvalues, self.data):
             d.setclass(v)
+        self.gain = orig_gain #restore original gains
             
     def get_score(self, a1, a2):
         return orngCI.FeatureByCartesianProduct(self.data, (a1, a2), measure=self.measure)[1] - self.gain[a1] - self.gain[a2]
