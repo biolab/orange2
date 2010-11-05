@@ -120,7 +120,7 @@ class OWGraph(QwtPlot):
         self.__dict__.update(settings)
 
     def saveToFile(self, extraButtons = []):
-        sizeDlg = OWChooseImageSizeDlg(self, extraButtons)
+        sizeDlg = OWChooseImageSizeDlg(self, extraButtons, parent=self)
         sizeDlg.exec_()
 
     def saveToFileDirect(self, fileName, size = None):
