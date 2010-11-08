@@ -16,6 +16,36 @@ try:
 except NameError:
     __DISABLE_OUTPUT__ = False
     
+def thread_safe_discard(func):
+    """ 
+    """
+    from functools import wraps
+    @wraps(func)
+    def safe_wrapper(self, *args, **kwargs):
+        if not hasattr(self, "_thread_safe_thread"):
+            self._thread_safe_thread = self.thread()
+        if QThread.currentThread() is not self._thread_safe_thread:
+            print >> sys.stderr, "Calling", func, "from the wrong thread.", "Discarding the call!"
+        else:
+            return func(self, *args, **kwargs)
+    return safe_wrapper
+
+def thread_safe_queue(func):
+    """
+    """
+    from functools import wraps, partial
+    @wraps(func)
+    def safe_wrapper(self, *args, **kwargs):
+        if not hasattr(self, "_thread_safe_queue"):
+            self._thread_safe_thread = self.thread()
+        if QThread.currentThread() is not self._thread_safe_thread:
+            print >> sys.stderr, "Calling", func, "from the wrong thread.", "Queuing the call!"
+            QMetaObject.invokeMethod(self, "queuedInvoke", Qt.QueuedConnection, Q_ARG("PyQt_PyObject", partial(safe_wrapper, self, *args, **kwargs)))
+        else:
+            return func(self, *args, **kwargs)
+            
+    return safe_wrapper
+
 class OutputWindow(QDialog):
     def __init__(self, canvasDlg, *args):
         QDialog.__init__(self, None, Qt.Window)
@@ -102,6 +132,7 @@ class OutputWindow(QDialog):
             self.canvasDlg.setStatusBarEvent(QString(text))
 
     # simple printing of text called by print calls
+    @thread_safe_queue
     def write(self, text):
         Text = self.getSafeString(text)
         Text = Text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
@@ -145,6 +176,7 @@ class OutputWindow(QDialog):
     def getSafeString(self, s):
         return str(s).replace("<", "&lt;").replace(">", "&gt;")
 
+    @thread_safe_queue
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.canvasDlg.settings["focusOnCatchException"]:
             self.canvasDlg.menuItemShowOutputWindow()
@@ -184,3 +216,7 @@ class OutputWindow(QDialog):
 
         if self.canvasDlg.settings["writeLogFile"]:
             self.logFile.write(str(text) + "<br>\n")
+            
+    @pyqtSignature("queuedInvoke(PyQt_PyObject)")
+    def queuedInvoke(self, func):
+        func()
