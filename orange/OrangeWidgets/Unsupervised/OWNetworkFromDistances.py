@@ -62,20 +62,20 @@ class OWNetworkFromDistances(OWWidget, OWNetworkHist):
         self.reportSection("Histogram")
         self.reportImage(self.histogram.saveToFileDirect, QSize(400,300))
         self.reportSettings("Output graph",
-                            [("Vertices", self.data.dim),
+                            [("Vertices", self.matrix.dim),
                              ("Edges", self.nedges),
-                             ("Connected vertices", "%i (%.1f%%)" % (self.pconnected, self.pconnected / max(1, float(self.data.dim))*100)),
+                             ("Connected vertices", "%i (%.1f%%)" % (self.pconnected, self.pconnected / max(1, float(self.matrix.dim))*100)),
                              ])
         
     def sendSignals(self):
         if self.graph != None:
             #setattr(matrix, "items", self.graph.items)
-            self.data.items = self.graph.items
+            self.matrix.items = self.graph.items
         
         self.send("Network", self.graph)
         
-        if self.data:
-            self.send("Distance Matrix", self.data)
+        if self.matrix:
+            self.send("Distance Matrix", self.matrix)
             
         if self.graph == None:
             self.send("Examples", None)

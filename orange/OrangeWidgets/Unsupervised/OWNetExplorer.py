@@ -421,7 +421,6 @@ class OWNetExplorer(OWWidget):
             self.information('No network found')
             self.btnRotateMDS.setChecked(False)
             return
-        
         if self.vertexDistance.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.btnRotateMDS.setChecked(False)
@@ -544,7 +543,7 @@ class OWNetExplorer(OWWidget):
             if self.optimization: self.optimization.vertexDistance = None
             if self.graph: self.graph.vertexDistance = None
             return
-        
+
         if matrix.dim != self.optimization.graph.nVertices:
             self.error('Distance matrix dimensionality must equal number of vertices')
             self.vertexDistance = None
