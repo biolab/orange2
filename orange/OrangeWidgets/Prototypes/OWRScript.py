@@ -11,6 +11,22 @@ from OWItemModels import PyListModel, ModelActionsWidget
 import rpy2.robjects as robjects
 import rpy2.rlike.container as rlc
 
+if hasattr(robjects, "DataFrame"): # rpy2 version 2.1
+    DataFrame = robjects.DataFrame
+else: # rpy2 version 2.0
+    DataFrame = robjects.RDataFrame
+    
+if hasattr(robjects, "Matrix"): # rpy2 version 2.1
+    Matrix = robjects.Matrix
+else: # rpy2 version 2.0
+    Matrix = robjects.RMatrix
+    
+if hasattr(robjects, "globalenv"): # rpy2 version 2.1
+    globalenv = robjects.globalenv
+else: # rpy2 version 2.0
+    globalenv = robjects.globalEnv
+        
+
 def ExampleTable_to_DataFrame(examples):
     attrs = [ attr for attr in examples.domain.variables if attr.varType in \
              [orange.VarTypes.Continuous, orange.VarTypes.Discrete, orange.VarTypes.String]]
@@ -43,13 +59,13 @@ def ExampleTable_to_DataFrame(examples):
         elif attr.varType == orange.VarTypes.String:
             data.append((attr.name, robjects.StrVector([str_or_NA(ex[attr]) for ex in examples])))
         
-    r_obj = robjects.RDataFrame(rlc.TaggedList([v for _, v in data], [t for t,_ in data]))
+    r_obj = DataFrame(rlc.TaggedList([v for _, v in data], [t for t,_ in data]))
     return r_obj
 
 
 def SymMatrix_to_Matrix(matrix):
     matrix = [[e for e in row for row in matrix]]
-    r_obj = robjects.RMatrix(matrix)
+    r_obj = Matrix(matrix)
     return r_obj
 
     
@@ -81,11 +97,11 @@ class RPy2Console(PythonConsole):
         r_obj = {}
         for key, val in locals.items():
             if isinstance(val, orange.ExampleTable):
-                r_obj = ExampleTable_to_DataFrame(val)
-                robjects.globalEnv[key] =  r_obj
+                dataframe = ExampleTable_to_DataFrame(val)
+                globalenv[key] =  dataframe
             elif isinstance(val, orange.SymMatrix):
                 matrix = SymMatrix_to_Matrix(val)
-                robjects.globalEnv[key] = matrix
+                globalenv[key] = matrix
                 
                 
 class RSyntaxHighlighter(QSyntaxHighlighter):
@@ -170,7 +186,7 @@ class LibraryWidget(QWidget):
         self.addScriptAction.pyqtConfigure(toolTip="Add a new script to library")
         
         self.updateScriptAction = QAction("Update", self)
-        self.updateScriptAction.pyqtConfigure(toolTip="Save changes in the editor to library")
+        self.updateScriptAction.pyqtConfigure(toolTip="Save changes in the editor to library", shortcut=QKeySequence.Save)
         
         self.removeScriptAction = QAction("-", self)
         self.removeScriptAction.pyqtConfigure(toolTip="Remove selected script from file")
@@ -182,7 +198,7 @@ class LibraryWidget(QWidget):
         self.addScriptFromFile.pyqtConfigure(toolTip="Add a new script to library from a file")
         
         self.saveScriptToFile = QAction("Save script to file", self)
-        self.saveScriptToFile.pyqtConfigure(toolTip="Save script to a file")
+        self.saveScriptToFile.pyqtConfigure(toolTip="Save script to a file", shortcut=QKeySequence.SaveAs)
         
         menu = QMenu(self)
         menu.addActions([self.addScriptFromFile, self.saveScriptToFile])
@@ -335,7 +351,7 @@ class OWRScript(OWWidget):
         row = self.selectedScript()
         if row is not None:
             self.libraryModel[row].script = str(self.scriptEdit.toPlainText())
-            self.libraryModel[row].flags = RScript.Modified
+            self.scriptEdit.document().setModified(False)
             self.libraryModel.emitDataChanged([row])
             
         
@@ -401,7 +417,6 @@ class OWRScript(OWWidget):
     def getLocals(self):
         return {"in_data": self.in_data,
                 "in_distance": self.in_distance,
-#                "device_filename": self.grDevFile.name}
                }
         
     def runScript(self):
