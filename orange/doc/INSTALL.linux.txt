@@ -70,8 +70,6 @@ tar -cf - --exclude='.svn' * | sudo tar --no-same-owner -xf - -C /usr/lib/python
 
 sudo sh -c "echo '/usr/lib/python2.6/dist-packages/orange' > /usr/lib/python2.6/dist-packages/orange.pth"
 
-sudo ln -s /usr/lib/python2.6/dist-packages/orange/liborange.so /usr/lib/liborange.so
-
 4. RUNNING
 
 To use Orange in python scripts, try importing "orange" and "orngStat" 
