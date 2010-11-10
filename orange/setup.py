@@ -350,14 +350,14 @@ else:
 orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
                                   include_dirs=include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
-                                  extra_link_args = py_extract_extra_link_args,
+                                  extra_link_args = extra_link_args,
                                   libraries=shared_libs,
                                   )
 
 orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/"), 
                                   include_dirs=include_dirs + ["source/orange/"], 
                                   extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
-                                  extra_link_args = py_extract_extra_link_args,
+                                  extra_link_args = extra_link_args,
                                   libraries=shared_libs,
                                   )
 
