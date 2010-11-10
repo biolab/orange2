@@ -28,7 +28,8 @@ elif sys.platform == "win32":
     extra_link_args = []
 elif sys.platform == "linux2":
     extra_compile_args = "-fPIC -fpermissive -w -DLINUX".split()
-    extra_link_args = []    
+    extra_link_args = ["-Wl,-R$ORIGIN"]    
+#    extra_link_args = ["-Wl,-R'$ORIGIN'"] #use this if distutils runs commands though the shell
 else:
     extra_compile_args = []
     extra_link_args = []
@@ -314,17 +315,12 @@ class pyxtract_build_ext(build_ext):
 class install_shared(install_lib):
     def run(self):
         install_lib.run(self)
-        if sys.platform == "linux2":
-            for ext in self.distribution.ext_modules:
-                if isinstance(ext, PyXtractSharedExtension): # link symlink shared extentions to ${sys.prefix}/lib TODO: should --user installs link to ~/.local/lib
-                    try:
-                        lib_name, path = ext.install_shared_link
-                        lib_name = os.path.join(sys.prefix, "lib", lib_name)
-                        lib_link = os.path.join(self.install_dir, path)
-                        copy_file(lib_link, lib_name, link="sym")
-                    except Exception, ex:
-                        log.info("Failed to link shared library %s to %s: %s" %(lib_name, lib_link, str(ex)))
-                        
+        
+    def copy_tree(self, infile, outfile, preserve_mode=1, preserve_times=1, preserve_symlinks=1, level=1):
+        """ Run copy_tree with preserve_symlinks=1 as default
+        """
+        install_lib.copy_tree(self, infile, outfile, preserve_mode, preserve_times, preserve_symlinks, level)
+        
             
 def get_source_files(path, ext="cpp"):
     return glob.glob(os.path.join(path, "*." + ext))
@@ -354,19 +350,15 @@ else:
 orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
                                   include_dirs=include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
-                                  extra_link_args = extra_link_args,
+                                  extra_link_args = py_extract_extra_link_args,
                                   libraries=shared_libs,
-#                                  depends=["orange/ppp/lists",
-#                                           "orange/ppp/stamp"]
                                   )
 
 orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/"), 
                                   include_dirs=include_dirs + ["source/orange/"], 
                                   extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
-                                  extra_link_args = extra_link_args,
+                                  extra_link_args = py_extract_extra_link_args,
                                   libraries=shared_libs,
-#                                  depends=["orange/ppp/lists",
-#                                           "orange/ppp/stamp"]
                                   )
 
 corn_ext = Extension("corn", get_source_files("source/corn/"), 
@@ -407,6 +399,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
                              "OrangeWidgets.Regression",
                              "OrangeWidgets.Unsupervised",
                              "OrangeWidgets.Visualize",
+                             "doc",
                              ],
       package_data = {"OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
                       "OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],
@@ -418,7 +411,7 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
                       "OrangeWidgets.Regression": ["icons/*.png"],
                       "OrangeWidgets.Unsupervised": ["icons/*.png"],
                       "OrangeWidgets.Visualize": ["icons/*.png"],
-                      "doc": ["*.html", "*.htm", "*.txt", "*.py", "*.css", "datasets/*.tab", ]
+                      "doc": ["datasets/*.tab", ]
                       },
       ext_modules = [include_ext, orange_ext, orangeom_ext, orangene_ext, corn_ext, statc_ext],
       extra_path=("orange", "orange"),
