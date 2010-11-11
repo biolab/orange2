@@ -726,9 +726,24 @@ class OWDataGenerator(OWWidget):
         while True:
             newlabel = "Class %i" %i
             if newlabel not in self.classValuesModel:
-                self.classValuesModel.append(newlabel)
+#                self.classValuesModel.append(newlabel)
                 break
             i += 1
+        values = list(self.classValuesModel) + [newlabel]
+        newclass = orange.EnumVariable("Class label", values=values)
+        newdomain = orange.Domain(self.graph.data.domain.attributes, newclass)
+        newdata = orange.ExampleTable(newdomain)
+        for ex in self.graph.data:
+            newdata.append(orange.Example(newdomain, [ex[a] for a in ex.domain.attributes] + [str(ex.getclass())]))
+        
+        self.classVariable = newclass
+        self.classValuesModel.wrap(self.classVariable.values)
+        
+        self.graph.data = newdata
+        self.graph.updateGraph()
+        
+        newindex = self.classValuesModel.index(len(self.classValuesModel) - 1)
+        self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
         
     def removeSelectedClassLabel(self):
         index = self.selectedClassLabelIndex()
