@@ -14,7 +14,7 @@ if not hasattr(QObject, "pyqtConfigure"):
         for name, val in kwargs.items():
             if meta.indexOfProperty(name) >= 0:
                 obj.setProperty(name, QVariant(val))
-            elif meta.indexOfSignal(meta.normalizedSignature(name)):
+            elif meta.indexOfSignal(meta.normalizedSignature(name)) >= 0:
                 obj.connect(obj, SIGNAL(name), val)
     QObject.pyqtConfigure = pyqtConfigure
 
@@ -799,8 +799,39 @@ class OWBaseWidget(QDialog):
                 self.widgetStateHandler()
             elif text: # and stateType != "Info":
                 self.printEvent(stateType + " - " + text)
+            
+            if type(id) == list:
+                for i in id:
+                    self.emit(SIGNAL("widgetStateChanged(QString, int, QString)"),
+                              QString(stateType), i,QString(""))
+            else:
+                self.emit(SIGNAL("widgetStateChanged(QString, int, QString)"),
+                             QString(stateType), id, QString(text or ""))
             #qApp.processEvents()
         return changed
+    
+    def widgetStateToHtml(self, info=True, warning=True, error=True):
+        pixmaps = self.getWidgetStateIcons()
+        items = [] 
+        iconPath = {"Info": "canvasIcons:information.png",
+                    "Warning": "canvasIcons:warning.png",
+                    "Error": "canvasIcons:error.png"}
+        for show, what in [(info, "Info"), (warning, "Warning"),(error, "Error")]:
+            if self.widgetState[what]:
+                items.append('<img src="%s" style="float: left;"> %s' % (iconPath[what], "\n".join(self.widgetState[what].values())))
+        return "<br>".join(items)
+        
+    @classmethod
+    def getWidgetStateIcons(cls):
+        if not hasattr(cls, "_cached__widget_state_icons"):
+            iconsDir = os.path.join(orngEnviron.canvasDir, "icons")
+            QDir.addSearchPath("canvasIcons",os.path.join(orngEnviron.canvasDir, "icons/"))
+            info = QPixmap("canvasIcons:information.png")
+            warning = QPixmap("canvasIcons:warning.png")
+            error = QPixmap("canvasIcons:error.png")
+            cls._cached__widget_state_icons = \
+                    {"Info": info, "Warning": warning, "Error": error}
+        return cls._cached__widget_state_icons
 
     def synchronizeContexts(self):
         if hasattr(self, "contextHandlers"):
