@@ -28,17 +28,18 @@ class IdentifierReplacer:
         return id
 
 class AttrComputer:
-    FUNCTIONS = dict(math.__dict__.items() +\
+    FUNCTIONS = dict([(key, val) for key, val in math.__dict__.items() if not key.startswith("_")] +\
                       {"normalvariate": random.normalvariate,
-                      "expovariate": random.expovariate,
-                      "gammavariate": random.gammavariate,
-                      "betavariate": random.betavariate,
-                      "lognormvariate": random.lognormvariate,
-                      "paretovariate": random.paretovariate,
-                      "vonmisesvariate": random.vonmisesvariate,
-                      "weibullvariate": random.weibullvariate,
-                      "triangular": random.triangular,
-                      "uniform": random.uniform}.items())
+                       "gauss": random.gauss,
+                       "expovariate": random.expovariate,
+                       "gammavariate": random.gammavariate,
+                       "betavariate": random.betavariate,
+                       "lognormvariate": random.lognormvariate,
+                       "paretovariate": random.paretovariate,
+                       "vonmisesvariate": random.vonmisesvariate,
+                       "weibullvariate": random.weibullvariate,
+                       "triangular": random.triangular,
+                       "uniform": random.uniform}.items())
     def __init__(self, expression):
         self.expression = expression
 
@@ -78,8 +79,12 @@ class OWFeatureConstructor(OWWidget):
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
         self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
-        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sorted(m for m in AttrComputer.FUNCTIONS.keys() if m[:2]!="__"), callback = self.funcListSelected)
-
+        sortedFuncs = sorted(m for m in AttrComputer.FUNCTIONS.keys())
+        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sortedFuncs, callback = self.funcListSelected)
+        model = self.cbFuncs.model()
+        for i, func in enumerate(sortedFuncs):
+            model.item(i + 1).setToolTip(AttrComputer.FUNCTIONS[func].__doc__)
+        
         hb = OWGUI.widgetBox(db, None, "horizontal", addSpace=True)
         OWGUI.button(hb, self, "Add", callback = self.addAttr)
         OWGUI.button(hb, self, "Update", callback = self.updateAttr)
@@ -193,7 +198,9 @@ class OWFeatureConstructor(OWWidget):
         if self.selectedFunc:
             print self.selectedFunc
             func = str(self.cbFuncs.itemText(self.selectedFunc))
-            if func in ["atan2", "fmod", "ldexp", "log", "pow"]:
+            if func in ["atan2", "fmod", "ldexp", "log", "pow", "normalvariate",
+                        "gauss", "lognormvariate", "betavariate", "gammavariate",
+                        "triangular", "uniform", "vonmisesvariate", "weibullvariate"]:
                 self.insertIntoExpression(func + "(,)")
                 self.leExpression.cursorBackward(False, 2)
             elif func in ["e", "pi"]:
