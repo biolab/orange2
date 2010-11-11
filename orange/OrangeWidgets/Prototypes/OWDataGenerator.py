@@ -11,7 +11,6 @@ from OWGraph import *
 import OWToolbars
 
 from OWItemModels import VariableListModel, VariableDelegate, PyListModel, ModelActionsWidget
-from Image import NONE
 import OWColorPalette
 
 dir = OWToolbars.dir
@@ -659,16 +658,16 @@ class OWDataGenerator(OWWidget):
         w.layout().addWidget(listView)
         
         addClassLabel = QAction("+", self)
-        addClassLabel.pyqtConfigure(toolTip="Add class label", icon=QIcon(icon_put))
+        addClassLabel.pyqtConfigure(toolTip="Add class label")#, icon=QIcon(icon_put))
         self.connect(addClassLabel, SIGNAL("triggered()"), self.addNewClassLabel)
         
-#        removeClassLabel = QAction("-", self)
-#        removeClassLabel.pyqtConfigure(toolTip="Remove class label", icon=QIcon(icon_remove))
-#        self.connect(removeClassLabel, SIGNAL("triggered()"), self.removeSelectedClassLabel)
+        removeClassLabel = QAction("-", self)
+        removeClassLabel.pyqtConfigure(toolTip="Remove class label")#, icon=QIcon(icon_remove))
+        self.connect(removeClassLabel, SIGNAL("triggered()"), self.removeSelectedClassLabel)
         
-        actionsWidget = ModelActionsWidget([addClassLabel], self) # ModelActionsWidget([addClassLabel, removeClassLabel], self)
+        actionsWidget =  ModelActionsWidget([addClassLabel, removeClassLabel], self)
         actionsWidget.layout().addStretch(10)
-        actionsWidget.setStyleSheet("QToolButton { qproperty-iconSize: 12px }")
+#        actionsWidget.setStyleSheet("QToolButton { qproperty-iconSize: 12px }")
         
         w.layout().addWidget(actionsWidget)
 #        bc.setModel(self.classValuesModel)
@@ -723,12 +722,36 @@ class OWDataGenerator(OWWidget):
         self.resize(800, 600)
         
     def addNewClassLabel(self):
-        self.classValuesModel.append("Class %i" % (len(self.classValuesModel) + 1))
+        i = 1
+        while True:
+            newlabel = "Class %i" %i
+            if newlabel not in self.classValuesModel:
+                self.classValuesModel.append(newlabel)
+                break
+            i += 1
         
     def removeSelectedClassLabel(self):
         index = self.selectedClassLabelIndex()
-        if index is not None:
-            self.graph.data
+        if index is not None and len(self.classValuesModel) > 1:
+            label = self.classValuesModel[index]
+            examples = [ex for ex in self.graph.data if str(ex.getclass()) != label]
+            
+            values = [val for val in self.classValuesModel if val != label]
+            newclass = orange.EnumVariable("Class label", values=values)
+            newdomain = orange.Domain(self.graph.data.domain.attributes, newclass)
+            newdata = orange.ExampleTable(newdomain)
+            for ex in examples:
+                if ex[self.classVariable] != label and ex[self.classVariable] in values:
+                    newdata.append(orange.Example(newdomain, [ex[a] for a in ex.domain.attributes] + [str(ex.getclass())]))
+                
+            self.classVariable = newclass
+            self.classValuesModel.wrap(self.classVariable.values)
+            
+            self.graph.data = newdata
+            self.graph.updateGraph()
+            
+            newindex = self.classValuesModel.index(max(0, index - 1))
+            self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
         
     def selectedClassLabelIndex(self):
         rows = [i.row() for i in self.classValuesView.selectionModel().selectedRows()]
