@@ -26,8 +26,9 @@ class OWNetworkHist():
         self.dstWeight = 0
         self.kNN = 0
         self.andor = 0
-        self.data = None
+        self.matrix = None
         self.excludeLimit = 1
+        self.percentil = 0
         
         boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
         
@@ -38,6 +39,7 @@ class OWNetworkHist():
         b = OWGUI.appendRadioButton(ribg, self, "andor", "AND", callback = self.generateGraph)
         b.setEnabled(False)
         OWGUI.spin(boxGeneral, self, "kNN", 0, 1000, 1, label="kNN:", orientation='horizontal', callback=self.generateGraph)
+        OWGUI.doubleSpin(boxGeneral, self, "percentil", 0, 100, 0.1, label="Percentil:", orientation='horizontal', callback=self.setPercentil, callbackOnReturn=1)
         
         # Options
         self.attrColor = ""
@@ -61,6 +63,13 @@ class OWNetworkHist():
         
         if str(self.netOption) != '3':
             self.attributeCombo.box.setEnabled(False)
+            
+    def setPercentil(self):
+        self.spinLowerThreshold = self.histogram.minValue
+        net = orngNetwork.Network(self.matrix.dim, 0)
+        lower, upper = net.getDistanceMatrixThreshold(self.matrix, self.percentil/100)
+        self.spinUpperThreshold = upper
+        self.generateGraph()
         
     def enableAttributeSelection(self):
         self.attributeCombo.box.setEnabled(True)
@@ -72,7 +81,7 @@ class OWNetworkHist():
     def setMatrix(self, data):
         if data == None: return
         
-        self.data = data
+        self.matrix = data
         # draw histogram
         data.matrixType = orange.SymMatrix.Symmetric
         values = data.getValues()
@@ -85,13 +94,13 @@ class OWNetworkHist():
         self.generateGraph()
         self.attributeCombo.clear()
         vars = []
-        if (self.data != None):
-            if hasattr(self.data, "items"):
+        if (self.matrix != None):
+            if hasattr(self.matrix, "items"):
                  
-                if isinstance(self.data.items, orange.ExampleTable):
-                    vars = list(self.data.items.domain.variables)
+                if isinstance(self.matrix.items, orange.ExampleTable):
+                    vars = list(self.matrix.items.domain.variables)
                 
-                    metas = self.data.items.domain.getmetas(0)
+                    metas = self.matrix.items.domain.getmetas(0)
                     for i, var in metas.iteritems():
                         vars.append(var)
                         
@@ -104,6 +113,8 @@ class OWNetworkHist():
                 print "error adding ", var, " to the attribute combo"
 
     def changeLowerSpin(self):
+        self.percentil = 0
+        
         if self.spinLowerThreshold < self.histogram.minValue:
             self.spinLowerThreshold = self.histogram.minValue
         elif self.spinLowerThreshold > self.histogram.maxValue:
@@ -115,6 +126,8 @@ class OWNetworkHist():
         self.generateGraph()
         
     def changeUpperSpin(self):
+        self.percentil = 0
+        
         if self.spinUpperThreshold < self.histogram.minValue:
             self.spinUpperThreshold = self.histogram.minValue
         elif self.spinUpperThreshold > self.histogram.maxValue:
@@ -135,7 +148,7 @@ class OWNetworkHist():
         if N_changed:
             self.netOption = 1
             
-        if self.data == None:
+        if self.matrix == None:
             self.infoa.setText("No data loaded.")
             self.infob.setText("")
             return
@@ -149,15 +162,15 @@ class OWNetworkHist():
             n = 0
             self.error('Estimated number of edges is too high (%d).' % nEdgesEstimate)
         else:
-            graph = orngNetwork.Network(self.data.dim, 0)
-            matrix = self.data
+            graph = orngNetwork.Network(self.matrix.dim, 0)
+            matrix = self.matrix
             
-            if hasattr(self.data, "items"):               
-                if type(self.data.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
+            if hasattr(self.matrix, "items"):               
+                if type(self.matrix.items) == type(orange.ExampleTable(orange.Domain(orange.StringVariable('tmp')))):
                     #graph.setattr("items", self.data.items)
-                    graph.items = self.data.items
+                    graph.items = self.matrix.items
                 else:
-                    data = [[str(x)] for x in self.data.items]
+                    data = [[str(x)] for x in self.matrix.items]
                     items = orange.ExampleTable(orange.Domain(orange.StringVariable('label'), 0), data)
                     #graph.setattr("items", list(items))
                     graph.items = list(items)
@@ -166,9 +179,9 @@ class OWNetworkHist():
             # set edges where distance is lower than threshold
                   
             self.warning(0)
-            if self.kNN >= self.data.dim:
-                self.warning(0, "kNN larger then supplied distance matrix dimension. Using k = %i" % (self.data.dim - 1))
-            nedges = graph.fromDistanceMatrix(self.data, self.spinLowerThreshold, self.spinUpperThreshold, min(self.kNN, self.data.dim - 1), self.andor)
+            if self.kNN >= self.matrix.dim:
+                self.warning(0, "kNN larger then supplied distance matrix dimension. Using k = %i" % (self.matrix.dim - 1))
+            nedges = graph.fromDistanceMatrix(self.matrix, self.spinLowerThreshold, self.spinUpperThreshold, min(self.kNN, self.matrix.dim - 1), self.andor)
             edges = graph.getEdges()
             
             #print graph.nVertices, self.matrix.dim
@@ -199,7 +212,7 @@ class OWNetworkHist():
                     include = reduce(lambda x,y: x+y, components)
                     if len(include) > 1:
                         self.graph = orngNetwork.Network(graph.getSubGraph(include))
-                        matrix = self.data.getitems(include)
+                        matrix = self.matrix.getitems(include)
                     else:
                         self.graph = None
                         matrix = None
@@ -211,7 +224,7 @@ class OWNetworkHist():
                 component = graph.getConnectedComponents()[0]
                 if len(component) > 1:
                     self.graph = orngNetwork.Network(graph.getSubGraph(component))
-                    matrix = self.data.getitems(component)
+                    matrix = self.matrix.getitems(component)
                 else:
                     self.graph = None
                     matrix = None
@@ -226,7 +239,7 @@ class OWNetworkHist():
                         
                     txt = self.label.lower()
                     #print 'txt:',txt
-                    nodes = [i for i, values in enumerate(self.data.items) if txt in str(values[str(self.attributeCombo.currentText())]).lower()]
+                    nodes = [i for i, values in enumerate(self.matrix.items) if txt in str(values[str(self.attributeCombo.currentText())]).lower()]
                     #print "nodes:",nodes
                     if len(nodes) > 0:
                         vertices = []
@@ -240,19 +253,21 @@ class OWNetworkHist():
                             #print "n vertices:", len(vertices), "n set vertices:", len(set(vertices))
                             vertices = list(set(vertices))
                             self.graph = orngNetwork.Network(graph.getSubGraph(vertices))
-                            matrix = self.data.getitems(vertices)
+                            matrix = self.matrix.getitems(vertices)
             else:
                 self.graph = graph
-                
-                
+        
+        if matrix != None:
+            self.matrix = matrix
+            
         self.pconnected = nedges
         self.nedges = n
         if hasattr(self, "infoa"):
-            self.infoa.setText("%d vertices" % self.data.dim)
+            self.infoa.setText("%d vertices" % self.matrix.dim)
         if hasattr(self, "infob"):
-            self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
+            self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.matrix.dim) * 100))
         if hasattr(self, "infoc"):
-            self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
+            self.infoc.setText("%d edges (%d average)" % (n, n / float(self.matrix.dim)))
         
         #print 'self.graph:',self.graph+
         if hasattr(self, "sendSignals"):
