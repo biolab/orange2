@@ -55,6 +55,32 @@ def _orange__new(base=orange.Preprocessor):
             return self
     return _orange__new_wrapped
 
+class Preprocessor_discretizeEntropy(Preprocessor_discretize):
+    """ An discretizer that uses orange.EntropyDiscretization method but,
+    unlike Preprocessor_disctetize class, also removes unused attributes
+    from the domain.
+    """
+    
+    __new__ = _orange__new(Preprocessor_discretize)
+    __reduce__ = _orange__reduce
+    
+    def __init__(self, method=orange.EntropyDiscretization()):
+        self.method = method
+        assert(isinstance(method, orange.EntropyDiscretization))
+        
+    def __call__(self, data, wightId=0):
+        newattr_list = []
+        for attr in data.domain.attributes:
+            if attr.varType == orange.VarTypes.Continuous:
+                newattr = self.method(attr, data)
+                if newattr.getValueFrom.transformer.points:
+                    newattr_list.append(newattr)
+            else:
+                newattr_list.append(attr)
+        newdomain = orange.Domain(newattr_list, data.domain.classVar)
+        newdomain.addmetas(data.domain.getmetas())
+        return orange.ExampleTable(newdomain, data)
+    
 class Preprocessor_removeContinuous(Preprocessor_discretize):
     """ A preprocessor that removes all continuous attributes.
     """
@@ -278,7 +304,9 @@ class DiscretizeEditor(BaseEditor):
         self.emit(SIGNAL("dataChanged"), self.data)
         
     def getDiscretizer(self):
-        if self.discInd in [0, 1, 2]:
+        if self.discInd == 0:
+            preprocessor = Preprocessor_discretizeEntropy(method=orange.EntropyDiscretization())
+        elif self.discInd in [1, 2]:
             name, disc, kwds = self.DISCRETIZERS[self.discInd]
             preprocessor = Preprocessor_discretize(method=disc(**dict([(key, getattr(self, key, val)) for key, val in kwds.items()])))
         elif self.discInd == 3:
@@ -504,6 +532,7 @@ class PreprocessorItemDelegate(QStyledItemDelegate):
         
     #Preprocessor name replacement rules
     REPLACE = {Preprocessor_discretize: "Discretize ({0.method})",
+               Preprocessor_discretizeEntropy: "Discretize (entropy)",
                Preprocessor_removeContinuous: "Discretize (remove continuous)",
                Preprocessor_continuize: "Continuize ({0.multinomialTreatment})",
                Preprocessor_removeDiscrete: "Continuize (remove discrete)",
@@ -602,13 +631,16 @@ class OWPreprocess(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler("", [""])}
     settingsList = ["allSchemas", "lastSelectedSchemaIndex"]
     
-    preprocessors =[("Discretize", Preprocessor_discretize, dict(method=orange.EntropyDiscretization())),
+    # Default preprocessors
+    preprocessors =[("Discretize", Preprocessor_discretizeEntropy, {}),
                     ("Continuize", Preprocessor_continuize, {}),
                     ("Impute", Preprocessor_impute, {}),
                     ("Feature selection", Preprocessor_featureSelection, {}),
                     ("Sample", Preprocessor_sample, {})]
     
+    # Editor widgets for preprocessors
     EDITORS = {Preprocessor_discretize: DiscretizeEditor,
+               Preprocessor_discretizeEntropy: DiscretizeEditor,
                Preprocessor_removeContinuous: DiscretizeEditor,
                Preprocessor_continuize: ContinuizeEditor,
                Preprocessor_removeDiscrete: ContinuizeEditor,
@@ -629,7 +661,7 @@ class OWPreprocess(OWWidget):
         self.changedFlag = False
         
 #        self.allSchemas = [PreprocessorSchema("Default" , [Preprocessor_discretize(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()])]
-        self.allSchemas = [("Default" , [Preprocessor_discretize(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()], 0)]
+        self.allSchemas = [("Default" , [Preprocessor_discretizeEntropy(method=orange.EntropyDiscretization()), Preprocessor_dropMissing()], 0)]
         
         self.lastSelectedSchemaIndex = 0
         
@@ -743,11 +775,14 @@ class OWPreprocess(OWWidget):
             
     def setData(self, data=None):
         self.data = data
-        self.commitIf()
+#        self.commit()
     
     def setLearner(self, learner=None):
         self.learner = learner
-        self.commitIf()
+#        self.commit()
+
+    def handleNewSignals(self):
+        self.commit()
     
     def addPreprocessor(self, prep):
         self.preprocessorsList.append(prep)
