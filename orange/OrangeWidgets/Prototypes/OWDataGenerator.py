@@ -58,6 +58,7 @@ class DataTool(QObject):
     widgets by installing itself as its event filter.
     """
     classIndex = 0
+    cursor = Qt.ArrowCursor
     class optionsWidget(QFrame):
         def __init__(self, tool, parent=None):
             QFrame.__init__(self, parent)
@@ -76,6 +77,7 @@ class DataTool(QObject):
             self.graph.canvas().installEventFilter(self)
             self.graph._data_tool_event_filter = self
             self.graph._tool_pixmap = None
+            self.graph.setCursor(self.cursor)
             self.graph.replot()
         
     def eventFilter(self, obj, event):
@@ -418,7 +420,7 @@ class ZoomTool(DataTool):
         return False
     
 class PutInstanceTool(DataTool):
-    
+    cursor = Qt.CrossCursor
     def mousePressEvent(self, event):
         if event.buttons() & Qt.LeftButton:
             coord = self.invTransform(event.pos())
@@ -438,6 +440,7 @@ class PutInstanceTool(DataTool):
 class BrushTool(DataTool):
     brushRadius = 20
     density = 5
+    cursor = Qt.CrossCursor
     
     class optionsWidget(QFrame):
         def __init__(self, tool, parent=None):
@@ -525,7 +528,7 @@ class BrushTool(DataTool):
         self.graph.updateGraph(dataInterval=(-len(new), sys.maxint))
     
 class MagnetTool(BrushTool):
-    
+    cursor = Qt.ArrowCursor
     def dataTransform(self, attr1, x, rx, attr2, y, ry):
         for ex in self.graph.data:
             x1, y1 = float(ex[attr1]), float(ex[attr2])
@@ -540,7 +543,7 @@ class MagnetTool(BrushTool):
         self.graph.updateGraph()
     
 class JitterTool(BrushTool):
-    
+    cursor = Qt.ArrowCursor
     def dataTransform(self, attr1, x, rx, attr2, y, ry):
         import random
         for ex in self.graph.data:
@@ -613,36 +616,11 @@ class OWDataGenerator(OWWidget):
         
         self.loadSettings()
         
-#        box = OWGUI.widgetBox(self.controlArea, "Domain")
-#        self.varListView = QListView(self)
-#        self.varListView.setItemDelegate(VariableDelegate(self))
         self.variablesModel = VariableListModel([orange.FloatVariable(name) for name in ["X", "Y"]], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
-#        self.varListView.setModel(self.variablesModel)
-#        box.layout().addWidget(self.varListView)
-#        
-#        self.connect(self.variablesModel, SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.onDomainChanged)
-        
-#        self.addDomainFeatureAction = QAction("+", self)
-#        self.removeDomainFeatureAction = QAction("-", self)
-#        self.connect(self.addDomainFeatureAction, SIGNAL("triggered()"), self.onAddFeature)
-#        self.connect(self.removeDomainFeatureAction, SIGNAL("triggered()"), self.onRemoveFeature)
-        
-#        self.connect(self.varListView.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.onVariableSelectionChange)
-        
-#        hlayout = QHBoxLayout()
-#        button1 = QToolButton()
-#        button1.setDefaultAction(self.addDomainFeatureAction)
-#        button2 = QToolButton()
-#        button2.setDefaultAction(self.removeDomainFeatureAction)
-#        
-#        hlayout.addWidget(button1)
-##        hlayout.addWidget(button2)
-#        hlayout.addStretch(10)
-#        box.layout().addLayout(hlayout)
+
         
         self.classVariable = orange.EnumVariable("Class label", values=["Class 1", "Class 2"], baseValue=0)
         
-#        cb = OWGUI.comboBox(self.controlArea, self, "classIndex", "Class Label")
         w = OWGUI.widgetBox(self.controlArea, "Class Label")
         
         self.classValuesView = listView = QListView()
@@ -657,23 +635,19 @@ class OWDataGenerator(OWWidget):
         listView.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
         w.layout().addWidget(listView)
         
-        addClassLabel = QAction("+", self)
+        self.addClassLabel = addClassLabel = QAction("+", self)
         addClassLabel.pyqtConfigure(toolTip="Add class label")#, icon=QIcon(icon_put))
         self.connect(addClassLabel, SIGNAL("triggered()"), self.addNewClassLabel)
         
-        removeClassLabel = QAction("-", self)
+        self.removeClassLabel = removeClassLabel = QAction("-", self)
         removeClassLabel.pyqtConfigure(toolTip="Remove class label")#, icon=QIcon(icon_remove))
         self.connect(removeClassLabel, SIGNAL("triggered()"), self.removeSelectedClassLabel)
         
         actionsWidget =  ModelActionsWidget([addClassLabel, removeClassLabel], self)
         actionsWidget.layout().addStretch(10)
-#        actionsWidget.setStyleSheet("QToolButton { qproperty-iconSize: 12px }")
+        actionsWidget.layout().setSpacing(1)
         
         w.layout().addWidget(actionsWidget)
-#        bc.setModel(self.classValuesModel)
-#        self.connect(cb, SIGNAL("currentIndexChanged(int)"), lambda base: setattr(self.classVariable, "baseValue", base))
-#        cb.box.layout().addSpacing(4)
-#        OWGUI.button(cb.box, self, "Add new class label", callback=self.onAddClassLabel)
         
         toolbox = OWGUI.widgetBox(self.controlArea, "Tools", orientation=QGridLayout())
         self.toolActions = QActionGroup(self)
@@ -745,6 +719,8 @@ class OWDataGenerator(OWWidget):
         newindex = self.classValuesModel.index(len(self.classValuesModel) - 1)
         self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
         
+        self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1)
+        
     def removeSelectedClassLabel(self):
         index = self.selectedClassLabelIndex()
         if index is not None and len(self.classValuesModel) > 1:
@@ -767,6 +743,8 @@ class OWDataGenerator(OWWidget):
             
             newindex = self.classValuesModel.index(max(0, index - 1))
             self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
+            
+            self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1) 
         
     def selectedClassLabelIndex(self):
         rows = [i.row() for i in self.classValuesView.selectionModel().selectedRows()]
