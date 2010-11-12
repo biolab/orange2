@@ -19,8 +19,9 @@ class WidgetDescription:
 
     def docDir(self):
         if not self.addOn:  # A built-in widget
-            subDir = os.sep+os.path.relpath(self.directory, orngEnviron.widgetDir) if "relpath" in os.path.__dict__ else self.directory.replace(orngEnviron.widgetDir, "")
-            return os.path.join(orngEnviron.orangeDocDir, "catalog%s" % subDir)
+            dir, widgetDir = os.path.realpath(self.directory), os.path.realpath(orngEnviron.widgetDir)
+            subDir = os.path.relpath(dir, widgetDir) if "relpath" in os.path.__dict__ else dir.replace(widgetDir, "")
+            return os.path.join(orngEnviron.orangeDocDir, "catalog", subDir)
         else:  # An add-on widget
             addOnDocDir = self.addOn.directoryDocumentation()
             return os.path.join(addOnDocDir, "widgets")
