@@ -12,7 +12,12 @@ def lineEditFilter(widget, master, value, *arg, **args):
     le.callback = callback
     le.focusOutEvent(None)
     return le
-    
+
+def QListWidget_py_iter(self):
+    for i in range(self.count()):
+        yield self.item(i)
+        
+QListWidget.py_iter = QListWidget_py_iter
 
 class LineEditFilter(QLineEdit):
     def __init__(self, parent):
@@ -58,9 +63,11 @@ class LineEditFilter(QLineEdit):
         else: return str(self.text())
         
     def setAllListItems(self, items = None):
-        if not items:
+        if items is None:
             items = [self.listbox.item(i) for i in range(self.listbox.count())]
-        if not items: return
+        if not items:
+            self.listboxItems = []
+            return
         if type(items[0]) == str:           # if items contain strings
             self.listboxItems = [(item, QListWidgetItem(item)) for item in items]
         else:                               # if items contain QListWidgetItems
@@ -70,27 +77,50 @@ class LineEditFilter(QLineEdit):
         self.updateListBoxItems()
         
     def updateListBoxItems(self, callCallback = 1):
-        if not self.listbox: return
+        if self.listbox is None: return
         last = self.getText()
-       
-        tuples = self.listboxItems                
-        if not self.caseSensitive:
-            tuples = [(text.lower(), item) for (text, item) in tuples]
-            last = last.lower()
-
-        if self.useRE:
-            try:
-                pattern = re.compile(last)
-                tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if pattern.match(text)]
-            except:
-                tuples = [(t, QListWidgetItem(i)) for (t,i) in self.listboxItems]        # in case we make regular expressions crash we show all items
-        else:
-            if self.matchAnywhere:  tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if last in text]
-            else:                   tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if text.startswith(last)]
         
-        self.listbox.clear()
-        for (t, item) in tuples:
-            self.listbox.addItem(item)
+        if self.useRE:
+            if self.caseSensitive:
+                pattern = re.compile(last)
+            else:
+                pattern = re.compile(last, re.IGNORECASE)
+            
+        for item in self.listbox.py_iter():
+            text = str(item.text())
+            if not self.caseSensitive:
+                text = text.lower()
+            if self.useRE:
+                try:
+                    test = pattern.match(text)
+                except Exception, ex:
+                    print ex
+                    test = True
+            else:
+                if self.matchAnywhere:
+                    test = last in text
+                else:
+                    test = text.startswith(last)
+            item.setHidden(not test)
+            
+#        tuples = self.listboxItems                
+#        if not self.caseSensitive:
+#            tuples = [(text.lower(), item) for (text, item) in tuples]
+#            last = last.lower()
+#
+#        if self.useRE:
+#            try:
+#                pattern = re.compile(last)
+#                tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if pattern.match(text)]
+#            except:
+#                tuples = [(t, QListWidgetItem(i)) for (t,i) in self.listboxItems]        # in case we make regular expressions crash we show all items
+#        else:
+#            if self.matchAnywhere:  tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if last in text]
+#            else:                   tuples = [(text, QListWidgetItem(item)) for (text, item) in tuples if text.startswith(last)]
+#        
+#        self.listbox.clear()
+#        for (t, item) in tuples:
+#            self.listbox.addItem(item)
         
         if self.callback and callCallback:
             self.callback()
