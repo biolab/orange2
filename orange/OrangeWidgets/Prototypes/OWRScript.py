@@ -25,6 +25,21 @@ if hasattr(robjects, "globalenv"): # rpy2 version 2.1
     globalenv = robjects.globalenv
 else: # rpy2 version 2.0
     globalenv = robjects.globalEnv
+    
+if hasattr(robjects, "NA_Real"):
+    NA_Real = robjects.NA_Real
+else:
+    NA_Real = robjects.r("NA")
+    
+if hasattr(robjects, "NA_Integer"):
+    NA_Real = robjects.NA_Integer
+else:
+    NA_Real = robjects.r("NA")
+    
+if hasattr(robjects, "NA_Character"):
+    NA_Real = robjects.NA_Character
+else:
+    NA_Real = robjects.r("NA")
         
 
 def ExampleTable_to_DataFrame(examples):
@@ -32,19 +47,19 @@ def ExampleTable_to_DataFrame(examples):
              [orange.VarTypes.Continuous, orange.VarTypes.Discrete, orange.VarTypes.String]]
     def float_or_NA(value):
         if value.isSpecial():
-            return robjects.NA_Real
+            return NA_Real
         else:
             return float(value)
         
     def int_or_NA(value):
         if value.isSpecial():
-            return robjects.NA_Integer
+            return NA_Integer
         else:
             return int(value)
     
     def str_or_NA(value):
         if value.isSpecial():
-            return robjects.NA_Character
+            return NA_Character
         else:
             return str(value)
         
