@@ -67,7 +67,14 @@ class OWExampleDistance(OWWidget):
             return
         data = self.data
         dist = self.metrics[self.Metrics][1](data)
-        self.matrix = orange.SymMatrix(len(data))
+        self.error(0)
+        try:
+            self.matrix = orange.SymMatrix(len(data))
+        except orange.KernelException, ex:
+            self.error(0, "Could not create distance matrix! %s" % str(ex))
+            self.matrix = None
+            self.send("Distance Matrix", None)
+            return
         self.matrix.setattr('items', data)
         for i in range(len(data)):
             for j in range(i+1):
