@@ -48,10 +48,17 @@ class PyListModel(QAbstractListModel):
         
     def flags(self, index):
         return Qt.ItemFlags(self._flags)
+        
+    def removeRows(self, row, count, parent=QModelIndex()):
+        if not parent.isValid():
+            self.__delslice__(row, row + count)
+            return True
+        else:
+            return False
     
     def extend(self, iterable):
         list_ = list(iterable)
-        self.beginInsertRows(QModelIndex(), len(self), len(self) + len(list_))
+        self.beginInsertRows(QModelIndex(), len(self), len(self) + len(list_) - 1)
         self._list.extend(list_)
         self.endInsertRows()
     
@@ -59,7 +66,7 @@ class PyListModel(QAbstractListModel):
         self.extend([item])
         
     def insert(self, i, val):
-        self.beginInsertRows(QModelIndex(), i, i + 1)
+        self.beginInsertRows(QModelIndex(), i, i)
         self._list.insert(i, val)
         self.endInsertRows()
         
@@ -92,18 +99,24 @@ class PyListModel(QAbstractListModel):
         del self._list[i]
         self.endRemoveRows()
         
-    def __delslice(self, i, j):
-        self.beginRemoveRows(QModelIndex(), i, j)
-        del self._list[i:j]
-        self.endRemoveRows()
+    def __delslice__(self, i, j):
+        if j > i:
+            self.beginRemoveRows(QModelIndex(), i, j - 1)
+            del self._list[i:j]
+            self.endRemoveRows()
         
     def __setitem__(self, i, value):
         self._list[i] = value
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(i), self.index(i))
         
     def __setslice__(self, i, j, iterable):
-        self._list[i:j] = iterable
-        self.reset()
+        self.__delslice__(i, j)
+        all = list(iterable)
+        if len(all):
+            self.beginInsertRows(QModelIndex(), i, i + len(all) - 1)
+            self._list[i:i] = all
+            self.endInsertRows()
+#        self.reset()
 #        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), self.index(i), self.index(j))
         
     def reverse(self):
