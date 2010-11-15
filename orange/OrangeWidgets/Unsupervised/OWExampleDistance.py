@@ -10,6 +10,7 @@ import OWGUI
 from OWWidget import *
 import random
 import orngClustering
+import orngMisc
 
 ##############################################################################
 # main class
@@ -76,9 +77,16 @@ class OWExampleDistance(OWWidget):
             self.send("Distance Matrix", None)
             return
         self.matrix.setattr('items', data)
+        pb = OWGUI.ProgressBar(self, 100)
+        milestones  = orngMisc.progressBarMilestones(len(data)*(len(data)-1)/2, 100)
+        count = 0
         for i in range(len(data)):
             for j in range(i+1):
                 self.matrix[i, j] = dist(data[i], data[j])
+                if count in milestones:
+                    pb.advance()
+                count += 1
+        pb.finish()
         self.send("Distance Matrix", self.matrix)
 
     def setLabel(self):
