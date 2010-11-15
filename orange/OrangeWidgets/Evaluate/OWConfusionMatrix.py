@@ -10,7 +10,34 @@ import OWGUI
 import orngStat, orngTest
 import statc, math
 from operator import add
+            
+class TransformedLabel(QLabel):
+    def __init__(self, text, parent=None):
+        QLabel.__init__(self, text, parent)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        self.setMaximumWidth(self.sizeHint().width() + 2)
+        self.setMargin(4)
+        
+    def sizeHint(self):
+        metrics = QFontMetrics(self.font())
+        rect = metrics.boundingRect(self.text())
+        size = QSize(rect.height() + self.margin(), rect.width() + self.margin())
+        return size
+    
+    def setGeometry(self, rect):
+        QLabel.setGeometry(self, rect)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        rect = self.geometry()
+        textRect = QRect(0,0,rect.width(), rect.height())
 
+        painter.translate(textRect.bottomLeft())
+        painter.rotate(-90)
+        painter.drawText(QRect(QPoint(0, 0), QSize(rect.height(), rect.width())), Qt.AlignCenter, self.text())
+        painter.end()
+        
+        
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
@@ -58,14 +85,15 @@ class OWConfusionMatrix(OWWidget):
         self.layout = QGridLayout(self.mainArea)
 
         self.layout.addWidget(OWGUI.widgetLabel(self.mainArea, "Prediction"), 0, 1, Qt.AlignCenter)
-        self.layout.addWidget(OWGUI.widgetLabel(self.mainArea, "Correct Class  "), 2, 0, Qt.AlignCenter)
+        
+        label = TransformedLabel("Correct Class")
+        self.layout.addWidget(label, 2, 0, Qt.AlignCenter)
+#        self.layout.addWidget(OWGUI.widgetLabel(self.mainArea, "Correct Class  "), 2, 0, Qt.AlignCenter)
         self.table = OWGUI.table(self.mainArea, rows = 0, columns = 0, selectionMode = QTableWidget.MultiSelection, addToLayout = 0)
         self.layout.addWidget(self.table, 2, 1)
         self.layout.setColumnStretch(1, 100)
         self.layout.setRowStretch(2, 100)
         self.connect(self.table, SIGNAL("itemSelectionChanged()"), self.sendIf)
-        
-        print self.controlArea.layout().spacing()
 
         self.resize(700,450)
 
