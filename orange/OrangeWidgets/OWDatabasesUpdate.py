@@ -7,7 +7,7 @@ from OWWidget import *
 from functools import partial
 from datetime import datetime
 
-import gzip
+import gzip, sys
 
 def sizeof_fmt(num):
     for x in ['bytes','KB','MB','GB','TB']:
@@ -15,16 +15,12 @@ def sizeof_fmt(num):
             return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
         num /= 1024.0
 
-class SemaphoreContext(QSemaphore):
-    def __enter__(self):
-        self.acquire()
-    def __exit__(self, *args):
-        self.release()
-        
+       
 class ItemProgressBar(QProgressBar):
     @pyqtSignature("advance()")
     def advance(self):
         self.setValue(self.value() + 1)
+   
         
 class ProgressBarRedirect(QObject):
     def __init__(self, parent, redirect):
@@ -44,72 +40,10 @@ class ProgressBarRedirect(QObject):
             finally:
                 self._delay = False
         else:
-            QTimer.singleShot(100, self.advance)
-            
-        
-        
-class CallWrapper(QObject):
-    def __init__(self, call):
-        QObject.__init__(self)
-        self.call = call
-    def __call__(self, *args, **kwargs):
-        return self.call(*args, **kwargs)
-    
-class UpdateThread(QThread):
-    semaphore = SemaphoreContext(3)
-    def __init__(self, item, *args):
-        QThread.__init__(self)
-        self.item = item
-        self.args = args
-        
-    def run(self):
-        call = CallWrapper(self.download)
+            QTimer.singleShot(10, self.advance)
 
-        QTimer.singleShot(100, call.__call__)
-        with self.semaphore:
-            ret = self.exec_()
         
-    @pyqtSignature("download()")
-    def download(self):
-        try:
-            orngServerFiles.download(*(self.args + (self.advance,)))
-        except Exception, ex:
-            self.emit(SIGNAL("finish(QString)"), QString(str(ex)))
-            self.exit(1)
-            print >> sys.stderr, "error: ", ex
-            return
-        self.emit(SIGNAL("finish(QString)"), QString("Ok"))
-        self.quit()
-
-    def advance(self):
-        self.emit(SIGNAL("advance()"))
-        qApp.processEvents()
-        
-class RunnableTask(QRunnable):
-    def __init__(self, call):
-        QRunnable.__init__(self)
-        self.setAutoDelete(False)
-        self._call = call
-        
-    def run(self):
-        self._return = self._call()
-        
-class UpdateTask(QObject):
-    def __init__(self, args, parent=None):
-        QObject.__init__(self, parent)
-        self.args = args
-        
-    def __call__(self):
-        try:
-            ret = orngServerFiles.download(*(self.args + (self._advance,)))
-        except Exception, ex:
-            self.emit(SIGNAL("finished(QString)"), QString(str(ex)))
-            return
-        self.emit(SIGNAL("finished(QString)"), QString("Ok"))
-        return ret
-            
-    def _advance(self):
-        self.emit(SIGNAL("advance()"))
+from OWConcurrent import *
         
 class UpdateOptionsWidget(QWidget):
     def __init__(self, updateCallback, removeCallback, state, *args):
@@ -208,12 +142,13 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.updateButton.setEnabled(False)
         self.setData(2, Qt.DisplayRole, QVariant(""))
         serverFiles = orngServerFiles.ServerFiles(access_code=self.master.accessCode if self.master.accessCode else None) 
-#        self.thread = tt = UpdateThread(None, self.domain, self.filename, serverFiles)
-        self.thread = tt = UpdateTask((self.domain, self.filename, serverFiles), None)
         
         pb = ItemProgressBar(self.treeWidget())
         pb.setRange(0, 100)
         pb.setTextVisible(False)
+        
+        self.task = AsyncCall(threadPool=QThreadPool.globalInstance())
+        
         if not getattr(self.master, "_sum_progressBar", None):
             self.master._sum_progressBar = OWGUI.ProgressBar(self.master,0)
             self.master._sum_progressBar.in_progress = 0
@@ -222,15 +157,13 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         master_pb.in_progress += 1
         self._progressBarRedirect = ProgressBarRedirect(QThread.currentThread(), master_pb)
 #        QObject.connect(self.thread, SIGNAL("advance()"), lambda :(pb.setValue(pb.value()+1), master_pb.advance()))
-        QObject.connect(self.thread, SIGNAL("advance()"), pb.advance, Qt.QueuedConnection)
-        QObject.connect(self.thread, SIGNAL("advance()"), self._progressBarRedirect.advance, Qt.QueuedConnection)
-        QObject.connect(self.thread, SIGNAL("finished(QString)"), self.EndDownload, Qt.QueuedConnection)
+        QObject.connect(self.task, SIGNAL("advance()"), pb.advance, Qt.QueuedConnection)
+        QObject.connect(self.task, SIGNAL("advance()"), self._progressBarRedirect.advance, Qt.QueuedConnection)
+        QObject.connect(self.task, SIGNAL("finished(QString)"), self.EndDownload, Qt.QueuedConnection)
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
-#        self.thread.start()
-        self._runnable = RunnableTask(self.thread)  
-        QThreadPool.globalInstance()
-        QThreadPool.globalInstance().start(self._runnable)
+        
+        self.task.apply_async(orngServerFiles.download, args=(self.domain, self.filename, serverFiles), kwargs=dict(callback=self.task.emitAdvance))
 
     def EndDownload(self, exitCode=0):
         self.treeWidget().removeItemWidget(self, 2)
@@ -274,6 +207,13 @@ class UpdateItemDelegate(QItemDelegate):
             size = QSize(size.width(), widget.sizeHint().height()/2)
         return size
     
+def retrieveFilesList(serverFiles, domains=None, advance=lambda: None):
+    domains = serverFiles.listdomains() if domains is None else domains
+    advance()
+    serverInfo = dict([(dom, serverFiles.allinfo(dom)) for dom in domains])
+    advance()
+    return serverInfo
+    
 class OWDatabasesUpdate(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Databases update", wantCloseButton=False, searchString="", showAll=True, domains=None, accessCode=""):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -300,8 +240,8 @@ class OWDatabasesUpdate(OWWidget):
         OWGUI.button(box, self, "Update all local files", callback=self.UpdateAll, tooltip="Update all updatable files")
         OWGUI.button(box, self, "Download filtered", callback=self.DownloadFiltered, tooltip="Download all filtered files shown")
         OWGUI.rubber(box)
-        OWGUI.lineEdit(box, self, "accessCode", "Access Code", orientation="horizontal", callback=self.UpdateFilesList)
-        self.retryButton = OWGUI.button(box, self, "Retry", callback=self.UpdateFilesList)
+        OWGUI.lineEdit(box, self, "accessCode", "Access Code", orientation="horizontal", callback=self.RetrieveFilesList)
+        self.retryButton = OWGUI.button(box, self, "Retry", callback=self.RetrieveFilesList)
         self.retryButton.hide()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
         OWGUI.rubber(box)
@@ -320,41 +260,31 @@ class OWDatabasesUpdate(OWWidget):
         self.allTags = []
         
         self.resize(800, 600)
-        QTimer.singleShot(50, self.UpdateFilesList)
-
-    def UpdateFilesList(self):
-        self.retryButton.hide()
-#        self.progressBarInit()
-        pb = OWGUI.ProgressBar(self, 3)
-        self.filesView.clear()
-#        self.tagsWidget.clear()
-        self.allTags = set()
-        allTitles = set()
-        self.updateItems = []
-        if self.accessCode:
-            self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
-            
-        self.error(0)    
-        try:
-            domains = self.serverFiles.listdomains() if self.domains is None else self.domains
-            pb.advance()
-            serverInfo = dict([(dom, self.serverFiles.allinfo(dom)) for dom in domains])
-            pb.advance()
-        except IOError, ex:
-            self.error(0, "Could not connect to server! Press the Retry button to try again.")
-            self.retryButton.show()
-            domains =orngServerFiles.listdomains() if self.domains is None else self.domains
-            pb.advance()
-            serverInfo = {}
-            pb.advance()
-            
+        
+#        QTimer.singleShot(50, self.UpdateFilesList)
+        QTimer.singleShot(50, self.RetrieveFilesList)
+        
+    def RetrieveFilesList(self):
+        self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
+        self.pb = ProgressBar(self, 3)
+        self.async_retrieve = createTask(retrieveFilesList, (self.serverFiles, self.domains, self.pb.advance), onResult=self.SetFilesList, onError=self.HandleError)
+        
+        self.setEnabled(False)
+        
+        
+    def SetFilesList(self, serverInfo):
+        self.setEnabled(True)
+        domains = serverInfo.keys() or orngServerFiles.listdomains()
         localInfo = dict([(dom, orngServerFiles.allinfo(dom)) for dom in domains])
         items = []
         
+        self.allTags = set()
+        allTitles = set()
+        self.updateItems = []
+        
         for i, domain in enumerate(set(domains) - set(["test", "demo"])):
-            local = localInfo.get(domain, {}) #orngServerFiles.listfiles(domain) or []
-#                files = self.serverFiles.listfiles(domain)
-            server =  serverInfo.get(domain, {}) #self.serverFiles.allinfo(domain)
+            local = localInfo.get(domain, {}) 
+            server =  serverInfo.get(domain, {})
             files = sorted(set(server.keys() + local.keys()))
             for j, file in enumerate(files):
                 infoServer = server.get(file, None)
@@ -365,20 +295,85 @@ class OWDatabasesUpdate(OWWidget):
                 displayInfo = infoServer if infoServer else infoLocal
                 self.allTags.update(displayInfo["tags"])
                 allTitles.update(displayInfo["title"].split())
-
-#                    self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
         
         for i, item in enumerate(items):
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
-        pb.advance()
+        self.pb.advance()
         self.filesView.resizeColumnToContents(0)
         self.filesView.resizeColumnToContents(1)
         self.filesView.resizeColumnToContents(2)
         self.lineEditFilter.setItems([hint for hint in sorted(self.allTags) if not hint.startswith("#")])
         self.SearchUpdate()
         self.UpdateInfoLabel()
-
-        self.progressBarFinished()
+        self.pb.finish()
+        
+    def HandleError(self, (exc_type, exc_value, tb)):
+        if exc_type >= IOError:
+            self.error(0, "Could not connect to server! Press the Retry button to try again.")
+            self.SetFilesList({})
+        else:
+            sys.excepthook(exc_type, exc_value, tb)
+            self.pb.finish()
+            self.setEnabled(True)
+            
+        
+#    def UpdateFilesList(self):
+#        self.retryButton.hide()
+##        self.progressBarInit()
+#        pb = OWGUI.ProgressBar(self, 3)
+#        self.filesView.clear()
+##        self.tagsWidget.clear()
+#        self.allTags = set()
+#        allTitles = set()
+#        self.updateItems = []
+#        if self.accessCode:
+#            self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
+#            
+#        self.error(0)    
+#        try:
+#            domains = self.serverFiles.listdomains() if self.domains is None else self.domains
+#            pb.advance()
+#            serverInfo = dict([(dom, self.serverFiles.allinfo(dom)) for dom in domains])
+#            pb.advance()
+#        except IOError, ex:
+#            self.error(0, "Could not connect to server! Press the Retry button to try again.")
+#            self.retryButton.show()
+#            domains =orngServerFiles.listdomains() if self.domains is None else self.domains
+#            pb.advance()
+#            serverInfo = {}
+#            pb.advance()
+#            
+#        localInfo = dict([(dom, orngServerFiles.allinfo(dom)) for dom in domains])
+#        items = []
+#        
+#        for i, domain in enumerate(set(domains) - set(["test", "demo"])):
+#            local = localInfo.get(domain, {}) #orngServerFiles.listfiles(domain) or []
+##                files = self.serverFiles.listfiles(domain)
+#            server =  serverInfo.get(domain, {}) #self.serverFiles.allinfo(domain)
+#            files = sorted(set(server.keys() + local.keys()))
+#            for j, file in enumerate(files):
+#                infoServer = server.get(file, None)
+#                infoLocal = local.get(file, None)
+#                
+#                items.append((self.filesView, domain, file, infoLocal, infoServer))
+#                
+#                displayInfo = infoServer if infoServer else infoLocal
+#                self.allTags.update(displayInfo["tags"])
+#                allTitles.update(displayInfo["title"].split())
+#
+##                    self.progressBarSet(100.0 * i / len(domains) + 100.0 * j / (len(files) * len(domains)))
+#        
+#        for i, item in enumerate(items):
+#            self.updateItems.append(UpdateTreeWidgetItem(self, *item))
+#        pb.advance()
+#        self.filesView.resizeColumnToContents(0)
+#        self.filesView.resizeColumnToContents(1)
+#        self.filesView.resizeColumnToContents(2)
+#        self.lineEditFilter.setItems([hint for hint in sorted(self.allTags) if not hint.startswith("#")])
+#        self.SearchUpdate()
+#        self.UpdateInfoLabel()
+#
+#        self.progressBarFinished()
 
     def UpdateInfoLabel(self):
         local = [item for item in self.updateItems if item.state != 2]
