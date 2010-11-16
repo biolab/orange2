@@ -973,9 +973,13 @@ class SOMScene(QGraphicsScene):
     def mouseReleaseEvent(self, event):
         if event.button() & Qt.LeftButton:
             self.selectionManager.end(event)
-            self.selectionRectItem.hide()
-            self.removeItem(self.selectionRectItem)
-            self.selectionRectItem = None
+            if self.selectionRectItem:
+                self.selectionRectItem.hide()
+                self.removeItem(self.selectionRectItem)
+                self.selectionRectItem = None
+    
+    def mouseDoubleClickEvent(self, event):
+        return
     
     def onSelectionAreaChange(self):
         self.setSelectionArea(self.selectionManager.selectionArea())
@@ -1002,8 +1006,8 @@ class OWSOMVisualizer(OWWidget):
         self.inputs = [("SOMMap", orngSOM.SOMMap, self.setSomMap), ("Examples", ExampleTable, self.data)]
         self.outputs = [("Examples", ExampleTable)]
         
-        self.drawMode = 0
-        self.objSize = 10
+        self.drawMode = 2
+        self.objSize = 15
         self.component = 0
         self.labelNodes = 0
         self.commitOnChange = 0
@@ -1017,7 +1021,7 @@ class OWSOMVisualizer(OWWidget):
         self.targetValue = 0
         self.contHistMode = 0
         self.inputSet = 0
-        self.showNodeOutlines = 0
+        self.showNodeOutlines = 1
 
         self.somMap = None
         self.examples = None
@@ -1205,9 +1209,13 @@ class OWSOMVisualizer(OWWidget):
             self.componentCombo.addItem(v.name)
         for v in somMap.examples.domain.variables:
             self.attributeCombo.addItem(v.name)
+            
+        if somMap.examples.domain.classVar:
+            self.attribute = len(somMap.examples.domain.variables) - 1
 
         self.openContext("", somMap.examples)
         self.component = min(self.component, len(somMap.examples.domain.attributes) - 1)
+        self.attribute = min(self.attribute, len(somMap.examples.domain.variables) - 1)
         self.setDiscCont()
         self.scene.setSom(somMap)
         self.update()
