@@ -408,7 +408,7 @@ class SchemaDoc(QWidget):
             self.save()
 
     def saveDocumentAs(self):
-        name = str(QFileDialog.getSaveFileName(self, "Save File", os.path.join(self.schemaPath, self.schemaName), "Orange Widget Schema (*.ows)"))
+        name = str(QFileDialog.getSaveFileName(self, "Save Orange Schema", os.path.join(self.schemaPath, self.schemaName), "Orange Widget Schema (*.ows)"))
         if os.path.splitext(name)[0] == "": return
         if os.path.splitext(name)[1].lower() != ".ows": name = os.path.splitext(name)[0] + ".ows"
         self.save(name)
@@ -550,7 +550,7 @@ class SchemaDoc(QWidget):
         extension = sys.platform == "win32" and ".pyw" or ".py"
         appName = (os.path.splitext(self.schemaName)[0] or "Schema") + extension
         appPath = os.path.exists(self.canvasDlg.settings["saveApplicationDir"]) and self.canvasDlg.settings["saveApplicationDir"] or self.schemaPath
-        qname = QFileDialog.getSaveFileName(self, "Save File as Application", os.path.join(appPath, appName) , "Orange Scripts (*%s)" % extension)
+        qname = QFileDialog.getSaveFileName(self, "Save Orange Schema as Application", os.path.join(appPath, appName) , "Orange Scripts (*%s)" % extension)
         if qname.isEmpty(): return
         (appPath, appName) = os.path.split(str(qname))
         appNameWithoutExt = os.path.splitext(appName)[0]
