@@ -136,21 +136,8 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.toolbar.addWidget(w)
         
-        self.addToolBarBreak()
-        orngTabs.constructCategoriesPopup(self)
-        self.createWidgetsToolbar()
-        self.readShortcuts()
-        
-        def addOnRefreshCallback():
-            self.widgetRegistry = orngRegistry.readCategories()
-            orngTabs.constructCategoriesPopup(self)
-            self.createWidgetsToolbar()
-        orngAddOns.addOnRefreshCallback.append(addOnRefreshCallback)
-
-        # create menu
-        self.initMenu()
-        self.readRecentFiles()
-
+        # Restore geometry before calling createWidgetsToolbar.
+        # On Mac OSX with unified title bar the canvas can move up on restarts
         state = self.settings.get("CanvasMainWindowGeometry", None)
         if state is not None:
             state = self.restoreGeometry(QByteArray(state))
@@ -172,7 +159,24 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.resize(width, height)
         
-        #move to center if frame not fully contained in space TODO: move to side of the space not the center
+        self.addToolBarBreak()
+        orngTabs.constructCategoriesPopup(self)
+        self.createWidgetsToolbar()
+        self.readShortcuts()
+        
+        def addOnRefreshCallback():
+            self.widgetRegistry = orngRegistry.readCategories()
+            orngTabs.constructCategoriesPopup(self)
+            self.createWidgetsToolbar()
+        orngAddOns.addOnRefreshCallback.append(addOnRefreshCallback)
+
+        # create menu
+        self.initMenu()
+        self.readRecentFiles()
+
+        
+        
+        #move to center if frame not fully contained in space
         if not space.contains(self.frameGeometry()):
             x = max(0, space.width() / 2 - width / 2)
             y = max(0, space.height() / 2 - height / 2)
@@ -375,7 +379,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.schema.loadDocument(filename)
         
     def menuItemOpen(self):
-        name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
+        name = QFileDialog.getOpenFileName(self, "Open Orange Schema", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
         self.schema.clear()
@@ -383,7 +387,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.addToRecentMenu(str(name))
 
     def menuItemOpenFreeze(self):
-        name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
+        name = QFileDialog.getOpenFileName(self, "Open Orange Schema", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
         self.schema.clear()
