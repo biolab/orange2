@@ -79,8 +79,10 @@ def ExampleTable_to_DataFrame(examples):
 
 
 def SymMatrix_to_Matrix(matrix):
-    matrix = [[e for e in row for row in matrix]]
-    r_obj = Matrix(matrix)
+    
+    v = robjects.FloatVector([e for row in matrix for e in row])
+
+    r_obj = robjects.r['matrix'](v, nrow=matrix.dim)
     return r_obj
 
     
@@ -271,7 +273,7 @@ class OWRScript(OWWidget):
         self.scriptLibraryList = [RScript("New script", "x <- c(1,2,5)\ny <- c(2,1 6)\nplot(x,y)\n")]
         self.selectedScriptIndex = 0
         
-        self.lastDir = os.path.expanduser("~/")
+        self.lastDir = os.path.expanduser("~/script.R")
         
         self.loadSettings()
         
