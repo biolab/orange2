@@ -263,18 +263,16 @@ class OWKMeans(OWWidget):
         random.seed(0)
         
         self.km = orngClustering.KMeans(
-            self.data,
             centroids = self.K,
             minscorechange=0,
             nstart = self.restarts,
             initialization = self.initializations[self.initializationType][1],
             distance = self.distanceMeasures[self.distanceMeasure][1],
             scoring = self.scoringMethods[self.scoring][1],
-            initialize_only = True,
             inner_callback = self.clusterCallback,
             )
         self.progressBarInit()
-        self.km.run()
+        self.km(self.data)
         self.sendData()
         self.progressBarFinished()
 
