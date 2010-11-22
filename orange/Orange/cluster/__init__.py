@@ -14,24 +14,17 @@ k-Means clustering
 Examples
 ========
 
-The following code runs k-means clustering and prints out the cluster indexes for the last 10 data instances (part of `kmeans-run.py`_, uses `iris.tab`_)::
+The following code runs k-means clustering and prints out the cluster indexes for the last 10 data instances (`kmeans-run.py`_, uses `iris.tab`_):
 
-    data  = orange.ExampleTable("iris")
-    km = orngClustering.KMeans(data, 3)
-    print km.clusters[-10:]
+.. literalinclude:: code/kmeans-run.py
 
 The output of this code is::
 
     [1, 1, 2, 1, 1, 1, 2, 1, 1, 2]
 
-Invoking a call-back function may be useful when tracing the progress of the clustering. Below is a code that uses an :obj:`inner_callback` to report on the number of instances that have changed the cluster and to report on the clustering score. For the score to be computed at each iteration we have to set :obj:`minscorechange`, but we can leave it at 0 (or even set it to a negative value, which allows the score to deteriorate by some amount). Part of `kmeans-run-callback.py`_, uses `iris.tab`_::
+Invoking a call-back function may be useful when tracing the progress of the clustering. Below is a code that uses an :obj:`inner_callback` to report on the number of instances that have changed the cluster and to report on the clustering score. For the score to be computed at each iteration we have to set :obj:`minscorechange`, but we can leave it at 0 or even set it to a negative value, which allows the score to deteriorate by some amount (`kmeans-run-callback.py`_, uses `iris.tab`_):
 
-    def callback(km):
-        print "Iteration: %d, changes: %d, score: %.4f" % (km.iteration,
-            km.nchanges, km.score)
-
-    data = orange.ExampleTable("iris")
-    km = orngClustering.KMeans(data, 3, minscorechange=0, inner_callback=callback)
+.. literalinclude:: code/kmeans-run-callback.py
 
 The convergence on Iris data set is fast::
 
@@ -44,35 +37,9 @@ The convergence on Iris data set is fast::
     Iteration: 7, changes: 2, score: 9.8624
     Iteration: 8, changes: 0, score: 9.8624
 
-Call-back above is used for reporting of the progress, but may as well call a function that plots a selection data projection with corresponding centroid at a given step of the clustering. This is exactly what we did with the following script (part of `kmeans-trace.py`_, uses `iris.tab`_)::
+Call-back above is used for reporting of the progress, but may as well call a function that plots a selection data projection with corresponding centroid at a given step of the clustering. This is exactly what we did with the following script (`kmeans-trace.py`_, uses `iris.tab`_):
 
-    def plot_scatter(data, km, attx, atty, filename="kmeans-scatter", title=None):
-        #plot a data scatter plot with the position of centeroids
-        pylab.rcParams.update({'font.size': 8, 'figure.figsize': [4,3]})
-        x = [float(d[attx]) for d in data]
-        y = [float(d[atty]) for d in data]
-        colors = ["c", "w", "b"]
-        cs = "".join([colors[c] for c in km.clusters])
-        pylab.scatter(x, y, c=cs, s=10)
-
-        xc = [float(d[attx]) for d in km.centroids]
-        yc = [float(d[atty]) for d in km.centroids]
-        pylab.scatter(xc, yc, marker="x", c="k", s=200)
-
-        pylab.xlabel(attx)
-        pylab.ylabel(atty)
-        if title:
-            pylab.title(title)
-        pylab.savefig("%s-%03d.png" % (filename, km.iteration))
-        pylab.close()
-
-    def in_callback(km):
-        print "Iteration: %d, changes: %d, score: %8.6f" % (km.iteration, km.nchanges, km.score)
-        plot_scatter(data, km, "petal width", "petal length", title="Iteration %d" % km.iteration)
-
-    data = orange.ExampleTable("iris")
-    random.seed(42)
-    km = orngClustering.KMeans(data, 3, minscorechange=0, maxiters=10, inner_callback=in_callback)
+.. literalinclude:: code/kmeans-trace.py
 
 Only the first four scatterplots are shown below. Colors of the data instances indicate the cluster membership. Notice that since the Iris data set includes four attributes, the closest centroid in a particular 2-dimensional projection is not necessary also the centroid of the cluster that the data point belongs to.
 
@@ -107,25 +74,9 @@ k-Means Utility Functions
 
 .. automethod:: Orange.cluster.score_fastsilhouette
 
-Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge (part of `kmeans-cmp-init.py`_, uses `iris.tab`_, `housing.tab`_, `vehicle.tab`_)::
+Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge (`kmeans-cmp-init.py`_, uses `iris.tab`_, `housing.tab`_, `vehicle.tab`_):
 
-    import orange
-    import orngClustering
-    import random
-
-    data_names = ["iris", "housing", "vehicle"]
-    data_sets = [orange.ExampleTable(name) for name in data_names]
-
-    print "%10s %3s %3s %3s" % ("", "Rnd", "Div", "HC")
-    for data, name in zip(data_sets, data_names):
-        random.seed(42)
-        km_random = orngClustering.KMeans(data, centroids = 3)
-        km_diversity = orngClustering.KMeans(data, centroids = 3, 
-            initialization=orngClustering.kmeans_init_diversity)
-        km_hc = orngClustering.KMeans(data, centroids = 3, 
-            initialization=orngClustering.KMeans_init_hierarchicalClustering(n=100))
-        print "%10s %3d %3d %3d" % (name, km_random.iteration, 
-            km_diversity.iteration, km_hc.iteration)
+.. literalinclude:: code/kmeans-cmp-init.py
 
 As expected, k-means converges faster with diversity and clustering-based initialization that with random seed selection::
 
@@ -134,19 +85,9 @@ As expected, k-means converges faster with diversity and clustering-based initia
        housing  14   6   4
        vehicle  11   4   3
 
-The following code computes the silhouette score for k=2..7 and plots a silhuette plot for k=3. Part of `kmeans-silhouette.py`_, uses `iris.tab`_::
+The following code computes the silhouette score for k=2..7 and plots a silhuette plot for k=3 (`kmeans-silhouette.py`_, uses `iris.tab`_):
 
-    import orange
-    import orngClustering
-
-    data = orange.ExampleTable("iris")
-    for k in range(2,8):
-        km = orngClustering.KMeans(data, k, initialization=orngClustering.kmeans_init_diversity)
-        score = orngClustering.score_silhouette(km)
-        print k, score
-
-    km = orngClustering.KMeans(data, 3, initialization=orngClustering.kmeans_init_diversity)
-    orngClustering.plot_silhouette(km, "kmeans-silhouette.png")
+.. literalinclude:: code/kmeans-silhouette.py
 
 The analysis suggests that k=2 is preferred as it yields the maximal silhouette coefficient::
 
@@ -161,14 +102,14 @@ The analysis suggests that k=2 is preferred as it yields the maximal silhouette 
 
    Silhouette plot for k=3.
 
-.. _iris.tab: doc/iris.tab
-.. _housing.tab: doc/housing.tab
-.. _vehicle.tab: doc/vehicle.tab
-.. _kmeans-run.py: doc/kmeans-run.py
-.. _kmeans-run-callback.py: doc/kmeans-run-callback.py
-.. _kmeans-trace.py: doc/kmeans-trace.py
-.. _kmeans-cmp-init.py: doc/kmeans-cmp-init.py
-.. _kmeans-silhouette.py: doc/kmeans-sillhouette.py
+.. _iris.tab: code/iris.tab
+.. _housing.tab: code/housing.tab
+.. _vehicle.tab: code/vehicle.tab
+.. _kmeans-run.py: code/kmeans-run.py
+.. _kmeans-run-callback.py: code/kmeans-run-callback.py
+.. _kmeans-trace.py: code/kmeans-trace.py
+.. _kmeans-cmp-init.py: code/kmeans-cmp-init.py
+.. _kmeans-silhouette.py: code/kmeans-sillhouette.py
 
 ================
 Other clustering

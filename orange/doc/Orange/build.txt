@@ -1,1 +1,2 @@
 sphinx-build -b html . output/
+cp -r code/ output/
