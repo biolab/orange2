@@ -688,25 +688,22 @@ class OWDistanceMap(OWWidget):
         x, y = event.scenePos().x(), event.scenePos().y()
         row = self.rowFromMousePos(x,y)
         col = self.colFromMousePos(x,y)
-        
         if (self.clicked==True):
             self.selection.UpdateSel(col, row)
 
         if (row==-1 or col==-1):
             self.selector.hide()
-##            self.bubble.hide()
         else:
-##            self.selector.setX(self.offsetX + col * self.CellWidth)
-##            self.selector.setY(self.offsetY + row * self.CellHeight)
+            bb = self.selector.sceneBoundingRect()
             self.selector.setPos(self.offsetX + col * self.CellWidth, self.offsetY + row * self.CellHeight)
             self.selector.show()
+            self.scene.update(bb) #Update the old boundingRect (left unchanged when scrolling the view. Why?)
 
             if self.ShowBalloon == 1:
-##                self.bubble.move(x + 20, y + 20)
 
                 i = self.getItemFromPos(col)
                 j = self.getItemFromPos(row)
-##                self.bubble.head.setText(str(self.matrix[i, j]))
+                
                 head = str(self.matrix[i, j])
 
                 if (self.ShowItemsInBalloon == 1):
@@ -716,25 +713,18 @@ class OWDistanceMap(OWWidget):
                     if type(namej) not in [str, unicode]:
                         namej = namej.name
                     if namei or namej:
-##                        self.bubble.body.setText(namei + "\n" + namej)
                         body = namei + "\n" + namej
                     else:
-##                        self.bubble.body.setText("")
                         body = ""
                 else:
-##                    self.bubble.body.setText("")
                     body = ""
 
-##                self.bubble.show()
-##                QToolTip.showText(QPoint(x,y), "")
                 QToolTip.showText(event.screenPos(), "")
                 QToolTip.showText(event.screenPos(), "%s\n%s" % (head, body))
-##            else:
-##                self.bubble.hide()
 
             self.updateSelectionRect()
 
-        self.scene.update()
+#        self.scene.update()
 
     def keyPressEvent(self, e):
         if e.key() == 4128:
