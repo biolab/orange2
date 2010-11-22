@@ -269,9 +269,9 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         if not sumdisc:
             retDist = self.prior
             sumdisc = self.prior.abs
-#        for c in self.examples.domain.classVar:
-#            retDist[c] /= sumdisc
-        retDist.normalize()
+        for c in self.examples.domain.classVar:
+            retDist[c] /= sumdisc
+        
         if retRules:
             if result_type == orange.GetValue:
               return (retDist.modus(), covRules)
