@@ -626,6 +626,50 @@ class PreprocessorSchemaDelegate(QStyledItemDelegate):
         schema = self.asSchema(index.data().toPyObject())
         schema.name = editor.text()
         model.setData(index, QVariant(schema))
+        
+        
+class PySortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, filter_fmt=None, sort_fmt=None, parent=None):
+        QSortFilterProxyModel.__init__(self, parent)
+        self.filter_fmt = filter_fmt
+        self.sort_fmt = sort_fmt
+        
+    if sys.version < "2.6":
+        import re
+        INSERT_RE = re.compile(r"{0\.(\w+)}")
+        def format(self, fmt, *args, **kwargs):
+            # a simple formating function for python 2.5
+            def replace(match):
+                attr = match.groups()[0]
+                if hasattr(args[0], attr):
+                    return str(getattr(args[0], attr))
+            return self.INSERT_RE.sub(replace, fmt)
+        
+    else:
+        def format(self, fmt, *args, **kwargs):
+            return fmt.format(*args, **kwargs)
+        
+    def lessThen(self, left, right):
+        left = self.sourceModel().data(left)
+        right = self.sourceModel().data(right)
+        
+        left, right = left.toPyObject(), right.toPyObject()
+        
+        if self.sort_fmt is not None:
+            left = self.format(self.sort_fmt, left)
+            right = self.format(self.sort_fmt, right)
+        
+        return left < right
+    
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        index = self.sourceModel().index(sourceRow, 0, sourceParent)
+        
+        value = index.data().toPyObject()
+        if self.filter_fmt:
+            value = self.format(self.filter_fmt, value)
+            
+        regexp = self.filterRegExp()
+        return regexp.indexIn(str(value)) >= 0
 
 class OWPreprocess(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler("", [""])}
@@ -707,12 +751,17 @@ class OWPreprocess(OWWidget):
         box.layout().addWidget(self.schemaFilterEdit)
         
         self.schemaList = PyListModel([], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEditable| Qt.ItemIsEnabled)
+        self.schemaListProxy = PySortFilterProxyModel(filter_fmt="{0.name}", parent=self)
+        self.schemaListProxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.schemaListProxy.setSourceModel(self.schemaList)
         self.schemaListView = QListView()
         self.schemaListView.setItemDelegate(PreprocessorSchemaDelegate(self))
-        self.schemaListView.setModel(self.schemaList)
+#        self.schemaListView.setModel(self.schemaList)
+        self.schemaListView.setModel(self.schemaListProxy)
+        self.connect(self.schemaFilterEdit, SIGNAL("textEdited(QString)"), self.schemaListProxy.setFilterRegExp)
         box.layout().addWidget(self.schemaListView)
         
-        self.schemaListSelectionModel = ListSingleSelectionModel(self.schemaList, self)
+        self.schemaListSelectionModel = ListSingleSelectionModel(self.schemaListProxy, self)
         self.schemaListView.setSelectionMode(QListView.SingleSelection)
         self.schemaListView.setSelectionModel(self.schemaListSelectionModel)
         
@@ -783,6 +832,14 @@ class OWPreprocess(OWWidget):
 
     def handleNewSignals(self):
         self.commit()
+        
+    def selectedSchemaIndex(self):
+        rows = self.schemaListSelectionModel.selectedRows()
+        rows = [self.schemaListProxy.mapToSource(row) for row in rows]
+        if rows:
+            return rows[0]
+        else:
+            return QModelIndex()
     
     def addPreprocessor(self, prep):
         self.preprocessorsList.append(prep)
@@ -824,24 +881,29 @@ class OWPreprocess(OWWidget):
         schema = list(self.preprocessorsList)
         self.schemaList.append(PreprocessorSchema("New schema", schema, self.preprocessorsListSelectionModel.selectedRow().row()))
         index = self.schemaList.index(len(self.schemaList) - 1)
+        index = self.schemaListProxy.mapFromSource(index)
         self.schemaListSelectionModel.setCurrentIndex(index, QItemSelectionModel.ClearAndSelect)
         self.schemaListView.edit(index)
     
     def onUpdateSchema(self):
-        index = self.schemaListSelectionModel.selectedRow()
+#        index = self.schemaListSelectionModel.selectedRow()
+        index = self.selectedSchemaIndex()
         if index.isValid():
             row = index.row()
             schema = self.schemaList[row]
-            self.schemaList[row] = PreprocessorSchema(schema.name, list(self.preprocessorsList), self.preprocessorsListSelectionModel.selectedRow().row())
+            self.schemaList[row] = PreprocessorSchema(schema.name, list(self.preprocessorsList),
+                                                      self.preprocessorsListSelectionModel.selectedRow().row())
     
     def onRemoveSchema(self):
-        index = self.schemaListSelectionModel.selectedRow()
+#        index = self.schemaListSelectionModel.selectedRow()
+        index = self.selectedSchemaIndex()
         if index.isValid():
             row = index.row()
             del self.schemaList[row]
             newrow = min(max(row - 1, 0), len(self.schemaList) - 1)
             if newrow > -1:
-                self.schemaListSelectionModel.select(self.schemaList.index(newrow), QItemSelectionModel.ClearAndSelect)
+                self.schemaListSelectionModel.select(self.schemaListProxy.mapFromSource(self.schemaList.index(newrow)),
+                                                     QItemSelectionModel.ClearAndSelect)
                 
     def setActiveSchema(self, schema):
         if schema.modified and hasattr(schema, "_tmp_preprocessors"):
@@ -870,7 +932,8 @@ class OWPreprocess(OWWidget):
 #        self.onUpdateSchema()
         
     def setSchemaModified(self, state):
-        index = self.schemaListSelectionModel.selectedRow()
+#        index = self.schemaListSelectionModel.selectedRow()
+        index = self.selectedSchemaIndex()
         if index.isValid():
             row = index.row()
             self.schemaList[row].modified = True
