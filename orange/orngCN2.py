@@ -118,12 +118,6 @@ class LengthValidator(orange.RuleValidator):
             return len(rule.filter.conditions) <= self.length
         return True    
     
-#def CN2Learner(examples = None, weightID=0, **kwds):
-#    cn2 = CN2LearnerClass(**kwds)
-#    if examples:
-#        return cn2(examples, weightID)
-#    else:
-#        return cn2
 
 def supervisedClassCheck(examples):
     if not examples.domain.classVar:
@@ -155,12 +149,14 @@ class CN2Learner(orange.RuleLearner):
         return CN2Classifier(rules, examples, weight)
 
 class CN2Classifier(orange.RuleClassifier):
-    def __init__(self, rules, examples, weightID = 0, **argkw):
+    def __init__(self, rules=None, examples=None, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
-        self.classVar = examples.domain.classVar
+        self.weightID = weightID
+        self.classVar = None if examples is None else examples.domain.classVar
         self.__dict__.update(argkw)
-        self.prior = orange.Distribution(examples.domain.classVar, examples)
+        if examples is not None:
+            self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
         classifier = None
@@ -186,13 +182,6 @@ class CN2Classifier(orange.RuleClassifier):
             retStr += "ELSE "+ruleToString(r)+" "+str(r.classDistribution)+"\n"
         return retStr
 
-
-#def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
-#    cn2 = CN2UnorderedLearnerClass(**kwds)
-#    if examples:
-#        return cn2(examples, weightID)
-#    else:
-#        return cn2
 
 # Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearner(orange.RuleLearner):
@@ -243,9 +232,9 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         self.rules = rules
         self.examples = examples
         self.weightID = weightID
-        self.classVar = examples.domain.classVar
+        self.classVar = examples.domain.classVar if examples is not None else None
         self.__dict__.update(argkw)
-        if examples:
+        if examples is not None:
             self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue, retRules = False):
@@ -269,8 +258,12 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         if not sumdisc:
             retDist = self.prior
             sumdisc = self.prior.abs
-        for c in self.examples.domain.classVar:
-            retDist[c] /= sumdisc
+            
+        if sumdisc > 0.0:
+            for c in self.examples.domain.classVar:
+                retDist[c] /= sumdisc
+        else:
+            retDist.normalize()
         
         if retRules:
             if result_type == orange.GetValue:
@@ -310,7 +303,12 @@ class RuleClassifier_bestRule(orange.RuleClassifier):
             retDist = self.prior
         else:
             bestRule.used += 1
-        retDist.normalize()
+        sumdist = sum(retDist)
+        if sumdist > 0.0:
+            for c in self.examples.domain.classVar:
+                retDist[c] /= sumdisc
+        else:
+            retDist.normalize()
         # return classifier(example, result_type=result_type)
         if result_type == orange.GetValue:
           return retDist.modus()
