@@ -415,4 +415,18 @@ div #sidebarbutton:hover {
 	background-color: #CCCCCC;
 }
 
+table.field-list td, table.field-list th {
+    border-bottom: 1px solid #FFECE3;
+    border-top: 1px solid #FFECE3;
+}
+
+table.field-list th.field-name {
+    background-color: #f8f8f8;
+}
+
+table.docutils {
+	border-bottom: 1px solid #FFECE3;
+    border-top: 1px solid #FFECE3;
+}
+   
 
