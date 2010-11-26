@@ -506,7 +506,7 @@ class KMeans:
         self.nstart = nstart
         self.initialization = initialization
         self.distance_constructor = distance
-        self.distance = self.distance_constructor(self.data)
+        self.distance = self.distance_constructor(self.data) if self.data else None
         self.scoring = scoring
         self.minimize_score = True if hasattr(scoring, 'minimize') else False
         self.inner_callback = inner_callback
@@ -518,6 +518,7 @@ class KMeans:
         """ Runs with optional new data. """
         if data:
             self.data = data
+            self.distance = self.distance_constructor(self.data)
         self.run()
     
     def init_centroids(self):
