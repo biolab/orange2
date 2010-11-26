@@ -74,6 +74,7 @@ class DataTool(QObject):
             installed = getattr(graph,"_data_tool_event_filter", None)
             if installed:
                 self.graph.canvas().removeEventFilter(installed)
+            self.graph.canvas().setMouseTracking(True)
             self.graph.canvas().installEventFilter(self)
             self.graph._data_tool_event_filter = self
             self.graph._tool_pixmap = None
@@ -81,6 +82,7 @@ class DataTool(QObject):
             self.graph.replot()
         
     def eventFilter(self, obj, event):
+        print event.type(), event.type() == QEvent.Leave
         if event.type() == QEvent.MouseButtonPress:
             return self.mousePressEvent(event)
         elif event.type() == QEvent.MouseButtonRelease:
@@ -91,9 +93,9 @@ class DataTool(QObject):
             return self.mouseMoveEvent(event)
         elif event.type() == QEvent.Paint:
             return self.paintEvent(event)
-        elif event.type() == QEvent.HoverLeave:
+        elif event.type() == QEvent.Leave:
             return self.leaveEvent(event)
-        elif event.type() == QEvent.HoverEnter:
+        elif event.type() == QEvent.Enter:
             return self.enterEvent(event)
         return False  
     
@@ -494,6 +496,10 @@ class BrushTool(DataTool):
         return False
         
     def paintEvent(self, event):
+        if not self.graph.canvas().underMouse():
+            self.graph._tool_pixmap = None
+            return False 
+            
         pixmap = QPixmap(self.graph.canvas().size())
         pixmap.fill(QColor(255, 255, 255, 0))
         painter = QPainter(pixmap)
