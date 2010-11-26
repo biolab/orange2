@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    orange.cluster
+   orange.classify.svm
 
 Indices and tables
 ==================
