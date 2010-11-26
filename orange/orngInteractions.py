@@ -20,6 +20,8 @@ import warnings
 import copy
 import bisect
 
+from collections import defaultdict
+
 #def entropy_frequency_matrix(m):
 #    n = sum(sum(v) for v in m)
 #    return -sum(sum(plogp(x/n) for x in v) for v in m)
@@ -102,7 +104,7 @@ class Interaction:
     """
     Two-way attribute interactions (feature synergies).
     """
-    def __init__(self, data, p_values=False, samples=10000, permutations=100):
+    def __init__(self, data, p_values=False, samples=10000, permutations=100, permutation="class"):
         self.data = data
         self.measure = orange.MeasureAttribute_info
         self.gain = self.gains()
@@ -110,17 +112,23 @@ class Interaction:
         self.samples = samples
         self.permutations = permutations
         self.p_values = p_values
+        if permutation == "class":
+            score_dist_fn = self.compute_score_dist
+        elif permutation == "aic":
+            score_dist_fn = self.compute_score_dist_aic
+        else:
+            wrongPermutationType()
         if p_values:
-            self.score_dist = self.compute_score_dist()
+            self.score_dist = score_dist_fn()
 
     def gains(self):
         return dict([(a, self.measure(a, self.data)) for a in self.data.domain.attributes])
 
-    def compute_score_dist(self):
+    def compute_score_dist(self, rand=random):
         """Distribution (list) of interaction scores obtained by permutation analysis"""
         
         def permute_class():
-            random.shuffle(classvalues)
+            rand.shuffle(classvalues)
             for v, d in itertools.izip(classvalues, self.data):
                 d.setclass(v)
                 
@@ -130,11 +138,13 @@ class Interaction:
         samples_in_permutations = self.samples / self.permutations
         self.permuted_scores = []
         orig_gain = self.gain
+
         for _ in range(self.permutations):
             permute_class()
             self.gain = self.gains() #recompute univariate gains for permuted classes
-            scores = [self.get_score(*random.sample(attributes, 2)) for _ in range(samples_in_permutations)]
+            scores = [self.get_score(*rand.sample(attributes, 2)) for _ in range(samples_in_permutations)]
             self.permuted_scores.extend(scores)
+
         self.permuted_scores_len = float(len(self.permuted_scores))
         self.permuted_scores.sort()
 
@@ -143,6 +153,75 @@ class Interaction:
             d.setclass(v)
         self.gain = orig_gain #restore original gains
             
+    def compute_score_dist_aic(self, rand=random):
+        """Distribution (list) of interaction scores obtained by permutation analysis"""
+        
+        def shuffleAttribute(data, attribute, locations):
+            """
+            Destructive!
+            Locations: transposion vector. i-th value is transfered
+            to locations[i]
+            """
+            attribute = data.domain[attribute]
+            l = [None]*len(data)
+            for i in range(len(data)):
+                l[locations[i]] = data[i][attribute]
+            for i in range(len(data)):
+                data[i][attribute] = l[i]
+
+                
+        def permute_attributes_in_class(data):
+            #shuffle inside a class
+            #get classes - you can get positions for class 1, then shuffle them
+            #inplace!
+
+            def groups_by_class(data):
+                #return groups by class value
+                dorig = defaultdict(list)
+                for i,c in enumerate([ex.getclass() for ex in data ]):
+                    dorig[c.value].append(i)
+                return dorig.values()
+     
+            def permute_by_groups(groups, rand):
+                # Permute by groups and return a transposition vector. Each group is
+                #a list of indices belonging to the group.
+
+                perm = [ None ] * len(data)
+
+                for indices in groups:
+                    indices2 = copy.copy(indices)
+                    rand.shuffle(indices2)
+
+                    for old,new in zip(indices,indices2):
+                        perm[old] = new
+
+                return perm
+
+            gc = groups_by_class(data)
+
+            for at in data.domain.attributes:
+                transpositions = permute_by_groups(gc, rand)
+                shuffleAttribute(data, at, transpositions)
+
+        datacopy = orange.ExampleTable(self.data.domain, self.data)
+        orig_classvalues = [d.getclass() for d in self.data]
+        attributes = self.data.domain.attributes
+        samples_in_permutations = self.samples / self.permutations
+        self.permuted_scores = []
+        orig_gain = self.gain
+
+        for _ in range(self.permutations):
+            permute_attributes_in_class(self.data)
+            self.gain = self.gains() #recompute univariate gains for permuted classes
+            scores = [self.get_score(*rand.sample(attributes, 2)) for _ in range(samples_in_permutations)]
+            self.permuted_scores.extend(scores)
+
+        self.permuted_scores_len = float(len(self.permuted_scores))
+        self.permuted_scores.sort()
+
+        self.data = datacopy
+        self.gain = orig_gain #restore original gains
+ 
     def get_score(self, a1, a2):
         return orngCI.FeatureByCartesianProduct(self.data, (a1, a2), measure=self.measure)[1] - self.gain[a1] - self.gain[a2]
         
