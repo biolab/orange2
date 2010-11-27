@@ -170,7 +170,7 @@ class OWVizRank(VizRank, OWWidget):
         self.classesBox.setFixedHeight(130)
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
         self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage projections")
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage Projections")
 
         self.classesList = OWGUI.listBox(self.classesBox, self, selectionMode = QListWidget.MultiSelection, callback = self.classesListChanged)
         self.classesList.setMinimumSize(60,60)
@@ -194,13 +194,13 @@ class OWVizRank(VizRank, OWWidget):
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.saveProjections, debuggingEnabled = 0)
 
         self.buttonBox9 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save Best Graphs", self.exportMultipleGraphs, debuggingEnabled = 0)
-        OWGUI.button(self.buttonBox9, self, "Remove Similar Projections", callback = self.removeTooSimilarProjections, debuggingEnabled = 0)
+        self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save Best", self.exportMultipleGraphs, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox9, self, "Remove Similar", callback = self.removeTooSimilarProjections, debuggingEnabled = 0)
 
         self.buttonBox3 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         if self.parentWidget:
             self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate Projection', callback = self.evaluateCurrentProjection, debuggingEnabled = 0)
-        self.reevaluateResults = OWGUI.button(self.buttonBox3, self, "Reevaluate Projections", callback = self.reevaluateAllProjections)
+        self.reevaluateResults = OWGUI.button(self.buttonBox3, self, "Reevaluate", callback = self.reevaluateAllProjections)
 
         self.buttonBox4 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.showKNNCorrectButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN Correct', self.showKNNCorect)
