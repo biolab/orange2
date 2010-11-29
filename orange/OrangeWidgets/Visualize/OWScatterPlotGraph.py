@@ -310,16 +310,27 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         # show legend if necessary
         if self.showLegend == 1:
             legendKeys = {}
-            if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete:
+            colorIndex = colorIndex if colorIndex != -1 and self.dataDomain[colorIndex].varType == orange.VarTypes.Discrete else -1
+            shapeIndex = shapeIndex if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete else -1
+            sizeIndex = sizeIndex if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete else -1
+            
+            singleLegend = len([index for index in [colorIndex, shapeIndex, sizeIndex] if index != -1]) == 1
+            if singleLegend:
+                #Show only values
+                legendJoin = lambda name, val: val
+            else:
+                legendJoin = lambda name, val: name + "=" + val 
+                
+            if colorIndex != -1:
                 num = len(self.dataDomain[colorIndex].values)
                 val = [[], [], [self.pointWidth]*num, [QwtSymbol.Ellipse]*num]
                 varValues = getVariableValuesSorted(self.dataDomain[colorIndex])
                 for ind in range(num):
-                    val[0].append(self.dataDomain[colorIndex].name + "=" + varValues[ind])
+                    val[0].append(legendJoin(self.dataDomain[colorIndex].name, varValues[ind]))
                     val[1].append(self.discPalette[ind])
                 legendKeys[colorIndex] = val
 
-            if shapeIndex != -1 and self.dataDomain[shapeIndex].varType == orange.VarTypes.Discrete:
+            if shapeIndex != -1:
                 num = len(self.dataDomain[shapeIndex].values)
                 if legendKeys.has_key(shapeIndex):  val = legendKeys[shapeIndex]
                 else:                               val = [[], [Qt.black]*num, [self.pointWidth]*num, []]
@@ -327,17 +338,17 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 val[3] = []; val[0] = []
                 for ind in range(num):
                     val[3].append(self.curveSymbols[ind])
-                    val[0].append(self.dataDomain[shapeIndex].name + "=" + varValues[ind])
+                    val[0].append(legendJoin(self.dataDomain[shapeIndex].name, varValues[ind]))
                 legendKeys[shapeIndex] = val
 
-            if sizeIndex != -1 and self.dataDomain[sizeIndex].varType == orange.VarTypes.Discrete:
+            if sizeIndex != -1:
                 num = len(self.dataDomain[sizeIndex].values)
                 if legendKeys.has_key(sizeIndex):  val = legendKeys[sizeIndex]
                 else:                               val = [[], [Qt.black]*num, [], [QwtSymbol.Ellipse]*num]
                 val[2] = []; val[0] = []
                 varValues = getVariableValuesSorted(self.dataDomain[sizeIndex])
                 for ind in range(num):
-                    val[0].append(self.dataDomain[sizeIndex].name + "=" + varValues[ind])
+                    val[0].append(legendJoin(self.dataDomain[sizeIndex].name, varValues[ind]))
                     val[2].append(MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues)))
                 legendKeys[sizeIndex] = val
         else:
