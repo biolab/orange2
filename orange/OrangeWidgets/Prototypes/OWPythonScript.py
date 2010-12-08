@@ -264,7 +264,7 @@ class OWPythonScript(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
         self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", orngNetwork.Network, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
-        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", orngNetwork.Network), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier)]
+        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", orngNetwork.Network), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier, Dynamic)]
         
         self.in_data = None
         self.in_network = None
@@ -527,7 +527,8 @@ class OWPythonScript(OWWidget):
         self.console.write("\nRunning script:\n")
         self.console.push("exec(_script)")
         self.console.new_prompt(sys.ps1)
-        for signal, cls in self.outputs:
+        for out in self.outputs:
+            signal = out[0]
             self.send(signal, getattr(self, signal, None))
 
 if __name__=="__main__":    

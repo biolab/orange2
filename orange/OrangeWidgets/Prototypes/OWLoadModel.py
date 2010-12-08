@@ -12,7 +12,7 @@ class OWLoadModel(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Load Model"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
         
-        self.outputs = [("Classifier", orange.Classifier)]
+        self.outputs = [("Classifier", orange.Classifier, Dynamic)]
         
         self.filenameHistory = []
         self.selectedFileIndex = 0
@@ -39,6 +39,8 @@ class OWLoadModel(OWWidget):
         OWGUI.rubber(self.controlArea)
         
         self.resize(200, 50)
+        
+        QTimer.singleShot(50, self.onRecentSelection)
         
         
     def onRecentSelection(self):
