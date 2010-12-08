@@ -6,7 +6,9 @@ General helper functions and classes for Orange Canvas
 concurent programming
 """
 from __future__ import with_statement
+from functools import partial
 
+    
 from OWWidget import *
 
 class AsyncCall(QObject):
@@ -24,14 +26,15 @@ class AsyncCall(QObject):
     Signals:
         - `starting()`
         - `finished(QString)` - emited when finished with an argument 'OK' on success or repr(ex) on error
+        - `finished(PyQt_PyObject, QString)` - same as above but also pass self as an argument 
         - `unhandledException(PyQt_PyObject)` - emited on error with `sys.exc_info()` argument
         - `resultReady(PyQt_PyObject)` - emited on success with function call result as argument
     """
-    def __init__(self, func=None, thread=None, threadPool=None, parent=None):
+    def __init__(self, func=None, args=(), kwargs={}, thread=None, threadPool=None, parent=None):
         QObject.__init__(self, parent)
         self.func = func
-        self._args = ()
-        self._kwargs = {}
+        self._args = args
+        self._kwargs = kwargs
         self.threadPool = None
         if thread is not None:
             self.moveToThread(thread)
@@ -59,36 +62,39 @@ class AsyncCall(QObject):
         except Exception, ex:
             print >> sys.stderr, "Exception in thread ", QThread.currentThread(), " while calling ", self.func
             self.emit(SIGNAL("finished(QString)"), QString(repr(ex)))
+            self.emit(SIGNAL("finished(PyQt_PyObject, QString)"), self, QString(repr(ex)))
             self.emit(SIGNAL("unhandledException(PyQt_PyObject)"), sys.exc_info())
 
+            self._exc_info = sys.exc_info()
             self._status = 1
             return
 
         self.emit(SIGNAL("finished(QString)"), QString("Ok"))
+        self.emit(SIGNAL("finished(PyQt_PyObject, QString)"), self, QString("Ok"))
         self.emit(SIGNAL("resultReady(PyQt_PyObject)"), self.result)
         self._status = 0
 
 
     def __call__(self, *args, **kwargs):
-        """ Same as apply_async(self.func, *args, **kwargs)
+        """ Apply the call with args and kwargs additional arguments
         """
-        self.apply_async(self.func, args, kwargs)
+        if args or kwargs:
+            self.func = partial(self.func, *self._args, **self._kwargs)
+            self._args, self._kwargs = args, kwargs
+            
+        if not self._connected:
+            QTimer.singleShot(50, self.__call__) # delay until event loop initialized by RunnableAsyncCall
+            return
+        else:
+            self.emit(SIGNAL("_async_start()"))
 
 
     def apply_async(self, func, args, kwargs):
         """ call function with `args` as positional and `kwargs` as keyword
-        arguments
+        arguments (Overrides __init__ arguments).
         """
         self.func, self._args, self._kwargs = func, args, kwargs
-#        if self.threadPool is not None:
-#            self._runnable = RunnableTask(self)
-#            threadPool.start(self._runnable) #start the execution from QRunnable.run
-#        else:
-        if not self._connected:
-            QTimer.singleShot(100, lambda: self.apply_async(func, args, kwargs)) # delay until event loop initialized by RunnableAsyncCall
-            return
-        else:
-            self.emit(SIGNAL("_async_start()"))
+        self.__call__()
 
 
     def poll(self):
@@ -97,27 +103,46 @@ class AsyncCall(QObject):
         return getattr(self, "_status", None)
     
     
+    def join(self, processEvents=True):
+        """ Wait until the execution finishes.
+        """
+        while self.poll() is None:
+            QThread.currentThread().msleep(50)
+            if processEvents and QThread.currentThread() is qApp.thread():
+                qApp.processEvents()
+                
+    def get_result(self, processEvents=True):
+        """ Block until the computation completes and return the call result.
+        If the execution resulted in an exception, this method will re-raise
+        it. 
+        """
+        self.join(processEvents=processEvents)
+        if self.poll() != 0:
+            # re-raise the error
+            raise self._exc_info[0], self._exc_info[1]
+        else:
+            return self.result
+    
     def emitAdvance(self, count=1):
         self.emit(SIGNAL("advance()"))
         self.emit(SIGNAL("advance(int)"), count)
         
         
     def emitProgressChanged(self, value):
-        self.emit(SIGNAL("progressChanged(int"), value)
+        self.emit(SIGNAL("progressChanged(float)"), value)
         
     
     @pyqtSignature("moveToAndExecute(PyQt_PyObject)")
     def moveToAndExecute(self, thread):
-        print "Moving to", thread, QThread.currentThread()
         self.moveToThread(thread)
         
         self.connect(self, SIGNAL("_async_start()"), self.execute, Qt.QueuedConnection)
         
         self.emit(SIGNAL("_async_start()"))
         
+        
     @pyqtSignature("moveToAndInit(PyQt_PyObject)")
     def moveToAndInit(self, thread):
-        print "Moving to", thread, QThread.currentThread()
         self.moveToThread(thread)
         
         self.connect(self, SIGNAL("_async_start()"), self.execute, Qt.QueuedConnection)

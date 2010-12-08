@@ -3,7 +3,10 @@
 #    manager, that handles correct processing of widget signals
 #
 
-import sys, time
+import sys, os, time
+import logging
+import logging.handlers
+
 import orange
 import orngDebugging
 
@@ -13,13 +16,17 @@ Multiple = 4
 Default = 8
 NonDefault = 16
 
-class InputSignal:
+Dynamic = 32 #Dynamic output signal
+
+
+class InputSignal(object):
     def __init__(self, name, signalType, handler, parameters = Single + NonDefault, oldParam = 0):
         self.name = name
         self.type = signalType
         self.handler = handler
 
-        if type(parameters) == str: parameters = eval(parameters)   # parameters are stored as strings
+        if type(parameters) == str: 
+            parameters = eval(parameters)   # parameters are stored as strings
         # if we have the old definition of parameters then transform them
         if parameters in [0,1]:
             self.single = parameters
@@ -30,9 +37,10 @@ class InputSignal:
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.single = parameters & Single
         self.default = parameters & Default
-
-class OutputSignal:
-    def __init__(self, name, signalType, parameters = NonDefault):
+        
+        
+class OutputSignal(object):
+    def __init__(self, name, signalType, parameters = Single + NonDefault):
         self.name = name
         self.type = signalType
 
@@ -42,11 +50,50 @@ class OutputSignal:
             return
 
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
+        self.single = parameters & Single
         self.default = parameters & Default
+        self.dynamic = parameters & Dynamic
+        if self.dynamic and self.single:
+            print "Output signal can not be Multiple and Dynamic"
+            self.dynamic = 0
+        
+                
+def canConnect(output, input, dynamic=False):
+    ret = issubclass(output.type, input.type)
+    if output.dynamic and dynamic:
+        ret = ret or issubclass(input.type,output.type)
+    return ret
 
+
+
+class SignalLink(object):
+    def __init__(self, widgetFrom, outputSignal, widgetTo, inputSignal, enabled=True):
+        self.widgetFrom = widgetFrom
+        self.widgetTo = widgetTo
+        
+        self.outputSignal = outputSignal
+        self.inputSignal = inputSignal
+        
+        if issubclass(outputSignal.type, inputSignal.type):
+            self.dynamic = False
+        else: 
+            self.dynamic = outputSignal.dynamic
+        
+        self.enabled = enabled
+    
+        self.signalNameFrom = self.outputSignal.name
+        self.signalNameTo = self.inputSignal.name
+        
+    
+    def canEnableDynamic(self, obj):
+        """ Can dynamic signal link be enabled for `obj`?
+        """
+        return isinstance(obj, self.inputSignal.type)
+    
+    
 
 # class that allows to process only one signal at a time
-class SignalWrapper:
+class SignalWrapper(object):
     def __init__(self, widget, method):
         self.widget = widget
         self.method = method
@@ -55,20 +102,19 @@ class SignalWrapper:
         manager = self.widget.signalManager
         if not manager:
             manager = signalManager
-
+        
         manager.signalProcessingInProgress += 1
         try:
             self.method(*k)
         finally:
             manager.signalProcessingInProgress -= 1
             if not manager.signalProcessingInProgress:
-                manager.processNewSignals(self.widget)
+                manager.processNewSignals(self.widget) 
 
 
-
-class SignalManager:
+class SignalManager(object):
     widgets = []    # topologically sorted list of widgets
-    links = {}      # dicionary. keys: widgetFrom, values: (widgetTo1, signalNameFrom1, signalNameTo1, enabled1), (widgetTo2, signalNameFrom2, signalNameTo2, enabled2)
+    links = {}      # dicionary. keys: widgetFrom, values: [SignalLink, ...]
     freezing = 0            # do we want to process new signal immediately
     signalProcessingInProgress = 0 # this is set to 1 when manager is propagating new signal values
 
@@ -77,60 +123,66 @@ class SignalManager:
         self.verbosity = orngDebugging.orngVerbosity
         self.stderr = sys.stderr
         self._seenExceptions = {}
-        #self.stdout = sys.stdout
+        self.widgetQueue = []
+        self.asyncProcessingEnabled = False
+        
+        import orngEnviron
+        if not hasattr(self, "log"):
+            SignalManager.log = logging.getLogger("SignalManager")
+            self.logFileName = os.path.join(orngEnviron.canvasSettingsDir, "signalManager.log")
+            self.log.addHandler(logging.handlers.RotatingFileHandler(self.logFileName, maxBytes=2**20, backupCount=2))
+            self.log.setLevel(logging.INFO)
+            
+            
+        self.log.info("Signal Manager started")
+        
+        self.stdout = sys.stdout
+        
+        class err(object):
+            def write(myself, str):
+                self.log.error(str[:-1] if str.endswith("\n") else str)
+            def flush(myself):
+                pass
+        self.myerr = err()
+            
         if orngDebugging.orngDebuggingEnabled:
-            self.debugFile = open(orngDebugging.orngDebuggingFileName, "wt")
+            self.debugHandler = logging.FileHandler(orngDebugging.orngDebuggingFileName, mode="wb")
+            self.log.addHandler(self.debugHandler)
+            self.log.setLevel(logging.DEBUG if orngDebugging.orngVerbosity > 0 else logging.INFO) 
             sys.excepthook = self.exceptionHandler
-            sys.stderr = self.debugFile
-            #sys.stdout = self.debugFile
+            sys.stderr = self.myerr
 
     def setDebugMode(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         self.verbosity = verbosity
-        if self.debugFile:
-            sys.stderr = self.stderr
-            #sys.stdout = self.stdout
-            self.debugFile.close()
-            self.debugFile = None
+
         if debugMode:
-            self.debugFile = open(debugFileName, "wt", 0)
+            handler = logging.FileHandler(debugFileName, "wb")
+            self.log.addHandler(handler)
+            
             sys.excepthook = self.exceptionHandler
-            sys.stderr = self.debugFile
-            #sys.stdout = self.debugFile
+                    
+            sys.stderr = self.myerr
 
     # ----------------------------------------------------------
     # ----------------------------------------------------------
     # DEBUGGING FUNCTION
 
     def closeDebugFile(self):
-        if self.debugFile:
-            self.debugFile.close()
-            self.debugFile = None
         sys.stderr = self.stderr
-        #sys.stdout = self.stdout
 
-#    def __del__(self):
-#        if not self or type(self) == type(None):
-#            return
-#        if self.debugFile:
-#            self.debugFile.close()
-#        sys.stderr = self.stderr
-#        #sys.stdout = self.stdout
-
-    #
     def addEvent(self, strValue, object = None, eventVerbosity = 1):
-        if not self.debugFile: return
-        if self.verbosity < eventVerbosity: return
-
-        self.debugFile.write(str(strValue))
+        info = str(strValue)
         if isinstance(object, orange.ExampleTable):
             name = " " + getattr(object, "name", "")
-            self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
+            info += ". Token type = ExampleTable" + name + ". len = " + str(len(object))
         elif type(object) == list:
-            self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object[:10])))
+            info += ". Token type = %s. Value = %s" % (str(type(object)), str(object[:10]))
         elif object != None:
-            self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100]))
-        self.debugFile.write("\n")
-        self.debugFile.flush()
+            info += ". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100])
+        if eventVerbosity > 0:
+            self.log.debug(info)
+        else:
+            self.log.info(info)
 
 
     def exceptionSeen(self, type, value, tracebackInfo):
@@ -139,84 +191,156 @@ class SignalManager:
         return self._seenExceptions.has_key(shortEStr)
 
     def exceptionHandler(self, type, value, tracebackInfo):
-        import traceback, os
-        if not self.debugFile: return
+        import traceback, os, StringIO
 
         # every exception show only once
         shortEStr = "".join(traceback.format_exception(type, value, tracebackInfo))[-2:]
-        if self._seenExceptions.has_key(shortEStr): return
+        if self._seenExceptions.has_key(shortEStr):
+            return
         self._seenExceptions[shortEStr] = 1
         
         list = traceback.extract_tb(tracebackInfo, 10)
         space = "\t"
         totalSpace = space
-        self.debugFile.write("Unhandled exception of type %s\n" % ( str(type)))
-        self.debugFile.write("Traceback:\n")
+        message = StringIO.StringIO()
+        message.write("Unhandled exception of type %s\n" % ( str(type)))
+        message.write("Traceback:\n")
 
         for i, (file, line, funct, code) in enumerate(list):
-            if not code: continue
-            self.debugFile.write(totalSpace + "File: " + os.path.split(file)[1] + " in line %4d\n" %(line))
-            self.debugFile.write(totalSpace + "Function name: %s\n" % (funct))
-            self.debugFile.write(totalSpace + "Code: " + code + "\n")
+            if not code:
+                continue
+            message.write(totalSpace + "File: " + os.path.split(file)[1] + " in line %4d\n" %(line))
+            message.write(totalSpace + "Function name: %s\n" % (funct))
+            message.write(totalSpace + "Code: " + code + "\n")
             totalSpace += space
 
-        self.debugFile.write(totalSpace[:-1] + "Exception type: " + str(type) + "\n")
-        self.debugFile.write(totalSpace[:-1] + "Exception value: " + str(value)+ "\n")
-        self.debugFile.flush()
+        message.write(totalSpace[:-1] + "Exception type: " + str(type) + "\n")
+        message.write(totalSpace[:-1] + "Exception value: " + str(value)+ "\n")
+        self.log.error(message.getvalue())
+#        message.flush()
 
     # ----------------------------------------------------------
     # ----------------------------------------------------------
 
     # freeze/unfreeze signal processing. If freeze=1 no signal will be processed until freeze is set back to 0
     def setFreeze(self, freeze, startWidget = None):
-        self.freezing = freeze
+        """ Freeze/unfreeze signal processing. If freeze=1 no signal will be 
+        processed until freeze is set back to 0
+        
+        """
+        self.freezing = max(freeze, 0)
+        if freeze:
+            self.addEvent("Freezing signal processing (%s)" % str(freeze))
+        else:
+            self.addEvent("Unfreezing signal processing")
+            
         if not freeze and self.widgets != []:
-            if startWidget: self.processNewSignals(startWidget)
-            else: self.processNewSignals(self.widgets[0])
+            if startWidget:
+                self.processNewSignals(startWidget)
+            else:
+                self.processNewSignals(self.widgets[0])
 
-    # add widget to list
     def addWidget(self, widget):
-        if self.verbosity >= 2:
-            self.addEvent("added widget " + widget.captionTitle, eventVerbosity = 2)
+        """ Add `widget` to the `widgets` list 
+        """
+        
+        self.addEvent("Added widget " + widget.captionTitle, eventVerbosity = 2)
 
         if widget not in self.widgets:
-            #self.widgets.insert(0, widget)
             self.widgets.append(widget)
+#            widget.connect(widget, SIGNAL("blockingStateChanged(bool)"), self.onStateChanged)
 
-    # remove widget from list
     def removeWidget(self, widget):
-        if self.verbosity >= 2:
-            self.addEvent("remove widget " + widget.captionTitle, eventVerbosity = 2)
+        """ Remove widget from the `widgets` list
+        """
+#        if self.verbosity >= 2:
+        self.addEvent("Remove widget " + widget.captionTitle, eventVerbosity = 2)
         self.widgets.remove(widget)
 
+    def getLinks(self, widgetFrom=None, widgetTo=None, signalNameFrom=None, signalNameTo=None):
+        """ Return a list of matching SignalLinks
+        """
+        links = []
+        if widgetFrom is None:
+            widgets = self.widgets # search all widgets
+        else:
+            widgets = [widgetFrom]
+        for w in widgets:
+            for link in self.links.get(w, []):
+                if (widgetFrom is None or widgetFrom is link.widgetFrom) and \
+                   (widgetTo is None or widgetTo is link.widgetTo) and \
+                   (signalNameFrom is None or signalNameFrom == link.signalNameFrom) and \
+                   (signalNameTo is None or signalNameTo == link.signalNameTo):
+                        links.append(link)
+                    
+        return links
 
-    # send list of widgets, that send their signal to widget's signalName
     def getLinkWidgetsIn(self, widget, signalName):
-        widgets = []
-        for key in self.links.keys():
-            links = self.links[key]
-            for (widgetTo, signalFrom, signalTo, enabled) in links:
-                if widget == widgetTo and signalName == signalTo: widgets.append(key)
-        return widgets
+        """ Return a list of widgets that connect to `widget`'s input `signalName` 
+        """
+        links = self.getLinks(None, widget, None, signalName)
+        return [link.widgetFrom for link in links]
 
-    # send list of widgets, that widget "widget" sends his signal "signalName"
+
     def getLinkWidgetsOut(self, widget, signalName):
-        widgets = []
-        if not self.links.has_key(widget): return widgets
-        links = self.links[widget]
-        for (widgetTo, signalFrom, signalTo, enabled) in links:
-            if signalName == signalFrom: widgets.append(widgetTo)
-        return widgets
-
-    # can we connect widgetFrom with widgetTo, so that there is no cycle?
-    def canConnect(self, widgetFrom, widgetTo):
-        return not self.existsPath(widgetTo, widgetFrom)
+        """ Return a list of widgets that connect to `widget`'s output `signalName`
+        """
+        links = self.getLinks(widget, None, signalName, None)
+        return [link.widgetTo for link in links]
+    
+    
+    
+    def canConnect(self, widgetFrom, widgetTo, dynamic=True):
+        # TODO: This should be retrieved from orngRegistry.WidgetDescription
+        outsignals = [OutputSignal(*tt) for tt in widgetFrom.outputs]
+        insignals = [InputSignal(*tt) for tt in widgetTo.inputs]
+        
+        return any(canConnect(out, in_, dynamic) for out in outsignals for in_ in insignals)
+        
+    
+    def proposePossibleLinks(self, widgetFrom, widgetTo, dynamic=True):
+        """ Return a ordered list of (OutputSignal, InputSignal, weight) tuples that
+        can connect both widgets
+        """
+        outSignals = [OutputSignal(*tt) for tt in widgetFrom.outputs]
+        inSignals = [InputSignal(*tt) for tt in widgetTo.inputs]
+        
+        # Get signals that are Single links and already connected to input widget
+        links = self.getLinks(None, widgetTo)
+        alreadyConnected = [link.signalNameTo for link in links if link.inputSignal.single]
+        
+        def weight(outS, inS):
+            check = [not outS.dynamic, inS.name not in alreadyConnected, bool(inS.default), bool(outS.default)] #Dynamic signals are lasts
+            weights = [2**i for i in range(len(check), 0, -1)]
+            
+            return sum([w for w, c in zip(weights, check) if c])
+        
+        possibleLinks = []
+        for outS in outSignals:
+            for inS in inSignals:
+                if canConnect(outS, inS, dynamic):
+                    possibleLinks.append((outS, inS, weight(outS, inS)))
+        
+        return sorted(possibleLinks, key=lambda link: link[-1], reverse=True)
+        
+    
+    def inputSignal(self, widget, name):
+        for tt in widget.inputs:
+            if tt[0] == name:
+                return InputSignal(*tt)
+            
+    def outputSignal(self, widget, name):
+        for tt in widget.outputs:
+            if tt[0] == name:
+                return OutputSignal(*tt)
+            
 
     def addLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo, enabled):
-        if self.verbosity >= 2:
-            self.addEvent("add link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
+        self.addEvent("Add link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
 
-        if not self.canConnect(widgetFrom, widgetTo): return 0
+        ## would this link create a cycle
+        if self.existsPath(widgetTo, widgetFrom): 
+            return 0
         # check if signal names still exist
         found = 0
         for o in widgetFrom.outputs:
@@ -236,12 +360,13 @@ class SignalManager:
 
 
         if self.links.has_key(widgetFrom):
-            for (widget, signalFrom, signalTo, Enabled) in self.links[widgetFrom]:
-                if widget == widgetTo and signalNameFrom == signalFrom and signalNameTo == signalTo:
-                    print "connection ", widgetFrom, " to ", widgetTo, " alread exists. Error!!"
-                    return 0
+            if self.getLinks(widgetFrom, widgetTo, signalNameFrom, signalNameTo):
+                print "connection ", widgetFrom, " to ", widgetTo, " alread exists. Error!!"
+                return
 
-        self.links[widgetFrom] = self.links.get(widgetFrom, []) + [(widgetTo, signalNameFrom, signalNameTo, enabled)]
+        link = SignalLink(widgetFrom, self.outputSignal(widgetFrom, signalNameFrom),
+                          widgetTo, self.inputSignal(widgetTo, signalNameTo), enabled=enabled)
+        self.links[widgetFrom] = self.links.get(widgetFrom, []) + [link]
 
         widgetTo.addInputConnection(widgetFrom, signalNameTo)
 
@@ -251,55 +376,75 @@ class SignalManager:
 
         # if channel is enabled, send data through it
         if enabled:
-            for key in widgetFrom.linksOut[signalNameFrom].keys():
-                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key, signalNameFrom)
-
+            self.pushAllOnLink(link)
+            
         # reorder widgets if necessary
         if self.widgets.index(widgetFrom) > self.widgets.index(widgetTo):
-            self.widgets.remove(widgetTo)
-            self.widgets.append(widgetTo)   # appent the widget at the end of the list
-            self.fixPositionOfDescendants(widgetTo)
-##            print "--------"
-##            for widget in self.widgets: print widget.captionTitle
-##            print "--------"
+            self.fixTopologicalOrdering()
+#            self.widgets.remove(widgetTo)
+#            self.widgets.append(widgetTo)   # appent the widget at the end of the list
+#            self.fixPositionOfDescendants(widgetTo)
+            
         return 1
 
     # fix position of descendants of widget so that the order of widgets in self.widgets is consistent with the schema
     def fixPositionOfDescendants(self, widget):
         for link in self.links.get(widget, []):
-            widgetTo = link[0]
+            widgetTo = link.widgetTo
             self.widgets.remove(widgetTo)
             self.widgets.append(widgetTo)
             self.fixPositionOfDescendants(widgetTo)
+            
+    def fixTopologicalOrdering(self):
+        """ fix the widgets topological ordering
+        """
+        order = []
+        visited = set()
+        queue = sorted([w for w in self.widgets if not self.getLinks(None, w)])  
+        while queue:
+            w = queue.pop(0)
+            order.append(w)
+            visited.add(w)
+            linked = set([link.widgetTo for link in self.getLinks(w)])
+            queue.extend(sorted(linked.difference(queue)))
+        self.widgets[:] = order
+            
 
-
-    # return list of signals that are connected from widgetFrom to widgetTo
     def findSignals(self, widgetFrom, widgetTo):
-        signals = []
-        for (widget, signalNameFrom, signalNameTo, enabled) in self.links.get(widgetFrom, []):
-            if widget == widgetTo:
-                signals.append((signalNameFrom, signalNameTo))
-        return signals
+        """ Return a list of (outputName, inputName) for links between widgets
+        """
+        links = self.getLinks(widgetFrom, widgetTo)
+        return [(link.signalNameFrom, link.signalNameTo) for link in links]
+    
 
-    # is signal from widgetFrom to widgetTo with name signalName enabled?
     def isSignalEnabled(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
-        for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
-            if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
-                return enabled
-        return 0
+        """ Is signal enabled
+        """
+        links = self.getLinks(widgetFrom, widgetTo, signalNameFrom, signalNameTo)
+        if links:
+            return links[0].enabled
+        else:
+            return False
+        
 
     def removeLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
-        if self.verbosity >= 2:
-            self.addEvent("remove link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
+        """ Remove link
+        """
+        self.addEvent("Remove link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
 
         # no need to update topology, just remove the link
         if self.links.has_key(widgetFrom):
-            for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
-                if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
-                    for key in widgetFrom.linksOut[signalFrom].keys():
-                        widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, key, signalNameFrom)
-                    self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
-                    if not self.freezing and not self.signalProcessingInProgress: self.processNewSignals(widgetFrom)
+            links = self.getLinks(widgetFrom, widgetTo, signalNameFrom, signalNameTo)
+            if len(links) != 1:
+                print "Error removing a link with none or more then one entries"
+                return
+                
+            link = links[0]
+            self.purgeLink(link)
+            
+            self.links[widgetFrom].remove(link)
+            if not self.freezing and not self.signalProcessingInProgress: 
+                self.processNewSignals(widgetFrom)
         widgetTo.removeInputConnection(widgetFrom, signalNameTo)
 
 
@@ -307,91 +452,222 @@ class SignalManager:
     # ENABLE OR DISABLE LINK CONNECTION
 
     def setLinkEnabled(self, widgetFrom, widgetTo, enabled, justSend = False):
-        links = self.links[widgetFrom]
-        for i in range(len(links)):
-            (widget, nameFrom, nameTo, e) = links[i]
-            if widget == widgetTo:
-                if not justSend:
-                    links[i] = (widget, nameFrom, nameTo, enabled)
-                if enabled:
-                    for key in widgetFrom.linksOut[nameFrom].keys():
-                        widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][key], key, nameFrom)
-
-        if enabled: self.processNewSignals(widgetTo)
+        """ Set `enabled` state for links between widgets.
+        """
+        for link in self.getLinks(widgetFrom, widgetTo):
+            if not justSend:
+                link.enabled = enabled
+            if enabled:
+                self.pushAllOnLink(link)
+                
+        if enabled:
+            self.processNewSignals(widgetTo)
 
 
     def getLinkEnabled(self, widgetFrom, widgetTo):
-        for (widget, nameFrom, nameTo, enabled) in self.links[widgetFrom]:      # it is enough that we find one signal connected from widgetFrom to widgetTo
-            if widget == widgetTo:                                  # that we know wheather the whole link (all signals) is enabled or not
-                return enabled
+        """ Is any link between widgets enabled
+        """
+        return any(link.enabled for link in self.getLinks(widgetFrom, widgetTo))
 
 
     # widget widgetFrom sends signal with name signalName and value value
     def send(self, widgetFrom, signalNameFrom, value, id):
+        """ Send signal `signalNameFrom` from `widgetFrom` with `value` and `id`
+        """
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
-        if self.verbosity >= 2:
-            self.addEvent("send data from " + widgetFrom.captionTitle + ". Signal = " + signalNameFrom, value, eventVerbosity = 2)
+        self.addEvent("Send data from " + widgetFrom.captionTitle + ". Signal = " + signalNameFrom, value, eventVerbosity = 2)
 
-        if not self.links.has_key(widgetFrom): return
-        for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
-            if signalFrom == signalNameFrom and enabled == 1:
-                #print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
-                widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id, signalNameFrom)
-
+        if not self.links.has_key(widgetFrom):
+            return
+        
+        for link in self.getLinks(widgetFrom, None, signalNameFrom, None):
+            self.pushToLink(link, value, id)
 
         if not self.freezing and not self.signalProcessingInProgress:
-            #print "processing new signals"
             self.processNewSignals(widgetFrom)
 
     # when a new link is created, we have to
     def sendOnNewLink(self, widgetFrom, widgetTo, signals):
-        for (outName, inName) in signals:
-            for key in widgetFrom.linksOut[outName].keys():
-                widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][key], key, outName)
+        for (signalNameFrom, signalNameTo) in signals:
+            for link in self.getLinks(widgetFrom, widgetTo, signalNameFrom, signalNameTo):
+                self.pushAllOnLink(link)
 
 
-    def processNewSignals(self, firstWidget):
-        if len(self.widgets) == 0: return
-        if self.signalProcessingInProgress: return
+    def pushAllOnLink(self, link):
+        """ Send all data on link
+        """
+        for key in link.widgetFrom.linksOut[link.signalNameFrom].keys():
+            self.pushToLink(link, link.widgetFrom.linksOut[link.signalNameFrom][key], key)
 
-        if self.verbosity >= 2:
-            self.addEvent("process new signals from " + firstWidget.captionTitle, eventVerbosity = 2)
 
-        if firstWidget not in self.widgets:
+    def purgeLink(self, link):
+        """ Clear all data on link (i.e. send None for all keys)
+        """
+        for key in link.widgetFrom.linksOut[link.signalNameFrom].keys():
+            self.pushToLink(link, None, key)
+            
+    def pushToLink(self, link, value, id):
+        """ Send value with id on link
+        """
+        if link.enabled:
+            if link.dynamic:
+                dyn_enable = link.canEnableDynamic(value)
+                print "Dynamic signal enabled", dyn_enable
+                self.setDynamicLinkEnabled(link, dyn_enable)
+                if not dyn_enable:
+                    value = None
+            link.widgetTo.updateNewSignalData(link.widgetFrom, link.signalNameTo, 
+                                          value, id, link.signalNameFrom)
+
+    def processNewSignals(self, firstWidget=None):
+        """ Process new signals starting from `firstWidget`
+        """
+        
+        if len(self.widgets) == 0 or self.signalProcessingInProgress or self.freezing:
+            return
+
+        if firstWidget not in self.widgets or self.widgetQueue:
             firstWidget = self.widgets[0]   # if some window that is not a widget started some processing we have to process new signals from the first widget
+            
+        self.addEvent("Process new signals starting from " + firstWidget.captionTitle, eventVerbosity = 2)
 
+        skipWidgets = self.getBlockedWidgets() # Widgets that are blocking
+        
+        
         # start propagating
         self.signalProcessingInProgress = 1
-
+        
         index = self.widgets.index(firstWidget)
         for i in range(index, len(self.widgets)):
+            if self.widgets[i] in skipWidgets:
+                continue
+                
+            while self.widgets[i] in self.widgetQueue:
+                self.widgetQueue.remove(self.widgets[i])
             if self.widgets[i].needProcessing:
+                self.addEvent("Processing " + self.widgets[i].captionTitle)
                 try:
                     self.widgets[i].processSignals()
-                except:
+                except Exception:
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
-
+                    
+                if self.widgets[i].isBlocking():
+                    if not self.asyncProcessingEnabled:
+                        self.addEvent("Widget %s blocked during signal processing. Aborting." % self.widgets[i].captionTitle)
+                        break
+                    else:
+                        self.addEvent("Widget %s blocked during signal processing." % self.widgets[i].captionTitle)            
+                    
+                    # If during signal processing the widget changed state to
+                    # blocking we skip all of its descendants 
+                    skipWidgets.update(self.widgetDescendants(self.widgets[i]))
+            if self.freezing:
+                self.addEvent("Signals frozen during processing of " + self.widgets[i].captionTitle + ". Aborting.")
+                break
+        
         # we finished propagating
         self.signalProcessingInProgress = 0
+        
+        if self.widgetQueue:
+            # if there are still some widgets on queue
+            self.processNewSignals(None)
+        
+    def scheduleSignalProcessing(self, widget=None):
+        self.widgetQueue.append(widget)
+        self.processNewSignals(widget)
 
 
     def existsPath(self, widgetFrom, widgetTo):
+        """ Is there a path between `widgetFrom` and `widgetTo` 
+        """
         # is there a direct link
-        if not self.links.has_key(widgetFrom): return 0
+        if not self.links.has_key(widgetFrom):
+            return 0
 
-        for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
-            if widget == widgetTo: return 1
+        for link in self.links[widgetFrom]:
+            if link.widgetTo == widgetTo:
+                return 1
 
         # is there a nondirect link
-        for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
-            if self.existsPath(widget, widgetTo): return 1
+        for link in self.links[widgetFrom]:
+            if self.existsPath(link.widgetTo, widgetTo):
+                return 1
 
         # there is no link...
         return 0
+    
 
+    def widgetDescendants(self, widget):
+        """ Return all widget descendants of `widget`
+        """
+        queue = [widget]
+        queue_set = set(queue)
+        
+        index = self.widgets.index(widget)
+        for i in range(index, len(self.widgets)):
+            widget = self.widgets[i]
+            if widget not in queue:
+                continue
+            linked = [link.widgetTo for link in self.links.get(widget, []) if link.enabled]
+            for w in linked:
+                if w not in queue_set:
+                    queue.append(widget)
+                    queue_set.add(widget)
+        return queue
+    
+    
+    def isWidgetBlocked(self, widget):
+        """ Is this widget or any of its up-stream connected widgets blocked.
+        """
+        if widget.isBlocking():
+            return True
+        else:
+            widgets = [link.widgetFrom for link in self.getLinks(None, widget, None, None)]
+            if widgets:
+                return any(self.isWidgetBlocked(w) for w in widgets)
+            else:
+                return False
+            
+            
+    def getBlockedWidgets(self):
+        """ Return a set of all widgets that are blocked.
+        """
+        blocked = set()
+        for w in self.widgets:
+            if w not in blocked and w.isBlocking():
+                blocked.update(self.widgetDescendants(w))
+        return blocked
+    
+                
+    def freeze(self, widget=None):
+        """ Return a context manager that freezes the signal processing
+        """
+        signalManager = self
+        class freezer(object):
+            def __enter__(self):
+                self.push()
+                return self
+            
+            def __exit__(self, *args):
+                self.pop()
+                
+            def push(self):
+                signalManager.setFreeze(signalManager.freezing + 1)
+                
+            def pop(self):
+                signalManager.setFreeze(signalManager.freezing - 1, widget)
+                
+        return freezer()
+    
+    def setDynamicLinkEnabled(self, link, enabled):
+        import PyQt4.QtCore as QtCore
+        link.widgetFrom.emit(QtCore.SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), link, enabled)
+        
+    
 
 # create a global instance of signal manager
 globalSignalManager = SignalManager()
-
+        
+     

@@ -161,7 +161,7 @@ class OWBaseWidget(QDialog):
 
         self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
         self.outputs = []    # signalName: dataType
-        self.wrappers =[]    # stored wrappers for widget events
+        self.wrappers = []    # stored wrappers for widget events
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: (signalData, id)
         self.connections = {}   # dictionary where keys are (control, signal) and values are wrapper instances. Used in connect/disconnect
@@ -182,6 +182,12 @@ class OWBaseWidget(QDialog):
         global widgetId
         widgetId += 1
         self.widgetId = widgetId
+        
+        self._private_thread_pools = {}
+        self.asyncCalls = []
+        self.asyncBlock = False
+        
+        self.connect(self, SIGNAL("blockingStateChanged(bool)"), lambda bool :self.signalManager.log.info("Blocking state changed %s %s" % (str(self), str(bool))))
 
 
     # uncomment this when you need to see which events occured
@@ -637,7 +643,8 @@ class OWBaseWidget(QDialog):
 
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
-        if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
+        if self.processingHandler:
+            self.processingHandler(self, 1)    # focus on active widget
         newSignal = 0        # did we get any new signals
 
         # we define only a way to handle signals that have defined a handler function
@@ -667,6 +674,10 @@ class OWBaseWidget(QDialog):
 
         if newSignal == 1:
             self.handleNewSignals()
+        
+        while self.isBlocking():
+            self.thread().msleep(50)
+            qApp.processEvents()
 
         if self.processingHandler:
             self.processingHandler(self, 0)    # remove focus from this widget
@@ -890,6 +901,115 @@ class OWBaseWidget(QDialog):
             (Qt.ControlModifier, Qt.Key_W): lambda self: self.setVisible(not self.isVisible())}
 
 
+    def scheduleSignalProcessing(self):
+        self.signalManager.scheduleSignalProcessing(self)
+
+    def setBlocking(self, state=True):
+        """ Set blocking flag for this widget. While this flag is set this
+        widget and all its descendants will not receive any new signals from
+        the signal manager
+        """
+        self.asyncBlock = state
+        self.emit(SIGNAL("blockingStateChanged(bool)"), self.asyncBlock)
+        if not self.isBlocking():
+            self.scheduleSignalProcessing()
+        
+        
+    def isBlocking(self):
+        """ Is this widget blocking signal processing. Widget is blocking if
+        asyncBlock value is True or any AsyncCall objects in asyncCalls list
+        has blocking flag set
+        """
+        return self.asyncBlock or any(a.blocking for a in self.asyncCalls)
+    
+    def asyncExceptionHandler(self, (etype, value, tb)):
+        import traceback
+        sys.excepthook(etype, value, tb)
+        
+    def asyncFinished(self, async, string):
+        """ Remove async from asyncCalls, update blocking state
+        """
+        
+        index = self.asyncCalls.index(async)
+        async = self.asyncCalls.pop(index)
+        
+        if async.blocking and not self.isBlocking():
+            # if we are responsible for unblocking
+            self.emit(SIGNAL("blockingStateChanged(bool)"), False)
+            self.scheduleSignalProcessing()
+            
+        async.disconnect(async, SIGNAL("finished(PyQt_PyObject, QString)"), self.asyncFinished)
+        self.emit(SIGNAL("asyncCallsStateChange()"))
+                
+            
+    
+    def asyncCall(self, func, args=(), kwargs={}, name=None, onResult=None, onStarted=None, onFinished=None, onError=None, blocking=True, thread=None, threadPool=None):
+        """ Return an OWConcurent.AsyncCall object func, args and kwargs
+        set and signals connected. 
+        """
+        from functools import partial
+        from OWConcurrent import AsyncCall
+        
+        asList = lambda slot: slot if isinstance(slot, list) else ([slot] if slot else [])
+        
+        onResult = asList(onResult)
+        onStarted = asList(onStarted) #+ [partial(self.setBlocking, True)]
+        onFinished = asList(onFinished) #+ [partial(self.blockSignals, False)]
+        onError = asList(onError) or [self.asyncExceptionHandler]
+        
+        async = AsyncCall(func, args, kwargs, thread=thread, threadPool=threadPool)
+        async.name = name if name is not None else ""
+            
+        for slot in  onResult:
+            async.connect(async, SIGNAL("resultReady(PyQt_PyObject)"), slot, Qt.QueuedConnection)
+        for slot in onStarted:
+            async.connect(async, SIGNAL("starting()"), slot, Qt.QueuedConnection)
+        for slot in onFinished:
+            async.connect(async, SIGNAL("finished(QString)"), slot, Qt.QueuedConnection)
+        for slot in onError:
+            async.connect(async, SIGNAL("unhandledException(PyQt_PyObject)"), slot, Qt.QueuedConnection)
+        
+        self.addAsyncCall(async, blocking)
+            
+        return async
+    
+    def addAsyncCall(self, async, blocking=True):
+        """ Add AsyncCall object to asyncCalls list (will be removed
+        once it finishes processing).
+        
+        """
+        ## TODO: make this thread safe
+        
+        async.connect(async, SIGNAL("finished(PyQt_PyObject, QString)"), self.asyncFinished)
+        
+        async.blocking = blocking
+        
+        if blocking:
+            # if we are responsible for blocking
+            state = any(a.blocking for a in self.asyncCalls)
+            self.asyncCalls.append(async)
+            if not state:
+                self.emit(SIGNAL("blockingStateChanged(bool)"), True)
+        else:
+            self.asyncCalls.append(async)
+            
+        self.emit(SIGNAL("asyncCallsStateChange()"))
+        
+    
+    
+def blocking(method):
+    """ Return method that sets blocking flag while executing
+    """
+    from functools import wraps
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        old = self._blocking
+        self.setBlocking(True)
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self.setBlocking(old)
+    
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)

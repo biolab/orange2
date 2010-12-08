@@ -102,7 +102,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar = self.addToolBar("Toolbar")
         self.toolbar.setOrientation(Qt.Horizontal)
 #        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        if not self.settings.get("showToolbar", True): self.toolbar.hide()
+        if not self.settings.get("showToolbar", True):
+            self.toolbar.hide()
         
         # create a schema
         self.schema = orngDoc.SchemaDoc(self)
@@ -110,7 +111,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.schema.setFocus()
 
         self.toolbar.addAction(QIcon(self.file_open), "Open schema", self.menuItemOpen)
+#        self.toolbar.addAction(QIcon(self.style().standardIcon(QStyle.SP_FileIcon)), "Open schema", self.menuItemOpen)
         self.toolSave = self.toolbar.addAction(QIcon(self.file_save), "Save schema", self.menuItemSave)
+#        self.toolSave = self.toolbar.addAction(QIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton)), "Save schema", self.menuItemSave)
         if RedR:
             self.toolReloadWidgets = self.toolbar.addAction(QIcon(self.reload_pic), "Reload Widgets", self.reloadWidgets)
         self.toolbar.addSeparator()
@@ -135,6 +138,16 @@ class OrangeCanvasDlg(QMainWindow):
         cb.setFocusPolicy(Qt.TabFocus)
         
         self.toolbar.addWidget(w)
+        
+        self.freezeAction = self.toolbar.addAction("Freeze signals")
+        self.freezeAction.setCheckable(True)
+        self.freezeAction.setIcon(QIcon(self.style().standardIcon(QStyle.SP_MediaPause))) #self.schema_pause))
+        
+        def toogleSchemaFreeze(freeze):
+            self.freezeAction.setIcon(QIcon(self.style().standardIcon(QStyle.SP_MediaPlay if freeze else QStyle.SP_MediaPause))) #self.schema_pause))
+            self.schema.setFreeze(freeze)
+            
+        self.connect(self.freezeAction, SIGNAL("toggled(bool)"), toogleSchemaFreeze) #lambda bool: self.schema.setFreeze(bool))
         
         # Restore geometry before calling createWidgetsToolbar.
         # On Mac OSX with unified title bar the canvas can move up on restarts
@@ -298,11 +311,11 @@ class OrangeCanvasDlg(QMainWindow):
             self.menuOptions.addAction("Set to debug mode", self.setDebugMode)
         
         # uncomment this only for debugging
-        #self.menuOptions.addSeparator()
-        #self.menuOptions.addAction("Dump widget variables", self.dumpVariables)
+#        self.menuOptions.addSeparator()
+#        self.menuOptions.addAction("Dump widget variables", self.dumpVariables)
 
         self.menuOptions.addSeparator()
-        #self.menuOptions.addAction( "Channel preferences",  self.menuItemPreferences)
+#        self.menuOptions.addAction( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.addSeparator()
         self.menuOptions.addAction("&Customize Shortcuts", self.menuItemEditWidgetShortcuts)
         self.menuOptions.addAction("&Delete Widget Settings", self.menuItemDeleteWidgetSettings)

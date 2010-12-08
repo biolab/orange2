@@ -123,6 +123,10 @@ class CanvasLine(QGraphicsPathItem):
             self.setGraphicsEffect(effect)
         if scene is not None:
             scene.addItem(self)
+            
+        self._dyn_enabled = False
+            
+        QObject.connect(self.outWidget.instance, SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), self.updateDynamicEnableState)
 
     def remove(self):        
         self.hide()
@@ -135,10 +139,31 @@ class CanvasLine(QGraphicsPathItem):
 
     def getSignals(self):
         signals = []
-        for (inWidgetInstance, outName, inName, X) in self.signalManager.links.get(self.outWidget.instance, []):
-            if inWidgetInstance == self.inWidget.instance:
-                signals.append((outName, inName))
+        for link in self.signalManager.getLinks(self.outWidget.instance, self.inWidget.instance):
+            signals.append((link.signalNameFrom, link.signalNameTo))
+#        for (inWidgetInstance, outName, inName, X) in self.signalManager.links.get(self.outWidget.instance, []):
+#            if inWidgetInstance == self.inWidget.instance:
+#                signals.append((outName, inName))
         return signals
+    
+    def isDynamic(self):
+        links = self.signalManager.getLinks(self.outWidget.instance, self.inWidget.instance)
+        return any(link.dynamic for link in links)
+    
+    def updateDynamicEnableState(self, link, enabled):
+        """ Call when dynamic signal state changes
+        """
+        links = self.signalManager.getLinks(self.outWidget.instance, self.inWidget.instance)
+        if link not in links:
+            return
+        
+        if self.isDynamic():
+            if enabled:
+                self._dyn_enabled = True
+            else:
+                self._dyn_enabled = False
+        self.update()
+        
     
     def updatePainterPath(self):
         p1 = self.outWidget.getRightEdgePoint()
@@ -168,9 +193,15 @@ class CanvasLine(QGraphicsPathItem):
             return rect
 
     def paint(self, painter, option, widget = None):
-        painter.setPen(QPen(QColor(200, 200, 200), 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        if self.isDynamic():
+            color2 = QColor(Qt.blue if self._dyn_enabled else Qt.red)
+            color1 = color2.lighter(150)
+        else:
+            color1 = QColor(200, 200, 200)
+            color2 = QColor(160, 160, 160)
+        painter.setPen(QPen(color1, 6 if self.hoverState == True else 4 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
         painter.drawPath(self.path())
-        painter.setPen(QPen(QColor(160, 160, 160), 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
+        painter.setPen(QPen(color2, 2 , self.getEnabled() and Qt.SolidLine or Qt.DashLine, Qt.RoundCap))
         painter.drawPath(self.path())
 
     def updateTooltip(self):
@@ -412,20 +443,27 @@ class CanvasWidget(QGraphicsRectItem):
         elif isinstance(pos, QRectF) and boxRect.intersects(pos): return True
         else: return False
         
-    def canConnect(self, outWidget, inWidget):
-        if outWidget == inWidget: return
-        outputs = [outWidget.instance.getOutputType(output.name) for output in outWidget.widgetInfo.outputs]
-        inputs = [inWidget.instance.getInputType(input.name) for input in inWidget.widgetInfo.inputs]
-        canConnect = 0
-        for outtype in outputs:
-            if True in [issubclass(outtype, intype) for intype in inputs]:
-                canConnect = 1
-                break
+    def canConnect(self, outWidget, inWidget, dynamic=False):
+        if outWidget == inWidget:
+            return
+        
+        canConnect = self.signalManager.canConnect(outWidget.instance, inWidget.instance, dynamic=dynamic)
+        
+#        outputs = [outWidget.instance.getOutputType(output.name) for output in outWidget.widgetInfo.outputs]
+#        inputs = [inWidget.instance.getInputType(input.name) for input in inWidget.widgetInfo.inputs]
+#        canConnect = 0
+#        for outtype in outputs:
+#            if any(issubclass(outtype, intype) for intype in inputs):
+#                canConnect = 1
+#                break
+#            elif dynamic and any(issubclass(intype, outtype) for intype in inputs):
+#                canConnect = 2
+#                break
 
         if outWidget == self:
             self.shownRightEdge = canConnect and self.imageRightEdgeG or self.imageRightEdgeR
         else:
-            self.shownLeftEdge = canConnect and self.imageLeftEdgeG or self.imageLeftEdgeR        
+            self.shownLeftEdge = canConnect and self.imageLeftEdgeG or self.imageLeftEdgeR
 
     def resetLeftRightEdges(self):
         self.shownLeftEdge = self.imageLeftEdge
@@ -588,3 +626,4 @@ class MyCanvasText(QGraphicsSimpleTextItem):
         elif self.flags & Qt.AlignBottom:yOff = rect.height()
         #painter.drawText(self.pos().x()-xOff, self.pos().y()-yOff, rect.width(), rect.height(), self.flags, self.text())
         painter.drawText(-xOff, -yOff, rect.width(), rect.height(), self.flags, self.text())
+        

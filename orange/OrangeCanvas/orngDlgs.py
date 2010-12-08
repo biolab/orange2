@@ -223,6 +223,7 @@ class SignalDialog(QDialog):
         self.signals = []
         self._links = []
         self.allSignalsTaken = 0
+        self.signalManager = self.canvasDlg.schema.signalManager
 
         # GUI
         self.setWindowTitle('Connect Signals')
@@ -290,7 +291,9 @@ class SignalDialog(QDialog):
                 if inType == None:
                     continue        #print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
                 if issubclass(outType, inType):
-                        possibleLinks.append((outS.name, inS.name))
+                    possibleLinks.append((outS.name, inS.name))
+                if issubclass(inType, outType):
+                    possibleLinks.append((outS.name, inS.name))
         return possibleLinks
 
     def addDefaultLinks(self):
@@ -346,6 +349,22 @@ class SignalDialog(QDialog):
             if len(pl) > 0:     # when we find a first non-empty list we stop searching
                 break
         return len(all) > 0
+    
+    def addDefaultLinks(self):
+        self.multiplePossibleConnections = 0
+        candidates = self.signalManager.proposePossibleLinks(self.outWidget.instance, self.inWidget.instance)
+        if candidates:
+            ## If there are more candidates with max weights
+            maxW = max([w for _,_,w in candidates])
+            maxCandidates = [c for c in candidates if c[-1] == maxW]
+            if len(maxCandidates) > 1:
+                self.multiplePossibleConnections = 1
+            best = maxCandidates[0]
+            self.addLink(best[0].name, best[1].name) # add the best to the view
+            return True
+        else:
+            return 0
+            
 
     def addLink(self, outName, inName):
         if (outName, inName) in self._links: return 1
@@ -353,7 +372,7 @@ class SignalDialog(QDialog):
         # check if correct types
         outType = self.outWidget.instance.getOutputType(outName)
         inType = self.inWidget.instance.getInputType(inName)
-        if not issubclass(outType, inType): return 0
+        if not issubclass(outType, inType) and not issubclass(inType, outType): return 0 #TODO check this with signalManager.canConnect
 
         inSignal = None
         inputs = self.inWidget.widgetInfo.inputs

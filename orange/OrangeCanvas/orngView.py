@@ -206,11 +206,11 @@ class SchemaView(QGraphicsView):
                     if self.tempWidget.getDistToLeftEdgePoint(self.mouseDownPosition) < self.tempWidget.getDistToRightEdgePoint(self.mouseDownPosition):
                         self.tempLine.setEndWidget(self.tempWidget)
                         for widget in self.doc.widgets:
-                            widget.canConnect(widget, self.tempWidget)
+                            widget.canConnect(widget, self.tempWidget, dynamic=True)
                     else:
                         self.tempLine.setStartWidget(self.tempWidget)
                         for widget in self.doc.widgets:
-                            widget.canConnect(self.tempWidget, widget)
+                            widget.canConnect(self.tempWidget, widget, dynamic=True)
                                                         
 #                self.scene().update()
 #                self.doc.canvasDlg.widgetPopup.setEnabled(len(self.getSelectedWidgets()) == 1)
@@ -330,7 +330,7 @@ class SchemaView(QGraphicsView):
 
             # we must check if we have really connected some output to input
             if start and end and start != end:
-                if self.doc.signalManager.signalProcessingInProgress:
+                if self.doc.signalManager.signalProcessingInProgress: # TODO: Remove this check when signal manager handles out of sync signals
                     QMessageBox.information( self, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.")
                 else:
                     self.doc.addLine(start, end)
