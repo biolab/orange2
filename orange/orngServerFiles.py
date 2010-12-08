@@ -528,10 +528,20 @@ class DownloadProgress(ConsoleProgressBar):
             self.redirect(self.state)
         return ret
     
+    class RedirectContext(object):
+        def __enter__(self):
+            DownloadProgress.lock.acquire()
+            return DownloadProgress
+        
+        def __exit__(self, ex_type, value, tb):
+            DownloadProgress.redirect = None
+            DownloadProgress.lock.release()
+            return False
+        
     @classmethod
     def setredirect(cls, redirect):
         cls.redirect = staticmethod(redirect)
-        return cls
+        return cls.RedirectContext()
     
     @classmethod
     def __enter__(cls):
@@ -540,7 +550,6 @@ class DownloadProgress(ConsoleProgressBar):
     
     @classmethod
     def __exit__(cls, exc_type, exc_value, traceback):
-        cls.redirect = None
         cls.lock.release()
         return False
 
