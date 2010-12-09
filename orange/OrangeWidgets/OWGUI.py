@@ -1690,6 +1690,8 @@ class TableBarItem(QItemDelegate):
         self.drawBackground(painter, option, index)
         ratio = None
         ratio, ok = index.data(TableBarItem.BarRole).toDouble()
+        if ratio != ratio: # NaN
+            ratio = None
         if not ok:
             ratio = None
             value, ok = index.data(Qt.DisplayRole).toDouble()
@@ -1699,8 +1701,7 @@ class TableBarItem(QItemDelegate):
                     max, span = self.table.normalizers[col]
                     ratio = (max - value) / span
         if ratio is not None:
-            painter.fillRect(option.rect.adjusted(1, 1, -option.rect.width() * (ratio), -1), self.color)
-#                painter.fillRect(option.rect.adjusted(0, option.rect.height()-4, -option.rect.width()*(max - value) / span, 0), self.color)
+            painter.fillRect(option.rect.adjusted(1, 1, -option.rect.width() * ratio, -1), self.color)
         text = index.data(Qt.DisplayRole).toString()
 
         self.drawDisplay(painter, option, option.rect, text)
