@@ -136,6 +136,11 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown Details in Arguments List" , orientation = "horizontal")
         self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% confidence interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
 
+        #Remove Argumentation tab (Argumentation does not work)
+        self.tabs.removeTab(2)
+        self.ArgumentationTab.hide()
+        
+        
         # ##########################
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')

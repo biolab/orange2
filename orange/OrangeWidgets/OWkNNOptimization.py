@@ -162,6 +162,12 @@ class OWVizRank(VizRank, OWWidget):
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the Selected Class Value")
         self.argumentList = OWGUI.listBox(self.argumentBox, self, callback = self.argumentSelected)
         self.argumentList.setMinimumSize(200,200)
+        
+        
+        #Remove and hide the argumentation tab (It does not work)
+        self.tabs.removeTab(2)
+        self.ArgumentationTab.hide()
+        
 
 
         # ##########################
@@ -225,6 +231,8 @@ class OWVizRank(VizRank, OWWidget):
             self.projectionLimit = 20
             self.optimizeProjectionLimit = 20
             self.attributeCount = 6
+            
+        self.subsetData = None
 
 
     # ##############################################################
@@ -769,7 +777,7 @@ class OWVizRank(VizRank, OWWidget):
         classValue, dist = VizRank.findArguments(self, example)
 
         if not self.arguments: return
-        classIndex = self.classValueCombo.currentItem()
+        classIndex = self.classValueCombo.currentIndex() #currentItem()
         for i in range(len(self.arguments[0])):
             prob, d, attrList, index = self.arguments[classIndex][i]
             self.argumentList.insertItem(i, "%.3f - %s" %(prob, attrList))
@@ -793,7 +801,7 @@ class OWVizRank(VizRank, OWWidget):
     def argumentationClassChanged(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
-        ind = self.classValueCombo.currentItem()
+        ind = self.classValueCombo.currentIndex() #currentItem()
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
             self.argumentList.addItem("%.2f - %s" %(val[0], val[2]))
@@ -801,7 +809,7 @@ class OWVizRank(VizRank, OWWidget):
     def argumentSelected(self):
         if self.argumentList.selectedItems() == []: return
         ind = self.argumentList.row(self.argumentList.selectedItems()[0])
-        classInd = self.classValueCombo.currentItem()
+        classInd = self.classValueCombo.currentIndex() #currentItem()
         generalDict = self.results[self.arguments[classInd][ind][3]][GENERAL_DICT]
         if self.visualizationMethod == SCATTERPLOT:
             attrs = self.arguments[classInd][ind][2]
