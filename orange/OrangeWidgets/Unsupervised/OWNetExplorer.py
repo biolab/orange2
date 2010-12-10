@@ -1166,7 +1166,7 @@ class OWNetExplorer(OWWidget):
                 
             elif var.varType in [orange.VarTypes.Continuous]:
                 self.vertexSizeCombo.addItem(self.icons[var.varType], unicode(var.name))
-                
+
             self.nameComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.showComponentCombo.addItem(self.icons[var.varType], unicode(var.name))
             self.editCombo.addItem(self.icons[var.varType], unicode(var.name))

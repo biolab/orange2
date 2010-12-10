@@ -22,11 +22,13 @@ class NetworkVertex():
         self.label = []
         self.tooltip = []
         
+        self.image = None
         self.pen = QPen(Qt.blue, 1)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.nocolor = Qt.white
         self.color = Qt.blue
         self.size = 5
+        self.style = 1
     
 class NetworkEdge():
     def __init__(self):
@@ -39,6 +41,7 @@ class NetworkEdge():
         self.label = []
 
         self.pen = QPen(Qt.lightGray, 1)
+        self.pen.setCapStyle(Qt.RoundCap)
 
 class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen=QPen(Qt.black), xData=None, yData=None):
@@ -69,6 +72,7 @@ class NetworkCurve(QwtPlotCurve):
       if nocolor:
         color.setAlpha(0)
       self.edges[index].pen = QPen(color, pen.width())
+      self.edges[index].pen.setCapStyle(Qt.RoundCap)
   
   def getSelectedVertices(self):
     return [vertex.index for vertex in self.vertices if vertex.selected]
@@ -245,9 +249,10 @@ class OWNetworkCanvas(OWGraph):
       
       self.maxVertexSize = 5
       self.minVertexSize = 5
+      self.invertEdgeSize = 0
       self.showComponentAttribute = None
       self.forceVectors = None
-      
+      self.appendToSelection = 1
       self.fontSize = 12
            
       self.setAxisAutoScale(self.xBottom)
@@ -660,6 +665,9 @@ class OWNetworkCanvas(OWGraph):
       d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
       if min < d and ndx != -1:
+          if not self.appendToSelection:
+              self.removeSelection()
+                    
           if self.insideview:
               self.networkCurve.unSelect()
               self.vertices[ndx].selected = not self.vertices[ndx].selected
@@ -714,6 +722,7 @@ class OWNetworkCanvas(OWGraph):
 #          print "number of component edges:", len(edges), "number of components:", len(components)
           components_c = [(sum(self.visualizer.graph.coors[0][c]) / len(c), sum(self.visualizer.graph.coors[1][c]) / len(c)) for c in components]
           weights = [1 - matrix[u,v] for u,v in edges]
+          
           max_weight = max(weights)
           min_weight = min(weights)
           span_weights = max_weight - min_weight
@@ -746,7 +755,6 @@ class OWNetworkCanvas(OWGraph):
       if self.forceVectors != None:
           for v in self.forceVectors:
               self.addCurve("force", Qt.white, Qt.green, 1, style=QwtPlotCurve.Lines, xData=v[0], yData=v[1], showFilledSymbols=False)
-              print v[0], v[1]
       
       for r in self.circles:
           step = 2 * pi / 64;
@@ -1066,7 +1074,7 @@ class OWNetworkCanvas(OWGraph):
               return True
       return False
       
-  def addVisualizer(self, visualizer):
+  def addVisualizer(self, visualizer, curve=None):
       self.visualizer = visualizer
       self.clear()
       
@@ -1077,7 +1085,11 @@ class OWNetworkCanvas(OWGraph):
       self.vertices = []
       self.edges_old = {}
       self.nEdges = 0
-      self.networkCurve = NetworkCurve(self)
+      if curve is None:
+          self.networkCurve = NetworkCurve(self)
+      else:
+          self.networkCurve = curve
+          
       self.edges = []
       self.minEdgeWeight = sys.maxint
       self.maxEdgeWeight = 0
@@ -1177,12 +1189,18 @@ class OWNetworkCanvas(OWGraph):
               if edge.weight == None:
                   size = 1
                   edge.pen = QPen(edge.pen.color(), size)
+                  edge.pen.setCapStyle(Qt.RoundCap)
               else:
-                  size = (edge.weight - self.minEdgeWeight) * k + 1
+                  if self.invertEdgeSize:
+                      size = (self.maxEdgeWeight - edge.weight - self.minEdgeWeight) * k + 1
+                  else:
+                      size = (edge.weight - self.minEdgeWeight) * k + 1
                   edge.pen = QPen(edge.pen.color(), size)
+                  edge.pen.setCapStyle(Qt.RoundCap)
       else:
           for edge in self.edges:
               edge.pen = QPen(edge.pen.color(), 1)
+              edge.pen.setCapStyle(Qt.RoundCap)
               
   def setVerticesSize(self, column=None, inverted=0):
       if self.visualizer == None or self.visualizer.graph == None or self.visualizer.graph.items == None:

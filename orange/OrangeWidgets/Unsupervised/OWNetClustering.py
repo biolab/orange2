@@ -14,7 +14,7 @@ from OWWidget import *
 
 class OWNetClustering(OWWidget):
     
-    settingsList = ['method', 'iterationHistory']
+    settingsList = ['method', 'iterationHistory', "autoApply"]
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network Clustering')
@@ -25,6 +25,7 @@ class OWNetClustering(OWWidget):
         self.net = None
         self.method = 0
         self.iterationHistory = 0
+        self.autoApply = 0
         
         self.loadSettings()
         
@@ -32,10 +33,13 @@ class OWNetClustering(OWWidget):
         OWGUI.appendRadioButton(ribg, self, "method", "Label propagation clustering (Raghavan et al., 2007)", callback = self.cluster)
         OWGUI.checkBox(OWGUI.indentedBox(ribg), self, "iterationHistory", "Append clustering data on each iteration", callback = self.cluster)
         self.info = OWGUI.widgetLabel(self.controlArea, ' ')
+        autoApplyCB = OWGUI.checkBox(self.controlArea, self, "autoApply", "Commit automatically")
         OWGUI.button(self.controlArea, self, "Commit", callback=self.cluster)
         
     def setNetwork(self, net):
         self.net = net
+        if self.autoApply:
+            self.cluster()
         
     def cluster(self):
         self.info.setText(' ')

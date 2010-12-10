@@ -79,11 +79,13 @@ def readMatrix(fn):
 class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
-    def __init__(self, parent=None, signalManager = None):
+    def __init__(self, parent=None, signalManager=None, inputItems=True):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, "Distance File", wantMainArea = 0, resizingEnabled = 0)
         
-        self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
+        if inputItems: 
+            self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
+            
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
         self.recentFiles=[]
@@ -106,13 +108,14 @@ class OWDistanceFile(OWWidget):
         button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         
-        self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self,
-                        "takeAttributeNames", ["Use examples as items", 
-                        "Use attribute names"], "Items from input data", 
-                        callback = self.relabel)
-        
-        self.rbInput.setDisabled(True)
-#
+        if inputItems: 
+            self.rbInput = OWGUI.radioButtonsInBox(self.controlArea, self,
+                            "takeAttributeNames", ["Use examples as items", 
+                            "Use attribute names"], "Items from input data", 
+                            callback = self.relabel)
+            
+            self.rbInput.setDisabled(True)
+    #
 #        Moved to SymMatrixTransform widget
 #
 #        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
