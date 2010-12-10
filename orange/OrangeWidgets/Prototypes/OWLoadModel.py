@@ -1,4 +1,8 @@
 """<name>Load Model</name>
+<description>Load saved orange classifiers from a file</description>
+<icon>icons/LoadModel.png</icon>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni.uni-lj.si)</contact>
+<priority>3050</priority>
 """
 
 from OWWidget import *
@@ -20,6 +24,8 @@ class OWLoadModel(OWWidget):
         
         self.loadSettings()
         
+        self.filenameHistory= filter(os.path.exists, self.filenameHistory)
+        
         #####
         # GUI
         #####
@@ -40,7 +46,8 @@ class OWLoadModel(OWWidget):
         
         self.resize(200, 50)
         
-        QTimer.singleShot(50, self.onRecentSelection)
+        if self.filenameHistory:
+            self.loadAndSend()
         
         
     def onRecentSelection(self):
@@ -66,6 +73,7 @@ class OWLoadModel(OWWidget):
             self.filenameHistory.insert(0, filename)
             self.filesCombo.insertItem(0, os.path.basename(filename))
             self.filesCombo.setCurrentIndex(0)
+            self.selectedFileIndex = 0
             self.loadAndSend()
             
     def loadAndSend(self):

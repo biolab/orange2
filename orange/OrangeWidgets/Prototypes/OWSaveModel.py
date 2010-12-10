@@ -1,4 +1,8 @@
 """<name>Save Model</name>
+<description>Save orange classifiers to a file</description>
+<icon>icons/SaveModel.png</icon>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
+<priority>3000</priority>
 """
 
 from OWWidget import *
