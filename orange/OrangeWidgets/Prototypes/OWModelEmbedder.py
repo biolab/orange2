@@ -90,9 +90,9 @@ class OWModelEmbedder(OWWidget):
             self.ow.setShownAttributes(attr)
             self.ow.handleNewSignals() 
         
-        #####################################
-        ### TODO: add new modelTypes here ###
-        #####################################
+        ################################
+        ### add new model types here ###
+        ################################
         
         if modelType == "SPCA" or modelType == "LINPROJ": 
             self.setWidget(OWLinProj.OWLinProj) 
