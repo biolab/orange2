@@ -16,7 +16,7 @@ class OWNetworkHist():
     def __init__(self, parent=None, type=0):
         self.parent = parent
         
-    def addHistogramControls(self):
+    def addHistogramControls(self, parent=None):
         # set default settings
         self.spinLowerThreshold = 0
         self.spinLowerChecked = False
@@ -30,7 +30,10 @@ class OWNetworkHist():
         self.excludeLimit = 1
         self.percentil = 0
         
-        boxGeneral = OWGUI.widgetBox(self.controlArea, box = "Distance boundaries")
+        if parent is None:
+            parent = self.controlArea
+            
+        boxGeneral = OWGUI.widgetBox(parent, box = "Distance boundaries")
         
         OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", orientation='horizontal', callback=self.changeLowerSpin, valueType=float)
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", orientation='horizontal', callback=self.changeUpperSpin, valueType=float)
@@ -43,7 +46,7 @@ class OWNetworkHist():
         
         # Options
         self.attrColor = ""
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "netOption", [], "Options", callback = self.generateGraph)
+        ribg = OWGUI.radioButtonsInBox(parent, self, "netOption", [], "Options", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "All vertices", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "netOption", "Exclude small components", callback = self.generateGraph)
         OWGUI.spin(OWGUI.indentedBox(ribg), self, "excludeLimit", 1, 100, 1, label="Less vertices than: ", callback = (lambda h=True: self.generateGraph(h)))
@@ -52,7 +55,7 @@ class OWNetworkHist():
         self.attribute = None
         self.attributeCombo = OWGUI.comboBox(ribg, self, "attribute", box = "Filter attribute")#, callback=self.setVertexColor)
         
-        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "dstWeight", [], "Distance -> Weight", callback = self.generateGraph)
+        ribg = OWGUI.radioButtonsInBox(parent, self, "dstWeight", [], "Distance -> Weight", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := distance", callback = self.generateGraph)
         OWGUI.appendRadioButton(ribg, self, "dstWeight", "Weight := 1 - distance", callback = self.generateGraph)
         
