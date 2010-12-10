@@ -13,7 +13,7 @@ import exceptions
 import os.path
 import pickle
 
-def readMatrix(fn):
+def readMatrix(fn, progress=None):
     msg = None
     matrix = labels = data = None
     
@@ -47,6 +47,7 @@ def readMatrix(fn):
         matrix = orange.SymMatrix(dim)
         data = None
         
+        milestones = orngMisc.progressBarMilestones(dim, 100)     
         if labeled:
             labels = []
         else:
@@ -70,7 +71,12 @@ def readMatrix(fn):
                         matrix[li, lj] = float(s)
                     except:
                         msg = "Invalid number in line %i, column %i" % (li+2, lj)
-
+            if li in milestones:
+                if progress:
+                    progress.advance()
+        if progress:
+            progress.finish()
+        
     if msg:
         raise exceptions.Exception(msg)
 
@@ -177,7 +183,8 @@ class OWDistanceFile(OWWidget):
             self.matrix = None
             self.labels = None
             self.data = None
-            self.matrix, self.labels, self.data = readMatrix(fn)
+            pb = OWGUI.ProgressBar(self, 100)
+            self.matrix, self.labels, self.data = readMatrix(fn, pb)
             self.relabel()
         except:
             self.error("Error while reading the file")
