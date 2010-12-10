@@ -43,7 +43,9 @@ class OWModelsFile(OWDistanceFile):
             self.matrix = None
             self.labels = None
             self.data = None
-            self.matrix, self.labels, self.data = readMatrix(fn)
+            pb = OWGUI.ProgressBar(self, 100)
+            self.matrix, self.labels, self.data = readMatrix(fn, pb)
+            
             dstFile, ext = os.path.splitext(fn)
             warning = ""
             self.warning()

@@ -119,7 +119,7 @@ class OWModelEmbedder(OWWidget):
             smx = orange.SymMatrix(len(data2))
             smx.setattr('items', data2)
             pb = OWGUI.ProgressBar(self, 100)
-            milestones  = orngMisc.progressBarMilestones(len(data2)*(len(data2)-1)/2, 100)
+            milestones = orngMisc.progressBarMilestones(len(data2)*(len(data2)-1)/2, 100)
             count = 0
             for i in range(len(data2)):
                 for j in range(i+1):
