@@ -439,6 +439,7 @@ class OWPythonScript(OWWidget):
         index = self.selectedScriptIndex()
         if index is not None:
             del self.libraryList[index]
+            self.libraryView.selectionModel().select(self.libraryList.index(max(index - 1, 0)), QItemSelectionModel.ClearAndSelect)
     
     def onSaveScriptToFile(self, *args):
         index = self.selectedScriptIndex()
@@ -494,9 +495,16 @@ class OWPythonScript(OWWidget):
         else:
             self.codeFile = filename
             
-        if self.codeFile == "": return
+        if self.codeFile == "":
+            return
             
-        f = open(self.codeFile, 'r')
+        self.error(0)
+        try:
+            f = open(self.codeFile, 'r')
+        except (IOError, OSError), ex:
+            self.text.setPlainText("")
+            return
+        
         self.text.setPlainText(f.read())
         f.close()
     
