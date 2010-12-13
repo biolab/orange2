@@ -22,10 +22,9 @@ class OWScatterPlot3D(OWWidget):
         self.yAttr = 0
         self.zAttr = 0
         
-        self.colorAttr = 0
-        self.shapeAttr = None
-        self.labelAttr = None
+        self.colorAttr = None
         self.sizeAttr = None
+        self.labelAttr = None
         
         self.pointSize = 5
         self.alphaValue = 255
@@ -54,14 +53,20 @@ class OWScatterPlot3D(OWWidget):
                                           tooltip="Attribute to use for point color",
                                           callback=self.onAxisChange)
         
-        self.sizeSlider = OWGUI.hSlider(self.controlArea, self, "pointSize", box="Point Size",
-                                        minValue=1, maxValue=10,
-                                        callback=self.onAxisChange,
-                                        )
+        self.sizeAttrCB = OWGUI.comboBox(self.controlArea, self, "sizeAttr", box="Point Size",
+                                         tooltip="Attribute to use for pointSize",
+                                         callback=self.onAxisChange,
+                                         )
+        OWGUI.hSlider(self.controlArea, self, "pointSize", box="Max. point size",
+                      minValue=1, maxValue=10,
+                      tooltip="Maximum point size",
+                      callback=self.onAxisChange
+                      )
         
-        self.alphaSlizer = OWGUI.hSlider(self.controlArea, self, "alphaValue", box="Transparency",
-                                         minValue=10, maxValue=255,
-                                         callback=self.onAxisChange)
+#        self.alphaSlizer = OWGUI.hSlider(self.controlArea, self, "alphaValue", box="Transparency",
+#                                         minValue=10, maxValue=255,
+#                                         tooltip="Point transparency value",
+#                                         callback=self.onAxisChange)
         
         #TODO: jittering options
         
@@ -83,16 +88,20 @@ class OWScatterPlot3D(OWWidget):
         self.yAttrCB.clear()
         self.zAttrCB.clear()
         self.colorAttrCB.clear()
+        self.sizeAttrCB.clear()
         if self.data is not None:
             self.allAttrs = data.domain.variables + data.domain.getmetas().values()
             self.axisCandidateAttrs = [attr for attr in self.allAttrs if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
             
+            self.colorAttrCB.addItem("<None>")
+            self.sizeAttrCB.addItem("<None>")
             icons = OWGUI.getAttributeIcons() 
             for attr in self.axisCandidateAttrs:
                 self.xAttrCB.addItem(icons[attr.varType], attr.name)
                 self.yAttrCB.addItem(icons[attr.varType], attr.name)
                 self.zAttrCB.addItem(icons[attr.varType], attr.name)
                 self.colorAttrCB.addItem(icons[attr.varType], attr.name)
+                self.sizeAttrCB.addItem(icons[attr.varType], attr.name)
             
             array, c, w = self.data.toNumpyMA()
             if len(c):
@@ -124,22 +133,36 @@ class OWScatterPlot3D(OWWidget):
         xInd, yInd, zInd = self.getAxesIndices()
         X, Y, Z, mask = self.getAxisData(xInd, yInd, zInd)
         
-        colorAttr = self.axisCandidateAttrs[self.colorAttr]
-        C = self.dataArray[:, self.colorAttr]
+        if self.colorAttr > 0:
+            colorAttr = self.axisCandidateAttrs[self.colorAttr -1]
+            C = self.dataArray[:, self.colorAttr - 1]
         
-        if colorAttr.varType == orange.VarTypes.Discrete:
-            palette = OWColorPalette.ColorPaletteHSV(len(colorAttr.values))
-            colors = [palette[int(value)] for value in C.ravel()]
-            colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
+            if colorAttr.varType == orange.VarTypes.Discrete:
+                palette = OWColorPalette.ColorPaletteHSV(len(colorAttr.values))
+                colors = [palette[int(value)] for value in C.ravel()]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
+            else:
+                palette = OWColorPalette.ColorPaletteBW()
+                maxC, minC = numpy.max(C), numpy.min(C)
+                C = (C - minC) / (maxC - minC)
+                colors = [palette[value] for value in C.ravel()]
+                colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
         else:
-            palette = OWColorPalette.ColorPaletteBW()
-            maxC, minC = numpy.max(C), numpy.min(C)
-            C = (C - minC) / (maxC - minC)
-            colors = [palette[value] for value in C.ravel()]
-            colors = [[c.red()/255., c.green()/255., c.blue()/255.] for c in colors]
+            colors = "b"
             
+        if self.sizeAttr > 0:
+            sizeAttr = self.axisCandidateAttrs[self.sizeAttr - 1]
+            S = self.dataArray[:, self.sizeAttr - 1]
+            if sizeAttr.varType == orange.VarTypes.Discrete:
+                sizes = [(v + 1) * len(sizeAttr.values) / (11 - self.pointSize) for v in S]
+            else:
+                min, max = numpy.min(S), numpy.max(S)
+                sizes = [(v - min) * self.pointSize / (max-min) for v in S]
+        else:
+            sizes = 1
+        
         self.graph.clear()
-        self.graph.scatter3d(X, Y, Z, colors)
+        self.graph.scatter(X, Y, Z, colors, sizes)
         
         
     def getAxisData(self, xInd, yInd, zInd):

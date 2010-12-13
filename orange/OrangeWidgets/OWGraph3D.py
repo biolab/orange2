@@ -52,12 +52,11 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        glu.gluPerspective(45.0, float(self.width())/float(self.height()), 0.1, 100.0)
-        glu.gluOrtho2D(0, 10, 0, 10)
+        glu.gluPerspective(30.0, float(self.width())/float(self.height()), 0.1, 100.0)
+#        glu.gluOrtho2D(0, 10, 0, 10)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         
     def resizeGL(self, w, h):
-        print "Resize"
         gl.glViewport(0, 0, w, h)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
@@ -65,7 +64,8 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             aspect = 1
         else:
             aspect = float(w)/float(h)
-        glu.gluPerspective(45.0, aspect, 0.1, 100.0)
+        radius = self.radius()
+        glu.gluPerspective(30.0, aspect, 0.1, radius * 50)
         gl.glMatrixMode(gl.GL_MODELVIEW)
 
     def paintGL(self):
@@ -78,8 +78,7 @@ class OWGraph3D(QtOpenGL.QGLWidget):
                       0, 1, 0)
         self.paintAxes()
         
-        size = numpy.max(self.center - self.b_box[1]) * 2 / 50.0  
-        print size
+        normalSize = numpy.max(self.center - self.b_box[1]) / 100.0  
         
         gl.glEnable(gl.GL_BLEND)
         gl.glEnable(gl.GL_CULL_FACE)
@@ -87,55 +86,32 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gluQuadric  = glu.gluNewQuadric()
-        for cmd, (array, colors) in self.commands:
-            for (x,y,z), (r, g, b) in zip(array, colors):
+        for cmd, (array, colors, sizes) in self.commands:
+            for (x,y,z), (r, g, b), size in zip(array, colors, sizes):
                 gl.glPushMatrix()
                 gl.glTranslatef(x, y, z)
                 gl.glColor4f(r, g, b, 0.3)
-                glu.gluSphere(gluQuadric, size, 5, 5)
+                glu.gluSphere(gluQuadric, normalSize * size, 10, 10)
                 gl.glPopMatrix()
         glu.gluDeleteQuadric(gluQuadric)
-        
                 
+        
     def paintGLScatter(self, array, colors="r", shape=".", size=1):
         for x, y, z in array:
             pass
             
         
     def paintAxes(self):
-        x_axis = [[self.minx, self.miny, self.minz],
-                  [self.maxx, self.miny, self.minz]]
-        y_axis = [[self.minx, self.miny, self.minz],
-                  [self.minx, self.maxy, self.minz]]
-        z_axis = [[self.minx, self.miny, self.minz],
-                  [self.minx, self.miny, self.maxz]]
-        x_axis = numpy.array(x_axis)
-        y_axis = numpy.array(y_axis)
-        z_axis = numpy.array(z_axis)
-        
-        unit_x = numpy.array([self.maxx - self.minx, 0, 0])
-        unit_y = numpy.array([0, self.maxy - self.miny, 0])
-        unit_z = numpy.array([0, 0, self.maxz - self.minz])
-        
-        A = y_axis[1]
-        B = y_axis[1] + unit_x
-        C = x_axis[1]
-        D = x_axis[0]
-        
-        E = A + unit_z
-        F = B + unit_z
-        G = C + unit_z
-        H = D + unit_z
         
         gl.glDisable(gl.GL_CULL_FACE)
         gl.glColor4f(1,1,1,1)
-        for start, end in [x_axis, y_axis, z_axis]:
+        for start, end in [self.x_axis, self.y_axis, self.z_axis]:
             gl.glBegin(gl.GL_LINES)
             gl.glVertex3f(*start)
             gl.glVertex3f(*end)
             gl.glEnd()
             
-        def paintGrid(planeQuad, sub=4):
+        def paintGrid(planeQuad, sub=7):
             P11, P12, P22, P21 = numpy.asarray(planeQuad)
             Dx = numpy.linspace(0.0, 1.0, num=sub)
             P1vecH = P12 - P11
@@ -169,11 +145,10 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         
         def paintPlain(planeQuad):
             gl.glColor4f(*colorPlane)
-            paintQuad(plane)
+            paintQuad(planeQuad)
             gl.glColor4f(*colorGrid)
-            paintGrid(plane)
+            paintGrid(planeQuad)
             
-        
         def normalize(Vec):            
             return Vec / numpy.sqrt(numpy.sum(Vec ** 2))
             
@@ -183,7 +158,6 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             return normalize(numpy.cross(V1, V2))
         
         cameraVector = normalize(self.center - self.camera)
-#        cameraVector *= numpy.sqrt(numpy.sum(cameraVector ** 2)
         def paintPlainIf(planeQuad, ccw=False):
             normal = normalFromPoints(*planeQuad[:3])
             cameraVector = planeQuad[0] - self.camera
@@ -191,37 +165,53 @@ class OWGraph3D(QtOpenGL.QGLWidget):
             if cos > 0:
                 paintPlain(planeQuad)
                 
-        #xy plane
-        plane = [A, B, C, D]
-        paintPlainIf(plane)
-
-        # yz plane
-        plane = [A, D, H, E]
-        paintPlainIf(plane)
-        
-        # xz plane
-        plane = [D, C, G, H]
-        paintPlainIf(plane)
-        
-        # xy back plane
-        plane = [H, G, F, E]
-        paintPlainIf(plane)
-        
-        # yz right plane
-        plane = [B, F, G, C]
-        paintPlainIf(plane)
-        
-        # xz top plane
-        plane = [E, F, B, A]
-        paintPlainIf(plane)
+        paintPlainIf(self.axisPlaneXY)
+        paintPlainIf(self.axisPlaneYZ)
+        paintPlainIf(self.axisPlaneXZ)
+        paintPlainIf(self.axisPlaneXYBack)
+        paintPlainIf(self.axisPlaneYZRight)
+        paintPlainIf(self.axisPLaneXZTop)
         
         gl.glEnable(gl.GL_CULL_FACE)
         
         
+    def updateAxes(self):
+        x_axis = [[self.minx, self.miny, self.minz],
+                  [self.maxx, self.miny, self.minz]]
+        y_axis = [[self.minx, self.miny, self.minz],
+                  [self.minx, self.maxy, self.minz]]
+        z_axis = [[self.minx, self.miny, self.minz],
+                  [self.minx, self.miny, self.maxz]]
+        self.x_axis = x_axis = numpy.array(x_axis)
+        self.y_axis = y_axis = numpy.array(y_axis)
+        self.z_axis = z_axis = numpy.array(z_axis)
+        
+        self.unit_x = unit_x = numpy.array([self.maxx - self.minx, 0, 0])
+        self.unit_y = unit_y = numpy.array([0, self.maxy - self.miny, 0])
+        self.unit_z = unit_z = numpy.array([0, 0, self.maxz - self.minz])
+        
+        A = y_axis[1]
+        B = y_axis[1] + unit_x
+        C = x_axis[1]
+        D = x_axis[0]
+        
+        E = A + unit_z
+        F = B + unit_z
+        G = C + unit_z
+        H = D + unit_z
+        
+        self.axisPlaneXY = [A, B, C, D]
+        self.axisPlaneYZ = [A, D, H, E]
+        self.axisPlaneXZ = [D, C, G, H]
+        
+        self.axisPlaneXYBack = [H, G, F, E]
+        self.axisPlaneYZRight = [B, F, G, C]
+        self.axisPLaneXZTop = [E, F, B, A]
+        
     def plot3d(self, x, y, z, format="."):
         pass
     
-    def scatter3d(self, X, Y, Z, c="b", marker="o"):
+    def scatter(self, X, Y, Z=0, c="b", s=20, **kwargs):
         array = [[x, y, z] for x,y,z in zip(X, Y, Z)]
         if isinstance(c, str):
             colorDict ={"r": [1.0, 0.0, 0.0],
@@ -232,12 +222,16 @@ class OWGraph3D(QtOpenGL.QGLWidget):
         else:
             colors = c
             
-        self.commands.append(("scatter", (array, colors)))
+        if isinstance(s, int):
+            s = [s for _ in array]
+            
+        self.commands.append(("scatter", (array, colors, s)))
         max, min = numpy.max(array, axis=0), numpy.min(array, axis=0)
         self.b_box = max, min
         self.minx, self.miny, self.minz = min
         self.maxx, self.maxy, self.maxz = max
         self.center = (min + max) / 2 
+        self.updateAxes()
         self.updateGL()
         
         
