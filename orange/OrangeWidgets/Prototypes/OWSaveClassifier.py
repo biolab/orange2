@@ -1,6 +1,6 @@
-"""<name>Save Model</name>
+"""<name>Save Classifier</name>
 <description>Save orange classifiers to a file</description>
-<icon>icons/SaveModel.png</icon>
+<icon>icons/SaveClassifier.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>3000</priority>
 """
@@ -11,14 +11,14 @@ import orange
 import sys, os
 
 
-class OWSaveModel(OWWidget):
+class OWSaveClassifier(OWWidget):
     settingsList = ["lastSaveFile", "filenameHistory"]
-    def __init__(self, parent=None, signalManager=None, name="Save Model"):
+    def __init__(self, parent=None, signalManager=None, name="Save Classifier"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
         
-        self.inputs = [("Classifier", orange.Classifier, self.setModel)]
+        self.inputs = [("Classifier", orange.Classifier, self.setClassifier)]
         
-        self.lastSaveFile = os.path.expanduser("~/orange_model.pck")
+        self.lastSaveFile = os.path.expanduser("~/orange_classifier.pck")
         self.filenameHistory = []
         self.selectedFileIndex = 0
         
@@ -44,8 +44,8 @@ class OWSaveModel(OWWidget):
         self.browseButton.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
          
         box = OWGUI.widgetBox(self.controlArea, "Save")
-        self.saveButton = OWGUI.button(box, self, "Save current model",
-                                       callback=self.saveCurrentModel)
+        self.saveButton = OWGUI.button(box, self, "Save current classifier",
+                                       callback=self.saveCurrentClassifier)
         
         self.saveButton.setEnabled(False)
         
@@ -53,7 +53,7 @@ class OWSaveModel(OWWidget):
         
         self.resize(200, 100)
         
-        self.model = None
+        self.classifier = None
         
         
     def onRecentSelection(self):
@@ -66,7 +66,7 @@ class OWSaveModel(OWWidget):
     
     
     def browse(self):
-        filename = QFileDialog.getSaveFileName(self, "Save Model As ...",
+        filename = QFileDialog.getSaveFileName(self, "Save Classifier As ...",
                     self.lastSaveFile, "Pickle files (*.pickle *.pck);; All files (*.*)")
         filename = str(filename)
         if filename:
@@ -79,31 +79,31 @@ class OWSaveModel(OWWidget):
             self.filenameHistory.insert(0, filename)
             self.filesCombo.insertItem(0, os.path.basename(filename))
             self.filesCombo.setCurrentIndex(0)
-            self.saveButton.setEnabled(self.model is not None and bool(self.filenameHistory))
+            self.saveButton.setEnabled(self.classifier is not None and bool(self.filenameHistory))
     
             
-    def saveCurrentModel(self):
-        if self.model is not None:
+    def saveCurrentClassifier(self):
+        if self.classifier is not None:
             filename = self.filenameHistory[self.selectedFileIndex]
             import cPickle
             self.error(0)
             try:
-                cPickle.dump(self.model, open(filename, "wb"))
+                cPickle.dump(self.classifier, open(filename, "wb"))
             except Exception, ex:
-                self.error(0, "Could not save model! %s" % str(ex))
+                self.error(0, "Could not save classifier! %s" % str(ex))
             
             
-    def setModel(self, model=None):
-        self.model = model
-        self.saveButton.setEnabled(model is not None and bool(self.filenameHistory))
+    def setClassifier(self, classifier=None):
+        self.classifier = classifier
+        self.saveButton.setEnabled(classifier is not None and bool(self.filenameHistory))
         
     
 if __name__ == "__main__":
     app = QApplication([])
-    w = OWSaveModel()
+    w = OWSaveClassifier()
     import orngTree
     data = orange.ExampleTable("../../doc/datasets/iris.tab")
-    w.setModel(orngTree.TreeLearner(data))
+    w.setClassifier(orngTree.TreeLearner(data))
     w.show()
     app.exec_()
     w.saveSettings()

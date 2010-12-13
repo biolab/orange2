@@ -1,6 +1,6 @@
-"""<name>Load Model</name>
+"""<name>Load Classifier</name>
 <description>Load saved orange classifiers from a file</description>
-<icon>icons/LoadModel.png</icon>
+<icon>icons/LoadClassifier.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni.uni-lj.si)</contact>
 <priority>3050</priority>
 """
@@ -10,17 +10,17 @@ import OWGUI
 import orange
 
 
-class OWLoadModel(OWWidget):
+class OWLoadClassifier(OWWidget):
     settingsList = ["filenameHistory", "selectedFileIndex", "lastFile"]
     
-    def __init__(self, parent=None, signalManager=None, name="Load Model"):
+    def __init__(self, parent=None, signalManager=None, name="Load Classifier"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
         
         self.outputs = [("Classifier", orange.Classifier, Dynamic)]
         
         self.filenameHistory = []
         self.selectedFileIndex = 0
-        self.lastFile = os.path.expanduser("~/orange_model.pck")
+        self.lastFile = os.path.expanduser("~/orange_classifier.pck")
         
         self.loadSettings()
         
@@ -61,7 +61,7 @@ class OWLoadModel(OWWidget):
         self.loadAndSend()
         
     def browse(self):
-        filename = QFileDialog.getOpenFileName(self, "Load Model From File",
+        filename = QFileDialog.getOpenFileName(self, "Load Classifier From File",
                         self.lastFile, "Pickle files (*.pickle *.pck)\nAll files (*.*)")
         filename = str(filename)
         if filename:
@@ -81,20 +81,20 @@ class OWLoadModel(OWWidget):
         import cPickle
         self.error([0, 1])
         try:
-            model = cPickle.load(open(filename, "rb"))
+            classifier = cPickle.load(open(filename, "rb"))
         except Exception, ex:
-            self.error(0, "Could not load model! %s" % str(ex))
+            self.error(0, "Could not load classifier! %s" % str(ex))
             return
         
-        if not isinstance(model, orange.Classifier):
+        if not isinstance(classifier, orange.Classifier):
             self.error(1, "'%s' is not an orange classifier" % os.path.basename(filename))
             return 
         
-        self.send("Classifier", model)
+        self.send("Classifier", classifier)
         
 if __name__ == "__main__":
     app = QApplication([])
-    w = OWLoadModel()
+    w = OWLoadClassifier()
     w.show()
     app.exec_()
     w.saveSettings() 
