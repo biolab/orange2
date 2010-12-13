@@ -1,8 +1,8 @@
 Data Table
 ==========
 
-.. image:: DataTable_icon.*
-   :alt: Data Table
+.. image:: DataTable_icon.png
+   :alt: Data Table icon
   
 Signals
 -------

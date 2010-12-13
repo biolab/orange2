@@ -1,8 +1,8 @@
 File
 ====
 
-.. image:: File_icon.*
-   :alt: File widget
+.. image:: File_icon.png
+   :alt: File widget icon
    
 Signals
 -------
@@ -19,7 +19,6 @@ Description
 
 .. image:: File.*
    :alt: File widget with loaded ionosphere.tab data set
-   :class: image-float-left
    
 This is the widget you will probably use in every schema. It reads the input data file 
 (data table with examples) and sends the data set to the output channel. It maintains

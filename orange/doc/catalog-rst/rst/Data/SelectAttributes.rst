@@ -1,8 +1,8 @@
 Select Attributes
 =================
 
-.. image:: SelectAttributes_icon.*
-   :alt: Select Attributes
+.. image:: SelectAttributes_icon.png
+   :alt: Select Attributes icon
    
 Signals
 -------
