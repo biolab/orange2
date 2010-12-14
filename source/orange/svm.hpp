@@ -252,12 +252,7 @@ public:
 
 	const TExample *currentExample;
 
-    svm_model* getModel() {return model;};
-    void setModel(svm_model *model) {
-    	if (this->model != NULL)
-    		svm_destroy_model(this->model);
-    	this->model = model;
-    }
+    svm_model* getModel() {return model;}
 
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);

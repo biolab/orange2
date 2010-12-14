@@ -1371,15 +1371,13 @@ PyObject *KernelFunc_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 PyObject *SVMClassifier__reduce__(PyObject* self)
 {
   PyTRY
-    //TCharBuffer buf(100);
     CAST_TO(TSVMClassifier, svm);
     string buf;
     if (svm_save_model_alt(buf, svm->getModel())){
         printf("error saving svm model");
     }
     if(svm->kernelFunc)
-        return Py_BuildValue("O(OOOOsO)N", getExportedFunction("__pickleLoaderSVMClassifier"),
-                                    self->ob_type,
+        return Py_BuildValue("O(OOOsO)N", self->ob_type,
                                     WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
@@ -1387,8 +1385,7 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
                                     WrapOrange(svm->kernelFunc),
                                     packOrangeDictionary(self));
     else
-        return Py_BuildValue("O(OOOOs)N", getExportedFunction("__pickleLoaderSVMClassifier"),
-                                    self->ob_type,
+        return Py_BuildValue("O(OOOs)N", self->ob_type,
                                     WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
@@ -1397,45 +1394,17 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
   PyCATCH
 }
 
-PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
-{
-  PyTRY
-    PyTypeObject* type;
-    PVariable var;
-    PExampleTable examples;
-    PExampleTable supportVectors;
-    PKernelFunc kernel;
-    char *pbuf;
-    if (!PyArg_ParseTuple(args, "OO&O&O&s|O&:__pickleLoaderSVMClassifier", &type, cc_Variable, &var,
-        cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &pbuf, cc_KernelFunc, &kernel))
-        return NULL;
-    //TCharBuffer buf(pbuf);
-    string buf(pbuf);
-    //printf("loading model\n");
-    svm_model *model=svm_load_model_alt(buf);
-
-    if (!model)
-        raiseError("Error building LibSVM model");
-    model->param.learner=NULL;
-    PSVMClassifier svm=mlnew TSVMClassifier(var, examples, model, NULL);
-    svm->kernelFunc=kernel;
-    svm->supportVectors=supportVectors;
-    return WrapOrange(svm);
-  PyCATCH
-}
 
 PyObject *SVMClassifierSparse__reduce__(PyObject* self)
 {
   PyTRY
-    //TCharBuffer buf(100);
     CAST_TO(TSVMClassifierSparse, svm);
     string buf;
     if (svm_save_model_alt(buf, svm->getModel())){
         printf("error saving svm model");
     }
     if(svm->kernelFunc)
-        return Py_BuildValue("O(OOOOsbO)N", getExportedFunction("__pickleLoaderSVMClassifierSparse"),
-                                    self->ob_type,
+        return Py_BuildValue("O(OOOsbO)N", self->ob_type,
                                     WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
@@ -1444,8 +1413,7 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
                                     WrapOrange(svm->kernelFunc),
                                     packOrangeDictionary(self));
     else
-        return Py_BuildValue("O(OOOOsb)N", getExportedFunction("__pickleLoaderSVMClassifierSparse"),
-                                    self->ob_type,
+        return Py_BuildValue("O(OOOsb)N", self->ob_type,
                                     WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
@@ -1455,33 +1423,6 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
   PyCATCH
 }
 
-PyObject *__pickleLoaderSVMClassifierSparse(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
-{
-  PyTRY
-    PyTypeObject* type;
-    PVariable var;
-    PExampleTable examples;
-    PExampleTable supportVectors;
-    PKernelFunc kernel;
-    char *pbuf;
-	char useNonMeta;
-    if (!PyArg_ParseTuple(args, "OO&O&O&sb|O&:__pickleLoaderSVMClassifierSparse", &type, cc_Variable, &var,
-        cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &pbuf, &useNonMeta, cc_KernelFunc, &kernel))
-        return NULL;
-    //TCharBuffer buf(pbuf);
-    string buf(pbuf);
-    //printf("loading model\n");
-    svm_model *model=svm_load_model_alt(buf);
-
-    if (!model)
-        raiseError("Error building LibSVM model");
-    model->param.learner=NULL;
-    PSVMClassifier svm=mlnew TSVMClassifierSparse(var, examples, model, NULL, useNonMeta != 0);
-    svm->kernelFunc=kernel;
-    svm->supportVectors=supportVectors;
-    return WrapOrange(svm);
-  PyCATCH
-}
 
 PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "(Example) -> list of floats")
 {PyTRY
@@ -1501,18 +1442,62 @@ PyObject *SVMClassifier_getModel(PyObject *self, PyObject* args, PyObject *keywo
 PyCATCH
 }
 
-PyObject *SVMClassifier_setModel(PyObject* self, PyObject* args, PyObject* kwargs) PYARGS(METH_VARARGS, "(string) -> None")
+
+PyObject * SVMClassifier_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(ClassifierFD, "(Variable, Examples, Examples, string, [kernelFunc]) -> SVMClassifier")
 {PyTRY
-	char *model_string;
-	if (!PyArg_ParseTuple(args, "s:setModel", &model_string))
+	PVariable classVar;
+	PExampleTable examples;
+	PExampleTable supportVectors;
+	char*  model_string;
+	PKernelFunc kernel;
+	if (PyArg_ParseTuple(args, ""))
+		return WrapNewOrange(mlnew TSVMClassifier(), type);
+	PyErr_Clear();
+	
+	if (!PyArg_ParseTuple(args, "O&O&O&s|O&:__new__", cc_Variable, &classVar, cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &model_string, cc_KernelFunc, &kernel))
 		return NULL;
-	string buf(model_string);
-	svm_model *model = svm_load_model_alt(buf);
-	SELF_AS(TSVMClassifier).setModel(model);
-	RETURN_NONE;
+
+	string buffer(model_string);
+	svm_model* model = svm_load_model_alt(buffer);
+	if (!model)
+		raiseError("Error building LibSVM Model");
+	model->param.learner = NULL;
+	PSVMClassifier svm = mlnew TSVMClassifier(classVar, examples, model, NULL);
+	svm->kernelFunc = kernel;
+	svm->supportVectors = supportVectors;
+	return WrapOrange(svm);
 PyCATCH
 }
 
+PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(SVMClassifier, "(Variable, Examples, Examples, string, [useNonMeta, kernelFunc]) -> SVMClassifierSparse")
+{PyTRY
+	PVariable classVar;
+	PExampleTable examples;
+	PExampleTable supportVectors;
+	char*  model_string;
+	char useNonMeta;
+	PKernelFunc kernel;
+	if (PyArg_ParseTuple(args, ""))
+		return WrapNewOrange(mlnew TSVMClassifierSparse(), type);
+	PyErr_Clear();
+	
+	if (!PyArg_ParseTuple(args, "O&O&O&s|bO&:__new__", cc_Variable, &classVar, cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &model_string, &useNonMeta, cc_KernelFunc, &kernel))
+		return NULL;
+	
+	string buffer(model_string);
+	svm_model* model = svm_load_model_alt(buffer);
+	if (!model)
+		raiseError("Error building LibSVM Model");
+	model->param.learner = NULL;
+	PSVMClassifier svm = mlnew TSVMClassifierSparse(classVar, examples, model, NULL, useNonMeta != 0);
+	svm->kernelFunc = kernel;
+	svm->supportVectors = supportVectors;
+	return WrapOrange(svm);
+	PyCATCH
+}
+
+	
+	
 /************* BAYES ************/
 
 #include "bayes.hpp"
