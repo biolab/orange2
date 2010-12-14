@@ -265,7 +265,11 @@ class SVMLearner(_SVMLearner):
     def learnClassifier(self, examples):
         if self.normalization:
             examples = self._normalize(examples)
-            return SVMClassifierWrapper(self.learner(examples), examples.domain)
+            svm = self.learner(examples)
+#            if self.kernelFunc:
+#                return SVMClassifierWrapper(svm)
+#            else:
+            return SVMClassifierWrapper(svm)
         return self.learner(examples)
 
     def tuneParameters(self, examples, parameters=None, folds=5, verbose=0, progressCallback=None):
@@ -314,21 +318,34 @@ class SVMLearner(_SVMLearner):
         newdomain = dc(examples)
         return examples.translate(newdomain)
 
-class SVMClassifierWrapper(object):
-    
-    def __init__(self, classifier=None, domain=None):
-        self.classifier = classifier
-        self.domain = domain
-        
-    def __getattr__(self, name):
-        try:
-            return getattr(self.__dict__["classifier"], name)
-        except (KeyError, AttributeError):
-            raise AttributeError(name)
 
+class SVMClassifierWrapper(orange.SVMClassifier):
+    def __new__(cls, wrapped):
+        return orange.SVMClassifier.__new__(cls, name=wrapped.name)
+    
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+        for name, val in wrapped.__dict__.items():
+            self.__dict__[name] = val
+        
     def __call__(self, example, what=orange.GetValue):
-        example = orange.Example(self.domain, example)
-        return self.classifier(example, what)
+        example = orange.Example(self.wrapped.domain, example)
+        return self.wrapped(example, what)
+    
+    def classDistribution(self, example):
+        example = orange.Example(self.wrapped.domain, example)
+        return self.wrapped.classDistribution(example)
+    
+    def getDecisionValues(self, example):
+        example = orange.Example(self.wrapped.domain, example)
+        return self.wrapped.getDecisionValues(example)
+    
+    def getModel(self):
+        return self.wrapped.getModel()
+    
+    def __reduce__(self):
+        return SVMClassifierWrapper, (self.wrapped,), dict([(name, val) for name, val in self.__dict__.items() if name not in self.wrapped.__dict__])
+    
         
 class SVMLearnerSparse(SVMLearner):
     """ Same as SVMLearner except that it learns from the examples meta
@@ -387,34 +404,11 @@ class SVMLearnerEasy(SVMLearner):
         import orngWrap
         tunedLearner = orngWrap.TuneMParameters(object=self.learner, parameters=parameters, folds=self.folds)
         
-        return SVMClassifierClassEasyWrapper(tunedLearner(newexamples, verbose=self.verbose), newdomain, examples)
+        return SVMClassifierWrapper(tunedLearner(newexamples, verbose=self.verbose))
 
 class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
     def __init__(self, **kwds):
         SVMLearnerSparse.__init__(self, **kwds)
-        
-class SVMClassifierClassEasyWrapper:
-    def __init__(self, classifier, domain=None, oldexamples=None):
-        self.classifier=classifier
-        self.domain=domain
-        self.oldexamples=oldexamples
-    def __call__(self,example, getBoth=orange.GetValue):
-        example=orange.ExampleTable([example]).translate(self.domain)[0] #orange.Example(self.domain, example)
-        return self.classifier(example, getBoth)
-    def __getattr__(self, name):
-        if name in ["supportVectors", "nSV", "coef", "rho", "examples", "kernelFunc"]:
-            return getattr(self.__dict__["classifier"], name)
-        else:
-            raise AttributeError(name)
-    def __setstate__(self, state):
-        print state
-        self.__dict__.update(state)
-        transformer=orange.DomainContinuizer()
-        transformer.multinominalTreatment=orange.DomainContinuizer.NValues
-        transformer.continuousTreatment=orange.DomainContinuizer.NormalizeBySpan
-        transformer.classTreatment=orange.DomainContinuizer.Ignore
-        print self.examples
-        self.domain=transformer(self.oldexamples)
 
 from collections import defaultdict
 
