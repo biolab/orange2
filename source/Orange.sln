@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Corn", "corn\Corn.vcproj", "{DB7466D1-CF93-44A1-9AB2-27290A2EC7C7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{93B854DA-EC3F-4314-B801-58411F9713FD} = {93B854DA-EC3F-4314-B801-58411F9713FD}

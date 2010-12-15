@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="orangeom"
 	ProjectGUID="{1DD56474-1110-413B-80B8-707E8EE28EC6}"
 	RootNamespace="orangeom"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -64,6 +65,8 @@
 				AdditionalDependencies="orange.lib"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orangeom.pyd"
 				AdditionalLibraryDirectories=""
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -82,9 +85,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -146,6 +146,8 @@
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orangeom_d.pyd"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -164,9 +166,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
