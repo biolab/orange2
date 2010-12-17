@@ -22,7 +22,8 @@ from OWWidget import *
 from OWWidget import *
 from PyQt4.QtWebKit import *
 
-import os, time, tempfile, shutil, re, shutil, pickle
+import os, time, tempfile, shutil, re, shutil, pickle, binascii
+import xml.dom.minidom
 
 report = None
 def escape(s):
@@ -60,6 +61,7 @@ class ReportWindow(OWWidget):
         self.tree = MyListWidget(self.controlArea, self)
         self.tree.setDragEnabled(True)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
+        self.tree.setFixedWidth(200)
         self.controlArea.layout().addWidget(self.tree)
         QObject.connect(self.tree, SIGNAL("currentItemChanged(QListWidgetItem *, QListWidgetItem *)"), self.selectionChanged)
         QObject.connect(self.tree, SIGNAL("itemActivated ( QListWidgetItem *)"), self.raiseWidget)
@@ -69,20 +71,26 @@ class ReportWindow(OWWidget):
         self.treeItems = {}
 
         self.reportBrowser = QWebView(self.mainArea)
-        self.mainArea.layout().addWidget(self.reportBrowser)
         self.reportBrowser.setUrl(QUrl.fromLocalFile(self.indexfile))
+        self.reportBrowser.page().mainFrame().addToJavaScriptWindowObject("myself", self)
         frame = self.reportBrowser.page().mainFrame()
         self.javascript = frame.evaluateJavaScript
         frame.setScrollBarPolicy(Qt.Vertical, Qt.ScrollBarAsNeeded)
+        self.mainArea.layout().addWidget(self.reportBrowser)
 
-        saveButton = OWGUI.button(self.controlArea, self, "&Save", self.saveReport)
+        box = OWGUI.widgetBox(self.controlArea)
+#        exportButton = OWGUI.button(box, self, "&Export", self.saveXML)
+#        OWGUI.button(box, self, "&Import", self.loadXML)
+        saveButton = OWGUI.button(box, self, "&Save", self.saveReport)
+        printButton = OWGUI.button(box, self, "&Print", self.printReport)
         saveButton.setAutoDefault(0)
         
         self.nodePopup = QMenu("Widget")
-        self.nodePopup.addAction( "Show widget",  self.showActiveNodeWidget)
+        self.showWidgetAction = self.nodePopup.addAction( "Show widget",  self.showActiveNodeWidget)
         self.nodePopup.addSeparator()
-#        self.renameAction = self.nodePopup.addAction( "&Rename", self.renameActiveNode, Qt.Key_F2)
+        #self.renameAction = self.nodePopup.addAction( "&Rename", self.renameActiveNode, Qt.Key_F2)
         self.deleteAction = self.nodePopup.addAction("Remove", self.removeActiveNode, Qt.Key_Delete)
+        self.deleteAllAction = self.nodePopup.addAction("Remove All", self.clearReport)
         self.nodePopup.setEnabled(1)
 
         self.resize(900, 850)
@@ -95,17 +103,7 @@ class ReportWindow(OWWidget):
             pass
 
 
-    entry = """
-    <div id="%s" onClick="myself.changeItem(this.id);">
-        <a name="%s" />
-        <h1>%s<span class="timestamp">%s</span></h1>
-        <div class="insideh1">
-            %s
-        </div>
-    </div>
-    """
-
-    def __call__(self, name, data, widgetId):
+    def __call__(self, name, data, widgetId, icon, wtime=None):
         if not self.isVisible():
             self.show()
         else:
@@ -113,21 +111,33 @@ class ReportWindow(OWWidget):
         self.counter += 1
         elid = "N%03i" % self.counter
 
-        widnode = QListWidgetItem(name, self.tree)
+        widnode = QListWidgetItem(icon, name, self.tree)
         widnode.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsEditable)
         widnode.elementId = elid
         widnode.widgetId = widgetId
+        widnode.time = wtime or time.strftime("%a %b %d %y, %H:%M:%S")
+        widnode.data = data
+        widnode.name = name
         self.tree.addItem(widnode)
         self.treeItems[elid] = widnode
+        self.addEntry(widnode)
         
-        newreport = self.entry % (elid, elid, name, time.strftime("%a %b %d %y, %H:%M:%S"), data)
-        widnode.content = newreport
-        self.javascript("""
-            document.body.innerHTML += '%s';
-            document.getElementById('%s').scrollIntoView();
-        """ % (escape(newreport), elid))
-        self.reportBrowser.page().mainFrame().addToJavaScriptWindowObject("myself", self)
-        
+       
+    def addEntry(self, widnode, scrollIntoView=True):
+        newEntry = """
+        <div id="%s" onClick="myself.changeItem(this.id);">
+            <a name="%s" />
+            <h1>%s<span class="timestamp">%s</span></h1>
+            <div class="insideh1">
+                %s
+            </div>
+        </div>
+        """ % (widnode.elementId, widnode.elementId, widnode.name, widnode.time, widnode.data)
+        self.javascript("document.body.innerHTML += '%s'" % escape(newEntry))
+        if scrollIntoView:
+            self.javascript("document.getElementById('%s').scrollIntoView();" % widnode.elementId)
+
+
     def selectionChanged(self, current, previous):
         if current:
             if self.dontScroll:
@@ -139,13 +149,15 @@ class ReportWindow(OWWidget):
                     newsel.scrollIntoView();""" % current.elementId)
 #            if not self.dontScroll:
 #                self.javascript("newsel.scrollIntoView(document.getElementById('%s'));" % current.elementId)
+            self.showWidgetAction.setEnabled(current.widgetId >= 0)
         if previous:
             self.javascript("document.getElementById('%s').className = '';" % previous.elementId)
         
         
     def rebuildHtml(self):
-        tt = "\n".join(self.tree.item(i).content for i in range(self.tree.count()))
-        self.javascript("document.body.innerHTML = '%s'" % escape(tt))
+        self.javascript("document.body.innerHTML = ''")
+        for i in range(self.tree.count()):
+            self.addEntry(self.tree.item(i))
         selected = self.tree.selectedItems()
         if selected:
             self.selectionChanged(selected[0], None)
@@ -185,6 +197,18 @@ class ReportWindow(OWWidget):
             self.tree.takeItem(self.tree.row(node))
         self.rebuildHtml()
 
+    def clearReport(self):
+        self.tree.clear()
+        self.rebuildHtml()
+        
+    def printReport(self):
+        printer = QPrinter()
+        printDialog = QPrintDialog(printer, self)
+        printDialog.setWindowTitle("Print report")
+        if (printDialog.exec_() != QDialog.Accepted):
+            return
+        getattr(self.reportBrowser, "print")(printer)
+        
         
     def createDirectory(self):
         tmpPathName = os.tempnam(orange-report)
@@ -218,8 +242,12 @@ class ReportWindow(OWWidget):
         index = "<br/>".join('<a href="#%s">%s</a>' % (self.tree.item(i).elementId, self.re_h1.search(self.tree.item(i).content).group("name"))
                              for i in range(self.tree.count()))
             
+######## Rewrite this to go through individual tree nodes. For one reason: this code used to work
+##       when the HTML stored in tree nodes included DIV and H1 tags, which it does not any more,
+##       so they have to be added here         
+
         data = "\n".join(self.tree.item(i).content for i in range(self.tree.count()))
-        
+
         tt = tt.replace("<body>", '<body><table width="100%%"><tr><td valign="top"><p style="padding-top:25px;">Index</p>%s</td><td>%s</td></tr></table>' % (index, data))
         tt = self.browser_re.sub("\\1", tt)
         
@@ -252,7 +280,76 @@ class ReportWindow(OWWidget):
             tt = tt.replace(filepref, subdir+"/")
         file(filename, "wb").write(tt.encode("utf8"))
  
-       
+
+    def saveXML(self):
+        filename = QFileDialog.getSaveFileName(self, "Export Report", self.saveDir, "XML file (*.xml)")
+        if not filename:
+            return
+
+        outf = file(str(filename), "wt")
+        outf.write('<?xml version="1.0" encoding="ascii"?>\n<report version="1.0">\n')
+        
+        for i in range(self.tree.count()):
+            item = self.tree.item(i)
+            outf.write('<entry name="%s" time="%s">\n' % (item.name, item.time))
+
+            filepref = "file:///"+self.tempdir
+            if filepref[-1] != os.sep:
+                filepref += os.sep
+            lfilepref = len(filepref)
+            imspos = -1
+            data = item.data
+            while True:
+                imspos = data.find(filepref, imspos+1)
+                if imspos == -1:
+                    break
+                imname = data[imspos+lfilepref:data.find('"', imspos)]
+                fname = os.path.join(filepref[8:], imname)
+                outf.write('    <binary name="%s"><![CDATA[%s]]></binary>\n' % (imname, binascii.b2a_base64(file(fname, "rb").read())))
+               
+            data = data.replace(filepref, "binary:///")
+            outf.write("<content><![CDATA[%s]]></content>\n\n\n" % data)
+            outf.write('</entry>\n')
+        outf.write('</report>')
+        
+
+    def loadXML(self):
+        filename = QFileDialog.getOpenFileName(self, "Import Report", self.saveDir, "XML file (*.xml)")
+        if not filename:
+            return
+
+        filepref = "file:///"+self.tempdir
+        if 1:#try:
+            x = xml.dom.minidom.parse(file(str(filename)))
+            x.normalize()
+            entries = []
+            files = []
+            for entry in x.getElementsByTagName("entry"):
+                data = entry.getElementsByTagName("content")[0].firstChild.data
+                for fle in entry.getElementsByTagName("binary"):
+                    name = oname = fle.getAttribute("name")
+                    base, ext = os.path.splitext(name)
+                    i = 0
+                    while os.path.exists(os.path.join(self.tempdir, name)):
+                        i += 1
+                        name = "%s%04i%s" % (base, i, ext)
+                    data = data.replace("binary:///"+oname, filepref+"/"+name)
+                    filedata = binascii.a2b_base64(fle.firstChild.data)
+                    files.append((name, filedata)) 
+                name = entry.getAttribute("name")
+                time = entry.getAttribute("time")
+                entries.append((name, data, None, QIcon(), time))
+                
+            for fname, fdata in files:
+                print fname, len(fdata)
+                file(os.path.join(self.tempdir, fname), "wb").write(fdata)
+            for entry in entries:
+                print entry[1]
+                self(*entry)
+        #except:
+            pass
+            # !!!!!!!!!!!
+        
 def getDepth(item, expanded=True):
     ccount = item.childCount()
     return 1 + (ccount and (not expanded or item.isExpanded()) and max(getDepth(item.child(cc), expanded) for cc in range(ccount)))

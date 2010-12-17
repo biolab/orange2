@@ -253,7 +253,7 @@ class OWWidget(OWBaseWidget):
        
     def finishReport(self):
         if self.__reportData is not None:
-            OWReport.report(self.reportName, self.__reportData or "", self.widgetId)#, self.getSettings(False))
+            OWReport.report(self.reportName, self.__reportData or "", self.widgetId, self.windowIcon())#, self.getSettings(False))
             self.__reportData = None
 
 import OWReport
