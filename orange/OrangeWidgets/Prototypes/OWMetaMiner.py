@@ -159,7 +159,7 @@ class OWMetaMinerCanvas(OWNetworkCanvas):
         self.tooltipData = []
         self.tooltipKeys = {}
         self.tips.removeAll()
-        
+
         for vertex in self.vertices:
             if not vertex.show:
                 continue
@@ -208,7 +208,8 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, Default)]
         self.outputs = [("Model", orange.Example),
-                        ("Classifier", orange.Classifier)]
+                        ("Classifier", orange.Classifier),
+                        ("Selected models", orange.ExampleTable)]
         
         self.vertexSize = 32
         self.autoSendSelection = False
@@ -292,7 +293,7 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         self.networkTab.layout().addStretch(1)
         
         self.icons = self.createAttributeIconDict()
-        self.resize(900, 600)
+        #self.resize(900, 600)
         
         self.netCanvas.callbackSelectVertex = self.sendNetworkSignals
 
@@ -346,25 +347,34 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
     def sendNetworkSignals(self):
         if self.graph != None and self.graph.items != None:
             selection = self.netCanvas.getSelectedVertices()
-            if len(selection) > 0: 
+            
+            if len(selection) == 1:
                 model = self.graph.items[selection[0]]
                 uuid = model["uuid"].value
                 method, vizr_result, projection_points, classifier, attrs = self.matrix.results[uuid]
                 
                 if len(vizr_result) > 5 and type(vizr_result[5]) == type({}) and "YAnchors" in vizr_result[5] and "XAnchors" in vizr_result[5]:
-                    model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("anchors"))
+                    if not model.domain.hasmeta("anchors"):
+                        model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("anchors"))
                     model["anchors"] = (vizr_result[5]["XAnchors"], vizr_result[5]["YAnchors"])
                     
                 if classifier:
-                    self.send("Classifier", classifier)
-                    model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("classifier"))
+                    if not model.domain.hasmeta("classifier"):
+                        model.domain.addmeta(orange.newmetaid(), orange.PythonVariable("classifier"))
                     model["classifier"] = classifier
+                    self.send("Classifier", classifier)
                     
                 self.send("Model", model)
+                self.send("Selected models", self.graph.items.getitems(selection))
+            elif len(selection) > 1: 
+                self.send("Model", None)
+                self.send("Selected models", self.graph.items.getitems(selection))
             else:
                 self.send("Model", None)
+                self.send("Selected models", None)
         else:
             self.send("Model", None)
+            self.send("Selected models", None)
             
     def mdsProgress(self, avgStress, stepCount):
         self.progressBarSet(int(stepCount * 100 / 10000))
