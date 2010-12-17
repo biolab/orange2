@@ -1402,27 +1402,6 @@ class OWNetExplorer(OWWidget):
         # if network exists
         if self.optimization != None:
             self.graph.updateCanvas()
-              
-    def keyPressEvent(self, e):
-        if e.key() == Qt.Key_Control:
-            self.graph.controlPressed = True
-            #print "cp"
-        elif e.key() == Qt.Key_Alt:
-            self.graph.altPressed = True
-        OWWidget.keyPressEvent(self, e)
-               
-    def keyReleaseEvent(self, e):
-        if e.key() == Qt.Key_Control:
-            self.graph.controlPressed = False
-        elif e.key() == Qt.Key_Alt:
-            self.graph.altPressed = False
-        OWWidget.keyReleaseEvent(self, e)
-        
-#    def keyPressEvent(self, e):
-#        if e.text() == "f":
-#            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
-#        else:
-#            OWWidget.keyPressEvent(self, e)
 
     def showDegreeDistribution(self):
         if self.optimization == None:

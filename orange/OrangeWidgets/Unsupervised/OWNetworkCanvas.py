@@ -264,6 +264,10 @@ class OWNetworkCanvas(OWGraph):
       self.minComponentEdgeWidth = 0
       self.maxComponentEdgeWidth = 0
       self.vertexDistance = None
+      self.controlPressed = False
+      self.altPressed = False
+      
+      self.setFocusPolicy(Qt.StrongFocus)
       
   def getSelection(self):
     return self.networkCurve.getSelectedVertices()
@@ -507,7 +511,7 @@ class OWNetworkCanvas(OWGraph):
     if not self.visualizer:
         return
         
-    self.grabKeyboard()
+    #self.grabKeyboard()
     self.mouseSelectedVertex = 0
     self.GMmouseMoveEvent = None
     
@@ -540,7 +544,7 @@ class OWNetworkCanvas(OWGraph):
       if not self.visualizer:
         return
         
-      self.releaseKeyboard()
+      #self.releaseKeyboard()
       if self.state == MOVE_SELECTION:
           self.state = SELECT_RECTANGLE
           self.mouseCurrentlyPressed = 0
@@ -557,7 +561,7 @@ class OWNetworkCanvas(OWGraph):
           
           
           if self.mouseSelectedVertex == 1 and x1 == x2 and y1 == y2 and self.selectVertex(self.GMmouseStartEvent):
-              pass
+              QwtPlot.mouseReleaseEvent(self, event)
           elif self.mouseSelectedVertex == 0:
                
               selection = self.visualizer.getVerticesInRect(x1, y1, x2, y2)
@@ -583,27 +587,42 @@ class OWNetworkCanvas(OWGraph):
       else:
           OWGraph.mouseReleaseEvent(self, event)
           
+      self.mouseCurrentlyPressed = 0
+      self.moveGroup = False
+          
       if self.callbackSelectVertex != None:
           self.callbackSelectVertex()
 
-  def keyPressEvent(self, keyEvent):
+  def keyPressEvent(self, e):
       if not self.visualizer:
         return
         
-      print keyEvent.key()
-      if keyEvent.key() == 87:
-          print "W"
+      if e.key() == 87 or e.key() == 81:
           selection = [v.index for v in self.vertices if v.selected]
-          #print selection
-          self.visualizer.rotateVertices([selection], [ -1])
-          self.drawPlotItems(replot=1)
+          if len(selection) > 0:
+              phi = [math.pi / -180 if e.key() == 87 else math.pi / 180]
+              self.visualizer.rotateVertices([selection], phi)
+              self.drawPlotItems(replot=1)
           
-      elif keyEvent.key() == 81:
-          print "Q"
-          selection = [v.index for v in self.vertices if v.selected]
-          #print selection
-          self.visualizer.rotateVertices([selection], [1])
-          self.drawPlotItems(replot=1)
+      if e.key() == Qt.Key_Control:
+          self.controlPressed = True
+      
+      elif e.key() == Qt.Key_Alt:
+          self.altPressed = True
+          
+      if e.text() == "f":
+          self.graph.freezeNeighbours = not self.graph.freezeNeighbours
+      
+      OWGraph.keyPressEvent(self, e)
+          
+  def keyReleaseEvent(self, e):
+      if e.key() == Qt.Key_Control:
+          self.controlPressed = False
+      
+      elif e.key() == Qt.Key_Alt:
+          self.altPressed = False
+      
+      OWGraph.keyReleaseEvent(self, e)
       
 
   def clickedSelectedOnVertex(self, pos):
@@ -665,7 +684,7 @@ class OWNetworkCanvas(OWGraph):
       d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
       
       if min < d and ndx != -1:
-          if not self.appendToSelection:
+          if not self.appendToSelection and not self.controlPressed:
               self.removeSelection()
                     
           if self.insideview:
