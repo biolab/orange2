@@ -354,7 +354,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             y = r * numpy.sin(fi)
             
             self.graph.coors[0][component] = x + x_center
-            self.graph.coors[1][component] = y + y_center 
+            self.graph.coors[1][component] = y + y_center
             
     def rotateComponents(self, maxSteps=100, minMoment=0.000000001, callbackProgress=None, callbackUpdateCanvas=None):
         """Rotate the network components using a spring model."""
