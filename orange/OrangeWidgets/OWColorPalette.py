@@ -357,7 +357,7 @@ class ColorPalleteListing(OWBaseWidget):
         butt.setIcon(QIcon(createDiscPalettePixmap(butt.iconSize().width(), butt.iconSize().height(), defaultRGBColors)))
         self.buttons.append(butt)
         
-        for type in ["Qualitative", "Spectral", "Diverging", "Sequential" ]:
+        for type in ["Qualitative", "Spectral", "Diverging", "Sequential", "Pastels"]:
             colorGroup = colorSchemes.get(type.lower(), {})
             if colorGroup != {}:
                 box = OWGUI.widgetBox(space, type + " Palettes", addSpace = True, orientation="vertical")
