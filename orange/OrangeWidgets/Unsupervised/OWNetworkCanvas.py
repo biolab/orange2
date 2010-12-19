@@ -18,9 +18,11 @@ class NetworkVertex():
         self.index = -1
         self.marked = False
         self.show = True
+        self.highlight = False
         self.selected = False
         self.label = []
         self.tooltip = []
+        self.uuid = None
         
         self.image = None
         self.pen = QPen(Qt.blue, 1)
