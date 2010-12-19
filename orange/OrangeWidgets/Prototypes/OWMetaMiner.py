@@ -6,12 +6,14 @@
 <priority>0</priority>
 """
 
+import scipy.stats
+
 import orange
 import orngVizRank
-import scipy.stats
 import orngNetwork
 
 import OWToolbars
+import OWColorPalette
 
 from orngScaleLinProjData import *
 from OWWidget import *
@@ -103,12 +105,16 @@ class ProjCurve(NetworkCurve):
                 style = (1 - vertex.style) * 2 * 100
                 #print style
                 #style=-50
+                #if vertex.highlight:
+                #    painter.setPen(QPen(QBrush(QColor(255,   0,   0, 192)), 1, Qt.SolidLine, Qt.RoundCap))
+                #else:
+                #    #oldcolor = QColor(125, 162, 206, 192)
+                painter.setPen(QPen(QBrush(vertex.color), 1, Qt.SolidLine, Qt.RoundCap))
+                
                 if vertex.selected:
                     size = int(vertex.size) + 5
                     brushColor = QColor(Qt.yellow)
                     brushColor.setAlpha(150)
-                    #painter.setPen(QPen(brushColor, 0))
-                    painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
                     gradient = QRadialGradient(QPointF(pX, pY), size)
                     gradient.setColorAt(0., brushColor)
                     gradient.setColorAt(1., QColor(255, 255, 255, 0))
@@ -119,8 +125,6 @@ class ProjCurve(NetworkCurve):
                     size = int(vertex.size) + 5
                     brushColor = QColor(Qt.cyan)
                     brushColor.setAlpha(80)
-                    #painter.setPen(QPen(brushColor, 0))
-                    painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
                     gradient = QRadialGradient(QPointF(pX, pY), size)
                     gradient.setColorAt(0., brushColor)
                     gradient.setColorAt(1., QColor(255, 255, 255, 0))
@@ -128,10 +132,10 @@ class ProjCurve(NetworkCurve):
                     painter.drawRoundedRect(pX - size/2, pY - size/2, size, size, style, style, Qt.RelativeSize)
                     #painter.drawEllipse(pX - size/2, pY - size/2, size, size)
                 else:
-                    painter.setPen(QPen(QBrush(QColor(125, 162, 206, 192)), 1, Qt.SolidLine, Qt.RoundCap))
                     size = int(vertex.size) + 5
                     gradient = QRadialGradient(QPointF(pX, pY), size)
-                    gradient.setColorAt(0., QColor(217, 232, 252, 192))
+                    #gradient.setColorAt(0., QColor(217, 232, 252, 192))
+                    gradient.setColorAt(0., vertex.color)
                     gradient.setColorAt(1., QColor(255, 255, 255, 0))
                     painter.setBrush(QBrush(gradient))
                     painter.drawRoundedRect(pX - size/2, pY - size/2, size, size, style, style, Qt.RelativeSize)
@@ -164,13 +168,17 @@ class OWMetaMinerCanvas(OWNetworkCanvas):
             if not vertex.show:
                 continue
             
+            clusterCA = self.visualizer.graph.items[vertex.index]["cluster CA"].value
+            if type(clusterCA) == type(1.): clusterCA = "%.4g" % clusterCA 
+            
             x1 = self.visualizer.network.coors[0][vertex.index]
             y1 = self.visualizer.network.coors[1][vertex.index]
-            lbl  = "CA: %.4g\n" % self.visualizer.graph.items[vertex.index]["CA"].value
+            lbl  = "%s\n" % self.visualizer.graph.items[vertex.index]["label"].value
+            lbl += "CA: %.4g\n" % self.visualizer.graph.items[vertex.index]["CA"].value
             lbl += "AUC: %.4g\n" % self.visualizer.graph.items[vertex.index]["AUC"].value
-            lbl += "CA best: %.4g\n" % self.visualizer.graph.items[vertex.index]["cluster CA"].value
-            lbl += "Attributes: %d\n" % len(self.visualizer.graph.items[vertex.index]["label"].value.split(", "))
-            lbl += ", ".join(sorted(self.visualizer.graph.items[vertex.index]["label"].value.split(", ")))
+            lbl += "CA best: %s\n" % clusterCA 
+            lbl += "Attributes: %d\n" % len(self.visualizer.graph.items[vertex.index]["attributes"].value.split(", "))
+            lbl += ", ".join(sorted(self.visualizer.graph.items[vertex.index]["attributes"].value.split(", ")))
             self.tips.addToolTip(x1, y1, lbl)
             self.tooltipKeys[vertex.index] = len(self.tips.texts) - 1
         
@@ -201,15 +209,16 @@ class OWMetaMinerCanvas(OWNetworkCanvas):
            
         
 class OWMetaMiner(OWWidget, OWNetworkHist):
-    settingsList = ["vertexSize", "lastSizeAttribute", "maxVertexSize", "minVertexSize", "tabIndex"]
+    settingsList = ["vertexSize", "lastSizeAttribute", "lastColorAttribute", "maxVertexSize", "minVertexSize", "tabIndex", "colorSettings", "selectedSchemaIndex"]
     
     def __init__(self, parent=None, signalManager=None, name = "Meta Miner"):
         OWWidget.__init__(self, parent, signalManager, name)
         
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, Default)]
+        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, Default),
+                       ("Model Subset", orange.ExampleTable, self.setSubsetModels)]
         self.outputs = [("Model", orange.Example),
                         ("Classifier", orange.Classifier),
-                        ("Selected models", orange.ExampleTable)]
+                        ("Selected Models", orange.ExampleTable)]
         
         self.vertexSize = 32
         self.autoSendSelection = False
@@ -218,8 +227,12 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         self.vertexSizeAttribute = 0
         self.optimization = None
         self.tabIndex = 0
-        self.lastSizeAttribute = ''
+        self.lastSizeAttribute = ""
+        self.lastColorAttribute = ""
         self.graph = None
+        self.colorAttribute = 0
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
         
         self.loadSettings()
         
@@ -287,19 +300,42 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         OWGUI.spin(self.sizeAttributeCombo.box, self, "minVertexSize", 16, 80, 2, label="Min vertex size:", callback = self.setMaxVertexSize)
         OWGUI.spin(self.sizeAttributeCombo.box, self, "maxVertexSize", 16, 80, 2, label="Max vertex size:", callback = self.setMaxVertexSize)
         
+        colorBox = OWGUI.widgetBox(self.networkTab, "Vertex color attribute", orientation="horizontal", addSpace = False)
+        self.colorCombo = OWGUI.comboBox(colorBox, self, "colorAttribute", callback=self.setVertexColor)
+        self.colorCombo.addItem("(same color)")
+        OWGUI.button(colorBox, self, "Set vertex color palette", self.setColors, tooltip = "Set vertex color palette", debuggingEnabled = 0)
         
+        dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
+        self.netCanvas.contPalette = dlg.getContinuousPalette("contPalette")
+        self.netCanvas.discPalette = dlg.getDiscretePalette("discPalette")
+                
         self.generalTab.layout().addStretch(1)
         self.matrixTab.layout().addStretch(1)
         self.networkTab.layout().addStretch(1)
         
         self.icons = self.createAttributeIconDict()
         #self.resize(900, 600)
-        
+        self.setMinimumWidth(600)
         self.netCanvas.callbackSelectVertex = self.sendNetworkSignals
 
     def currentTabChanged(self, index): 
             self.tabIndex = index
-    
+            
+    def setSubsetModels(self, subsetData):
+        self.info()
+        
+        if "uuid" not in subsetData.domain:
+            self.info("Invalid subset data. Data domain must contain 'uuid' attribute.")
+            return
+        
+        uuids = set([ex["uuid"].value for ex in subsetData])
+
+        for v in self.vertices:
+            if v.uuid in uuids:
+                v.highlight = 1
+            else:
+                v.highlight = 0
+                
     def setMatrix(self, matrix):
         self.warning()
         
@@ -311,13 +347,17 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             self.warning("Data matrix does not have required data for items and results.")
             return
         
-        requiredAttrs = set(["CA", "AUC"])
+        requiredAttrs = set(["CA", "AUC", "attributes", "uuid"])
         attrs = [attr.name for attr in matrix.items.domain] 
         if len(requiredAttrs.intersection(attrs)) != len(requiredAttrs):
-            self.warning("Items ExampleTable does not contain required attributes CA and AUC.")
+            self.warning("Items ExampleTable does not contain required attributes: %s." % ", ".join(requiredAttrs))
             return
-        
+            
         OWNetworkHist.setMatrix(self, matrix)
+        
+        for i, ex in enumerate(matrix.items):
+            ex["attributes"] = ", ".join(sorted(ex["attributes"].value.split(", ")))
+            self.netCanvas.vertices[i].uuid = ex["uuid"].value
                 
     def setMaxVertexSize(self):
         if self.netCanvas == None:
@@ -376,6 +416,33 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             self.send("Model", None)
             self.send("Selected models", None)
             
+    def setColors(self):
+        dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
+        if dlg.exec_():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
+            self.netCanvas.contPalette = dlg.getContinuousPalette("contPalette")
+            self.netCanvas.discPalette = dlg.getDiscretePalette("discPalette")
+            
+            self.setVertexColor()
+            
+    def setVertexColor(self):
+        if self.optimization == None:
+            return
+        
+        self.netCanvas.setVertexColor(self.colorCombo.currentText())
+        self.lastColorAttribute = self.colorCombo.currentText()
+        self.netCanvas.updateData()
+        self.netCanvas.replot()
+        
+    def createColorDialog(self, colorSettings, selectedSchemaIndex):
+        c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
+        c.createDiscretePalette("discPalette", "Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous Palette")
+        schemas = c.getCurrentState()
+        c.setColorSchemas(colorSettings, selectedSchemaIndex)
+        return c
+            
     def mdsProgress(self, avgStress, stepCount):
         self.progressBarSet(int(stepCount * 100 / 10000))
         qApp.processEvents()
@@ -426,6 +493,7 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             btn.setText(btnCaption)
             btn.setChecked(False)
         
+        self.setVertexColor()
         self.progressBarFinished()
         
     def sendSignals(self):
@@ -433,11 +501,16 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             self.optimization = orngNetwork.NetworkOptimization(self.graph)
             self.optimization.vertexDistance = self.matrix
             self.netCanvas.addVisualizer(self.optimization)
-            self.netCanvas.setLabelText(["label"])    
+            self.netCanvas.setLabelText(["attributes"])    
             self.sizeAttributeCombo.clear()
+            self.colorCombo.clear()
             self.sizeAttributeCombo.addItem("(same size)")
+            self.colorCombo.addItem("(same color)")
             vars = self.optimization.getVars()
             for var in vars:
+                if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                    self.colorCombo.addItem(self.icons[var.varType], unicode(var.name))
+            
                 if var.varType in [orange.VarTypes.Continuous]:
                     self.sizeAttributeCombo.addItem(self.icons[var.varType], unicode(var.name))
             
@@ -445,6 +518,11 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             if index > -1:
                 self.sizeAttributeCombo.setCurrentIndex(index)
                 self.vertexSizeAttribute = index
+                
+            index = self.colorCombo.findText(self.lastColorAttribute)
+            if index > -1:
+                self.colorCombo.setCurrentIndex(index)
+                self.colorAttribute = index
                 
             self.setMaxVertexSize()
             self.setVertexStyle()

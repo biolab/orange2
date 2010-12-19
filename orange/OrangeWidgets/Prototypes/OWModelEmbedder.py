@@ -70,8 +70,8 @@ class OWModelEmbedder(OWWidget):
             return
         if self.model is None: return
         if "model" not in self.model.domain: return
-        if "label" in self.model.domain:
-            attr = self.model["label"].value.split(', ')
+        if "attributes" in self.model.domain:
+            attr = self.model["attributes"].value.split(', ')
         
         modelType = self.model["model"].value.upper()
         
