@@ -389,6 +389,8 @@ class OrangeCanvasDlg(QMainWindow):
             elif ret == QMessageBox.Cancel:
                 return
         self.schema.clear()
+        dirname = os.path.dirname(filename)
+        os.chdir(dirname)
         self.schema.loadDocument(filename)
         
     def menuItemOpen(self):
@@ -396,6 +398,8 @@ class OrangeCanvasDlg(QMainWindow):
         if name.isEmpty():
             return
         self.schema.clear()
+        dirname = os.path.dirname(str(name))
+        os.chdir(dirname)
         self.schema.loadDocument(str(name), freeze=0)
         self.addToRecentMenu(str(name))
 
@@ -404,6 +408,8 @@ class OrangeCanvasDlg(QMainWindow):
         if name.isEmpty():
             return
         self.schema.clear()
+        dirname = os.path.dirname(str(name))
+        os.chdir(dirname)
         self.schema.loadDocument(str(name), freeze=1)
         self.addToRecentMenu(str(name))
 
@@ -456,8 +462,11 @@ class OrangeCanvasDlg(QMainWindow):
     def openRecentFile(self, index):
         if len(self.settings["RecentFiles"]) >= index:
             self.schema.clear()
-            self.schema.loadDocument(self.settings["RecentFiles"][index - 1])
-            self.addToRecentMenu(self.settings["RecentFiles"][index - 1])
+            name = self.settings["RecentFiles"][index - 1]
+            dirname = os.path.dirname(name)
+            os.chdir(dirname)
+            self.schema.loadDocument(name)
+            self.addToRecentMenu(name)
 
     def addToRecentMenu(self, name):
         recentDocs = []

@@ -11,7 +11,7 @@ def call(f,*args,**keyargs):
     return f(*args, **keyargs)
 
 from OWWidget import *
-import OWGUI, string, os.path, user, sys, warnings
+import OWGUI, string, os, sys, warnings
 import orngIO
 
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
@@ -97,10 +97,16 @@ class OWFile(OWWidget):
         OWGUI.rubber(self.controlArea)
         
         # remove missing data set names
-        self.recentFiles=filter(os.path.exists, self.recentFiles)
+        def exists(path):
+            if not os.path.exists(path):
+                dirpath, basename = os.path.split(path)
+                return os.path.exists(os.path.join("./", basename))
+            else:
+                return True
+        self.recentFiles = filter(exists, self.recentFiles)
         self.setFileList()
 
-        if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
+        if len(self.recentFiles) > 0 and exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
@@ -148,7 +154,6 @@ class OWFile(OWWidget):
     def browseFile(self, inDemos=0):
         "Display a FileDialog and select a file"
         if inDemos:
-            import os
             try:
                 import orngConfiguration
                 startfile = orngConfiguration.datasetsPath
@@ -165,38 +170,33 @@ class OWFile(OWWidget):
                     startfile = ""
 
             if not startfile or not os.path.exists(startfile):
-                d = OWGUI.__file__
-                if d[-8:] == "OWGUI.py":
-                    startfile = d[:-22] + "doc/datasets"
-                elif d[-9:] == "OWGUI.pyc":
-                    startfile = d[:-23] + "doc/datasets"
+                widgetsdir = os.path.dirname(OWGUI.__file__)
+                orangedir = os.path.dirname(widgetsdir)
+                startfile = os.path.join(orangedir, "doc", "datasets")
 
             if not startfile or not os.path.exists(startfile):
                 d = os.getcwd()
-                if d[-12:] == "OrangeCanvas":
-                    startfile = d[:-12]+"doc/datasets"
+                if os.path.basename(d) == "OrangeCanvas":
+                    startfile = os.path.join(os.path.dirname(d), "doc", "datasets")
                 else:
-                    if d[-1] not in ["/", "\\"]:
-                        d+= "/"
-                    startfile = d+"doc/datasets"
+                    startfile = os.path.join(d, "doc", "datasets")
 
             if not os.path.exists(startfile):
                 QMessageBox.information( None, "File", "Cannot find the directory with example data sets", QMessageBox.Ok + QMessageBox.Default)
                 return
         else:
             if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-                if sys.platform == "darwin":
-                    startfile = user.home
-                else:
-                    startfile="."
+                startfile = os.path.expanduser("~/")
             else:
-                startfile=self.recentFiles[0]
+                startfile = self.recentFiles[0]
 
         filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, self.dlgFormats))
 
         if filename == "":
             return
-        if filename in self.recentFiles: self.recentFiles.remove(filename)
+        
+        if filename in self.recentFiles:
+            self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
         self.setFileList()
 
@@ -205,9 +205,17 @@ class OWFile(OWWidget):
 
     # Open a file, create data from it and send it over the data channel
     def openFile(self, fn, throughReload, DK=None, DC=None):
-        if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
+        if self.processingHandler: 
+            self.processingHandler(self, 1)    # focus on active widget
         self.error()
         self.warning()
+        self.information()
+        
+        if not os.path.exists(fn):
+            dirname, basename = os.path.split(fn)
+            if os.path.exists(os.path.join("./", basename)):
+                fn = os.path.join("./", basename)
+                self.information("Loading '%s' from the current directory." % basename)
 
         self.closeContext()
         self.loadedFile = ""
