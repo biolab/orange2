@@ -31,7 +31,8 @@ ICON_PATHS = [("TREE",              "Classify/icons/ClassificationTree"),
               ("RADVIZ",            "Visualize/icons/Radviz"),
               ("POLYVIZ",           "Visualize/icons/Polyviz"),
               ("BAYES",             "Classify/icons/NaiveBayes"),
-              ("KNN",               "Classify/icons/kNearestNeighbours")]
+              ("KNN",               "Classify/icons/kNearestNeighbours"),
+              ("SVM",               "Classify/icons/BasicSVM")]
 
 ICON_SIZES = ["16", "32", "40", "48", "60"]
 
@@ -405,16 +406,16 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
                     self.send("Classifier", classifier)
                     
                 self.send("Model", model)
-                self.send("Selected models", self.graph.items.getitems(selection))
+                self.send("Selected Models", self.graph.items.getitems(selection))
             elif len(selection) > 1: 
                 self.send("Model", None)
-                self.send("Selected models", self.graph.items.getitems(selection))
+                self.send("Selected Models", self.graph.items.getitems(selection))
             else:
                 self.send("Model", None)
-                self.send("Selected models", None)
+                self.send("Selected Models", None)
         else:
             self.send("Model", None)
-            self.send("Selected models", None)
+            self.send("Selected Models", None)
             
     def setColors(self):
         dlg = self.createColorDialog(self.colorSettings, self.selectedSchemaIndex)
@@ -493,7 +494,6 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             btn.setText(btnCaption)
             btn.setChecked(False)
         
-        self.setVertexColor()
         self.progressBarFinished()
         
     def sendSignals(self):
@@ -526,6 +526,7 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
                 
             self.setMaxVertexSize()
             self.setVertexStyle()
+            self.setVertexColor()
             self.optimize(0)
                 
 if __name__=="__main__":    
