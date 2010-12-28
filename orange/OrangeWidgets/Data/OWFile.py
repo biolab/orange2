@@ -20,7 +20,16 @@ warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 class FileNameContextHandler(ContextHandler):
     def match(self, context, imperfect, filename):
         return context.filename == filename and 2
-        
+
+
+def addOrigin(examples, filename):
+    vars = examples.domain.variables + examples.domain.getmetas().values()
+    strings = [var for var in vars if isinstance(var, orange.StringVariable)]
+    dirname, basename = os.path.split(filename)
+    for var in strings:
+        if "type" in var.attributes and "origin" not in var.attributes:
+            var.attributes["origin"] = dirname
+                 
 
 class OWFile(OWWidget):
     settingsList=["recentFiles", "createNewOn", "showAdvanced"]
@@ -306,6 +315,7 @@ class OWFile(OWWidget):
         #qApp.processEvents()
         #self.adjustSize()
 
+        addOrigin(data, fn)
         # make new data and send it
         fName = os.path.split(fn)[1]
         if "." in fName:
