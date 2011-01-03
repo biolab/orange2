@@ -36,6 +36,40 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
+# rst epliog
+rst_epilog = """
+.. |1| image:: /images/1.png
+       :align: middle
+          
+.. |2| image:: /images/2.png
+       :align: middle
+
+.. |3| image:: /images/3.png
+       :align: middle
+       
+.. |4| image:: /images/4.png
+       :align: middle
+       
+.. |5| image:: /images/5.png
+       :align: middle
+       
+.. |6| image:: /images/6.png
+       :align: middle
+       
+.. |7| image:: /images/7.png
+       :align: middle
+       
+.. |8| image:: /images/8.png
+       :align: middle
+       
+.. |9| image:: /images/9.png
+       :align: middle
+       
+.. |10| image:: /images/10.png
+       :align: middle
+"""
+
+
 # General information about the project.
 project = u'Orange widget catalog'
 copyright = u'Bioinformatics Laboratory, FRI UL'
@@ -199,3 +233,27 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+from docutils import nodes
+from docutils.transforms import Transform
+ 
+class StampListDecorate(Transform):
+    default_priority = 1000
+    def apply(self):
+        for node in self.document.traverse(nodes.Node):
+            if isinstance(node,  nodes.Node) and not isinstance(node, nodes.Text):
+                try:
+                    if "stamp-list" in node["classes"][:]:
+                        self.decorate(node)
+                except Exception, ex:
+                    print ex
+                
+    def decorate(self, node):
+        for ol in node.traverse(nodes.enumerated_list):
+            start = int(ol["start"])
+            for i, list_item in enumerate(ol.traverse(nodes.list_item)):
+                list_item["classes"].append("list-item-%i" % (start + i))
+                
+    
+def setup(app):
+    app.add_transform(StampListDecorate)
+
