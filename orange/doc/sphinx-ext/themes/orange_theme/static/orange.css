@@ -429,4 +429,47 @@ table.docutils {
     border-top: 1px solid #FFECE3;
 }
    
+img.image-float-left {
+	float:left;
+}
 
+	
+.stamp-list li.list-item-1 {
+	list-style-image: url(../_static/images/1.png)
+}
+
+.stamp-list li.list-item-2 {
+	list-style-image: url(../_static/images/2.png)
+}
+
+.stamp-list li.list-item-3 {
+	list-style-image: url(../_static/images/3.png)
+}
+
+.stamp-list li.list-item-4 {
+	list-style-image: url(../_static/images/4.png)
+}
+
+.stamp-list li.list-item-5 {
+	list-style-image: url(../_static/images/5.png)
+}
+
+.stamp-list li.list-item-6 {
+	list-style-image: url(../_static/images/6.png)
+}
+
+.stamp-list li.list-item-7 {
+	list-style-image: url(../_static/images/7.png)
+}
+
+.stamp-list li.list-item-8 {
+	list-style-image: url(../_static/images/8.png)
+}
+
+.stamp-list li.list-item-9 {
+	list-style-image: url(../_static/images/9.png)
+}
+
+.stamp-list li.list-item-10 {
+	list-style-image: url(../_static/images/10.png)
+}
