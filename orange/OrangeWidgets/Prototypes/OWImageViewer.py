@@ -1,6 +1,6 @@
 """<name>Image Viewer</name>
 <description>View images embeded in example table</description>
-
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 """
 
 from OWWidget import *
@@ -83,7 +83,7 @@ class GraphicsTextWidget(QGraphicsWidget):
 class GraphicsThumbnailWidget(QGraphicsWidget):
     def __init__(self, pixmap, title="Image", parent=None, scene=None):
         QGraphicsWidget.__init__(self, parent)
-        self.setCacheMode(QGraphicsItem.ItemCoordinateCache)
+        #self.setCacheMode(QGraphicsItem.ItemCoordinateCache)
         layout = QGraphicsLinearLayout(Qt.Vertical, self)
         layout.setSpacing(2)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -255,6 +255,7 @@ class OWImageViewer(OWWidget):
         
         self.sceneLayout = None
         self.selectedExamples = []
+        self.hasTypeImageHint = False
         
         self.updateZoom()
         
@@ -262,11 +263,14 @@ class OWImageViewer(OWWidget):
     def setData(self, data):
         self.data = data
         self.closeContext("")
+        self.information(0)
+        self.error(0)
         if data is not None:
             self.imageAttrCB.clear()
             self.titleAttrCB.clear()
             self.allAttrs = data.domain.variables + data.domain.getmetas().values()
             self.stringAttrs = [attr for attr in self.allAttrs if attr.varType == orange.VarTypes.String]
+            self.hasTypeImageHint = any("type" in attr.attributes for attr in self.stringAttrs)
             self.stringAttrs = sorted(self.stringAttrs, key=lambda  attr: 0 if "type" in attr.attributes else 1)
             icons = OWGUI.getAttributeIcons()
             for attr in self.stringAttrs:
@@ -275,10 +279,16 @@ class OWImageViewer(OWWidget):
                 self.titleAttrCB.addItem(icons[attr.varType], attr.name)
             
             self.openContext("", data)
-            self.imageAttr = min(self.imageAttr, len(self.stringAttrs) - 1)
-            self.titleAttr = min(self.titleAttr, len(self.allAttrs) - 1)
-            self.setupScene()
+            self.imageAttr = max(min(self.imageAttr, len(self.stringAttrs) - 1), 0)
+            self.titleAttr = max(min(self.titleAttr, len(self.allAttrs) - 1), 0)
+            
+            if self.stringAttrs:
+                self.setupScene()
+            else:
+                self.clearScene()
         else:
+            self.imageAttrCB.clear()
+            self.titleAttrCB.clear()
             self.clearScene()
             
             
@@ -286,6 +296,8 @@ class OWImageViewer(OWWidget):
         self.clearScene()
         self.scene.blockSignals(True)
         thumbnailSize = self.zoom / 25.0 * 150.0
+        self.information(0)
+        self.error(0)
         if self.data:
             attr = self.stringAttrs[self.imageAttr]
             titleAttr = self.allAttrs[self.titleAttr]
@@ -296,8 +308,11 @@ class OWImageViewer(OWWidget):
             widget.setLayout(layout)
             widget.setPos(10, 10)
             self.scene.addItem(widget)
+            fileExistsCount = 0
             for i, ex in enumerate(examples):
                 filename = self.filenameFromValue(ex[attr])
+                if os.path.exists(filename):
+                    fileExistsCount += 1
                 title = str(ex[titleAttr])
                 pixmap = self.pixmapFromFile(filename)
                 thumbnail = GraphicsThumbnailWidget(pixmap, title=title, parent=widget)
@@ -308,6 +323,13 @@ class OWImageViewer(OWWidget):
             widget.show()
             layout.invalidate()
             self.sceneLayout = layout
+            if fileExistsCount == 0 and not "type" in attr.attributes:
+                self.error(0, "No images found!\nMake sure the '%s' attribute is tagged with 'type=image'" % attr.name) 
+            elif fileExistsCount < len(examples):
+                self.information(0, "Only %i out of %i images found." % (fileExistsCount, len(examples)))
+            
+                
+                
         self.scene.blockSignals(False)
         
         qApp.processEvents()
@@ -324,7 +346,7 @@ class OWImageViewer(OWWidget):
             
     def pixmapFromFile(self, filename):
         pixmap = QPixmap(filename)
-        if not pixmap.size().isValid():
+        if pixmap.isNull():
             try:
                 import Image, ImageQt
                 img = Image.open(filename)
