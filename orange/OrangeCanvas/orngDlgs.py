@@ -217,7 +217,8 @@ class SignalCanvasView(QGraphicsView):
 # #######################################
 class SignalDialog(QDialog):
     def __init__(self, canvasDlg, *args):
-        apply(QDialog.__init__,(self,) + args)
+        QDialog.__init__(self, *args)
+        self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.canvasDlg = canvasDlg
 
         self.signals = []
@@ -474,9 +475,9 @@ class CanvasOptionsDlg(QDialog):
         canvasDlgSettings = OWGUI.widgetBox(hbox1, "Canvas Dialog Settings")
 #        schemeSettings = OWGUI.widgetBox(hbox1, "Scheme Settings") 
          
-        self.widthSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasWidth", minValue = 300, maxValue = 1200, label = "Canvas width:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
-        self.heightSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasHeight", minValue = 300, maxValue = 1200, label = "Canvas height:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
-        OWGUI.separator(canvasDlgSettings)
+#        self.widthSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasWidth", minValue = 300, maxValue = 1200, label = "Canvas width:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
+#        self.heightSlider = OWGUI.qwtHSlider(canvasDlgSettings, self.settings, "canvasHeight", minValue = 300, maxValue = 1200, label = "Canvas height:  ", step = 50, precision = " %.0f px", debuggingEnabled = 0)
+#        OWGUI.separator(canvasDlgSettings)
         
         items = [str(n) for n in QStyleFactory.keys()]
         itemsLower = [s.lower() for s in items]
@@ -528,14 +529,15 @@ class CanvasOptionsDlg(QDialog):
         outputCanvas = OWGUI.widgetBox(hboxExc, "Canvas Info Handling")
         outputWidgets = OWGUI.widgetBox(hboxExc, "Widget Info Handling")
         self.ocShow = OWGUI.checkBox(outputCanvas, self.settings, "ocShow", 'Show icon above widget for...')
-        self.ocInfo = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, 10), self.settings, "ocInfo", 'Information')
-        self.ocWarning = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, 10), self.settings, "ocWarning", 'Warnings')
-        self.ocError = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, 10), self.settings, "ocError", 'Errors')
+        indent = OWGUI.checkButtonOffsetHint(self.ocShow)
+        self.ocInfo = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, indent), self.settings, "ocInfo", 'Information')
+        self.ocWarning = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, indent), self.settings, "ocWarning", 'Warnings')
+        self.ocError = OWGUI.checkBox(OWGUI.indentedBox(outputCanvas, indent), self.settings, "ocError", 'Errors')
 
         self.owShow = OWGUI.checkBox(outputWidgets, self.settings, "owShow", 'Show statusbar info for...')
-        self.owInfo = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, 10), self.settings, "owInfo", 'Information')
-        self.owWarning = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, 10), self.settings, "owWarning", 'Warnings')
-        self.owError = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, 10), self.settings, "owError", 'Errors')
+        self.owInfo = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, indent), self.settings, "owInfo", 'Information')
+        self.owWarning = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, indent), self.settings, "owWarning", 'Warnings')
+        self.owError = OWGUI.checkBox(OWGUI.indentedBox(outputWidgets, indent), self.settings, "owError", 'Errors')
 
         verbosityBox = OWGUI.widgetBox(ExceptionsTab, "Verbosity", orientation = "horizontal")
         verbosityBox.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
