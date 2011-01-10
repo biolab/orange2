@@ -53,7 +53,6 @@ class PyXtractSharedExtension(PyXtractExtension):
     pass
         
 class pyxtract_build_ext(build_ext):
-    
     def run_pyxtract(self, ext, dir):
         original_dir = os.path.realpath(os.path.curdir)
         log.info("running pyxtract for %s" % ext.name)
@@ -77,7 +76,7 @@ class pyxtract_build_ext(build_ext):
         build_ext.finalize_options(self)
         self.library_dirs.append(self.build_lib) # add the build lib dir (for liborange_include)
         
-    def build_extension(self, ext):        
+    def build_extension(self, ext):
         if isinstance(ext, LibStatic):
             self.build_static(ext)
         elif isinstance(ext, PyXtractExtension):
@@ -322,8 +321,10 @@ class install_shared(install_lib):
         install_lib.copy_tree(self, infile, outfile, preserve_mode, preserve_times, preserve_symlinks, level)
         
             
-def get_source_files(path, ext="cpp"):
-    return glob.glob(os.path.join(path, "*." + ext))
+def get_source_files(path, ext="cpp", exclude=[]):
+    files = glob.glob(os.path.join(path, "*." + ext))
+    files = [file for file in files if os.path.basename(file) not in exclude]
+    return files
 
 include_ext = LibStatic("orange_include", get_source_files("source/include/"), include_dirs=include_dirs)
 
@@ -347,14 +348,14 @@ if sys.platform == "darwin":
 else:
     shared_libs = libraries + ["orange"]
     
-orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/") + get_source_files("source/orangeom/qhull/", "c"),
+orangeom_ext = PyXtractExtension("orangeom", get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"]) + get_source_files("source/orangeom/qhull/", "c"),
                                   include_dirs=include_dirs + ["source/orange/"],
                                   extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
                                   extra_link_args = extra_link_args,
                                   libraries=shared_libs,
                                   )
 
-orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/"), 
+orangene_ext = PyXtractExtension("orangene", get_source_files("source/orangene/", exclude=["lib_vectors.cpp"]), 
                                   include_dirs=include_dirs + ["source/orange/"], 
                                   extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
                                   extra_link_args = extra_link_args,
