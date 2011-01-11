@@ -363,7 +363,7 @@ TClassifierFD::TClassifierFD(const TClassifierFD &old)
 
 void TClassifierFD::afterSet(const char *name)
 {
-  if (!strcmp(name, "domain"))
+  if (!strcmp(name, "domain") && !classVar)
     classVar = domain->classVar;
 
   TClassifier::afterSet(name);
