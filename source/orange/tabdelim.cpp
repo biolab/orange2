@@ -769,12 +769,13 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
   char c, c2;
   int col = 0;
   string atom;
+  atom.reserve(10); //avoid frequent reallocations
   for(;;) {
     c = fgetc(fei.file);
 
     if (c==(char)EOF)
       break;
-    if (!col && (c=='|')) {
+    if (!col && (c=='|')) { //ignore comment
       for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=(char)EOF); c=fgetc(fei.file));
       return -1;
     }
@@ -796,12 +797,14 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
       case '\t':
         atoms.push_back(trim(atom));
         atom = string();
+        atom.reserve(10); //avoid frequent reallocations
         break;
 
       case ',':
         if (csv) {
           atoms.push_back(trim(atom));
           atom = string();
+          atom.reserve(10); //avoid frequent reallocations
           break;
         }
         // else fallthrough
