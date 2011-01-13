@@ -490,7 +490,6 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
   vector<string> atoms;
   vector<string>::const_iterator ai, ae;
   TDomainDepot::TAttributeDescriptions::iterator di, db(desc.begin()), de(desc.end());
-  TIntList::const_iterator ati, atb(attributeTypes->begin());
 
   for (int i = headerLines; !feof(fei.file) && i--; )
     while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv, (headerLines==3) && !i) == -1));
@@ -499,25 +498,32 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
     if (readTabAtom(fei, atoms, true, csv) <= 0)
       continue;
     
-    for(di = db, ati = atb, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++, ati++) {
-      if (!*atb)
-        continue;
-        
-      const char *ceni = ai->c_str();
-      if (   !*ceni
-          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
-          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
-         continue;
+    for(di = db, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++) {
 
-      map<string, int>::iterator vf = di->values.lower_bound(*ai);
-      if ((vf != di->values.end()) && (vf->first == *ai)) {
-        vf->second++;
-      }
-      else {
-        di->values.insert(vf, make_pair(*ai, 1));
+      //skip the attribute if it is a FLOATVAR
+      if (di->varType != TValue::FLOATVAR) {
+
+          const char *ceni = ai->c_str();
+
+          if (   !*ceni
+              || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+              || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
+             continue;
+
+          //increase counter or insert
+          //maybe it would be faster if di->values was a unordered_map?
+          map<string, int>::iterator vf = di->values.lower_bound(*ai);
+          if ((vf != di->values.end()) && (vf->first == *ai)) {
+            vf->second++;
+          }
+          else {
+            di->values.insert(vf, make_pair(*ai, 1));
+          }
+
       }
     }
   }
+
 }
 
 
