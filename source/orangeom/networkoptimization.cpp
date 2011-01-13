@@ -1323,6 +1323,34 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
   PyCATCH
 }
 
+PyObject *NetworkOptimization_vertexDistances(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x, y) -> List of (distance, vertex)")
+{
+  PyTRY
+	double x;
+	double y;
+
+	if (!PyArg_ParseTuple(args, "dd:NetworkOptimization.vertexDistances", &x, &y))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	int i;
+	PyObject* distancies = PyList_New(0);
+	for (i=0; i < graph->nVertices; i++)
+	{
+		double dX = graph->network->pos[0][i] - x;
+		double dY = graph->network->pos[1][i] - y;
+		double d = dX*dX + dY*dY;
+
+		PyObject *nel = Py_BuildValue("di", d, i);
+		PyList_Append(distancies, nel);
+		Py_DECREF(nel);
+	}
+
+	return distancies;
+  PyCATCH
+}
+
 PyObject *NetworkOptimization_getVerticesInRect(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x1, y1, x2, y2) -> list of vertices")
 {
   PyTRY
