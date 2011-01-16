@@ -434,7 +434,7 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
   }
   
   /* Check whether this is a string attribute:
-     - has more than 20 values
+     - has more at least 20 values
      - less than half of the values appear more than once */
   if ((status==0) && (desc.values.size() > 20)) {
       int more2 = 0;
@@ -490,6 +490,7 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
   vector<string> atoms;
   vector<string>::const_iterator ai, ae;
   TDomainDepot::TAttributeDescriptions::iterator di, db(desc.begin()), de(desc.end());
+  TIntList::const_iterator ati, atb(attributeTypes->begin());
 
   for (int i = headerLines; !feof(fei.file) && i--; )
     while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv, (headerLines==3) && !i) == -1));
@@ -498,32 +499,25 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
     if (readTabAtom(fei, atoms, true, csv) <= 0)
       continue;
     
-    for(di = db, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++) {
+    for(di = db, ati = atb, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++, ati++) {
+      if (!*atb)
+        continue;
+        
+      const char *ceni = ai->c_str();
+      if (   !*ceni
+          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
+         continue;
 
-      //skip the attribute if it is a FLOATVAR or STRINGVAR
-      if ((di->varType != TValue::FLOATVAR) && (di->varType != STRINGVAR)) {
-
-          const char *ceni = ai->c_str();
-
-          if (   !*ceni
-              || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
-              || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
-             continue;
-
-          //increase counter or insert - THIS PART IS SLOW!
-          //maybe it would be faster if di->values was a unordered_map?
-          map<string, int>::iterator vf = di->values.lower_bound(*ai);
-          if ((vf != di->values.end()) && (vf->first == *ai)) {
-            vf->second++;
-          }
-          else {
-            di->values.insert(vf, make_pair(*ai, 1));
-          }
-
+      map<string, int>::iterator vf = di->values.lower_bound(*ai);
+      if ((vf != di->values.end()) && (vf->first == *ai)) {
+        vf->second++;
+      }
+      else {
+        di->values.insert(vf, make_pair(*ai, 1));
       }
     }
   }
-
 }
 
 
@@ -780,7 +774,7 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
 
     if (c==(char)EOF)
       break;
-    if (!col && (c=='|')) { //ignore comment
+    if (!col && (c=='|')) {
       for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=(char)EOF); c=fgetc(fei.file));
       return -1;
     }
@@ -801,13 +795,13 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
 
       case '\t':
         atoms.push_back(trim(atom));
-        atom.clear();
+        atom = string();
         break;
 
       case ',':
         if (csv) {
           atoms.push_back(trim(atom));
-          atom.clear();
+          atom = string();
           break;
         }
         // else fallthrough
