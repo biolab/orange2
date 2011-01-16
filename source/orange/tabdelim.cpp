@@ -434,7 +434,7 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
   }
   
   /* Check whether this is a string attribute:
-     - has more at least 20 values
+     - has more than 20 values
      - less than half of the values appear more than once */
   if ((status==0) && (desc.values.size() > 20)) {
       int more2 = 0;
@@ -500,8 +500,8 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
     
     for(di = db, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++) {
 
-      //skip the attribute if it is a FLOATVAR
-      if (di->varType != TValue::FLOATVAR) {
+      //skip the attribute if it is a FLOATVAR or STRINGVAR
+      if ((di->varType != TValue::FLOATVAR) && (di->varType != STRINGVAR)) {
 
           const char *ceni = ai->c_str();
 
@@ -510,7 +510,7 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
               || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
              continue;
 
-          //increase counter or insert
+          //increase counter or insert - THIS PART IS SLOW!
           //maybe it would be faster if di->values was a unordered_map?
           map<string, int>::iterator vf = di->values.lower_bound(*ai);
           if ((vf != di->values.end()) && (vf->first == *ai)) {
