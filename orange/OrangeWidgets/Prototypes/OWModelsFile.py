@@ -16,14 +16,72 @@ import os.path
 import pickle
 
 class OWModelsFile(OWDistanceFile):
-    settingsList = ["recentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
+    settingsList = ["recentFiles", "origRecentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
 
     def __init__(self, parent=None, signalManager = None):
         OWDistanceFile.__init__(self, parent, signalManager, inputItems=0)
         #self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
+        
+        
+        
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
+        
+        self.dataFileBox.setTitle(" Model File ")
+        self.origRecentFiles=[]
+        self.origFileIndex = 0
+        self.originalData = None
+        
+        self.loadSettings()
+        
+        box = OWGUI.widgetBox(self.controlArea, "Original Data File", addSpace=True)
+        hbox = OWGUI.widgetBox(box, orientation = 0)
+        self.origFilecombo = OWGUI.comboBox(hbox, self, "origFileIndex", callback = self.loadOrigDataFile)
+        self.origFilecombo.setMinimumWidth(250)
+        button = OWGUI.button(hbox, self, '...', callback = self.browseOrigFile)
+        button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
+        button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.loadOrigDataFile()
+        
+    def browseOrigFile(self):
+        if self.origRecentFiles:
+            lastPath = os.path.split(self.origRecentFiles[0])[0]
+        else:
+            lastPath = "."
+        fn = str(QFileDialog.getOpenFileName(self, "Open Original Data File", 
+                                             lastPath, "Data File (*.tab)"))
+        fn = os.path.abspath(fn)
+        if fn in self.origRecentFiles: # if already in list, remove it
+            self.origRecentFiles.remove(fn)
+        self.origRecentFiles.insert(0, fn)
+        self.origFileIndex = 0
+        self.loadOrigDataFile()
+        
+    def loadOrigDataFile(self):
+        if self.origFileIndex:
+            fnOrigData = self.origRecentFiles[self.origFileIndex]
+            self.origRecentFiles.remove(fnOrigData)
+            self.origRecentFiles.insert(0, fnOrigData)
+            self.origFileIndex = 0
+        else:
+            fnOrigData = self.origRecentFiles[0]
 
+        self.origFilecombo.clear()
+        for file in self.origRecentFiles:
+            self.origFilecombo.addItem(os.path.split(file)[1])
+        
+        if os.path.exists(fnOrigData):
+            self.originalData = orange.ExampleTable(fnOrigData)
+        
+        if self.matrix == None:
+            self.loadFile()
+        else:
+            self.matrix.originalData = self.originalData
+            self.send("Distance Matrix", self.matrix)
+        
     def loadFile(self):
+        if not hasattr(self, "originalData"):
+            return
+        
         if self.fileIndex:
             fn = self.recentFiles[self.fileIndex]
             self.recentFiles.remove(fn)
@@ -57,7 +115,9 @@ class OWModelsFile(OWDistanceFile):
                 self.matrix.results = pickle.load(open(dstFile + ".res", 'rb'))
             else:
                 warning += "Results pickle %s not found!\n" % (dstFile + ".res")
-                
+            
+            self.matrix.originalData = self.originalData
+            
             if warning != "":
                 self.warning(warning.rstrip())
     
