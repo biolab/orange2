@@ -106,8 +106,8 @@ class OWDistanceFile(OWWidget):
         self.labels = None
         
         
-        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace=True)
-        hbox = OWGUI.widgetBox(box, orientation = 0)
+        self.dataFileBox = OWGUI.widgetBox(self.controlArea, "Data File", addSpace=True)
+        hbox = OWGUI.widgetBox(self.dataFileBox, orientation = 0)
         self.filecombo = OWGUI.comboBox(hbox, self, "fileIndex", callback = self.loadFile)
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)

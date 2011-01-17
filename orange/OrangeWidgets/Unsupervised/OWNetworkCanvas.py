@@ -453,7 +453,12 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 50:
+          dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - event.x()
+          dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - event.y()
+          # transform to pixel distance
+          distance = math.sqrt(dX**2 + dY**2) 
+            
+          if ndx != -1 and distance <= self.vertices[ndx].size / 2:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
               self.networkCurve.setMarkedVertices(toMark)
               self.drawPlotItems()
@@ -471,10 +476,14 @@ class OWNetworkCanvas(OWGraph):
           selection = self.networkCurve.getSelectedVertices()
           if len(selection) > 0:
               px = self.invTransform(2, event.x())
-              py = self.invTransform(0, event.y())   
+              py = self.invTransform(0, event.y())  
+               
               v, mind = self.visualizer.closestVertex(px, py)
-                            
-              if v != -1 and mind < 100:
+              dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][v]) - event.x()
+              dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][v]) - event.y()
+              # transform to pixel distance
+              distance = math.sqrt(dX**2 + dY**2)               
+              if v != -1 and distance <= self.vertices[v].size / 2:
                   if self.visualizer.vertexDistance == None:
                       dst = 'vertex distance signal not set'
                   else:
@@ -490,7 +499,11 @@ class OWNetworkCanvas(OWGraph):
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 30:
+          dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - event.x()
+          dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - event.y()
+          # transform to pixel distance
+          distance = math.sqrt(dX**2 + dY**2)               
+          if ndx != -1 and distance <= self.vertices[ndx].size / 2:
               if not self.optimizing:
                   self.optimizing = 1
                   initTemp = 1000
@@ -635,15 +648,11 @@ class OWNetworkCanvas(OWGraph):
       py = self.invTransform(0, pos.y())   
 
       ndx, min = self.visualizer.closestVertex(px, py)
-      
-      minx1 = self.invTransform(2, 0)
-      miny1 = self.invTransform(0, 0)
-      minx2 = self.invTransform(2, 10)
-      miny2 = self.invTransform(0, 10)
-      
-      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
-      
-      if min < d and ndx != -1:
+      dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - pos.x()
+      dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - pos.y()
+      # transform to pixel distance
+      distance = math.sqrt(dX**2 + dY**2)
+      if ndx != -1 and distance <= self.vertices[ndx].size / 2:
           return self.vertices[ndx].selected
       else:
           return False
@@ -656,15 +665,11 @@ class OWNetworkCanvas(OWGraph):
       py = self.invTransform(0, pos.y())   
 
       ndx, min = self.visualizer.closestVertex(px, py)
-      
-      minx1 = self.invTransform(2, 0)
-      miny1 = self.invTransform(0, 0)
-      minx2 = self.invTransform(2, 10)
-      miny2 = self.invTransform(0, 10)
-      
-      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
-      
-      if min < d and ndx != -1:
+      dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - pos.x()
+      dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - pos.y()
+      # transform to pixel distance
+      distance = math.sqrt(dX**2 + dY**2)
+      if ndx != -1 and distance <= self.vertices[ndx].size / 2:
           return True
       else:
           return False
@@ -678,14 +683,11 @@ class OWNetworkCanvas(OWGraph):
 
       ndx, min = self.visualizer.closestVertex(px, py)
       
-      minx1 = self.invTransform(2, 0)
-      miny1 = self.invTransform(0, 0)
-      minx2 = self.invTransform(2, 10)
-      miny2 = self.invTransform(0, 10)
-      
-      d = sqrt((minx2 - minx1) ** 2 + (miny2 - miny1) ** 2)
-      
-      if min < d and ndx != -1:
+      dX = self.transform(QwtPlot.xBottom, self.visualizer.graph.coors[0][ndx]) - pos.x()
+      dY = self.transform(QwtPlot.yLeft,   self.visualizer.graph.coors[1][ndx]) - pos.y()
+      # transform to pixel distance
+      distance = math.sqrt(dX**2 + dY**2)
+      if ndx != -1 and distance <= self.vertices[ndx].size / 2:
           if not self.appendToSelection and not self.controlPressed:
               self.removeSelection()
                     
