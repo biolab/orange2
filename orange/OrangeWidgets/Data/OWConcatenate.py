@@ -142,30 +142,33 @@ class OWConcatenate(OWWidget):
                 tableCount += 1
             if self.additional:
                 tableCount += len(self.additional)
-                
-            dataSourceVar = orange.EnumVariable(self.dataSourceName, values = [str(x) for x in range(1, 1 + tableCount)])
             
             origDomain = newTable.domain
-            if self.addIdAs == 0:
-                domain = orange.Domain(origDomain.attributes, dataSourceVar)
-                if origDomain.classVar:
-                    domain.addmeta(orange.newmetaid(), origDomain.classVar)
-                aid = -1
-            elif self.addIdAs == 1:
-                domain=orange.Domain(origDomain.attributes+[dataSourceVar], origDomain.classVar)
-                aid = len(origDomain.attributes)
+            if self.dataSourceSelected:
+                dataSourceVar = orange.EnumVariable(self.dataSourceName, values = [str(x) for x in range(1, 1 + tableCount)])
+                if self.addIdAs == 0:
+                    domain = orange.Domain(origDomain.attributes, dataSourceVar)
+                    if origDomain.classVar:
+                        domain.addmeta(orange.newmetaid(), origDomain.classVar)
+                    aid = -1
+                elif self.addIdAs == 1:
+                    domain=orange.Domain(origDomain.attributes+[dataSourceVar], origDomain.classVar)
+                    aid = len(origDomain.attributes)
+                else:
+                    domain=orange.Domain(origDomain.attributes, origDomain.classVar)
+                    aid=orange.newmetaid()
+                    domain.addmeta(aid, dataSourceVar)
             else:
-                domain=orange.Domain(origDomain.attributes, origDomain.classVar)
-                aid=orange.newmetaid()
-                domain.addmeta(aid, dataSourceVar)
+                domain = orange.Domain(origDomain.attributes, origDomain.classVar)
 
             domain.addmetas(origDomain.getmetas())
             
             table1 = orange.ExampleTable(domain)
             table1.extend(newTable)
             
-            for ex, id in izip(table1, dataSourceIDs):
-                ex[aid] = dataSourceVar(str(id))
+            if self.dataSourceSelected:
+                for ex, id in izip(table1, dataSourceIDs):
+                    ex[aid] = dataSourceVar(str(id))
 
             newTable = table1
 
