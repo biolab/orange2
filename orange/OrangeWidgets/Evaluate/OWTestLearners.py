@@ -237,26 +237,27 @@ class OWTestLearners(OWWidget):
         self.reportSettings("Validation method",
                             [("Method", self.resamplingMethods[self.resampling])]
                             + exset +
-                            [("Target class", self.data.domain.classVar.values[self.targetClass])])
+                            ([("Target class", self.data.domain.classVar.values[self.targetClass])] if self.data else []))
         
         self.reportData(self.data)
-        
-        self.reportSection("Results")
-        learners = [(l.time, l) for l in self.learners.values()]
-        learners.sort()
-        learners = [lt[1] for lt in learners]
-        usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
-        
-        res = "<table><tr><th></th>"+"".join("<th><b>%s</b></th>" % hr for hr in [s.label for i, s in enumerate(self.stat) if i in usestat])+"</tr>"
-        for i, l in enumerate(learners):
-            res += "<tr><th><b>%s</b></th>" % l.name
-            if l.scores:
-                for j in usestat:
-                    scr = l.scores[j]
-                    res += "<td>" + ("%.4f" % scr if scr is not None else "") + "</td>"
-            res += "</tr>"
-        res += "</table>"
-        self.reportRaw(res)
+
+        if self.data:        
+            self.reportSection("Results")
+            learners = [(l.time, l) for l in self.learners.values()]
+            learners.sort()
+            learners = [lt[1] for lt in learners]
+            usestat = [self.selectedRScores, self.selectedCScores][self.isclassification()]
+            
+            res = "<table><tr><th></th>"+"".join("<th><b>%s</b></th>" % hr for hr in [s.label for i, s in enumerate(self.stat) if i in usestat])+"</tr>"
+            for i, l in enumerate(learners):
+                res += "<tr><th><b>%s</b></th>" % l.name
+                if l.scores:
+                    for j in usestat:
+                        scr = l.scores[j]
+                        res += "<td>" + ("%.4f" % scr if scr is not None else "") + "</td>"
+                res += "</tr>"
+            res += "</table>"
+            self.reportRaw(res)
             
     def score(self, ids):
         """compute scores for the list of learners"""
