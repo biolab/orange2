@@ -29,6 +29,10 @@ class SchemaDoc(QWidget):
         self.setLayout(QVBoxLayout())
         #self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvas = QGraphicsScene()
+
+        self.guide_text = self.canvas.addSimpleText("Right-click to add widgets", font=QFont("Helvetica", 36))
+        self.guide_text.setBrush(QBrush(QColor(235,235,235)))
+
         oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 300.0, 300.0)) # inital item so sceneRect always contains QPoint(0, 0)
         self.canvas.sceneRect() # call scene rect so int calculates the rect 
         self.canvas.removeItem(oneItem)
@@ -38,6 +42,14 @@ class SchemaDoc(QWidget):
         self.layout().setMargin(0)
         self.schemaID = orngHistory.logNewSchema()
 
+        self.update_guide()
+
+    def update_guide(self):
+        """ Sets the visibility of the guide text """
+        visible = not len(self.widgets)
+        self.guide_text.setVisible(visible)
+        if visible:
+            self.canvasView.ensureVisible(self.guide_text)
 
     def isSchemaChanged(self):
         return self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
@@ -316,6 +328,7 @@ class SchemaDoc(QWidget):
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
 
         qApp.restoreOverrideCursor()
+        self.update_guide()
         return newwidget
 
     # remove widget
@@ -334,6 +347,7 @@ class SchemaDoc(QWidget):
         if saveTempDoc:
             self.saveTempDoc()
         
+        self.update_guide()
         orngHistory.logRemoveWidget(self.schemaID, id(widget), (widget.widgetInfo.category, widget.widgetInfo.name))
 
     def clear(self):
