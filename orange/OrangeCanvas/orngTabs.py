@@ -647,6 +647,7 @@ class CanvasPopup(QMenu):
                     icon = self.canvasDlg.getWidgetIcon(widgetInfo)
                     act = self.addAction(icon, widgetInfo.name)
                     act.widgetInfo = widgetInfo
+                    act.setIconVisibleInMenu(True)
                     self.quickActions.append(act)
                     break
         self.categoriesYOffset = self.sizeHint().height()
@@ -660,7 +661,7 @@ class CanvasPopup(QMenu):
 def constructCategoriesPopup(canvasDlg):
     global categoriesPopup
     categoriesPopup = CanvasPopup(canvasDlg)
-    categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item { color: black; } QMenu::item:disabled { color: #dddddd } QMenu::separator {height: 1px; background: #dddddd; margin-left: 3px; margin-right: 4px;}""")
+    categoriesPopup.setStyleSheet(""" QMenu { background-color: #fffff0; selection-background-color: blue; } QMenu::item { color: black; selection-color: white } QMenu::item:disabled { color: #dddddd } QMenu::separator {height: 3px; background: #dddddd; margin-left: 3px; margin-right: 4px;}""")
 
     catmenuDict = {}
     for category, show in canvasDlg.settings["WidgetTabs"]:
@@ -689,6 +690,7 @@ def constructCategoriesPopup(canvasDlg):
             act = catmenu.addAction(icon, widgetInfo.name)
             act.widgetInfo = widgetInfo
             act.category = catmenu
+            act.setIconVisibleInMenu(True)
             categoriesPopup.allActions.append(act)
           
 #def constructWidgetSuggest(canvasDlg):
