@@ -30,8 +30,12 @@ class SchemaDoc(QWidget):
         #self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvas = QGraphicsScene()
 
-        self.guide_text = self.canvas.addSimpleText("Right-click to add widgets", font=QFont("Helvetica", 36))
+        self.guide_text = self.canvas.addSimpleText("Right-click to add widgets")
         self.guide_text.setBrush(QBrush(QColor(235,235,235)))
+        font = QFont()
+        font.setStyleHint(QFont.SansSerif)
+        font.setPixelSize(36)
+        self.guide_text.setFont(font)
 
         oneItem = self.canvas.addRect(QRectF(0.0, 0.0, 300.0, 300.0)) # inital item so sceneRect always contains QPoint(0, 0)
         self.canvas.sceneRect() # call scene rect so int calculates the rect 
