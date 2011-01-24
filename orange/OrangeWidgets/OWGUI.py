@@ -891,6 +891,19 @@ class OrangeListBox(QListWidget):
             ev.accept()
         else:
             ev.ignore()
+            
+    def updateGeometries(self):
+        """ A workaround for a bug in Qt (see: http://bugreports.qt.nokia.com/browse/QTBUG-14412)
+        """ 
+        if getattr(self, "_updatingGeometriesNow", False):
+#            import sys
+#            print >> sys.stderr, "Suppressing recursive update geometries"
+            return
+        self._updatingGeometriesNow = True
+        try:
+            return QListWidget.updateGeometries(self)
+        finally:
+            self._updatingGeometriesNow = False
 
 
 class SmallWidgetButton(QPushButton):
