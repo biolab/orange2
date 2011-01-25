@@ -2,6 +2,7 @@
 <description>Takes a ExampleTable and runs correspondence analysis</description>
 <icon>icons/CorrespondenceAnalysis.png</icon>
 <priority>3300</priority>
+<contact>Ales Erjavec (ales.erjavec(@ at @)fri.uni-lj.si</contact>
 """
 
 from OWWidget import *
@@ -28,13 +29,15 @@ class OWCorrespondenceAnalysis(OWWidget):
         self.rowAttr = 1
         self.xPrincipalAxis = 0
         self.yPrincipalAxis = 1
-        self.pointSize = 5
+        self.pointSize = 6
         self.alpha = 240
         self.jitter = 0
         self.showGridlines = 0
         self.percCol = 100
         self.percRow = 100
         self.autoSend = 0
+        
+        self.loadSettings()
         
         # GUI
         self.graph = OWGraph(self)
@@ -44,7 +47,7 @@ class OWCorrespondenceAnalysis(OWWidget):
         
         self.controlAreaTab = OWGUI.tabWidget(self.controlArea)
         # Graph tab
-        graphTab = OWGUI.createTabPage(self.controlAreaTab, "Graph")
+        self.graphTab = graphTab = OWGUI.createTabPage(self.controlAreaTab, "Graph")
         self.colAttrCB = OWGUI.comboBox(graphTab, self, "colAttr", "Column Attribute", 
                                         tooltip="Column attribute",
                                         callback=self.runCA)
@@ -76,7 +79,7 @@ class OWCorrespondenceAnalysis(OWWidget):
         OWGUI.rubber(graphTab)
         
         # Settings tab
-        settingsTab = OWGUI.createTabPage(self.controlAreaTab, "Settings")
+        self.settingsTab = settingsTab = OWGUI.createTabPage(self.controlAreaTab, "Settings")
         OWGUI.hSlider(settingsTab, self, "pointSize", "Point Size", 3, 20, step=1,
                       callback=self.setPointSize)
         
@@ -146,7 +149,7 @@ class OWCorrespondenceAnalysis(OWWidget):
         try:
             self.CA = orngCA.CA([[c for c in row] for row in self.contingency])
         except numpy.linalg.LinAlgError:
-            self.error(0, "Could not compute.")
+            self.error(0, "Could not compute the mapping! " + str(ex))
             self.graph.removeDrawingCurves(True, True, True)
             raise
             
@@ -225,6 +228,8 @@ class OWCorrespondenceAnalysis(OWWidget):
             allpoints = numpy.vstack(vstack)
             maxx, maxy = numpy.max(allpoints, axis=0)
             minx, miny = numpy.min(allpoints, axis=0)
+            spanx = maxx - minx
+            spany = maxy - miny
         
         self.graph.setAxisScale(QwtPlot.xBottom, minx - spanx * 0.05, maxx + spanx * 0.05)
         self.graph.setAxisScale(QwtPlot.yLeft, miny - spany * 0.05, maxy + spany * 0.05)
