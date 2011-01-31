@@ -336,10 +336,12 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         self.btnFR = OWGUI.button(self.optimizationButtons, self, "Fruchterman-Reingold", toggleButton=1)
         self.btnMDS = OWGUI.button(self.optimizationButtons, self, "MDS", toggleButton=1)
         self.btnRND = OWGUI.button(self.optimizationButtons, self, "Random", toggleButton=1)
+        self.btnFRAGVIZ = OWGUI.button(self.optimizationButtons, self, "FragViz", toggleButton=1)
         
-        QObject.connect(self.btnFR,  SIGNAL("clicked()"), (lambda m=0,btn=self.btnFR:  self.optimize(m, btn)))
-        QObject.connect(self.btnMDS, SIGNAL("clicked()"), (lambda m=1,btn=self.btnMDS: self.optimize(m, btn)))
-        QObject.connect(self.btnRND, SIGNAL("clicked()"), (lambda m=2,btn=self.btnRND: self.optimize(m, btn)))
+        QObject.connect(self.btnFR,      SIGNAL("clicked()"), (lambda m=0,btn=self.btnFR:      self.optimize(m, btn)))
+        QObject.connect(self.btnMDS,     SIGNAL("clicked()"), (lambda m=1,btn=self.btnMDS:     self.optimize(m, btn)))
+        QObject.connect(self.btnRND,     SIGNAL("clicked()"), (lambda m=2,btn=self.btnRND:     self.optimize(m, btn)))
+        QObject.connect(self.btnFRAGVIZ, SIGNAL("clicked()"), (lambda m=3,btn=self.btnFRAGVIZ: self.optimize(m, btn)))
         
         # MARTIX CONTROLS
         self.addHistogramControls(self.matrixTab)
@@ -375,6 +377,8 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         self.predGraph.setAxisScale(QwtPlot.xBottom, 0.0, 1.0, 0.1)
         self.predGraph.numberOfBars = 2
         self.predGraph.barSize = 200 / (self.predGraph.numberOfBars + 1)
+        #self.infoCA = OWGUI.widgetLabel(vizPredAcc, 'CA: ')
+        #self.infoAUC = OWGUI.widgetLabel(vizPredAcc, 'AUC: ')
         
         vizPredAcc = OWGUI.widgetBox(self.vizTab, "Attribute lists", orientation = "vertical")
         OWGUI.checkBox(vizPredAcc, self, "vizAttributes", "Display attribute lists", callback = self.visualizeInfo)
@@ -601,14 +605,12 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
         self.progressBarInit()
         
         if method == 0:
-            tolerance = 5
             initTemp = 1000
             breakpoints = 6
-            frSteps = self.iterations
-            k = int(frSteps / breakpoints)
-            o = frSteps % breakpoints
+            k = int(self.iterations / breakpoints)
+            o = self.iterations % breakpoints
             iteration = 0
-            coolFactor = math.exp(math.log(10.0/10000.0) / frSteps)
+            coolFactor = math.exp(math.log(10.0/10000.0) / self.iterations)
             while iteration < breakpoints:
                 initTemp = self.optimization.fruchtermanReingold(k, initTemp, coolFactor)
                 iteration += 1
@@ -621,10 +623,16 @@ class OWMetaMiner(OWWidget, OWNetworkHist):
             self.optimization.mdsComponents(self.iterations, 10, callbackProgress=self.mdsProgress, \
                                             callbackUpdateCanvas=self.netCanvas.updateCanvas, \
                                             torgerson=0, minStressDelta=0, avgLinkage=0, rotationOnly=0, \
-                                            mdsType=orngNetwork.MdsType.MDS, scalingRatio=1, mdsFromCurrentPos=1)
+                                            mdsType=orngNetwork.MdsType.MDS, scalingRatio=0, mdsFromCurrentPos=1)
             
         if method == 2:
             self.optimization.random()
+            
+        if method == 3:
+            self.optimization.mdsComponents(self.iterations, 10, callbackProgress=self.mdsProgress, \
+                                            callbackUpdateCanvas=self.netCanvas.updateCanvas, \
+                                            torgerson=0, minStressDelta=0, avgLinkage=1, rotationOnly=0, \
+                                            mdsType=orngNetwork.MdsType.componentMDS, scalingRatio=0, mdsFromCurrentPos=1)
         
         self.netCanvas.updateCanvas()
             
