@@ -628,8 +628,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 self.graph.coors[0][component] = (self.graph.coors[0][component] - x_avg_graph) / r + x_avg_mds
                 self.graph.coors[1][component] = (self.graph.coors[1][component] - y_avg_graph) / r + y_avg_mds
                
-        #if callbackUpdateCanvas:
-        #    callbackUpdateCanvas()
+        if callbackUpdateCanvas:
+            callbackUpdateCanvas()
     
     def mdsCallback(self, a,b=None):
         """Refresh the UI when running  MDS on network components."""
