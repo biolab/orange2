@@ -1,6 +1,8 @@
 """
 
-.. index:: clutering
+.. index:: clustering
+
+Everything about clustering, including agglomerative and hierarchical clustering.
 
 ==================
 k-Means clustering
@@ -446,7 +448,7 @@ class KMeans_init_hierarchicalClustering():
 
 class KMeans:
     """
-    K-means clustering algorithm:
+    Implements a k-means clustering algorithm:
 
     #. Choose the number of clusters, k.
     #. Choose a set of k initial centroids.
@@ -456,7 +458,7 @@ class KMeans:
     #. Repeat the previous two steps, until some convergence criterion is 
        met (e.g., the cluster assignment has not changed).
 
-    The main advantage of the algorithm is simplicity and low memory  
+    The main advantages of this algorithm are simplicity and low memory  
     requirements. The principal disadvantage is the dependence of results 
     on the selection of initial set of centroids.
 
@@ -474,7 +476,7 @@ class KMeans:
                  scoring=score_distance_to_centroids, inner_callback = None,
                  outer_callback = None):
         """
-        :param data: Instances to be clustered. If not None, clustering will be executed immediately after initialization unless initialize_only is set to True.
+        :param data: Data instances to be clustered. If not None, clustering will be executed immediately after initialization unless initialize_only=True.
         :type data: :class:`orange.ExampleTable` or None
         :param centroids: either specify a number of clusters or provide a list of examples that will serve as clustering centroids.
         :type centroids: integer or a list of :class:`orange.Example`
@@ -515,7 +517,7 @@ class KMeans:
             self.run()
         
     def __call__(self, data = None):
-        """ Runs with optional new data. """
+        """Runs the k-means clustering algorithm, with optional new data."""
         if data:
             self.data = data
             self.distance = self.distance_constructor(self.data)
