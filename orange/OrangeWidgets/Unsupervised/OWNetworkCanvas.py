@@ -1281,6 +1281,7 @@ class OWNetworkCanvas(OWGraph):
       self.setAxisAutoScale(self.yLeft)
       self.updateData()
       self.replot()  
+      print "update"
   
   def zoomExtent(self):
       self.setAxisAutoScale(self.xBottom)
