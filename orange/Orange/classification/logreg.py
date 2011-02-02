@@ -5,21 +5,181 @@
 Logistic Regression
 ===================
 
-Module logreg is a set of wrappers around classes LogisticLearner and
-LogisticClassifier, that are implemented in core Orange. This module
-expanses use of logistic regression to discrete attributes, it helps
-handling various anomalies in attributes, such as constant variables
-and singularities, that makes fitting logistic regression almost
-impossible. It also implements a function for constructing a stepwise
-logistic regression, which is a good technique to prevent overfitting,
-and is a good feature subset selection technique as well.
+Module :obj:`Orange.classification.logreg` is a set of wrappers around
+classes LogisticLearner and LogisticClassifier, that are implemented
+in core Orange. This module extends the use of logistic regression
+to discrete attributes, it helps handling various anomalies in
+attributes, such as constant variables and singularities, that make
+fitting logistic regression almost impossible. It also implements a
+function for constructing a stepwise logistic regression, which is a
+good technique for prevent overfitting, and is a good feature subset
+selection technique as well.
 
 Functions
 ---------
 
 .. autofunction:: LogRegLearner
 .. autofunction:: StepWiseFSS
+.. autofunction:: printOUT
 
+Class
+-----
+
+.. autoclass:: StepWiseFSS_class
+
+Examples
+--------
+
+First example shows a very simple induction of a logistic regression
+classifier (`logreg-run.py`_, uses `titanic.tab`_).
+
+.. literalinclude:: code/logreg-run.py
+
+Result::
+
+    Classification accuracy: 0.778282598819
+
+    class attribute = survived
+    class values = <no, yes>
+
+        Attribute       beta  st. error     wald Z          P OR=exp(beta)
+
+        Intercept      -1.23       0.08     -15.15      -0.00
+     status=first       0.86       0.16       5.39       0.00       2.36
+    status=second      -0.16       0.18      -0.91       0.36       0.85
+     status=third      -0.92       0.15      -6.12       0.00       0.40
+        age=child       1.06       0.25       4.30       0.00       2.89
+       sex=female       2.42       0.14      17.04       0.00      11.25
+
+Next examples shows how to handle singularities in data sets
+(`logreg-singularities.py`_, uses `adult_sample.tab`_).
+
+.. literalinclude:: code/logreg-singularities.py
+
+Result::
+
+    <=50K <=50K
+    <=50K <=50K
+    <=50K <=50K
+    >50K >50K
+    <=50K >50K
+
+    class attribute = y
+    class values = <>50K, <=50K>
+
+                               Attribute       beta  st. error     wald Z          P OR=exp(beta)
+
+                               Intercept       6.62      -0.00       -inf       0.00
+                                     age      -0.04       0.00       -inf       0.00       0.96
+                                  fnlwgt      -0.00       0.00       -inf       0.00       1.00
+                           education-num      -0.28       0.00       -inf       0.00       0.76
+                 marital-status=Divorced       4.29       0.00        inf       0.00      72.62
+            marital-status=Never-married       3.79       0.00        inf       0.00      44.45
+                marital-status=Separated       3.46       0.00        inf       0.00      31.95
+                  marital-status=Widowed       3.85       0.00        inf       0.00      46.96
+    marital-status=Married-spouse-absent       3.98       0.00        inf       0.00      53.63
+        marital-status=Married-AF-spouse       4.01       0.00        inf       0.00      55.19
+                 occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
+                 occupation=Craft-repair       0.37       0.00        inf       0.00       1.45
+                occupation=Other-service       2.68       0.00        inf       0.00      14.61
+                        occupation=Sales       0.22       0.00        inf       0.00       1.24
+               occupation=Prof-specialty       0.18       0.00        inf       0.00       1.19
+            occupation=Handlers-cleaners       1.29       0.00        inf       0.00       3.64
+            occupation=Machine-op-inspct       0.86       0.00        inf       0.00       2.37
+                 occupation=Adm-clerical       0.30       0.00        inf       0.00       1.35
+              occupation=Farming-fishing       1.12       0.00        inf       0.00       3.06
+             occupation=Transport-moving       0.62       0.00        inf       0.00       1.85
+              occupation=Priv-house-serv       3.46       0.00        inf       0.00      31.87
+              occupation=Protective-serv       0.11       0.00        inf       0.00       1.12
+                 occupation=Armed-Forces       0.59       0.00        inf       0.00       1.81
+                       relationship=Wife      -1.06      -0.00        inf       0.00       0.35
+                  relationship=Own-child      -1.04      60.00      -0.02       0.99       0.35
+              relationship=Not-in-family      -1.94  532845.00      -0.00       1.00       0.14
+             relationship=Other-relative      -2.42       0.00       -inf       0.00       0.09
+                  relationship=Unmarried      -1.92       0.00       -inf       0.00       0.15
+                 race=Asian-Pac-Islander      -0.19       0.00       -inf       0.00       0.83
+                 race=Amer-Indian-Eskimo       2.88       0.00        inf       0.00      17.78
+                              race=Other       3.93       0.00        inf       0.00      51.07
+                              race=Black       0.11       0.00        inf       0.00       1.12
+                              sex=Female       0.30       0.00        inf       0.00       1.36
+                            capital-gain      -0.00       0.00       -inf       0.00       1.00
+                            capital-loss      -0.00       0.00       -inf       0.00       1.00
+                          hours-per-week      -0.04       0.00       -inf       0.00       0.96
+
+In case we set removeSingular to 0, inducing logistic regression
+classifier would return an error::
+
+    Traceback (most recent call last):
+      File "logreg-singularities.py", line 4, in <module>
+        lr = classification.logreg.LogRegLearner(table, removeSingular=0)
+      File "/home/jure/devel/orange/Orange/classification/logreg.py", line 255, in LogRegLearner
+        return lr(examples, weightID)
+      File "/home/jure/devel/orange/Orange/classification/logreg.py", line 291, in __call__
+        lr = learner(examples, weight)
+    orange.KernelException: 'orange.LogRegLearner': singularity in workclass=Never-worked
+
+
+We can see that attribute workclass=Never-worked is causeing singularity. The
+issue of this is that we should remove Never-worked manually or leave it to
+function LogRegLearner to remove it automatically. 
+
+In the last example it is shown, how the use of stepwise logistic
+regression can help us in achieving better classification
+(`logreg-stepwise.py`_, uses `ionosphere.tab`_):
+
+.. literalinclude:: code/logreg-stepwise.py
+
+Result::
+
+    Learner      CA
+    logistic     0.841
+    filtered     0.846
+
+    Number of times attributes were used in cross-validation:
+     1 x a21
+    10 x a22
+     8 x a23
+     7 x a24
+     1 x a25
+    10 x a26
+    10 x a27
+     3 x a28
+     7 x a29
+     9 x a31
+     2 x a16
+     7 x a12
+     1 x a32
+     8 x a15
+    10 x a14
+     4 x a17
+     7 x a30
+    10 x a11
+     1 x a10
+     1 x a13
+    10 x a34
+     2 x a19
+     1 x a18
+    10 x a3
+    10 x a5
+     4 x a4
+     4 x a7
+     8 x a6
+    10 x a9
+    10 x a8
+
+References
+----------
+
+David W. Hosmer, Stanley Lemeshow. Applied Logistic Regression - 2nd ed. Wiley, New York, 2000 
+
+
+.. _logreg-run.py: code/logreg-run.py
+.. _logreg-singularities.py: code/logreg-singularities.py
+.. _logreg-stepwise.py: code/logreg-stepwise.py
+
+.. _ionosphere.tab: code/ionosphere.tab
+.. _adult_sample.tab: code/adult_sample.tab
+.. _titanic.tab: code/titanic.tab
 
 """
 
@@ -37,6 +197,14 @@ from numpy.linalg import *
 #######################
 
 def printOUT(classifier):
+    """ Formatted print to console of all major attributes in logistic
+    regression classifier. Parameter classifier is a logistic regression
+    classifier.
+
+    :param examples: data set
+    :type examples: :obj:`Orange.data.table`
+    """
+
     # print out class values
     print
     print "class attribute = " + classifier.domain.classVar.name
@@ -66,34 +234,28 @@ def hasDiscreteValues(domain):
             return 1
     return 0
 
-def LogRegLearner(examples = None, weightID=0, **kwds):
-    """ Returns a LogisticClassifier if examples are given. If examples
-    are not specified, an instance of object LogisticLearner with
-    its parameters appropriately initialized is returned.  Parameter
-    weightID defines the ID of the weight meta attribute. Set parameter
-    removeSingular to 1,if you want automatic removal of disturbing
-    attributes, such as constants and singularities. Examples can contain
-    discrete and continuous attributes. Parameter fitter is used to
-    alternate fitting algorithm. Currently a Newton-Raphson fitting
-    algorithm is used, however you can change it to something else. You
-    can find bayesianFitter in orngLR to test it out. The last three
-    parameters addCrit, deleteCrit, numAttr are used to set parameters
-    for stepwise attribute selection (see next method). If you wish to
-    use stepwise within LogRegLearner, stpewiseLR must be set as 1.
+def LogRegLearner(table=None, weightID=0, **kwds):
+    """ Logistic regression learner
 
-    :param examples:
-    :param weightID:
-    :param removeSingular:
-    :param fitter:
-    :param stepwiseLR:
-    :param addCrit:
-    :param deleteCrit:
-    :param numAttr:
+    :obj:`LogRegLearner` implements logistic regression. If data
+    instances are provided to the constructor, the learning algorithm
+    is called and the resulting classifier is returned instead of the
+    learner.
+
+    :param table: data set with either discrete or continuous features
+    :type table: Orange.table.data
+    :param weightID: the ID of the weight meta attribute
+    :param removeSingular: set to 1 if you want automatic removal of disturbing attributes, such as constants and singularities
+    :param fitter: alternate the fitting algorithm (currently the Newton-Raphson fitting algorithm is used)
+    :param stepwiseLR: set to 1 if you wish to use stepwise logistic regression
+    :param addCrit: parameter for stepwise attribute selection
+    :param deleteCrit: parameter for stepwise attribute selection
+    :param numAttr: parameter for stepwise attribute selection
         
     """
     lr = LogRegLearnerClass(**kwds)
-    if examples:
-        return lr(examples, weightID)
+    if table:
+        return lr(table, weightID)
     else:
         return lr
 
@@ -693,6 +855,26 @@ def getLikelihood(fitter, examples):
 
 
 class StepWiseFSS_class(orange.Learner):
+  """ Performs stepwise logistic regression and returns a list of "most"
+  informative attributes. Each step of this algorithm is composed
+  of two parts. First is backward elimination, where each already
+  chosen attribute is tested for significant contribution to overall
+  model. If worst among all tested attributes has higher significance
+  that is specified in deleteCrit, this attribute is removed from
+  the model. The second step is forward selection, which is similar
+  to backward elimination. It loops through all attributes that are
+  not in model and tests whether they contribute to common model with
+  significance lower that addCrit. Algorithm stops when no attribute
+  in model is to be removed and no attribute out of the model is to
+  be added. By setting numAttr larger than -1, algorithm will stop its
+  execution when number of attributes in model will exceed that number.
+
+  Significances are assesed via the likelihood ration chi-square
+  test. Normal F test is not appropriate, because errors are assumed to
+  follow a binomial distribution.
+
+  """
+
   def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
     self.__dict__.update(kwds)
     self.addCrit = addCrit

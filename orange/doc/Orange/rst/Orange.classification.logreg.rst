@@ -1,5 +1,5 @@
 ============================
-orange.classification.logreg
+Orange.classification.logreg
 ============================
 
 .. automodule:: Orange.classification.logreg

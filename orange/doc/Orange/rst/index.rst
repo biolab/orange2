@@ -18,7 +18,7 @@ Contents:
    Orange.classification.lookup
    orange.classification.svm
    orange.classification.tree
-   orange.classification.logreg
+   Orange.classification.logreg
    orange.classification.rules
 
    orange.feature
