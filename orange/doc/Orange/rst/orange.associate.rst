@@ -1,5 +1,5 @@
 ==============
-orange.associate
+Orange.associate
 ==============
 
 .. automodule:: Orange.associate
