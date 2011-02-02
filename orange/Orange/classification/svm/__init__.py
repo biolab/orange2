@@ -7,8 +7,8 @@ Support Vector Machines
 
 .. index:: Support Vector Machines Classification
 
-Interface to the LibSVM library (LIBSVM : a library for support vector machines
-(http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
+Interface to the LibSVM library (a library for support vector machines
+- http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
 
 .. note:: On some data-sets SVM can perform very badly. It is a known fact that
           SVM's can be very sensitive to the proper choice of the parameters.
@@ -172,7 +172,7 @@ class SVMLearner(_SVMLearner):
         :param kernel_type: Defines the type of a kernel to use for learning
             (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
             kernels.Sigmoid, kernels.Custom)
-        :type kernel_type: SVMLearner.Kernel
+        :type kernel_type: classification.kernels.Kernel
         :param degree: Kernel parameter (for Polynomial) (default 3)
         :type degree: int
         :param gamma: Kernel parameter (Polynomial/RBF/Sigmoid)
@@ -181,7 +181,7 @@ class SVMLearner(_SVMLearner):
         :param coef0: Kernel parameter (Polynomial/Sigmoid) (default 0)
         :type coef0: int
         :param kernelFunc: Function that will be called if `kernel_type` is
-            `Custom`. It must accept two `Orange.data.Example` arguments and
+            `Custom`. It must accept two `data.Example` arguments and
             return a float (the distance between the examples).
         :type kernelFunc: callable function
         :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
@@ -278,7 +278,7 @@ class SVMLearner(_SVMLearner):
         """Tune the parameters of the SVMLearner on given examples using 
         cross validation.
         
-        :param examples: ExampleTable on which to tune the parameters 
+        :param examples: data.Table on which to tune the parameters 
         :param parameters: if not set defaults to ["nu", "C", "gamma"]
         :param folds: number of folds used for cross validation
         :param verbose:
