@@ -12,7 +12,7 @@ import data.io
 import data.example
 import data.sample
 import data.value
-import data.variable
+import data.feature
 import data.domain
 
 import graph
