@@ -50,6 +50,7 @@ class BoostedLearner(orange.Learner):
         self.learner = learner
 
     def __call__(self, instances, origWeight = 0):
+        import math
         weight = orange.newmetaid()
         if origWeight:
             for i in instances:
@@ -80,7 +81,7 @@ class BoostedLearner(orange.Learner):
             for e in range(n):
                 if corr[e]:
                     instances[e].setweight(weight, instances[e].getweight(weight)*beta)
-            f = 1/float(reduce(add, [e.getweight(weight) for e in instances]))
+            f = 1/float(sum([e.getweight(weight) for e in instances]))
             for e in range(n):
                 instances[e].setweight(weight, instances[e].getweight(weight)*f)
 

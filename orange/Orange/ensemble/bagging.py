@@ -75,12 +75,12 @@ class BaggedClassifier(orange.Classifier):
         self.__dict__.update(kwds)
 
     def __call__(self, example, resultType = orange.GetValue):
-        if self.classVar.varType == orange.data.Type.Discrete:
+        if self.classVar.varType == Orange.data.Type.Discrete:
             freq = [0.] * len(self.classVar.values)
             for c in self.classifiers:
                 freq[int(c(example))] += 1
             index = freq.index(max(freq))
-            value = orange.data.Value(self.classVar, index)
+            value = Orange.data.Value(self.classVar, index)
             if resultType == orange.GetValue:
                 return value
             for i in range(len(freq)):
@@ -89,7 +89,7 @@ class BaggedClassifier(orange.Classifier):
                 return freq
             else:
                 return (value, freq)
-        elif self.classVar.varType == orange.data.Type.Continuous:
+        elif self.classVar.varType ==Orange.data.Type.Continuous:
             votes = [c(example, orange.GetBoth if resultType==\
                 orange.GetProbabilities else resultType) \
                 for c in self.classifiers]
