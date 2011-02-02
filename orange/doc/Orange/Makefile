@@ -28,7 +28,7 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _* *.html
+	-rm -rf _* *.html .doctrees .buildinfo searchindex.js
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .
