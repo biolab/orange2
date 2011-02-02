@@ -11,7 +11,7 @@ net = Orange.network.Network.read('musicians.net')
 net.items = Orange.data.Table('musicians_items.tab')
 
 ow = OWNetExplorer.OWNetExplorer()
-ow.setNetwork(net)
+ow.setGraph(net)
 
 ow.show()
 appl.exec_()
