@@ -10,7 +10,7 @@ Scoring
 
 .. index:: feature scoring
 
-.. autoclass:: Orange.feature.scoring
+.. autoclass:: scoring
    :members:
 
 Examples
@@ -23,7 +23,7 @@ Selection
 
 .. index:: feature selection
 
-.. autoclass:: Orange.feature.selection
+.. autoclass:: selection
    :members:
 
 Examples
@@ -36,7 +36,7 @@ Discretization
 
 .. index:: discretization
 
-.. autoclass:: Orange.feature.discretization
+.. autoclass:: discretization
    :members:
 
 Examples
@@ -49,7 +49,7 @@ Continuization
 
 .. index:: continuization
 
-.. autoclass:: Orange.feature.continuization
+.. autoclass:: continuization
    :members:
 
 Examples
@@ -62,7 +62,7 @@ Imputation
 
 .. index:: imputation
 
-.. autoclass:: Orange.feature.imputation
+.. autoclass:: imputation
    :members:
 
 Examples
@@ -70,9 +70,10 @@ Examples
 
 """
 
-__all__ = ["scoring", "selection", "discretization", "continuization", "imputation"]
-
+import scoring
+import selection
+import discretization
+import continuization
+import imputation
 
 __docformat__ = 'restructuredtext'
-
-    
