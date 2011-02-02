@@ -1,5 +1,5 @@
-========================
-orange.classify.majority
-========================
+==============================
+orange.classification.majority
+==============================
 
 .. automodule:: Orange.classification.majority

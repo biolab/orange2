@@ -13,7 +13,7 @@ constructs is an instance of :obj:`ConstantClassifier`.
 Learning
 ========
 
-.. class:: Orange.classify.MajorityLearner
+.. class:: MajorityLearner
 
     MajorityLearner will most often be used as is, without setting any
     features. Nevertheless, it has two.
@@ -32,7 +32,7 @@ Learning
 Classification
 ==============
 
-.. class:: Orange.classify.ConstantClassifier
+.. class:: ConstantClassifier
 
     ConstantClassifier always classifies to the same class and reports
     same class probabilities.
