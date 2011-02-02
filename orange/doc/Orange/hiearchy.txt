@@ -1,0 +1,35 @@
+
+
+Orange
+   core
+      orange; counters; serverfiles
+   data
+      io; domain; variable; example; value; sampling
+   statistics
+      estimate; distributions; evd
+   feature
+      scoring; selection; continuization; discretization; 
+      imputation; construction; interactions
+   distance
+      instances; features
+   preprocessing
+      outliers; filter; scaling
+   classification
+      trees; rules; lookup; bayes; svm; logreg; knn; majority; wrappers;
+      multitarget; multilabel; multiclass
+   regression
+      majority; pade; linreg; trees
+   ensamble
+      forest; boosting; bagging
+   clustering
+      kmeans; hierarchical; consensus
+   projection
+      correspondence; pca; freeviz
+   associate
+      rules; itemsets
+   network
+      graph
+   evaluation
+      scoring; testing
+   optimization
+      tuning
