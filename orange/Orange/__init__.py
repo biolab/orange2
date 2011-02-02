@@ -15,7 +15,7 @@ import data.value
 import data.feature
 import data.domain
 
-import graph
+import network
 
 import stat
 
