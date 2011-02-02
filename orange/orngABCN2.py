@@ -454,7 +454,7 @@ class ABCN2(Orange.core.RuleLearner):
         cn2_learner = Orange.classification.rules.CN2UnorderedLearner()
         cn2_learner.ruleFinder = Orange.core.RuleBeamFinder()
         cn2_learner.ruleFinder.refiner = SelectorArgConditions(crit_example, allowed_conditions)
-        cn2_learner.ruleFinder.evaluator = Orange.classification.rules.mEstimate(self.ruleFinder.evaluator.m)
+        cn2_learner.ruleFinder.evaluator = Orange.classification.rules.MEstimate(self.ruleFinder.evaluator.m)
         rule = cn2_learner.ruleFinder(examples,weightID,0,Orange.core.RuleList())
         return rule.filter.conditions
 

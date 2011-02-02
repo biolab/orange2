@@ -83,7 +83,6 @@ from Orange.core import \
     RuleClassifier_firstRule, \
     RuleClassifier_logit, \
     RuleLearner, \
-    Rule, \
     RuleBeamCandidateSelector, \
     RuleBeamCandidateSelector_TakeAll, \
     RuleBeamFilter, \
@@ -150,6 +149,67 @@ class WRACCEvaluator(RuleEvaluator):
             return pRule*(pTruePositive-pClass)
         else: return (pTruePositive-pClass)/max(pRule,1e-6)
 
+class Rule(Orange.core.Rule):
+    """
+    Wrapper around a native Rule class to add print method.
+    """
+    
+    def __init__(self, nativeBayesClassifier):
+        self.nativeBayesClassifier = nativeBayesClassifier
+        for k, v in self.nativeBayesClassifier.__dict__.items():
+            self.__dict__[k] = v
+  
+    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue,
+                 *args, **kwdargs):
+        """Classify a new instance
+        
+        :param instance: instance to be classifier
+        :type instance: :class:`Orange.data.Instance`
+        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
+              :class:`Orange.core.Classifier.GetProbabilities` or
+              :class:`Orange.core.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
+        self.nativeBayesClassifier(instance, *args, **kwdargs)
+
+    def __setattr__(self, name, value):
+        if name == "nativeBayesClassifier":
+            self.__dict__[name] = value
+            return
+        if name in self.nativeBayesClassifier.__dict__:
+            self.nativeBayesClassifier.__dict__[name] = value
+        self.__dict__[name] = value
+    
+    def p(self, class_, instance):
+        """Return probability of single class
+        Probability is not normalized and can be different from probability
+        returned from __call__
+        
+        :param class_:
+        :type class_:
+        :param instance: instance to be classified
+        :type instance: :class:`Orange.data.Instance`
+        
+        """
+        return self.nativeBayesClassifier.p(class_, instance)
+    
+    def printModel(self):
+        """Print classificator in human friendly format"""
+        nValues=len(self.classVar.values)
+        frmtStr=' %10.3f'*nValues
+        classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
+        print classes
+        print "class probabilities "+(frmtStr % tuple(self.distribution))
+        print
+    
+        for i in self.conditionalDistributions:
+            print "Attribute", i.variable.name
+            print classes
+            for v in range(len(i.variable.values)):
+                print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
+            print
 
 class CN2Learner(RuleLearner):
     """
@@ -288,7 +348,7 @@ class CN2UnorderedLearner(RuleLearner):
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = RuleValidator_LRS(alpha = alpha)
         self.ruleFinder.ruleStoppingValidator = RuleValidator_LRS(alpha = 1.0)
-        self.ruleStopping = RuleStopping_apriori()
+        self.ruleStopping = RuleStopping_Apriori()
         self.dataStopping = RuleDataStoppingCriteria_NoPositives()
         
     def __call__(self, instances, weight=0):
@@ -429,7 +489,7 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
     def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
-        self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
+        self.coverAndRemove = CovererAndRemover_MultWeights(mult=mult)
 
     def __call__(self, instances, weight=0):        
         supervisedClassCheck(instances)
@@ -441,7 +501,233 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         return classifier
 
 
+class MEstimate(RuleEvaluator):
+    """
+    Rule evaluator using m-estimate of probability rule evaluation function.
+    :param m: m-value for m-estimate
+    :type m: integer
+    
+    """
+    def __init__(self, m=2):
+        self.m = m
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if not rule.classDistribution:
+            return 0.
+        sumDist = rule.classDistribution.abs
+        if self.m == 0 and not sumDist:
+            return 0.
+        # get distribution
+        if targetClass>-1:
+            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)
+        else:
+            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)      
+        return p
+
+class RuleStopping_Apriori(RuleStoppingCriteria):
+    def __init__(self, apriori=None):
+        self.apriori =  None
+        
+    def __call__(self,rules,rule,instances,data):
+        if not self.apriori:
+            return False
+        if not type(rule.classifier) == Orange.core.DefaultClassifier:
+            return False
+        ruleAcc = rule.classDistribution[rule.classifier.defaultVal]/rule.classDistribution.abs
+        aprioriAcc = self.apriori[rule.classifier.defaultVal]/self.apriori.abs
+        if ruleAcc>aprioriAcc:
+            return False
+        return True
+
+class LengthValidator(RuleValidator):
+    """ prune rules with more conditions than self.length. """
+    def __init__(self, length=-1):
+        self.length = length
+        
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if self.length >= 0:
+            return len(rule.filter.conditions) <= self.length
+        return True    
+
+
+class NoDuplicatesValidator(RuleValidator):
+    def __init__(self,alpha=.05,min_coverage=0,max_rule_length=0,rules=RuleList()):
+        self.rules = rules
+        self.validator = RuleValidator_LRS(alpha=alpha,min_coverage=min_coverage,max_rule_length=max_rule_length)
+        
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if rule_in_set(rule,self.rules):
+            return False
+        return bool(self.validator(rule,data,weightID,targetClass,apriori))
+                
+class RuleStopping_SetRules(RuleStoppingCriteria):
+    def __init__(self,validator):
+        self.ruleStopping = RuleStoppingCriteria_NegativeDistribution()
+        self.validator = validator
+
+    def __call__(self,rules,rule,instances,data):        
+        ru_st = self.ruleStopping(rules,rule,instances,data)
+        if not ru_st:
+            self.validator.rules.append(rule)
+        return bool(ru_st)
+
+
+class RuleClassifier_BestRule(RuleClassifier):
+    def __init__(self, rules, instances, weightID = 0, **argkw):
+        self.rules = rules
+        self.instances = instances
+        self.classVar = instances.domain.classVar
+        self.__dict__.update(argkw)
+        self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
+
+    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue):
+        retDist = Orange.core.Distribution(instance.domain.classVar)
+        bestRule = None
+        for r in self.rules:
+            if r(instance) and (not bestRule or r.quality>bestRule.quality):
+                for v_i,v in enumerate(instance.domain.classVar):
+                    retDist[v_i] = r.classDistribution[v_i]
+                bestRule = r
+        if not bestRule:
+            retDist = self.prior
+        else:
+            bestRule.used += 1
+        sumdist = sum(retDist)
+        if sumdist > 0.0:
+            for c in self.instances.domain.classVar:
+                retDist[c] /= sumdisc
+        else:
+            retDist.normalize()
+        # return classifier(instance, result_type=result_type)
+        if result_type == Orange.core.Classifier.GetValue:
+          return retDist.modus()
+        if result_type == Orange.core.Classifier.GetProbabilities:
+          return retDist
+        return (retDist.modus(),retDist)
+
+    def __str__(self):
+        retStr = ""
+        for r in self.rules:
+            retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
+        return retStr    
+
+class CovererAndRemover_MultWeights(RuleCovererAndRemover):
+    def __init__(self, mult = 0.7):
+        self.mult = mult
+    def __call__(self, rule, instances, weights, targetClass):
+        if not weights:
+            weights = Orange.core.newmetaid()
+            instances.addMetaAttribute(weights,1.)
+            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
+        newWeightsID = Orange.core.newmetaid()
+        instances.addMetaAttribute(newWeightsID,1.)
+        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
+        for instance in instances:
+            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
+                instance[newWeightsID]=instance[weights]*self.mult
+            else:
+                instance[newWeightsID]=instance[weights]
+        return (instances,newWeightsID)
+
+class CovererAndRemover_AddWeights(RuleCovererAndRemover):
+    def __call__(self, rule, instances, weights, targetClass):
+        if not weights:
+            weights = Orange.core.newmetaid()
+            instances.addMetaAttribute(weights,1.)
+            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
+        try:
+            coverage = instances.domain.getmeta("Coverage")
+        except:
+            coverage = Orange.data.feature.Continuous("Coverage")
+            instances.domain.addmeta(Orange.core.newmetaid(),coverage, True)
+            instances.addMetaAttribute(coverage,0.0)
+        newWeightsID = Orange.core.newmetaid()
+        instances.addMetaAttribute(newWeightsID,1.)
+        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
+        for instance in instances:
+            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
+                try:
+                    instance[coverage]+=1.0
+                except:
+                    instance[coverage]=1.0
+                instance[newWeightsID]=1.0/(instance[coverage]+1)
+            else:
+                instance[newWeightsID]=instance[weights]
+        return (instances,newWeightsID)
+
+
+class CovererAndRemover_Prob(RuleCovererAndRemover):
+    """ This class impements probabilistic covering. """
+    def __init__(self, probAttribute=None, sigAttribute=None):
+        self.indices = None
+        self.probAttribute = probAttribute
+        self.bestRule = []
+
+    def initialize(self, instances, weightID, targetClass, apriori):
+        self.bestRule = [None]*len(instances)
+        self.probAttribute = Orange.core.newmetaid()
+        instances.addMetaAttribute(self.probAttribute,-1.e-6)
+        instances.domain.addmeta(self.probAttribute, Orange.data.feature.Continuous("Probs"))
+        for instance in instances:
+##            if targetClass<0 or (instance.getclass() == targetClass):
+            instance[self.probAttribute] = apriori[targetClass]/apriori.abs
+        return instances
+
+    def getBestRules(self, currentRules, instances, weightID):
+        bestRules = RuleList()
+        for r in currentRules:
+            if hasattr(r.learner, "argumentRule") and not orngCN2.rule_in_set(r,bestRules):
+                bestRules.append(r)
+        for r_i,r in enumerate(self.bestRule):
+            if r and not rule_in_set(r,bestRules) and instances[r_i].getclass()==r.classifier.defaultValue:
+                bestRules.append(r)
+        return bestRules
+
+    def remainingInstancesP(self, instances, targetClass):
+        pSum, pAll = 0.0, 0.0
+        for ex in instances:
+            if ex.getclass() == targetClass:
+                pSum += ex[self.probAttribute]
+                pAll += 1.0
+        return pSum/pAll
+
+    def __call__(self, rule, instances, weights, targetClass):
+        if targetClass<0:
+            for instance_i, instance in enumerate(instances):
+                if rule(instance) and rule.quality>instance[self.probAttribute]-0.01:
+                    instance[self.probAttribute] = rule.quality+0.01
+                    self.bestRule[instance_i]=rule
+        else:
+            for instance_i, instance in enumerate(instances): #rule.classifier.defaultVal == instance.getclass() and
+                if rule(instance) and rule.quality>instance[self.probAttribute]:
+                    instance[self.probAttribute] = rule.quality+0.001
+                    self.bestRule[instance_i]=rule
+##                if rule.classifier.defaultVal == instance.getclass():
+##                    print instance[self.probAttribute]
+        # compute factor
+        return (instances,weights)
+
+
+class CN2EVCUnorderedLearner(ABCN2):
+    """This is implementation of CN2 + EVC as evaluation + LRC classification.
+        Main parameters:
+          -- ...
+    """
+    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
+        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
+                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
+
 def ruleToString(rule, showDistribution = True):
+    """
+    Write a string presentation of rule in human readable format.
+    :param rule: rule to pretty-print.
+    :type rule: :class:`Orange.classification.rules.Rules`
+    :param showDistribution: determines whether presentation should also
+        contain the distribution of covered instances
+    :type showDistribution: boolean
+    
+    """
     def selectSign(oper):
         if oper == Orange.core.ValueFilter_continuous.Less:
             return "<"
@@ -481,51 +767,6 @@ def ruleToString(rule, showDistribution = True):
             ret += str(rule.classDistribution)
     return ret        
 
-
-class mEstimate(RuleEvaluator):
-    def __init__(self, m=2):
-        self.m = m
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if not rule.classDistribution:
-            return 0.
-        sumDist = rule.classDistribution.abs
-        if self.m == 0 and not sumDist:
-            return 0.
-        # get distribution
-        if targetClass>-1:
-            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)
-        else:
-            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)      
-        return p
-
-class RuleStopping_apriori(RuleStoppingCriteria):
-    def __init__(self, apriori=None):
-        self.apriori =  None
-        
-    def __call__(self,rules,rule,instances,data):
-        if not self.apriori:
-            return False
-        if not type(rule.classifier) == Orange.core.DefaultClassifier:
-            return False
-        ruleAcc = rule.classDistribution[rule.classifier.defaultVal]/rule.classDistribution.abs
-        aprioriAcc = self.apriori[rule.classifier.defaultVal]/self.apriori.abs
-        if ruleAcc>aprioriAcc:
-            return False
-        return True
-
-class LengthValidator(RuleValidator):
-    """ prune rules with more conditions than self.length. """
-    def __init__(self, length=-1):
-        self.length = length
-        
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if self.length >= 0:
-            return len(rule.filter.conditions) <= self.length
-        return True    
-    
-
 def supervisedClassCheck(instances):
     if not instances.domain.classVar:
         raise Exception("Class variable is required!")
@@ -536,88 +777,6 @@ def supervisedClassCheck(instances):
 
 
 
-class RuleClassifier_bestRule(RuleClassifier):
-    def __init__(self, rules, instances, weightID = 0, **argkw):
-        self.rules = rules
-        self.instances = instances
-        self.classVar = instances.domain.classVar
-        self.__dict__.update(argkw)
-        self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
-
-    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue):
-        retDist = Orange.core.Distribution(instance.domain.classVar)
-        bestRule = None
-        for r in self.rules:
-            if r(instance) and (not bestRule or r.quality>bestRule.quality):
-                for v_i,v in enumerate(instance.domain.classVar):
-                    retDist[v_i] = r.classDistribution[v_i]
-                bestRule = r
-        if not bestRule:
-            retDist = self.prior
-        else:
-            bestRule.used += 1
-        sumdist = sum(retDist)
-        if sumdist > 0.0:
-            for c in self.instances.domain.classVar:
-                retDist[c] /= sumdisc
-        else:
-            retDist.normalize()
-        # return classifier(instance, result_type=result_type)
-        if result_type == Orange.core.Classifier.GetValue:
-          return retDist.modus()
-        if result_type == Orange.core.Classifier.GetProbabilities:
-          return retDist
-        return (retDist.modus(),retDist)
-
-    def __str__(self):
-        retStr = ""
-        for r in self.rules:
-            retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
-        return retStr    
-
-class CovererAndRemover_multWeights(RuleCovererAndRemover):
-    def __init__(self, mult = 0.7):
-        self.mult = mult
-    def __call__(self, rule, instances, weights, targetClass):
-        if not weights:
-            weights = Orange.core.newmetaid()
-            instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
-        newWeightsID = Orange.core.newmetaid()
-        instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
-        for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
-                instance[newWeightsID]=instance[weights]*self.mult
-            else:
-                instance[newWeightsID]=instance[weights]
-        return (instances,newWeightsID)
-
-class CovererAndRemover_addWeights(RuleCovererAndRemover):
-    def __call__(self, rule, instances, weights, targetClass):
-        if not weights:
-            weights = Orange.core.newmetaid()
-            instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
-        try:
-            coverage = instances.domain.getmeta("Coverage")
-        except:
-            coverage = Orange.data.feature.Continuous("Coverage")
-            instances.domain.addmeta(Orange.core.newmetaid(),coverage, True)
-            instances.addMetaAttribute(coverage,0.0)
-        newWeightsID = Orange.core.newmetaid()
-        instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
-        for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
-                try:
-                    instance[coverage]+=1.0
-                except:
-                    instance[coverage]=1.0
-                instance[newWeightsID]=1.0/(instance[coverage]+1)
-            else:
-                instance[newWeightsID]=instance[weights]
-        return (instances,newWeightsID)
 
 def rule_in_set(rule,rules):
     for r in rules:
@@ -632,7 +791,7 @@ def rules_equal(rule1,rule2):
         found=False # find the same condition in the other rule
         for c2 in rule2.filter.conditions:
             try:
-                if not c1.position == c2.position: continue # same attribute?
+                if not c1.position == c2.position: continue # same feature?
                 if not type(c1) == type(c2): continue # same type of condition
                 if type(c1) == Orange.core.ValueFilter_discrete:
                     if not type(c1.values[0]) == type(c2.values[0]): continue
@@ -648,27 +807,6 @@ def rules_equal(rule1,rule2):
             return False
     return True
 
-class noDuplicates_validator(RuleValidator):
-    def __init__(self,alpha=.05,min_coverage=0,max_rule_length=0,rules=RuleList()):
-        self.rules = rules
-        self.validator = RuleValidator_LRS(alpha=alpha,min_coverage=min_coverage,max_rule_length=max_rule_length)
-        
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if rule_in_set(rule,self.rules):
-            return False
-        return bool(self.validator(rule,data,weightID,targetClass,apriori))
-                
-class ruleSt_setRules(RuleStoppingCriteria):
-    def __init__(self,validator):
-        self.ruleStopping = RuleStoppingCriteria_NegativeDistribution()
-        self.validator = validator
-
-    def __call__(self,rules,rule,instances,data):        
-        ru_st = self.ruleStopping(rules,rule,instances,data)
-        if not ru_st:
-            self.validator.rules.append(rule)
-        return bool(ru_st)
-    
 
 # Miscellaneous - utility functions
 def avg(l):
@@ -760,56 +898,8 @@ def createEVDistList(evdList):
         l.append(Orange.core.EVDist(mu=el[0],beta=el[1],percentiles=el[2]))
     return l
 
-class CovererAndRemover_Prob(RuleCovererAndRemover):
-    """ This class impements probabilistic covering. """
-    def __init__(self, probAttribute=None, sigAttribute=None):
-        self.indices = None
-        self.probAttribute = probAttribute
-        self.bestRule = []
 
-    def initialize(self, instances, weightID, targetClass, apriori):
-        self.bestRule = [None]*len(instances)
-        self.probAttribute = Orange.core.newmetaid()
-        instances.addMetaAttribute(self.probAttribute,-1.e-6)
-        instances.domain.addmeta(self.probAttribute, Orange.data.feature.Continuous("Probs"))
-        for instance in instances:
-##            if targetClass<0 or (instance.getclass() == targetClass):
-            instance[self.probAttribute] = apriori[targetClass]/apriori.abs
-        return instances
 
-    def getBestRules(self, currentRules, instances, weightID):
-        bestRules = RuleList()
-        for r in currentRules:
-            if hasattr(r.learner, "argumentRule") and not orngCN2.rule_in_set(r,bestRules):
-                bestRules.append(r)
-        for r_i,r in enumerate(self.bestRule):
-            if r and not rule_in_set(r,bestRules) and instances[r_i].getclass()==r.classifier.defaultValue:
-                bestRules.append(r)
-        return bestRules
-
-    def remainingInstancesP(self, instances, targetClass):
-        pSum, pAll = 0.0, 0.0
-        for ex in instances:
-            if ex.getclass() == targetClass:
-                pSum += ex[self.probAttribute]
-                pAll += 1.0
-        return pSum/pAll
-
-    def __call__(self, rule, instances, weights, targetClass):
-        if targetClass<0:
-            for instance_i, instance in enumerate(instances):
-                if rule(instance) and rule.quality>instance[self.probAttribute]-0.01:
-                    instance[self.probAttribute] = rule.quality+0.01
-                    self.bestRule[instance_i]=rule
-        else:
-            for instance_i, instance in enumerate(instances): #rule.classifier.defaultVal == instance.getclass() and
-                if rule(instance) and rule.quality>instance[self.probAttribute]:
-                    instance[self.probAttribute] = rule.quality+0.001
-                    self.bestRule[instance_i]=rule
-##                if rule.classifier.defaultVal == instance.getclass():
-##                    print instance[self.probAttribute]
-        # compute factor
-        return (instances,weights)
 
 def add_sub_rules(rules, instances, weight, learner, dists):
     apriori = Orange.core.Distribution(instances.domain.classVar,instances,weight)
@@ -856,18 +946,3 @@ def add_sub_rules(rules, instances, weight, learner, dists):
         newRules.append(tmpRle)
     return newRules
 
-#def CN2EVCUnorderedLearner(instances = None, weightID=0, **kwds):
-#    cn2 = CN2EVCUnorderedLearnerClass(**kwds)
-#    if instances:
-#        return cn2(instances, weightID)
-#    else:
-#        return cn2
-    
-class CN2EVCUnorderedLearner(ABCN2):
-    """This is implementation of CN2 + EVC as evaluation + LRC classification.
-        Main parameters:
-          -- ...
-    """
-    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
-        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
-                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
