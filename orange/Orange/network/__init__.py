@@ -158,7 +158,8 @@ class Network(orangeom.Network):
             except:
                 label = ""
             
-            fp.write("\tnode\n\t[\n\t\tid\t%d\n\t\tlabel\t\"%s\"\n\t]\n" % (v, label))
+            fp.write("\tnode\n\t[\n\t\tid\t%d\n\t\tlabel\t\"%s\"\n\t]\n" % 
+                     (v, label))
         
         for u,v in self.getEdges():
             fp.write("\tedge\n\t[\n\t\tsource\t%d\n\t\ttarget\t%d\n\t\tlabel\t\"%s\"\n\t]\n" % (u, v, ""))
@@ -169,7 +170,8 @@ class Network(orangeom.Network):
             (name, ext) = os.path.splitext(fp.name)
             self.items.save(name + "_items.tab")
             
-        if hasattr(self, 'links') and self.links != None and len(self.links) > 0:
+        if hasattr(self, 'links') and self.links != None and \
+                                                        len(self.links) > 0:
             (name, ext) = os.path.splitext(fp.name)
             self.links.save(name + "_links.tab")
         
@@ -181,7 +183,7 @@ class Network(orangeom.Network):
         
         """
         name = ''
-        fp.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
+        fp.write('### Generated with Orange Network Visualizer ### \n\n\n')
         if name == '':
             fp.write('*Network ' + '"no name" \n\n')
         else:
@@ -242,7 +244,8 @@ class Network(orangeom.Network):
             (name, ext) = os.path.splitext(fp.name)
             self.items.save(name + "_items.tab")
             
-        if hasattr(self, 'links') and self.links != None and len(self.links) > 0:
+        if hasattr(self, 'links') and self.links != None \
+                                                    and len(self.links) > 0:
             (name, ext) = os.path.splitext(fp.name)
             self.links.save(name + "_links.tab")
 
@@ -283,7 +286,11 @@ class Network(orangeom.Network):
             return net 
 
 class NetworkOptimization(orangeom.NetworkOptimization):
-    """main class for performing network layout optimization. Network structure is defined in orangeom.Network class."""
+    
+    """main class for performing network layout optimization. Network structure 
+    is defined in orangeom.Network class.
+    
+    """
     
     def __init__(self, network=None, name="None"):
         if network is None:
@@ -318,10 +325,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             outer_vertices = vertices - set(component)
             
             for u in component:
-                u_ = numpy.array([self.graph.coors[0][u], self.graph.coors[1][u]])
+                u_ = numpy.array([self.graph.coors[0][u], 
+                                  self.graph.coors[1][u]])
                 force = numpy.array([0.0, 0.0])                
                 for v in outer_vertices:
-                    v_ = numpy.array([self.graph.coors[0][v], self.graph.coors[1][v]])
+                    v_ = numpy.array([self.graph.coors[0][v], 
+                                      self.graph.coors[1][v]])
                     d = self.vertexDistance[u, v]
                     norm = numpy.linalg.norm(v_ - u_)
                     force += (d - norm) * (v_ - u_) / norm 
@@ -341,7 +350,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     
     def collapse(self):
         if len(self.graph.getNodes(1)) > 0:
-            nodes = list(set(range(self.graph.nVertices)) - set(self.graph.getNodes(1)))
+            nodes = list(set(range(self.graph.nVertices)) - \
+                         set(self.graph.getNodes(1)))
                 
             if len(nodes) > 0:
                 subgraph = orangeom.Network(self.graph.getSubGraph(nodes))
@@ -370,7 +380,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         
                 #print graphstomerge
                 #print used
-                subgraph = orangeom.Network(subgraph.getSubGraphMergeClusters(graphstomerge))
+                subgraph = orangeom.Network(
+                            subgraph.getSubGraphMergeClusters(graphstomerge))
                                    
                 nodescomp = list(set(range(self.graph.nVertices)) - used)
                 
@@ -459,7 +470,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             self.graph.coors[0][component] = x + x_center
             self.graph.coors[1][component] = y + y_center
             
-    def rotateComponents(self, maxSteps=100, minMoment=0.000000001, callbackProgress=None, callbackUpdateCanvas=None):
+    def rotateComponents(self, maxSteps=100, minMoment=0.000000001, 
+                         callbackProgress=None, callbackUpdateCanvas=None):
         """Rotate the network components using a spring model."""
         if self.vertexDistance == None:
             return 1
@@ -473,13 +485,16 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.stopRotate = 0
         
         # rotate only components with more than one vertex
-        components = [component for component in self.graph.getConnectedComponents() if len(component) > 1]
+        components = [component for component \
+                      in self.graph.getConnectedComponents() \
+                      if len(component) > 1]
         vertices = set(range(self.graph.nVertices))
         step = 0
         M = [1]
         temperature = [[30.0, 1] for i in range(len(components))]
         dirChange = [0] * len(components)
-        while step < maxSteps and (max(M) > minMoment or min(M) < -minMoment) and not self.stopRotate:
+        while step < maxSteps and (max(M) > minMoment or min(M) < -minMoment) \
+                                                     and not self.stopRotate:
             M = [0] * len(components) 
             
             for i in range(len(components)):
@@ -504,7 +519,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         v_y = self.graph.coors[1][v]
                         L = [(u_x - v_x), (u_y - v_y)]
                         R = [(u_x - x_center), (u_y - y_center)]
-                        e = math.sqrt((v_x - x_center) ** 2 + (v_y - y_center) ** 2)
+                        e = math.sqrt((v_x - x_center) ** 2 + \
+                                      (v_y - y_center) ** 2)
                         
                         M[i] += (1 - d) / (e ** 2) * numpy.cross(R, L)
             
@@ -536,7 +552,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             self.rotateVertices(components, phi)
             if callbackUpdateCanvas: callbackUpdateCanvas()
-            if callbackProgress : callbackProgress(min([dirChange[i] for i in range(len(dirChange)) if M[i] != 0]), 9)
+            if callbackProgress : callbackProgress(min([dirChange[i] for i \
+                                    in range(len(dirChange)) if M[i] != 0]), 9)
             step += 1
     
     def mdsUpdateData(self, components, mds, callbackUpdateCanvas):
@@ -545,7 +562,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         x_mds = []
         y_mds = []
         phi = [None] * len(components)
-        self.diag_coors = math.sqrt((min(self.graph.coors[0]) - max(self.graph.coors[0]))**2 + (min(self.graph.coors[1]) - max(self.graph.coors[1]))**2)
+        self.diag_coors = math.sqrt(( \
+                    min(self.graph.coors[0]) - max(self.graph.coors[0]))**2 + \
+                    (min(self.graph.coors[1]) - max(self.graph.coors[1]))**2)
         
         if self.mdsType == MdsType.MDS:
             x = [mds.points[u][0] for u in range(self.graph.nVertices)]
@@ -569,8 +588,13 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 x_avg_mds = sum(x) / len(x) 
                 y_avg_mds = sum(y) / len(y)
                 # compute rotation angle
-                c = [numpy.linalg.norm(numpy.cross(mds.points[u], [self.graph.coors[0][u],self.graph.coors[1][u]])) for u in component]
-                n = [numpy.vdot([self.graph.coors[0][u],self.graph.coors[1][u]], [self.graph.coors[0][u],self.graph.coors[1][u]]) for u in component]
+                c = [numpy.linalg.norm(numpy.cross(mds.points[u], \
+                            [self.graph.coors[0][u],self.graph.coors[1][u]])) \
+                            for u in component]
+                n = [numpy.vdot([self.graph.coors[0][u], \
+                                 self.graph.coors[1][u]], \
+                                 [self.graph.coors[0][u], \
+                                  self.graph.coors[1][u]]) for u in component]
                 phi[i] = sum(c) / sum(n)
                 #print phi
             
@@ -583,7 +607,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             x_mds.append(x_avg_mds) 
             y_mds.append(y_avg_mds)
 
-            component_props.append((x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi))
+            component_props.append((x_avg_graph, y_avg_graph, \
+                                    x_avg_mds, y_avg_mds, phi))
         
         w = max(self.graph.coors[0]) - min(self.graph.coors[0])
         h = max(self.graph.coors[1]) - min(self.graph.coors[1])
@@ -624,9 +649,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             e_count = 0
             for i in range(len(components)):
                 for j in range(i + 1, len(components)):
-                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, phi_i = component_props[i]
-                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, phi_j = component_props[j]
-                    e_fr += math.sqrt((x_avg_graph_i-x_avg_graph_j)**2 + (y_avg_graph_i-y_avg_graph_j)**2)
+                    x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, \
+                    y_avg_mds_i, phi_i = component_props[i]
+                    x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, \
+                    y_avg_mds_j, phi_j = component_props[j]
+                    e_fr += math.sqrt((x_avg_graph_i-x_avg_graph_j)**2 + \
+                                      (y_avg_graph_i-y_avg_graph_j)**2)
                     e_count += 1
             self.mdsScaleRatio = e_fr / e_count       
         elif self.scalingRatio == 9:
@@ -646,7 +674,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         e_count += 1
             self.mdsScaleRatio = e_fr / e_count
         
-        diag_mds =  math.sqrt((max(x_mds) - min(x_mds))**2 + (max(y_mds) - min(y_mds))**2)
+        diag_mds =  math.sqrt((max(x_mds) - min(x_mds))**2 + (max(y_mds) - \
+                                                              min(y_mds))**2)
         e = [math.sqrt((self.graph.coors[0][u] - self.graph.coors[0][v])**2 + 
                   (self.graph.coors[1][u] - self.graph.coors[1][v])**2) for 
                   (u, v) in self.graph.getEdges()]
@@ -692,9 +721,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 e_count = 0
                 for i in range(len(components)):
                     for j in range(i + 1, len(components)):
-                        x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, y_avg_mds_i, phi_i = component_props[i]
-                        x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, y_avg_mds_j, phi_j = component_props[j]
-                        e_mds += math.sqrt((x_avg_mds_i-x_avg_mds_j)**2 + (y_avg_mds_i-y_avg_mds_j)**2)
+                        x_avg_graph_i, y_avg_graph_i, x_avg_mds_i, \
+                        y_avg_mds_i, phi_i = component_props[i]
+                        x_avg_graph_j, y_avg_graph_j, x_avg_mds_j, \
+                        y_avg_mds_j, phi_j = component_props[j]
+                        e_mds += math.sqrt((x_avg_mds_i-x_avg_mds_j)**2 + \
+                                           (y_avg_mds_i-y_avg_mds_j)**2)
                         e_count += 1
                 r = self.mdsScaleRatio / e_mds * e_count
             elif self.scalingRatio == 9:
@@ -716,7 +748,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
         for i in range(len(components)):
             component = components[i]
-            x_avg_graph, y_avg_graph, x_avg_mds, y_avg_mds, phi = component_props[i]
+            x_avg_graph, y_avg_graph, x_avg_mds, \
+            y_avg_mds, phi = component_props[i]
             
 #            if phi[i]:  # rotate vertices
 #                #print "rotate", i, phi[i]
@@ -728,8 +761,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 
             # translate vertices
             if not self.rotationOnly:
-                self.graph.coors[0][component] = (self.graph.coors[0][component] - x_avg_graph) / r + x_avg_mds
-                self.graph.coors[1][component] = (self.graph.coors[1][component] - y_avg_graph) / r + y_avg_mds
+                self.graph.coors[0][component] = \
+                (self.graph.coors[0][component] - x_avg_graph) / r + x_avg_mds
+                self.graph.coors[1][component] = \
+                (self.graph.coors[1][component] - y_avg_graph) / r + y_avg_mds
                
         if callbackUpdateCanvas:
             callbackUpdateCanvas()
@@ -737,10 +772,14 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def mdsCallback(self, a,b=None):
         """Refresh the UI when running  MDS on network components."""
         if not self.mdsStep % self.mdsRefresh:
-            self.mdsUpdateData(self.mdsComponents, self.mds, self.callbackUpdateCanvas)
+            self.mdsUpdateData(self.mdsComponents, 
+                               self.mds, 
+                               self.callbackUpdateCanvas)
             
             if self.mdsType == MdsType.exactSimulation:
-                self.mds.points = [[self.graph.coors[0][i], self.graph.coors[1][i]] for i in range(len(self.graph.coors))]
+                self.mds.points = [[self.graph.coors[0][i], \
+                                    self.graph.coors[1][i]] \
+                                    for i in range(len(self.graph.coors))]
                 self.mds.freshD = 0
             
             if self.callbackProgress != None:
@@ -753,8 +792,15 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         else:
             return 1
             
-    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, avgLinkage=False, rotationOnly=False, mdsType=MdsType.componentMDS, scalingRatio=0, mdsFromCurrentPos=0):
-        """Position the network components according to similarities among them."""
+    def mdsComponents(self, mdsSteps, mdsRefresh, callbackProgress=None, \
+                      callbackUpdateCanvas=None, torgerson=0, \
+                      minStressDelta=0, avgLinkage=False, rotationOnly=False, \
+                      mdsType=MdsType.componentMDS, scalingRatio=0, \
+                      mdsFromCurrentPos=0):
+        """Position the network components according to similarities among 
+        them.
+        
+        """
 
         if self.vertexDistance == None:
             self.information('Set distance matrix to input signal')
@@ -771,7 +817,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.mdsStep = 0
         self.stopMDS = 0
         self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
-        self.diag_coors = math.sqrt((min(self.graph.coors[0]) - max(self.graph.coors[0]))**2 + (min(self.graph.coors[1]) - max(self.graph.coors[1]))**2)
+        self.diag_coors = math.sqrt((min(self.graph.coors[0]) -  \
+                                     max(self.graph.coors[0]))**2 + \
+                                     (min(self.graph.coors[1]) - \
+                                      max(self.graph.coors[1]))**2)
         self.rotationOnly = rotationOnly
         self.mdsType = mdsType
         self.scalingRatio = scalingRatio
@@ -814,7 +863,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         if torgerson:
             self.mds.Torgerson() 
 
-        self.mds.optimize(mdsSteps, orngMDS.SgnRelStress, self.minStressDelta, progressCallback=self.mdsCallback)
+        self.mds.optimize(mdsSteps, orngMDS.SgnRelStress, self.minStressDelta,\
+                          progressCallback=self.mdsCallback)
         self.mdsUpdateData(self.mdsComponents, self.mds, callbackUpdateCanvas)
         
         if callbackProgress != None:
@@ -834,11 +884,19 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         del self.scalingRatio
         return 0
 
-    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, callbackProgress=None, callbackUpdateCanvas=None, torgerson=0, minStressDelta = 0, scalingRatio=0, mdsFromCurrentPos=0):
-        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, callbackUpdateCanvas, torgerson, minStressDelta, True, scalingRatio=scalingRatio, mdsFromCurrentPos=mdsFromCurrentPos)
+    def mdsComponentsAvgLinkage(self, mdsSteps, mdsRefresh, \
+                                callbackProgress=None, \
+                                callbackUpdateCanvas=None, torgerson=0, \
+                                minStressDelta = 0, scalingRatio=0,\
+                                mdsFromCurrentPos=0):
+        return self.mdsComponents(mdsSteps, mdsRefresh, callbackProgress, \
+                                  callbackUpdateCanvas, torgerson, \
+                                  minStressDelta, True, \
+                                  scalingRatio=scalingRatio, \
+                                  mdsFromCurrentPos=mdsFromCurrentPos)
 
     def saveNetwork(self, fn):
-        print "This method is deprecated. You should use orngNetwork.Network.saveNetwork"
+        print "This method is deprecated. Use orngNetwork.Network.saveNetwork"
         name = ''
         try:
             root, ext = os.path.splitext(fn)
@@ -849,7 +907,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         except IOError:
             return 1
 
-        graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
+        graphFile.write('### Generated with Orange.network ### \n\n\n')
         if name == '':
             graphFile.write('*Network ' + '"no name" \n\n')
         else:
@@ -858,7 +916,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
         #izpis opisov vozlisc
         print "e", self.graph.nEdgeTypes
-        graphFile.write('*Vertices %8d %8d\n' % (self.graph.nVertices, self.graph.nEdgeTypes))
+        graphFile.write('*Vertices %8d %8d\n' % (self.graph.nVertices, \
+                                                 self.graph.nEdgeTypes))
         for v in range(self.graph.nVertices):
             graphFile.write('% 8d ' % (v + 1))
 #            if verticesParms[v].label!='':
@@ -886,13 +945,15 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             graphFile.write('*Arcs \n')
             for (i, j) in self.graph.getEdges():
                 if len(self.graph[i, j]) > 0:
-                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self.graph[i, j]))))
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, \
+                                                float(str(self.graph[i, j]))))
                     graphFile.write('\n')
         else:
             graphFile.write('*Edges \n')
             for (i, j) in self.graph.getEdges():
                 if len(self.graph[i, j]) > 0:
-                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, float(str(self.graph[i, j]))))
+                    graphFile.write('%8d %8d %f' % (i + 1, j + 1, \
+                                                float(str(self.graph[i, j]))))
                     graphFile.write('\n')
 
         graphFile.write('\n')
@@ -909,7 +970,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return 0
     
     def readNetwork(self, fn, directed=0):
-        print "This method is deprecated. You should use orngNetwork.Network.readNetwork"
+        print "This method is deprecated. Use orngNetwork.Network.readNetwork"
         network = Network(1,directed)
         net = network.readPajek(fn, directed)
         self.setGraph(net)
@@ -955,7 +1016,8 @@ class NetworkClustering():
                     nbh = self.net.getNeighbours(v)
                     if len(nbh) == 0: continue
                     lbls = [labels[u] for u in nbh]
-                    lbls = [(len(list(c)), l) for l, c in itertools.groupby(lbls)]
+                    lbls = [(len(list(c)), l) for l, c \
+                            in itertools.groupby(lbls)]
                     m = max(lbls)[0]
                     mlbls = [l for c, l in lbls if c >= m]
                     if labels[v] not in mlbls: 
@@ -964,17 +1026,27 @@ class NetworkClustering():
                 if stop: break
                     
         if results2items and not resultHistory2items:
-            attrs = [orange.EnumVariable('clustering label propagation', values=list(set([l for l in lblhistory[-1]])))]
+            attrs = [orange.EnumVariable('clustering label propagation', \
+                                         values=list(set([l for l \
+                                                        in lblhistory[-1]])))]
             dom = orange.Domain(attrs, 0)
             data = orange.ExampleTable(dom, [[l] for l in lblhistory[-1]])
-            self.net.items = data if self.net.items == None else orange.ExampleTable([self.net.items, data])
+            if self.net.items is None:
+                self.net.items = data  
+            else: 
+                self.net.items = orange.ExampleTable([self.net.items, data])
         if resultHistory2items:
-            attrs = [orange.EnumVariable('c'+ str(i), values=list(set([l for l in lblhistory[0]]))) for i,labels in enumerate(lblhistory)]
+            attrs = [orange.EnumVariable('c'+ str(i), \
+                values=list(set([l for l in lblhistory[0]]))) for i,labels \
+                in enumerate(lblhistory)]
             dom = orange.Domain(attrs, 0)
             # transpose history
             data = map(list, zip(*lblhistory))
             data = orange.ExampleTable(dom, data)
-            self.net.items = data if self.net.items == None else orange.ExampleTable([self.net.items, data])
+            if self.net.items is None:
+                self.net.items = data  
+            else: 
+                self.net.items = orange.ExampleTable([self.net.items, data])
 
         return labels
     
