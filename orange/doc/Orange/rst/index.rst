@@ -19,7 +19,7 @@ Contents:
    orange.classification.svm
    orange.classification.tree
    Orange.classification.logreg
-   orange.classification.rules
+   Orange.classification.rules
 
    Orange.ensemble
 
