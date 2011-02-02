@@ -95,8 +95,10 @@ SVM based Recursive Feature Elimination
 """
 import math
 
+from collections import defaultdict
+
 import Orange.core
-import Orange.classify.svm.kernels
+import Orange.classification.svm.kernels
 
 from Orange.core import SVMLearner as _SVMLearner
 from Orange.core import SVMLearnerSparse as _SVMLearnerSparse
@@ -105,13 +107,6 @@ from Orange.core import LinearClassifier, \
                         LinearLearner, \
                         SVMClassifier, \
                         SVMClassifierSparse
-              
-C_SVC = _SVMLearner.C_SVC
-Nu_SVC = _SVMLearner.Nu_SVC
-OneClass = _SVMLearner.OneClass
-Nu_SVR = _SVMLearner.Nu_SVR
-Epsilon_SVR = _SVMLearner.Epsilon_SVR
-
 
 # ORANGE Support Vector Machines
 # This module was written by Ales Erjavec
@@ -160,7 +155,13 @@ def maxNu(examples):
     
 class SVMLearner(_SVMLearner):
     __new__ = _orange__new__(_SVMLearner)
-        
+    
+    C_SVC = _SVMLearner.C_SVC
+    Nu_SVC = _SVMLearner.Nu_SVC
+    OneClass = _SVMLearner.OneClass
+    Nu_SVR = _SVMLearner.Nu_SVR
+    Epsilon_SVR = _SVMLearner.Epsilon_SVR
+            
     def __init__(self, svm_type=Nu_SVC, kernel_type=kernels.RBF, kernelFunc=None, 
                  C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3, coef0=0, 
                  shrinking=True, probability=True, verbose=False, 
@@ -425,7 +426,30 @@ class SVMLearnerSparseClassEasy(SVMLearnerEasy, SVMLearnerSparse):
     def __init__(self, **kwds):
         SVMLearnerSparse.__init__(self, **kwds)
 
-from collections import defaultdict
+class LinearLearner(Orange.core.LinearLearner):
+    
+    """A wrapper around Orange.core.LinearLearner with a default
+    solver_type == L2Loss_SVM_Dual 
+    
+    .. note:: The default in Orange.core.LinearLearner is L2_LR
+    
+    """
+    
+    def __new__(cls, data=None, weightId=0, **kwargs):
+        self = Orange.core.LinearLearner.__new__(cls, **kwargs)
+        if data:
+            self.__init__(**kwargs)
+            return self.__call__(data, weightId)
+        else:
+            return self
+        
+    def __init__(self, **kwargs):
+        if kwargs.get("solver_type", None) in [Orange.core.LinearLearner.L2_LR, 
+                                               None]:
+            kwargs = dict(kwargs)
+            kwargs["solver_type"] = Orange.core.LinearLearner.L2Loss_SVM_Dual
+        for name, val in kwargs.items():
+            setattr(self, name, val)
 
 def getLinearSVMWeights(classifier, sum=True):
     """Extract attribute weights from the linear svm classifier.
@@ -632,29 +656,4 @@ def exampleTableToSVMFormat(examples, file):
             if not ex[attr].isSpecial():
                 file.write(" "+str(i+1)+":"+str(ex[attr]))
         file.write("\n")
-            
-class LinearLearner(Orange.core.LinearLearner):
-    
-    """A wrapper around Orange.core.LinearLearner with a default
-    solver_type == L2Loss_SVM_Dual 
-    
-    .. note:: The default in Orange.core.LinearLearner is L2_LR
-    
-    """
-    
-    def __new__(cls, data=None, weightId=0, **kwargs):
-        self = Orange.core.LinearLearner.__new__(cls, **kwargs)
-        if data:
-            self.__init__(**kwargs)
-            return self.__call__(data, weightId)
-        else:
-            return self
-        
-    def __init__(self, **kwargs):
-        if kwargs.get("solver_type", None) in [Orange.core.LinearLearner.L2_LR, 
-                                               None]:
-            kwargs = dict(kwargs)
-            kwargs["solver_type"] = Orange.core.LinearLearner.L2Loss_SVM_Dual
-        for name, val in kwargs.items():
-            setattr(self, name, val)
-
+      
