@@ -26,6 +26,7 @@ Interface to the LibSVM library (a library for support vector machines
 .. autoclass:: Orange.classification.svm.SVMLearnerEasy
    :members:
    
+=================
 Usefull functions
 =================
 
@@ -35,9 +36,9 @@ Usefull functions
 
 .. automethod:: Orange.classification.svm.exampleTableToSVMFormat
 
-
+===============
 Kernel Wrappers
----------------
+===============
 
 .. autoclass:: Orange.classification.svm.kernels.KernelWrapper
    :members:
@@ -70,16 +71,16 @@ Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
 
 .. literalinclude:: code/svm-custom-kernel.py
 
-
+===========================
 SVM derived feature weights
----------------------------
+===========================
 
 .. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
    :members:
 
-
+=======================================
 SVM based Recursive Feature Elimination
----------------------------------------
+=======================================
 
 .. autoclass:: Orange.classification.svm.RFE
    :members:
@@ -167,38 +168,38 @@ class SVMLearner(_SVMLearner):
                  coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
                  weight=[], **kwargs):
-        """:param svm_type: Defines the type of SVM (can be C_SVC, 
+        """:param svm_type: defines the type of SVM (can be C_SVC, 
             Nu_SVC (default), OneClass, Epsilon_SVR, Nu_SVR)
         :type svm_type: SVMLearner.SVMType
-        :param kernel_type: Defines the type of a kernel to use for learning
+        :param kernel_type: defines the type of a kernel to use for learning
             (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
             kernels.Sigmoid, kernels.Custom)
         :type kernel_type: classification.kernels.Kernel
-        :param degree: Kernel parameter (for Polynomial) (default 3)
+        :param degree: kernel parameter (for Polynomial) (default 3)
         :type degree: int
-        :param gamma: Kernel parameter (Polynomial/RBF/Sigmoid)
+        :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
             (default 1/number_of_examples)
         :type gamma: float
-        :param coef0: Kernel parameter (Polynomial/Sigmoid) (default 0)
+        :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
         :type coef0: int
-        :param kernelFunc: Function that will be called if `kernel_type` is
-            `Custom`. It must accept two `data.Example` arguments and
+        :param kernelFunc: function that will be called if `kernel_type` is
+            `Custom`. It must accept two `data.Instance` arguments and
             return a float (the distance between the examples).
         :type kernelFunc: callable function
         :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
         :type C: float
         :param nu: Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)
         :type nu: float
-        :param p: Epsilon in loss-function for Epsilon_SVR
+        :param p: epsilon in loss-function for Epsilon_SVR
         :type p: float
-        :param cache_size: Cache memory size in MB (default 100)
+        :param cache_size: cache memory size in MB (default 100)
         :type cache_size: int
-        :param eps: Tolerance of termination criterion (default 0.001)
+        :param eps: tolerance of termination criterion (default 0.001)
         :type eps: float
-        :param probability: Determines if a probability model should be build
+        :param probability: determines if a probability model should be build
             (default False)
         :type probability: bool
-        :param shrinking: Determines whether to use shrinking heuristics 
+        :param shrinking: determines whether to use shrinking heuristics 
             (default True)
         :type shrinking: bool
         :param weights: a list of class weights
@@ -282,7 +283,7 @@ class SVMLearner(_SVMLearner):
         :param examples: data.Table on which to tune the parameters 
         :param parameters: if not set defaults to ["nu", "C", "gamma"]
         :param folds: number of folds used for cross validation
-        :param verbose:
+        :param verbose: default False
         :param progressCallback: a callback function to report progress
             
         Example::
@@ -393,7 +394,8 @@ class SVMLearnerEasy(SVMLearner):
     def learnClassifier(self, examples):
         transformer=Orange.core.DomainContinuizer()
         transformer.multinomialTreatment=Orange.core.DomainContinuizer.NValues
-        transformer.continuousTreatment=Orange.core.DomainContinuizer.NormalizeBySpan
+        transformer.continuousTreatment= \
+            Orange.core.DomainContinuizer.NormalizeBySpan
         transformer.classTreatment=Orange.core.DomainContinuizer.Ignore
         newdomain=transformer(examples)
         newexamples=examples.translate(newdomain)
@@ -546,7 +548,8 @@ class MeasureAttribute_SVMWeights(Orange.core.MeasureAttribute):
         return MeasureAttribute_SVMWeights, (), {"learner": self.learner}
     
     def __init__(self, learner=None, **kwargs):
-        """:param learner: Learner used for weight esstimation (default LinearLearner(solver_type=L2Loss_SVM_Dual))
+        """:param learner: Learner used for weight esstimation 
+            (default LinearLearner(solver_type=L2Loss_SVM_Dual))
         :type learner: Orange.core.Learner 
         
         """
@@ -592,7 +595,7 @@ class RFE(object):
 
     def getAttrScores(self, data, stopAt=0, progressCallback=None):
         """Return a dict mapping attributes to scores (scores are not scores 
-        in a general meaning they represent the step number at which they 
+        in a general meaning; they represent the step number at which they 
         were removed from the recursive evaluation).
         
         """

@@ -96,16 +96,17 @@ class MultiplicationKernelWrapper(DualKernelWrapper):
 class CompositeKernelWrapper(DualKernelWrapper):
     def __init__(self, wrapped1, wrapped2, l=0.5):
         DualKernelWrapper.__init__.__doc__ + """\
-        :param l:
+        :param l: 
         
         """
         DualKernelWrapper.__init__(self, wrapped1, wrapped2)
         self.l=l
+        
     def __call__(self, example1, example2):
         """Return
         
         .. math:: l * wrapped1(example1, example2) + (1 - l) * 
-        wrapped2(example1, example2)
+            wrapped2(example1, example2)
             
         """
         return self.l * self.wrapped1(example1, example2) + (1-self.l) * \
