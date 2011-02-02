@@ -25,7 +25,7 @@ import probability.distributions
 import probability.evd
 
 import classify
-import classify.trees
+import classify.tree
 import classify.rules
 import classify.lookup
 import classify.bayes
