@@ -12,9 +12,10 @@ Contents:
    :maxdepth: 2
 
    orange.cluster
-   orange.classify.svm
-   orange.classify.tree
-   orange.classify.logreg
+   orange.classification.svm
+   orange.classification.tree
+   orange.classification.logreg
+   orange.classification.rules
 
 Indices and tables
 ==================
