@@ -1,6 +1,6 @@
 """
 =================
-Introduction
+Induction of association rules
 =================
 
 Orange provides two algorithms for induction of association rules. One is the basic Agrawal's algorithm with dynamic induction of supported itemsets and rules that is designed specifically for datasets with a large number of different items. This is, however, not really suitable for attribute-based machine learning problems, which are at the primary focus of Orange. We have thus adapted the original algorithm to be more efficient for the latter type of data, and to induce the rules in which, for contrast to Agrawal's rules, both sides don't only contain attributes (like "bread, butter -> jam") but also their values ("bread = wheat, butter = yes -> jam = plum"). As a further variation, the algorithm can be limited to search only for classification rules in which the sole attribute to appear on the right side of the rule is the class attribute.
