@@ -1,5 +1,4 @@
 import orange
-core = orange
 
 # Definitely ugly, but I see no other workaround.
 # When, e.g. data.io executes "from orange import ExampleTable"
