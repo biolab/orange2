@@ -24,15 +24,18 @@ import probability.estimate
 import probability.distributions
 import probability.evd
 
-import classify
-import classify.tree
-import classify.rules
-import classify.lookup
-import classify.bayes
-import classify.svm
-import classify.logreg
-import classify.knn
-import classify.majority
+import classification
+import classification.tree
+import classification.rules
+import classification.lookup
+import classification.bayes
+import classification.svm
+import classification.logreg
+import classification.knn
+import classification.majority
+
+import projection
+import projection.som
 
 import regress
 
