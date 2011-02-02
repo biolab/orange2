@@ -21,6 +21,8 @@ Contents:
    Orange.classification.logreg
    orange.classification.rules
 
+   Orange.ensemble
+
    orange.feature
    
    Orange.network
