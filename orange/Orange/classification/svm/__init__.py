@@ -98,6 +98,7 @@ import math
 from collections import defaultdict
 
 import Orange.core
+import Orange.data
 import kernels
 
 from Orange.core import SVMLearner as _SVMLearner
@@ -336,15 +337,15 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
             self.__dict__[name] = val
         
     def __call__(self, example, what=Orange.core.GetValue):
-        example = Orange.core.Example(self.wrapped.domain, example)
+        example = Orange.data.Instance(self.wrapped.domain, example)
         return self.wrapped(example, what)
     
     def classDistribution(self, example):
-        example = Orange.core.Example(self.wrapped.domain, example)
+        example = Orange.data.Instance(self.wrapped.domain, example)
         return self.wrapped.classDistribution(example)
     
     def getDecisionValues(self, example):
-        example = Orange.core.Example(self.wrapped.domain, example)
+        example = Orange.data.Instance(self.wrapped.domain, example)
         return self.wrapped.getDecisionValues(example)
     
     def getModel(self):
@@ -487,7 +488,7 @@ def getLinearSVMWeights(classifier, sum=True):
             coefInd=j-1
             for svInd in apply(range, svRanges[i]):
                 attributes = SVs.domain.attributes + \
-                SVs[svInd].getmetas(False, Orange.core.Variable).keys()
+                SVs[svInd].getmetas(False, Orange.data.feature.Feature).keys()
                 for attr in attributes:
                     if attr.varType==Orange.core.VarTypes.Continuous:
                         updateWeights(w, attr, to_float(SVs[svInd][attr]), \
@@ -495,7 +496,7 @@ def getLinearSVMWeights(classifier, sum=True):
             coefInd=i
             for svInd in apply(range, svRanges[j]):
                 attributes = SVs.domain.attributes + \
-                SVs[svInd].getmetas(False, Orange.core.Variable).keys()
+                SVs[svInd].getmetas(False, Orange.data.feature.Feature).keys()
                 for attr in attributes:
                     if attr.varType==Orange.core.VarTypes.Continuous:
                         updateWeights(w, attr, to_float(SVs[svInd][attr]), \
@@ -625,16 +626,16 @@ class RFE(object):
         :type data: Orange.core.ExampleTable
         :param numSelected: number of features to preserve
         :type numSelected: int
-         
+        
         """
         scores = self.getAttrScores(data, progressCallback=progressCallback)
         scores = sorted(scores.items(), key=lambda item: item[1])
         
         scores = dict(scores[-numSelected:])
         attrs = [attr for attr in data.domain.attributes if attr in scores]
-        domain = Orange.core.Domain(attrs, data.domain.classVar)
+        domain = Orange.data.Domain(attrs, data.domain.classVar)
         domain.addmetas(data.domain.getmetas())
-        data = Orange.core.ExampleTable(domain, data)
+        data = Orange.data.Table(domain, data)
         return data
 
 def exampleTableToSVMFormat(examples, file):
