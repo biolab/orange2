@@ -1,9 +1,9 @@
-from Orange import core
+from Orange import data
 from Orange.classification import svm
 
-data = core.ExampleTable("brown-selected")
-print data.domain
+table = data.Table("brown-selected")
+print table.domain
 
 rfe = svm.RFE()
-newdata = rfe(data, 10)
+newdata = rfe(table, 10)
 print newdata.domain
