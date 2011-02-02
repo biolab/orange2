@@ -1,5 +1,5 @@
 ==============
-orange.feature
+Orange.feature
 ==============
 
 .. automodule:: Orange.feature
