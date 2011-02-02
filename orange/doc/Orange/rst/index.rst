@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    orange.cluster
+   orange.classification.majority
    orange.classification.svm
    orange.classification.tree
    orange.classification.logreg
