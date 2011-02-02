@@ -1,6 +1,7 @@
 import math
 
 from Orange.core import SVMLearner as _SVMLearner
+from Orange.core import KernelFunc
 
 Linear = _SVMLearner.Linear
 Polynomial = _SVMLearner.Polynomial

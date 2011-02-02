@@ -17,53 +17,53 @@ Interface to the LibSVM library (LIBSVM : a library for support vector machines
           and use the `SVMLearnerEasy` class which does this automatically
           (it is similar to the easy.py script in the LibSVM distribution).
 
-.. autoclass:: Orange.classify.svm.SVMLearner
+.. autoclass:: Orange.classification.svm.SVMLearner
    :members:
    
-.. autoclass:: Orange.classify.svm.SVMLearnerSparse
+.. autoclass:: Orange.classification.svm.SVMLearnerSparse
    :members:
    
-.. autoclass:: Orange.classify.svm.SVMLearnerEasy
+.. autoclass:: Orange.classification.svm.SVMLearnerEasy
    :members:
    
 Usefull functions
 =================
 
-.. automethod:: Orange.classify.svm.maxNu
+.. automethod:: Orange.classification.svm.maxNu
 
-.. automethod:: Orange.classify.svm.getLinearSVMWeights
+.. automethod:: Orange.classification.svm.getLinearSVMWeights
 
-.. automethod:: Orange.classify.svm.exampleTableToSVMFormat
+.. automethod:: Orange.classification.svm.exampleTableToSVMFormat
 
 
 Kernel Wrappers
 ---------------
 
-.. autoclass:: Orange.classify.svm.kernels.KernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.KernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.DualKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.DualKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.RBFKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.RBFKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.PolyKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.PolyKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.AdditionKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.AdditionKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.MultiplicationKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.MultiplicationKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.CompositeKernelWrapper
+.. autoclass:: Orange.classification.svm.kernels.CompositeKernelWrapper
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.SparseLinKernel
+.. autoclass:: Orange.classification.svm.kernels.SparseLinKernel
    :members:
 
-.. autoclass:: Orange.classify.svm.kernels.BagOfWords
+.. autoclass:: Orange.classification.svm.kernels.BagOfWords
    :members:
 
 Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
@@ -74,14 +74,14 @@ Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
 SVM derived feature weights
 ---------------------------
 
-.. autoclass:: Orange.classify.svm.MeasureAttribute_SVMWeights
+.. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
    :members:
 
 
 SVM based Recursive Feature Elimination
 ---------------------------------------
 
-.. autoclass:: Orange.classify.svm.RFE
+.. autoclass:: Orange.classification.svm.RFE
    :members:
 
 
@@ -98,11 +98,10 @@ import math
 from collections import defaultdict
 
 import Orange.core
-import Orange.classification.svm.kernels
+import kernels
 
 from Orange.core import SVMLearner as _SVMLearner
 from Orange.core import SVMLearnerSparse as _SVMLearnerSparse
-from Orange.core import KernelFunc
 from Orange.core import LinearClassifier, \
                         LinearLearner, \
                         SVMClassifier, \
@@ -162,9 +161,9 @@ class SVMLearner(_SVMLearner):
     Nu_SVR = _SVMLearner.Nu_SVR
     Epsilon_SVR = _SVMLearner.Epsilon_SVR
             
-    def __init__(self, svm_type=Nu_SVC, kernel_type=kernels.RBF, kernelFunc=None, 
-                 C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3, coef0=0, 
-                 shrinking=True, probability=True, verbose=False, 
+    def __init__(self, svm_type=Nu_SVC, kernel_type=kernels.RBF, 
+                 kernelFunc=None, C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3, 
+                 coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
                  weight=[], **kwargs):
         """:param svm_type: Defines the type of SVM (can be C_SVC, 
@@ -205,7 +204,7 @@ class SVMLearner(_SVMLearner):
         :type weights: list
         
         """
-        self.svm_type=Orange.core.SVMLearner.Nu_SVC
+        self.svm_type = SVMLearner.Nu_SVC
         self.kernel_type = kernel_type
         self.kernelFunc = kernelFunc
         self.C = C
@@ -247,7 +246,7 @@ class SVMLearner(_SVMLearner):
 #            self.probability=True
         ##################################################
         nu = self.nu
-        if self.svm_type == Orange.core.SVMLearner.Nu_SVC: #is nu feasibile
+        if self.svm_type == SVMLearner.Nu_SVC: #is nu feasibile
             maxNu= self.maxNu(examples)
             if self.nu > maxNu:
                 if getattr(self, "verbose", 0):
@@ -268,7 +267,7 @@ class SVMLearner(_SVMLearner):
         if self.normalization:
             examples = self._normalize(examples)
             svm = self.learner(examples)
-#            if self.kernelFunc:
+#            if self.:
 #                return SVMClassifierWrapper(svm)
 #            else:
             return SVMClassifierWrapper(svm)
