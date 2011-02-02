@@ -23,7 +23,7 @@ Contents:
 
    Orange.ensemble
 
-   orange.feature
+   Orange.feature
    
    Orange.network
    
