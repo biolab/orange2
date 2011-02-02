@@ -22,6 +22,8 @@ Contents:
    orange.classification.rules
 
    orange.feature
+   
+   orange.projection.som
 
 Indices and tables
 ==================
