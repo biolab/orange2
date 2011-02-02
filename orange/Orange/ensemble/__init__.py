@@ -49,6 +49,7 @@ References
 Examples
 ========
 
+.. literalinclude:: code/ensemble.py
 
 
 """
