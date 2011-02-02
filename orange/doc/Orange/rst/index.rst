@@ -17,6 +17,8 @@ Contents:
    orange.classification.logreg
    orange.classification.rules
 
+   orange.feature
+
 Indices and tables
 ==================
 
