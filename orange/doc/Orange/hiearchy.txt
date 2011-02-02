@@ -4,7 +4,9 @@ Orange
    core
       orange; counters; serverfiles
    data
-      io; domain; variable; example; value; sampling
+      Table; Instance; Value; Domain
+      feature (Discrete, Continuous, String; Python)
+      io; sampling
    statistics
       estimate; distributions; evd
    feature
@@ -24,7 +26,7 @@ Orange
    clustering
       kmeans; hierarchical; consensus
    projection
-      correspondence; pca; freeviz
+      correspondence; pca; freeviz; mds; som
    associate
       rules; itemsets
    network
