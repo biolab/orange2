@@ -1,5 +1,35 @@
-import orangeom
+""" 
+.. index:: network
+
+Network analysis and layout optimization.
+
+=======
+Network
+=======
+
+.. autoclass:: Orange.network.Network
+   :members:
+   
+===========================
+Network Layout Optimization
+===========================
+
+.. autoclass:: Orange.network.NetworkOptimization
+   :members:
+   
+=============================
+Community Detection in Graphs
+=============================
+
+.. autoclass:: Orange.network.NetworkClustering
+   :members:
+   
+"""
 import random
+import os
+
+import orange
+import orangeom
 
 from orange import Graph, GraphAsList, GraphAsMatrix, GraphAsTree
 
@@ -12,15 +42,71 @@ class MdsTypeClass():
 MdsType = MdsTypeClass()
 
 class Network(orangeom.Network):
-    """Orange data structure for representing directed and undirected networks with various types of weighted connections and other data."""
+    
+    """Data structure for representing directed and undirected networks.
+    
+    Network class holds network structure information and supports basic 
+    network analysis. Network class is inherited from orange.GraphAsList. 
+    Refer to orange.GraphAsList for more graph analysis tools. See the 
+    orangeom.Pathfinder class for a way to simplify your network.
+    
+    .. attribute:: coors
+   
+        Coordinates for all vertices. They are initialized to random positions. 
+        You can modify them manually or use one of the optimization algorithms. 
+        Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
+       
+    .. attribute:: items
+   
+        ExampleTable with information about vertices. Number of rows should 
+        match the number of vertices.
+       
+    .. attribute:: links
+   
+        ExampleTable with information about edges. Number of rows should match 
+        the number of edges. Two float attributes named "u" and "v" must be in 
+        links table domain to relate the data of an example to an edge. Here, 
+        egde is defined by two vertices "u" and "v".
+
+    .. attribute:: optimization
+   
+        An instance of the NetworkOptimization class. Various network layout 
+        optimization methods can be applied to the network through this 
+        attribute. 
+        
+    .. method:: fromDistanceMatrix(matrix, lower, upper, kNN=0):
+        
+        Creates edges between vertices with the distance within given 
+        threshold. The .
+        
+        :param matrix: number of objects in a matrix must match the number 
+            of vertices in a network.
+        :type matrix: Orange.core.SymMatrix
+        :param lower: lower distance bound.
+        :type lower: float
+        :param upper: upper distance bound.
+        :type upper: float
+        :param kNN: specifies the minimum number of closest vertices to be 
+            connected.
+        :type kNN: int
+    
+    """
     
     def __init__(self, *args):
+        """:param nVertices: number of vertices (default 1)
+        :param nEdges: number of edge types (default 1)
+        :param directedGraph: directed edges (default True)
+        
+        """
         #print "orngNetwork.Network"
         self.optimization = NetworkOptimization(self)
         self.clustering = NetworkClustering(self)
         
     def getDistanceMatrixThreshold(self, matrix, ratio):
-        """Return lower and upper distance threshold values for given ratio of edges"""
+        """Return lower and upper distance threshold values for the given 
+        ratio of edges
+        
+        """
         values = []
         for i in range(matrix.dim):
             for j in range(i):
@@ -30,12 +116,17 @@ class Network(orangeom.Network):
         return values[0][0], values[int(ratio*len(values))][0]
         
     def save(self, fileName):
-        """Saves network to Pajek (.net) file."""
+        """Save the network to a Pajek (.net) or GML file format. 
+        data.Table items and links are saved automatically if the value is not 
+        None. They are saved to "file_items.tab" and "file_links.tab" files.
+        
+        :param fileName: file path
+        :type fileName: string
+        
+        """
         self.saveNetwork(fileName)
         
-    def saveNetwork(self, fileName):
-        """Save network to file."""
-        
+    def saveNetwork(self, fileName):        
         try:
             root, ext = os.path.splitext(fileName)
             if ext == '':
@@ -51,8 +142,12 @@ class Network(orangeom.Network):
             self.savePajek(graphFile)
 
     def saveGML(self, fp):
-        """Save network to GML (.gml) file format."""
+        """Save network to GML (.gml) file format.
         
+        :param fp: file pointer
+        :type fp: file
+        
+        """
         fp.write("graph\n[\n")
         tabs = "\t"
         fp.write("%slabel\t\"%s\"\n" % (tabs, self.name))
@@ -79,7 +174,12 @@ class Network(orangeom.Network):
             self.links.save(name + "_links.tab")
         
     def savePajek(self, fp):
-        """Save network to Pajek (.net) file format."""
+        """Save network to Pajek (.net) file format.
+        
+        :param fp: file pointer
+        :type fp: file
+        
+        """
         name = ''
         fp.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
         if name == '':
@@ -150,7 +250,15 @@ class Network(orangeom.Network):
         
     @staticmethod
     def read(fileName, directed=0):
-        """Read network. Supported network formats: from Pajek (.net) file, GML."""
+        """Read network. Supported network formats: from Pajek (.net) file, 
+        GML.
+        
+        :param fileName: file path
+        :type fileName: string
+        :param directed: (default False)
+        :type directed: bool
+        
+        """
         if type(fileName) == file:
             root, ext = os.path.splitext(fileName.name)
             if ext.lower() == ".net":
