@@ -4,7 +4,7 @@
 
 This page describes the Orange trees. It first describes the basic components and procedures: it starts with <A href="#structure">the structure</A> that represents the tree, then it defines <A href="#classification">how the tree is used for classification</A>, then <A href="#learning">how it is built</A> and <a href="#pruning">pruned</A>. The order might seem strange, but the things are rather complex and this order is perhaps a bit easier to follow. After you have some idea about what the principal components do, we described the <a href="#classes">concrete classes</A> that you can use as components for a tree learner.
 
-Classification trees are represented as a tree-like hierarchy of TreeNode classes.
+Classification trees are represented as a tree-like hierarchy of :obj:`TreeNode` classes.
 
 
 .. class:: TreeNode
@@ -16,56 +16,56 @@ Classification trees are represented as a tree-like hierarchy of TreeNode classe
     .. attribute:: distribution
     
         Stores a distribution for learning examples belonging to the node.
-        Storing distributions can be disabled by setting the TreeLearners's
-        storeDistributions flag to false.
+        Storing distributions can be disabled by setting the 
+        :obj:`TreeLearner`'s storeDistributions flag to false.
 
     .. attribute:: contingency
 
         Stores complete contingency matrices for the learning examples 
         belonging to the node. Storing contingencies can be enabled by 
-        setting <code>TreeLearner</code>'s <code>storeContingencies</code> 
+        setting :obj:`TreeLearner`'s :obj:`storeContingencies` 
         flag to <CODE>true</CODE>. Note that even when the flag is not 
         set, the contingencies get computed and stored to 
-        <code>TreeNode</code>, but are removed shortly afterwards. 
+        :obj:`TreeNone`, but are removed shortly afterwards. 
         The details are given in the 
-        description of the <code>TreeLearner</code> object.
+        description of the :obj:`TreeLearner`object.
 
     .. attribute:: examples, weightID
 
         Store a set of learning examples for the node and the
-        corresponding ID of weight meta attribute. The root of the
+        corresponding ID of /weight meta attribute. The root of the
         tree stores a "master table" of examples, while other nodes'
-        <CODE>ExampleTable</CODE>s contain reference to examples in
-        the root's <CODE>ExampleTable</CODE>. Examples are only stored
-        if a corresponding flag (<code>storeExamples</code>) has been
+        :obj:`orange.ExampleTable` contain reference to examples in
+        the root's :obj:`orange.ExampleTable`. Examples are only stored
+        if a corresponding flag (:obj:`storeExamples`) has been
         set while building the tree; to conserve the space, storing
-        is disabled by default.</DD>
+        is disabled by default.
 
     .. attribute:: nodeClassifier
 
         A classifier (usually, but not necessarily, a
-        <code>DefaultClassifier</code>) that can be used to classify
+        :obj:`DefaultClassifier`) that can be used to classify
         examples coming to the node. If the node is a leaf, this is
         used to decide the final class (or class distribution) of an
         example. If it's an internal node, it is stored if
-        <code>TreeNode</code>'s flag <code>storeNodeClassifier</code>
-        is set. Since the <code>nodeClassifier</code> is needed by
-        some <code>TreeDescenders</code> and for pruning (see far below),
+        :obj:`TreeNode`'s flag :obj:`storeNodeClassifier`
+        is set. Since the :obj:`nodeClassifier` is needed by
+        :obj:`TreeDescender` and for pruning (see far below),
         this is the default behaviour; space consumption of the default
-        <code>DefaultClassifier</code> is rather small. You should
+        :obj:`DefaultClassifier` is rather small. You should
         never disable this if you intend to prune the tree later.
 
     If the node is a leaf, the remaining fields are <code>None</code>. If it's an internal node, there are several additional fields.
 
     .. attribute:: branches
 
-        Stores a list of subtrees, given as <code>TreeNode</code>s. 
+        Stores a list of subtrees, given as :obj:`TreeNode`.
         An element can be <code>None</code>; in this case the node is empty.
 
-    .. attribute:: branchDescriptionsa
+    .. attribute:: branchDescriptions
 
         A list with string descriptions for branches, constructed by
-        <code>TreeSplitConstructor</code>. It can contain different kinds
+        :obj:`TreeSplitConstructor`. It can contain different kinds
         of descriptions, but basically, expect things like 'red' or '>12.3'.
 
     .. attribute:: branchSizes
@@ -78,29 +78,54 @@ Classification trees are represented as a tree-like hierarchy of TreeNode classe
     .. attribute:: branchSelector
 
         Gives a branch for each example. The same object is used during
-        learning and classifying. The <code>branchSelector</code> is of type <code>Classifier</code>, since its job is similar to that of a classifier: it gets an example and returns discrete <code>Value</code> in range [0, <CODE>len(branches)-1</CODE>]. When an example cannot be classified to any branch, the selector can return a <CODE>Value</CODE> containing a special value (<code>sVal</code>) which should be a discrete distribution (<code>DiscDistribution</code>). This should represent a <code>branchSelector</code>'s opinion of how to divide the example between the branches. Whether the proposition will be used or not depends upon the chosen <code>TreeExampleSplitter</code> (when learning) or <code>TreeDescender</code> (when classifying).</DD>
-</DL>
+        learning and classifying. The :obj:`branchSelector` is of
+        type :obj:`orange.Classifier`, since its job is similar to that
+        of a classifier: it gets an example and returns discrete
+        :obj:`orange.Value` in range [0, <CODE>len(branches)-1</CODE>].
+        When an example cannot be classified to any branch, the selector
+        can return a :obj:`orange.Value` containing a special value
+        (<code>sVal</code>) which should be a discrete distribution
+        (<code>DiscDistribution</code>). This should represent a
+        :obj:`branchSelector`'s opinion of how to divide the
+        example between the branches. Whether the proposition will be
+        used or not depends upon the chosen :obj:`TreeExampleSplitter`
+        (when learning) or :obj:`TreeDescender` (when classifying).
 
-<p>The three lists (<code>branches</code>, <code>branchDescriptions</code> and <code>branchSizes</code>) are of the same length; all of them are defined if the node is internal and none if it is a leaf.</p>
+    The lists :obj:`branches`, :obj:`branchDescriptions` and :obj:`branchSizes` are of the same length; all of them are defined if the node is internal and none if it is a leaf.
 
-<p><code>TreeNode</code> has a method <code>treesize()</code> that returns the number of nodes in the subtrees (including the node, excluding null-nodes).</p>
+    .. method:: treeSize():
+        
+        Return the number of nodes in the subtrees (including the node, excluding null-nodes).
 
 <A name="classification"></A>
 <H3>Classification</H3>
 
-<p>A <code><INDEX name="classes/TreeClassifier">TreeClassifier</code> is an object that classifies examples according to a tree stored in a field <code>tree</code>.</p>
+.. class:: TreeClassifier
 
-<p>Classification would be straightforward if there were no unknown values or, in general, examples that cannot be placed into a single branch. The response in such cases is determined by a component <code>descender</code>.</p>
+    Classifies examples according to a tree stored in :obj:`tree`.
 
-<p><code><INDEX name="classes/TreeDescender">TreeDescender</code> is an abstract object which is given an example and whose basic job is to descend as far down the tree as possible, according to the values of example's attributes. The <code>TreeDescender</code> calls the node's <code>branchSelector</code> to get the branch index. If it's a simple index, the corresponding branch is followed. If not, it's up to descender to decide what to do, and that's where descenders differ. A <code>descender</code> can choose a single branch (for instance, the one that is the most recommended by the <code>branchSelector</code>) or it can let the branches vote.</p>
+    Classification would be straightforward if there were no unknown 
+    values or, in general, examples that cannot be placed into a 
+    single branch. The response in such cases is determined by a
+    component :obj:`descender`.
 
-<p>In general there are three possible outcomes of a descent.</p>
-<UL>
-<LI>Descender reaches a leaf. This happens when nothing went wrong (there are no unknown or out-of-range values in the example) or when things went wrong, but the descender smoothed them by selecting a single branch and continued the descend. In this case, the descender returns the reached <code>TreeNode</code>.</li>
+    :obj:`TreeDescender` is an abstract object which is given an example
+    and whose basic job is to descend as far down the tree as possible,
+    according to the values of example's attributes. The
+    :obj:`TreeDescender`: calls the node's :obj:`branchSelector` to get 
+    the branch index. If it's a simple index, the corresponding branch 
+    is followed. If not, it's up to descender to decide what to do, and
+    that's where descenders differ. A :obj:`descender` can choose 
+    a single branch (for instance, the one that is the most recommended 
+    by the :obj:`branchSelector`) or it can let the branches vote.
 
-<LI><code>branchSelector</code> returned a distribution and the <code>TreeDescender</code> decided to stop the descend at this (internal) node. Again, descender returns the current <code>TreeNode</code> and nothing else.</LI>
+    In general there are three possible outcomes of a descent.
 
-<LI><code>branchSelector</code> returned a distribution and the <code>TreeNode</code> wants to split the example (i.e., to decide the class by voting). It returns a <code>TreeNode</code> and the vote-weights for the branches. The weights can correspond to the distribution returned by
+    # Descender reaches a leaf. This happens when nothing went wrong (there are no unknown or out-of-range values in the example) or when things went wrong, but the descender smoothed them by selecting a single branch and continued the descend. In this case, the descender returns the reached :obj:`TreeNode`.
+
+    # :obj:`branchSelector` returned a distribution and the :obj:`TreeDescender` decided to stop the descend at this (internal) node. Again, descender returns the current <code>TreeNode</code> and nothing else.</LI>
+
+    # :obj:`branchSelector` returned a distribution and the <code>TreeNode</code> wants to split the example (i.e., to decide the class by voting). It returns a <code>TreeNode</code> and the vote-weights for the branches. The weights can correspond to the distribution returned by
 <code>branchSelector</code>, to the number of learning examples that were assigned to each branch, or to something else.</LI>
 </UL>
 
