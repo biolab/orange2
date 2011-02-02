@@ -528,7 +528,7 @@ class MeasureAttribute_SVMWeights(Orange.core.MeasureAttribute):
         
     Example::
         >>> measure = MeasureAttribute_SVMWeights()
-        >>> for attr in data.domain.attributes:
+        >>> for attr in table.domain.attributes:
             ...   print "%15s: %.3f" % (attr.name, measure(attr, data))
           
     """
