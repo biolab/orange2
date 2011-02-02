@@ -20,7 +20,7 @@ the topology of the map and returns an inference objects which, given the data, 
 optimization of the map:: 
 
    import Orange
-   som = Orange.projection.som.SOMLearner(map_shape=(10, 20), initialize=Orange.projection.som.InitializeRandom)
+   som = Orange.projection.som.SOMLearner(map_shape=(8, 8), initialize=Orange.projection.som.InitializeRandom)
    data = Orange.data.table("iris.tab")
    map = som(data)
 
@@ -37,12 +37,30 @@ optimization of the map::
 Supervised Learning with Self-Organizing Maps
 =============================================
 
+Supervised learning requires class-labeled data. For training,
+class information is first added to data instances as a regular feature 
+by extending the feature vectors accordingly. Next, the map is trained, and the
+training data projected to nodes. Each node then classifies to the majority class.
+For classification, the data instance is projected the cell, returning the associated class.
+An example of the code that trains and then classifies on the same data set is::
+
+    import Orange
+    import random
+    learner = Orange.projection.som.SOMSupervisedLearner(map_shape=(4, 4))
+    data = Orange.data.Table("iris.tab")
+    classifier = learner(data)
+    random.seed(50)
+    for d in random.sample(data, 5):
+        print "%-15s originally %-15s" % (classifier(d), d.getclass())
+
 .. autoclass:: SOMSupervisedLearner
    :members:
    
 ==================
 Supporting Classes
 ==================
+
+Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects.
 
 .. autoclass:: Map
    :members:
@@ -54,13 +72,33 @@ Supporting Classes
 Examples
 ========
 
-The following code runs k-means clustering and prints out the cluster indexes for the last 10 data instances (`kmeans-run.py`_, uses `iris.tab`_):
+The following code  (`code/som-mapping.py`_, uses `iris.tab`_) infers self-organizing map from Iris data set. The map is rather small, and consists 
+of only 9 cells. We optimize the network, and then report how many data instances were mappped
+into each cell. The second part of the code reports on data instances from one of the corner cells:
 
-.. literalinclude:: code/som1.py
+.. literalinclude:: code/som-mapping.py
 
 The output of this code is::
 
-    [1, 1, 2, 1, 1, 1, 2, 1, 1, 2]
+    Node    Instances
+    (0, 0)  21
+    (0, 1)  1
+    (0, 2)  23
+    (1, 0)  22
+    (1, 1)  7
+    (1, 2)  6
+    (2, 0)  32
+    (2, 1)  16
+    (2, 2)  22
+    
+    Data instances in cell (1, 2):
+    [4.9, 2.4, 3.3, 1.0, 'Iris-versicolor']
+    [5.0, 2.0, 3.5, 1.0, 'Iris-versicolor']
+    [5.6, 2.9, 3.6, 1.3, 'Iris-versicolor']
+    [5.7, 2.6, 3.5, 1.0, 'Iris-versicolor']
+    [5.5, 2.4, 3.7, 1.0, 'Iris-versicolor']
+    [5.0, 2.3, 3.3, 1.0, 'Iris-versicolor']
+
 
 """
 
@@ -69,6 +107,9 @@ import sys, os
 import numpy
 import numpy.ma as ma
 import orange
+import random
+
+random.seed(42)
 
 HexagonalTopology = 0
 RectangularTopology = 1
@@ -161,7 +202,8 @@ class Map(object):
         else:
             min, max = numpy.zeros(dimension), numpy.ones(dimension)
         for node in self:
-            node.vector = min + numpy.random.rand(dimension) * (max - min)
+#            node.vector = min + numpy.random.rand(dimension) * (max - min)
+            node.vector = min + random.randint(0, dimension) * (max - min)
 
     def initialize_map_linear(self, data, map_shape=(10, 20)):
         """ Initialize the map node vectors linearly over the subspace
