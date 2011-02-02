@@ -37,6 +37,11 @@ import classification.majority
 import projection
 import projection.som
 
+import ensemble
+import ensemble.bagging
+import ensemble.boosting
+import ensemble.forest
+
 import regress
 
 import associate
