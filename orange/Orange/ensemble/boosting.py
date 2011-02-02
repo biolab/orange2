@@ -1,5 +1,7 @@
 import Orange
 import Orange.core as orange
+import orngMisc
+
 _inf = 100000
 
 #def BoostedLearner(learner, examples=None, t=10, name='AdaBoost.M1'):
@@ -93,7 +95,7 @@ class BoostedClassifier(orange.Classifier):
         votes = [0.] * len(self.classVar.values)
         for c, e in self.classifiers:
             votes[int(c(example))] += e
-        #index = Orange.misc.selectBestIndex(votes)
+        index = orngMisc.selectBestIndex(votes)
         # TODO
         value = Orange.data.Value(self.classVar, index)
         if resultType == orange.GetValue:
