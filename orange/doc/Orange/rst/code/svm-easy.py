@@ -1,7 +1,7 @@
-import orange
-import Orange.classify.svm as svm
+from Orange import core
+from Orange.classification import svm
 
-data = orange.ExampleTable("vehicle.tab")
+data = core.ExampleTable("vehicle.tab")
 
 svm_easy = svm.SVMLearnerEasy(name="svm easy", folds=3)
 svm_normal = svm.SVMLearner(name="svm")

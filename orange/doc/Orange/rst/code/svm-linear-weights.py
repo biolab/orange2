@@ -1,8 +1,8 @@
-import orange
-import Orange.classify.svm as svm
+from Orange import core 
+from Orange.classification import svm
 
-data = orange.ExampleTable("brown-selected")
-classifier = svm.SVMLearner(data, kernel_type=svm.Linear, normalization=False)
+data = core.ExampleTable("brown-selected")
+classifier = svm.SVMLearner(data, kernel_type=svm.kernels.Linear, normalization=False)
 
 weights = svm.getLinearSVMWeights(classifier)
 print weights
