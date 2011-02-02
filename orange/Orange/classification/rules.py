@@ -1,0 +1,33 @@
+from orange import \
+     AssociationClassifier, \
+         AssociationLearner, \
+         RuleClassifier, \
+             RuleClassifier_firstRule, \
+             RuleClassifier_logit, \
+         RuleLearner, \
+         Rule, \
+         RuleBeamCandidateSelector, \
+              RuleBeamCandidateSelector_TakeAll, \
+         RuleBeamFilter, \
+              RuleBeamFilter_Width, \
+         RuleBeamInitializer, \
+              RuleBeamInitializer_Default, \
+         RuleBeamRefiner, \
+              RuleBeamRefiner_Selector, \
+         RuleClassifierConstructor, \
+         RuleCovererAndRemover, \
+              RuleCovererAndRemover_Default, \
+         RuleDataStoppingCriteria, \
+              RuleDataStoppingCriteria_NoPositives, \
+         RuleEvaluator, \
+              RuleEvaluator_Entropy, \
+              RuleEvaluator_LRS, \
+              RuleEvaluator_Laplace, \
+              RuleEvaluator_mEVC, \
+         RuleFinder, \
+              RuleBeamFinder, \
+         RuleList, \
+         RuleStoppingCriteria, \
+              RuleStoppingCriteria_NegativeDistribution, \
+         RuleValidator, \
+         RuleValidator_LRS
