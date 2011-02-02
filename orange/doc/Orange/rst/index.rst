@@ -23,6 +23,8 @@ Contents:
 
    orange.feature
    
+   Orange.network
+   
    orange.projection.som
 
 Indices and tables
