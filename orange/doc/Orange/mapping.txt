@@ -17,6 +17,9 @@ core
 	    VariableFloatMap
 	    TransformValue
 
+ExampleTable -> Data
+Example -> Instance
+
 data
     io
          BasketFeeder
@@ -26,10 +29,9 @@ data
               TabDelimExampleGenerator
 
     example
-         ExampleTable
+         
          ExampleGenerator
          ExampleGeneratorList
-         Example
          EFMDataDescription
 	     
     sample
