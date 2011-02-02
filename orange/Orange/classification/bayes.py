@@ -227,11 +227,18 @@ class NaiveBayesClassifier(Orange.core.Classifier):
         for k, v in self.nativeBayesClassifier.__dict__.items():
             self.__dict__[k] = v
   
-    def __call__(self, instance, *args, **kwdargs):
+    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue,
+                 *args, **kwdargs):
         """Classify a new instance
+        
         :param instance: instance to be classifier
         :type instance: :class:`Orange.data.Instance`
-        :rtype: :class:Orange.data.`
+        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
+              :class:`Orange.core.Classifier.GetProbabilities` or
+              :class:`Orange.core.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
         """
         self.nativeBayesClassifier(instance, *args, **kwdargs)
 
@@ -245,9 +252,14 @@ class NaiveBayesClassifier(Orange.core.Classifier):
     
     def p(self, class_, instance):
         """Return probability of single class
-        
         Probability is not normalized and can be different from probability
         returned from __call__
+        
+        :param class_:
+        :type class_:
+        :param instance: instance to be classified
+        :type instance: :class:`Orange.data.Instance`
+        
         """
         return self.nativeBayesClassifier.p(class_, instance)
     
