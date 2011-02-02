@@ -1,3 +1,69 @@
+"""
+
+.. index:: self-organizing map (SOM)
+
+.. index:: 
+   single: projection; self-organizing map (SOM)
+
+An implementation of `self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_ algorithm (SOM). 
+SOM is an unsupervised learning 
+algorithm that infers low, typically two-dimensional discretized representation of the input space,
+called a map. The map preserves topological properties of the input space, such that
+the cells that are close in the map include data instances that are similar to each other.
+
+=================================
+Inference of Self-Organizing Maps
+=================================
+
+The main class for inference of self-organizing maps is :obj:`SOMLearner`. The class initializes
+the topology of the map and returns an inference objects which, given the data, performs the 
+optimization of the map:: 
+
+   import Orange
+   som = Orange.projection.som.SOMLearner(map_shape=(10, 20), initialize=Orange.projection.som.InitializeRandom)
+   data = Orange.data.table("iris.tab")
+   map = som(data)
+
+.. autoclass:: SOMLearner
+   :members:
+
+.. autoclass:: Solver
+   :members:
+
+.. autoclass:: SOMMap
+   :members:
+
+=============================================
+Supervised Learning with Self-Organizing Maps
+=============================================
+
+.. autoclass:: SOMSupervisedLearner
+   :members:
+   
+==================
+Supporting Classes
+==================
+
+.. autoclass:: Map
+   :members:
+   
+.. autoclass:: Node
+   :members:
+ 
+========
+Examples
+========
+
+The following code runs k-means clustering and prints out the cluster indexes for the last 10 data instances (`kmeans-run.py`_, uses `iris.tab`_):
+
+.. literalinclude:: code/som1.py
+
+The output of this code is::
+
+    [1, 1, 2, 1, 1, 1, 2, 1, 1, 2]
+
+"""
+
 import sys, os
 
 import numpy
@@ -13,12 +79,17 @@ NeighbourhoodBubble = 1
 NeighbourhoodEpanechicov = 2
 
 class Node(object):
+    """An object holding the information about the node in the map.
+    """
     def __init__(self, pos, map=None, vector=None):
         self.pos = pos
         self.map = map
         self.vector = vector
 
 class Map(object):
+    """Self organizing map (the structure). Includes methods for data initialization.
+    """
+    
     HexagonalTopology = HexagonalTopology
     RectangularTopology = RectangularTopology
     InitializeLinear = InitializeLinear
@@ -33,27 +104,27 @@ class Map(object):
         self.map = [[Node((i, j), self) for j in range(map_shape[1])] for i in range(map_shape[0])]
         
     def __getitem__(self, pos):
-        """ Return the node at position x, y
+        """ Return the node at position x, y.
         """
         x, y = pos
         return self.map[x][y]
 
     def __iter__(self):
-        """ Iterate over all nodes in the map
+        """ Iterate over all nodes in the map.
         """
         for row in self.map:
             for node in row:
                 yield node
 
     def vectors(self):
-        """ Return all vectors of the map as rows in an numpy.array
+        """Return all vectors of the map as rows in an numpy.array.
         """
         return numpy.array([node.vector for node in self])
 
     def unit_distances(self):
-        """ Return a NxN numpy.array of internode distances (based on
+        """Return a NxN numpy.array of internode distances (based on
         node position in the map, not vector space) where N is the number of
-        nodes
+        nodes.
         """
         nodes = list(self)
         dist = numpy.zeros((len(nodes), len(nodes)))
@@ -65,7 +136,7 @@ class Map(object):
         return numpy.array(dist)
 
     def unit_coords(self):
-        """ Return the unit coordinates of all nodes in the map as an numpy.array
+        """ Return the unit coordinates of all nodes in the map as an numpy.array.
         """
         nodes = list(self)
         coords = numpy.zeros((len(nodes), len(self.map_shape)))
@@ -81,8 +152,8 @@ class Map(object):
 
 
     def initialize_map_random(self, data=None, dimension=5):
-        """ Initialize the map nodes vectors randomly, by supplying
-        either training data or dimension of the data
+        """Initialize the map nodes vectors randomly, by supplying
+        either training data or dimension of the data.
         """
         if data is not None:
             min, max = ma.min(data, 0), ma.max(data, 0);
@@ -93,8 +164,8 @@ class Map(object):
             node.vector = min + numpy.random.rand(dimension) * (max - min)
 
     def initialize_map_linear(self, data, map_shape=(10, 20)):
-        """ Initialize the map node vectors lineary over the subspace
-        of the two most significant eigenvectors
+        """ Initialize the map node vectors linearly over the subspace
+        of the two most significant eigenvectors.
         """
         data = data.copy() #ma.array(data)
         dim = data.shape[1]
@@ -119,7 +190,6 @@ class Map(object):
 
         for i in range(mdim):
             eigvec[:, i] = eigvec[:, i] / numpy.sqrt(numpy.dot(eigvec[:, i], eigvec[:, i])) * numpy.sqrt(eigval[i])
-##        print eigvec, eigval
 
         unit_coords = self.unit_coords()
         for d in range(mdim):
@@ -139,17 +209,17 @@ class Map(object):
         return getUMat(self)
         
 class Solver(object):
-    """ SOM Solver class used to train the map.
-    Arguments:
-        * neighbourhood - Neighbourhood function (NeighbourhoodGaussian, or NeighbourhoodBubble)
-        * radius_ini    - Inttial radius
-        * raduis_fin    - Final radius
-        * epoch         - Number of training iterations
-        * batch_train   - If True run the batch training algorithem (default), else use the sequential one
-        * learning_rate - If learning rate for the sequential training algorithem
+    """ SOM Solver class used to train the map. Supports batch and sequential training.
+    Based on ideas from `SOM Toolkit for Matlab <http://www.cis.hut.fi/somtoolbox>`_.
 
-    Both the batch ans sequential algorithems are based on SOM Toolkit for Matlab
+    :param neighbourhood: neighborhood function (NeighbourhoodGaussian, or NeighbourhoodBubble)
+    :param radius_ini: initial radius
+    :param raduis_fin: final radius
+    :param epoch: number of training interactions
+    :param batch_train: if True run the batch training algorithm (default), else use the sequential one
+    :param learning_rate: learning rate for the sequential training algorithm
     """
+    
     def __init__(self, **kwargs):
         self.neighbourhood = NeighbourhoodGaussian
         self.learning_rate = 0.05
@@ -166,10 +236,12 @@ class Solver(object):
         return self.radius_ini - (float(self.radius_ini) - self.radius_fin)*(float(epoch) / self.epochs)
 
     def alpha(self, epoch):
+        """Compute the learning rate from epoch, starting with learning_rate to 0 at the end of training. 
+        """
         return (1 - epoch/self.epochs)*self.learning_rate
             
     def __call__(self, data, map, progressCallback=None):
-        """ Train the map on data. Use progressCallback to Report on the progress.
+        """ Train the map from data. Set progressCallback function to report on the progress.
         """
         self.data = data
         self.map = map
@@ -183,6 +255,8 @@ class Solver(object):
         return self.map
 
     def train_sequential(self, progressCallback):
+        """Sequential training algorithm. 
+        """
         self.vectors = self.map.vectors()
         self.unit_distances = self.map.unit_distances()
         
@@ -210,6 +284,8 @@ class Solver(object):
 #        show()
 
     def train_step_sequential(self, epoch, indices=None):
+        """A single step of sequential training algorithm.
+        """
         indices = range(len(self.data)) if indices == None else indices
         for ind in indices:
             x = self.data[ind]
@@ -234,6 +310,9 @@ class Solver(object):
             self.vectors[nonzero] = self.vectors[nonzero] - Dx[nonzero] * numpy.reshape(h, (len(h), 1))
 
     def train_batch(self, progressCallback=None):
+        """Batch training algorithm.
+        """
+        
         self.unit_distances = self.map.unit_distances()
         self.constant_matrix = 2 * ma.dot(numpy.eye(self.data.shape[1]), numpy.transpose(self.data))
         self.dist_cons = numpy.transpose(ma.dot(self.data**2, numpy.ones(self.data.shape[1])))
@@ -260,6 +339,8 @@ class Solver(object):
             node.vector = vector
 
     def train_step_batch(self, epoch):
+        """A single step of batch training algorithm.
+        """
         D1 = ma.dot(self.vectors**2, self.weight_matrix)
         D2 = ma.dot(self.vectors, self.constant_matrix)
         Dist = D1 - D2
@@ -292,11 +373,24 @@ class Solver(object):
  
             
 class SOMLearner(orange.Learner):
-    """ SOMLearner is a class used to learn SOM from orange.ExampleTable
-
-    Example:
-        >>> som = orngSOM.SOMLearner(map_shape=(10, 20), initialize=orngSOM.InitializeRandom)
-        >>> map = som(orange.ExampleTable("iris.tab"))
+    """An implementation of self-organizing map. Considers an input data set, projects the data 
+    instances onto a map, and returns a result in the form of a classifier holding projection
+    information together with an algorithm to project new data instances. Uses :obj:`Map` for
+    representation of projection space, :obj:`Solver` for training, and returns a trained 
+    map with information on projection of the training data as crafted by :obj:`SOMMap`.
+    
+    :param map_shape: dimension of the map
+    :param initialize: type of initialization (InitializeLinear or InitializeRandom), linear 
+      initialization assigns the data to the cells according to its position in two-dimensional
+      principal component projection
+    :param topology: topology type (HexagonalTopology or RectangularTopology)
+    :param neighbourhood: cell neighborhood type (NeighbourhoodGaussian, NeighbourhoodBubble or NeighbourhoodEpanechicov),
+    :param batch_train: perform batch training?
+    :param learning_rate: learning rate
+    :param radius_ini: initial radius
+    :param radius_fin: final radius
+    :param epochs: number of epochs (iterations of a training steps)
+    :param solver: a class that executes the optimization algorithm
     """
     
     def __new__(cls, examples=None, weightId=0, **kwargs):
@@ -308,7 +402,8 @@ class SOMLearner(orange.Learner):
             return self
         
     def __init__(self, map_shape=(5, 10), initialize=InitializeLinear, topology=HexagonalTopology, neighbourhood=NeighbourhoodGaussian,
-                 batch_train=True, learning_rate=0.05, radius_ini=3.0, radius_fin=1.0, epochs=1000, **kwargs):
+                 batch_train=True, learning_rate=0.05, radius_ini=3.0, radius_fin=1.0, epochs=1000, solver=Solver, **kwargs):
+
         self.map_shape = map_shape
         self.initialize = initialize
         self.topology = topology
@@ -318,27 +413,31 @@ class SOMLearner(orange.Learner):
         self.radius_ini = radius_ini
         self.radius_fin = radius_fin
         self.epochs = epochs
+        self.solver = solver
         self.eps = 1e-4
         
         orange.Learner.__init__(self, **kwargs)
         
-    def __call__(self, examples, weightID=0, progressCallback=None):
-        data, classes, w = examples.toNumpyMA()
+    def __call__(self, data, weightID=0, progressCallback=None):
+        numdata, classes, w = data.toNumpyMA()
         map = Map(self.map_shape, topology=self.topology)
         if self.initialize == Map.InitializeLinear:
-            map.initialize_map_linear(data)
+            map.initialize_map_linear(numdata)
         else:
-            map.initialize_map_random(data)
-        map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
+            map.initialize_map_random(numdata)
+        map = self.solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
                      radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epochs=self.epochs)(data, map, progressCallback=progressCallback)
-        return SOMMap(map, examples)
+                     epochs=self.epochs)(numdata, map, progressCallback=progressCallback)
+        return SOMMap(map, data)
 
 class SOMSupervisedLearner(SOMLearner):
-    """ SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
+    """SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
     class information in the learning process. This is achieved by adding a value for each class
     to the training instances, where 1.0 signals class membership and all other values are 0.0.
     After the training, the new values are discarded from the node vectors.
+    
+    :param data: class-labeled data set
+    :param progressCallback: a function to report on inference progress
     """
     def __call__(self, examples, weightID=0, progressCallback=None):
         data, classes, w = examples.toNumpyMA()
@@ -359,29 +458,35 @@ class SOMSupervisedLearner(SOMLearner):
         return SOMMap(map, examples)
 
 class SOMMap(orange.Classifier):
-    def __init__(self, map=[], examples=[]):
+    """Project the data onto the inferred self-organizing map.
+    
+    :param map: a trained self-organizing map
+    :param data: the data to be mapped on the map
+    """
+    
+    def __init__(self, map=[], data=[]):
         self.map = map
-        self.examples = examples
+        self.examples = data
         for node in map:
-            node.referenceExample = orange.Example(orange.Domain(examples.domain.attributes, False),
+            node.referenceExample = orange.Example(orange.Domain(self.examples.domain.attributes, False),
                                                  [(var(value) if var.varType == orange.VarTypes.Continuous else var(int(value))) \
-                                                  for var, value in zip(examples.domain.attributes, node.vector)])
-            node.examples = orange.ExampleTable(examples.domain)
+                                                  for var, value in zip(self.examples.domain.attributes, node.vector)])
+            node.examples = orange.ExampleTable(self.examples.domain)
 
-        for ex in examples:
+        for ex in self.examples:
             node = self.getBestMatchingNode(ex)
             node.examples.append(ex)
 
-        if examples and examples.domain.classVar:
+        if self.examples and self.examples.domain.classVar:
             for node in self.map:
-                node.classifier = orange.MajorityLearner(node.examples if node.examples else examples)
+                node.classifier = orange.MajorityLearner(node.examples if node.examples else self.examples)
                      
-            self.classVar = examples.domain.classVar
+            self.classVar = self.examples.domain.classVar
         else:
             self.classVar = None
 
     def getBestMatchingNode(self, example):
-        """ Return the best matching node
+        """Return the best matching node for a given data instance
         """
         example, c, w = orange.ExampleTable([example]).toNumpyMA()
         vectors = self.map.vectors()
