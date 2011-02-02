@@ -1,5 +1,5 @@
 ========================
-orange.classifcation.svm
+Orange.classifcation.svm
 ========================
 
 .. automodule:: Orange.classification.svm
