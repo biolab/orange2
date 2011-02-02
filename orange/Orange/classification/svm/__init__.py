@@ -234,11 +234,11 @@ class SVMLearner(_SVMLearner):
         if len(examples) == 0:
             raise ValueError("Example table is without any defined classes")
         if self.svm_type in [0,1] and \
-        examples.domain.classVar.varType!=Orange.core.VarTypes.Discrete:
+        examples.domain.classVar.varType!=Orange.data.Type.Discrete:
             self.svm_type+=3
             #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
         if self.svm_type in [3,4] and \
-        examples.domain.classVar.varType==Orange.core.VarTypes.Discrete:
+        examples.domain.classVar.varType==Orange.data.Type.Discrete:
             self.svm_type-=3
             #raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
         if self.kernel_type==4 and not self.kernelFunc:
@@ -492,7 +492,7 @@ def getLinearSVMWeights(classifier, sum=True):
                 attributes = SVs.domain.attributes + \
                 SVs[svInd].getmetas(False, Orange.data.feature.Feature).keys()
                 for attr in attributes:
-                    if attr.varType==Orange.core.VarTypes.Continuous:
+                    if attr.varType==Orange.data.Type.Continuous:
                         updateWeights(w, attr, to_float(SVs[svInd][attr]), \
                                       classifier.coef[coefInd][svInd])
             coefInd=i
@@ -500,7 +500,7 @@ def getLinearSVMWeights(classifier, sum=True):
                 attributes = SVs.domain.attributes + \
                 SVs[svInd].getmetas(False, Orange.data.feature.Feature).keys()
                 for attr in attributes:
-                    if attr.varType==Orange.core.VarTypes.Continuous:
+                    if attr.varType==Orange.data.Type.Continuous:
                         updateWeights(w, attr, to_float(SVs[svInd][attr]), \
                                       classifier.coef[coefInd][svInd])
             weights.append(w)
@@ -645,12 +645,12 @@ def exampleTableToSVMFormat(examples, file):
     """Save an example table in svm format as used by LibSVM"""
     attrs = examples.domain.attributes + examples.domain.getmetas().values()
     attrs = [attr for attr in attrs if attr.varType 
-             in [Orange.core.VarTypes.Continuous, 
-                 Orange.core.VarTypes.Discrete]]
+             in [Orange.data.Type.Continuous, 
+                 Orange.data.Type.Discrete]]
     cv = examples.domain.classVar
     
     for ex in examples:
-        if cv.varType == Orange.core.VarTypes.Discrete:
+        if cv.varType == Orange.data.Type.Discrete:
             file.write(str(int(ex[cv])))  
         else:
             file.write(str(float(ex[cv])))
