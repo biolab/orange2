@@ -24,7 +24,7 @@ rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
 
 # Gets current (daily) info files from SVN
 echo "Updating local ailab Fink info files repository."
-curl "http://www.ailab.si/orange/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+curl "http://orange.biolab.si/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 tar -xzf $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/ailab/main/finkinfo/
 rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
 
@@ -39,9 +39,9 @@ if ! grep -q '^UseBinaryDist:.*true' $FINK_ROOT/etc/fink.conf; then
 fi
 
 # Adds our binary repository to local Fink (APT) configuration if on Mac OS X versions we provide binary packages for
-if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]] && ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
+if [[ "$MAC_VERSION" -eq 5 || "$MAC_VERSION" -eq 6 ]] && ! grep -q "deb http://orange.biolab.si/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding ailab Fink binary packages repository to Fink configuration."
-	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
+	echo "deb http://orange.biolab.si/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
 
 # Refreshes packages lists
