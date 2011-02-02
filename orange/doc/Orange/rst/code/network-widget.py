@@ -3,12 +3,12 @@ from PyQt4.QtGui import QApplication
 
 appl = QApplication(sys.argv)
 
-import orange
-import orngNetwork
+import Orange.data
+import Orange.network
 import OWNetExplorer
 
-net = orngNetwork.Network.read('musicians.net')
-net.items = orange.ExampleTable('musicians_items.tab')
+net = Orange.network.Network.read('musicians.net')
+net.items = Orange.data.Table('musicians_items.tab')
 
 ow = OWNetExplorer.OWNetExplorer()
 ow.setNetwork(net)
