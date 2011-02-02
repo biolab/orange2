@@ -5,9 +5,14 @@
 # Classes:     orngSOM.SOMLearner
 
 import Orange
-som = Orange.projection.som.SOMLearner(map_shape=(10, 20), initialize=Orange.projection.som.InitializeRandom)
+som = Orange.projection.som.SOMLearner(map_shape=(3, 3), initialize=Orange.projection.som.InitializeRandom)
 map = som(Orange.data.Table("iris.tab"))
-for n in map:
-    print "node:", n.pos[0], n.pos[1]
-    for e in n.examples:
-        print "\t",e
+
+print "Node    Instances"
+print "\n".join(["%s  %d" % (str(n.pos), len(n.examples)) for n in map])
+
+i, j = 1, 2
+print
+print "Data instances in cell (%d, %d):" % (i, j)
+for e in map[i, j].examples:
+    print e
