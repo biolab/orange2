@@ -1,5 +1,13 @@
 import Orange.core as orange
 
+from Orange.core import \
+    Discrete2Continuous, \
+    Discretizer, \
+        BiModalDiscretizer, \
+        EquiDistDiscretizer, \
+        IntervalDiscretizer, \
+        ThresholdDiscretizer
+
 ######
 # from orngDics.py
 def entropyDiscretization(data):
