@@ -14,7 +14,8 @@ Contents:
    orange.associate   
    orange.cluster
    orange.classification.bayes
-   orange.classification.majority
+   Orange.classification.majority
+   Orange.classification.lookup
    orange.classification.svm
    orange.classification.tree
    orange.classification.logreg
