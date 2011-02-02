@@ -1,1 +1,1 @@
-from Orange.classify.logreg import *
+from Orange.classification.logreg import *
