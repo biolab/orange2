@@ -16,15 +16,19 @@ CN2
 Several variations of well-known CN2 rule learning algorithms are implemented.
 
 All variations of CN2 are implemented by wrapping
-:class:`Orange.core.RuleLearner` class. Each CN2 learner class in this module
-changes some of RuleLearner's replaceable components to reflect the required
-behaviour. Thus, in the description of each class, we mention only components
-that differ from default values.
+:class:`Orange.classification.rules.RuleLearner` class. Each CN2 learner class
+in this module changes some of RuleLearner's replaceable components to reflect
+the required behaviour. Thus, in the description of each class, we mention only
+components that differ from default values.
 
 .. autoclass:: Orange.classification.rules.CN2Learner
    :members:
    :show-inheritance:
    :undoc-members:
+   
+.. autoclass:: Orange.classification.rules.CN2Classifier
+   :members:
+   :show-inheritance:
    
 .. index:: Unordered CN2
    
@@ -32,6 +36,10 @@ that differ from default values.
    :members:
    :show-inheritance:
    :undoc-members:
+   
+.. autoclass:: Orange.classification.rules.CN2UnorderedClassifier
+   :members:
+   :show-inheritance:
    
 .. index:: CN2-SD
 .. index:: Subgroup discovery
@@ -95,57 +103,11 @@ from Orange.core import \
     RuleValidator, \
     RuleValidator_LRS
 
-
-
-
-################################################################################
-# Following is a copy&paste of orngCN2 ...                                     #
-################################################################################
-
-
 import Orange.core
-import random, math
+import random
+import math
 from orngABCN2 import ABCN2
 
-def ruleToString(rule, showDistribution = True):
-    def selectSign(oper):
-        if oper == Orange.core.ValueFilter_continuous.Less:
-            return "<"
-        elif oper == Orange.core.ValueFilter_continuous.LessEqual:
-            return "<="
-        elif oper == Orange.core.ValueFilter_continuous.Greater:
-            return ">"
-        elif oper == Orange.core.ValueFilter_continuous.GreaterEqual:
-            return ">="
-        else: return "="
-
-    if not rule:
-        return "None"
-    conds = rule.filter.conditions
-    domain = rule.filter.domain
-    
-    ret = "IF "
-    if len(conds)==0:
-        ret = ret + "TRUE"
-
-    for i,c in enumerate(conds):
-        if i > 0:
-            ret += " AND "
-        if type(c) == Orange.core.ValueFilter_discrete:
-            ret += domain[c.position].name + "=" + str([domain[c.position].values[int(v)] for v in c.values])
-        elif type(c) == Orange.core.ValueFilter_continuous:
-            ret += domain[c.position].name + selectSign(c.oper) + str(c.ref)
-    if rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and rule.classifier.defaultVal:
-        ret = ret + " THEN "+domain.classVar.name+"="+\
-        str(rule.classifier.defaultValue)
-        if showDistribution:
-            ret += str(rule.classDistribution)
-    elif rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and type(domain.classVar) == Orange.core.EnumVariable:
-        ret = ret + " THEN "+domain.classVar.name+"="+\
-        str(rule.classDistribution.modus())
-        if showDistribution:
-            ret += str(rule.classDistribution)
-    return ret        
 
 class LaplaceEvaluator(RuleEvaluator):
     def __call__(self, rule, data, weightID, targetClass, apriori):
@@ -159,6 +121,7 @@ class LaplaceEvaluator(RuleEvaluator):
             return (rule.classDistribution[targetClass]+1)/(sumDist+2)
         else:
             return (max(rule.classDistribution)+1)/(sumDist+len(data.domain.classVar.values))
+
 
 class WRACCEvaluator(RuleEvaluator):
     def __call__(self, rule, data, weightID, targetClass, apriori):
@@ -180,58 +143,28 @@ class WRACCEvaluator(RuleEvaluator):
             return pRule*(pTruePositive-pClass)
         else: return (pTruePositive-pClass)/max(pRule,1e-6)
 
-class mEstimate(RuleEvaluator):
-    def __init__(self, m=2):
-        self.m = m
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if not rule.classDistribution:
-            return 0.
-        sumDist = rule.classDistribution.abs
-        if self.m == 0 and not sumDist:
-            return 0.
-        # get distribution
-        if targetClass>-1:
-            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)
-        else:
-            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)      
-        return p
 
-class RuleStopping_apriori(RuleStoppingCriteria):
-    def __init__(self, apriori=None):
-        self.apriori =  None
-        
-    def __call__(self,rules,rule,examples,data):
-        if not self.apriori:
-            return False
-        if not type(rule.classifier) == Orange.core.DefaultClassifier:
-            return False
-        ruleAcc = rule.classDistribution[rule.classifier.defaultVal]/rule.classDistribution.abs
-        aprioriAcc = self.apriori[rule.classifier.defaultVal]/self.apriori.abs
-        if ruleAcc>aprioriAcc:
-            return False
-        return True
-
-class LengthValidator(RuleValidator):
-    """ prune rules with more conditions than self.length. """
-    def __init__(self, length=-1):
-        self.length = length
-        
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if self.length >= 0:
-            return len(rule.filter.conditions) <= self.length
-        return True    
-    
-
-def supervisedClassCheck(examples):
-    if not examples.domain.classVar:
-        raise Exception("Class variable is required!")
-    if examples.domain.classVar.varType == Orange.core.VarTypes.Continuous:
-        raise Exception("CN2 requires a discrete class!")
-    
 class CN2Learner(RuleLearner):
+    """
+    Classical CN2 (see Clark and Niblett; 1988). It learns a set of ordered
+    rules, which means that classificator must try these rules in the same
+    order as they were learned.
+    
+    """
+    
     def __new__(cls, examples=None, weightID=0, **kwargs):
+        """
+        :param examples: Data instances to learn from. If not None, an
+            :class:`Orange.classification.rules.CN2Classifier` is returned. 
+        :type examples: :class:`Orange.data.Table` or None
+        :param weightId: ID number of weight attribute, default 0
+        :type weightId: integer
+        :rtype: :class:`Orange.classification.rules.CN2Learner` or
+            :class:`Orange.classification.rules.CN2Classifier`
+        
+        Other named parameters may be passed as defined by the ancestor class.
+        
+        """
         self = RuleLearner.__new__(cls, **kwargs)
         if examples is not None:
             self.__init__(**kwargs)
@@ -240,6 +173,18 @@ class CN2Learner(RuleLearner):
             return self
         
     def __init__(self, evaluator = RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
+        """
+        :param evaluator:  
+        :type evaluator: :class:`Orange.data.Table`
+        :param beamWidth: 
+        :type beamWidth: 
+        :param alpha:
+        :type alpha:
+        :rtype: :class:`Orange.classification.rules.CN2Learner`
+        
+        Other named parameters may be passed as defined by the ancestor class.
+        
+        """
         self.__dict__.update(kwds)
         self.ruleFinder = RuleBeamFinder()
         self.ruleFinder.ruleFilter = RuleBeamFilter_Width(width = beamWidth)
@@ -247,13 +192,31 @@ class CN2Learner(RuleLearner):
         self.ruleFinder.validator = RuleValidator_LRS(alpha = alpha)
         
     def __call__(self, examples, weight=0):
+        """
+        :param examples: Data instances to learn from. 
+        :type examples: :class:`Orange.data.Table`
+        :param weight: ID number of weight attribute, default 0
+        :type weight: integer
+        :rtype: :class:`Orange.classification.rules.CN2Classifier`
+        
+        Learns from the given table of data instances.
+        
+        """
         supervisedClassCheck(examples)
         
         cl = RuleLearner.__call__(self,examples,weight)
         rules = cl.rules
         return CN2Classifier(rules, examples, weight)
 
+
 class CN2Classifier(RuleClassifier):
+    """
+    Classical CN2 (see Clark and Niblett; 1988). Classifies using an ordered
+    set of rules. Usually the learner
+    (:class:`Orange.classification.rules.CN2Learner`) is used to construct the
+    classifier.
+    
+    """
     def __init__(self, rules=None, examples=None, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
@@ -288,9 +251,31 @@ class CN2Classifier(RuleClassifier):
         return retStr
 
 
-# Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearner(RuleLearner):
+    """
+    CN2 unordered (see Clark and Boswell; 1991). It learns a set of unordered
+    rules - classification from rules does not assume ordering of rules - and
+    returns an :class:`Orange.classification.rules.CN2UnorderedClassifier`. In
+    fact, learning rules is quite similar to learning in classical CN2, where
+    the process of learning of rules is separated to learning rules for each
+    class, which is implemented in class' __call__ function. Learning of rules
+    for each class uses a slightly changed version of classical CN2 algorithm.
+    
+    """
     def __new__(cls, examples=None, weightID=0, **kwargs):
+        """
+        :param examples: Data instances to learn from. If not None, an
+            :class:`Orange.classification.rules.CN2UnorderedClassifier` is
+            returned. 
+        :type examples: :class:`Orange.data.Table` or None
+        :param weightId: ID number of weight attribute, default 0
+        :type weightId: integer
+        :rtype: :class:`Orange.classification.rules.CN2UnorderedLearner` or
+            :class:`Orange.classification.rules.CN2UnorderedClassifier`
+        
+        Other named parameters may be passed as defined by the ancestor class.
+        
+        """
         self = RuleLearner.__new__(cls, **kwargs)
         if examples is not None:
             self.__init__(**kwargs)
@@ -387,6 +372,147 @@ class CN2UnorderedClassifier(RuleClassifier):
         for r in self.rules:
             retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
         return retStr
+
+
+class CN2SDUnorderedLearner(CN2UnorderedLearner):
+    """
+    CN2-SD (see Lavrac et al.; 2004). It learns a set of unordered rules, which
+    is the same as :class:`Orange.classification.rules.CN2UnorderedLearner`.
+    The difference between classical CN2 unordered and CN2-SD is selection of
+    specific evaluation function and covering function, as mentioned in
+    description of 'mult' parameter of __init__ function.
+    
+    """
+    def __new__(cls, examples=None, weightID=0, **kwargs):
+        """
+        :param examples: Data instances to learn from. If not None, an
+            :class:`Orange.classification.rules.CN2UnorderedClassifier` is
+            returned. 
+        :type examples: :class:`Orange.data.Table` or None
+        :param weightId: ID number of weight attribute, default 0
+        :type weightId: integer
+        :rtype: :class:`Orange.classification.rules.CN2SDUnorderedLearner` or
+            :class:`Orange.classification.rules.CN2UnorderedClassifier`
+        
+        Other named parameters may be passed as defined by the ancestor class.
+        
+        """
+        self = CN2UnorderedLearner.__new__(cls, **kwargs)
+        if examples is not None:
+            self.__init__(**kwargs)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+        
+    def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
+        CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
+                                          beamWidth = beamWidth, alpha = alpha, **kwds)
+        self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
+
+    def __call__(self, examples, weight=0):        
+        supervisedClassCheck(examples)
+        
+        oldExamples = Orange.core.ExampleTable(examples)
+        classifier = CN2UnorderedLearnerClass.__call__(self,examples,weight)
+        for r in classifier.rules:
+            r.filterAndStore(oldExamples,weight,r.classifier.defaultVal)
+        return classifier
+
+
+def ruleToString(rule, showDistribution = True):
+    def selectSign(oper):
+        if oper == Orange.core.ValueFilter_continuous.Less:
+            return "<"
+        elif oper == Orange.core.ValueFilter_continuous.LessEqual:
+            return "<="
+        elif oper == Orange.core.ValueFilter_continuous.Greater:
+            return ">"
+        elif oper == Orange.core.ValueFilter_continuous.GreaterEqual:
+            return ">="
+        else: return "="
+
+    if not rule:
+        return "None"
+    conds = rule.filter.conditions
+    domain = rule.filter.domain
+    
+    ret = "IF "
+    if len(conds)==0:
+        ret = ret + "TRUE"
+
+    for i,c in enumerate(conds):
+        if i > 0:
+            ret += " AND "
+        if type(c) == Orange.core.ValueFilter_discrete:
+            ret += domain[c.position].name + "=" + str([domain[c.position].values[int(v)] for v in c.values])
+        elif type(c) == Orange.core.ValueFilter_continuous:
+            ret += domain[c.position].name + selectSign(c.oper) + str(c.ref)
+    if rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and rule.classifier.defaultVal:
+        ret = ret + " THEN "+domain.classVar.name+"="+\
+        str(rule.classifier.defaultValue)
+        if showDistribution:
+            ret += str(rule.classDistribution)
+    elif rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and type(domain.classVar) == Orange.core.EnumVariable:
+        ret = ret + " THEN "+domain.classVar.name+"="+\
+        str(rule.classDistribution.modus())
+        if showDistribution:
+            ret += str(rule.classDistribution)
+    return ret        
+
+
+class mEstimate(RuleEvaluator):
+    def __init__(self, m=2):
+        self.m = m
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if not rule.classDistribution:
+            return 0.
+        sumDist = rule.classDistribution.abs
+        if self.m == 0 and not sumDist:
+            return 0.
+        # get distribution
+        if targetClass>-1:
+            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)
+        else:
+            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)      
+        return p
+
+class RuleStopping_apriori(RuleStoppingCriteria):
+    def __init__(self, apriori=None):
+        self.apriori =  None
+        
+    def __call__(self,rules,rule,examples,data):
+        if not self.apriori:
+            return False
+        if not type(rule.classifier) == Orange.core.DefaultClassifier:
+            return False
+        ruleAcc = rule.classDistribution[rule.classifier.defaultVal]/rule.classDistribution.abs
+        aprioriAcc = self.apriori[rule.classifier.defaultVal]/self.apriori.abs
+        if ruleAcc>aprioriAcc:
+            return False
+        return True
+
+class LengthValidator(RuleValidator):
+    """ prune rules with more conditions than self.length. """
+    def __init__(self, length=-1):
+        self.length = length
+        
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if self.length >= 0:
+            return len(rule.filter.conditions) <= self.length
+        return True    
+    
+
+def supervisedClassCheck(examples):
+    if not examples.domain.classVar:
+        raise Exception("Class variable is required!")
+    if examples.domain.classVar.varType == Orange.core.VarTypes.Continuous:
+        raise Exception("CN2 requires a discrete class!")
+    
+
+
+
 
 class RuleClassifier_bestRule(RuleClassifier):
     def __init__(self, rules, examples, weightID = 0, **argkw):
@@ -520,36 +646,7 @@ class ruleSt_setRules(RuleStoppingCriteria):
         if not ru_st:
             self.validator.rules.append(rule)
         return bool(ru_st)
-#
-#def CN2SDUnorderedLearner(examples = None, weightID=0, **kwds):
-#    cn2 = CN2SDUnorderedLearnerClass(**kwds)
-#    if examples:
-#        return cn2(examples, weightID)
-#    else:
-#        return cn2
     
-class CN2SDUnorderedLearner(CN2UnorderedLearner):
-    def __new__(cls, examples=None, weightID=0, **kwargs):
-        self = CN2UnorderedLearner.__new__(cls, **kwargs)
-        if examples is not None:
-            self.__init__(**kwargs)
-            return self.__call__(examples, weightID)
-        else:
-            return self
-        
-    def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
-        CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
-                                          beamWidth = beamWidth, alpha = alpha, **kwds)
-        self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
-
-    def __call__(self, examples, weight=0):        
-        supervisedClassCheck(examples)
-        
-        oldExamples = Orange.core.ExampleTable(examples)
-        classifier = CN2UnorderedLearnerClass.__call__(self,examples,weight)
-        for r in classifier.rules:
-            r.filterAndStore(oldExamples,weight,r.classifier.defaultVal)
-        return classifier
 
 # Miscellaneous - utility functions
 def avg(l):
