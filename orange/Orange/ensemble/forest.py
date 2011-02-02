@@ -88,9 +88,9 @@ class RandomForestLearner(orange.Learner):
 
         if not learner:
             # tree learner assembled as suggested by Brieman (2001)
-            #TODOsmallTreeLearner = Orange.tree.TreeLearner(
-            #storeNodeClassifier = 0, storeContingencies=0, 
-            #storeDistributions=1, minExamples=5).instance()
+            smallTreeLearner = Orange.classification.tree.TreeLearner(
+            storeNodeClassifier = 0, storeContingencies=0, 
+            storeDistributions=1, minExamples=5).instance()
             smallTreeLearner.split.discreteSplitConstructor.measure = \
                     smallTreeLearner.split.continuousSplitConstructor.measure =\
                         orange.MeasureAttribute_gini()
