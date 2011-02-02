@@ -26,6 +26,7 @@ Class
 -----
 
 .. autoclass:: StepWiseFSS_class
+   :members:
 
 Examples
 --------
@@ -51,7 +52,7 @@ Result::
         age=child       1.06       0.25       4.30       0.00       2.89
        sex=female       2.42       0.14      17.04       0.00      11.25
 
-Next examples shows how to handle singularities in data sets
+The next examples shows how to handle singularities in data sets
 (`logreg-singularities.py`_, uses `adult_sample.tab`_).
 
 .. literalinclude:: code/logreg-singularities.py
@@ -119,12 +120,10 @@ classifier would return an error::
     orange.KernelException: 'orange.LogRegLearner': singularity in workclass=Never-worked
 
 
-We can see that attribute workclass=Never-worked is causeing singularity. The
-issue of this is that we should remove Never-worked manually or leave it to
-function LogRegLearner to remove it automatically. 
+We can see that the attribute workclass is causing a singularity.
 
-In the last example it is shown, how the use of stepwise logistic
-regression can help us in achieving better classification
+The last example shows, how the use of stepwise logistic
+regression can help us achieve better classification
 (`logreg-stepwise.py`_, uses `ionosphere.tab`_):
 
 .. literalinclude:: code/logreg-stepwise.py
@@ -198,11 +197,9 @@ from numpy.linalg import *
 
 def printOUT(classifier):
     """ Formatted print to console of all major attributes in logistic
-    regression classifier. Parameter classifier is a logistic regression
-    classifier.
+    regression classifier. 
 
-    :param examples: data set
-    :type examples: :obj:`Orange.data.table`
+    :param classifier: logistic regression classifier
     """
 
     # print out class values
@@ -801,17 +798,16 @@ class bayesianFitter(orange.LogRegFitter):
 ############################################################
 
 
-def StepWiseFSS(examples = None, **kwds):
-    """
-    If examples are specified, stepwise logistic regression implemented
-    in stepWiseFSS_class is performed and a list of chosen attributes
-    is returned. If examples are not specified an instance of
-    stepWiseFSS_class with all parameters set is returned. Parameters
-    addCrit, deleteCrit and numAttr are explained in the description
-    of stepWiseFSS_class.
+def StepWiseFSS(table=None, **kwds):
+    """Implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000].
 
-    :param examples: data set
-    :type examples: Orange.data.table
+    If :obj:`table` is specified, stepwise logistic regression implemented
+    in :obj:`stepWiseFSS_class` is performed and a list of chosen attributes
+    is returned. If :obj:`table` is not specified an instance of
+    :obj:`stepWiseFSS_class` with all parameters set is returned.
+
+    :param table: data set
+    :type table: Orange.data.table
 
     :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
     :type addCrit: float
@@ -825,11 +821,11 @@ def StepWiseFSS(examples = None, **kwds):
     """
 
     """
-      Constructs and returns a new set of examples that includes a
+      Constructs and returns a new set of table that includes a
       class and attributes selected by stepwise logistic regression. This is an
       implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000]
 
-      examples: data set (ExampleTable)     
+      table: data set (ExampleTable)     
       addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
       deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
       numAttr: maximum number of selected attributes, use -1 for infinity
@@ -837,8 +833,8 @@ def StepWiseFSS(examples = None, **kwds):
     """
 
     fss = apply(StepWiseFSS_class, (), kwds)
-    if examples is not None:
-        return fss(examples)
+    if table is not None:
+        return fss(table)
     else:
         return fss
 
@@ -876,6 +872,7 @@ class StepWiseFSS_class(orange.Learner):
   """
 
   def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
+
     self.__dict__.update(kwds)
     self.addCrit = addCrit
     self.deleteCrit = deleteCrit
