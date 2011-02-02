@@ -2,4 +2,4 @@
 orange.classify.majority
 ========================
 
-.. automodule:: Orange.classify.majority
+.. automodule:: Orange.classification.majority
