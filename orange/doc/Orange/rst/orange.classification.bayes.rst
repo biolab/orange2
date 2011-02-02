@@ -1,5 +1,5 @@
-=====================
-orange.classify.bayes
-=====================
+===========================
+orange.classification.bayes
+===========================
 
-.. automodule:: classification
+.. automodule:: Orange.classification.bayes

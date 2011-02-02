@@ -1,12 +1,12 @@
 """ 
    index:: naive bayes
 
-=======================
-Support Vector Machines
-=======================
+=========================
+Naive Bayesian Classifier
+=========================
 
 .. index:: Naive Bayesian Learner
-.. autoclass:: Orange.classify.bayes.NaiveBayes
+.. autoclass:: Orange.classification.bayes.NaiveBayes
    :members:
    
 """
@@ -28,10 +28,17 @@ class NaiveBayes(Orange.core.Learner):
         else:
             return self
         
-    def __init__(self, m=0, estimatorConstructor=None,
-                 conditionalEstimatorConstructor=None,
+    def __init__(self, normalizePredictions=True, adjustTreshold=False,
+                 m=0, estimatorConstructor=None, conditionalEstimatorConstructor=None,
                  conditionalEstimatorConstructorContinuous=None,**argkw):
         """
+        :param adjustTreshold: If set and the class is binary, the classifier's
+                threshold will be set as to optimize the classification accuracy.
+                The threshold is tuned by observing the probabilities predicted on
+                learning data. Default is False (to conform with the usual naive
+                bayesian classifiers), but setting it to True can increase the
+                accuracy considerably.
+        :type adjustTreshold: boolean
         :param m: m for m-estimate. If set, m-estimation of probabilities
                 will be used using :class:`orange.ProbabilityEstimatorConstructor_m`
                 This attribute is ignored if you also set estimatorConstructor.
@@ -51,6 +58,7 @@ class NaiveBayes(Orange.core.Learner):
                 :class:`orange.ConditionalProbabilityEstimatorConstructor_loess`
         :type conditionalEstimatorConstructorContinuous: orange.ConditionalProbabilityEstimatorConstructor
         """
+        self.adjustThreshold = adjustTreshold
         self.m = m
         self.estimatorConstructor = estimatorConstructor
         self.conditionalEstimatorConstructor = conditionalEstimatorConstructor
