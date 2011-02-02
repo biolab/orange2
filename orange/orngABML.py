@@ -1,11 +1,11 @@
 # This module is used to handle argumented examples.
 
-import orange
+import Orange.core
 import re
 import string
 import warnings
 
-import orngCN2
+import Orange.classification.rules
 import numpy
 
 # regular expressions
@@ -26,18 +26,18 @@ argAt = re.compile(r'[{},]+')
 argCompare = re.compile(r'[(<=)(>=)<>]')
 
 def strSign(oper):
-    if oper == orange.ValueFilter_continuous.Less:
+    if oper == Orange.core.ValueFilter_continuous.Less:
         return "<"
-    elif oper == orange.ValueFilter_continuous.LessEqual:
+    elif oper == Orange.core.ValueFilter_continuous.LessEqual:
         return "<="
-    elif oper == orange.ValueFilter_continuous.Greater:
+    elif oper == Orange.core.ValueFilter_continuous.Greater:
         return ">"
-    elif oper == orange.ValueFilter_continuous.GreaterEqual:
+    elif oper == Orange.core.ValueFilter_continuous.GreaterEqual:
         return ">="
     else: return "="
 
 def strArg(arg, domain, leave_ref):
-    if type(arg) == orange.ValueFilter_discrete:
+    if type(arg) == Orange.core.ValueFilter_discrete:
         return str(domain[arg.position].name)
     else:
         if leave_ref:
@@ -61,8 +61,8 @@ class Argumentation:
     """ Class that describes a set of positive and negative arguments
     this class is used as a value for ArgumentationVariable. """
     def __init__(self):
-        self.positiveArguments = orange.RuleList()
-        self.negativeArguments = orange.RuleList()
+        self.positiveArguments = Orange.core.RuleList()
+        self.negativeArguments = Orange.core.RuleList()
         self.notYetComputedArguments = [] # Arguments that need the whole data set
                                           # when processing are stored here 
     
@@ -100,7 +100,7 @@ class Argumentation:
 
 POSITIVE = True
 NEGATIVE = False
-class ArgumentVariable(orange.PythonVariable):
+class ArgumentVariable(Orange.core.PythonVariable):
     """ For writing and parsing arguments in .tab files. """
     def str2val(self, strV):
         """ convert str to val - used for creating variables. """
@@ -111,7 +111,7 @@ class ArgumentVariable(orange.PythonVariable):
         mt = testVal.match(strV)
         if not mt or not mt.end() == len(strV):
             warnings.warn(strV+" is a badly formed argument.")
-            return orange.PythonValueSpecial(2) # return special if argument doesnt match the formal form 
+            return Orange.core.PythonValueSpecial(2) # return special if argument doesnt match the formal form 
 
         if not example:
             example = self.example
@@ -128,7 +128,7 @@ class ArgumentVariable(orange.PythonVariable):
             if sp == '~':
                 type = NEGATIVE
                 continue
-            argument = orange.Rule(filter=orange.Filter_values(domain=domain))
+            argument = Orange.core.Rule(filter=Orange.core.Filter_values(domain=domain))
             argument.setattr("unspecialized_argument",False)
             
             reasonValues = filter(lambda x:x!='' and x!='"', argAt.split(sp)) # reasons in this argument
@@ -144,8 +144,8 @@ class ArgumentVariable(orange.PythonVariable):
                         warnings.warn("Meta attribute %s used in argument. Is this intentional?"%r)
                         continue
                     value = example[attribute]
-                    if attribute.varType == orange.VarTypes.Discrete: # discrete argument
-                        argument.filter.conditions.append(orange.ValueFilter_discrete(
+                    if attribute.varType == Orange.core.VarTypes.Discrete: # discrete argument
+                        argument.filter.conditions.append(Orange.core.ValueFilter_discrete(
                                                             position = domain.attributes.index(attribute),
                                                             values=[value],
                                                             acceptSpecial = 0))
@@ -187,11 +187,11 @@ class ArgumentVariable(orange.PythonVariable):
                             continue
                     else:
                         ref = 0.                        
-                    if sign == "<": oper = orange.ValueFilter_continuous.Less
-                    elif sign == ">": oper = orange.ValueFilter_continuous.Greater
-                    elif sign == "<=": oper = orange.ValueFilter_continuous.LessEqual
-                    else: oper = orange.ValueFilter_continuous.GreaterEqual
-                    argument.filter.conditions.append(orange.ValueFilter_continuous(
+                    if sign == "<": oper = Orange.core.ValueFilter_continuous.Less
+                    elif sign == ">": oper = Orange.core.ValueFilter_continuous.Greater
+                    elif sign == "<=": oper = Orange.core.ValueFilter_continuous.LessEqual
+                    else: oper = Orange.core.ValueFilter_continuous.GreaterEqual
+                    argument.filter.conditions.append(Orange.core.ValueFilter_continuous(
                                                 position = domain.attributes.index(attribute),
                                                 oper=oper,
                                                 ref=ref,
@@ -203,7 +203,7 @@ class ArgumentVariable(orange.PythonVariable):
                         argument.filter.conditions[-1].setattr("unspecialized_condition",False)
 
             if example.domain.classVar:
-                argument.classifier = orange.DefaultClassifier(defaultVal = example.getclass())
+                argument.classifier = Orange.core.DefaultClassifier(defaultVal = example.getclass())
             argument.complexity = len(argument.filter.conditions)
 
             if type: # and len(argument.filter.conditions):
@@ -238,9 +238,9 @@ class ArgumentFilter_hasSpecial:
 def evaluateAndSortArguments(examples, argAtt, evaluateFunction = None, apriori = None):
     """ Evaluate positive arguments and sort them by quality. """
     if not apriori:
-        apriori = orange.Distribution(examples.domain.classVar,examples)
+        apriori = Orange.core.Distribution(examples.domain.classVar,examples)
     if not evaluateFunction:
-        evaluateFunction = orange.RuleEvaluator_Laplace()
+        evaluateFunction = Orange.core.RuleEvaluator_Laplace()
         
     for e in examples:
         if not e[argAtt].isSpecial():
@@ -250,14 +250,14 @@ def evaluateAndSortArguments(examples, argAtt, evaluateFunction = None, apriori 
             e[argAtt].value.positiveArguments.sort(lambda x,y: -cmp(x.quality, y.quality))
 
 def isGreater(oper):
-    if oper == orange.ValueFilter_continuous.Greater or \
-       oper == orange.ValueFilter_continuous.GreaterEqual:
+    if oper == Orange.core.ValueFilter_continuous.Greater or \
+       oper == Orange.core.ValueFilter_continuous.GreaterEqual:
         return True
     return False
 
 def isLess(oper):
-    if oper == orange.ValueFilter_continuous.Less or \
-       oper == orange.ValueFilter_continuous.LessEqual:
+    if oper == Orange.core.ValueFilter_continuous.Less or \
+       oper == Orange.core.ValueFilter_continuous.LessEqual:
         return True
     return False
 
@@ -270,19 +270,19 @@ class ConvertClass:
 
     def __call__(self,example, returnWhat):
         if example[self.classAtt] == self.classValue:
-            return orange.Value(self.newClassAtt, self.classValue+"_")
+            return Orange.core.Value(self.newClassAtt, self.classValue+"_")
         else:
-            return orange.Value(self.newClassAtt, "not " + self.classValue)
+            return Orange.core.Value(self.newClassAtt, "not " + self.classValue)
     
 def createDichotomousClass(domain, att, value, negate, removeAtt = None):
     # create new variable
-    newClass = orange.EnumVariable(att.name+"_", values = [str(value)+"_", "not " + str(value)])
-    positive = orange.Value(newClass, str(value)+"_")
-    negative = orange.Value(newClass, "not " + str(value))
+    newClass = Orange.core.EnumVariable(att.name+"_", values = [str(value)+"_", "not " + str(value)])
+    positive = Orange.core.Value(newClass, str(value)+"_")
+    negative = Orange.core.Value(newClass, "not " + str(value))
     newClass.getValueFrom = ConvertClass(att,str(value),newClass)
     
     att = [a for a in domain.attributes]
-    newDomain = orange.Domain(att+[newClass])
+    newDomain = Orange.core.Domain(att+[newClass])
     newDomain.addmetas(domain.getmetas())
     if negate==1:
         return (newDomain, negative)
@@ -302,11 +302,11 @@ class ConvertCont:
             return example[self.position]
         if isLess(self.oper):
             if example[self.position]<self.value:
-                return orange.Value(self.newAtt, self.value)
+                return Orange.core.Value(self.newAtt, self.value)
             else:
-                return orange.Value(self.newAtt, float(example[self.position]))
+                return Orange.core.Value(self.newAtt, float(example[self.position]))
         else:
             if example[self.position]>self.value:
-                return orange.Value(self.newAtt, self.value)
+                return Orange.core.Value(self.newAtt, self.value)
             else:
-                return orange.Value(self.newAtt, float(example[self.position]))
+                return Orange.core.Value(self.newAtt, float(example[self.position]))
