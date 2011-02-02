@@ -13,6 +13,7 @@ Contents:
 
    orange.cluster
    orange.classify.svm
+   orange.classify.tree
 
 Indices and tables
 ==================
