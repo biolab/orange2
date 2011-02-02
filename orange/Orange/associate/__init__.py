@@ -10,7 +10,7 @@ It is also possible to extract item sets instead of association rules. These are
 Besides association rule inducer, Orange also provides a rather simplified method for classification by association rules.
 
 =================
-Association rules inducer with Agrawal's algorithm
+Agrawal's algorithm
 =================
 
 The class that induces rules by Agrawal's algorithm, accepts the data examples of two forms. The first is the standard form in which each examples is described by values of a fixed list of attributes, defined in domain. The algorithm, however, disregards the attribute values but only checks whether the value is defined or not. The rule shown above, "bread, butter -> jam" actually means that if "bread" and "butter" are defined, then "jam" is defined as well. It is expected that most of values will be undefined - if this is not so, you need to use the other association rules inducer, described in the next chapter.
@@ -37,10 +37,6 @@ If examples were given in the sparse form, so are the left and right side of the
         
 The last attribute deserves some explanation. The algorithm's running time (and its memory consumption) depends on the minimal support; the lower the requested support, the more eligible itemsets will be found. There is no general rule for knowing the itemset in advance (generally, value should be around 0.3, but this depends upon the number of different items, the diversity of examples...) so it's very easy to set the limit too low. In this case, the algorithm can induce hundreds of thousands of itemsets until it runs out of memory. To prevent this, it will stop inducing itemsets and report an error when the prescribed maximum maxItemSets is exceeded. In this case, you should increase the required support. On the other hand, you can (reasonably) increase the maxItemSets to as high as you computer is able to handle.
 
-        
-Examples for AssociationRulesSparseInducer
-========
-
 We shall test the rule inducer on a dataset consisting of a brief description of Spanish Inquisition, given by Palin et al:
 
     NOBODY expects the Spanish Inquisition! Our chief weapon is surprise...surprise and fear...fear and surprise.... Our two weapons are fear and surprise...and ruthless efficiency.... Our *three* weapons are fear, surprise, and ruthless efficiency...and an almost fanatical devotion to the Pope.... Our *four*...no... *Amongst* our weapons.... Amongst our weaponry...are such elements as fear, surprise.... I'll come in again.
@@ -49,7 +45,7 @@ We shall test the rule inducer on a dataset consisting of a brief description of
     
 The text needs to be cleaned of punctuation marks and capital letters at beginnings of the sentences, each sentence needs to be put in a new line and commas need to be inserted between the words.
 
-inquisition.basket ::
+**inquisition.basket** ::
 
     nobody, expects, the, Spanish, Inquisition
     our, chief, weapon, is, surprise, surprise, and, fear,fear, and, surprise
@@ -64,7 +60,7 @@ inquisition.basket ::
     
 Inducing the rules is trivial.
 
-assoc-agrawal.py (uses inquisition.basket) ::
+**assoc-agrawal.py** (uses inquisition.basket) ::
 
     import Orange
     data = Orange.data.Table("inquisition")
@@ -92,9 +88,7 @@ The induced rules are surprisingly fear-full. ::
 
 If examples are weighted, weight can be passed as an additional argument to call operator.
 
-To get only a list of supported item sets, one should call the method getItemsets. The result is a list whose elements are tuples with two elements. The first is a tuple with indices of attributes in the item set. Sparse examples are usually represented with meta attributes, so this indices will be negative. The second element is  a list of indices supporting the item set, that is, containing all the items in the set. If storeExamples is False, the second element is None.
-
-assoc-agrawal.py (uses inquisition.basket) ::
+To get only a list of supported item sets, one should call the method getItemsets. The result is a list whose elements are tuples with two elements. The first is a tuple with indices of attributes in the item set. Sparse examples are usually represented with meta attributes, so this indices will be negative. The second element is  a list of indices supporting the item set, that is, containing all the items in the set. If storeExamples is False, the second element is None. ::
 
     inducer = Orange.associate.AssociationRulesSparseInducer(support = 0.5, storeExamples = True)
     itemsets = inducer.getItemsets(data)
@@ -111,7 +105,7 @@ The sixth itemset contains attributes with indices -11 and -7, that is, the word
 This way of representing the itemsets is not very programmer-friendly, but it is much more memory efficient than and faster to work with than using objects like Variable and Example.
 
 =================
-Association rules for non-sparse examples
+Non-sparse examples
 =================
 
 The other algorithm for association rules provided by Orange, AssociationRulesInducer is optimized for non-sparse examples in the usual Orange form. Each example is described by values of a fixed set of attributes. Unknown values are ignored, while values of attributes are not (as opposite to the above-described algorithm for sparse rules). In addition, the algorithm can be directed to search only for classification rules, in which the only attribute on the right-hand side is the class attribute.
@@ -133,16 +127,14 @@ The other algorithm for association rules provided by Orange, AssociationRulesIn
     .. attribute:: maxItemSets
     The maximal number of itemsets.
 
-Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of maxItemSet there.
+Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of maxItemSet there. ::
 
-assoc.py (uses lenses.tab) ::
+    import Orange
 
-    import orange
-
-    data = orange.ExampleTable("lenses")
+    data = Orange.data.Table("lenses")
 
     print "Association rules"
-    rules = orange.AssociationRulesInducer(data, supp = 0.5)
+    rules = Orange.associate.AssociationRulesInducer(data, supp = 0.5)
     for r in rules:
         print "%5.3f  %5.3f  %s" % (r.support, r.confidence, r)
         
@@ -157,10 +149,10 @@ The found rules are ::
     
 To limit the algorithm to classification rules, set classificationRules to 1. ::
 
-    import orange
+    import Orange
 
-    data = orange.ExampleTable("inquisition")
-    rules = orange.AssociationRulesSparseInducer(data,
+    data = Orange.data.Table("inquisition")
+    rules = Orange.associate.AssociationRulesSparseInducer(data,
                 support = 0.5, storeExamples = True)
 
     print "%5s   %5s" % ("supp", "conf")
@@ -177,7 +169,7 @@ AssociationRulesInducer can also work with weighted examples; the ID of weight a
 
 Itemsets are induced in a similar fashion as for sparse data, except that the first element of the tuple, the item set, is represented not by indices of attributes, as before, but with tuples (attribute-index, value-index). ::
 
-    inducer = orange.AssociationRulesInducer(support = 0.3, storeExamples = True)
+    inducer = Orange.associate.AssociationRulesInducer(support = 0.3, storeExamples = True)
     itemsets = inducer.getItemsets(data)
     print itemsets[8]
     
@@ -231,7 +223,7 @@ Both classes for induction of association rules return the induced rules in Asso
     .. method:: AssociationRule(left, right, nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples)
     Constructs an association rule and computes all measures listed above.
     
-    .. method:: AssociationRule(left, right, support, confidence]])
+    .. method:: AssociationRule(left, right, support, confidence)
     Construct association rule and sets its support and confidence. If you intend to pass such a rule to someone that expects more things to be set, you should set the manually - AssociationRules's constructor cannot compute anything from these two arguments.
     
     .. method:: AssociationRule(rule)
@@ -242,11 +234,11 @@ Both classes for induction of association rules return the induced rules in Asso
     
 Association rule inducers do not store evidence about which example supports which rule (although this is available during induction, the information is discarded afterwards). Let us write a function that find the examples that confirm the rule (ie fit both sides of it) and those that contradict it (fit the left-hand side but not the right). ::
 
-    import orange
+    import Orange
 
-    data = orange.ExampleTable("lenses")
+    data = Orange.data.Table("lenses")
 
-    rules = orange.AssociationRulesInducer(data, supp = 0.3)
+    rules = Orange.associate.AssociationRulesInducer(data, supp = 0.3)
     rule = rules[0]
 
     print
