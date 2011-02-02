@@ -1,8 +1,8 @@
-import orngNetwork
+import Orange.network
 from pylab import *
 
 # create graph object of type GraphAsList
-net = orngNetwork.Network(5, 0)
+net = Orange.network.Network(5, 0)
 
 # set edges
 for i in range(4):
@@ -10,7 +10,7 @@ for i in range(4):
         net[i,j] = 1
 
 # vertices are placed randomly in NetworkOptimization constructor
-networkOptimization = orngNetwork.NetworkOptimization(net)
+networkOptimization = Orange.network.NetworkOptimization(net)
 
 # optimize verices layout with one of included algorithms
 networkOptimization.fruchtermanReingold(100, 1000)

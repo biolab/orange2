@@ -1,8 +1,8 @@
-import orngNetwork
+import Orange.network
 from pylab import *
 
 # read network from file
-net = orngNetwork.Network.read("K5.net")
+net = Orange.network.Network.read("K5.net")
 
 # read all edges and plot a line
 for u, v in net.getEdges():
