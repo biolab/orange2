@@ -11,6 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   orange.associate   
    orange.cluster
    orange.classification.bayes
    orange.classification.majority
