@@ -448,6 +448,7 @@ class KMeans_init_hierarchicalClustering():
 
 class KMeans:
     """
+
     Implements a k-means clustering algorithm:
 
     #. Choose the number of clusters, k.
@@ -467,7 +468,10 @@ class KMeans:
     :var centroids: Current set of centroids. 
     :var scoring: Current clustering score.
     :var iteration: Current clustering iteration.
-    :var clusters:  A list of cluster indexes. An i-th element provides an index to a centroid associated with i-th data instance from the input data set. 
+    :var clusters:  A list of cluster indexes. An i-th element provides an
+    index to a centroid associated with i-th data instance from the input 
+    data set. 
+
     """
 
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,

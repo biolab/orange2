@@ -1,4 +1,4 @@
-from orange import kNNLearner, \
+from orange import kNNLearner as Learner,\
          FindNearest,\
          FindNearest_BruteForce,\
          FindNearestConstructor,\
