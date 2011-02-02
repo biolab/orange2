@@ -14,6 +14,7 @@ Contents:
    orange.cluster
    orange.classify.svm
    orange.classify.tree
+   orange.classify.logreg
 
 Indices and tables
 ==================
