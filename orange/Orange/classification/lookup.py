@@ -159,7 +159,16 @@ constructed.
     part of `lookup-lookup.py`_ (uses: `monks-1.tab`_):
 
     .. literalinclude:: code/lookup-lookup.py
-        :lines: 26-29    
+        :lines: 26-29
+    
+    Output::
+    
+        ['1', '1', '2', '2', '4', '1', '1']: ab 0, e1 3
+        ['3', '3', '1', '2', '2', '1', '1']: ab 8, e1 1
+        ['2', '1', '2', '3', '4', '2', '0']: ab 3, e1 3
+        ['2', '1', '1', '2', '1', '1', '1']: ab 3, e1 0
+        ['1', '1', '1', '2', '3', '1', '1']: ab 0, e1 2 
+
 
 ==========================
 Classifier by ExampleTable
