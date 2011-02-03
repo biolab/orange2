@@ -5,7 +5,7 @@
 # Referenced:  majority.htm
 
 import Orange
-import orange, orngTest, orngStat
+import orngTest, orngStat
 
 table = Orange.data.Table("monks-1")
 
