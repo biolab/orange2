@@ -235,7 +235,7 @@ class NaiveLearner(Orange.classification.Learner):
             bayes.estimatorConstructor = Orange.core.ProbabilityEstimatorConstructor_m(m = self.m)
         if self.conditionalEstimatorConstructor:
             bayes.conditionalEstimatorConstructor = self.conditionalEstimatorConstructor
-        else:
+        elif bayes.estimatorConstructor:
             bayes.conditionalEstimatorConstructor = Orange.core.ConditionalProbabilityEstimatorConstructor_ByRows()
             bayes.conditionalEstimatorConstructor.estimatorConstructor=bayes.estimatorConstructor
             
