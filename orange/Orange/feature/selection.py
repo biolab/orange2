@@ -162,6 +162,8 @@ __docformat__ = 'restructuredtext'
 
 import Orange.core as orange
 
+from Orange.feature.scoring import attMeasure
+
 # from orngFSS
 def bestNAtts(scores, N):
     """Return the best N features (without scores) from the list returned
@@ -223,8 +225,7 @@ def selectAttsAboveThresh(data, scores, threshold=0.0):
     :type scores: list
     :param threshold: score threshold for attribute selection. Defaults to 0.
     :type threshold: float
-    :rtype: :obj:`list`
-    Result: the first N features (without measures)
+    :rtype: :obj:`list` first N features (without measures)
   
     """
     return data.select(attsAboveThreshold(scores, threshold)+[data.domain.classVar.name])
@@ -298,6 +299,7 @@ class FilterAttsAboveThresh_Class:
         
         :param data: an data table
         :type data: Orange.data.table
+
         """
         ma = attMeasure(data, self.measure)
         return selectAttsAboveThresh(data, ma, self.threshold)
