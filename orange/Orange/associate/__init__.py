@@ -24,15 +24,19 @@ If examples were given in the sparse form, so are the left and right side of the
 .. class:: Orange.associate.AssociationRulesSparseInducer
 
     .. attribute:: support
+    
     Minimal support for the rule.
     
     .. attribute:: confidence
+    
     Minimal confidence for the rule.
     
     .. attribute:: storeExamples
+    
     Tells the inducer to store the examples covered by each rule and those confirming it.
     
     .. attribute:: maxItemSets
+    
     The maximal number of itemsets.
 
 .. _maxItemSets:
@@ -115,18 +119,23 @@ The other algorithm for association rules provided by Orange (AssociationRulesIn
 .. class:: Orange.associate.AssociationRulesInducer
 
     .. attribute:: support
+    
     Minimal support for the rule.
     
     .. attribute:: confidence
+    
     Minimal confidence for the rule.
     
     .. attribute:: classificationRules
+    
     If 1 (default is 0), the algorithm constructs classification rules instead of general association rules.
     
     .. attribute:: storeExamples
+    
     Tells the inducer to store the examples covered by each rule and those confirming it
     
     .. attribute:: maxItemSets
+    
     The maximal number of itemsets.
 
 Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of :ref:`maxItemSets <maxItemSets>` there. The example uses `lenses data table <http://orange.biolab.si/doc/reference/lenses.tab>`_. ::
@@ -188,45 +197,59 @@ Both classes for induction of association rules return the induced rules in Asso
     The left and the right side of the rule. Both are given as Example. In rules created by AssociationRulesSparseInducer from examples that contain all values as meta-values, left and right are examples in the same form. Otherwise, values in left that do not appear in the rule are "don't care", and value in right are "don't know". Both can, however, be tested by isSpecial (see documentation on  `Value <http://orange.biolab.si/doc/reference/Value.htm>`_).
     
     .. attribute:: nLeft, nRight
+    
     The number of features (ie defined values) on the left and on the right side of the rule.
     
     .. attribute:: nAppliesLeft, nAppliesRight, nAppliesBoth
+    
     The number of (learning) examples that conform to the left, the right and to both sides of the rule.
     
     .. attribute:: nExamples
+    
     The total number of learning examples.
     
     .. attribute:: support
+    
     nAppliesBoth/nExamples.
 
     .. attribute:: confidence
+    
     nAppliesBoth/nAppliesLeft.
     
     .. attribute:: coverage
+    
     nAppliesLeft/nExamples.
 
     .. attribute:: strength
+    
     nAppliesRight/nAppliesLeft.
     
     .. attribute:: lift
+    
     nExamples * nAppliesBoth / (nAppliesLeft * nAppliesRight).
     
     .. attribute:: leverage
+    
     (nAppliesBoth * nExamples - nAppliesLeft * nAppliesRight).
     
     .. attribute:: examples, matchLeft, matchBoth
+    
     If storeExamples was True during induction, examples contains a copy of the example table used to induce the rules. Attributes matchLeft and matchBoth are lists of integers, representing the indices of examples which match the left-hand side of the rule and both sides, respectively.
 
     .. method:: AssociationRule(left, right, nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples)
+    
     Constructs an association rule and computes all measures listed above.
     
     .. method:: AssociationRule(left, right, support, confidence)
+    
     Construct association rule and sets its support and confidence. If you intend to pass on such a rule you should set other attributes manually - AssociationRules's constructor cannot compute anything from arguments support and confidence.
     
     .. method:: AssociationRule(rule)
+    
     Given an association rule as the argument, constructor copies of the rule.
     
     .. method:: appliesLeft(example), appliesRight(example), appliesBoth(example)
+    
     Tells whether the example fits into the left, right or both sides of the rule, respectively. If the rule is represented by sparse examples, the given example must be sparse as well.
     
 Association rule inducers do not store evidence about which example supports which rule (although this information is available during induction its discarded afterwards). Let us write a function that finds the examples that confirm the rule (fit both sides of it) and those that contradict it (fit the left-hand side but not the right). The example uses the `lenses data table <http://orange.biolab.si/doc/reference/lenses.tab>`_. ::
