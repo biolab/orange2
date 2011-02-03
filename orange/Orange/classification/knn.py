@@ -10,7 +10,9 @@ k Nearest Neighbours
 
 kNN is one of the simplest learning techniques - the learner only needs to 
 store the instances, while the classifier does its work by observing the most 
-similar instances of the instance to be classified.
+similar instances of the instance to be classified:
+
+.. literalinclude:: code/knnExample0.py
 
 .. class:: kNNLearner(k, distanceConstructor, weightID)
 
@@ -104,7 +106,7 @@ together with their weights. If instances are weighted (non-zero
 :obj:`weightID`), weights are considered when counting the neighbours.
 
 If :meth:`kNNClassifier.findNearest` returns only one neighbour 
-(this is the case if k=1), :class:`kNNClassifier` returns the neighbour's
+(this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the neighbour's
 class.
 
 Otherwise, the retrieved neighbours vote about the class prediction
@@ -114,17 +116,17 @@ neighbours have greater impact on the prediction; weight of instance
 is computed as exp(-t:sup:`2`/s:sup:`2`), where the meaning of t depends
 on the setting of :obj:`rankWeight`.
 
-* if :obj:`rankWeight` is false, t is a distance from the instance being
+* if :obj:`rankWeight` is :obj:`false`, :obj:`t` is a distance from the instance being
   classified
-* if :obj:`rankWeight` is true, neighbours are ordered and t is the position
+* if :obj:`rankWeight` is :obj:`true`, neighbours are ordered and :obj:`t` is the position
   of the neighbour on the list (a rank)
 
 
-In both cases, s is chosen so that the impact of the farthest instance is
+In both cases, :obj:`s` is chosen so that the impact of the farthest instance is
 0.001.
 
 Weighting gives the classifier certain insensitivity to the number of
-neighbours used, making it possible to use large k's.
+neighbours used, making it possible to use large :obj:`k`'s.
 
 The classifier can treat continuous and discrete features, and can even
 distinguish between ordinal and nominal features. See information on
@@ -137,7 +139,7 @@ We will test the learner on 'iris' dataset. We shall split it onto train
 (80%) and test (20%) sets, learn on training instances and test on five
 randomly selected test instances.
 
-part of (`knnlearner.py`_, uses `iris.tab`_)
+First part of (`knnlearner.py`_, uses `iris.tab`_)
 
 .. literalinclude:: code/knnExample1.py
 
@@ -158,6 +160,8 @@ does not have a greater and predictable effect on the performance of kNN
 classifiers. So there is not much point in changing the default. If you
 decide to do so, you need to set the distanceConstructor to an instance
 of one of the classes for distance measuring.
+
+Second part of (`knnlearner.py`_, uses `iris.tab`_)
 
 .. literalinclude:: code/knnExample2.py
 
