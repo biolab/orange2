@@ -1,6 +1,7 @@
-# Description: Shows how to "learn" the majority class and compare other classifiers to the default classification
+# Description: Shows how to "learn" the majority class and compare
+#              other classifiers to the default classification
 # Category:    default classification accuracy, statistics
-# Classes:     MajorityLearner, ConstantClassifier, Orange.evaluate.crossValidation
+# Classes:     MajorityLearner, Orange.evaluate.crossValidation
 # Uses:        monks-1
 # Referenced:  majority.htm
 

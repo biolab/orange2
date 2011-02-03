@@ -18,15 +18,17 @@ Learning
     MajorityLearner will most often be used as is, without setting any
     features. Nevertheless, it has two.
 
-    :param estimatorConstructor: An estimator constructor that can 
-      be used for estimation of class probabilities. If left None,
-      probability of each class is estimated as the relative 
-      frequency of examples belonging to this class.
-    :type estimatorConstructor: :class:`Orange.???` or None
-    :param aprioriDistribution: Apriori class distribution that is
-      passed to estimator constructor if one is given.
-    :type aprioriDistribution: :class:`Orange.???` or None
-
+    .. attribute:: estimatorConstructor
+    
+        An estimator constructor that can be used for estimation of
+        class probabilities. If left None, probability of each class is
+        estimated as the relative frequency of examples belonging to
+        this class.
+        
+    .. attribute:: aprioriDistribution
+    
+        Apriori class distribution that is passed to estimator
+        constructor if one is given.
 
 ==============
 Classification
@@ -37,11 +39,13 @@ Classification
     ConstantClassifier always classifies to the same class and reports
     same class probabilities.
 
-    :param defaultVal: Value that is returned by the classifier.
-    :type defaultVal: :class:`Orange.???` or None
-    :param defaultDistribution: Class probabilities returned by the
-      classifier.
-    :type defaultDistribution: :class:`Orange.???` or None
+    .. attribute:: defaultVal
+    
+        Value that is returned by the classifier.
+    
+    .. attribute:: defaultDistribution
+
+        Class probabilities returned by the classifier.
 
 The ConstantClassifier's constructor can be called without arguments,
 with value (for defaultVal), variable (for classVar). If the value is
