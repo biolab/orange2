@@ -47,6 +47,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngSVM.SparseLinKernel": "Orange.classification.svm.kernels.SparseLinKernel",
            "orngSVM.BagOfWords": "Orange.classification.svm.kernels.BagOfWords",
            
+           "orange.kNNLearner":"Orange.classification.knn.kNNLearner",
+           "orange.kNNClassifier":"Orange.classification.knn.kNNClassifier",
+           "orange.FindNearest_BruteForce":"Orange.classification.knn.FindNearest",
+           "orange.FindNearestConstructor_BruteForce":"Orange.classification.knn.FindNearestConstructor",
+           "orange.P2NN":"Orange.classification.knn.P2NN",
+           
            }
 
 def build_pattern(mapping=MAPPING):
