@@ -8,7 +8,32 @@ from lib2to3.main import diff_texts, StdoutRefactoringTool, warn
 
 import optparse
 import logging
+import shutil
 
+class MyStdRefactoringTool(StdoutRefactoringTool):
+    def write_file(self, new_text, filename, old_text, encoding):
+        if not self.nobackups:
+            # Make backup
+            
+            filename = getattr(self, "outputfilename", filename)
+            
+            backup = filename + ".bak"
+            if os.path.lexists(backup):
+                try:
+                    os.remove(backup)
+                except os.error, err:
+                    self.log_message("Can't remove backup %s", backup)
+            if os.path.exists(filename):
+                try:
+                    os.rename(filename, backup)
+                except os.error, err:
+                    self.log_message("Can't rename %s to %s", filename, backup)
+        # Actually write the new file
+        write = super(StdoutRefactoringTool, self).write_file
+        write(new_text, filename, old_text, encoding)
+        if not self.nobackups:
+            shutil.copymode(backup, filename)
+            
 def main(fixer_pkg, args=None):
     """Main program.
 
@@ -43,8 +68,8 @@ def main(fixer_pkg, args=None):
                       help="Don't write backups for modified files.")
     parser.add_option("-a", "--aggressive", action="store_true", default=False,
                       help="Aggressive name replace (without a module qualifier, e.g. replace ExampleTable with even if not preceded by orange.* )")
-#    parser.add_option("-o: --output", action="store_string", default = None,
-#                      help="Output file (Ignore -w and write output to file)")
+    parser.add_option("-o", "--outfile", default = "",
+                      help="Output filename (if -w present and a single file on the command line)")
 
     # Parse command line arguments
     refactor_stdin = False
@@ -69,8 +94,9 @@ def main(fixer_pkg, args=None):
         if options.write:
             print >> sys.stderr, "Can't write to stdin."
             return 2
-    if options.print_function:
-        flags["print_function"] = True
+        
+#    if options.print_function:
+#        flags["print_function"] = True
 
     # Set up logging handler
     level = logging.DEBUG if options.verbose else logging.INFO
@@ -81,7 +107,6 @@ def main(fixer_pkg, args=None):
     # Remove aggressive fixes if not requested
     if not options.aggressive:
         avail_fixes = set([fix for fix in avail_fixes if not fix.endswith("_aggressive")])
-        print avail_fixes
         
     unwanted_fixes = set(fixer_pkg + ".fix_" + fix for fix in options.nofix)
     explicit = set()
@@ -96,10 +121,17 @@ def main(fixer_pkg, args=None):
     else:
         requested = avail_fixes.union(explicit)
     fixer_names = requested.difference(unwanted_fixes)
-    print fixer_names
-    rt = StdoutRefactoringTool(sorted(fixer_names), flags, sorted(explicit),
+    rt = MyStdRefactoringTool(sorted(fixer_names), flags, sorted(explicit),
                                options.nobackups, not options.no_diffs)
-
+    if options.outfile:
+        if len(args) > 2:
+            print args
+            print >> sys.stderr, "-o, --outfile used but multiple script arguments"
+        elif not os.path.isfile(args[-1]):
+            print >> sys.stderr, "-o, --outfile used but argumnet is a directory"
+        else:
+            rt.outputfilename = options.outfile
+        
     # Refactor all files and directories passed as arguments
     if not rt.errors:
         if refactor_stdin:
