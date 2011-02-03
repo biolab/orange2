@@ -2,13 +2,26 @@
 import sys, os
 
 from lib2to3 import refactor, main
-from lib2to3.main import diff_texts, StdoutRefactoringTool, warn
+from lib2to3.main import StdoutRefactoringTool
 
 #fixes = refactor.get_fixers_from_package("lib2to3.fixes")    
 
 import optparse
 import logging
 import shutil
+import difflib
+
+
+def diff_texts(a, b, filename):
+    """Return a unified diff of two strings."""
+    a = a.splitlines()
+    b = b.splitlines()
+    return difflib.unified_diff(a, b, filename, filename,
+                                "(original)", "(refactored)",
+                                lineterm="")
+    
+def warn(msg):
+    print >> sys.stderr, "WARNING: %s" % (msg,)
 
 class MyStdRefactoringTool(StdoutRefactoringTool):
     def write_file(self, new_text, filename, old_text, encoding):
