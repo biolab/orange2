@@ -5,11 +5,12 @@
 Supervised rule induction algorithms and rule-based classification methods.
 
 First, the commonly used CN2 learner's description is given. That is followed
-by documentation of common classes and functions of the module.
+by documentation of the common framework of classes that enable customization
+of the rule induction process.
 
-===
-CN2
-===
+============================
+CN2 Rule Induction Algorithm
+============================
 
 .. index:: CN2
 
@@ -19,18 +20,28 @@ All are implemented by wrapping the
 in this module changes some of RuleLearner's replaceable components to reflect
 the required behaviour.
 
-Usage is consistent with typical learner usage in Orange::
+Usage is consistent with typical learner usage in Orange:
 
-    # Read some data
-    instances =  Orange.data.Table("titanic")
+.. literalinclude:: code/rules-cn2.py
+    :lines: 7-
 
-    # construct the learning algorithm and use it to induce a classifier
-    cn2_learner = Orange.classifier.rules.CN2Learner()
-    cn2_clasifier = cn2_learner(data)
-
-    # ... or, in a single step
-    cn2_classifier = Orange.classifier.rules.CN2Learner(instances)
-
+This is the resulting printout::
+    
+    IF sex=['female'] AND status=['first'] AND age=['child'] THEN survived=yes<0.000, 1.000>
+    IF sex=['female'] AND status=['second'] AND age=['child'] THEN survived=yes<0.000, 13.000>
+    IF sex=['male'] AND status=['second'] AND age=['child'] THEN survived=yes<0.000, 11.000>
+    IF sex=['female'] AND status=['first'] THEN survived=yes<4.000, 140.000>
+    IF status=['first'] AND age=['child'] THEN survived=yes<0.000, 5.000>
+    IF sex=['male'] AND status=['second'] THEN survived=no<154.000, 14.000>
+    IF status=['crew'] AND sex=['female'] THEN survived=yes<3.000, 20.000>
+    IF status=['second'] THEN survived=yes<13.000, 80.000>
+    IF status=['third'] AND sex=['male'] AND age=['adult'] THEN survived=no<387.000, 75.000>
+    IF status=['crew'] THEN survived=no<670.000, 192.000>
+    IF age=['child'] AND sex=['male'] THEN survived=no<35.000, 13.000>
+    IF sex=['male'] THEN survived=no<118.000, 57.000>
+    IF age=['child'] THEN survived=no<17.000, 14.000>
+    IF TRUE THEN survived=no<89.000, 76.000>
+    
 .. autoclass:: Orange.classification.rules.CN2Learner
    :members:
    :show-inheritance:
@@ -56,6 +67,10 @@ Usage is consistent with typical learner usage in Orange::
    :members:
    :show-inheritance:
    
+.. autoclass:: Orange.classification.rules.CN2EVCUnorderedLearner
+   :members:
+   :show-inheritance:
+   
 References
 ----------
 
@@ -70,9 +85,418 @@ References
   <http://jmlr.csail.mit.edu/papers/volume5/lavrac04a/lavrac04a.pdf>`_. Journal
   of Machine Learning Research 5: 153-188, 2004.
 
-===========
-All the rest ...
-===========
+=================
+General Framework
+=================
+
+A general framework of classes supports the described CN2 implementation, and
+can in fact be fine-tuned to specific needs by replacing individual components.
+Here is a simple example, while a detailed architecture can be observed
+in description of classes that follows it:
+
+.. literalinclude:: code/rules-customized.py
+    :lines: 7-17
+
+In the example, the rule evaluation function was set to an m-estimate of
+probability with m=50. The result is::
+
+    IF sex=['male'] AND status=['second'] AND age=['adult'] THEN survived=no<154.000, 14.000>
+    IF sex=['male'] AND status=['third'] AND age=['adult'] THEN survived=no<387.000, 75.000>
+    IF sex=['female'] AND status=['first'] THEN survived=yes<4.000, 141.000>
+    IF status=['crew'] AND sex=['male'] THEN survived=no<670.000, 192.000>
+    IF status=['second'] THEN survived=yes<13.000, 104.000>
+    IF status=['third'] AND sex=['male'] THEN survived=no<35.000, 13.000>
+    IF status=['first'] AND age=['adult'] THEN survived=no<118.000, 57.000>
+    IF status=['crew'] THEN survived=yes<3.000, 20.000>
+    IF sex=['female'] THEN survived=no<106.000, 90.000>
+    IF TRUE THEN survived=yes<0.000, 5.000>
+
+Notice that we first need to set the ruleFinder
+component, because the default components are not constructed when the learner
+is constructed, but only when we run it on data. At that time, the algorithm
+checks which components are necessary and sets defaults. Similarly, when the
+learner finishes, it destructs all default components. Continuing with our
+example, assume that we wish to set a different validation function and a
+different bean width. This is simply written as:
+
+.. literalinclude:: code/rules-customized.py
+    :lines: 19-23
+
+
+.. py:class:: Orange.classification.rules.Rule(filter, classifier, lr, dist, ce, w = 0, qu = -1)
+   
+   Base class for presentation of a single induced rule.
+   
+   Parameters, that can be passed to the constructor, correspond to the first
+   7 attributes. All attributes are:
+   
+   .. attribute:: filter
+   
+      contents of the rule; this is the basis of the Rule class. Must be of
+      type :class:`Orange.core.Filter`; an instance of
+      :class:`Orange.core.Filter_values` is set as a default.
+   
+   .. attribute:: classifier
+      
+      each rule can be used as a classical Orange like
+      classifier. Must be of type :class:`Orange.classification.Classifier`. By default,
+      an instance of :class:`Orange.core.DefaultClassifier` is used.
+   
+   .. attribute:: learner
+      
+      learner to be used for making a classifier. Must be of type
+      :class:`Orange.core.learner`. By default,
+      :class:`Orange.core.MajorityLearner` is used.
+   
+   .. attribute:: classDistribution
+      
+      distribution of class in data instances covered by this rule
+      (:class:`Orange.core.Distribution`).
+   
+   .. attribute:: examples
+      
+      data instances covered by this rule (:class:`Orange.data.Table`).
+   
+   .. attribute:: weightID
+   
+      ID of the weight meta-attribute for the stored data instances (int).
+   
+   .. attribute:: quality
+      
+      quality of the rule. Rules with higher quality are better (float).
+   
+   .. attribute:: complexity
+   
+      complexity of the rule (float). Complexity is used for
+      selecting between rules with equal quality, where rules with lower
+      complexity are preferred. Typically, complexity corresponds to the
+      number of selectors in rule (actually to number of conditions in filter),
+      but, obviously, any other measure can be applied.
+   
+   .. method:: filterAndStore(instances, weightID=0, targetClass=-1)
+   
+      Filter passed data instances and store them in the attribute 'examples'.
+      Also, compute classDistribution, set weight of stored examples and create
+      a new classifier using 'learner' attribute.
+      
+      :param weightID: ID of the weight meta-attribute.
+      :type weightID: int
+      :param targetClass: index of target class; -1 for all.
+      :type targetClass: int
+   
+   Objects of this class can be invoked:
+
+   .. method:: __call__(instance, instances, weightID=0, targetClass=-1)
+   
+      There are two ways of invoking this method. One way is only passing the
+      data instance; then the Rule object returns True if the given instance is
+      covered by the rule's filter.
+      
+      :param instance: data instance.
+      :type instance: :class:`Orange.data.Instance`
+      
+      Another way of invocation is passing a table of data instances,
+      in which case a table of instances, covered by this rule, is returned.
+      
+      :param instances: a table of data instances.
+      :type instances: :class:`Orange.data.Table`
+      :param ref: TODO
+      :type ref: bool
+      :param negate: if set to True, the result is inverted: the resulting
+          table contains instances *not* covered by the rule.
+      :type negate: bool
+
+.. py:class:: Orange.classification.rules.RuleLearner(storeInstances = true, targetClass = -1, baseRules = Orange.classification.rules.RuleList())
+   
+   Bases: :class:`Orange.core.Learner`
+   
+   A base rule induction learner. The algorithm follows separate-and-conquer
+   strategy, which has its origins in the AQ family of algorithms
+   (Fuernkranz J.; Separate-and-Conquer Rule Learning, Artificial Intelligence
+   Review 13, 3-54, 1999). Basically, such algorithms search for the "best"
+   possible rule in learning instancess, remove covered data from learning
+   instances (separate) and repeat the process (conquer) on the remaining
+   instances.
+   
+   The class' functionality can be best explained by showing its __call__
+   function::
+   
+        def __call__(self, instances, weightID=0):
+            ruleList = Orange.classification.rules.RuleList()
+            allInstances = Orange.data.Table(instances)
+            while not self.dataStopping(instances, weightID, self.targetClass):
+                newRule = self.ruleFinder(instances, weightID, self.targetClass,
+                                          self.baseRules)
+                if self.ruleStopping(ruleList, newRule, instances, weightID):
+                    break
+                instances, weightID = self.coverAndRemove(newRule, instances,
+                                                        weightID, self.targetClass)
+                ruleList.append(newRule)
+            return Orange.classification.rules..RuleClassifier_FirstRule(
+                rules=ruleList, instances=allInstances)
+                
+   The four customizable components here are the invoked dataStopping,
+   ruleFinder, coverAndRemove and ruleStopping objects. By default, components
+   of the original CN2 algorithm will be used, but this can be changed by
+   modifying those attributes:
+   
+   .. attribute:: dataStopping
+   
+      an object of class
+      :class:`Orange.classification.rules.RuleDataStoppingCriteria`
+      that determines whether there will be any benefit from further learning
+      (ie. if there is enough data to continue learning). The default
+      implementation
+      (:class:`Orange.classification.rules.RuleDataStoppingCriteria_NoPositives`)
+      returns True if there are no more instances of given class. 
+   
+   .. attribute:: ruleStopping
+      
+      an object of class 
+      :class:`Orange.classification.rules.RuleStoppingCriteria`
+      that decides from the last rule learned if it is worthwhile to use the
+      rule and learn more rules. By default, no rule stopping criteria is
+      used (ruleStopping==None), thus accepting all rules.
+       
+   .. attribute:: coverAndRemove
+       
+      an object of class
+      :class:`Orange.classification.rules.RuleCovererAndRemover`
+      that removes instances covered by the rule and returns remaining
+      instances. The default implementation
+      (:class:`Orange.classification.rules.RuleCovererAndRemover_Default`)
+      only removes the instances that belong to given target class, except if
+      it is not given (ie. targetClass==-1).
+    
+   .. attribute:: ruleFinder
+      
+      an object of class
+      :class:`Orange.classification.rules.RuleFinder` that learns a single
+      rule from instances. Default implementation is
+      :class:`Orange.classification.rules.RuleBeamFinder`.
+
+   Constructor can be given the following parameters:
+    
+   :param storeInstances: if set to True, the rules will have data instances
+       stored.
+   :type storeInstances: bool
+    
+   :param targetClass: index of a specific class being learned; -1 for all.
+   :type targetClass: int
+   
+   :param baseRules: Rules that we would like to use in ruleFinder to
+       constrain the learning space. If not set, it will be set to a set
+       containing only an empty rule.
+   :type baseRules: :class:`Orange.classification.rules.RuleList`
+
+Rule Finders
+------------
+
+.. class:: Orange.classification.rules.RuleFinder
+
+   Base class for all rule finders. These are used to learn a single rule from
+   instances.
+   
+   Rule finders are invokable in the following manner:
+   
+   .. method:: __call__(table, weightID, targetClass, baseRules)
+   
+      Return a new rule, induced from instances in the given table.
+      
+      :param table: data instances to learn from.
+      :type table: :class:`Orange.data.Table`
+      
+      :param weightID: ID of the weight meta-attribute for the stored data
+          instances.
+      :type weightID: int
+      
+      :param targetClass: index of a specific class being learned; -1 for all.
+      :type targetClass: int 
+      
+      :param baseRules: Rules that we would like to use in ruleFinder to
+          constrain the learning space. If not set, it will be set to a set
+          containing only an empty rule.
+      :type baseRules: :class:`Orange.classification.rules.RuleList`
+
+.. class:: Orange.classification.rules.RuleBeamFinder
+   
+   Bases: :class:`Orange.classification.rules.RuleFinder`
+   
+   Beam search for the best rule. This is the default class used in RuleLearner
+   to find the best rule. Pseudo code of the algorithm is shown here:
+
+   .. parsed-literal::
+
+      def \_\_call\_\_(self, table, weightID, targetClass, baseRules):
+          prior = orange.Distribution(table.domain.classVar, table, weightID)
+          rulesStar, bestRule = self.\ **initializer**\ (table, weightID, targetClass, baseRules, self.evaluator, prior)
+          \# compute quality of rules in rulesStar and bestRule
+          ...
+          while len(rulesStar) \> 0:
+              candidates, rulesStar = self.\ **candidateSelector**\ (rulesStar, table, weightID)
+              for cand in candidates:
+                  newRules = self.\ **refiner**\ (cand, table, weightID, targetClass)
+                  for newRule in newRules:
+                      if self.\ **ruleStoppingValidator**\ (newRule, table, weightID, targetClass, cand.classDistribution):
+                          newRule.quality = self.\ **evaluator**\ (newRule, table, weightID, targetClass, prior)
+                          rulesStar.append(newRule)
+                          if self.\ **validator**\ (newRule, table, weightID, targetClass, prior) and
+                              newRule.quality \> bestRule.quality:
+                              bestRule = newRule
+              rulesStar = self.\ **ruleFilter**\ (rulesStar, table, weightID)
+          return bestRule
+
+   Bolded in the pseudo-code are several exchangeable components, exposed as
+   attributes. These are:
+
+   .. attribute:: initializer
+   
+      an object of class
+      :class:`Orange.classification.rules.RuleBeamInitializer`
+      used to initialize rulesStar and for selecting the
+      initial best rule. By default
+      (:class:`Orange.classification.rules.RuleBeamInitializer_Default`),
+      baseRules are returned as starting rulesSet and the best from baseRules
+      is set as bestRule. If baseRules are not set, this class will return
+      rulesStar with rule that covers all instances (has no selectors) and
+      this rule will be also used as bestRule.
+   
+   .. attribute:: candidateSelector
+   
+      an object of class
+      :class:`Orange.classification.rules.RuleBeamCandidateSelector`
+      used to separate a subset from the current
+      rulesStar and return it. These rules will be used in the next
+      specification step. Default component (an instance of
+      :class:`Orange.classification.rules.RuleBeamCandidateSelector_TakeAll`)
+      takes all rules in rulesStar
+    
+   .. attribute:: refiner
+   
+      an object of class
+      :class:`Orange.classification.rules.RuleBeamRefiner`
+      used to refine given rule. New rule should cover a
+      strict subset of examples covered by given rule. Default component
+      (:class:`Orange.classification.rules.RuleBeamRefiner_Selector`) adds
+      a conjunctive selector to selectors present in the rule.
+    
+   .. attribute:: ruleFilter
+   
+      an object of class
+      :class:`Orange.classification.rules.RuleBeamFilter`
+      used to filter rules to keep beam relatively small
+      to contain search complexity. By default, it takes five best rules:
+      :class:`Orange.classification.rules.RuleBeamFilter_Width`\ *(m=5)*\ .
+
+   .. method:: __call__(data, weightID, targetClass, baseRules)
+
+   Determines the next best rule to cover the remaining data instances.
+   
+   :param data: data instances.
+   :type data: :class:`Orange.data.Table`
+   
+   :param weightID: index of the weight meta-attribute.
+   :type weightID: int
+   
+   :param targetClass: index of the target class.
+   :type targetClass: int
+   
+   :param baseRules: existing rules.
+   :type baseRules: :class:`Orange.classification.rules.RuleList`
+
+Rule Evaluators
+---------------
+
+.. class:: Orange.classification.rules.RuleEvaluator
+
+   Base class for rule evaluators that evaluate the quality of the rule based
+   on covered data instances. All evaluators support being invoked in the
+   following manner:
+   
+   .. method:: __call__(rule, instances, weightID, targetClass, prior)
+   
+      Calculates a non-negative rule quality.
+      
+      :param rule: rule to evaluate.
+      :type rule: :class:`Orange.classification.rules.Rule`
+      
+      :param instances: a table of instances, covered by the rule.
+      :type instances: :class:`Orange.data.Table`
+      
+      :param weightID: index of the weight meta-attribute.
+      :type weightID: int
+      
+      :param targetClass: index of target class of this rule.
+      :type targetClass: int
+      
+      :param prior: prior class distribution.
+      :type prior: :class:`Orange.core.Distribution`
+
+.. autoclass:: Orange.classification.rules.LaplaceEvaluator
+   :members:
+   :show-inheritance:
+
+.. autoclass:: Orange.classification.rules.WRACCEvaluator
+   :members:
+   :show-inheritance:
+   
+.. class:: Orange.classification.rules.RuleEvaluator_Entropy
+
+   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+    
+.. class:: Orange.classification.rules.RuleEvaluator_LRS
+
+   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+
+.. class:: Orange.classification.rules.RuleEvaluator_Laplace
+
+   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+
+.. class:: Orange.classification.rules.RuleEvaluator_mEVC
+
+   Bases: :class:`Orange.classification.rules.RuleEvaluator`
+   
+Instance Coverers and Removers
+------------------------------
+
+.. class:: RuleCovererAndRemover
+
+   Base class for rule coverers and removers that, when invoked, remove
+   instances covered by the rule and return remaining instances.
+
+.. autoclass:: CovererAndRemover_MultWeights
+
+.. autoclass:: CovererAndRemover_AddWeights
+   
+Miscellaneous Functions
+-----------------------
+
+.. automethod:: Orange.classification.rules.ruleToString
+
+   .. method:: __call__(rule, instances, weights, targetClass)
+   
+      Calculates a non-negative rule quality.
+      
+      :param rule: rule to evaluate.
+      :type rule: :class:`Orange.classification.rules.Rule`
+      
+      :param instances: a table of instances, covered by the rule.
+      :type instances: :class:`Orange.data.Table`
+      
+      :param weights: index of the weight meta-attribute.
+      :type weights: int
+      
+      :param targetClass: index of target class of this rule.
+      :type targetClass: int
+
+..
+    Undocumented are:
+    Data-based Stopping Criteria
+    ----------------------------
+    Rule-based Stopping Criteria
+    ----------------------------
+    Rule-based Stopping Criteria
+    ----------------------------
 
 """
 
@@ -83,6 +507,7 @@ from Orange.core import \
     RuleClassifier_firstRule, \
     RuleClassifier_logit, \
     RuleLearner, \
+    Rule, \
     RuleBeamCandidateSelector, \
     RuleBeamCandidateSelector_TakeAll, \
     RuleBeamFilter, \
@@ -116,6 +541,9 @@ from orngABCN2 import ABCN2
 
 
 class LaplaceEvaluator(RuleEvaluator):
+    """
+    Laplace's rule of succession.
+    """
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if not rule.classDistribution:
             return 0.
@@ -130,6 +558,9 @@ class LaplaceEvaluator(RuleEvaluator):
 
 
 class WRACCEvaluator(RuleEvaluator):
+    """
+    Weighted relative accuracy.
+    """
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if not rule.classDistribution:
             return 0.
@@ -149,67 +580,32 @@ class WRACCEvaluator(RuleEvaluator):
             return pRule*(pTruePositive-pClass)
         else: return (pTruePositive-pClass)/max(pRule,1e-6)
 
-class Rule(Orange.core.Rule):
-    """
-    Wrapper around a native Rule class to add print method.
-    """
-    
-    def __init__(self, nativeBayesClassifier):
-        self.nativeBayesClassifier = nativeBayesClassifier
-        for k, v in self.nativeBayesClassifier.__dict__.items():
-            self.__dict__[k] = v
-  
-    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue,
-                 *args, **kwdargs):
-        """Classify a new instance
-        
-        :param instance: instance to be classifier
-        :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
-              :class:`Orange.core.Classifier.GetProbabilities` or
-              :class:`Orange.core.Classifier.GetBoth`
-        
-        :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
-        """
-        self.nativeBayesClassifier(instance, *args, **kwdargs)
 
-    def __setattr__(self, name, value):
-        if name == "nativeBayesClassifier":
-            self.__dict__[name] = value
-            return
-        if name in self.nativeBayesClassifier.__dict__:
-            self.nativeBayesClassifier.__dict__[name] = value
-        self.__dict__[name] = value
+class MEstimateEvaluator(RuleEvaluator):
+    """
+    Rule evaluator using m-estimate of probability rule evaluation function.
     
-    def p(self, class_, instance):
-        """Return probability of single class
-        Probability is not normalized and can be different from probability
-        returned from __call__
-        
-        :param class_:
-        :type class_:
-        :param instance: instance to be classified
-        :type instance: :class:`Orange.data.Instance`
-        
-        """
-        return self.nativeBayesClassifier.p(class_, instance)
+    :param m: m-value for m-estimate
+    :type m: int
     
-    def printModel(self):
-        """Print classificator in human friendly format"""
-        nValues=len(self.classVar.values)
-        frmtStr=' %10.3f'*nValues
-        classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
-        print classes
-        print "class probabilities "+(frmtStr % tuple(self.distribution))
-        print
-    
-        for i in self.conditionalDistributions:
-            print "Attribute", i.variable.name
-            print classes
-            for v in range(len(i.variable.values)):
-                print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
-            print
+    """
+    def __init__(self, m=2):
+        self.m = m
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if not rule.classDistribution:
+            return 0.
+        sumDist = rule.classDistribution.abs
+        if self.m == 0 and not sumDist:
+            return 0.
+        # get distribution
+        if targetClass>-1:
+            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)
+        else:
+            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)      
+        return p
+
 
 class CN2Learner(RuleLearner):
     """
@@ -231,7 +627,7 @@ class CN2Learner(RuleLearner):
         whether rule is good enough to be returned by rulefinder. Likelihood
         ratio statistics is used that gives an estimate if rule is
         statistically better than the default rule.
-    :type alpha: number
+    :type alpha: float
 
     """
     
@@ -267,9 +663,9 @@ class CN2Classifier(RuleClassifier):
         
         :param instance: instance to be classifier
         :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
-              :class:`Orange.core.Classifier.GetProbabilities` or
-              :class:`Orange.core.Classifier.GetBoth`
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
@@ -284,7 +680,7 @@ class CN2Classifier(RuleClassifier):
         if instances is not None:
             self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
 
-    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue):
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         classifier = None
         for r in self.rules:
          #   r.filter.domain = instance.domain
@@ -296,9 +692,9 @@ class CN2Classifier(RuleClassifier):
             classifier = Orange.core.DefaultClassifier(instance.domain.classVar, self.prior.modus())
             classifier.defaultDistribution = self.prior
 
-        if result_type == Orange.core.Classifier.GetValue:
+        if result_type == Orange.classification.Classifier.GetValue:
           return classifier(instance)
-        if result_type == Orange.core.Classifier.GetProbabilities:
+        if result_type == Orange.classification.Classifier.GetProbabilities:
           return classifier.defaultDistribution
         return (classifier(instance),classifier.defaultDistribution)
 
@@ -331,7 +727,7 @@ class CN2UnorderedLearner(RuleLearner):
         whether rule is good enough to be returned by rulefinder. Likelihood
         ratio statistics is used that gives an estimate if rule is
         statistically better than the default rule.
-    :type alpha: number
+    :type alpha: float
     """
     def __new__(cls, instances=None, weightID=0, **kwargs):
         self = RuleLearner.__new__(cls, **kwargs)
@@ -384,9 +780,9 @@ class CN2UnorderedClassifier(RuleClassifier):
         
         :param instance: instance to be classifier
         :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
-              :class:`Orange.core.Classifier.GetProbabilities` or
-              :class:`Orange.core.Classifier.GetBoth`
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
@@ -430,14 +826,14 @@ class CN2UnorderedClassifier(RuleClassifier):
             retDist.normalize()
         
         if retRules:
-            if result_type == Orange.core.Classifier.GetValue:
+            if result_type == Orange.classification.Classifier.GetValue:
               return (retDist.modus(), covRules)
-            if result_type == Orange.core.Classifier.GetProbabilities:
+            if result_type == Orange.classification.Classifier.GetProbabilities:
               return (retDist, covRules)
             return (retDist.modus(),retDist,covRules)
-        if result_type == Orange.core.Classifier.GetValue:
+        if result_type == Orange.classification.Classifier.GetValue:
           return retDist.modus()
-        if result_type == Orange.core.Classifier.GetProbabilities:
+        if result_type == Orange.classification.Classifier.GetProbabilities:
           return retDist
         return (retDist.modus(),retDist)
 
@@ -456,7 +852,7 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
     specific evaluation function and covering function:
     :class:`Orange.classifier.rules.WRACCEvaluator` is used to implement
     weight-relative accuracy and 
-    :class:`Orange.classifier.rules.CovererAndRemover_multWeight` avoids
+    :class:`Orange.classifier.rules.CovererAndRemover_MultWeight` avoids
     excluding covered instances, multiplying their weight by the value of
     mult parameter instead.
     
@@ -474,9 +870,9 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         whether rule is good enough to be returned by rulefinder. Likelihood
         ratio statistics is used that gives an estimate if rule is
         statistically better than the default rule.
-    :type alpha: number
+    :type alpha: float
     :param mult: multiplicator for weights of covered instances.
-    :type mult: number
+    :type mult: float
     """
     def __new__(cls, instances=None, weightID=0, **kwargs):
         self = CN2UnorderedLearner.__new__(cls, **kwargs)
@@ -501,29 +897,14 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         return classifier
 
 
-class MEstimate(RuleEvaluator):
+class CN2EVCUnorderedLearner(ABCN2):
     """
-    Rule evaluator using m-estimate of probability rule evaluation function.
-    :param m: m-value for m-estimate
-    :type m: integer
-    
+    CN2 + EVC as evaluation + LRC classification.
     """
-    def __init__(self, m=2):
-        self.m = m
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if not rule.classDistribution:
-            return 0.
-        sumDist = rule.classDistribution.abs
-        if self.m == 0 and not sumDist:
-            return 0.
-        # get distribution
-        if targetClass>-1:
-            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)
-        else:
-            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
-            p = p / (rule.classDistribution.abs + self.m)      
-        return p
+    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
+        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
+                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
+
 
 class RuleStopping_Apriori(RuleStoppingCriteria):
     def __init__(self, apriori=None):
@@ -539,6 +920,19 @@ class RuleStopping_Apriori(RuleStoppingCriteria):
         if ruleAcc>aprioriAcc:
             return False
         return True
+
+
+class RuleStopping_SetRules(RuleStoppingCriteria):
+    def __init__(self,validator):
+        self.ruleStopping = RuleStoppingCriteria_NegativeDistribution()
+        self.validator = validator
+
+    def __call__(self,rules,rule,instances,data):        
+        ru_st = self.ruleStopping(rules,rule,instances,data)
+        if not ru_st:
+            self.validator.rules.append(rule)
+        return bool(ru_st)
+
 
 class LengthValidator(RuleValidator):
     """ prune rules with more conditions than self.length. """
@@ -561,16 +955,6 @@ class NoDuplicatesValidator(RuleValidator):
             return False
         return bool(self.validator(rule,data,weightID,targetClass,apriori))
                 
-class RuleStopping_SetRules(RuleStoppingCriteria):
-    def __init__(self,validator):
-        self.ruleStopping = RuleStoppingCriteria_NegativeDistribution()
-        self.validator = validator
-
-    def __call__(self,rules,rule,instances,data):        
-        ru_st = self.ruleStopping(rules,rule,instances,data)
-        if not ru_st:
-            self.validator.rules.append(rule)
-        return bool(ru_st)
 
 
 class RuleClassifier_BestRule(RuleClassifier):
@@ -581,7 +965,7 @@ class RuleClassifier_BestRule(RuleClassifier):
         self.__dict__.update(argkw)
         self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
 
-    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue):
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         retDist = Orange.core.Distribution(instance.domain.classVar)
         bestRule = None
         for r in self.rules:
@@ -600,9 +984,9 @@ class RuleClassifier_BestRule(RuleClassifier):
         else:
             retDist.normalize()
         # return classifier(instance, result_type=result_type)
-        if result_type == Orange.core.Classifier.GetValue:
+        if result_type == Orange.classification.Classifier.GetValue:
           return retDist.modus()
-        if result_type == Orange.core.Classifier.GetProbabilities:
+        if result_type == Orange.classification.Classifier.GetProbabilities:
           return retDist
         return (retDist.modus(),retDist)
 
@@ -612,7 +996,15 @@ class RuleClassifier_BestRule(RuleClassifier):
             retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
         return retStr    
 
+
 class CovererAndRemover_MultWeights(RuleCovererAndRemover):
+    """
+    Covering and removing of instances using weight multiplication.
+    :param mult: weighting multiplication factor
+    :type mult: float
+    
+    """
+    
     def __init__(self, mult = 0.7):
         self.mult = mult
     def __call__(self, rule, instances, weights, targetClass):
@@ -624,13 +1016,19 @@ class CovererAndRemover_MultWeights(RuleCovererAndRemover):
         instances.addMetaAttribute(newWeightsID,1.)
         instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
+            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.classification.Classifier.GetValue):
                 instance[newWeightsID]=instance[weights]*self.mult
             else:
                 instance[newWeightsID]=instance[weights]
         return (instances,newWeightsID)
 
+
 class CovererAndRemover_AddWeights(RuleCovererAndRemover):
+    """
+    Covering and removing of instances using weight addition.
+    
+    """
+    
     def __call__(self, rule, instances, weights, targetClass):
         if not weights:
             weights = Orange.core.newmetaid()
@@ -646,7 +1044,7 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
         instances.addMetaAttribute(newWeightsID,1.)
         instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.core.Classifier.GetValue):
+            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.classification.Classifier.GetValue):
                 try:
                     instance[coverage]+=1.0
                 except:
@@ -709,23 +1107,16 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
         return (instances,weights)
 
 
-class CN2EVCUnorderedLearner(ABCN2):
-    """This is implementation of CN2 + EVC as evaluation + LRC classification.
-        Main parameters:
-          -- ...
-    """
-    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
-        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
-                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
-
 def ruleToString(rule, showDistribution = True):
     """
     Write a string presentation of rule in human readable format.
+    
     :param rule: rule to pretty-print.
-    :type rule: :class:`Orange.classification.rules.Rules`
+    :type rule: :class:`Orange.classification.rules.Rule`
+    
     :param showDistribution: determines whether presentation should also
         contain the distribution of covered instances
-    :type showDistribution: boolean
+    :type showDistribution: bool
     
     """
     def selectSign(oper):
@@ -774,10 +1165,6 @@ def supervisedClassCheck(instances):
         raise Exception("CN2 requires a discrete class!")
     
 
-
-
-
-
 def rule_in_set(rule,rules):
     for r in rules:
         if rules_equal(rule,r):
@@ -806,7 +1193,6 @@ def rules_equal(rule1,rule2):
         if not found:
             return False
     return True
-
 
 # Miscellaneous - utility functions
 def avg(l):
@@ -858,7 +1244,6 @@ def compParameters(vals,oldMi=0.5,oldBeta=1.1):
     mi = max(oldMi, avg(vals) - 0.57721*beta)
     return mi, beta, percs
 
-
 def computeDists(data, weight=0, targetClass=0, N=100, learner=None):
     """ Compute distributions of likelihood ratio statistics of extreme (best) rules.  """
     if not learner:
@@ -897,9 +1282,6 @@ def createEVDistList(evdList):
     for el in evdList:
         l.append(Orange.core.EVDist(mu=el[0],beta=el[1],percentiles=el[2]))
     return l
-
-
-
 
 def add_sub_rules(rules, instances, weight, learner, dists):
     apriori = Orange.core.Distribution(instances.domain.classVar,instances,weight)
