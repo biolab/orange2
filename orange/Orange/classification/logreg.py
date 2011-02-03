@@ -5,15 +5,14 @@
 Logistic Regression
 ===================
 
-Module :obj:`Orange.classification.logreg` is a set of wrappers around
-the classes LogisticLearner and LogisticClassifier, that are implemented
-in core Orange. This module extends the use of logistic regression
-to discrete features, it can handle various anomalies in
-features, such as constant variables and singularities, that make
-fitting logistic regression almost impossible. It also implements a
-function for constructing stepwise logistic regression, which is a
-good technique for prevent overfitting, and is a good feature subset
-selection technique as well.
+A set of wrappers around the classes LogisticLearner and
+LogisticClassifier, that are implemented in core Orange. This module
+extends the use of logistic regression to discrete features, it can
+handle various anomalies in features, such as constant variables and
+singularities, that make fitting logistic regression almost impossible. It
+also implements a function for constructing stepwise logistic regression,
+which is a good technique for prevent overfitting, and is a good feature
+subset selection technique as well.
 
 Useful Functions
 ---------
@@ -239,7 +238,7 @@ def LogRegLearner(table=None, weightID=0, **kwds):
     classifier is returned instead of the learner.
 
     :param table: data table with either discrete or continuous features
-    :type table: Orange.table.data
+    :type table: Orange.data.Table
     :param weightID: the ID of the weight meta attribute
     :type weightID: int
     :param removeSingular: set to 1 if you want automatic removal of disturbing features, such as constants and singularities

@@ -13,6 +13,7 @@ Contents:
 
    Orange.associate   
    orange.cluster
+   Orange.data
    orange.classification.bayes
    Orange.classification.majority
    Orange.classification.lookup
