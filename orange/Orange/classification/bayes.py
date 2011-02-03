@@ -8,7 +8,7 @@ Naive Bayesian Classifier
 .. index:: Naive Bayesian Learner
 .. autoclass:: Orange.classification.bayes.NaiveBayesLearner
    :members:
-   
+ 
 .. autoclass:: Orange.classification.bayes.NaiveBayesClassifier
    :members:
    
@@ -141,31 +141,44 @@ class NaiveBayesLearner(Orange.core.Learner):
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
     
-    :param adjustTreshold: If set and the class is binary, the classifier's
+    :param adjustTreshold: sets the corresponding attribute
+    :type adjustTreshold: boolean
+    :param m: sets the estimatorConstructor to \
+    :class:`orange.ProbabilityEstimatorConstructor_m` with specified m 
+    :type m: integer
+    :param estimatorConstructor: sets the corresponding attribute
+    :type estimatorConstructor: orange.ProbabilityEstimatorConstructor
+    :param conditionalEstimatorConstructor: sets the corresponding attribute
+    :type conditionalEstimatorConstructor:
+            :class:`orange.ConditionalProbabilityEstimatorConstructor`
+    :param conditionalEstimatorConstructorContinuous: sets the corresponding
+            attribute
+    :type conditionalEstimatorConstructorContinuous: 
+            :class:`orange.ConditionalProbabilityEstimatorConstructor`
+    :rtype: :class:`Orange.classification.bayes.NaiveBayesLearner` or
+            :class:`Orange.classification.bayes.NaiveBayesClassifier` 
+    
+    All attributes can also be set as constructor parameters.
+    
+    :var adjustTreshold: If set and the class is binary, the classifier's
             threshold will be set as to optimize the classification accuracy.
             The threshold is tuned by observing the probabilities predicted on
             learning data. Setting it to True can increase the
-            accuracy considerably.
-    :type adjustTreshold: boolean
-    :param m: m for m-estimate. If set, m-estimation of probabilities
+            accuracy considerably
+    :var m: m for m-estimate. If set, m-estimation of probabilities
             will be used using :class:`orange.ProbabilityEstimatorConstructor_m`
             This attribute is ignored if you also set estimatorConstructor.
-    :type m: integer
-    :param estimatorConstructor: Probability estimator constructor for
+    :var estimatorConstructor: Probability estimator constructor for
             prior class probabilities. Defaults to
-            :`class:orange.ProbabilityEstimatorConstructor_relative`
+            :class:`orange.ProbabilityEstimatorConstructor_relative`
             Setting this attribute disables the above described attribute m.
-    :type estimatorConstructor: orange.ProbabilityEstimatorConstructor
-    :param conditionalEstimatorConstructor: Probability estimator constructor
+    :var conditionalEstimatorConstructor: Probability estimator constructor
             for conditional probabilities for discrete features. If omitted,
             the estimator for prior probabilities will be used.
-    :type conditionalEstimatorConstructor: orange.ConditionalProbabilityEstimatorConstructor
-    :param conditionalEstimatorConstructorContinuous: Probability estimator constructor
-            for conditional probabilities for continuous features. Defaults to
-            :class:`orange.ConditionalProbabilityEstimatorConstructor_loess`
-    :type conditionalEstimatorConstructorContinuous: orange.ConditionalProbabilityEstimatorConstructor
-    :rtype: :class:`Orange.classification.bayes.NaiveBayesLearner` or
-            :class:`Orange.classification.bayes.NaiveBayesClassifier` 
+    :var conditionalEstimatorConstructorContinuous: Probability estimator
+            constructor for conditional probabilities for continuous features.
+            Defaults to 
+            :class:`orange.ConditionalProbabilityEstimatorConstructor_loess` 
     """
     
     def __new__(cls, examples = None, weightID = 0, **argkw):
@@ -208,7 +221,7 @@ class NaiveBayesLearner(Orange.core.Learner):
         if self.conditionalEstimatorConstructor:
             bayes.conditionalEstimatorConstructor = self.conditionalEstimatorConstructor
         else:
-            bayes.conditionalEstimatorConstructor = orange.ConditionalProbabilityEstimatorConstructor_ByRows()
+            bayes.conditionalEstimatorConstructor = Orange.core.ConditionalProbabilityEstimatorConstructor_ByRows()
             bayes.conditionalEstimatorConstructor.estimatorConstructor=bayes.estimatorConstructor
             
         if self.conditionalEstimatorConstructorContinuous:
@@ -218,12 +231,29 @@ class NaiveBayesLearner(Orange.core.Learner):
             
 class NaiveBayesClassifier(Orange.core.Classifier):
     """
-    Wrapps a native BayesClassifier to add print method
-    :param:
+    Predictor based on calculated probabilities
+    
+    :param baseClassifier:
+    :type:
+    
+    :var distribution: Stores probabilities of classes, i.e. p(C) for each
+            class C.
+    :var estimator: An object that returns a probability of class p(C) for a
+            given class C.
+    :var conditionalDistributions: A list of conditional probabilities.
+    :var conditionalEstimators: A list of estimators for conditional
+            probabilities
+    :var normalize: Tells whether the returned probabilities should be
+            normalized (default: True)
+    :var adjustThreshold: For binary classes, this tells the learner to
+            determine the optimal threshold probability according to 0-1
+            loss on the training set. For multiple class problems, it has
+            no effect.
     """
     
-    def __init__(self, nativeBayesClassifier):
-        self.nativeBayesClassifier = nativeBayesClassifier
+    def __init__(self, baseClassifier=None):
+        if not baseClassifier: baseClassifier = _BayesClassifier()
+        self.nativeBayesClassifier = baseClassifier
         for k, v in self.nativeBayesClassifier.__dict__.items():
             self.__dict__[k] = v
   
