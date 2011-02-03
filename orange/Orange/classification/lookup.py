@@ -18,23 +18,10 @@ features into a more useful subset that will only include the features
 a, b, e, and features that will tell whether a and b are equal and
 whether e is 1 (don't bother about the details, they follow later).
 
-part of `classifierByLookupTable.py`_ (uses: `monks-1.tab`_)::
+part of `lookup-classifier.py`_ (uses: `monks-1.tab`_):
 
-    import Orange
-    
-    data = Orange.data.Table("monks-1")
-    
-    a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
-    
-    ab = Orange.data.feature.Discrete("a==b", values = ["no", "yes"])
-    ab.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(ab, a, b,
-                        ["yes", "no", "no",  "no", "yes", "no",  "no", "no", "yes"])
-    
-    e1 = Orange.data.feature.Discrete("e==1", values = ["no", "yes"])
-    e1.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(e1, e,
-                        ["yes", "no", "no", "no", "?"])
-    
-    data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
+.. literalinclude:: code/lookup-classifier.py
+    :lines: 7-21
     
 We can check the correctness of the script by printing out several
 random examples from data2.
@@ -123,7 +110,7 @@ constructed.
     A general constructor that, based on the number of attribute descriptors, constructs one of the three classes discussed. If lookupTable and distributions are omitted, constructor also initializes lookupTable and distributions to two lists of the right sizes, but their elements are don't knows and empty distributions. If they are given, they must be of correct size.
 
 
-.. _classifierByLookupTable.py: code/classifierByLookupTable.py
+.. _lookup-classifier.py: code/lookup-classifier.py
 .. _monks-1.tab: code/monks-1.tab
 
 """

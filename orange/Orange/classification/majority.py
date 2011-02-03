@@ -65,6 +65,7 @@ Here's a simple example.
 `majority.py`_ (uses: `monks-1.tab`_):
 
 .. literalinclude:: code/majority.py
+    :lines: 7-
 
 .. _majority.py: code/majority.py
 .. _monks-1.tab: code/monks-1.tab
