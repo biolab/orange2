@@ -15,7 +15,7 @@ Agrawal's algorithm
 
 The class that induces rules by Agrawal's algorithm, accepts the data examples of two forms. The first is the standard form in which each examples is described by values of a fixed list of features, defined in domain. The algorithm, however, disregards the feature values but only checks whether the value is defined or not. The rule shown above, "bread, butter -> jam" actually means that if "bread" and "butter" are defined, then "jam" is defined as well. It is expected that most of values will be undefined - if this is not so, you need to use the other association rules inducer, described in the next chapter.
 
-Since the usual representation of examples described above is rather unsuitable for sparse examples, AssociationRulesSparseInducer can also use examples represented a bit differently. Sparse examples have no fixed features - the examples' domain is empty, there are neither ordinary nor class features. All values assigned to example are given as meta-features. All meta-features need, however, be `registered with the domain descriptor <http://orange.biolab.si/doc/reference/Domain.htm#meta-features>`_. If you have data of this kind, the most suitable format for it is the `basket format <http://orange.biolab.si/doc/reference/fileformats.htm#basket>`_.
+Since the usual representation of examples described above is rather unsuitable for sparse examples, AssociationRulesSparseInducer can also use examples represented a bit differently. Sparse examples have no fixed features - the examples' domain is empty, there are neither ordinary nor class features. All values assigned to example are given as meta-attributes. All meta-attributes need, however, be `registered with the domain descriptor <http://orange.biolab.si/doc/reference/Domain.htm#meta-attributes>`_. If you have data of this kind, the most suitable format for it is the `basket format <http://orange.biolab.si/doc/reference/fileformats.htm#basket>`_.
 
 In both cases, the examples are first translated into an internal AssociationRulesSparseInducer's internal format for sparse datasets. The algorithm first dynamically builds all itemsets (sets of features) that have at least the prescribed support. Each of these is then used to derive rules with requested confidence.
 
@@ -86,7 +86,7 @@ The induced rules are surprisingly fear-full: ::
 
 If examples are weighted, weight can be passed as an additional argument to call operator.
 
-To get only a list of supported item sets, one should call the method getItemsets. The result is a list whose elements are tuples with two elements. The first is a tuple with indices of features in the item set. Sparse examples are usually represented with meta features, so this indices will be negative. The second element is  a list of indices supporting the item set, that is, containing all the items in the set. If storeExamples is False, the second element is None. ::
+To get only a list of supported item sets, one should call the method getItemsets. The result is a list whose elements are tuples with two elements. The first is a tuple with indices of features in the item set. Sparse examples are usually represented with meta-attributes, so this indices will be negative. The second element is  a list of indices supporting the item set, that is, containing all the items in the set. If storeExamples is False, the second element is None. ::
 
     inducer = Orange.associate.AssociationRulesSparseInducer(support = 0.5, storeExamples = True)
     itemsets = inducer.getItemsets(data)
