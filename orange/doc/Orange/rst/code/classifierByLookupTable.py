@@ -1,9 +1,6 @@
-# Description: Shows how to construct and use classifiers by lookup table
-#              to construct new features from the existing
-# Category:    classification, lookup classifiers, constructive induction,
-#              feature construction
-# Classes:     ClassifierByLookupTable, ClassifierByLookupTable1,
-#              ClassifierByLookupTable2, ClassifierByLookupTable3
+# Description: Shows how to construct and use classifiers by lookup table to construct new features from the existing
+# Category:    classification, lookup classifiers, constructive induction, feature construction
+# Classes:     ClassifierByLookupTable, ClassifierByLookupTable1, ClassifierByLookupTable2, ClassifierByLookupTable3
 # Uses:        monk1
 # Referenced:  lookup.htm
 
