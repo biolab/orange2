@@ -5,21 +5,21 @@
 Logistic Regression
 ===================
 
-A set of wrappers around the classes LogisticLearner and
-LogisticClassifier, that are implemented in core Orange. This module
-extends the use of logistic regression to discrete features, it can
-handle various anomalies in features, such as constant variables and
-singularities, that make fitting logistic regression almost impossible. It
-also implements a function for constructing stepwise logistic regression,
-which is a good technique for prevent overfitting, and is a good feature
-subset selection technique as well.
+Implements logistic regression and extends it's use to discrete features.
+It can handle various anomalies in features, such as constant variables
+and singularities, that make fitting logistic regression almost
+impossible. It also implements a function for constructing stepwise
+logistic regression, which is a good technique for prevent overfitting,
+and is a good feature subset selection technique as well.
+
 
 Useful Functions
----------
+----------------
 
 .. autofunction:: LogRegLearner
 .. autofunction:: StepWiseFSS
 .. autofunction:: printOUT
+
 
 Class
 -----
@@ -186,6 +186,7 @@ from orange import LogRegLearner, LogRegClassifier, LogRegFitter, LogRegFitter_C
 import orange
 import orngCI
 import math, os
+import warnings
 from numpy import *
 from numpy.linalg import *
 
@@ -193,8 +194,11 @@ from numpy.linalg import *
 #######################
 ## Print out methods ##
 #######################
-
 def printOUT(classifier):
+    warnings.warn("printOut is deprecated, use dump instead.", DeprecationWarning)
+    dump(classifier)
+
+def dump(classifier):
     """ Formatted print to console of all major features in logistic
     regression classifier. 
 

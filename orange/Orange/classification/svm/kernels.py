@@ -34,7 +34,7 @@ class DualKernelWrapper(KernelWrapper):
         
 class RBFKernelWrapper(KernelWrapper):
     
-    """AKernel wrapper that uses a wrapped kernel function in a RBF
+    """A Kernel wrapper that uses a wrapped kernel function in a RBF
     (Radial Basis Function)
     
     """
@@ -77,7 +77,7 @@ class AdditionKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
         """Return:
         
-        :math::`wrapped1(example1, example2) + wrapped2(example1, example2)`
+        :math:`wrapped1(example1, example2) + wrapped2(example1, example2)`
             
         """
         return self.wrapped1(example1, example2) + \
