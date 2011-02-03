@@ -5,22 +5,34 @@
 Naive Bayesian Classifier
 =========================
 
+The most primitive bayesian classifier is :obj:`NaiveLearner`. The class
+estimates conditional probabilities from train data and uses them for
+prediction of new examples. 
+
+Example (`bayes-run.py`_, uses `iris.tab`_)
+
+.. literalinclude:: code/bayes-run.py
+    :lines: 7-
+
 .. index:: Naive Bayesian Learner
-.. autoclass:: Orange.classification.bayes.NaiveBayesLearner
+.. autoclass:: Orange.classification.bayes.NaiveLearner
    :members:
+   :show-inheritance:
  
-.. autoclass:: Orange.classification.bayes.NaiveBayesClassifier
+.. autoclass:: Orange.classification.bayes.NaiveClassifier
    :members:
+   :show-inheritance:
    
 Examples
 ========
 Let us load the data, induce a classifier and see how it performs on the first
 five examples.
 
->>> data = orange.ExampleTable("lenses")
->>> bayes = orange.BayesLearner(data)
+>>> from Orange import *
+>>> table = data.Table("lenses")
+>>> bayes = classification.bayes.NaiveLearner(table)
 >>>
->>> for ex in data[:5]:
+>>> for ex in table[:5]:
 ...    print ex.getclass(), bayes(ex)
 no no
 no no
@@ -31,8 +43,8 @@ hard hard
 The classifier is correct in all five cases. Interested in probabilities,
 maybe?
 
->>> for ex in data[:5]:
-...     print ex.getclass(), bayes(ex, orange.Classifier.GetProbabilities)
+>>> for ex in table[:5]:
+...     print ex.getclass(), bayes(ex, Orange.classification.Classifier.GetProbabilities)
 no <0.423, 0.000, 0.577>
 no <0.000, 0.000, 1.000>
 soft <0.000, 0.668, 0.332>
@@ -66,14 +78,14 @@ first attribute is "young".
 
 Let us now use m-estimate instead of relative frequencies.
 
->>> bayesl = orange.BayesLearner()
->>> bayesl.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=2.0)
->>> bayes = bayesl(data)
+>>> bayesl = classification.bayes.NaiveLearner(m=2.0)
+>>> bayes = bayesl(table)
 
 The classifier is still correct for all examples.
 
->>> for ex in data[:5]:
-...     print ex.getclass(), bayes(ex, no &lt;0.375, 0.063, 0.562&gt;
+>>> for ex in table[:5]:
+...     print ex.getclass(), bayes(ex, Orange.classification.Classifier.GetBoth) 
+no <0.375, 0.063, 0.562>;
 no <0.016, 0.003, 0.981>
 soft <0.021, 0.607, 0.372>
 no <0.001, 0.039, 0.960>
@@ -99,10 +111,10 @@ to Python yet.)
 Finally, let us show an example with continuous attributes. We will take iris
 dataset that contains four continuous and no discrete attributes.
 
->>> data = orange.ExampleTable("iris")
->>> bayes = orange.BayesLearner(data)
->>> for exi in range(0, len(data), 20):
-...     print data[exi].getclass(), bayes(data[exi], orange.Classifier.GetBoth)
+>>> table = data.Table("iris")
+>>> bayes = orange.BayesLearner(table)
+>>> for exi in range(0, len(table), 20):
+...     print data[exi].getclass(), bayes(table[exi], orange.Classifier.GetBoth)
 
 The classifier works well. To see a glimpse of how it works, let us observe
 conditional distributions for the first attribute. It is stored in
@@ -128,13 +140,16 @@ If petal lengths are shorter, the most probable class is "setosa". Irises with m
 
 It is important to stress that the curves are relatively smooth although no fitting (either manual or automatic) of parameters took place.
 
+
+.. _bayes-run.py: code/bayes-run.py
+.. _iris.tab: code/iris.tab
 """
 
 import Orange
 from Orange.core import BayesClassifier as _BayesClassifier
 from Orange.core import BayesLearner as _BayesLearner
 
-class NaiveBayesLearner(Orange.core.Learner):
+class NaiveLearner(Orange.classification.Learner):
     """
     Probabilistic classifier based on applying Bayes' theorem (from Bayesian
     statistics) with strong (naive) independence assumptions.
@@ -182,7 +197,7 @@ class NaiveBayesLearner(Orange.core.Learner):
     """
     
     def __new__(cls, examples = None, weightID = 0, **argkw):
-        self = Orange.core.Learner.__new__(cls, **argkw)
+        self = Orange.classification.Learner.__new__(cls, **argkw)
         if examples:
             self.__init__(**argkw)
             return self.__call__(examples, weightID)
@@ -229,7 +244,7 @@ class NaiveBayesLearner(Orange.core.Learner):
             
         return NaiveBayesClassifier(bayes(instances, weight))
             
-class NaiveBayesClassifier(Orange.core.Classifier):
+class NaiveClassifier(Orange.classification.Classifier):
     """
     Predictor based on calculated probabilities
     
@@ -257,15 +272,15 @@ class NaiveBayesClassifier(Orange.core.Classifier):
         for k, v in self.nativeBayesClassifier.__dict__.items():
             self.__dict__[k] = v
   
-    def __call__(self, instance, result_type=Orange.core.Classifier.GetValue,
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
                  *args, **kwdargs):
         """Classify a new instance
         
         :param instance: instance to be classifier
         :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.core.Classifier.GetValue` or \
-              :class:`Orange.core.Classifier.GetProbabilities` or
-              :class:`Orange.core.Classifier.GetBoth`
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
         
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both

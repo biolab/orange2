@@ -1,7 +1,12 @@
+# Description: Naive Bayes Learner on iris data set
+# Category:    classification
+# Uses:        iris
+# Referenced:  Orange.classification.bayes
+# Classes:     Orange.classification.bayes.NaiveLearner, Orange.classification.bayes.NaiveClassifier
+
 import Orange
-som = Orange.projection.som.SOMLearner(map_shape=(10, 20), initialize=Orange.projection.som.InitializeRandom)
-map = som(Orange.data.Table("iris.tab"))
-for n in map:
-    print "node:", n.pos[0], n.pos[1]
-    for e in n.examples:
-        print "\t",e
+table = Orange.data.Table("iris.tab")
+
+learner = Orange.classification.bayes.NaiveLearner()
+classifier = learner(table)
+prediction = classifier(table[0])
