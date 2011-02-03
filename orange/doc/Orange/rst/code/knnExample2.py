@@ -1,7 +1,10 @@
-knn = Orange.classification.kNNLearner()
+import Orange
+table = Orange.data.Table("iris")
+
+knn = Orange.classification.knn.kNNLearner()
 knn.k = 10
 knn.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Hamming()
-knn = knn(train)
+knn = knn(table)
 for i in range(5):
-    instance = test.randomexample()
+    instance = table.randomexample()
     print instance.getclass(), knn(instance)

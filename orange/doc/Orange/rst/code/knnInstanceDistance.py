@@ -2,7 +2,7 @@ import Orange
 
 table = Orange.data.Table("lenses")
 
-nnc = Orange.classifier.knn.FindNearestConstructore()
+nnc = Orange.classification.knn.FindNearestConstructor()
 nnc.distanceConstructor = Orange.core.ExamplesDistanceConstructor_Euclidean()
 
 did = Orange.core.newmetaid()
