@@ -272,7 +272,7 @@ class OWNetExplorer(OWWidget):
         #OWGUI.button(self.edgesTab, self, "Clustering", callback=self.clustering)
         
         ib = OWGUI.widgetBox(self.infoTab, "Prototype")
-        #OWGUI.button(ib, self, "Collapse", callback=self.collapse)
+        #OWGUI.button(ib, self, "Collapse", callback=self._collapse)
         
         #ib = OWGUI.widgetBox(ibProto, "Name components")
         OWGUI.lineEdit(ib, self, "organism", "Organism:", orientation='horizontal')
@@ -400,7 +400,7 @@ class OWNetExplorer(OWWidget):
         
     def drawForce(self):
         if self.btnForce.isChecked() and self.optimization is not None:
-            self.graph.forceVectors = self.optimization.computeForces() 
+            self.graph.forceVectors = self.optimization._computeForces() 
         else:
             self.graph.forceVectors = None
             
@@ -577,7 +577,7 @@ class OWNetExplorer(OWWidget):
         
         self.send("Marked Examples", None)
 
-    def collapse(self):
+    def _collapse(self):
         #print "collapse"
         self.optimization.collapse()
         self.graph.addVisualizer(self.optimization)
