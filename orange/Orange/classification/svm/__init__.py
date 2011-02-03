@@ -11,11 +11,11 @@ Interface to the LibSVM library (a library for support vector machines
 - http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
 
 .. note:: On some data-sets SVM can perform very badly. It is a known fact that
-          SVM's can be very sensitive to the proper choice of the parameters.
-          If you are having problems with learner's accuracy try scaling the
+          SVM can be very sensitive to the proper choice of the parameters.
+          If you are having problems with the learner's accuracy try scaling the
           data and using different parameters or choose an easier approach
-          and use the `SVMLearnerEasy` class which does this automatically
-          (it is similar to the easy.py script in the LibSVM distribution).
+          and use the :obj:`SVMLearnerEasy` class which does this automatically
+          (it is similar to the `svm-easy.py`_ script in the LibSVM distribution).
 
 .. autoclass:: Orange.classification.svm.SVMLearner
    :members:
@@ -153,6 +153,43 @@ def maxNu(examples):
                 if n1 != 0 and n2 !=0] + [nu])
     
 class SVMLearner(_SVMLearner):
+    """:param svm_type: defines the type of SVM (can be C_SVC, Nu_SVC (default), OneClass, Epsilon_SVR, Nu_SVR)
+    :type svm_type: SVMLearner.SVMType
+    :param kernel_type: defines the type of a kernel to use for learning
+        (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
+        kernels.Sigmoid, kernels.Custom)
+    :type kernel_type: classification.kernels.Kernel
+    :param degree: kernel parameter (for Polynomial) (default 3)
+    :type degree: int
+    :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
+        (default 1/number_of_examples)
+    :type gamma: float
+    :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
+    :type coef0: int
+    :param kernelFunc: function that will be called if `kernel_type` is
+        `Custom`. It must accept two `data.Instance` arguments and
+        return a float (the distance between the examples).
+    :type kernelFunc: callable function
+    :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
+    :type C: float
+    :param nu: Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)
+    :type nu: float
+    :param p: epsilon in loss-function for Epsilon_SVR
+    :type p: float
+    :param cache_size: cache memory size in MB (default 100)
+    :type cache_size: int
+    :param eps: tolerance of termination criterion (default 0.001)
+    :type eps: float
+    :param probability: determines if a probability model should be build
+        (default False)
+    :type probability: bool
+    :param shrinking: determines whether to use shrinking heuristics 
+        (default True)
+    :type shrinking: bool
+    :param weights: a list of class weights
+    :type weights: list
+    
+    """
     __new__ = _orange__new__(_SVMLearner)
     
     C_SVC = _SVMLearner.C_SVC
@@ -166,44 +203,6 @@ class SVMLearner(_SVMLearner):
                  coef0=0, shrinking=True, probability=True, verbose=False, 
                  cache_size=200, eps=0.001, normalization=True,
                  weight=[], **kwargs):
-        """:param svm_type: defines the type of SVM (can be C_SVC, 
-            Nu_SVC (default), OneClass, Epsilon_SVR, Nu_SVR)
-        :type svm_type: SVMLearner.SVMType
-        :param kernel_type: defines the type of a kernel to use for learning
-            (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
-            kernels.Sigmoid, kernels.Custom)
-        :type kernel_type: classification.kernels.Kernel
-        :param degree: kernel parameter (for Polynomial) (default 3)
-        :type degree: int
-        :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
-            (default 1/number_of_examples)
-        :type gamma: float
-        :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
-        :type coef0: int
-        :param kernelFunc: function that will be called if `kernel_type` is
-            `Custom`. It must accept two `data.Instance` arguments and
-            return a float (the distance between the examples).
-        :type kernelFunc: callable function
-        :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
-        :type C: float
-        :param nu: Nu parameter for Nu_SVC, Nu_SVR and OneClass (default 0.5)
-        :type nu: float
-        :param p: epsilon in loss-function for Epsilon_SVR
-        :type p: float
-        :param cache_size: cache memory size in MB (default 100)
-        :type cache_size: int
-        :param eps: tolerance of termination criterion (default 0.001)
-        :type eps: float
-        :param probability: determines if a probability model should be build
-            (default False)
-        :type probability: bool
-        :param shrinking: determines whether to use shrinking heuristics 
-            (default True)
-        :type shrinking: bool
-        :param weights: a list of class weights
-        :type weights: list
-        
-        """
         self.svm_type = SVMLearner.Nu_SVC
         self.kernel_type = kernel_type
         self.kernelFunc = kernelFunc
