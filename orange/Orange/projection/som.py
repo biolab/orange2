@@ -20,16 +20,33 @@ the topology of the map and returns an inference objects which, given the data, 
 optimization of the map:: 
 
    import Orange
-   som = Orange.projection.som.SOMLearner(map_shape=(8, 8), initialize=Orange.projection.som.InitializeRandom)
+   som = Orange.projection.som.SOMLearner(map_shape=(8, 8), 
+            initialize=Orange.projection.som.InitializeRandom)
    data = Orange.data.table("iris.tab")
    map = som(data)
+
+.. autodata:: NeighbourhoodGaussian
+
+.. autodata:: HexagonalTopology
+
+.. autodata:: RectangularTopology
+
+.. autodata:: InitializeLinear
+
+.. autodata:: InitializeRandom
+
+.. autodata:: NeighbourhoodGaussian 
+
+.. autodata:: NeighbourhoodBubble
+
+.. autodata:: NeighbourhoodEpanechicov 
 
 .. autoclass:: SOMLearner
    :members:
 
 .. autoclass:: Solver
    :members:
-
+   
 .. autoclass:: SOMMap
    :members:
 
@@ -60,7 +77,12 @@ An example of the code that trains and then classifies on the same data set is::
 Supporting Classes
 ==================
 
-Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects.
+Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects. The code below
+(`som-node.py`_, uses `iris.tab`_) shows an example how to access the information stored in the 
+node of the map:
+
+.. literalinclude:: code/som-node.py
+    :lines: 7-
 
 .. autoclass:: Map
    :members:
@@ -72,11 +94,16 @@ Class :obj:`Map` stores the self-organizing map composed of :obj:`Node` objects.
 Examples
 ========
 
-The following code  (`code/som-mapping.py`_, uses `iris.tab`_) infers self-organizing map from Iris data set. The map is rather small, and consists 
-of only 9 cells. We optimize the network, and then report how many data instances were mappped
+.. _som-mapping.py: code/som-mapping.py
+.. _som-node.py: code/som-node.py
+.. _iris.tab: code/iris.tab
+
+The following code  (`som-mapping.py`_, uses `iris.tab`_) infers self-organizing map from Iris data set. The map is rather small, and consists 
+of only 9 cells. We optimize the network, and then report how many data instances were mapped
 into each cell. The second part of the code reports on data instances from one of the corner cells:
 
 .. literalinclude:: code/som-mapping.py
+    :lines: 7-
 
 The output of this code is::
 
@@ -112,154 +139,41 @@ import random
 random.seed(42)
 
 HexagonalTopology = 0
+"""Hexagonal topology, cells are hexagon-shaped."""
 RectangularTopology = 1
+"""Rectangular topology, cells are square-shaped"""
+
 InitializeLinear = 0
+"""Data instances are initially assigned to cells according to their two-dimensional PCA projection."""
 InitializeRandom = 1
-NeighbourhoodGaussian = 0
+"""Data instances are initially randomly assigned to cells."""
+
+NeighbourhoodGaussian = 0 
+"""Gaussian (smoothed) neighborhood."""
 NeighbourhoodBubble = 1
+"""Bubble (crisp) neighborhood."""
 NeighbourhoodEpanechicov = 2
+"""Epanechicov (cut and smoothed) neighborhood."""
 
-class Node(object):
-    """An object holding the information about the node in the map.
-    """
-    def __init__(self, pos, map=None, vector=None):
-        self.pos = pos
-        self.map = map
-        self.vector = vector
+##########################################################################
+# Inference of Self-Organizing Maps 
 
-class Map(object):
-    """Self organizing map (the structure). Includes methods for data initialization.
-    """
-    
-    HexagonalTopology = HexagonalTopology
-    RectangularTopology = RectangularTopology
-    InitializeLinear = InitializeLinear
-    InitializeRandom = InitializeRandom
-    NeighbourhoodGaussian = NeighbourhoodGaussian
-    NeighbourhoodBubble = NeighbourhoodBubble
-    NeighbourhoodEpanechicov = NeighbourhoodEpanechicov
-        
-    def __init__(self, map_shape=(20, 40), topology=HexagonalTopology):
-        self.map_shape = map_shape
-        self.topology = topology
-        self.map = [[Node((i, j), self) for j in range(map_shape[1])] for i in range(map_shape[0])]
-        
-    def __getitem__(self, pos):
-        """ Return the node at position x, y.
-        """
-        x, y = pos
-        return self.map[x][y]
-
-    def __iter__(self):
-        """ Iterate over all nodes in the map.
-        """
-        for row in self.map:
-            for node in row:
-                yield node
-
-    def vectors(self):
-        """Return all vectors of the map as rows in an numpy.array.
-        """
-        return numpy.array([node.vector for node in self])
-
-    def unit_distances(self):
-        """Return a NxN numpy.array of internode distances (based on
-        node position in the map, not vector space) where N is the number of
-        nodes.
-        """
-        nodes = list(self)
-        dist = numpy.zeros((len(nodes), len(nodes)))
-
-        coords = self.unit_coords()
-        for i in range(len(nodes)):
-            for j in range(len(nodes)):
-                dist[i, j] = numpy.sqrt(numpy.dot(coords[i] - coords[j], coords[i] - coords[j]))
-        return numpy.array(dist)
-
-    def unit_coords(self):
-        """ Return the unit coordinates of all nodes in the map as an numpy.array.
-        """
-        nodes = list(self)
-        coords = numpy.zeros((len(nodes), len(self.map_shape)))
-        coords[:, 0] = numpy.floor(numpy.arange(len(nodes)) / self.map_shape[0])
-        coords[:, 1] = numpy.mod(numpy.arange(len(nodes)), self.map_shape[1])
-        
-        ## in hexagonal topology we move every odd map row by 0.5 and multiply all by sqrt(0.75)
-        if self.topology == Map.HexagonalTopology:
-            ind = numpy.nonzero(1 - numpy.mod(coords[:, 0], 2))
-            coords[ind] = coords[ind] + 0.5
-            coords = coords * numpy.sqrt(0.75)
-        return coords
-
-
-    def initialize_map_random(self, data=None, dimension=5):
-        """Initialize the map nodes vectors randomly, by supplying
-        either training data or dimension of the data.
-        """
-        if data is not None:
-            min, max = ma.min(data, 0), ma.max(data, 0);
-            dimension = data.shape[1]
-        else:
-            min, max = numpy.zeros(dimension), numpy.ones(dimension)
-        for node in self:
-#            node.vector = min + numpy.random.rand(dimension) * (max - min)
-            node.vector = min + random.randint(0, dimension) * (max - min)
-
-    def initialize_map_linear(self, data, map_shape=(10, 20)):
-        """ Initialize the map node vectors linearly over the subspace
-        of the two most significant eigenvectors.
-        """
-        data = data.copy() #ma.array(data)
-        dim = data.shape[1]
-        mdim = len(map_shape)
-        munits = len(list(self))
-        me = ma.mean(data, 0)
-        A = numpy.zeros((dim ,dim))
-
-        for i in range(dim):
-            data[:, i] = data[:, i] - me[i]
-        
-        for i in range(dim):
-            for j in range(dim):
-                c = data[:, i] * data[:, j]
-                A[i, j] = ma.sum(c) / len(c)
-                A[j, i] = A[i, j]
-
-        eigval, eigvec = numpy.linalg.eig(A)
-        ind = list(reversed(numpy.argsort(eigval)))
-        eigval = eigval[ind[:mdim]]
-        eigvec = eigvec[:, ind[:mdim]]
-
-        for i in range(mdim):
-            eigvec[:, i] = eigvec[:, i] / numpy.sqrt(numpy.dot(eigvec[:, i], eigvec[:, i])) * numpy.sqrt(eigval[i])
-
-        unit_coords = self.unit_coords()
-        for d in range(mdim):
-            max, min = numpy.max(unit_coords[:, d]), numpy.min(unit_coords[:, d])
-            unit_coords[:, d] = (unit_coords[:, d] - min)/(max - min)
-        unit_coords = (unit_coords - 0.5) * 2
-
-        vectors = numpy.array([me for i in range(munits)])
-        for i in range(munits):
-            for d in range(mdim):
-                vectors[i] = vectors[i] +  unit_coords[i][d] * numpy.transpose(eigvec[:, d])
-
-        for i, node in enumerate(self):
-            node.vector = vectors[i]
-
-    def getUMat(self):
-        return getUMat(self)
-        
 class Solver(object):
     """ SOM Solver class used to train the map. Supports batch and sequential training.
     Based on ideas from `SOM Toolkit for Matlab <http://www.cis.hut.fi/somtoolbox>`_.
 
-    :param neighbourhood: neighborhood function (NeighbourhoodGaussian, or NeighbourhoodBubble)
+    :param neighbourhood: neighborhood function id
+    :type neighbourhood: :obj:`NeighbourhoodGaussian`, :obj:`NeighbourhoodBubble`, or :obj:`NeighbourhoodEpanechicov`
     :param radius_ini: initial radius
+    :type radius_ini: int
     :param raduis_fin: final radius
+    :type raduis_fin: int
     :param epoch: number of training interactions
+    :type epoch: int
     :param batch_train: if True run the batch training algorithm (default), else use the sequential one
+    :type batch_train: bool
     :param learning_rate: learning rate for the sequential training algorithm
+    :type learning_rate: float
     """
     
     def __init__(self, **kwargs):
@@ -283,7 +197,7 @@ class Solver(object):
         return (1 - epoch/self.epochs)*self.learning_rate
             
     def __call__(self, data, map, progressCallback=None):
-        """ Train the map from data. Set progressCallback function to report on the progress.
+        """ Train the map from data. Pass progressCallback function to report on the progress.
         """
         self.data = data
         self.map = map
@@ -412,8 +326,8 @@ class Solver(object):
         nonzero = (numpy.array(sorted(set(ma.nonzero(A)[0]))), )
         
         self.vectors[nonzero] = S[nonzero] / A[nonzero]
- 
-            
+
+
 class SOMLearner(orange.Learner):
     """An implementation of self-organizing map. Considers an input data set, projects the data 
     instances onto a map, and returns a result in the form of a classifier holding projection
@@ -422,17 +336,26 @@ class SOMLearner(orange.Learner):
     map with information on projection of the training data as crafted by :obj:`SOMMap`.
     
     :param map_shape: dimension of the map
-    :param initialize: type of initialization (InitializeLinear or InitializeRandom), linear 
+    :type map_shape: tuple
+    :param initialize: initialization type id; linear 
       initialization assigns the data to the cells according to its position in two-dimensional
       principal component projection
-    :param topology: topology type (HexagonalTopology or RectangularTopology)
-    :param neighbourhood: cell neighborhood type (NeighbourhoodGaussian, NeighbourhoodBubble or NeighbourhoodEpanechicov),
+    :type initialize: :obj:`InitializeRandom` or :obj:`InitializeLinear`
+    :param topology: topology type id
+    :type topology: :obj:`HexagonalTopology` or :obj:`RectangularTopology`
+    :param neighbourhood: cell neighborhood type id
+    :type neighbourhood: :obj:`NeighbourhoodGaussian`, obj:`NeighbourhoodBubble`, or obj:`NeighbourhoodEpanechicov`
     :param batch_train: perform batch training?
+    :type batch_train: bool
     :param learning_rate: learning rate
+    :type learning_rate: float
     :param radius_ini: initial radius
+    :type radius_ini: int
     :param radius_fin: final radius
+    :type radius_fin: int
     :param epochs: number of epochs (iterations of a training steps)
-    :param solver: a class that executes the optimization algorithm
+    :type epochs: int
+    :param solver: a class with the optimization algorithm
     """
     
     def __new__(cls, examples=None, weightId=0, **kwargs):
@@ -472,38 +395,13 @@ class SOMLearner(orange.Learner):
                      epochs=self.epochs)(numdata, map, progressCallback=progressCallback)
         return SOMMap(map, data)
 
-class SOMSupervisedLearner(SOMLearner):
-    """SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
-    class information in the learning process. This is achieved by adding a value for each class
-    to the training instances, where 1.0 signals class membership and all other values are 0.0.
-    After the training, the new values are discarded from the node vectors.
-    
-    :param data: class-labeled data set
-    :param progressCallback: a function to report on inference progress
-    """
-    def __call__(self, examples, weightID=0, progressCallback=None):
-        data, classes, w = examples.toNumpyMA()
-        nval = len(examples.domain.classVar.values)
-        ext = ma.zeros((len(data), nval))
-        ext[([i for i, m in enumerate(classes.mask) if m], [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
-        data = ma.hstack((data, ext))
-        map = Map(self.map_shape, topology=self.topology)
-        if self.initialize == Map.InitializeLinear:
-            map.initialize_map_linear(data)
-        else:
-            map.initialize_map_random(data)
-        map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
-                     radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
-                     epoch=self.epochs)(data, map, progressCallback=progressCallback)
-        for node in map:
-            node.vector = node.vector[:-nval]
-        return SOMMap(map, examples)
-
 class SOMMap(orange.Classifier):
     """Project the data onto the inferred self-organizing map.
     
     :param map: a trained self-organizing map
+    :type map: :obj:`SOMMap`
     :param data: the data to be mapped on the map
+    :type data: :obj:`Orange.data.Table`
     """
     
     def __init__(self, map=[], data=[]):
@@ -555,6 +453,194 @@ class SOMMap(orange.Classifier):
         """ Return the node at position x, y
         """
         return self.map.__getitem__(val)
+
+##########################################################################
+# Supervised learning
+
+class SOMSupervisedLearner(SOMLearner):
+    """SOMSupervisedLearner is a class used to learn SOM from orange.ExampleTable, by using the
+    class information in the learning process. This is achieved by adding a value for each class
+    to the training instances, where 1.0 signals class membership and all other values are 0.0.
+    After the training, the new values are discarded from the node vectors.
+    
+    :param data: class-labeled data set
+    :type data: :obj:`Orange.data.Table`
+    :param progressCallback: a one argument function to report on inference progress (in %)
+    """
+    def __call__(self, examples, weightID=0, progressCallback=None):
+        data, classes, w = examples.toNumpyMA()
+        nval = len(examples.domain.classVar.values)
+        ext = ma.zeros((len(data), nval))
+        ext[([i for i, m in enumerate(classes.mask) if m], [int(c) for c, m in zip(classes, classes.mask) if m])] = 1.0
+        data = ma.hstack((data, ext))
+        map = Map(self.map_shape, topology=self.topology)
+        if self.initialize == Map.InitializeLinear:
+            map.initialize_map_linear(data)
+        else:
+            map.initialize_map_random(data)
+        map = Solver(batch_train=self.batch_train, eps=self.eps, neighbourhood=self.neighbourhood,
+                     radius_ini=self.radius_ini, radius_fin=self.radius_fin, learning_rate=self.learning_rate,
+                     epoch=self.epochs)(data, map, progressCallback=progressCallback)
+        for node in map:
+            node.vector = node.vector[:-nval]
+        return SOMMap(map, examples)
+
+##########################################################################
+# Supporting Classes 
+
+class Node(object):
+    """An object holding the information about the node in the map.
+
+    .. attribute:: pos
+
+        Node position.
+
+    .. attribute:: referenceExample
+
+        Reference data instance (a prototype).
+        
+    .. attribute:: examples
+    
+        Data set with instances training instances that were mapped to the node. 
+    """
+    def __init__(self, pos, map=None, vector=None):
+        self.pos = pos
+        self.map = map
+        self.vector = vector
+
+class Map(object):
+    """Self organizing map (the structure). Includes methods for data initialization.
+    
+    .. attribute:: map
+
+        Self orginzing map. A list of lists of :obj:`Node`.
+        
+    .. attribute:: examples
+    
+        Data set that was considered when optimizing the map.
+    """
+    
+    HexagonalTopology = HexagonalTopology
+    RectangularTopology = RectangularTopology
+    InitializeLinear = InitializeLinear
+    InitializeRandom = InitializeRandom
+    NeighbourhoodGaussian = NeighbourhoodGaussian
+    NeighbourhoodBubble = NeighbourhoodBubble
+    NeighbourhoodEpanechicov = NeighbourhoodEpanechicov
+        
+    def __init__(self, map_shape=(20, 40), topology=HexagonalTopology):
+        self.map_shape = map_shape
+        self.topology = topology
+        self.map = [[Node((i, j), self) for j in range(map_shape[1])] for i in range(map_shape[0])]
+        
+    def __getitem__(self, pos):
+        """ Return the node at position x, y.
+        """
+        x, y = pos
+        return self.map[x][y]
+
+    def __iter__(self):
+        """ Iterate over all nodes in the map.
+        """
+        for row in self.map:
+            for node in row:
+                yield node
+
+    def vectors(self):
+        """Return all vectors of the map as rows in an numpy.array.
+        """
+        return numpy.array([node.vector for node in self])
+
+    def unit_distances(self):
+        """Return a NxN numpy.array of internode distances (based on
+        node position in the map, not vector space) where N is the number of
+        nodes.
+        """
+        nodes = list(self)
+        dist = numpy.zeros((len(nodes), len(nodes)))
+
+        coords = self.unit_coords()
+        for i in range(len(nodes)):
+            for j in range(len(nodes)):
+                dist[i, j] = numpy.sqrt(numpy.dot(coords[i] - coords[j], coords[i] - coords[j]))
+        return numpy.array(dist)
+
+    def unit_coords(self):
+        """ Return the unit coordinates of all nodes in the map as an numpy.array.
+        """
+        nodes = list(self)
+        coords = numpy.zeros((len(nodes), len(self.map_shape)))
+        coords[:, 0] = numpy.floor(numpy.arange(len(nodes)) / self.map_shape[0])
+        coords[:, 1] = numpy.mod(numpy.arange(len(nodes)), self.map_shape[1])
+        
+        ## in hexagonal topology we move every odd map row by 0.5 and multiply all by sqrt(0.75)
+        if self.topology == Map.HexagonalTopology:
+            ind = numpy.nonzero(1 - numpy.mod(coords[:, 0], 2))
+            coords[ind] = coords[ind] + 0.5
+            coords = coords * numpy.sqrt(0.75)
+        return coords
+
+
+    def initialize_map_random(self, data=None, dimension=5):
+        """Initialize the map nodes vectors randomly, by supplying
+        either training data or dimension of the data.
+        """
+        if data is not None:
+            min, max = ma.min(data, 0), ma.max(data, 0);
+            dimension = data.shape[1]
+        else:
+            min, max = numpy.zeros(dimension), numpy.ones(dimension)
+        for node in self:
+#            node.vector = min + numpy.random.rand(dimension) * (max - min)
+            node.vector = min + random.randint(0, dimension) * (max - min)
+
+    def initialize_map_linear(self, data, map_shape=(10, 20)):
+        """ Initialize the map node vectors linearly over the subspace
+        of the two most significant eigenvectors.
+        """
+        data = data.copy() #ma.array(data)
+        dim = data.shape[1]
+        mdim = len(map_shape)
+        munits = len(list(self))
+        me = ma.mean(data, 0)
+        A = numpy.zeros((dim ,dim))
+
+        for i in range(dim):
+            data[:, i] = data[:, i] - me[i]
+        
+        for i in range(dim):
+            for j in range(dim):
+                c = data[:, i] * data[:, j]
+                A[i, j] = ma.sum(c) / len(c)
+                A[j, i] = A[i, j]
+
+        eigval, eigvec = numpy.linalg.eig(A)
+        ind = list(reversed(numpy.argsort(eigval)))
+        eigval = eigval[ind[:mdim]]
+        eigvec = eigvec[:, ind[:mdim]]
+
+        for i in range(mdim):
+            eigvec[:, i] = eigvec[:, i] / numpy.sqrt(numpy.dot(eigvec[:, i], eigvec[:, i])) * numpy.sqrt(eigval[i])
+
+        unit_coords = self.unit_coords()
+        for d in range(mdim):
+            max, min = numpy.max(unit_coords[:, d]), numpy.min(unit_coords[:, d])
+            unit_coords[:, d] = (unit_coords[:, d] - min)/(max - min)
+        unit_coords = (unit_coords - 0.5) * 2
+
+        vectors = numpy.array([me for i in range(munits)])
+        for i in range(munits):
+            for d in range(mdim):
+                vectors[i] = vectors[i] +  unit_coords[i][d] * numpy.transpose(eigvec[:, d])
+
+        for i, node in enumerate(self):
+            node.vector = vectors[i]
+
+    def getUMat(self):
+        return getUMat(self)
+        
+##########################################################################
+# Supporting functions 
 
 def getUMat(som):
     dim1=som.map_shape[0]*2-1
@@ -608,8 +694,11 @@ def __fillRect(array, som):
             array[i][j]=sum(l)/len(l)
     return array
 
+##########################################################################
+# Testing (deprecated, use regression tests instead  
+
 if __name__ == "__main__":
-    data = orange.ExampleTable("doc//datasets//iris.tab")
+    data = orange.ExampleTable("iris.tab")
     learner = SOMLearner()
     learner = SOMLearner(batch_train=True, initialize=InitializeLinear, radius_ini=3, radius_fin=1, neighbourhood=Map.NeighbourhoodGaussian, epochs=1000)
     map = learner(data)
