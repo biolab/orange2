@@ -33,7 +33,7 @@ Usefull functions
 
 .. automethod:: Orange.classification.svm.getLinearSVMWeights
 
-.. automethod:: Orange.classification.svm.exampleTableToSVMFormat
+.. automethod:: Orange.classification.svm.tableToSVMFormat
 
 SVM derived feature weights
 ===========================
@@ -171,7 +171,7 @@ class SVMLearner(_SVMLearner):
     :type coef0: int
     :param kernelFunc: function that will be called if `kernel_type` is
         `Custom`. It must accept two :obj:`Orange.data.Instance` arguments and
-        return a float (the distance between the examples).
+        return a float (the distance between the instances).
     :type kernelFunc: callable function
     :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
     :type C: float
@@ -285,14 +285,19 @@ class SVMLearner(_SVMLearner):
 
     def tuneParameters(self, examples, parameters=None, folds=5, verbose=0, 
                        progressCallback=None):
-        """Tune the parameters of the SVMLearner on given examples using 
+        """Tune the parameters of the SVMLearner on given instances using 
         cross validation.
         
-        :param examples: :obj:`Orange.data.Table` on which to tune the parameters 
+        :param examples: data table on which to tune the parameters
+        :type examples: Orange.data.Table 
         :param parameters: if not set defaults to ["nu", "C", "gamma"]
+        :type parameters: list of strings
         :param folds: number of folds used for cross validation
+        :type folds: int
         :param verbose: default False
-        :param progressCallback: a callback function to report progress
+        :type verbose: bool
+        :param progressCallback: report progress
+        :type progressCallback: callback function
             
         Example::
             >>> svm = SVMLearner()
@@ -367,8 +372,8 @@ class SVMClassifierWrapper(Orange.core.SVMClassifier):
             
 class SVMLearnerSparse(SVMLearner):
     
-    """Same as SVMLearner except that it learns from the examples meta
-    attributes.
+    """Same as SVMLearner except that it learns from the 
+        :obj:`Orange.data.Table` meta attributes.
     
     .. note:: Note that meta attributes don't need to be registered with
         the data-set domain, or present in all the examples. Use this if you
@@ -382,8 +387,8 @@ class SVMLearnerSparse(SVMLearner):
 
 class SVMLearnerEasy(SVMLearner):
     
-    """Same as `SVMLearner` except that it will automatically scale the data
-    and perform parameter optimization using the `tuneParameters` method
+    """Same as :obj:`SVMLearner` except that it will automatically scale the data
+    and perform parameter optimization using the :obj:`tuneParameters` method
     similar to the easy.py script in LibSVM package. Use this if the
     SVMLearner performs badly. 
     
@@ -634,7 +639,7 @@ class RFE(object):
         """Return a new dataset with only `numSelected` best scoring attributes
         
         :param data: Data
-        :type data: Orange.core.ExampleTable
+        :type data: Orange.data.Table
         :param numSelected: number of features to preserve
         :type numSelected: int
         
@@ -650,7 +655,10 @@ class RFE(object):
         return data
 
 def exampleTableToSVMFormat(examples, file):
-    """Save an example table in svm format as used by LibSVM"""
+    tableToSVMFormat(examples, file)
+
+def tableToSVMFormat(examples, file):
+    """Save :obj:`Orange.data.Table` to a format used by LibSVM."""
     attrs = examples.domain.attributes + examples.domain.getmetas().values()
     attrs = [attr for attr in attrs if attr.varType 
              in [Orange.data.Type.Continuous, 
