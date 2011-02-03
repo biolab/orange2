@@ -51,14 +51,14 @@ from orange import \
      DistributionList, \
      ComputeDomainContingency, \
      ConditionalProbabilityEstimator, \
-         ConditionalProbabilityEstimator_ByRows, \
-         ConditionalProbabilityEstimator_FromDistribution, \
-         ConditionalProbabilityEstimatorConstructor, \
-         ConditionalProbabilityEstimatorConstructor_ByRows, \
-         ConditionalProbabilityEstimatorConstructor_loess, \
+     ConditionalProbabilityEstimator_ByRows, \
+     ConditionalProbabilityEstimator_FromDistribution, \
+     ConditionalProbabilityEstimatorConstructor, \
+     ConditionalProbabilityEstimatorConstructor_ByRows, \
+     ConditionalProbabilityEstimatorConstructor_loess, \
      ConditionalProbabilityEstimatorList, \
-         Contingency, \
-             ContingencyAttrAttr, \
-             ContingencyClass, \
-             ContingencyAttrClass, \
-             ContingencyClassAttr, 
+     Contingency, \
+     ContingencyAttrAttr, \
+     ContingencyClass, \
+     ContingencyAttrClass, \
+     ContingencyClassAttr
