@@ -7,14 +7,14 @@
 import Orange
 import orange, orngTest, orngStat
 
-data = Orange.data.Table("monks-1")
+table = Orange.data.Table("monks-1")
 
-treeLearner = Orange.classification.tree.TreeLearner() #orange.TreeLearner()
-bayesLearner = Orange.classification.bayes.NaiveBayesLearner()
+treeLearner = Orange.classification.tree.TreeLearner()
+bayesLearner = Orange.classification.bayes.NaiveLearner()
 majorityLearner = Orange.classification.majority.MajorityLearner()
 learners = [treeLearner, bayesLearner, majorityLearner]
 
-res = orngTest.crossValidation(learners, data)
+res = orngTest.crossValidation(learners, table)
 CAs = orngStat.CA(res, reportSE = 1)
 
 print "Tree:    %5.3f+-%5.3f" % CAs[0]
