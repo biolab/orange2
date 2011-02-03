@@ -1,21 +1,21 @@
 # Description: Shows how to construct and use classifiers by lookup table to construct new features from the existing
 # Category:    classification, lookup classifiers, constructive induction, feature construction
 # Classes:     ClassifierByLookupTable, ClassifierByLookupTable1, ClassifierByLookupTable2, ClassifierByLookupTable3
-# Uses:        monk1
+# Uses:        monks-1
 # Referenced:  lookup.htm
 
-import orange
+import Orange
 
-data = orange.ExampleTable("monk1")
+data = Orange.data.Table("monks-1")
 
 a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
 
-ab = orange.EnumVariable("a==b", values = ["no", "yes"])
-ab.getValueFrom = orange.ClassifierByLookupTable(ab, a, b,
+ab = Orange.data.feature.Discrete("a==b", values = ["no", "yes"])
+ab.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(ab, a, b,
                     ["yes", "no", "no",  "no", "yes", "no",  "no", "no", "yes"])
 
-e1 = orange.EnumVariable("e==1", values = ["no", "yes"])
-e1.getValueFrom = orange.ClassifierByLookupTable(e1, e,
+e1 = Orange.data.feature.Discrete("e==1", values = ["no", "yes"])
+e1.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(e1, e,
                     ["yes", "no", "no", "no", "?"])
 
 data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
