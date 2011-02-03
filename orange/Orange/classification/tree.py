@@ -25,18 +25,18 @@ Classification trees are represented as a tree-like hierarchy of
     
         Stores a distribution for learning examples belonging to the node.
         Storing distributions can be disabled by setting the 
-        :obj:`TreeLearner`'s storeDistributions flag to false.
+        :obj:`TreeLearnerBase`'s storeDistributions flag to false.
 
     .. attribute:: contingency
 
         Stores complete contingency matrices for the learning examples 
         belonging to the node. Storing contingencies can be enabled by 
-        setting :obj:`TreeLearner`'s :obj:`storeContingencies` 
-        flag to <CODE>true</CODE>. Note that even when the flag is not 
+        setting :obj:`TreeLearnerBase`'s :obj:`storeContingencies` 
+        flag to true. Note that even when the flag is not 
         set, the contingencies get computed and stored to 
         :obj:`TreeNone`, but are removed shortly afterwards. 
         The details are given in the 
-        description of the :obj:`TreeLearner`object.
+        description of the :obj:`TreeLearnerBase`object.
 
     .. attribute:: examples, weightID
 
@@ -93,8 +93,8 @@ Classification trees are represented as a tree-like hierarchy of
         :obj:`orange.Value` in range [0, <CODE>len(branches)-1</CODE>].
         When an example cannot be classified to any branch, the selector
         can return a :obj:`orange.Value` containing a special value
-        (<code>sVal</code>) which should be a discrete distribution
-        (<code>DiscDistribution</code>). This should represent a
+        (sVal) which should be a discrete distribution
+        (DiscDistribution). This should represent a
         :obj:`branchSelector`'s opinion of how to divide the
         example between the branches. Whether the proposition will be
         used or not depends upon the chosen :obj:`TreeExampleSplitter`
@@ -204,7 +204,7 @@ chooses the most probable class.
 Learning
 ========
 
-The main learning object is :obj:`TreeLearner`. It is basically 
+The main learning object is :obj:`TreeLearnerBase`. It is basically 
 a skeleton into which the user must plug the components for particular 
 functions. For easier use, defaults are provided.
 
@@ -242,7 +242,7 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
     branch descriptions and a list with the number of examples that
     go into each branch. Just what we need for the :obj:`TreeNode`.
     It can return an empty list for the number of examples in branches;
-    in this case, the :obj:`TreeLearner` will find the number itself
+    in this case, the :obj:`TreeLearnerBase` will find the number itself
     after splitting the example set into subsets. However, if a split
     constructors can provide the numbers at no extra computational
     cost, it should do so.
@@ -262,7 +262,7 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
     A :obj:`TreeSplitConstructor` can veto the further tree induction
     by returning no classifier. This can happen for many reasons.
     A general one is related to number of examples in the branches.
-    :obj:`TreeSplitConstructor` has a field <code>minSubset</code>,
+    :obj:`TreeSplitConstructor` has a field :obj:`minSubset`,
     which sets the minimal number of examples in a branch; null nodes,
     however, are allowed. If there is no split where this condition
     is met, :obj:`TreeSplitConstructor` stops the induction.
@@ -273,10 +273,6 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
         always in Orange (where not specified otherwise), "number of 
         examples" refers to the weighted number of examples.
     
-    .. method:: test()
-
-        Bla bla.
-
     .. method:: __call__(examples, [weightID=0, apriori_distribution, candidates]) 
 
         Construct a split. Returns a tuple (:obj:`branchSelector`,
@@ -376,14 +372,14 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
         a None when no splitting of examples occurs and thus no weights are 
         needed.
 
-.. class:: TreeLearner
+.. class:: TreeLearnerBase
 
-    TreeLearner has a number of components.
+    TreeLearnerBase has a number of components.
 
     .. attribute:: split
 
         Object of type :obj:`TreeSplitConstructor`. Default value, 
-        provided by :obj:`TreeLearner`, is :obj:`SplitConstructor_Combined`
+        provided by :obj:`TreeLearnerBase`, is :obj:`SplitConstructor_Combined`
         with separate constructors for discrete and continuous attributes. 
         Discrete attributes are used as are, while continuous attributes
         are binarized. Gain ratio is used to select attributes.
@@ -418,7 +414,7 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
 
         Induces a classifier from examples belonging to a node. The
         same learner is used for internal nodes and for leaves. The
-        default :obj:`nodeLearner` is :obj:`MajorityLearner`.
+        default :obj:`nodeLearner` is :obj:`orange.MajorityLearner`.
 
     .. attribute:: descender
 
@@ -446,8 +442,8 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
         since distributions actually points to the same distribution
         that is stored in <code>contingency.classes</code>.
 
-    The :obj:`TreeLearner` first sets the defaults for missing
-    components. Although stored in the actual :obj:`TreeLearner`'s
+    The :obj:`TreeLearnerBase` first sets the defaults for missing
+    components. Although stored in the actual :obj:`TreeLearnerBase`'s
     fields, they are removed when the induction is finished.
 
     Then it ensures that examples are stored in a table. This is needed
@@ -466,7 +462,7 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
     we cannot proceed. A list of candidate attributes is set; in the
     beginning, all attributes are candidates for the split criterion.
 
-    Now comes the recursive part of the :obj:`TreeLearner`. Its arguments 
+    Now comes the recursive part of the :obj:`TreeLearnerBase`. Its arguments 
     are a set of examples, a weight meta-attribute ID (a tricky thing,
     it can be always the same as the original or can change to 
     accomodate splitting of examples among branches), apriori class
@@ -474,7 +470,7 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
     of Boolean values).
 
     The contingency matrix is computed next. This happens
-    even if the flag :obj:`storeContingencies` is <CODE>false</CODE>.
+    even if the flag :obj:`storeContingencies` is false.
     If the <code>contingencyComputer</code> is given we use it,
     otherwise we construct just an ordinary contingency matrix.
 
@@ -499,14 +495,14 @@ type :obj:`TreeStopCriteria` and :obj:`exampleSplitter`
     If it fails to return a branch selector, induction stops and the 
     :obj:`TreeNode` is returned.
 
-    :obj:`TreeLearner` than uses :obj:`ExampleSplitter` to divide 
+    :obj:`TreeLearnerBase` than uses :obj:`ExampleSplitter` to divide 
     the examples as described above.
 
     The contingency gets removed at this point if it is not to be 
     stored. Thus, the :obj:`split`, :obj:`stop` and 
     :obj:`exampleSplitter` can use the contingency matrices if they will.
 
-    The :obj:`TreeLearner` then recursively calls itself for each of 
+    The :obj:`TreeLearnerBase` then recursively calls itself for each of 
     the non-empty subsets. If the splitter returnes a list of weights, 
     a corresponding weight is used for each branch. Besides, the 
     attribute spent by the splitter (if any) is removed from the 
@@ -540,7 +536,7 @@ Talking about node classifiers - pruners cannot construct a
 subtrees into classifiers for new leaves. Thus, if you want to build
 a prunable tree, internal nodes must have their :obj:`nodeClassifier`
 defined. Fortunately, all you need to do is nothing; if you leave
-the :obj:`TreeLearner`'s flags as they are by default, the
+the :obj:`TreeLearnerBase`'s flags as they are by default, the
 :obj:`nodeClassifier` are created.
 
 =======
@@ -549,7 +545,7 @@ Classes
 
 Several classes described above are already functional and can
 (and mostly will) be used as they are. Those classes are :obj:`TreeNode`,
-:obj:`TreeLearner` and :obj:`TreeClassifier`. This section describe 
+:obj:`TreeLearnerBase` and :obj:`TreeClassifier`. This section describe 
 the other classes.
 
 Classes :obj:`TreeSplitConstructor`, :obj:`TreeStopCriteria`, 
@@ -557,7 +553,7 @@ Classes :obj:`TreeSplitConstructor`, :obj:`TreeStopCriteria`,
 and :obj:`Classifier` are among the Orange classes that can be subtyped 
 in Python and have the call operator overloadedd in such a way that it
 is callbacked from C++ code. You can thus program your own components
-for :obj:`orange.TreeLearner` and :obj:`TreeClassifier`. The detailed 
+for :obj:`orange.TreeLearnerBase` and :obj:`TreeClassifier`. The detailed 
 information on how this is done and what can go wrong, is given in a 
 separate page, dedicated to callbacks to Python XXXXXXXXXX.
 
@@ -745,7 +741,7 @@ Classes derived from TreeExampleSplitter
 ========================================
 
 :obj:`TreeExampleSplitter` is the third crucial component of
-:obj:`TreeLearner`. Its function is described in 
+:obj:`TreeLearnerBase`. Its function is described in 
 description of the learning process. XXXXXXXXXX
 
 .. class:: TreeExampleSplitter_IgnoreUnknowns
@@ -813,7 +809,7 @@ is given in description of classification with trees. XXXXXX
         Descends down the tree until it reaches a leaf or a node in 
         which a vote of subtrees is required. In both cases, a tuple 
         of two elements is returned; in the former, the tuple contains 
-        the reached node and <CODE>None</CODE>, in the latter in 
+        the reached node and None, in the latter in 
         contains a node and weights of votes for subtrees (a list of floats).
 
         :obj:`TreeDescender`'s that never split examples always descend
@@ -873,7 +869,6 @@ is given in description of classification with trees. XXXXXX
 
 TreePruner and derived classes
 ==============================
-
 
 .. index::
     pair: classification trees; pruning
@@ -1067,17 +1062,17 @@ the selector, branches and branch descriptions.
 Learning
 ========
 
-You've already seen a simple example of using a :obj:`TreeLearner`.
+You've already seen a simple example of using a :obj:`TreeLearnerBase`.
 You can just call it and let it fill the empty slots with the default
 components. This section will teach you three things: what are the
 missing components (and how to set the same components yourself),
 how to use alternative components to get a different tree and,
 finally, how to write a skeleton for tree induction in Python.
 
-Default components for TreeLearner
-==================================
+Default components for TreeLearnerBase
+======================================
 
-Let us construct a :obj:`TreeLearner` to play with.
+Let us construct a :obj:`TreeLearnerBase` to play with.
 
 .. _treelearner.py: code/treelearner.py
 
@@ -1415,10 +1410,27 @@ Printing out C45 Tree
 
 .. autofunction:: c45_printTree
 
+===============
+orngTree module
+===============
+
+.. autoclass:: TreeLearner
+    :members:
+
+
+Tree size
+=========
+
+.. autofunction:: countNodes
+
+.. autofunction:: countLeaves
+
+
+
 """
 
 from Orange.core import \
-     TreeLearner, \
+     TreeLearner as TreeLearnerBase, \
          TreeClassifier, \
          C45Learner, \
          C45Classifier, \
@@ -1455,15 +1467,14 @@ from Orange.core import \
               TreeStopCriteria_common
 
 
-#from orngC45
-def c45_showBranch(node, classvar, lev, i):
+def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
     if node.nodeType == 1:
         print ("\n"+"|   "*lev + "%s = %s:") % (var.name, var.values[i]),
-        c45_printTree0(node.branch[i], classvar, lev+1)
+        _c45_printTree0(node.branch[i], classvar, lev+1)
     elif node.nodeType == 2:
         print ("\n"+"|   "*lev + "%s %s %.1f:") % (var.name, ["<=", ">"][i], node.cut),
-        c45_printTree0(node.branch[i], classvar, lev+1)
+        _c45_printTree0(node.branch[i], classvar, lev+1)
     else:
         inset = filter(lambda a:a[1]==i, enumerate(node.mapping))
         inset = [var.values[j[0]] for j in inset]
@@ -1471,20 +1482,20 @@ def c45_showBranch(node, classvar, lev, i):
             print ("\n"+"|   "*lev + "%s = %s:") % (var.name, inset[0]),
         else:
             print ("\n"+"|   "*lev + "%s in {%s}:") % (var.name, ", ".join(inset)),
-        c45_printTree0(node.branch[i], classvar, lev+1)
+        _c45_printTree0(node.branch[i], classvar, lev+1)
         
         
-def c45_printTree0(node, classvar, lev):
+def _c45_printTree0(node, classvar, lev):
     var = node.tested
     if node.nodeType == 0:
         print "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items),
     else:
         for i, branch in enumerate(node.branch):
             if not branch.nodeType:
-                c45_showBranch(node, classvar, lev, i)
+                _c45_showBranch(node, classvar, lev, i)
         for i, branch in enumerate(node.branch):
             if branch.nodeType:
-                c45_showBranch(node, classvar, lev, i)
+                _c45_showBranch(node, classvar, lev, i)
 
 def c45_printTree(tree):
     """
@@ -1534,10 +1545,1269 @@ def c45_printTree(tree):
     in each node - something which :obj:`c45_printTree` obviously can't do
     (nor is there any need it should).
 
-"""
+    """
     c45_printTree0(tree.tree, tree.classVar, 0)
-    print
-#end orngC45
 
 
 
+
+#
+# From  orngTree
+#
+
+"""
+
+The module also contains functions for counting the number of nodes
+and leaves in the tree. It laso includes functions for 
+printing out the tree, which are
+rather versatile and can print out practically anything you'd like to
+know, from the number of examples, proportion of examples of majority
+class in nodes and similar, to more complex statistics like the
+proportion of examples in a particular class divided by the proportion
+of examples of this class in a parent node. And even more, you can
+define your own callback functions to be used for printing.
+
+<P>For a bit more complex example, here's how to write your own stop function. The example itself is more funny than useful. It constructs and prints two trees. For the first one we define the <code>defStop</code> function, which is used by default, and combine it with a random function so that the stop criteria will also be met in additional 20% of the cases when <code>defStop</code> is false. The second tree is build such that it considers only the random function as the stopping criteria. Note that in the second case lambda function still has three parameters, since this is a necessary number of parameters for the stop function (for more, see section on <a href="../reference/TreeLearner.htm">Orange Trees</a> in Orange Reference).
+</p>
+
+<p class="header"><a href="tree3.py">tree3.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+
+<XMP class=code>import orange, orngTree
+from whrandom import randint, random
+
+data = orange.ExampleTable("iris.tab")
+
+defStop = orange.TreeStopCriteria()
+f = lambda examples, weightID, contingency: defStop(examples, weightID, contingency) or randint(1, 5)==1
+l = orngTree.TreeLearner(data, stop=f)
+orngTree.printTxt(l, leafFields=['major', 'contingency'])
+
+f = lambda x,y,z: randint(1, 5)==1
+l = orngTree.TreeLearner(data, stop=f)
+orngTree.printTxt(l, leafFields=['major', 'contingency'])
+</XMP>
+
+<p>The output is not shown here since the resulting trees are rather
+big.</p>
+
+
+
+<h2>Tree Size</h2>
+
+
+<h2>Printing the Tree</h2>
+<index name="classification trees/printing">
+
+<P>Function <code>dumpTree</code> dumps a tree to a string, and <code>printTree</code> prints out the tree (<code>printTxt</code> is alias for <code>printTree</code>, and it's there for compatibility). Functions have same arguments.</P>
+
+<P>Before we go on: you can read all about the function and use it to its full extent, or you can just call it, giving it the tree as the sole argument and it will print out the usual textual representation of the tree. If you're satisfied with that, you can stop here.</P>
+
+<p class=section>Arguments</p>
+<dl class=arguments>
+  <dt>tree</dt>
+  <dd>The tree to be printed out.</dd>
+
+  <dt>leafStr</dt>
+  <dd>The format string for printing the tree leaves. If left empty, "%V (%^.2m%)" will be used for classification trees and "%V" for regression trees.</dd>
+
+  <dt>nodeStr</dt>
+  <dd>The string for printing out the internal nodes. If left empty (as it is by default), no data is printed out for internal nodes. If set to <code>"."</code>, the same string is used as for leaves.</dd>
+
+  <dt>maxDepth</dt>
+  <dd>If set, it limits the depth to which the tree is printed out.</dd>
+
+  <dt>minExamples</dt>
+  <dd>If set, the subtrees with less than the given number of examples are not printed.</dd>
+
+  <dt>simpleFirst</dt>
+  <dd>If <code>True</code> (default), the branches with a single node are printed before the branches with larger subtrees. If you set it to <code>False</code> (which I don't know why you would), the branches are printed in order of appearance.</dd>
+
+  <dt>userFormats</dt>
+  <dd>A list of regular expressions and callback function through which the user can print out other specific information in the nodes.
+</dl>
+
+<P>The magic is in the format string. It is a string which is printed out at every leaf or internal node with the certain format specifiers replaced by data from the tree node. Specifiers are generally of form
+<B><code>%<em>[^]</em><em>&lt;precision&gt;</em><em>&lt;quantity&gt;</em><em>&lt;divisor&gt;</em>.</code></B>
+</center>
+
+<P><B><EM>^</EM></B> at the start tells that the number should be multiplied by 100. It's useful for printing proportions like percentages, but it makes no sense to multiply, say, the number of examples at the node (although the function will allow it).</P>
+
+<P><B><em>&lt;precision&gt;</em></B> is in the same format as in Python (or C) string formatting. For instance, <code>%N</code> denotes the number of examples in the node, hence <code>%6.2N</code> would mean output to two decimal digits and six places altogether. If left out, a default format <code>5.3</code> is used, unless you multiply the numbers by 100, in which case the default is <code>.0</code> (no decimals, the number is rounded to the nearest integer).</code></P>
+
+<P><B><em>&lt;divisor&gt;</em></B> tells what to divide the quantity in that node with. <code>bP</code> means division by the same quantity in the parent node; for instance, <code>%NbP</code> will tell give the number of examples in the node divided by the number of examples in parent node. You can add use precision formatting, e.g. <code>%6.2NbP</code>. <code>bA</code> is division by the same quantity over the entire data set, so <code>%NbA</code> will tell you the proportion of examples (out of the entire training data set) that fell into that node. If division is impossible since the parent node does not exist or some data is missing, a dot is printed out instead of the quantity.</P>
+
+<P><B><em>&lt;quantity&gt;</em></B> is the only required element. It defines what to print. For instance, <code>%N</code> would print out the number of examples in the node. Possible quantities are
+<dl class=arguments_sm>
+<dt>V</dt>
+<dd>The value predicted at that node. You cannot define the precision or divisor here.</dd>
+
+<dt>N</dt>
+<dd>The number of examples in the node.</dd>
+
+<dt>M</dt>
+<dd>The number of examples in the majority class (that is, the class predicted by the node).</dd>
+
+<dt>m</dt>
+<dd>The proportion of examples in the majority class.</dd>
+
+<dt>A</dt>
+<dd>The average class for examples the node; this is available only for regression trees.</dd>
+
+<dt>E</dt>
+<dd>Standard error for class of examples in the node; available for regression trees.</dd>
+
+<dt>I</dt>
+<dd>Print out the confidence interval. The modifier is used as <code>%I(95)</code> of (more complicated) <code>%5.3I(95)bP</code>.</dd>
+
+<dt>C</dt>
+<dd>The number of examples in the given class. For classification trees, this modifier is used as, for instance in, <code>%5.3C="Iris-virginica"bP</code> - this will tell the number of examples of Iris-virginica by the number of examples this class in the parent node. If you are interested in examples that are <em>not</em> Iris-virginica, say <code>%5.3CbP!="Iris-virginica"</code>
+
+For regression trees, you can use operators =, !=, &lt;, &lt;=, &gt;, and &gt;=, as in <code>%C&lt;22</code> - add the precision and divisor if you will. You can also check the number of examples in a certain interval: <code>%C[20, 22]</code> will give you the number of examples between 20 and 22 (inclusive) and <code>%C(20, 22)</code> will give the number of such examples excluding the boundaries. You can of course mix the parentheses, e.g. <code>%C(20, 22]</code>. If you would like the examples outside the interval, add a <code>!</code>, like <code>%C!(20, 22]</code>.</dd>
+
+<dt>c</dt>
+<dd>Same as above, except that it computes the proportion of the class instead of the number of examples.</dd>
+
+<dt>D</dt>
+<dd>Prints out the number of examples in each class. You can use both, precision (it is applied to each number in the distribution) or the divisor. This quantity cannot be computed for regression trees.</dd>
+
+<dt>d</dt>
+<dd>Same as above, except that it shows proportions of examples. This again doesn't work with regression trees.</dd>
+</dl>
+
+<dt>&lt;user defined formats&gt;</dt>
+<dd>You can add more, if you will. Instructions and examples are given at the end of this section.</dd>
+</P>
+
+<P>Now for some examples. We shall build a small tree from the iris data set - we shall limit the depth to three levels.</P>
+
+<p class="header">part of <a href="orngTree1.py">orngTree1.py</a></p>
+<xmp class="code">import orange, orngTree
+data = orange.ExampleTable("iris")
+tree = orngTree.TreeLearner(data, maxDepth=3)
+</xmp>
+
+<P>The easiest way to call the function is to pass the tree as the only argument. Calling <code>orngTree.printTree(tree)</code> will print
+<xmp class="printout">petal width<0.800: Iris-setosa (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor (94.23%)
+|    |    petal length>=5.350: Iris-virginica (100.00%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica (66.67%)
+|    |    petal length>=4.850: Iris-virginica (100.00%)
+</xmp>
+</P>
+
+<P>Let's now print out the predicted class at each node, the number of examples in the majority class with the total number of examples in the node,
+<code>orngTree.printTree(tree, leafStr="%V (%M out of %N)")</code>.
+<xmp class="printout">petal width<0.800: Iris-setosa (50.000 out of 50.000)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
+|    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
+|    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
+</xmp>
+</P>
+
+<P>Would you like to know how the number of examples declines as compared to the entire data set and to the parent node? We find it with this: <code>orng.printTree("%V (%^MbA%, %^MbP%)")</code>
+<xmp class="printout">petal width<0.800: Iris-setosa (100%, 100%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor (98%, 100%)
+|    |    petal length>=5.350: Iris-virginica (4%, 40%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica (4%, 4%)
+|    |    petal length>=4.850: Iris-virginica (86%, 96%)
+</xmp>
+<P>Let us first read the format string. <code>%M</code> is the number of examples in the majority class. We want it divided by the number of all examples from this class on the entire data set, hence <code>%MbA</code>. To have it multipied by 100, we say <code>%^MbA</code>. The percent sign <em>after</em> that is just printed out literally, just as the comma and parentheses (see the output). The string for showing the proportion of this class in the parent is the same except that we have <code>bP</code> instead of <code>bA</code>.</P>
+
+<P>And now for the output: all examples of setosa for into the first node. For versicolor, we have 98% in one node; the rest is certainly not in the neighbouring node (petal length&gt;=5.350) since all versicolors from the node petal width&lt;1.750 went to petal length&lt;5.350 (we know this from the <code>100%</code> in that line). Virginica is the majority class in the three nodes that together contain 94% of this class (4+4+86). The rest must had gone to the same node as versicolor.</P>
+
+<P>If you find this guesswork annoying - so do I. Let us print out the number of versicolors in each node, together with the proportion of versicolors among the examples in this particular node and among all versicolors. So,<br>
+<code>'%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)</code><br>gives the following output:</P>
+
+<xmp class="printout">petal width<0.800: 0.000 (0% of node, 0% of versicolors)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
+|    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
+|    petal width>=1.750
+|    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
+|    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
+</xmp>
+
+<P>Finally, we may want to print out the distributions, using a simple string <code>%D</code>.</P>
+<xmp class="printout">petal width<0.800: [50.000, 0.000, 0.000]
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: [0.000, 49.000, 3.000]
+|    |    petal length>=5.350: [0.000, 0.000, 2.000]
+|    petal width>=1.750
+|    |    petal length<4.850: [0.000, 1.000, 2.000]
+|    |    petal length>=4.850: [0.000, 0.000, 43.000]
+</xmp>
+<P>What is the order of numbers here? If you check <code>data.domain.classVar.values</code>, you'll learn that the order is setosa, versicolor, virginica; so in the node at peta length&lt;5.350 we have 49 versicolors and 3 virginicae. To print out the proportions, we can use, for instance <code>%.2d</code> - this gives us proportions within node, rounded on two decimals.</P>
+<xmp class="printout">petal width<0.800: [1.00, 0.00, 0.00]
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: [0.00, 0.94, 0.06]
+|    |    petal length>=5.350: [0.00, 0.00, 1.00]
+|    petal width>=1.750
+|    |    petal length<4.850: [0.00, 0.33, 0.67]
+|    |    petal length>=4.850: [0.00, 0.00, 1.00]
+</xmp>
+
+<P>We haven't tried printing out some information for internal nodes. To start with the most trivial case, we shall print the prediction at each node
+<xmp class="code">orngTree.printTree(tree, leafStr="%V", nodeStr=".")</xmp> says that the <code>nodeStr</code> should be the same as <code>leafStr</code> (not very useful here, since <code>leafStr</code> is trivial anyway).</P>
+<xmp class="printout">root: Iris-setosa
+|    petal width<0.800: Iris-setosa
+|    petal width>=0.800: Iris-versicolor
+|    |    petal width<1.750: Iris-versicolor
+|    |    |    petal length<5.350: Iris-versicolor
+|    |    |    petal length>=5.350: Iris-virginica
+|    |    petal width>=1.750: Iris-virginica
+|    |    |    petal length<4.850: Iris-virginica
+|    |    |    petal length>=4.850: Iris-virginica
+</xmp>
+
+<P>Note that the output is somewhat different now: there appeared another node called <em>root</em> and the tree looks one level deeper. This is needed to print out the data for that node to.</P>
+
+<P>Now for something more complicated: let us observe how the number of virginicas decreases down the tree:</P>
+<xmp class="code>"orngTree.printTree(tree, leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')</xmp>
+<P>Let's first interpret the format string: <code>CbA="Iris-virginica"</code> is the number of examples from class virginica, divided by the total number of examples in this class. Add <code>^.1</code> and the result will be multiplied and printed with one decimal. The trailing <code>%</code> is printed out. In parentheses we print the same thing except that we divide by the examples in the parent node. Note the use of single quotes, so we can use the double quotes inside the string, when we specify the class.</P>
+<xmp class="printout">root: 100.0% (.%)
+|    petal width<0.800: 0.0% (0.0%)
+|    petal width>=0.800: 100.0% (100.0%)
+|    |    petal width<1.750: 10.0% (10.0%)
+|    |    |    petal length<5.350: 6.0% (60.0%)
+|    |    |    petal length>=5.350: 4.0% (40.0%)
+|    |    petal width>=1.750: 90.0% (90.0%)
+|    |    |    petal length<4.850: 4.0% (4.4%)
+|    |    |    petal length>=4.850: 86.0% (95.6%)
+</xmp>
+<P>See what's in the parentheses in the root node? If <code>printTree</code> cannot compute something (in this case it's because the root has no parent), it prints out a dot. You can also replace <code>=</code> by <code>!=</code> and it will count all classes <em>except</em> virginica.</P>
+
+<P>For one final example with classification trees, we shall print the distributions in that nodes, the distribution compared to the parent and the proportions compared to the parent (the latter things are not the same - think why). In the leaves we shall also add the predicted class. So now we'll have to call the function like this.</P>
+<xmp class="code>"orngTree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')</xmp>
+<p>Here's the result:</p>
+<xmp class="printout">root: [50.000, 50.000, 50.000] . .
+|    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
+|        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
+|    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
+|    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
+|    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
+|    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
+|    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
+|    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
+|    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
+|    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
+|    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
+|    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
+|    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
+</xmp>
+
+<P>To explore the possibilities when printing regression trees, we are gonna induce a tree from the housing data set. Called with the tree as the only argument, <code>printTree</code> prints the tree like this:
+
+<xmp class="printout">RM<6.941
+|    LSTAT<14.400
+|    |    DIS<1.385: 45.6
+|    |    DIS>=1.385: 22.9
+|    LSTAT>=14.400
+|    |    CRIM<6.992: 17.1
+|    |    CRIM>=6.992: 12.0
+RM>=6.941
+|    RM<7.437
+|    |    CRIM<7.393: 33.3
+|    |    CRIM>=7.393: 14.4
+|    RM>=7.437
+|    |    TAX<534.500: 45.9
+|    |    TAX>=534.500: 21.9
+</xmp>
+
+<P>Let us add the standard error in both internal nodes and leaves, and the 90% confidence intervals in the leaves. So we want to call it like this:</P>
+<xmp class="code">orngTree.printTree(tree, leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")</xmp>
+
+<xmp class="printout">root: [SE: 0.409]
+|    RM<6.941: [SE: 0.306]
+|    |    LSTAT<14.400: [SE: 0.320]
+|    |    |    DIS<1.385: [SE: 4.420]:
+|    |    |        [SE: 4.420]   45.6 [38.331-52.829]
+|    |    |    DIS>=1.385: [SE: 0.244]:
+|    |    |        [SE: 0.244]   22.9 [22.504-23.306]
+|    |    LSTAT>=14.400: [SE: 0.333]
+|    |    |    CRIM<6.992: [SE: 0.338]:
+|    |    |        [SE: 0.338]   17.1 [16.584-17.691]
+|    |    |    CRIM>=6.992: [SE: 0.448]:
+|    |    |        [SE: 0.448]   12.0 [11.243-12.714]
+|    RM>=6.941: [SE: 1.031]
+|    |    RM<7.437: [SE: 0.958]
+|    |    |    CRIM<7.393: [SE: 0.692]:
+|    |    |        [SE: 0.692]   33.3 [32.214-34.484]
+|    |    |    CRIM>=7.393: [SE: 2.157]:
+|    |    |        [SE: 2.157]   14.4 [10.862-17.938]
+|    |    RM>=7.437: [SE: 1.124]
+|    |    |    TAX<534.500: [SE: 0.817]:
+|    |    |        [SE: 0.817]   45.9 [44.556-47.237]
+|    |    |    TAX>=534.500: [SE: 0.000]:
+|    |    |        [SE: 0.000]   21.9 [21.900-21.900]
+</xmp>
+
+<P>What's the difference between <code>%V</code>, the predicted value and <code>%A</code> the average? Doesn't a regression tree always predict the leaf average anyway? Not necessarily, the tree predict whatever the <code>nodeClassifier</code> in a leaf returns. But you're mostly right. The difference is in the number of decimals: <code>%V</code> uses the <code>FloatVariable</code>'s function for printing out the value, which results the printed number to have the same number of decimals as in the original file from which the data was read.</P>
+
+<P>Regression trees cannot print the distributions in the same way as classification trees. They instead offer a set of operators for observing the number of examples within a certain range. For instance, let us check the number of examples with values below 22, and compare this number with values in the parent nodes.</P>
+<xmp class="code">orngTree.printTree(tree, leafStr="%C<22 (%cbP<22)", nodeStr=".")</xmp>
+
+<xmp class="printout">root: 277.000 (.)
+|    RM<6.941: 273.000 (1.160)
+|    |    LSTAT<14.400: 107.000 (0.661)
+|    |    |    DIS<1.385: 0.000 (0.000)
+|    |    |    DIS>=1.385: 107.000 (1.020)
+|    |    LSTAT>=14.400: 166.000 (1.494)
+|    |    |    CRIM<6.992: 93.000 (0.971)
+|    |    |    CRIM>=6.992: 73.000 (1.040)
+|    RM>=6.941: 4.000 (0.096)
+|    |    RM<7.437: 3.000 (1.239)
+|    |    |    CRIM<7.393: 0.000 (0.000)
+|    |    |    CRIM>=7.393: 3.000 (15.333)
+|    |    RM>=7.437: 1.000 (0.633)
+|    |    |    TAX<534.500: 0.000 (0.000)
+|    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
+
+<P>The last line, for instance, says the the number of examples with the class below 22 is among those with tax above 534 is 30 times higher than the number of such examples in its parent node.</P>
+
+<P>For another exercise, let's count the same for all examples <em>outside</em> interval [20, 22] (given like this, the interval includes the bounds). And let us print out the proportions as percents.</P>
+
+<xmp class="code">orngTree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")</xmp>
+
+<P>OK, let's observe the format string for one last time. <code>%c![20, 22]</code> would be the proportion of examples (within the node) whose values are below 20 or above 22. By <code>%cbP![20, 22]</code> we derive this by the same statistics computed on the parent. Add a <code>^</code> and you have the percentages.</P>
+
+<xmp class="printout">root: 439.000 (.%)
+|    RM<6.941: 364.000 (98%)
+|    |    LSTAT<14.400: 200.000 (93%)
+|    |    |    DIS<1.385: 5.000 (127%)
+|    |    |    DIS>=1.385: 195.000 (99%)
+|    |    LSTAT>=14.400: 164.000 (111%)
+|    |    |    CRIM<6.992: 91.000 (96%)
+|    |    |    CRIM>=6.992: 73.000 (105%)
+|    RM>=6.941: 75.000 (114%)
+|    |    RM<7.437: 46.000 (101%)
+|    |    |    CRIM<7.393: 43.000 (100%)
+|    |    |    CRIM>=7.393: 3.000 (100%)
+|    |    RM>=7.437: 29.000 (98%)
+|    |    |    TAX<534.500: 29.000 (103%)
+|    |    |    TAX>=534.500: 0.000 (0%)
+</xmp>
+
+
+<h3>Defining Your Own Printout functions</h3>
+
+<P><code>dumpTree</code>'s argument <code>userFormats</code> can be used to print out some other information in the leaves or nodes. If provided, <code>userFormat</code> should contain a list of tuples with a regular expression and a callback function to be called when that expression is found in the format string. Expressions from <code>userFormats</code> are checked before the built-in expressions discussed above, so you can override the built-ins if you want to.</P>
+
+<P>The regular expression should describe a string like those we used above, for instance the string <code>%.2DbP</code>. When a leaf or internal node is printed out, the format string (<code>leafStr</code> or <code>nodeStr</code>) is checked for these regular expressions and when the match is found, the corresponding callback function is called.</P>
+
+<P>The callback function will get five arguments: the format string (<code>leafStr</code> or <code>nodeStr</code>), the match object, the node which is being printed, its parent (can be <code>None</code>) and the tree classifier. The function should return the format string in which the part described by the match object (that is, the part that is matched by the regular expression) is replaced by whatever information your callback function is supposed to give.</P>
+
+<P>The function can use several utility function provided in the module.</P>
+<dl class="attributes">
+<dt>insertStr(s, mo, sub)</dt>
+<dd>Replaces the part of <code>s</code> which is covered by <code>mo</code> by the string <code>sub</code>.</dd>
+
+<dt>insertDot(s, mo)</dt>
+<dd>Calls <code>insertStr(s, mo, "."). You should use this when the function cannot compute the desired quantity; it is called, for instance, when it needs to divide by something in the parent, but the parent doesn't exist.</dd>
+
+<dt>insertNum(s, mo, n)</dt>
+<dd>Replaces the part of <code>s</code> matched by <code>mo</code> by the number <code>n</code>, formatted as specified by the user, that is, it multiplies it by 100, if needed, and prints with the right number of places and decimals. It does so by checking the <code>mo</code> for a group named <code>m100</code> (representing the <code>^</code> in the format string) and a group named <code>fs</code> represented the part giving the number of decimals (e.g. <code>5.3</code>).</dd>
+
+<dt>byWhom(by, parent, tree)</dt>
+<dd>If <code>by</code> equals <code>bp</code>, it returns <code>parent</code>, else it returns <code>tree.tree</code>. This is used to find what to divide the quantity with, when division is required.</dd>
+</dl>
+
+<P>There are also a few pieces of regular expression that you may want to reuse. The two you are likely to use are</P>
+<dl class="attributes-sm">
+<dt>fs</dt>
+<dd>Defines the multiplier by 100 (<code>^</code>) and the format for the number of decimals (e.g. <code>5.3</code>). The corresponding groups are named <code>m100</code> and <code>fs</code>.</dd>
+
+<dt>by</dt>
+<dd>Defines <code>bP</code> or <code>bA</code> or nothing; the result is in groups <code>by</code>.</dd>
+</dl>
+
+<P>For a trivial example, "%V" is implemented like this. There is the following tuple in the list of built-in formats: <code>(re.compile("%V"), replaceV)</code>. <code>replaceV</code> is a function defined by:</P>
+<xmp class="code">def replaceV(strg, mo, node, parent, tree):
+    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))</xmp>
+<P>It therefore takes the value predicted at the node (<code>node.nodeClassifier.defaultValue</code>), converts it to a string and passes it to <code>insertStr</code> to do the replacement.</P>
+
+<P>A more complex regular expression is the one for the proportion of majority class, defined as <code>"%"+fs+"M"+by</code>. It uses the two partial expressions defined above.</P>
+
+<P>Let's say with like to print the classification margin for each node, that is, the difference between the proportion of the largest and the second largest class in the node.</P>
+
+<p class="header">part of <a href="orngTree2.py">orngTree2.py</a></p>
+<xmp class="code">def getMargin(dist):
+    if dist.abs < 1e-30:
+        return 0
+    l = list(dist)
+    l.sort()
+    return (l[-1] - l[-2]) / dist.abs
+
+def replaceB(strg, mo, node, parent, tree):
+    margin = getMargin(node.distribution)
+
+    by = mo.group("by")
+    if margin and by:
+        whom = orngTree.byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            divMargin = getMargin(whom.distribution)
+            if divMargin > 1e-30:
+                margin /= divMargin
+            else:
+                orngTree.insertDot(strg, mo)
+        else:
+            return orngTree.insertDot(strg, mo)
+    return orngTree.insertNum(strg, mo, margin)
+
+
+myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]</xmp>
+
+<P>We first defined <code>getMargin</code> which gets the distribution and computes the margin. The callback replaces, <code>replaceB</code>, computes the margin for the node. If we need to divided the quantity by something (that is, if the <code>by</code> group is present), we call <code>orngTree.byWhom</code> to get the node with whose margin this node's margin is to be divided. If this node (usually the parent) does not exist of if its margin is zero, we call <code>insertDot</code> to insert a dot, otherwise we call <code>insertNum</code> which will insert the number, obeying the format specified by the user.</P>
+
+<P><code>myFormat</code> is a list containing the regular expression and the callback function.</P>
+
+<P>We can now print out the iris tree, for instance using the following call.</P>
+<xmp class="code">orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats = myFormat)</xmp>
+
+<P>And this is what we get.</P>
+<xmp class="printout">petal width<0.800: Iris-setosa 100% (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica 33% (34.85%)
+|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
+</xmp>
+
+
+<h2>Plotting the Tree using Dot</h2>
+
+<p>Function <code>printDot</code> prints the tree to a file in a format used by <a
+href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>.
+Uses the same parameters as <code>printTxt</code> defined above, and
+in addition two parameters which define the shape used for internal
+nodes and laves of the tree:
+
+<p class=section>Arguments</p>
+<dl class=arguments>
+  <dt>leafShape</dt>
+  <dd>Shape of the outline around leves of the tree. If "plaintext",
+  no outline is used (default: "plaintext")</dd>
+
+  <dt>internalNodeShape</dt>
+  <dd>Shape of the outline around internal nodes of the tree. If "plaintext",
+  no outline is used (default: "box")</dd>
+</dl>
+
+<p>Check <a
+href="http://www.graphviz.org/doc/info/shapes.html">Polygon-based
+Nodes</a> for various outlines supported by GraphViz.</p>
+
+<P>Suppose you saved the tree in a file <code>tree5.dot</code>. You can then print it out as a gif if you execute the following command line
+<XMP class=code>dot -Tgif tree5.dot -otree5.gif
+</XMP>
+</P>
+GraphViz's dot has quite a few other output formats, check its documentation to learn which.</P>
+
+References
+==========
+
+E Koutsofios, SC North. Drawing Graphs with dot. AT&T Bell Laboratories,
+Murray Hill NJ, U.S.A., October 1993.
+
+<p><a href="http://www.research.att.com/sw/tools/graphviz/">Graphviz -
+open source graph drawing software</a>. A home page of AT&T's dot and
+similar software packages.</p>
+
+"""
+
+import orange
+import base64
+from warnings import warn
+
+class TreeLearner(orange.Learner):
+    """
+    Assembles the generic classification or regression tree learner 
+    (from Orange's objects for induction of decision trees). 
+    :class:`TreeLearner` is essentially a wrapper
+    around :class:`TreeLearnerBase`, provided for easier use of the latter.
+    It sets a number of parameters used in induction that
+    can also be set after the creation of the object, most often through
+    the object's attributes. If upon initialization
+    :class:`TreeLearner` is given a set of examples, then an instance
+    of :class:`TreeClassifier` object is returned instead.
+
+    The values of attributes can be also be set in the constructor. 
+
+    .. attribute:: nodeLearner
+
+        Induces a classifier from examples belonging to a node. The
+        same learner is used for internal nodes and for leaves. The
+        default :obj:`nodeLearner` is :obj:`MajorityLearner`.
+
+    **Split construction**
+
+    .. attribute:: split
+        
+        Defines a function that will be used in place of
+        :obj:`TreeSplitConstructor`. 
+        Useful when prototyping new tree induction
+        algorithms. When this parameter is defined, other parameters that
+        affect the procedures for growing of the tree are ignored. These
+        include :obj:`binarization`, :obj:`measure`,
+        :obj:`worstAcceptable` and :obj:`minSubset` (Default:
+        :class:TreeSplitConstructor_Combined 
+        with separate constructors for discrete and continuous attributes.
+        Discrete attributes are used as they are, while 
+        continuous attributes are binarized.
+        Gain ratio is used to select attributes. 
+        A minimum of two examples in a leaf is required for 
+        discrete and five examples in a leaf for continuous attributes.)
+
+    .. attribute:: binarization
+
+        If 1, :class:`TreeSplitConstructor_ExhaustiveBinary` is used.
+        If 2, use class:`TreeSplitConstructor_OneAgainstOthers`. If
+        0, do not use binarization (use class:`TreeSplitConstructor_Attribute`).
+        Default: 0.
+
+    .. attribute:: measure
+    
+        Measure for scoring of the attributes when deciding which of the
+        attributes will be used for splitting of the example set in the node.
+        Can be either a measure XXXXX or one of
+        "infoGain" (:class:`orange.MeasureAttribute_info`), 
+        "gainRatio" (:class:`orange.MeasureAttribute_gainRatio`), 
+        "gini" (:class:`orange.MeasureAttribute_gini`),
+        "relief" (:class:`orange.MeasureAttribute_relief`),
+        "retis" (:class: `orange.MeasureAttribute_MSE`). Default: "gainRatio".
+
+    .. attribute:: reliefM, reliefK
+
+        Sem `m` and `k` to given values if the :obj:`measure` is relief.
+
+    **Pruning**
+
+    .. attribute:: worstAcceptable
+
+        Used in pre-pruning, sets the lowest required attribute
+        score. If the score of the best attribute is below this margin, the
+        tree at that node is not grown further (default: 0).
+
+        So, to allow splitting only when gainRatio (the default measure)
+        is greater than 0.6, one should run the learner like this:
+        :samp:`l = orngTree.TreeLearner(data, worstAcceptable=0.6)`
+
+    .. attribute:: minSubset
+
+        Minimal number of examples in non-null leaves (default: 0).
+
+    .. attribute:: minExamples
+
+        Data subsets with less than :obj:`minExamples`
+        examples are not split any further, that is, all leaves in the tree
+        will contain at least that many of examples (default: 0).
+
+    .. attribute:: maxDepth
+
+        Gives maximal tree depth;  0 means that only root is generated. 
+        The default is 100. 
+
+    .. attribute:: maxMajority
+
+        Induction stops when the proportion of majority class in the
+        node exceeds the value set by this parameter(default: 1.0). E.g.
+        to stop the induction as soon as the majority class reaches 70%,
+        you should say 
+        :samp:`tree2 = orngTree.TreeLearner(data, maxMajority=0.7)`
+
+        This is an example of the tree on iris data set, built with
+        XXXXXXXXX what above arguments XXXXXXXXX
+        the above arguments - the numbers show the majority class 
+        proportion at each node. You can find more details in the 
+        script tree2.py, which induces and prints this tree.
+
+        ::
+
+            root: 0.333
+            |    petal width<0.800: 1.000
+            |    petal width>=0.800: 0.500
+            |    |    petal width<1.750: 0.907
+            |    |    petal width>=1.750: 0.978
+    
+    .. attribute:: stop
+
+        Used for passing a function which is used in place of
+        :class:`TreeStopCriteria`. Useful when prototyping new
+        tree induction algorithms. See a documentation on 
+        :class:`TreeStopCriteria` for more info on this function. 
+        When used, parameters  :obj:`maxMajority` and :obj:`minExamples` 
+        will not be  considered (default: None). XXXXX To je pisalo spodaj.
+        The default stopping criterion stops induction when all examples in a node belong to the same class.
+
+    .. attribute:: mForPruning
+
+        If non-zero, invokes an error-based bottom-up post-pruning,
+        where m-estimate is used to estimate class probabilities 
+        (default: 0).
+
+    .. attribute:: sameMajorityPruning
+
+        If true, invokes a bottom-up post-pruning by removing the
+        subtrees of which all leaves classify to the same class
+        (default: False).
+
+    **Record keeping**
+
+    .. attribute:: storeDistributions, storeContingencies, storeExamples, storeNodeClassifier
+
+        Determines whether to store class distributions, contingencies and
+        examples in :class:`TreeNode`, and whether the :obj:`nodeClassifier`
+        should be build for internal nodes. By default everything except 
+        :obj:`storeExamples` is enabled. You won't save any memory by not storing 
+        distributions but storing contingencies, since distributions actually points to
+        the same distribution that is stored in
+        :obj:`contingency.classes`. (default: True except for
+        storeExamples, which defaults to False).
+    
+    """
+    def __new__(cls, examples = None, weightID = 0, **argkw):
+        self = orange.Learner.__new__(cls, **argkw)
+        if examples:
+            self.__init__(**argkw)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+      
+    def __init__(self, **kw):
+        self.learner = None
+        self.__dict__.update(kw)
+      
+    def __setattr__(self, name, value):
+        if name in ["split", "binarization", "measure", "worstAcceptable", "minSubset",
+              "stop", "maxMajority", "minExamples", "nodeLearner", "maxDepth", "reliefM", "reliefK"]:
+            self.learner = None
+        self.__dict__[name] = value
+
+    def __call__(self, examples, weight=0):
+        """
+        Return a classifier from the given examples.
+        """
+        if not self.learner:
+            self.learner = self.instance()
+        if not hasattr(self, "split") and not hasattr(self, "measure"):
+            if examples.domain.classVar.varType == orange.VarTypes.Discrete:
+                measure = orange.MeasureAttribute_gainRatio()
+            else:
+                measure = orange.MeasureAttribute_MSE()
+            self.learner.split.continuousSplitConstructor.measure = measure
+            self.learner.split.discreteSplitConstructor.measure = measure
+            
+        tree = self.learner(examples, weight)
+        if getattr(self, "sameMajorityPruning", 0):
+            tree = orange.TreePruner_SameMajority(tree)
+        if getattr(self, "mForPruning", 0):
+            tree = orange.TreePruner_m(tree, m = self.mForPruning)
+        return tree
+
+    def instance(self):
+        """
+        Return the constructed learner - an object of :class:`TreeLearnerBase`.
+        """
+        learner = orange.TreeLearner()
+
+        hasSplit = hasattr(self, "split")
+        if hasSplit:
+            learner.split = self.split
+        else:
+            learner.split = orange.TreeSplitConstructor_Combined()
+            learner.split.continuousSplitConstructor = orange.TreeSplitConstructor_Threshold()
+            binarization = getattr(self, "binarization", 0)
+            if binarization == 1:
+                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_ExhaustiveBinary()
+            elif binarization == 2:
+                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_OneAgainstOthers()
+            else:
+                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_Attribute()
+
+            measures = {"infoGain": orange.MeasureAttribute_info,
+                "gainRatio": orange.MeasureAttribute_gainRatio,
+                "gini": orange.MeasureAttribute_gini,
+                "relief": orange.MeasureAttribute_relief,
+                "retis": orange.MeasureAttribute_MSE
+                }
+
+            measure = getattr(self, "measure", None)
+            if type(measure) == str:
+                measure = measures[measure]()
+            if not hasSplit and not measure:
+                measure = orange.MeasureAttribute_gainRatio()
+
+            measureIsRelief = type(measure) == orange.MeasureAttribute_relief
+            relM = getattr(self, "reliefM", None)
+            if relM and measureIsRelief:
+                measure.m = relM
+            
+            relK = getattr(self, "reliefK", None)
+            if relK and measureIsRelief:
+                measure.k = relK
+
+            learner.split.continuousSplitConstructor.measure = measure
+            learner.split.discreteSplitConstructor.measure = measure
+
+            wa = getattr(self, "worstAcceptable", 0)
+            if wa:
+                learner.split.continuousSplitConstructor.worstAcceptable = wa
+                learner.split.discreteSplitConstructor.worstAcceptable = wa
+
+            ms = getattr(self, "minSubset", 0)
+            if ms:
+                learner.split.continuousSplitConstructor.minSubset = ms
+                learner.split.discreteSplitConstructor.minSubset = ms
+
+        if hasattr(self, "stop"):
+            learner.stop = self.stop
+        else:
+            learner.stop = orange.TreeStopCriteria_common()
+            mm = getattr(self, "maxMajority", 1.0)
+            if mm < 1.0:
+                learner.stop.maxMajority = self.maxMajority
+            me = getattr(self, "minExamples", 0)
+            if me:
+                learner.stop.minExamples = self.minExamples
+
+        for a in ["storeDistributions", "storeContingencies", "storeExamples", "storeNodeClassifier", "nodeLearner", "maxDepth"]:
+            if hasattr(self, a):
+                setattr(learner, a, getattr(self, a))
+
+        return learner
+
+def __countNodes(node):
+    count = 0
+    if node:
+        count += 1
+        if node.branches:
+            for node in node.branches:
+                count += __countNodes(node)
+    return count
+
+def countNodes(tree):
+    """
+    Return the number of nodes of tree.
+
+    :param tree: The tree for which to count the nodes.
+    :type tree: :class:`TreeClassifier`
+    """
+    return __countNodes(type(tree) == orange.TreeClassifier and tree.tree or tree)
+
+
+def __countLeaves(node):
+    count = 0
+    if node:
+        if node.branches: # internal node
+            for node in node.branches:
+                count += __countLeaves(node)
+        else:
+            count += 1
+    return count
+
+def countLeaves(tree):
+    """
+    Return the number of leaves in the tree.
+
+    :param tree: The tree for which to count the leaves.
+    :type tree: :class:`TreeClassifier`
+    """
+    return __countLeaves(type(tree) == orange.TreeClassifier and tree.tree or tree)
+
+
+# the following is for the output
+
+import re
+fs = r"(?P<m100>\^?)(?P<fs>(\d*\.?\d*)?)"
+by = r"(?P<by>(b(P|A)))?"
+bysub = r"((?P<bysub>b|s)(?P<by>P|A))?"
+opc = r"(?P<op>=|<|>|(<=)|(>=)|(!=))(?P<num>\d*\.?\d+)"
+opd = r'(?P<op>=|(!=))"(?P<cls>[^"]*)"'
+intrvl = r'((\((?P<intp>\d+)%?\))|(\(0?\.(?P<intv>\d+)\))|)'
+fromto = r"(?P<out>!?)(?P<lowin>\(|\[)(?P<lower>\d*\.?\d+)\s*,\s*(?P<upper>\d*\.?\d+)(?P<upin>\]|\))"
+re_V = re.compile("%V")
+re_N = re.compile("%"+fs+"N"+by)
+re_M = re.compile("%"+fs+"M"+by)
+re_m = re.compile("%"+fs+"m"+by)
+re_Ccont = re.compile("%"+fs+"C"+by+opc)
+re_Cdisc = re.compile("%"+fs+"C"+by+opd)
+re_ccont = re.compile("%"+fs+"c"+by+opc)
+re_cdisc = re.compile("%"+fs+"c"+by+opd)
+re_Cconti = re.compile("%"+fs+"C"+by+fromto)
+re_cconti = re.compile("%"+fs+"c"+by+fromto)
+re_D = re.compile("%"+fs+"D"+by)
+re_d = re.compile("%"+fs+"d"+by)
+re_AE = re.compile("%"+fs+"(?P<AorE>A|E)"+bysub)
+re_I = re.compile("%"+fs+"I"+intrvl)
+
+def insertDot(s, mo):
+    return s[:mo.start()] + "." + s[mo.end():]
+
+def insertStr(s, mo, sub):
+    return s[:mo.start()] + sub + s[mo.end():]
+
+def insertNum(s, mo, n):
+    grps = mo.groupdict()
+    m100 = grps.get("m100", None)
+    if m100:
+        n *= 100
+    fs = grps.get("fs") or (m100 and ".0" or "5.3")
+    return s[:mo.start()] + ("%%%sf" % fs % n) + s[mo.end():]
+
+def byWhom(by, parent, tree):
+        if by=="bP":
+            return parent
+        else:
+            return tree.tree
+
+def replaceV(strg, mo, node, parent, tree):
+    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))
+
+def replaceN(strg, mo, node, parent, tree):
+    by = mo.group("by")
+    N = node.distribution.abs
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            if whom.distribution.abs > 1e-30:
+                N /= whom.distribution.abs
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, N)
+        
+
+def replaceM(strg, mo, node, parent, tree):
+    by = mo.group("by")
+    maj = int(node.nodeClassifier.defaultValue)
+    N = node.distribution[maj]
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            if whom.distribution[maj] > 1e-30:
+                N /= whom.distribution[maj]
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, N)
+        
+
+def replacem(strg, mo, node, parent, tree):
+    by = mo.group("by")
+    maj = int(node.nodeClassifier.defaultValue)
+    if node.distribution.abs > 1e-30:
+        N = node.distribution[maj] / node.distribution.abs
+        if by:
+            if whom and whom.distribution:
+                byN = whom.distribution[maj] / whom.distribution.abs
+                if byN > 1e-30:
+                    N /= byN
+            else:
+                return insertDot(strg, mo)
+    else:
+        N = 0.
+    return insertNum(strg, mo, N)
+
+
+def replaceCdisc(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Discrete:
+        return insertDot(strg, mo)
+    
+    by, op, cls = mo.group("by", "op", "cls")
+    N = node.distribution[cls]
+    if op == "!=":
+        N = node.distribution.abs - N
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            if whom.distribution[cls] > 1e-30:
+                N /= whom.distribution[cls]
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, N)
+
+    
+def replacecdisc(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Discrete:
+        return insertDot(strg, mo)
+    
+    op, by, cls = mo.group("op", "by", "cls")
+    N = node.distribution[cls]
+    if node.distribution.abs > 1e-30:
+        N /= node.distribution.abs
+        if op == "!=":
+            N = 1 - N
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            if whom.distribution[cls] > 1e-30:
+                N /= whom.distribution[cls] / whom.distribution.abs
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, N)
+
+
+import operator
+__opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "=": operator.eq, "!=": operator.ne}
+
+def replaceCcont(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+    
+    by, op, num = mo.group("by", "op", "num")
+    op = __opdict[op]
+    num = float(num)
+    N = sum([x[1] for x in node.distribution.items() if op(x[0], num)], 0.)
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            byN = sum([x[1] for x in whom.distribution.items() if op(x[0], num)], 0.)
+            if byN > 1e-30:
+                N /= byN
+        else:
+            return insertDot(strg, mo)
+
+    return insertNum(strg, mo, N)
+    
+    
+def replaceccont(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+    
+    by, op, num = mo.group("by", "op", "num")
+    op = __opdict[op]
+    num = float(num)
+    N = sum([x[1] for x in node.distribution.items() if op(x[0], num)], 0.)
+    if node.distribution.abs > 1e-30:
+        N /= node.distribution.abs
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            byN = sum([x[1] for x in whom.distribution.items() if op(x[0], num)], 0.)
+            if byN > 1e-30:
+                N /= byN/whom.distribution.abs # abs > byN, so byN>1e-30 => abs>1e-30
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, N)
+
+
+def extractInterval(mo, dist):
+    out, lowin, lower, upper, upin = mo.group("out", "lowin", "lower", "upper", "upin")
+    lower, upper = float(lower), float(upper)
+    if out:
+        lop = lowin == "(" and operator.le or operator.lt
+        hop = upin == ")" and operator.ge or operator.ge
+        return filter(lambda x:lop(x[0], lower) or hop(x[0], upper), dist.items())
+    else:
+        lop = lowin == "(" and operator.gt or operator.ge
+        hop = upin == ")" and operator.lt or operator.le
+        return filter(lambda x:lop(x[0], lower) and hop(x[0], upper), dist.items())
+
+    
+def replaceCconti(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+
+    by = mo.group("by")
+    N = sum([x[1] for x in extractInterval(mo, node.distribution)])
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            byN = sum([x[1] for x in extractInterval(mo, whom.distribution)])
+            if byN > 1e-30:
+                N /= byN
+        else:
+            return insertDot(strg, mo)
+        
+    return insertNum(strg, mo, N)
+
+            
+def replacecconti(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+
+    N = sum([x[1] for x in extractInterval(mo, node.distribution)])
+    ab = node.distribution.abs
+    if ab > 1e-30:
+        N /= ab
+
+    by = mo.group("by")
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            byN = sum([x[1] for x in extractInterval(mo, whom.distribution)])
+            if byN > 1e-30:
+                N /= byN/whom.distribution.abs
+        else:
+            return insertDot(strg, mo)
+        
+    return insertNum(strg, mo, N)
+
+    
+def replaceD(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Discrete:
+        return insertDot(strg, mo)
+
+    fs, by, m100 = mo.group("fs", "by", "m100")
+    dist = list(node.distribution)
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom:
+            for i, d in enumerate(whom.distribution):
+                if d > 1e-30:
+                    dist[i] /= d
+        else:
+            return insertDot(strg, mo)
+    mul = m100 and 100 or 1
+    fs = fs or (m100 and ".0" or "5.3")
+    return insertStr(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+
+
+def replaced(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Discrete:
+        return insertDot(strg, mo)
+
+    fs, by, m100 = mo.group("fs", "by", "m100")
+    dist = list(node.distribution)
+    ab = node.distribution.abs
+    if ab > 1e-30:
+        dist = [d/ab for d in dist]
+    if by:
+        whom = byWhom(by, parent, tree)
+        if whom:
+            for i, d in enumerate(whom.distribution):
+                if d > 1e-30:
+                    dist[i] /= d/whom.distribution.abs # abs > d => d>1e-30 => abs>1e-30
+        else:
+            return insertDot(strg, mo)
+    mul = m100 and 100 or 1
+    fs = fs or (m100 and ".0" or "5.3")
+    return insertStr(strg, mo, "["+", ".join(["%%%sf" % fs % (N*mul) for N in dist])+"]")
+
+
+def replaceAE(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+
+    AorE, bysub, by = mo.group("AorE", "bysub", "by")
+    
+    if AorE == "A":
+        A = node.distribution.average()
+    else:
+        A = node.distribution.error()
+    if by:
+        whom = byWhom("b"+by, parent, tree)
+        if whom:
+            if AorE == "A":
+                avg = whom.distribution.average()
+            else:
+                avg = whom.distribution.error()
+            if bysub == "b":
+                if avg > 1e-30:
+                    A /= avg
+            else:
+                A -= avg
+        else:
+            return insertDot(strg, mo)
+    return insertNum(strg, mo, A)
+
+
+Z = { 0.75:1.15, 0.80:1.28, 0.85:1.44, 0.90:1.64, 0.95:1.96, 0.99:2.58 }
+
+def replaceI(strg, mo, node, parent, tree):
+    if tree.classVar.varType != orange.VarTypes.Continuous:
+        return insertDot(strg, mo)
+
+    fs = mo.group("fs") or "5.3"
+    intrvl = float(mo.group("intp") or mo.group("intv") or "95")/100.
+    mul = mo.group("m100") and 100 or 1
+
+    if not Z.has_key(intrvl):
+        raise SystemError, "Cannot compute %5.3f% confidence intervals" % intrvl
+
+    av = node.distribution.average()    
+    il = node.distribution.error() * Z[intrvl]
+    return insertStr(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
+
+
+# This class is more a collection of function, merged into a class so that they don't
+# need to transfer too many arguments. It will be constructed, used and discarded,
+# it is not meant to store any information.
+class __TreeDumper:
+    defaultStringFormats = [(re_V, replaceV), (re_N, replaceN), (re_M, replaceM), (re_m, replacem),
+                              (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
+                              (re_Ccont, replaceCcont), (re_ccont, replaceccont),
+                              (re_Cconti, replaceCconti), (re_cconti, replacecconti),
+                              (re_D, replaceD), (re_d, replaced),
+                              (re_AE, replaceAE), (re_I, replaceI)
+                             ]
+
+    def __init__(self, leafStr, nodeStr, stringFormats, minExamples, maxDepth, simpleFirst, tree, **kw):
+        self.stringFormats = stringFormats
+        self.minExamples = minExamples
+        self.maxDepth = maxDepth
+        self.simpleFirst = simpleFirst
+        self.tree = tree
+        self.__dict__.update(kw)
+
+        if leafStr:
+            self.leafStr = leafStr
+        else:
+            if tree.classVar.varType == orange.VarTypes.Discrete:
+                self.leafStr = "%V (%^.2m%)"
+            else:
+                self.leafStr = "%V"
+
+        if nodeStr == ".":
+            self.nodeStr = self.leafStr
+        else:
+            self.nodeStr = nodeStr
+        
+
+    def formatString(self, strg, node, parent):
+        if hasattr(strg, "__call__"):
+            return strg(node, parent, self.tree)
+        
+        if not node:
+            return "<null node>"
+        
+        for rgx, replacer in self.stringFormats:
+            if not node.distribution:
+                strg = rgx.sub(".", strg)
+            else:
+                strt = 0
+                while True:
+                    mo = rgx.search(strg, strt)
+                    if not mo:
+                        break
+                    strg = replacer(strg, mo, node, parent, self.tree)
+                    strt = mo.start()+1
+                        
+        return strg
+        
+
+    def showBranch(self, node, parent, lev, i):
+        bdes = node.branchDescriptions[i]
+        bdes = node.branchSelector.classVar.name + (bdes[0] not in "<=>" and "=" or "") + bdes
+        if node.branches[i]:
+            nodedes = self.nodeStr and ": "+self.formatString(self.nodeStr, node.branches[i], node) or ""
+        else:
+            nodedes = "<null node>"
+        return "|    "*lev + bdes + nodedes
+        
+        
+    def dumpTree0(self, node, parent, lev):
+        if node.branches:
+            if node.distribution.abs < self.minExamples or lev > self.maxDepth:
+                return "|    "*lev + ". . .\n"
+            
+            res = ""
+            if self.leafStr and self.nodeStr and self.leafStr != self.nodeStr:
+                leafsep = "\n"+("|    "*lev)+"    "
+            else:
+                leafsep = ""
+            if self.simpleFirst:
+                for i, branch in enumerate(node.branches):
+                    if not branch or not branch.branches:
+                        if self.leafStr == self.nodeStr:
+                            res += "%s\n" % self.showBranch(node, parent, lev, i)
+                        else:
+                            res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                                 leafsep + self.formatString(self.leafStr, branch, node))
+            for i, branch in enumerate(node.branches):
+                if branch and branch.branches:
+                    res += "%s\n%s" % (self.showBranch(node, parent, lev, i),
+                                       self.dumpTree0(branch, node, lev+1))
+                elif not self.simpleFirst:
+                    if self.leafStr == self.nodeStr:
+                        res += "%s\n" % self.showBranch(node, parent, lev, i)
+                    else:
+                        res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                             leafsep+self.formatString(self.leafStr, branch, node))
+            return res
+        else:
+            return self.formatString(self.leafStr, node, parent)
+
+
+    def dumpTree(self):
+        if self.nodeStr:
+            lev, res = 1, "root: %s\n" % self.formatString(self.nodeStr, self.tree.tree, None)
+            self.maxDepth += 1
+        else:
+            lev, res = 0, ""
+        return res + self.dumpTree0(self.tree.tree, None, lev)
+        
+
+    def dotTree0(self, node, parent, internalName):
+        if node.branches:
+            if node.distribution.abs < self.minExamples or len(internalName)-1 > self.maxDepth:
+                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % _quoteName(internalName))
+                return
+                
+            label = node.branchSelector.classVar.name
+            if self.nodeStr:
+                label += "\\n" + self.formatString(self.nodeStr, node, parent)
+            self.fle.write('%s [ shape=%s label="%s"]\n' % (_quoteName(internalName), self.nodeShape, label))
+            
+            for i, branch in enumerate(node.branches):
+                if branch:
+                    internalBranchName = internalName+chr(i+65)
+                    self.fle.write('%s -> %s [ label="%s" ]\n' % (_quoteName(internalName), _quoteName(internalBranchName), node.branchDescriptions[i]))
+                    self.dotTree0(branch, node, internalBranchName)
+                    
+        else:
+            self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.leafShape, self.formatString(self.leafStr, node, parent)))
+
+
+    def dotTree(self, internalName="n"):
+        self.fle.write("digraph G {\n")
+        self.dotTree0(self.tree.tree, None, internalName)
+        self.fle.write("}\n")
+
+def _quoteName(x):
+    return '"%s"' % (base64.b64encode(x))
+
+def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
+    return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
+                        argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+                        tree).dumpTree()
+
+
+def printTree(*a, **aa):
+    print dumpTree(*a, **aa)
+
+printTxt = printTree
+
+
+def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
+    fle = type(fileName) == str and file(fileName, "wt") or fileName
+
+    __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
+                 argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+                 tree,
+                 leafShape = leafShape, nodeShape = nodeShape, fle = fle).dotTree()
+                        
+printDot = dotTree
+        
+##import orange, orngTree, os
+##os.chdir("c:\\d\\ai\\orange\\doc\\datasets")
+##data = orange.ExampleTable("iris")
+###data = orange.ExampleTable("housing")
+##tree = orngTree.TreeLearner(data)
+##printTxt(tree)
+###print printTree(tree, '%V %4.2NbP %.3C!="Iris-virginica"')
+###print printTree(tree, '%A %I(95) %C![20,22)bP', ".", maxDepth=3)
+###dotTree("c:\\d\\ai\\orange\\x.dot", tree, '%A', maxDepth= 3)
