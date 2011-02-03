@@ -270,7 +270,7 @@ class NaiveBayesClassifier(Orange.core.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        self.nativeBayesClassifier(instance, *args, **kwdargs)
+        return self.nativeBayesClassifier(instance, result_type, *args, **kwdargs)
 
     def __setattr__(self, name, value):
         if name == "nativeBayesClassifier":
