@@ -1,7 +1,7 @@
 from Orange.classification.rules import ruleToString
 from Orange.classification.rules import LaplaceEvaluator
 from Orange.classification.rules import WRACCEvaluator
-from Orange.classification.rules import MEstimate as mEstimate
+from Orange.classification.rules import MEstimateEvaluator as mEstimate
 from Orange.classification.rules import RuleStopping_Apriori as RuleStopping_apriori
 from Orange.classification.rules import LengthValidator
 from Orange.classification.rules import supervisedClassCheck
