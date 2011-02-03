@@ -6,16 +6,16 @@ Logistic Regression
 ===================
 
 Module :obj:`Orange.classification.logreg` is a set of wrappers around
-classes LogisticLearner and LogisticClassifier, that are implemented
+the classes LogisticLearner and LogisticClassifier, that are implemented
 in core Orange. This module extends the use of logistic regression
-to discrete attributes, it helps handling various anomalies in
-attributes, such as constant variables and singularities, that make
+to discrete features, it can handle various anomalies in
+features, such as constant variables and singularities, that make
 fitting logistic regression almost impossible. It also implements a
-function for constructing a stepwise logistic regression, which is a
+function for constructing stepwise logistic regression, which is a
 good technique for prevent overfitting, and is a good feature subset
 selection technique as well.
 
-Functions
+Useful Functions
 ---------
 
 .. autofunction:: LogRegLearner
@@ -31,7 +31,7 @@ Class
 Examples
 --------
 
-First example shows a very simple induction of a logistic regression
+The first example shows a very simple induction of a logistic regression
 classifier (`logreg-run.py`_, uses `titanic.tab`_).
 
 .. literalinclude:: code/logreg-run.py
@@ -107,7 +107,7 @@ Result::
                             capital-loss      -0.00       0.00       -inf       0.00       1.00
                           hours-per-week      -0.04       0.00       -inf       0.00       0.96
 
-In case we set removeSingular to 0, inducing logistic regression
+In case we set :obj:`removeSingular` to 0, inducing a logistic regression
 classifier would return an error::
 
     Traceback (most recent call last):
@@ -196,7 +196,7 @@ from numpy.linalg import *
 #######################
 
 def printOUT(classifier):
-    """ Formatted print to console of all major attributes in logistic
+    """ Formatted print to console of all major features in logistic
     regression classifier. 
 
     :param classifier: logistic regression classifier
@@ -216,7 +216,7 @@ def printOUT(classifier):
 
     # print out the head
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
-    print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
+    print formatstr % ("Feature", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
     print
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
@@ -232,23 +232,30 @@ def hasDiscreteValues(domain):
     return 0
 
 def LogRegLearner(table=None, weightID=0, **kwds):
-    """ Logistic regression learner
+    """ Logistic regression learner.
 
-    :obj:`LogRegLearner` implements logistic regression. If data
-    instances are provided to the constructor, the learning algorithm
-    is called and the resulting classifier is returned instead of the
-    learner.
+    Implements logistic regression. If data instances are provided to
+    the constructor, the learning algorithm is called and the resulting
+    classifier is returned instead of the learner.
 
-    :param table: data set with either discrete or continuous features
+    :param table: data table with either discrete or continuous features
     :type table: Orange.table.data
     :param weightID: the ID of the weight meta attribute
-    :param removeSingular: set to 1 if you want automatic removal of disturbing attributes, such as constants and singularities
+    :type weightID: int
+    :param removeSingular: set to 1 if you want automatic removal of disturbing features, such as constants and singularities
+    :type removeSingular: bool
     :param fitter: alternate the fitting algorithm (currently the Newton-Raphson fitting algorithm is used)
+    :type fitter: type???
     :param stepwiseLR: set to 1 if you wish to use stepwise logistic regression
-    :param addCrit: parameter for stepwise attribute selection
-    :param deleteCrit: parameter for stepwise attribute selection
-    :param numAttr: parameter for stepwise attribute selection
-        
+    :type stepwiseLR: bool
+    :param addCrit: parameter for stepwise feature selection
+    :type addCrit: float
+    :param deleteCrit: parameter for stepwise feature selection
+    :type deleteCrit: float
+    :param numFeatures: parameter for stepwise feature selection
+    :type numFeatures: int
+    :rtype: :obj:`LogRegLearnerClass` or :obj:`LogRegClassifier`
+
     """
     lr = LogRegLearnerClass(**kwds)
     if table:
@@ -273,8 +280,8 @@ class LogRegLearnerClass(orange.Learner):
         if getattr(self, "stepwiseLR", 0):
             addCrit = getattr(self, "addCrit", 0.2)
             removeCrit = getattr(self, "removeCrit", 0.3)
-            numAttr = getattr(self, "numAttr", -1)
-            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numAttr = numAttr)
+            numFeatures = getattr(self, "numFeatures", -1)
+            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numFeatures = numFeatures)
             tmpDomain = orange.Domain(attributes, examples.domain.classVar)
             tmpDomain.addmetas(examples.domain.getmetas())
             examples = examples.select(tmpDomain)
@@ -802,33 +809,34 @@ def StepWiseFSS(table=None, **kwds):
     """Implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000].
 
     If :obj:`table` is specified, stepwise logistic regression implemented
-    in :obj:`stepWiseFSS_class` is performed and a list of chosen attributes
+    in :obj:`StepWiseFSS_class` is performed and a list of chosen features
     is returned. If :obj:`table` is not specified an instance of
-    :obj:`stepWiseFSS_class` with all parameters set is returned.
+    :obj:`StepWiseFSS_class` with all parameters set is returned.
 
     :param table: data set
     :type table: Orange.data.table
 
-    :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
+    :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then features is added if its P is lower than 0.2)
     :type addCrit: float
 
     :param deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
     :type deleteCrit: float
 
-    :param numAttr: maximum number of selected attributes, use -1 for infinity
-    :type numAttr: int
+    :param numFeatures: maximum number of selected features, use -1 for infinity.
+    :type numFeatures: int
+    :rtype: :obj:`StepWiseFSS_class` or list of features
 
     """
 
     """
       Constructs and returns a new set of table that includes a
-      class and attributes selected by stepwise logistic regression. This is an
+      class and features selected by stepwise logistic regression. This is an
       implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000]
 
       table: data set (ExampleTable)     
       addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
       deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
-      numAttr: maximum number of selected attributes, use -1 for infinity
+      numFeatures: maximum number of selected features, use -1 for infinity
 
     """
 
@@ -851,19 +859,20 @@ def getLikelihood(fitter, examples):
 
 
 class StepWiseFSS_class(orange.Learner):
-  """ Performs stepwise logistic regression and returns a list of "most"
-  informative attributes. Each step of this algorithm is composed
-  of two parts. First is backward elimination, where each already
-  chosen attribute is tested for significant contribution to overall
-  model. If worst among all tested attributes has higher significance
-  that is specified in deleteCrit, this attribute is removed from
-  the model. The second step is forward selection, which is similar
-  to backward elimination. It loops through all attributes that are
-  not in model and tests whether they contribute to common model with
-  significance lower that addCrit. Algorithm stops when no attribute
-  in model is to be removed and no attribute out of the model is to
-  be added. By setting numAttr larger than -1, algorithm will stop its
-  execution when number of attributes in model will exceed that number.
+  """ Performs stepwise logistic regression and returns a list of the
+  most "informative" features. Each step of the algorithm is composed
+  of two parts. The first is backward elimination, where each already
+  chosen feature is tested for a significant contribution to the overall
+  model. If the worst among all tested features has higher significance
+  than is specified in :obj:`deleteCrit`, the feature is removed from
+  the model. The second step is forward selection, which is similar to
+  backward elimination. It loops through all the features that are not
+  in the model and tests whether they contribute to the common model
+  with significance lower that :obj:`addCrit`. The algorithm stops when
+  no feature in the model is to be removed and no feature not in the
+  model is to be added. By setting :obj:`numFeatures` larger than -1,
+  the algorithm will stop its execution when the number of features in model
+  exceeds that number.
 
   Significances are assesed via the likelihood ration chi-square
   test. Normal F test is not appropriate, because errors are assumed to
@@ -871,12 +880,12 @@ class StepWiseFSS_class(orange.Learner):
 
   """
 
-  def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
+  def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1, **kwds):
 
     self.__dict__.update(kwds)
     self.addCrit = addCrit
     self.deleteCrit = deleteCrit
-    self.numAttr = numAttr
+    self.numFeatures = numFeatures
   def __call__(self, examples):
     if getattr(self, "imputer", 0):
         examples = self.imputer(examples)(examples)
@@ -948,7 +957,7 @@ class StepWiseFSS_class(orange.Learner):
             # END OF DELETION PART
             
         # if enough attributes has been chosen, stop the procedure
-        if self.numAttr>-1 and len(attr)>=self.numAttr:
+        if self.numFeatures>-1 and len(attr)>=self.numFeatures:
             remain_attr=[]
          
         # for each attribute in the remaining
@@ -1009,12 +1018,12 @@ def StepWiseFSS_Filter(examples = None, **kwds):
 
 
 class StepWiseFSS_Filter_class(object):
-    def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
+    def __init__(self, addCrit=0.2, deleteCrit=0.3, numFeatures = -1):
         self.addCrit = addCrit
         self.deleteCrit = deleteCrit
-        self.numAttr = numAttr
+        self.numFeatures = numFeatures
     def __call__(self, examples):
-        attr = StepWiseFSS(examples, addCrit=self.addCrit, deleteCrit = self.deleteCrit, numAttr = self.numAttr)
+        attr = StepWiseFSS(examples, addCrit=self.addCrit, deleteCrit = self.deleteCrit, numFeatures = self.numFeatures)
         return examples.select(orange.Domain(attr, examples.domain.classVar))
                 
 
