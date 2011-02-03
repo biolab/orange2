@@ -11,6 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   orange.data.feature
    Orange.associate   
    Orange.cluster
    Orange.data
