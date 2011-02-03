@@ -41,6 +41,8 @@ SVM derived feature weights
 .. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
    :members:
 
+.. _kernel-wrapper:
+
 ===============
 Kernel Wrappers
 ===============
@@ -153,12 +155,13 @@ def maxNu(examples):
                 if n1 != 0 and n2 !=0] + [nu])
     
 class SVMLearner(_SVMLearner):
-    """:param svm_type: defines the type of SVM (can be C_SVC, Nu_SVC (default), OneClass, Epsilon_SVR, Nu_SVR)
+    """:param svm_type: defines the type of SVM (can be C_SVC, Nu_SVC 
+        (default), OneClass, Epsilon_SVR, Nu_SVR)
     :type svm_type: SVMLearner.SVMType
     :param kernel_type: defines the type of a kernel to use for learning
         (can be kernels.RBF (default), kernels.Linear, kernels.Polynomial, 
         kernels.Sigmoid, kernels.Custom)
-    :type kernel_type: classification.kernels.Kernel
+    :type kernel_type: kernel function, see :ref:`kernel-wrapper`
     :param degree: kernel parameter (for Polynomial) (default 3)
     :type degree: int
     :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
@@ -227,6 +230,14 @@ class SVMLearner(_SVMLearner):
     maxNu = staticmethod(maxNu)
 
     def __call__(self, examples, weight=0):
+        """Construct a SVM classifier
+        
+        :param examples: data table with continuous features
+        :type examples: Orange.data.Table
+        :param weight: refer to `LibSVM documentation 
+            <http://http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_
+        
+        """
         examples = Orange.core.Preprocessor_dropMissingClasses(examples)
         if len(examples) == 0:
             raise ValueError("Example table is without any defined classes")
