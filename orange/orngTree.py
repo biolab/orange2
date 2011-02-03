@@ -1,4 +1,5 @@
 import orange
+import base64
 from warnings import warn
 
 class TreeLearner(orange.Learner):
@@ -594,18 +595,18 @@ class __TreeDumper:
     def dotTree0(self, node, parent, internalName):
         if node.branches:
             if node.distribution.abs < self.minExamples or len(internalName)-1 > self.maxDepth:
-                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % internalName)
+                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % _quoteName(internalName))
                 return
                 
             label = node.branchSelector.classVar.name
             if self.nodeStr:
                 label += "\\n" + self.formatString(self.nodeStr, node, parent)
-            self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.nodeShape, label))
+            self.fle.write('%s [ shape=%s label="%s"]\n' % (_quoteName(internalName), self.nodeShape, label))
             
             for i, branch in enumerate(node.branches):
                 if branch:
                     internalBranchName = internalName+chr(i+65)
-                    self.fle.write('%s -> %s [ label="%s" ]\n' % (internalName, internalBranchName, node.branchDescriptions[i]))
+                    self.fle.write('%s -> %s [ label="%s" ]\n' % (_quoteName(internalName), _quoteName(internalBranchName), node.branchDescriptions[i]))
                     self.dotTree0(branch, node, internalBranchName)
                     
         else:
@@ -617,6 +618,8 @@ class __TreeDumper:
         self.dotTree0(self.tree.tree, None, internalName)
         self.fle.write("}\n")
 
+def _quoteName(x):
+    return '"%s"' % (base64.b64encode(x))
 
 def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
     return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
