@@ -48,29 +48,39 @@ class BaggedLearner(orange.Learner):
             when examples are passed to bagged learner.
         :type t: int
         :param name: The name of the learner.
-        :type name: string"""
+        :type name: string
+        :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier` or 
+                :class:`Orange.ensemble.bagging.BaggedLearner`
+        """
         self.t = t
         self.name = name
         self.learner = learner
 
-    def __call__(self, examples, weight=0):
+    def __call__(self, instances, weight=0):
+        """Learn from the given table of data instances.
+        
+        :param instances: Data instances to learn from.
+        :type instances: Orange.data.Table
+        :param weight: Id of meta attribute with weights of instances
+        :type weight: int
+        :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier`
+        """
         r = random.Random()
         r.seed(0)
         
-        n = len(examples)
+        n = len(instances)
         classifiers = []
         for i in range(self.t):
             selection = []
             for i in range(n):
                 selection.append(r.randrange(n))
-            examples = Orange.data.Table(examples)
-            data = examples.getitems(selection)
+            instances = Orange.data.Table(instances)
+            data = instances.getitems(selection)
             classifiers.append(self.learner(data, weight))
         return BaggedClassifier(classifiers = classifiers, name=self.name,\
-                    classVar=examples.domain.classVar)
+                    classVar=instances.domain.classVar)
 
 class BaggedClassifier(orange.Classifier):
-    """Return classifier."""
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 

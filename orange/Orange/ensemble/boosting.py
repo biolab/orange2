@@ -44,12 +44,21 @@ class BoostedLearner(orange.Learner):
         :param t: Number of boosted classifiers created from the example set.
         :type t: int
         :param name: The name of the learner.
-        :type name: string"""
+        :type name: string
+        :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
+                :class:`Orange.ensemble.boosting.BoostedLearner`"""
         self.t = t
         self.name = name
         self.learner = learner
 
     def __call__(self, instances, origWeight = 0):
+        """Learn from the given table of data instances.
+        
+        :param instances: Data instances to learn from.
+        :type instances: Orange.data.Table
+        :param origWeight: Weight.
+        :type origWeight: int
+        :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier`"""
         import math
         weight = orange.newmetaid()
         if origWeight:
@@ -70,13 +79,16 @@ class BoostedLearner(orange.Learner):
                     corr.append(0)
                 else:
                     corr.append(1)
-            epsilon = epsilon / float(reduce(lambda x,y:x+y.getweight(weight), instances, 0))
-            classifiers.append((classifier, epsilon and math.log((1-epsilon)/epsilon) or _inf))
+            epsilon = epsilon / float(reduce(lambda x,y:x+y.getweight(weight), 
+                instances, 0))
+            classifiers.append((classifier, epsilon and math.log(
+                (1-epsilon)/epsilon) or _inf))
             if epsilon==0 or epsilon >= 0.499:
                 if epsilon >= 0.499 and len(classifiers)>1:
                     del classifiers[-1]
                 instances.removeMetaAttribute(weight)
-                return BoostedClassifier(classifiers = classifiers, name=self.name, classVar=instances.domain.classVar)
+                return BoostedClassifier(classifiers = classifiers, 
+                    name=self.name, classVar=instances.domain.classVar)
             beta = epsilon/(1-epsilon)
             for e in range(n):
                 if corr[e]:
@@ -86,7 +98,8 @@ class BoostedLearner(orange.Learner):
                 instances[e].setweight(weight, instances[e].getweight(weight)*f)
 
         instances.removeMetaAttribute(weight)
-        return BoostedClassifier(classifiers = classifiers, name=self.name, classVar=instances.domain.classVar)
+        return BoostedClassifier(classifiers = classifiers, name=self.name, 
+            classVar=instances.domain.classVar)
 
 class BoostedClassifier(orange.Classifier):
     def __init__(self, **kwds):

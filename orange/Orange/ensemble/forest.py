@@ -1,7 +1,10 @@
 from math import sqrt, floor
-import Orange.classification.tree
 import Orange.core as orange
 import Orange
+import Orange.feature.scoring
+import orngTree
+import random
+
 
 class RandomForestLearner(orange.Learner):
     """
@@ -55,8 +58,9 @@ class RandomForestLearner(orange.Learner):
                 induction of classifier. This is called with parameter 
                 (from 0.0 to 1.0) that gives estimates on learning progress.
         :param name: The name of the learner.
-        :type name: string"""
-        import random
+        :type name: string
+        :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier` or 
+                :class:`Orange.ensemble.forest.RandomForestLearner`"""
         self.trees = trees
         self.name = name
         self.learner = learner
@@ -72,17 +76,24 @@ class RandomForestLearner(orange.Learner):
 
         if not learner:
             # tree learner assembled as suggested by Brieman (2001)
-            smallTreeLearner = Orange.classification.tree.TreeLearner(
+            smallTreeLearner = orngTree.TreeLearner(
             storeNodeClassifier = 0, storeContingencies=0, 
             storeDistributions=1, minExamples=5).instance()
             smallTreeLearner.split.discreteSplitConstructor.measure = \
                     smallTreeLearner.split.continuousSplitConstructor.measure =\
-                        orange.MeasureAttribute_gini()
+                        Orange.feature.scoring.Gini()
             smallTreeLearner.split = SplitConstructor_AttributeSubset(\
                     smallTreeLearner.split, attributes, self.rand)
             self.learner = smallTreeLearner
 
     def __call__(self, examples, weight=0):
+        """Learn from the given table of data instances.
+        
+        :param instances: Data instances to learn from.
+        :type instances: Orange.data.Table
+        :param origWeight: Weight.
+        :type origWeight: int
+        :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`"""
         # if number of attributes for subset is not set, use square root
         if hasattr(self.learner.split, 'attributes') and\
                     not self.learner.split.attributes:
@@ -142,8 +153,7 @@ class RandomForestClassifier(orange.Classifier):
 
 ### MeasureAttribute_randomForests
 
-class MeasureAttribute(orange.MeasureAttribute):
-    
+class MeasureAttribute_randomForests(orange.MeasureAttribute):
     def __init__(self, learner=None, trees = 100, attributes=None, rand=None):
         """:param trees: Number of trees in the forest.
         :type trees: int
@@ -321,3 +331,22 @@ class MeasureAttribute(orange.MeasureAttribute):
             return cs
         else:
           return set([])
+
+class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
+    def __init__(self, scons, attributes, rand = None):
+        import random
+        self.scons = scons           # split constructor of original tree
+        self.attributes = attributes # number of attributes to consider
+        if rand:
+            self.rand = rand             # a random generator
+        else:
+            self.rand = random.Random()
+            self.rand.seed(0)
+
+    def __call__(self, gen, weightID, contingencies, apriori, candidates, clsfr):
+        cand = [1]*self.attributes + [0]*(len(candidates) - self.attributes)
+        self.rand.shuffle(cand)
+        # instead with all attributes, we will invoke split constructor 
+        # only for the subset of a attributes
+        t = self.scons(gen, weightID, contingencies, apriori, cand, clsfr)
+        return t
