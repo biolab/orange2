@@ -539,8 +539,8 @@ def exampleWeightedSum(example, weights):
         
 class MeasureAttribute_SVMWeights(Orange.core.MeasureAttribute):
     
-    """Measure attribute relevance by training an linear SVM classifier on
-    provided examples and using a squared sum of weights (of each binary
+    """Measure attribute relevance by training a linear SVM classifier on
+    provided instances, using a squared sum of weights (of each binary
     classifier) as the returned measure.
         
     Example::
