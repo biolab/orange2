@@ -101,6 +101,7 @@ from collections import defaultdict
 import Orange.core
 import Orange.data
 import kernels
+import warnings
 
 from Orange.core import SVMLearner as _SVMLearner
 from Orange.core import SVMLearnerSparse as _SVMLearnerSparse
@@ -655,6 +656,7 @@ class RFE(object):
         return data
 
 def exampleTableToSVMFormat(examples, file):
+    warnings.warn("Deprecated. Use tableToSVMFormat", DeprecationWarning)
     tableToSVMFormat(examples, file)
 
 def tableToSVMFormat(examples, file):
