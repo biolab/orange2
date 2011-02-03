@@ -1,8 +1,9 @@
 """
 .. index: knn
 
-Module :mod:`orange.classification.knn` includes classes for classification based on nearest neighbours
-algorithm and also classes for finding instances near the given one. 
+Module :mod:`orange.classification.knn` includes classes for classification
+based on nearest neighbours algorithm and also classes for finding instances
+near the given one. 
 
 ====================
 k Nearest Neighbours
@@ -29,7 +30,8 @@ similar instances of the instance to be classified:
     
     .. method:: __call__(instances)
         
-        Return learned kNNClassifier
+        Return instance of :class:`kNNClassifier` that learns from the
+        :obj:`instances`.
         
         :param instances: table of instances
         :type instances: Orange.data.Table
@@ -55,28 +57,34 @@ kNNLearner first constructs an object for measuring distances between
 instances. distanceConstructor is used if given; otherwise, Euclidean 
 metrics will be used. :class:`kNNLearner` then constructs an instance of 
 :class:`FindNearest_BruteForce`. Together with ID of meta feature with 
-weights of instances, :obj:`k` and :obj:`rankWeight`, it is passed to a :class:`kNNClassifier`.
+weights of instances, :attr:`kNNLearner.k` and :attr:`kNNLearner.rankWeight`,
+it is passed to a :class:`kNNClassifier`.
 
-.. class:: kNNClassifier(domain, weightID, k, FindNearest, rankWeight, nExamples)
+.. class:: kNNClassifier(domain, weightID, k, FindNearest, rankWeight, \
+nExamples)
 
     .. method:: __call__(instance)
     
         :param instance: given instance to be classified
         :type instance: Orange.data.Instance
         
-        :param return_type: return value and probabilities, only value or only probabilities
-        :type return_type: Orange.classifier.getBoth, Orange.classifier.getValue, Orange.classifier.getProbilities
+        :param return_type: return value and probabilities, only value or only
+                            probabilities
+        :type return_type: Orange.classifier.getBoth, 
+                           Orange.classifier.getValue,
+                           Orange.classifier.getProbilities
         
-        :rtype: :class:`Orange.data.Value`, :class:`Orange.statistics.distribution`, or a tuple with both
+        :rtype: :class:`Orange.data.Value`,
+                :class:`Orange.statistics.distribution`, or a tuple with both
         
     .. method:: findNearest(instance)
     
     A component that finds nearest neighbours of a given instance.
         
     :param instance: given instance
-    :type instance: Orange.data.instance
+    :type instance: Orange.data.Instance
         
-    :rtype: :class:`Orange.data.instance`
+    :rtype: :class:`Orange.data.Instance`
     
     
     .. attribute:: k
@@ -95,19 +103,19 @@ weights of instances, :obj:`k` and :obj:`rankWeight`, it is passed to a :class:`
     .. attribute:: nExamples
     
     The number of learning instances. It is used to compute the number of 
-    neighbours if :obj:`k` is zero.
+    neighbours if :attr:`kNNClassifier.k` is zero.
 
 When called to classify an instance, the classifier first calls 
 :meth:`kNNClassifier.findNearest` 
-to retrieve a list with :obj:`k` nearest neighbours. The component 
-:meth:`kNNClassifier.findNearest` has 
+to retrieve a list with :attr:`kNNClassifier.k` nearest neighbours. The
+component :meth:`kNNClassifier.findNearest` has 
 a stored table of instances (those that have been passed to the learner) 
 together with their weights. If instances are weighted (non-zero 
 :obj:`weightID`), weights are considered when counting the neighbours.
 
 If :meth:`kNNClassifier.findNearest` returns only one neighbour 
-(this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the neighbour's
-class.
+(this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the
+neighbour's class.
 
 Otherwise, the retrieved neighbours vote about the class prediction
 (or probability of classes). Voting has double weights. As first, if
@@ -116,14 +124,14 @@ neighbours have greater impact on the prediction; weight of instance
 is computed as exp(-t:sup:`2`/s:sup:`2`), where the meaning of t depends
 on the setting of :obj:`rankWeight`.
 
-* if :obj:`rankWeight` is :obj:`false`, :obj:`t` is a distance from the instance being
-  classified
-* if :obj:`rankWeight` is :obj:`true`, neighbours are ordered and :obj:`t` is the position
-  of the neighbour on the list (a rank)
+* if :obj:`rankWeight` is :obj:`false`, :obj:`t` is a distance from the
+  instance being classified
+* if :obj:`rankWeight` is :obj:`true`, neighbours are ordered and :obj:`t`
+  is the position of the neighbour on the list (a rank)
 
 
-In both cases, :obj:`s` is chosen so that the impact of the farthest instance is
-0.001.
+In both cases, :obj:`s` is chosen so that the impact of the farthest instance
+is 0.001.
 
 Weighting gives the classifier certain insensitivity to the number of
 neighbours used, making it possible to use large :obj:`k`'s.
@@ -196,11 +204,11 @@ searching) (:class:`FindNearestConstructor`).
 
 .. class:: FindNearest
 
-    A class for brute force search for nearest neighbours. It stores a table of
-    instances (it's its own copy of instances, not only Orange.data.Table with
-    references to another Orange.data.Table). When asked for neighbours, it
-    measures distances to all instances, stores them in a heap and returns the
-    first k as an Orange.data.Table with references to instances stored in
+    A class for brute force search for nearest neighbours. It stores a table 
+    of instances (it's its own copy of instances, not only Orange.data.Table
+    with references to another Orange.data.Table). When asked for neighbours,
+    it measures distances to all instances, stores them in a heap and returns 
+    the first k as an Orange.data.Table with references to instances stored in
     FindNearest's field instances).
     
     .. attribute:: distance
@@ -218,12 +226,12 @@ searching) (:class:`FindNearestConstructor`).
     .. method:: __call__(instance, n)
     
     :param instance: given instance
-    :type instance: Orange.data.instance
+    :type instance: Orange.data.Instance
     
     :param n: number of neighbours
     :type n: int
     
-    :rtype: list(Orange.data.instance)
+    :rtype: list of :obj:`Orange.data.Instance`
     
 .. class:: FindNearestConstructor()
 
@@ -234,9 +242,10 @@ searching) (:class:`FindNearestConstructor`).
     
     If there are more instances with the same distance fighting for the last
     places, the tie is resolved by randomly picking the appropriate number of
-    instances. A local random generator is constructed and initiated by a constant
-    computed from the reference instance. The effect of this is that same random
-    neighbours will be chosen for the instance each time FindNearest_BruteForce
+    instances. A local random generator is constructed and initiated by a
+    constant computed from the reference instance. The effect of this is that
+    same random neighbours will be chosen for the instance each time
+    FindNearest_BruteForce
     is called.
     
     .. attribute:: distanceConstructor
@@ -244,20 +253,21 @@ searching) (:class:`FindNearestConstructor`).
     A component of class ExamplesDistanceConstructor that "learns" to measure
     distances between instances. Learning can be, for instances, storing the
     ranges of continuous features or the number of value of a discrete feature
-    (see the page about measuring distances for more information). The result of
-    learning is an instance of ExamplesDistance that should be used for measuring
-    distances between instances.
+    (see the page about measuring distances for more information). The result
+    of learning is an instance of ExamplesDistance that should be used for
+    measuring distances between instances.
     
     .. attribute:: includeSame
     
-    Tells whether to include the examples that are same as the reference; default is true.
+    Tells whether to include the examples that are same as the reference;
+    default is true.
     
     .. method:: __call__(table, weightID, distanceID)
     
-        Constructs an instance of FindNearest that would return neighbours of a
-        given instance, obeying weightID when counting them (also, some measures
-        of distance might consider weights as well) and store the distances in a
-        meta attribute with ID distanceID.
+        Constructs an instance of FindNearest that would return neighbours of
+        a given instance, obeying weightID when counting them (also, some 
+        measures of distance might consider weights as well) and store the 
+        distances in a meta attribute with ID distanceID.
     
         :param table: table of instances
         :type table: Orange.data.Table

@@ -7,6 +7,7 @@
 import Orange
 table = Orange.data.Table("iris")
 
+print "Testing using euclidean distance"
 rndind = Orange.core.MakeRandomIndices2(table, p0=0.8)
 train = table.select(rndind, 0)
 test = table.select(rndind, 1)
@@ -16,7 +17,8 @@ for i in range(5):
     instance = test.randomexample()
     print instance.getclass(), knn(instance)
 
-print "\n\n"
+print "\n"
+print "Testing using hamming distance"
 table = Orange.data.Table("iris")
 knn = Orange.classification.knn.kNNLearner()
 knn.k = 10
