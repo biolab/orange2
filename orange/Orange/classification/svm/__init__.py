@@ -7,12 +7,13 @@ Support Vector Machines
 
 .. index:: Support Vector Machines Classification
 
-Interface to the LibSVM library (a library for support vector machines
-- http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
+A collection of classes that wrap the 
+`LibSVM library <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_ (a library for 
+`support vector machines <http://en.wikipedia.org/wiki/Support_vector_machine>`_)
 
-.. note:: On some data-sets SVM can perform very badly. It is a known fact that
-          SVM can be very sensitive to the proper choice of the parameters.
-          If you are having problems with the learner's accuracy try scaling the
+.. note:: On some data-sets SVM can perform very poorly. SVM can be very 
+          sensitive to the proper choice of the parameters. If you are having 
+          problems with the learner's accuracy try scaling the
           data and using different parameters or choose an easier approach
           and use the :obj:`SVMLearnerEasy` class which does this automatically
           (it is similar to the `svm-easy.py`_ script in the LibSVM distribution).
@@ -79,7 +80,7 @@ Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
 .. literalinclude:: code/svm-custom-kernel.py
 
 =======================================
-SVM based Recursive Feature Elimination
+SVM-Based Recursive Feature Elimination
 =======================================
 
 .. autoclass:: Orange.classification.svm.RFE
@@ -92,6 +93,12 @@ SVM based Recursive Feature Elimination
 .. _brown-selected.tab: code/brown-selected.tab
 .. _iris.tab: code/iris.tab
 .. _vehicle.tab: code/vehicle.tab
+
+References
+========== 
+
+C.-W. Hsu, C.-C. Chang, C.-J. Lin. A practical guide to support vector 
+classification
 
 """
 import math
@@ -166,7 +173,7 @@ class SVMLearner(_SVMLearner):
     :param degree: kernel parameter (for Polynomial) (default 3)
     :type degree: int
     :param gamma: kernel parameter (Polynomial/RBF/Sigmoid)
-        (default 1/number_of_examples)
+        (default 1/number_of_instances)
     :type gamma: float
     :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
     :type coef0: int
@@ -377,7 +384,7 @@ class SVMLearnerSparse(SVMLearner):
         :obj:`Orange.data.Table` meta attributes.
     
     .. note:: Note that meta attributes don't need to be registered with
-        the data-set domain, or present in all the examples. Use this if you
+        the data-set domain, or present in all the instances. Use this if you
         are learning from large sparse data-sets.
     
     """
