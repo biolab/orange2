@@ -1,1 +1,1 @@
-from Orange.discretization import *
+from Orange.feature.discretization import *
