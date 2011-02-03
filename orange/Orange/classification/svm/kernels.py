@@ -49,9 +49,9 @@ class RBFKernelWrapper(KernelWrapper):
         self.gamma=gamma
         
     def __call__(self, example1, example2):
-        """Return 
+        """Return:  
         
-        .. math::  exp(-gamma * wrapped(example1, example2) ^ 2)
+        :math:`exp(-gamma * wrapped(example1, example2) ^ 2)` 
         
         """
         return math.exp(-self.gamma*math.pow(self.wrapped(example1, 
@@ -66,18 +66,18 @@ class PolyKernelWrapper(KernelWrapper):
         KernelWrapper.__init__(self, wrapped)
         self.degree=degree
     def __call__(self, example1, example2):
-        """Return
+        """Return:
         
-        .. math:: wrapped(example1, example2) ^ d
+        :math:`wrapped(example1, example2) ^ d`
         
         """
         return math.pow(self.wrapped(example1, example2), self.degree)
 
 class AdditionKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
-        """Return
+        """Return:
         
-        .. math:: wrapped1(example1, example2) + wrapped2(example1, example2)
+        :math::`wrapped1(example1, example2) + wrapped2(example1, example2)`
             
         """
         return self.wrapped1(example1, example2) + \
@@ -85,9 +85,9 @@ class AdditionKernelWrapper(DualKernelWrapper):
 
 class MultiplicationKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
-        """Return
+        """Return:
         
-        .. math:: wrapped1(example1, example2) * wrapped2(example1, example2)
+        :math:`wrapped1(example1, example2) * wrapped2(example1, example2)`
             
         """
         return self.wrapped1(example1, example2) * \
@@ -103,10 +103,9 @@ class CompositeKernelWrapper(DualKernelWrapper):
         self.l=l
         
     def __call__(self, example1, example2):
-        """Return
+        """Return:
         
-        .. math:: l * wrapped1(example1, example2) + (1 - l) * 
-            wrapped2(example1, example2)
+        :math:`l*wrapped1(example1,example2)+(1-l)*wrapped2(example1,example2)`
             
         """
         return self.l * self.wrapped1(example1, example2) + (1-self.l) * \
@@ -127,9 +126,9 @@ class SparseLinKernel(object):
 
 class BagOfWords(object):
     def __call__(self, example1, example2):
-        """Computes a BOW kernel function
+        """Computes a BOW kernel function:
          
-        .. math:: \sum_{i=1}^n example1_i * example2_i
+        :math:`\sum_{i=1}^n example1_i * example2_i`
         
         using the examples meta attributes (need to be floats)
         
