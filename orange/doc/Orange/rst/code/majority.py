@@ -9,8 +9,8 @@ import orange, orngTest, orngStat
 
 data = Orange.data.Table("monks-1")
 
-treeLearner = orange.TreeLearner()
-bayesLearner = orange.BayesLearner()
+treeLearner = Orange.classification.tree.TreeLearner() #orange.TreeLearner()
+bayesLearner = Orange.classification.bayes.NaiveBayesLearner()
 majorityLearner = Orange.classification.majority.MajorityLearner()
 learners = [treeLearner, bayesLearner, majorityLearner]
 

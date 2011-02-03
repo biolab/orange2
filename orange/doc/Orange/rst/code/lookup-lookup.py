@@ -6,9 +6,9 @@
 
 import Orange
 
-data = Orange.data.Table("monks-1")
+table = Orange.data.Table("monks-1")
 
-a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
+a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
 
 ab = Orange.data.feature.Discrete("a==b", values = ["no", "yes"])
 ab.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(ab, a, b,
@@ -18,13 +18,13 @@ e1 = Orange.data.feature.Discrete("e==1", values = ["no", "yes"])
 e1.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(e1, e,
                     ["yes", "no", "no", "no", "?"])
 
-data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
+table2 = table.select([a, b, ab, e, e1, table.domain.classVar])
 
 for i in range(5):
-    print data2.randomexample()
+    print table2.randomexample()
 
 for i in range(5):
-    ex = data.randomexample()
+    ex = table.randomexample()
     print "%s: ab %i, e1 %i " % (ex, ab.getValueFrom.getindex(ex),
                                  e1.getValueFrom.getindex(ex))
     
