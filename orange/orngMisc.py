@@ -1,6 +1,8 @@
 from __future__ import with_statement
 import random, types
 
+## -> Orange.misc
+
 def getobjectname(x, default=""):
     if type(x)==types.StringType:
         return x
@@ -25,6 +27,8 @@ def demangleExamples(x):
     else:
         return x, 0
     
+
+## -> Orange.misc.counters
 
 class BooleanCounter:
   def __init__(self, bits):
@@ -174,6 +178,7 @@ class CanonicFuncCounter:
     return self.state
 
 
+## Orange.misc.selection
 
 import random
 
@@ -251,6 +256,8 @@ def compare2_smaller(x, y):
     return -cmp(x, y)
 
 
+# Orange.misc
+
 def frange(*argw):
     start, stop, step = 0.0, 1.0, 0.1
     if len(argw)==1:
@@ -273,6 +280,8 @@ def frange(*argw):
         i+=1
     return res
 
+
+# Orange.misc
 
 verbose = 0
 
@@ -328,7 +337,10 @@ class ConsoleProgressBar(object):
         
 def progressBarMilestones(count, iterations=100):
     return set([int(i*count/float(iterations)) for i in range(iterations)])
-        
+
+
+## Odkrij, kdo to uporablja
+      
 class ColorPalette(object):
     def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
         self.colors = colors
@@ -425,6 +437,9 @@ def with_gc_disabled(func):
         with contextmanager(disabler)():
             return func(*args, **kwargs)
     return wrapper  
+
+
+## -> Orange.misc.render
 
 import numpy
 
