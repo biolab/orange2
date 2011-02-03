@@ -17,6 +17,8 @@ class MyStdRefactoringTool(StdoutRefactoringTool):
             
             filename = getattr(self, "outputfilename", filename)
             
+            if hasattr(self, "outputfilename"):
+                self.nobackups = True
             backup = filename + ".bak"
             if os.path.lexists(backup):
                 try:
@@ -32,7 +34,10 @@ class MyStdRefactoringTool(StdoutRefactoringTool):
         write = super(StdoutRefactoringTool, self).write_file
         write(new_text, filename, old_text, encoding)
         if not self.nobackups:
-            shutil.copymode(backup, filename)
+            try:
+                shutil.copymode(backup, filename)
+            except OSError, ex:
+                pass
             
 def main(fixer_pkg, args=None):
     """Main program.
@@ -125,7 +130,6 @@ def main(fixer_pkg, args=None):
                                options.nobackups, not options.no_diffs)
     if options.outfile:
         if len(args) > 2:
-            print args
             print >> sys.stderr, "-o, --outfile used but multiple script arguments"
         elif not os.path.isfile(args[-1]):
             print >> sys.stderr, "-o, --outfile used but argumnet is a directory"
