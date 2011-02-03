@@ -1,7 +1,6 @@
 import Orange.network
 from pylab import *
 
-# create graph object of type GraphAsList
 # vertices are placed randomly in Network constructor
 net = Orange.network.Network(5, 0)
 
