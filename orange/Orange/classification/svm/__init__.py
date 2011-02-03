@@ -142,7 +142,7 @@ def _orange__new__(base=Orange.core.Learner):
 
 def maxNu(examples):
     """Return the maximum nu parameter for Nu_SVC support vector learning
-     for the given example table. 
+     for the given data table. 
     
     """
     nu = 1.0
@@ -170,7 +170,7 @@ class SVMLearner(_SVMLearner):
     :param coef0: kernel parameter (Polynomial/Sigmoid) (default 0)
     :type coef0: int
     :param kernelFunc: function that will be called if `kernel_type` is
-        `Custom`. It must accept two `data.Instance` arguments and
+        `Custom`. It must accept two :obj:`Orange.data.Instance` arguments and
         return a float (the distance between the examples).
     :type kernelFunc: callable function
     :param C: C parameter for C_SVC, Epsilon_SVR, Nu_SVR
@@ -288,7 +288,7 @@ class SVMLearner(_SVMLearner):
         """Tune the parameters of the SVMLearner on given examples using 
         cross validation.
         
-        :param examples: data.Table on which to tune the parameters 
+        :param examples: :obj:`Orange.data.Table` on which to tune the parameters 
         :param parameters: if not set defaults to ["nu", "C", "gamma"]
         :param folds: number of folds used for cross validation
         :param verbose: default False
