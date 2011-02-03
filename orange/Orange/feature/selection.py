@@ -2,10 +2,27 @@
 .. index:: feature selection
 
 Some machine learning methods may perform better if they learn only from a 
-selected subset of "best" features. Here we mostly implement filter approaches,
-were feature scores are estimated prior to the modelling, that is, without
-knowing of which machine learning method will be used to construct a predictive
-model.
+selected subset of "best" features. 
+
+The performance of some machine learning method can be improved by learning 
+only from a selected subset of data, which includes the most informative or 
+"best" features. This so-called filter approaches can boost the performance 
+of learner both in terms of predictive accuracy, speed-up induction, and
+simplicity of resulting models. Feature scores are estimated prior to the
+modelling, that is, without knowing of which machine learning method will be
+used to construct a predictive model.
+
+`selection-best3.py`_ (uses `voting.tab`_):
+
+.. literalinclude:: code/selection-best3.py
+    :lines: 7-
+
+The script should output this::
+
+    Best 3 features:
+    physician-fee-freeze
+    el-salvador-aid
+    synfuels-corporation-cutback
 
 .. automethod:: Orange.feature.selection.FilterAttsAboveThresh
 
@@ -44,19 +61,9 @@ classification problems.
 .. automethod:: Orange.feature.selection.filterRelieff
 
 
-====================================
-Filter Approach for Machine Learning
-====================================
-
-Attribute scoring has at least two potential uses. One is
-informative (or descriptive): the data analyst can use attribute
-scoring to find "good" features and those that are irrelevant for
-given classification task. The other use is in improving the
-performance of machine learning by learning only from the data set
-that includes the most informative features. This so-called filter
-approach can boost the performance of learner both in terms of
-predictive accuracy, speed-up of induction, and simplicity of
-resulting models.
+========
+Examples
+========
 
 Following is a script that defines a new classifier that is based
 on naive Bayes and prior to learning selects five best features from
@@ -66,45 +73,10 @@ lesson in <a href="../ofb/default.htm">Orange for Beginners</a>). The
 script compares this filtered learner naive Bayes that uses a complete
 set of features.
 
-`fss3.py`_ (uses `voting.tab`_)::
+`selection-bayes.py`_ (uses `voting.tab`_):
 
-    import orange, orngFSS
-
-    class BayesFSS(object):
-        def __new__(cls, examples=None, **kwds):
-            learner = object.__new__(cls, **kwds)
-            if examples:
-                return learner(examples)
-            else:
-                return learner
-    
-        def __init__(self, name='Naive Bayes with FSS', N=5):
-            self.name = name
-            self.N = 5
-    
-        def __call__(self, data, weight=None):
-            ma = orngFSS.attMeasure(data)
-            filtered = orngFSS.selectBestNAtts(data, ma, self.N)
-            model = orange.BayesLearner(filtered)
-            return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
-    
-    class BayesFSS_Classifier:
-        def __init__(self, **kwds):
-            self.__dict__.update(kwds)
-    
-        def __call__(self, example, resultType = orange.GetValue):
-            return self.classifier(example, resultType)
-    
-    # test above wraper on a data set
-    import orngStat, orngTest
-    data = orange.ExampleTable("voting")
-    learners = (orange.BayesLearner(name='Naive Bayes'), BayesFSS(name="with FSS"))
-    results = orngTest.crossValidation(learners, data)
-    
-    # output the results
-    print "Learner      CA"
-    for i in range(len(learners)):
-        print "%-12s %5.3f" % (learners[i].name, orngStat.CA(results)[i])
+.. literalinclude:: code/selection-bayes.py
+    :lines: 7-
 
 Interestingly, and somehow expected, feature subset selection
 helps. This is the output that we get::
@@ -113,13 +85,9 @@ helps. This is the output that we get::
     Naive Bayes  0.903
     with FSS     0.940
 
-======================
-And a Much Simpler One
-======================
-
-Although perhaps educational, we can do all of the above by
-wrapping the learner using <code>FilteredLearner</code>, thus creating
-an object that is assembled from data filter and a base learner. When
+Now, a much simpler example. Although perhaps educational, we can do all of 
+the above by wrapping the learner using <code>FilteredLearner</code>, thus 
+creating an object that is assembled from data filter and a base learner. When
 given the data, this learner uses attribute filter to construct a new
 data set and base learner to construct a corresponding
 classifier. Attribute filters should be of the type like
@@ -133,12 +101,10 @@ from previous example, and compares naive Bayesian classifier to the
 same classifier when only a single most important attribute is
 used.
 
-`fss4.py`_ (uses `voting.tab`_)::
+`selection-filtered-learner.py`_ (uses `voting.tab`_):
 
-    nb = orange.BayesLearner()
-    learners = (orange.BayesLearner(name='bayes'),
-                FilteredLearner(nb, filter=FilterBestNAtts(n=1), name='filtered'))
-    results = orngEval.CrossValidation(learners, data)
+.. literalinclude:: code/selection-filtered-learner.py
+    :lines: 13-16
 
 Now, let's decide to retain three features (change the code in <a
 href="fss4.py">fss4.py</a> accordingly!), but observe how many times
@@ -150,21 +116,11 @@ selected. <code>orngEval.CrossValidation</code> stores classifiers in
 returns a classifier that can tell which features it used (how
 convenient!), so the code to do all this is quite short.
 
-`fss4.py`_ (uses `voting.tab`_)::
+.. literalinclude:: code/selection-filtered-learner.py
+    :lines: 25-
 
-    print "\\nNumber of times features were used in cross-validation:\\n"
-    attsUsed = {}
-    for i in range(10):
-        for a in results.classifiers[i][1].atts():
-            if a.name in attsUsed.keys():
-                attsUsed[a.name] += 1
-            else:
-                attsUsed[a.name] = 1
-    for k in attsUsed.keys():
-        print "%2d x %s" % (attsUsed[k], k)
-
-Running `fss4.py`_ with three features selected each time a learner is run
-gives the following result::
+Running `selection-filtered-learner.py`_ with three features selected each
+time a learner is run gives the following result::
 
     Learner      CA
     bayes        0.903
@@ -184,23 +140,20 @@ all the ten cross-validation tests!
 References
 ----------
 
-* K. Kira and L. Rendell. A practical approach to feature
-  selection. In D. Sleeman and P. Edwards, editors, <em>Proc. 9th Int'l
-  Conf. on Machine Learning</em>, pages 249{256, Aberdeen, 1992. Morgan
-  Kaufmann Publishers.
+* K. Kira and L. Rendell. A practical approach to feature selection. In
+  D. Sleeman and P. Edwards, editors, Proc. 9th Int'l Conf. on Machine
+  Learning, pages 249{256, Aberdeen, 1992. Morgan Kaufmann Publishers.
 
-* I. Kononenko. Estimating attributes: Analysis and extensions of
-  RELIEF. In F. Bergadano and L. De Raedt, editors, <em>Proc. European
-  Conf. on Machine Learning (ECML-94)</em>, pages
-  171-182. Springer-Verlag, 1994.
+* I. Kononenko. Estimating attributes: Analysis and extensions of RELIEF.
+  In F. Bergadano and L. De Raedt, editors, Proc. European Conf. on Machine
+  Learning (ECML-94), pages  171-182. Springer-Verlag, 1994.
 
-* R. Kohavi, G. John: Wrappers for Feature Subset Selection,
-  <em>Artificial Intelligence</em>, 97 (1-2), pages 273-324, 1997
+* R. Kohavi, G. John: Wrappers for Feature Subset Selection, Artificial
+  Intelligence, 97 (1-2), pages 273-324, 1997
 
-.. _fss1.py: code/fss1.py
-.. _fss2.py: code/fss2.py
-.. _fss3.py: code/fss3.py
-.. _fss4.py: code/fss4.py
+.. _selection-best3.py: code/selection-best3.py
+.. _selection-bayes.py: code/selection-bayes.py
+.. _selection-filtered-learner.py: code/selection-filtered-learner.py
 .. _voting.tab: code/voting.tab
 
 """
@@ -276,8 +229,8 @@ def selectAttsAboveThresh(data, scores, threshold=0.0):
     """
     return data.select(attsAboveThreshold(scores, threshold)+[data.domain.classVar.name])
 
-def filterRelieff(data, measure = orange.MeasureAttribute_relief(k=20, m=50), margin=0):
-    """Take the data set and use an attribute measure to removes the worst 
+def filterRelieff(data, measure=orange.MeasureAttribute_relief(k=20, m=50), margin=0):
+    """Take the data set and use an attribute measure to remove the worst 
     scored attribute (those below the margin). Repeats, until no attribute has
     negative or zero score.
     
@@ -289,8 +242,8 @@ def filterRelieff(data, measure = orange.MeasureAttribute_relief(k=20, m=50), ma
     :param data: an data table
     :type data: Orange.data.table
     :param measure: an attribute measure (derived from 
-      :obj:`Orange.MeasureAttribute`). Defaults to 
-      :obj:`Orange.MeasureAttribute_relief` for k=20 and m=50.
+      :obj:`Orange.feature.scoring.Measure`). Defaults to 
+      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.
     :param margin: if score is higher than margin, attribute is not removed.
       Defaults to 0.
     :type margin: float
@@ -314,22 +267,25 @@ def FilterAttsAboveThresh(data=None, **kwds):
         return filter
   
 class FilterAttsAboveThresh_Class:
-    """FilterAttsAboveThresh([<em>measure</em>[<em>, threshold</em>]])</dt>
-    <dd class="ddfun">This is simply a wrapper around the function
-    <code>selectAttsAboveThresh</code>. It allows to create an object
-    which stores filter's parameters and can be later called with the data
-    to return the data set that includes only the selected
-    features. <em>measure</em> is a function that returns a list of
-    couples (attribute name, score), and it defaults to
-    <code>orange.MeasureAttribute_relief(k=20, m=50)</code>. The default
-    threshold is 0.0. Some examples of how to use this class are::
+    """Stores filter's parameters and can be later called with the data to
+    return the data table with only selected features. 
+    
+    This class is used in the function :obj:`selectAttsAboveThresh`.
+    
+    :param measure: an attribute measure (derived from 
+      :obj:`Orange.feature.scoring.Measure`). Defaults to 
+      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.  
+    :param threshold: score threshold for attribute selection. Defaults to 0.
+    :type threshold: float
+     
+    Some examples of how to use this class are::
 
-        filter = orngFSS.FilterAttsAboveThresh(threshold=.15)
+        filter = Orange.feature.selection.FilterAttsAboveThresh(threshold=.15)
         new_data = filter(data)
-        new_data = orngFSS.FilterAttsAboveThresh(data)
-        new_data = orngFSS.FilterAttsAboveThresh(data, threshold=.1)
-        new_data = orngFSS.FilterAttsAboveThresh(data, threshold=.1,
-                     measure=orange.MeasureAttribute_gini())
+        new_data = Orange.feature.selection.FilterAttsAboveThresh(data)
+        new_data = Orange.feature.selection.FilterAttsAboveThresh(data, threshold=.1)
+        new_data = Orange.feature.selection.FilterAttsAboveThresh(data, threshold=.1,
+                   measure=Orange.feature.scoring.Gini())
 
     """
     def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50), 
@@ -338,15 +294,23 @@ class FilterAttsAboveThresh_Class:
         self.threshold = threshold
 
     def __call__(self, data):
+        """Take data and return features with scores above given threshold.
+        
+        :param data: an data table
+        :type data: Orange.data.table
+        """
         ma = attMeasure(data, self.measure)
         return selectAttsAboveThresh(data, ma, self.threshold)
 
 def FilterBestNAtts(data=None, **kwds):
-    """FilterBestNAtts</b>([<em>measure</em>[<em>, n</em>]])</dt>
-    <dd class="ddfun">Similarly to <code>FilterAttsAboveThresh</code>,
-    this is a wrapper around the function
-    <code>selectBestNAtts</code>. Measure and the number of features to
-    retain are optional (the latter defaults to 5).
+    """Similarly to :obj:`FilterAttsAboveThresh`, wrap around class
+    :obj:`FilterBestNAtts_Class`.
+    
+    :param measure: an attribute measure (derived from 
+      :obj:`Orange.feature.scoring.Measure`). Defaults to 
+      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.  
+    :param n: number of best features to return. Defaults to 5.
+    :type n: int
 
     """
     filter = apply(FilterBestNAtts_Class, (), kwds)
@@ -363,13 +327,14 @@ class FilterBestNAtts_Class:
         return selectBestNAtts(data, ma, self.n)
 
 def FilterRelief(data=None, **kwds):
-    """FilterRelieff</b>([<em>measure</em>[<em>, margin</em>]])</dt>
-    <dd class="ddfun">Similarly to <code>FilterBestNAtts</code>, this is a
-    wrapper around the function
-    <code>filterRelieff</code>. <em>measure</em> and <em>margin</em> are
-    optional attributes, where <em>measure</em> defaults to
-    <code>orange.MeasureAttribute_relief(k=20, m=50)</code> and
-    <em>margin</em> to 0.0.
+    """Similarly to :obj:`FilterBestNAtts`, wrap around class 
+    :obj:`FilterRelief_Class`.
+    
+    :param measure: an attribute measure (derived from 
+      :obj:`Orange.feature.scoring.Measure`). Defaults to 
+      :obj:`Orange.feature.scoring.Relief` for k=20 and m=50.  
+    :param margin: margin for Relief scoring. Defaults to 0.
+    :type margin: float
 
     """    
     filter = apply(FilterRelief_Class, (), kwds)
@@ -389,20 +354,24 @@ class FilterRelief_Class:
 # wrapped learner
 
 def FilteredLearner(baseLearner, examples = None, weight = None, **kwds):
-    """FilteredLearner</b>([<em>baseLearner</em>[<em>,
-    examples</em>[<em>, filter</em>[<em>, name</em>]]]])</dt> <dd>Wraps a
-    <em>baseLearner</em> using a data <em>filter</em>, and returns the
-    corresponding learner. When such learner is presented a data set, data
-    is first filtered and then passed to
-    <em>baseLearner</em>. <em>FilteredLearner</em> comes handy when one
-    wants to test the schema of feature-subset-selection-and-learning by
-    some repetitive evaluation method, e.g., cross validation. Filter
-    defaults to orngFSS.FilterAttsAboveThresh with default
-    attributes. Here is an example of how to set such learner (build a
-    wrapper around naive Bayesian learner) and use it on a data set::
+    """Return the corresponding learner that wraps 
+    :obj:`Orange.classification.baseLearner` and a data selection method. 
+    
+    When such learner is presented a data table, data is first filtered and 
+    then passed to :obj:`Orange.classification.baseLearner`. This comes handy 
+    when one wants to test the schema of feature-subset-selection-and-learning
+    by some repetitive evaluation method, e.g., cross validation. 
+    
+    :param filter: defatuls to
+      :obj:`Orange.feature.selection.FilterAttsAboveThresh`
+    :type filter: Orange.feature.selection.FilterAttsAboveThresh
 
-        nb = orange.BayesLearner()
-        learner = orngFSS.FilteredLearner(nb, filter=orngFSS.FilterBestNAtts(n=5), name='filtered')
+    Here is an example of how to build a wrapper around naive Bayesian learner
+    and use it on a data set::
+
+        nb = Orange.classification.bayes.NaiveBayesLearner()
+        learner = Orange.feature.selection.FilteredLearner(nb, 
+                  filter=Orange.feature.selection.FilterBestNAtts(n=5), name='filtered')
         classifier = learner(data)
 
     """

@@ -1,42 +1,27 @@
 """
-Feature scoring is normally used in feature subset selection for classification
-problems.
+Feature scoring is used in feature subset selection for classification
+problems. The goal is to find "good" features that are relevant for the given
+classification task.
 
-Let start with a simple script that reads the data, uses :obj:`attMeasure` to
-derive attribute scores and prints out these for the first three best scored
-attributes. Same scoring function is then used to report (only) on three best
-score attributes.
+Here is a simple script that reads the data, uses :obj:`attMeasure` to
+derive feature scores and prints out these for the first three best scored
+features. Same scoring function is then used to report (only) on three best
+score features.
 
-`fss1.py`_ (uses `voting.tab`_)::
+.. _scoring-all.py: code/scoring-all.py
+.. _voting.tab: code/voting.tab
 
-    import orange, import orngFSS
-    data = orange.ExampleTable("voting")
+`scoring-all.py`_ (uses `voting.tab`_):
 
-    print 'Score estimate for first three attributes:'
-    ma = orngFSS.attMeasure(data)
-    for m in ma[:3]:
-        print "%5.3f %s" % (m[1], m[0])
-
-    n = 3
-    best = orngFSS.bestNAtts(ma, n)
-    print '\\nBest %d attributes:' % n
-    for s in best:
-        print s
+.. literalinclude:: code/scoring-all.py
+    :lines: 7-
 
 The script should output this::
 
-    Attribute scores for best three attributes:
-    Attribute scores for best three attributes:
-    0.728 physician-fee-freeze
-    0.329 adoption-of-the-budget-resolution
-    0.321 synfuels-corporation-cutback
-
-    Best 3 attributes:
-    physician-fee-freeze
-    adoption-of-the-budget-resolution
-    synfuels-corporation-cutback</xmp>
-
-Functions and classes for feature scoring:
+    Feature scores for best three features:
+    0.613 physician-fee-freeze
+    0.255 adoption-of-the-budget-resolution
+    0.228 synfuels-corporation-cutback
 
 .. autoclass:: Orange.feature.scoring.OrderAttributesByMeasure
    :members:
@@ -62,39 +47,47 @@ Different Score Measures
 
 .. note: add links to gain ratio, relief and other feature scores
 
-The following script reports on gain ratio and relief attribute
-scores. Notice that for our data set the ranks of the attributes
-rather match well!
+The following script reports on gain ratio and relief feature scores.
 
-`fss2.py`_ (uses `voting.tab`_)::
+`scoring-relief-gainRatio.py`_ (uses `voting.tab`_):
 
-    import orange, orngFSS
-    data = orange.ExampleTable("voting")
-
-    print 'Relief GainRt Attribute'
-    ma_def = orngFSS.attMeasure(data)
-    gainRatio = orange.MeasureAttribute_gainRatio()
-    ma_gr  = orngFSS.attMeasure(data, gainRatio)
-    for i in range(5):
-        print "%5.3f  %5.3f  %s" % (ma_def[i][1], ma_gr[i][1], ma_def[i][0])
+.. literalinclude:: code/scoring-relief-gainRatio.py
+    :lines: 7-
+    
+Notice that on this data the ranks of features match rather well::
+    
+    Relief GainRt Feature
+    0.613  0.752  physician-fee-freeze
+    0.255  0.444  el-salvador-aid
+    0.228  0.414  synfuels-corporation-cutback
+    0.189  0.382  crime
+    0.166  0.345  adoption-of-the-budget-resolution
 
 ==========
 References
 ==========
 
-* Kononeko: Strojno ucenje.
+* Kononeko: Strojno ucenje. Zalozba FE in FRI, Ljubljana, 2005.
+
+.. _scoring-relief-gainRatio.py: code/scoring-relief-gainRatio.py
+.. _voting.tab: code/voting.tab
 
 """
 
 import Orange.core as orange
+from orange import MeasureAttribute_gainRatio as GainRatio
+from orange import MeasureAttribute as Measure
+from orange import MeasureAttribute_relief as Relief
+from orange import MeasureAttribute_info as InfoGain
+from orange import MeasureAttribute_gini as Gini
 
 ######
 # from orngEvalAttr.py
 class OrderAttributesByMeasure:
     """Construct an instance that orders features by their scores.
     
-    :param measure: an attribute measure, derived from 
-      :obj:`orange.MeasureAttribute`.
+    :param measure: a feature measure, derived from 
+      :obj:`Orange.feature.scoring.Measure`.
     
     """
     def __init__(self, measure=None):
@@ -102,7 +95,7 @@ class OrderAttributesByMeasure:
 
     def __call__(self, data, weight):
         """Take :obj:`Orange.data.table` data table and an instance of
-        :obj:`orange.MeasureAttribute` to score and order features.  
+        :obj:`Orange.feature.scoring.Measure` to score and order features.  
 
         :param data: a data table used to score features
         :type data: Orange.data.table
@@ -113,11 +106,11 @@ class OrderAttributesByMeasure:
 
         """
         if self.measure:
-            measure=self.measure
+            measure = self.measure
         else:
-            measure=orange.MeasureAttribute_relief(m=5,k=10)
+            measure = Relief(m=5,k=10)
 
-        measured=[(attr, measure(attr, data, None, weight)) for attr in data.domain.attributes]
+        measured = [(attr, measure(attr, data, None, weight)) for attr in data.domain.attributes]
         measured.sort(lambda x, y: cmp(x[1], y[1]))
         return [x[0] for x in measured]
 
@@ -166,7 +159,7 @@ class MeasureAttribute_DistanceClass(orange.MeasureAttribute):
         for vals in attrClassCont.values():
             dist += list(vals)
         classAttrEntropy = Entropy(numpy.array(dist))
-        infoGain = orange.MeasureAttribute_info(attr, data)
+        infoGain = InfoGain(attr, data)
         if classAttrEntropy > 0:
             return float(infoGain) / classAttrEntropy
         else:
@@ -276,17 +269,17 @@ def mergeAttrValues(data, attrList, attrMeasure, removeUnusedValues = 1):
 
 ######
 # from orngFSS
-def attMeasure(data, measure = orange.MeasureAttribute_relief(k=20, m=50)):
-    """Assess the quality of attributes using the given measure and return
-    a sorted list of tuples (attribute name, measure).
+def attMeasure(data, measure=Relief(k=20, m=50)):
+    """Assess the quality of features using the given measure and return
+    a sorted list of tuples (feature name, measure).
 
     :param data: data table should include a discrete class.
-    :type data: Orange.data.table.
-    :param measure:  attribute scoring function. Derived from
-      :obj:`orange.MeasureAttribute`. Defaults to Defaults to 
-      :obj:`orange.MeasureAttribute_relief` with k=20 and m=50.
-    :type measure: :obj:`orange.MeasureAttribute` 
-    :rtype: :obj:`list` a sorted list of tuples (attribute name, score)
+    :type data: :obj:`Orange.data.table`
+    :param measure:  feature scoring function. Derived from
+      :obj:`Orange.feature.scoring.Measure`. Defaults to Defaults to 
+      :obj:`Orange.feature.scoring.Relief` with k=20 and m=50.
+    :type measure: :obj:`Orange.feature.scoring.Measure` 
+    :rtype: :obj:`list` a sorted list of tuples (feature name, score)
 
     """
     measl=[]
