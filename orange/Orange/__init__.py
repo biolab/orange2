@@ -42,7 +42,7 @@ import ensemble.bagging
 import ensemble.boosting
 import ensemble.forest
 
-import regress
+import regression
 
 import associate
 
