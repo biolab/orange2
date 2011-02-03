@@ -26,7 +26,6 @@ Interface to the LibSVM library (a library for support vector machines
 .. autoclass:: Orange.classification.svm.SVMLearnerEasy
    :members:
    
-=================
 Usefull functions
 =================
 
@@ -35,6 +34,12 @@ Usefull functions
 .. automethod:: Orange.classification.svm.getLinearSVMWeights
 
 .. automethod:: Orange.classification.svm.exampleTableToSVMFormat
+
+SVM derived feature weights
+===========================
+
+.. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
+   :members:
 
 ===============
 Kernel Wrappers
@@ -70,13 +75,6 @@ Kernel Wrappers
 Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
 
 .. literalinclude:: code/svm-custom-kernel.py
-
-===========================
-SVM derived feature weights
-===========================
-
-.. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
-   :members:
 
 =======================================
 SVM based Recursive Feature Elimination
