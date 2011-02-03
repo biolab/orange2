@@ -12,7 +12,7 @@ Contents:
    :maxdepth: 2
 
    Orange.associate   
-   orange.cluster
+   Orange.cluster
    Orange.data
    orange.classification.bayes
    Orange.classification.majority
