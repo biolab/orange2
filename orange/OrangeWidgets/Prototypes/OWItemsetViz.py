@@ -378,14 +378,14 @@ class OWItemsetViz(OWWidget):
         self.insideViewNeighbours = 2
         self.insideSpin = OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
         #OWGUI.button(self.protoTab, self, "Clustering", callback=self.clustering)
-        OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
+        OWGUI.button(self.protoTab, self, "Collapse", callback=self._collapse)
         
         self.icons = self.createAttributeIconDict()
         self.setHubs()
         
         self.resize(850, 700)    
 
-    def collapse(self):
+    def _collapse(self):
         print "collapse"
         self.visualize.collapse()
         self.graph.addVisualizer(self.visualize)
