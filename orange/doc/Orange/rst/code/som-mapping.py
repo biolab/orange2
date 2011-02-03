@@ -1,11 +1,12 @@
 # Description: Self Organizing Maps on iris data set
-# Category:    modelling
+# Category:    projection
 # Uses:        iris
-# Referenced:  orngSOM.htm
-# Classes:     orngSOM.SOMLearner
+# Referenced:  Orange.projection.som
+# Classes:     Orange.projection.som.SOMLearner
 
 import Orange
-som = Orange.projection.som.SOMLearner(map_shape=(3, 3), initialize=Orange.projection.som.InitializeRandom)
+som = Orange.projection.som.SOMLearner(map_shape=(3, 3),
+                initialize=Orange.projection.som.InitializeRandom)
 map = som(Orange.data.Table("iris.tab"))
 
 print "Node    Instances"

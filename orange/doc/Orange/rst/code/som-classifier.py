@@ -1,8 +1,8 @@
 # Description: Self Organizing Maps on iris data set
-# Category:    modelling
+# Category:    projection
 # Uses:        iris
-# Referenced:  orngSOM.htm
-# Classes:     orngSOM.SOMLearner
+# Referenced:  Orange.projection.som
+# Classes:     Orange.projection.som.SOMLearner
 
 import Orange
 import random
