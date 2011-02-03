@@ -242,7 +242,7 @@ class NaiveLearner(Orange.classification.Learner):
         if self.conditionalEstimatorConstructorContinuous:
             bayes.conditionalEstimatorConstructorContinuous = self.conditionalEstimatorConstructorContinuous
             
-        return NaiveBayesClassifier(bayes(instances, weight))
+        return NaiveClassifier(bayes(instances, weight))
             
 class NaiveClassifier(Orange.classification.Classifier):
     """
