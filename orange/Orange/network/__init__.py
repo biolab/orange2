@@ -14,8 +14,9 @@ Network
 Network Layout Optimization
 ===========================
 
-.. autoclass:: Orange.network.NetworkOptimization
-   :members:
+    .. autoclass:: Orange.network.NetworkOptimization
+       :members:
+       :exclude-members: collapse 
    
 =============================
 Community Detection in Graphs
@@ -24,6 +25,82 @@ Community Detection in Graphs
 .. autoclass:: Orange.network.NetworkClustering
    :members:
    
+   
+========
+Examples
+========
+
+Network constructor and random layout
+=====================================
+
+In our first example we create a Network object with a simple full graph (K5). 
+Vertices are initially placed randomly. Graph is visualized using pylabs 
+matplotlib. NetworkOptimization class is not needed because we do not apply any 
+layout optimization method in this example.
+
+`network-constructor.py`_
+
+.. literalinclude:: code/network-constructor.py
+
+Executing the above script pops-up a pylab window with the following graph 
+drawing:
+
+.. image:: files/network-K5-random.png
+
+Network layout optimization
+===========================
+
+This example demonstrates how to optimize network layout using one of included 
+algorithms.
+
+part of `network-optimization.py`_
+
+.. literalinclude:: code/network-optimization.py
+    :lines: 12-16
+    
+The following optimization algorithms are supported:
+
+* .random()
+* .fruchtermanReingold(steps, temperature, coolingFactor=Default, hiddenNodes=[], weighted=False)
+* .radialFruchtermanReingold(center, steps, temperature)
+* .circularOriginal()
+* .circularRandom()
+* .circularCrossingReduction()
+
+Spring forces layout optimization is the result of the above script:
+
+.. image:: files/network-K5-fr.png
+
+Reading and saving a network
+============================
+
+This example demonstrates reading a network. Network class can read or write 
+Pajek (.net) or GML file format.
+
+`network-read.py`_ (uses: `K5.net`_):
+
+.. literalinclude:: code/network-read.py
+    :lines: 4-5
+
+Visualize a network in NetExplorer widget
+=========================================
+
+This example demonstrates how to display a network in NetExplorer.
+
+part of `network-widget.py`_
+
+.. literalinclude:: code/network-widget.py
+    :lines: 10-16
+    
+.. image:: files/network-explorer.png
+    :width: 100%
+
+.. _network-constructor.py: code/network-constructor.py
+.. _network-optimization.py: code/network-optimization.py
+.. _network-read.py: code/network-read.py
+.. _K5.net: code/K5.net
+.. _network-widget.py: code/network-widget.py
+
 """
 import random
 import os
@@ -55,7 +132,8 @@ class Network(orangeom.Network):
         Coordinates for all vertices. They are initialized to random positions. 
         You can modify them manually or use one of the optimization algorithms. 
         Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
-       
+    
+    
     .. attribute:: items
    
         ExampleTable with information about vertices. Number of rows should 
@@ -77,7 +155,8 @@ class Network(orangeom.Network):
     .. method:: fromDistanceMatrix(matrix, lower, upper, kNN=0):
         
         Creates edges between vertices with the distance within given 
-        threshold. The .
+        threshold. The DistanceMatrix dimension should equal the number of 
+        vertices.
         
         :param matrix: number of objects in a matrix must match the number 
             of vertices in a network.
@@ -89,6 +168,22 @@ class Network(orangeom.Network):
         :param kNN: specifies the minimum number of closest vertices to be 
             connected.
         :type kNN: int
+        
+    .. method:: hideVertices(vertices)
+        
+        Remove vertices from optimize list
+        
+    .. method:: showVertices(vertices)
+    
+        Add vertices to optimize list
+        
+    .. method:: showAll()
+    
+        Add all vertices to optimize list
+        
+    .. method:: getVisible()
+    
+        Return optimize list
     
     """
     
@@ -287,8 +382,57 @@ class Network(orangeom.Network):
 
 class NetworkOptimization(orangeom.NetworkOptimization):
     
-    """main class for performing network layout optimization. Network structure 
-    is defined in network.Network class.
+    """Perform network layout optimization. Network structure is defined in 
+    :obj:Orange.network.Network class.
+    
+    :param network: Network to optimize
+    :type network: Orange.network.Network
+    
+    .. attribute:: graph
+    
+    Holds the :obj:`Orange.network.Network` object.
+    
+    .. method:: random()
+    
+    Random layout optimization.
+    
+    .. method:: fruchtermanReingold(steps=100, temperature=1000, coolFactor=default, hiddenNodes=[], weighted=False) 
+        
+    Fruchterman-Reingold spring layout optimization. Set number of iterations 
+    with argument steps, start temperature with temperature (for example: 1000) 
+    and set list of hidden nodes with argument hidden_nodes.    
+        
+    .. method:: radialFruchtermanReingold(center, steps=100, temperature=1000)
+    
+    Radial Fruchterman-Reingold spring layout optimization. Set center node 
+    with attribute center, number of iterations with argument steps and start 
+    temperature with temperature (for example: 1000).
+    
+    .. method:: circularOriginal()
+    
+    Circular layout optimization based on original order.
+    
+    .. method:: circularRandom()
+    
+    Circular layout optimization based on random order.
+    
+    .. method:: circularCrossingReduction()
+    
+    Circular layout optimization (Michael Baur, Ulrik Brandes) with crossing 
+    reduction.
+    
+    .. method:: closestVertex(x, y)
+    
+    Return the closest vertex to (x, y) coordinate.  
+    
+    .. method:: vertexDistances(x, y)
+    
+    Return distances (list of (distance, vertex) tuples) of all vertices to 
+    the given coordinate.
+    
+    .. method:: getVerticesInRect(x1, y1, x2, y2)
+    
+    Return a list of all vertices in given rectangle.
     
     """
     
@@ -307,7 +451,17 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.vertexDistance = None
         self.mds = None
         
-    def computeForces(self):
+    def setNetwork(network):
+        """Set the network object for layout optimization.
+    
+        :param network: network object for layout optimization
+        :type network: Orange.network.Network
+        
+        """
+        self.setGraph(network)
+        
+    def _computeForces(self):
+        """Compute forces for each vertex for force vector visualization."""
         n = self.graph.nVertices
         vertices = set(range(n))
         e_avg = 0
@@ -349,6 +503,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return rv
     
     def collapse(self):
+        """Experimental method to group cliques to meta nodes."""
         if len(self.graph.getNodes(1)) > 0:
             nodes = list(set(range(self.graph.nVertices)) - \
                          set(self.graph.getNodes(1)))
@@ -407,6 +562,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 self.coors[1][len(nodescomp)] = y
             
     def getVars(self):
+        """Return a list of features in network items."""
         vars = []
         if (self.graph != None):
             if hasattr(self.graph, "items"):
@@ -419,6 +575,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return vars
     
     def getEdgeVars(self):
+        """Return a list of features in network links."""
         vars = []
         if (self.graph != None):
             if hasattr(self.graph, "links"):
@@ -432,16 +589,26 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']
     
     def getData(self, i, j):
+        import warnings
+        warnings.warn("Deprecated.", DeprecationWarning)
         if self.graph.items is orange.ExampleTable:
             return self.data[i][j]
         elif self.graph.data is type([]):
             return self.data[i][j]
         
     def nVertices(self):
+        import warnings
+        warnings.warn("Deprecated.", DeprecationWarning)
         if self.graph:
             return self.graph.nVertices
         
-    def rotateVertices(self, components, phi):   
+    def rotateVertices(self, components, phi): 
+        """Rotate network components for a given angle.
+        
+        :param components: list of network components
+        :type components: list of lists of vertex indices
+        :param phi: list of component rotation angles (unit: radians)
+        """  
         #print phi 
         for i in range(len(components)):
             if phi[i] == 0:
@@ -896,7 +1063,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                                   mdsFromCurrentPos=mdsFromCurrentPos)
 
     def saveNetwork(self, fn):
-        print "This method is deprecated. Use orngNetwork.Network.saveNetwork"
+        import warnings
+        warnings.warn("Deprecated. Use Orange.network.Network.saveNetwork", 
+                      DeprecationWarning)
         name = ''
         try:
             root, ext = os.path.splitext(fn)
@@ -970,7 +1139,9 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return 0
     
     def readNetwork(self, fn, directed=0):
-        print "This method is deprecated. Use orngNetwork.Network.readNetwork"
+        import warnings
+        warnings.warn("Deprecated. Use Orange.network.Network.readNetwork", 
+                      DeprecationWarning)
         network = Network(1,directed)
         net = network.readPajek(fn, directed)
         self.setGraph(net)
@@ -978,7 +1149,13 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return net
     
 class NetworkClustering():
-
+    
+    """A collection of algorithms for community detection in graphs.
+    
+    :param network: network data for community detection
+    :type network: Orange.network.Network
+    """ 
+    
     random.seed(0)
     
     def __init__(self, network):
@@ -986,7 +1163,15 @@ class NetworkClustering():
         
         
     def labelPropagation(self, results2items=0, resultHistory2items=0):
-        """Label propagation method from Raghavan et al., 2007"""
+        """Label propagation method from Raghavan et al., 2007
+        
+        :param results2items: append a new feature result to items 
+            (Orange.data.Table)
+        :type results2items: bool
+        :param resultHistory2items: append new features result to items 
+            (Orange.data.Table) after each iteration of the algorithm
+        :type resultHistory2items: bool
+        """
         
         vertices = range(self.net.nVertices)
         labels = range(self.net.nVertices)
