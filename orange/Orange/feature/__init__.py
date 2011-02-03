@@ -1,5 +1,4 @@
 """
-
 .. index:: feature
 
 Feature scoring, selection, discretization, continuzation, imputation.
@@ -10,12 +9,8 @@ Scoring
 
 .. index:: feature scoring
 
-.. autoclass:: scoring
+.. automodule:: Orange.feature.scoring
    :members:
-
-Examples
-========
-
 
 ==================
 Selection
@@ -23,12 +18,7 @@ Selection
 
 .. index:: feature selection
 
-.. autoclass:: selection
-   :members:
-
-Examples
-========
-
+.. automodule:: Orange.feature.selection
 
 ==================
 Discretization
@@ -36,12 +26,8 @@ Discretization
 
 .. index:: discretization
 
-.. autoclass:: discretization
+.. automodule:: Orange.feature.discretization
    :members:
-
-Examples
-========
-
 
 ==================
 Continuization
@@ -49,12 +35,8 @@ Continuization
 
 .. index:: continuization
 
-.. autoclass:: continuization
+.. automodule:: Orange.feature.continuization
    :members:
-
-Examples
-========
-
 
 ==================
 Imputation
@@ -62,11 +44,8 @@ Imputation
 
 .. index:: imputation
 
-.. autoclass:: imputation
+.. automodule:: Orange.feature.imputation
    :members:
-
-Examples
-========
 
 """
 

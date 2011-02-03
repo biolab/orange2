@@ -17,6 +17,7 @@ def entropyDiscretization(data):
   Arguments: data
   Returns:   table of examples with discretized atributes. Attributes that are
              categorized to a single value (constant) are removed.
+
   """
   orange.setrandseed(0)
   tablen=orange.Preprocessor_discretize(data, method=orange.EntropyDiscretization())
