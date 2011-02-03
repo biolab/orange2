@@ -288,7 +288,7 @@ class Network(orangeom.Network):
 class NetworkOptimization(orangeom.NetworkOptimization):
     
     """main class for performing network layout optimization. Network structure 
-    is defined in orangeom.Network class.
+    is defined in network.Network class.
     
     """
     
