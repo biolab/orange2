@@ -20,7 +20,7 @@ Contents:
    orange.classification.tree
    Orange.classification.logreg
    Orange.classification.rules
-   Orange.classification.knn
+   orange.classification.knn
 
    Orange.ensemble
 
