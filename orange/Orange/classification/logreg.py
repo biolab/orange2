@@ -813,7 +813,7 @@ def StepWiseFSS(table=None, **kwds):
     :obj:`StepWiseFSS_class` with all parameters set is returned.
 
     :param table: data set
-    :type table: Orange.data.table
+    :type table: Orange.data.Table
 
     :param addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then features is added if its P is lower than 0.2)
     :type addCrit: float
@@ -858,7 +858,7 @@ def getLikelihood(fitter, examples):
 
 
 class StepWiseFSS_class(orange.Learner):
-  """ Performs stepwise logistic regression and returns a list of the
+  """ Perform stepwise logistic regression and return a list of the
   most "informative" features. Each step of the algorithm is composed
   of two parts. The first is backward elimination, where each already
   chosen feature is tested for a significant contribution to the overall
