@@ -36,6 +36,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
         
         os.chdir(dir)
         outputsdir = "%s/results/%s/%s" % (regtestdir, module, dir)
+        print "DIR", dir
         if not os.path.exists(outputsdir):
             os.mkdir(outputsdir)
 
@@ -109,7 +110,7 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
                         os.remove(remname)
                     
                 titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
-                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, str(titerations), outputsdir)
+                os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest_one.py", name, str(titerations), outputsdir)
                 
                 result = open("xtest1_report", "rt").readline().rstrip() or "crash"
                 error_status = max(error_status, states.index(result))
@@ -176,8 +177,9 @@ def main(argv):
         print "Error: %s is wrong name of the module, should be in [orange|obi|text]" % module
         sys.exit(1)
     
-    test_scripts(command=="test", command=="report" or (command=="report-html" and command or False), module=module, root_directory=root, 
-                test_files=test_files, directories=directories)
+    test_scripts(command=="test", command=="report" or (command=="report-html" and command or False), 
+                 module=module, root_directory=root, 
+                 test_files=test_files, directories=directories)
     # sys.exit(error_status)
     
 main(sys.argv[1:])
