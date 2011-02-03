@@ -419,7 +419,7 @@ def kmeans_init_diversity(data, k, distfun):
     return seeds
 
 class KMeans_init_hierarchicalClustering():
-    """Is actually a class that returns an clustering initialization function that performs hierarhical clustering, uses it to infer k clusters, and computes a list of cluster-based data centers."""
+    """A class that returns an clustering initialization function that performs hierarhical clustering, uses it to infer k clusters, and computes a list of cluster-based data centers."""
 
     def __init__(self, n=100):
         """
@@ -463,15 +463,31 @@ class KMeans:
     requirements. The principal disadvantage is the dependence of results 
     on the selection of initial set of centroids.
 
-    :var k: Number of clusters.
-    :var data: Instances to cluster.
-    :var centroids: Current set of centroids. 
-    :var scoring: Current clustering score.
-    :var iteration: Current clustering iteration.
-    :var clusters:  A list of cluster indexes. An i-th element provides an
-    index to a centroid associated with i-th data instance from the input 
-    data set. 
+    .. attribute:: k
 
+        Number of clusters.
+
+    .. attribute:: data
+
+        Instances to cluster.
+
+    .. attribute:: centroids
+
+        Current set of centroids. 
+
+    .. attribute:: scoring
+
+        Current clustering score.
+
+    .. attribute:: iteration
+
+        Current clustering iteration.
+
+    .. attribute:: clusters
+
+        A list of cluster indexes. An i-th element provides an
+        index to a centroid associated with i-th data instance from the input 
+        data set. 
     """
 
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
