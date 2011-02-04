@@ -183,6 +183,13 @@ provided by Orange. If not, you can skip the remainder of this page.
 .. autoclass:: ExperimentResults
     :members:
 
+References
+==========
+
+Salzberg, S. L. (1997). On comparing classifiers: Pitfalls to avoid
+and a recommended approach. Data Mining and Knowledge Discovery 1,
+pages 317-328.
+
 """
 
 import Orange
@@ -266,9 +273,50 @@ class TestedExample:
             self.probabilities[i] = list(aprob)
 
 class ExperimentResults(object):
-    """ ExperimentResults stores results of one or more repetitions of
+    """
+    ``ExperimentResults`` stores results of one or more repetitions of
     some test (cross validation, repeated sampling...) under the same
     circumstances.
+
+    .. attribute:: results
+
+        A list of instances of TestedExample, one for each example in
+        the dataset.
+
+    .. attribute:: classifiers
+
+        A list of classifiers, one element for each repetition (eg
+        fold). Each element is a list of classifiers, one for each
+        learner. This field is used only if storing is enabled by
+        ``storeClassifiers=1``.
+
+    .. attribute:: numberOfIterations
+
+        Number of iterations. This can be the number of folds
+        (in cross validation) or the number of repetitions of some
+        test. ``TestedExample``'s attribute ``iterationNumber`` should
+        be in range ``[0, numberOfIterations-1]``.
+
+    .. attribute:: numberOfLearners
+
+        Number of learners. Lengths of lists classes and probabilities
+        in each :obj:`TestedExample` should equal ``numberOfLearners``.
+
+    .. attribute:: loaded
+
+        If the experimental method supports caching and there are no
+        obstacles for caching (such as unknown random seeds), this is a
+        list of boolean values. Each element corresponds to a classifier
+        and tells whether the experimental results for that classifier
+        were computed or loaded from the cache.
+
+    .. attribute:: weights
+
+        A flag telling whether the results are weighted. If ``False``,
+        weights are still present in ``TestedExamples``, but they are
+        all ``1.0``. Clear this flag, if your experimental procedure
+        ran on weighted testing examples but you would like to ignore
+        the weights in statistics.
 
     """
     def __init__(self, iterations, classifierNames, classValues, weights, baseClass=-1, **argkw):
@@ -305,6 +353,38 @@ class ExperimentResults(object):
         return not 0 in self.loaded                
                 
     def saveToFiles(self, learners, filename):
+        """
+        Saves and load testing results. ``learners`` is a list of learners and
+        ``filename`` is a template for the filename. The attribute loaded is
+        initialized so that it contains 1's for the learners whose data
+        was loaded and 0's for learners which need to be tested. The
+        function returns 1 if all the files were found and loaded,
+        and 0 otherwise.
+
+        The data is saved in a separate file for each classifier. The
+        file is a binary pickle file containing a list of tuples
+        ``((x.actualClass, x.iterationNumber), (x.classes[i],
+        x.probabilities[i]))`` where ``x`` is a :obj:`TestedExample`
+        and ``i`` is the index of a learner.
+
+        The file resides in the directory ``./cache``. Its name consists
+        of a template, given by a caller. The filename should contain
+        a %s which is replaced by name, shortDescription, description,
+        func_doc or func_name (in that order) attribute of the learner
+        (this gets extracted by orngMisc.getobjectname). If a learner
+        has none of these attributes, its class name is used.
+
+        Filename should include enough data to make sure that it
+        indeed contains the right experimental results. The function
+        :obj:`learningCurve`, for example, forms the name of the file
+        from a string ``"{learningCurve}"``, the proportion of learning
+        examples, random seeds for cross-validation and learning set
+        selection, a list of preprocessors' names and a checksum for
+        examples. Of course you can outsmart this, but it should suffice
+        in most cases.
+
+        """
+
         for i in range(len(learners)):
             if self.loaded[i]:
                 continue
