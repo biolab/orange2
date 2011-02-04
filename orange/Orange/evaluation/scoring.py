@@ -5,7 +5,8 @@
 This module contains various measures of quality for classification and
 regression. Most functions require an argument named res, an instance of
 :class:`Orange.evaluation.testing.ExperimentResults` as computed by
-functions from orngTest and which contains predictions obtained through
+functions from Orange.evaluation.testing and which contains predictions
+obtained through
 cross-validation, leave one-out, testing on training data or test set examples.
 
 ==============
@@ -49,6 +50,7 @@ So, let's compute all this in part of
 (`statExamples.py`_, uses `voting.tab`_ and `vehicle.tab`_) and print it out:
 
 .. literalinclude:: code/statExample1.py
+   :lines: 13-
 
 .. _voting.tab: code/voting.tab
 .. _vehicle.tab: code/vehicle.tab
@@ -337,7 +339,7 @@ We shall use the following code to prepare suitable experimental results::
     ri2 = orange.MakeRandomIndices2(voting, 0.6)
     train = voting.selectref(ri2, 0)
     test = voting.selectref(ri2, 1)
-    res1 = orngTest.learnAndTestOnTestData(learners, train, test)
+    res1 = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
 
 
 .. autofunction:: AUCWilcoxon
@@ -420,11 +422,12 @@ Utility Functions
 
 """
 
-import statc
+import statc, operator, math
 from operator import add
 import numpy
 
-import orngMisc, orngTest
+import Orange
+
 
 #### Private stuff
 
@@ -457,7 +460,7 @@ def splitByIterations(res):
     if res.numberOfIterations < 2:
         return [res]
         
-    ress = [orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    ress = [Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
             for i in range(res.numberOfIterations)]
     for te in res.results:
         ress[te.iterationNumber].results.append(te)
@@ -704,7 +707,8 @@ def CA(res, reportSE = False, **argkw):
     will contain tuples with accuracies and standard errors.
     
     If results are from multiple repetitions of experiments (like those
-    returned by orngTest.crossValidation or orngTest.proportionTest) the
+    returned by Orange.evaluation.testing.crossValidation or
+    Orange.evaluation.testing.proportionTest) the
     standard error (SE) is estimated from deviation of classification
     accuracy accross folds (SD), as SE = SD/sqrt(N), where N is number
     of repetitions (e.g. number of folds).
@@ -1592,7 +1596,7 @@ def TCthresholdlAverageROC(ROCcurves, samples = 10):
 def computeCalibrationCurve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
-    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
     for te in res.results:
         mres.results.append( te )
 
@@ -1654,7 +1658,7 @@ def computeCalibrationCurve(res, classIndex=-1):
 def computeLiftCurve(res, classIndex=-1):
     import corn
     ## merge multiple iterations into one
-    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    mres = Orange.evaluation.testing.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
     for te in res.results:
         mres.results.append( te )
 
@@ -2077,7 +2081,7 @@ def WilcoxonPairs(res, avgranks, stat=CA):
 
 
 def plotLearningCurveLearners(file, allResults, proportions, learners, noConfidence=0):
-    plotLearningCurve(file, allResults, proportions, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], noConfidence)
+    plotLearningCurve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], noConfidence)
     
 def plotLearningCurve(file, allResults, proportions, legend, noConfidence=0):
     import types
@@ -2129,7 +2133,7 @@ def printSingleROCCurveCoordinates(file, curve):
 
 
 def plotROCLearners(file, curves, learners):
-    plotROC(file, curves, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))])
+    plotROC(file, curves, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))])
     
 def plotROC(file, curves, legend):
     import types
@@ -2160,7 +2164,7 @@ def plotROC(file, curves, legend):
 
 
 def plotMcNemarCurveLearners(file, allResults, proportions, learners, reference=-1):
-    plotMcNemarCurve(file, allResults, proportions, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], reference)
+    plotMcNemarCurve(file, allResults, proportions, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], reference)
 
 def plotMcNemarCurve(file, allResults, proportions, legend, reference=-1):
     if reference<0:
@@ -2274,7 +2278,7 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
     del file
 
 def legendLearners2PiCTeX(file, learners, **options):
-  return apply(legend2PiCTeX, (file, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
+  return apply(legend2PiCTeX, (file, [Orange.misc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
     
 def legend2PiCTeX(file, legend, **options):
     import types
