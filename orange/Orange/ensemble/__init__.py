@@ -6,26 +6,35 @@ Module orngEnsemble implements Breiman's bagging and Random Forest,
 and Freund and Schapire's boosting algorithms.
 
 
-==================
+=======
 Bagging
-==================
+=======
 
 .. index:: ensemble bagging
 .. autoclass:: Orange.ensemble.bagging.BaggedLearner
    :members:
    :show-inheritance:
 
-==================
+.. autoclass:: Orange.ensemble.bagging.BaggedClassifier
+   :members:
+   :show-inheritance:
+
+========
 Boosting
-==================
+========
 
 .. index:: ensemble boosting
+
 .. autoclass:: Orange.ensemble.boosting.BoostedLearner
   :members:
   :show-inheritance:
 
+.. autoclass:: Orange.ensemble.boosting.BoostedClassifier
+   :members:
+   :show-inheritance:
+
 Example
-========
+=======
 Let us try boosting and bagging on Lymphography data set and use TreeLearner
 with post-pruning as a base learner. For testing, we use 10-fold cross
 validation and observe classification accuracy.
@@ -46,12 +55,16 @@ Running this script, we may get something like::
         bagged tree: 0.790
 
 
-=======
+=============
 Random Forest
-=======
+=============
 
 .. index:: ensemble randomforest
 .. autoclass:: Orange.ensemble.forest.RandomForestLearner
+  :members:
+  :show-inheritance:
+
+.. autoclass:: Orange.ensemble.forest.RandomForestClassifier
   :members:
   :show-inheritance:
 
@@ -81,7 +94,7 @@ brier score and area under ROC curve::
 Perhaps the sole purpose of the following example is to show how to access
 the individual classifiers once they are assembled into the forest, and to 
 show how we can assemble a tree learner to be used in random forests. The 
-tree induction uses an feature subset split constructor, which we have 
+tree induction uses the feature subset split constructor, which we have 
 borrowed from :class:`Orange.ensemble` and from which we have requested the
 best feature for decision nodes to be selected from three randomly 
 chosen features.
@@ -105,11 +118,11 @@ non-myopic measure of attribute importance.
 
 Assessing relevance of features with random forests is based on the
 idea that randomly changing the value of an important feature greatly
-affects example's classification while changing the value of an
-unimportant feature doen't affect it much. Implemented algorithm
-accumulates feature scores over given number of trees. Importances of
+affects instance's classification while changing the value of an
+unimportant feature does not affect it much. Implemented algorithm
+accumulates feature scores over given number of trees. Importance of
 all features for a single tree are computed as: correctly classified OOB
-examples minus correctly classified OOB examples when an feature is
+instances minus correctly classified OOB instances when the feature is
 randomly shuffled. The accumulated feature scores are divided by the
 number of used trees and multiplied by 100 before they are returned.
 
@@ -117,18 +130,19 @@ number of used trees and multiplied by 100 before they are returned.
   :members:
 
 Computation of feature importance with random forests is rather slow. Also, 
-importances for all features need to be considered simultaneous. Since we
+importances for all features need to be considered simultaneously. Since we
 normally compute feature importance with random forests for all features in
 the dataset, MeasureAttribute_randomForests caches the results. When it 
 is called to compute a quality of certain feature, it computes qualities
 for all features in the dataset. When called again, it uses the stored 
-results if the domain is still the same and the example table has not
-changed (this is done by checking the example tables version and is
-not foolproof; it won't detect if you change values of existing examples,
-but will notice adding and removing examples; see the page on 
+results if the domain is still the same and the data table has not
+changed (this is done by checking the data table's version and is
+not foolproof; it will not detect if you change values of existing instances,
+but will notice adding and removing instances; see the page on 
 :class:`Orange.data.Table` for details).
 
-Caching will only have an effect if you use the same instance for all
+Caching will only have an effect if you use the same
+:class:`Orange.ensemble.forest.MeasureAttribute_randomForests` object for all
 features in the domain.
 
 `ensemble-forest-measure.py`_ (uses `iris.tab`_)

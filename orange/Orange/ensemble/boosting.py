@@ -4,46 +4,34 @@ import orngMisc
 
 _inf = 100000
 
-#def BoostedLearner(learner, examples=None, t=10, name='AdaBoost.M1'):
-#    learner = BoostedLearnerClass(learner, t, name)
-#    if examples:
-#        return learner(examples)
-#    else:
-#        return learner
-
 class BoostedLearner(orange.Learner):
     """
     Instead of drawing a series of bootstrap samples from the training set,
-    bootstrap maintains a weight for each instance. When classifier is 
+    bootstrap maintains a weight for each instance. When a classifier is 
     trained from the training set, the weights for misclassified instances 
-    are increased. Just like in bagged learner, the class is decided based 
+    are increased. Just like in a bagged learner, the class is decided based 
     on voting of classifiers, but in boosting votes are weighted by accuracy 
     obtained on training set.
 
     BoostedLearner is an implementation of AdaBoost.M1 (Freund and Shapire, 
     1996). From user's viewpoint, the use of the BoostedLearner is similar to 
     that of BaggedLearner. The learner passed as an argument needs to deal 
-    with example weights.
+    with instance weights.
     
-    :param learner: learner to be bagged.
+    :param learner: learner to be boosted.
     :type learner: :class:`Orange.core.Learner`
-    :param examples: ff examples are passed to BoostedLearner,
-        this returns a BoostedClassifier, that is, creates t 
-        classifiers using learner and a subset of examples, 
-        as appropriate for AdaBoost.M1 (default: None).
-    :type examples: :class:`Orange.data.Table`
-    :param t: number of boosted classifiers created from the example set.
+    :param t: number of boosted classifiers created from the instance set.
     :type t: int
-    :param name: name of the learner.
-    :type name: string
+    :param name: name of the resulting learner.
+    :type name: str
     :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
             :class:`Orange.ensemble.boosting.BoostedLearner`
     """
-    def __new__(cls, learner, examples=None, weightId=None, **kwargs):
+    def __new__(cls, learner, instances=None, weightId=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
-        if examples is not None:
+        if instances is not None:
             self.__init__(self, learner, **kwargs)
-            return self.__call__(examples, weightId)
+            return self.__call__(instances, weightId)
         else:
             return self
 
@@ -53,13 +41,16 @@ class BoostedLearner(orange.Learner):
         self.learner = learner
 
     def __call__(self, instances, origWeight = 0):
-        """Learn from the given table of data instances.
+        """
+        Learn from the given table of data instances.
         
         :param instances: data instances to learn from.
         :type instances: Orange.data.Table
         :param origWeight: weight.
         :type origWeight: int
-        :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier`"""
+        :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier`
+        
+        """
         import math
         weight = orange.newmetaid()
         if origWeight:
@@ -103,13 +94,46 @@ class BoostedLearner(orange.Learner):
             classVar=instances.domain.classVar)
 
 class BoostedClassifier(orange.Classifier):
-    def __init__(self, **kwds):
+    """
+    A classifier that uses a boosting technique. Usually the learner
+    (:class:`Orange.ensemble.boosting.BoostedLearner`) is used to construct the
+    classifier.
+    
+    When constructing the classifier manually, the following parameters can
+    be passed:
+
+    :param classifiers: a list of boosted classifiers.
+    :type classifiers: list
+    
+    :param name: name of the resulting classifier.
+    :type name: str
+    
+    :param classVar: the class attribute.
+    :type classVar: :class:`Orange.data.feature.Feature`
+    
+    """
+
+    def __init__(self, classifiers, name, classVar, **kwds):
+        self.classifiers = classifiers
+        self.name = name
+        self.classVar = classVar
         self.__dict__.update(kwds)
 
-    def __call__(self, example, resultType = orange.GetValue):
+    def __call__(self, instance, resultType = orange.GetValue):
+        """
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
         votes = [0.] * len(self.classVar.values)
         for c, e in self.classifiers:
-            votes[int(c(example))] += e
+            votes[int(c(instance))] += e
         index = orngMisc.selectBestIndex(votes)
         # TODO
         value = Orange.data.Value(self.classVar, index)

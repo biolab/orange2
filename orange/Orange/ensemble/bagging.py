@@ -4,50 +4,37 @@ import random
 import Orange.core as orange
 import Orange
 
-#######################################################################
-# Bagging
-
-#def BaggedLearner(learner=None, t=10, name='Bagging', examples=None):
-#    learner = BaggedLearnerClass(learner, t, name)
-#    if examples:
-#        return learner(examples)
-#    else:
-#        return learner
 
 class BaggedLearner(orange.Learner):
     """
     BaggedLearner takes a learner and returns a bagged learner, which is 
     essentially a wrapper around the learner passed as an argument. If 
-    examples are passed in arguments, BaggedLearner returns a bagged 
-    classifiers. Both learner and classifier then behave just like any 
+    instances are passed in arguments, BaggedLearner returns a bagged 
+    classifier. Both learner and classifier then behave just like any 
     other learner and classifier in Orange.
 
-    Bagging, in essence, takes a training data and a learner, and builds t 
-    classifiers each time presenting a learner a bootstrap sample from the 
-    training data. When given a test example, classifiers vote on class, 
-    and a bagged classifier returns a class with a highest number of votes. 
+    Bagging, in essence, takes training data and a learner, and builds *t* 
+    classifiers, each time presenting a learner a bootstrap sample from the 
+    training data. When given a test instance, classifiers vote on class, 
+    and a bagged classifier returns a class with the highest number of votes. 
     As implemented in Orange, when class probabilities are requested, these 
     are proportional to the number of votes for a particular class.
     
     :param learner: learner to be bagged.
     :type learner: :class:`Orange.core.Learner`
-    :param examples: if examples are passed to BaggedLearner, this returns
-        a BaggedClassifier, that is, creates t classifiers using learner 
-        and a subset of examples, as appropriate for bagging.
-    :type examples: :class:`Orange.data.Table`
     :param t: number of bagged classifiers, that is, classifiers created
-        when examples are passed to bagged learner.
+        when instances are passed to bagged learner.
     :type t: int
-    :param name: name of the learner.
-    :type name: string
+    :param name: name of the resulting learner.
+    :type name: str
     :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier` or 
             :class:`Orange.ensemble.bagging.BaggedLearner`
     """
-    def __new__(cls, learner, examples=None, weightId=None, **kwargs):
+    def __new__(cls, learner, instances=None, weightId=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
-        if examples is not None:
+        if instances is not None:
             self.__init__(self, learner, **kwargs)
-            return self.__call__(examples, weightId)
+            return self.__call__(instances, weightId)
         else:
             return self
         
@@ -57,13 +44,15 @@ class BaggedLearner(orange.Learner):
         self.learner = learner
 
     def __call__(self, instances, weight=0):
-        """Learn from the given table of data instances.
+        """
+        Learn from the given table of data instances.
         
         :param instances: data instances to learn from.
         :type instances: Orange.data.Table
         :param weight: ID of meta attribute with weights of instances
         :type weight: int
         :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier`
+        
         """
         r = random.Random()
         r.seed(0)
@@ -81,14 +70,47 @@ class BaggedLearner(orange.Learner):
                     classVar=instances.domain.classVar)
 
 class BaggedClassifier(orange.Classifier):
-    def __init__(self, **kwds):
+    """
+    A classifier that uses a bagging technique. Usually the learner
+    (:class:`Orange.ensemble.bagging.BaggedLearner`) is used to construct the
+    classifier.
+    
+    When constructing the classifier manually, the following parameters can
+    be passed:
+
+    :param classifiers: a list of boosted classifiers.
+    :type classifiers: list
+    
+    :param name: name of the resulting classifier.
+    :type name: str
+    
+    :param classVar: the class attribute.
+    :type classVar: :class:`Orange.data.feature.Feature`
+
+    """
+
+    def __init__(self, classifiers, name, classVar, **kwds):
+        self.classifiers = classifiers
+        self.name = name
+        self.classVar = classVar
         self.__dict__.update(kwds)
 
-    def __call__(self, example, resultType = orange.GetValue):
+    def __call__(self, instance, resultType = orange.GetValue):
+        """
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
         if self.classVar.varType == Orange.data.Type.Discrete:
             freq = [0.] * len(self.classVar.values)
             for c in self.classifiers:
-                freq[int(c(example))] += 1
+                freq[int(c(instance))] += 1
             index = freq.index(max(freq))
             value = Orange.data.Value(self.classVar, index)
             if resultType == orange.GetValue:
@@ -100,7 +122,7 @@ class BaggedClassifier(orange.Classifier):
             else:
                 return (value, freq)
         elif self.classVar.varType ==Orange.data.Type.Continuous:
-            votes = [c(example, orange.GetBoth if resultType==\
+            votes = [c(instance, orange.GetBoth if resultType==\
                 orange.GetProbabilities else resultType) \
                 for c in self.classifiers]
             wsum = float(len(self.classifiers))
