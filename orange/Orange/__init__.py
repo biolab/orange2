@@ -63,3 +63,8 @@ import evaluation
 import evaluation.scoring
 
 import cluster
+
+import misc
+import misc.counters
+import misc.render
+import misc.selection
