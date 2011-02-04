@@ -18,6 +18,7 @@ help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html      to make standalone HTML files"
 	@echo "  dirhtml   to make HTML files named index.html in directories"
+	@echo "  epub	   to make epub file"
 	@echo "  pickle    to make pickle files"
 	@echo "  json      to make JSON files"
 	@echo "  htmlhelp  to make HTML files and a HTML help project"
@@ -28,10 +29,16 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _* *.html .doctrees .buildinfo searchindex.js
+	-rm -rf _* *.html html .doctrees .buildinfo searchindex.js *.epub epub
+
+epub:
+	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) epub
+	mv epub/*.epub .
+	@echo
+	@echo "Build finished. The epub pages are in "
 
 html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) html
 	@echo
 	@echo "Build finished. The HTML pages are in .. ."
 
