@@ -104,9 +104,9 @@ This way of representing the itemsets is not very programmer-friendly, but it is
 
 .. _non-sparse-examples:
 
-=================
+===================
 Non-sparse examples
-=================
+===================
 
 The other algorithm for association rules provided by Orange (AssociationRulesInducer) is optimized for non-sparse examples in the usual Orange form. Each example is described by values of a fixed set of features. Unknown values are ignored, while values of features are not (as opposite to the above-described algorithm for sparse rules). In addition, the algorithm can be directed to search only for classification rules, in which the only feature on the right-hand side is the class Feature.
 
