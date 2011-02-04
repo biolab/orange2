@@ -182,7 +182,7 @@ the feature values; in Orange, these are derived from
     it on-the-fly. For instance, to measure the quality of feature
     "tear_rate", you could write simply::
 
-        >>> print orange.MeasureAttribute_info("tear_rate", data)
+        >>> print Orange.feature.scoring.Info("tear_rate", data)
         0.548794984818
 
     You shouldn't use this shortcut with ReliefF, though; see the explanation

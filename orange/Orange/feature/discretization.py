@@ -1,3 +1,85 @@
+"""
+
+This module implements some functions and classes that can be used for
+categorization of continuous features. Besides several general classes that
+can help in this task, we also provide a function that may help in
+entropy-based discretization (Fayyad & Irani), and a wrapper around classes for
+categorization that can be used for learning.
+
+.. method:: entropyDiscretization(table)
+
+    Take the classified data set (table) and categorize all continuous
+    features using the entropy based discretization 
+    :obj:`EntropyDiscretization`. After categorization, 
+    features that were categorized to a single interval (to a constant value) 
+    are removed from table. Returns the data set that includes all categorical
+    and discretized continuous features from the original data table.
+
+.. class:: EntropyDiscretization
+
+    This is simple wrapper class around the function
+    :obj:`entropyDiscretization`. Once invoked it would either create an
+    object that can be passed a data set for discretization, or if invoked
+    with the data set, would return a discretized data set::
+
+        discretizer = Orange.feature.dicretization.EntropyDiscretization()
+        disc_data = discretizer(data)
+        another_disc_data = Orange.feature.dicretization.EntropyDiscretization(data)
+
+.. class:: DiscretizedLearner([baseLearner[, examples[, discretizer[, name]]]])
+
+    :param baseLearner:
+    
+    :param instances:
+    
+    :param discretizer:
+    
+    :param name:
+
+<dt>DiscretizedLearner</dt>
+<index name="classes/DiscretizedLearner (in orngDisc)">
+<index name="classifiers/with discretization">
+
+This class allows to set an learner object, such that before learning a data 
+passed to a learner is discretized. In this way we can
+prepare an object that lears without giving it the data, and, for
+instance, use it in some standard testing procedure that repeats
+learning/testing on several data samples. Default procedure for
+discretization (<em>discretizer</em>) is
+<code>orngDisc.EntropyDiscretization</code>.  An example on how such
+learner is set and used in ten-fold cross validation is given
+below::
+
+    bayes = orange.BayesLearner()
+    disc = orange.Preprocessor_discretize(method=orange.EquiNDiscretization(numberOfIntervals=10))
+    dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')
+    dbayes2 = orngDisc.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)
+    results = orngEval.CrossValidation([dBayes], data)
+    classifier = orngDisc.DiscretizedLearner(bayes, examples=data)
+
+
+========
+Examples
+========
+
+A chapter on `feature subset selection <../ofb/o_fss.htm>`_ in Orange
+for Beginners tutorial shows the use of DiscretizedLearner. Other
+discretization classes from core Orange are listed in chapter on
+`categorization <../ofb/o_categorization.htm>`_ of the same tutorial.
+
+
+
+==========
+References
+==========
+
+* UM Fayyad and KB Irani. Multi-interval discretization of continuous valued
+  attributes for classification learning. In <em>Proceedings of the 13th
+  International Joint Conference on Artificial Intelligence</em>, pages
+  1022--1029, Chambery, France, 1993.
+
+"""
+
 import Orange.core as orange
 
 from Orange.core import \
