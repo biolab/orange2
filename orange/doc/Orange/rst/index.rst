@@ -7,8 +7,6 @@
 Orange Scripting Reference
 ##########################
 
-Contents:
-
 .. toctree::
    :maxdepth: 3
 
