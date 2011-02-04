@@ -1,17 +1,21 @@
 """
 
+Orange has several classes for computing and storing basic statistics about
+features, distributions and contingencies.
+ 
 =================
 Basic Statistics for Continuous Features
 =================
 
+The are two simple classes for computing basic statistics
+for continuous features, such as their minimal and maximal value
+or average: :class:`BasicAttrStat` holds the statistics for a single feature
+and :class:`DomainBasicAttrStat` is a container storing a list of instances of
+the above class for all features in the domain.
 
-.. class:: Orange.probability.distribution.BasicAttrStat
+.. class:: BasicAttrStat
 
-    Orange contains two simple classes for computing basic statistics
-    for continuous features, such as their minimal and maximal value
-    or average: BasicAttrStat holds the statistics for a single feature
-    and DomainBasicAttrStat holds the statistics for all features in the domain.
-
+    `BasicAttrStat` computes on-the fly statistics. 
 
     .. attribute:: variable
     
@@ -19,7 +23,7 @@ Basic Statistics for Continuous Features
 
     .. attribute:: min, max
 
-        Minimal and maximal feature value that was encountered
+        Minimal and maximal feature value encountered
         in the data table.
 
     .. attribute:: avg, dev
@@ -30,73 +34,60 @@ Basic Statistics for Continuous Features
 
         Number of instances for which the value was defined
         (and used in the statistics). If instances were weighted,
-        n is the sum of weights of those instances.
+        `n` is the sum of weights of those instances.
 
     .. attribute:: sum, sum2
 
         Weighted sum of values and weighted sum of
         squared values of this feature.
 
-    .. attribute:: holdRecomputation
+    ..
+        .. attribute:: holdRecomputation
+    
+            Holds recomputation of the average and standard deviation.
 
-        Holds recomputation of the average and standard deviation.
+    .. method:: add(value[, weight=1.0])
 
-    .. method:: add(value[, weight])
+        Adds a value to the statistics. Both arguments should be numbers.
 
-        Adds a value to the statistics. Both arguments should be numbers;
-        weight is optional, default is 1.0.
-        
-    .. method:: recompute()
+    ..
+        .. method:: recompute()
 
-        Recomputes the average and deviation.
+            Recomputes the average and deviation.
 
+    The class works as follows. Values are added by :obj:`add`, for each value
+    it checks and, if necessary, adjusts :obj:`min` and :obj:`max`, adds the value to
+    :obj:`sum` and its square to :obj:`sum2`. The weight is added to :obj:`n`.
 
-You most probably won't construct the class yourself, but instead call
-DomainBasicAttrStat to compute statistics for all continuous
-features in the dataset.
-
-Nevertheless, here's how the class works. Values are fed into add;
-this is usually done by DomainBasicAttrStat, but you can traverse the
-instances and feed the values in Python, if you want to. For each value
-it checks and, if necessary, adjusts min and max, adds the value to
-sum and its square to sum2. The weight is added to n. If holdRecomputation
-is false, it also computes the average and the deviation.
-If true, this gets postponed until recompute is called.
-It makes sense to postpone recomputation when using the class from C++,
-while when using it from Python, the recomputation will take much much
-less time than the Python interpreter, so you can leave it on.
-
-You can see that the statistics does not include the median or,
-more generally, any quantiles. That's because it only collects
-statistics that can be computed on the fly, without remembering the data.
-If you need quantiles, you will need to construct a ContDistribution.
+    The statistics does not include the median or any other statistics that can be computed on the fly, without remembering the data. Quantiles can be computed
+    by :obj:`ContDistribution`. !!!TODO
 
 
-.. _distributions-basic-stat: code/distributions-basic-stat.py
-part of `distributions-basic-stat`_ (uses monks-1.tab)
+    .. _distributions-basic-stat: code/distributions-basic-stat.py
+    part of `distributions-basic-stat`_ (uses monks-1.tab)
 
-.. literalinclude:: code/distributions-basic-stat.py
-    :lines: 1-10
+    .. literalinclude:: code/distributions-basic-stat.py
+        :lines: 1-10
 
-This code prints out::
+    This code prints out::
 
-             feature   min   max   avg
-        sepal length 4.300 7.900 5.843
-         sepal width 2.000 4.400 3.054
-        petal length 1.000 6.900 3.759
-         petal width 0.100 2.500 1.199
+                 feature   min   max   avg
+            sepal length 4.300 7.900 5.843
+             sepal width 2.000 4.400 3.054
+            petal length 1.000 6.900 3.759
+             petal width 0.100 2.500 1.199
 
-.. class:: Orange.probability.distribution.DomainBasicAttrStat
+    Instances of this class are seldom constructed manually; they are more often
+    returned as elements of the class :class:`DomainBasicAttrStat`  described below.
 
-    DomainBasicAttrStat behaves as a list of BasicAttrStat except
-    for a few details.
-
-    Constructor expects an instance generator;
-    if instances are weighted, the second (otherwise optional)
-    arguments should give the id of the meta-attribute with weights.
-
+.. class:: DomainBasicAttrStat
+    :param data: A table of instances
+    :type data: Orange.data.Table
+    :param weight: The id of the meta-attribute with weights
+    :type data: `int` or none
+    
     DomainBasicAttrStat behaves like a ordinary list, except that its
-    elements can also be indexed by feature descriptors or feaure names.    
+    elements can also be indexed by feature descriptors or feature names.    
 
     .. method:: purge()
   
