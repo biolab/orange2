@@ -3,11 +3,11 @@
 .. index: scoring
 
 This module contains various measures of quality for classification and
-regression. Most functions require an argument named res, an instance of
+regression. Most functions require an argument named :obj:`res`, an instance of
 :class:`Orange.evaluation.testing.ExperimentResults` as computed by
-functions from Orange.evaluation.testing and which contains predictions
-obtained through
-cross-validation, leave one-out, testing on training data or test set examples.
+functions from :mod:`Orange.evaluation.testing` and which contains 
+predictions obtained through cross-validation,
+leave one-out, testing on training data or test set instances.
 
 ==============
 Classification
@@ -58,7 +58,7 @@ So, let's compute all this in part of
 
 The output should look like this::
 
-    method  CA  AP  Brier   IS
+    method  CA      AP      Brier    IS
     bayes   0.903   0.902   0.175    0.759
     tree    0.846   0.845   0.286    0.641
     majrty  0.614   0.526   0.474   -0.000
@@ -74,32 +74,33 @@ Confusion Matrix
 .. autofunction:: confusionMatrices
 
    **A positive-negative confusion matrix** is computed (a) if the class is
-   binary unless classIndex argument is -2, (b) if the class is multivalued
-   and the classIndex is non-negative. Argument classIndex then tells which
-   class is positive. In case (a), classIndex may be omited; the first class
-   is then negative and the second is positive, unless the baseClass attribute
-   in the object with results has non-negative value. In that case, baseClass
-   is an index of the traget class. baseClass attribute of results object
-   should be set manually. The result of a function is a list of instances
-   of class ConfusionMatrix, containing the (weighted) number of true
-   positives (TP), false negatives (FN), false positives (FP) and true
-   negatives (TN).
+   binary unless :obj:`classIndex` argument is -2, (b) if the class is
+   multivalued and the :obj:`classIndex` is non-negative. Argument
+   :obj:`classIndex` then tells which class is positive. In case (a),
+   :obj:`classIndex` may be omitted; the first class
+   is then negative and the second is positive, unless the :obj:`baseClass`
+   attribute in the object with results has non-negative value. In that case,
+   :obj:`baseClass` is an index of the target class. :obj:`baseClass`
+   attribute of results object should be set manually. The result of a
+   function is a list of instances of class :class:`ConfusionMatrix`,
+   containing the (weighted) number of true positives (TP), false
+   negatives (FN), false positives (FP) and true negatives (TN).
    
-   We can also add the keyword argument cutoff
-   (e.g. confusionMatrices(results, cutoff=0.3); if we do, confusionMatrices
+   We can also add the keyword argument :obj:`cutoff`
+   (e.g. confusionMatrices(results, cutoff=0.3); if we do, :obj:`confusionMatrices`
    will disregard the classifiers' class predictions and observe the predicted
    probabilities, and consider the prediction "positive" if the predicted
-   probability of the positive class is higher than the cutoff.
+   probability of the positive class is higher than the :obj:`cutoff`.
 
    The example (part of `statExamples.py`_) below shows how setting the
    cut off threshold from the default 0.5 to 0.2 affects the confusion matrics 
    for naive Bayesian classifier::
    
-       cm = orngStat.confusionMatrices(res)[0]
+       cm = Orange.evaluation.scoring.confusionMatrices(res)[0]
        print "Confusion matrix for naive Bayes:"
        print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
        
-       cm = orngStat.confusionMatrices(res, cutoff=0.2)[0]
+       cm = Orange.evaluation.scoring.confusionMatrices(res, cutoff=0.2)[0]
        print "Confusion matrix for naive Bayes:"
        print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
 
@@ -113,14 +114,14 @@ Confusion Matrix
        TP: 239, FP: 18, FN: 28.0, TN: 150
    
    shows that the number of true positives increases (and hence the number of
-   false negatives decreases) by only a single example, while five examples
+   false negatives decreases) by only a single instance, while five instances
    that were originally true negatives become false positives due to the
    lower threshold.
    
    To observe how good are the classifiers in detecting vans in the vehicle
    data set, we would compute the matrix like this::
    
-      cm = orngStat.confusionMatrices(resVeh, \
+      cm = Orange.evaluation.scoring.confusionMatrices(resVeh, \
 vehicle.domain.classVar.values.index("van"))
    
    and get the results like these::
@@ -144,13 +145,13 @@ vehicle.domain.classVar.values.index("van"))
    
    The function then returns a three-dimensional matrix, where the element
    A[:obj:`learner`][:obj:`actualClass`][:obj:`predictedClass`]
-   gives the number of examples belonging to 'actualClass' for which the
+   gives the number of instances belonging to 'actualClass' for which the
    'learner' predicted 'predictedClass'. We shall compute and print out
    the matrix for naive Bayesian classifier.
    
    Here we see another example from `statExamples.py`_::
    
-       cm = orngStat.confusionMatrices(resVeh)[0]
+       cm = Orange.evaluation.scoring.confusionMatrices(resVeh)[0]
        classes = vehicle.domain.classVar.values
        print "\t"+"\t".join(classes)
        for className, classConfusions in zip(classes, cm):
@@ -169,8 +170,8 @@ vehicle.domain.classVar.values.index("van"))
    Van's are clearly simple: 189 vans were classified as vans (we know this
    already, we've printed it out above), and the 10 misclassified pictures
    were classified as buses (6) and Saab cars (4). In all other classes,
-   there were more examples misclassified as vans than correctly classified
-   examples. The classifier is obviously quite biased to vans.
+   there were more instances misclassified as vans than correctly classified
+   instances. The classifier is obviously quite biased to vans.
    
    .. method:: sens(confm) 
    .. method:: spec(confm)
@@ -220,11 +221,11 @@ vehicle.domain.classVar.values.index("van"))
    Let us print out sensitivities and specificities of our classifiers in
    part of `statExamples.py`_::
    
-       cm = orngStat.confusionMatrices(res)
+       cm = Orange.evaluation.scoring.confusionMatrices(res)
        print
        print "method\tsens\tspec"
        for l in range(len(learners)):
-           print "%s\t%5.3f\t%5.3f" % (learners[l].name, orngStat.sens(cm[l]), orngStat.spec(cm[l]))
+           print "%s\t%5.3f\t%5.3f" % (learners[l].name, Orange.evaluation.scoring.sens(cm[l]), Orange.evaluation.scoring.spec(cm[l]))
    
    .. _statExamples.py: code/statExamples.py
 
@@ -244,14 +245,14 @@ problems as specifically described below.
    
    .. attribute:: AUC.ByWeightedPairs (or 0)
       
-      Computes AUC for each pair of classes (ignoring examples of all other
+      Computes AUC for each pair of classes (ignoring instances of all other
       classes) and averages the results, weighting them by the number of
-      pairs of examples from these two classes (e.g. by the product of
+      pairs of instances from these two classes (e.g. by the product of
       probabilities of the two classes). AUC computed in this way still
       behaves as concordance index, e.g., gives the probability that two
-      randomly chosen examples from different classes will be correctly
+      randomly chosen instances from different classes will be correctly
       recognized (this is of course true only if the classifier knows
-      from which two classes the examples came).
+      from which two classes the instances came).
    
    .. attribute:: AUC.ByPairs (or 1)
    
@@ -265,7 +266,7 @@ problems as specifically described below.
       is, treating other classes as one class). The AUCs are then averaged by
       the class probabilities. This is related to concordance index in which
       we test the classifier's (average) capability for distinguishing the
-      examples from a specified class from those that come from other classes.
+      instances from a specified class from those that come from other classes.
       Unlike the binary AUC, the measure is not independent of class
       distributions.
       
@@ -273,12 +274,12 @@ problems as specifically described below.
    
       As above, except that the average is not weighted.
    
-   In case of :obj:`multiple folds` (for instance if the data comes from cross
+   In case of multiple folds (for instance if the data comes from cross
    validation), the computation goes like this. When computing the partial
    AUCs for individual pairs of classes or singled-out classes, AUC is
    computed for each fold separately and then averaged (ignoring the number
-   of examples in each fold, it's just a simple average). However, if a
-   certain fold doesn't contain any examples of a certain class (from the
+   of instances in each fold, it's just a simple average). However, if a
+   certain fold doesn't contain any instances of a certain class (from the
    pair), the partial AUC is computed treating the results as if they came
    from a single-fold. This is not really correct since the class
    probabilities from different folds are not necessarily comparable,
@@ -289,7 +290,7 @@ problems as specifically described below.
    classification accuracies (except that we call AUC instead of
    CA, of course)::
    
-       AUCs = orngStat.AUC(res)
+       AUCs = Orange.evaluation.scoring.AUC(res)
        for l in range(len(learners)):
            print "%10s: %5.3f" % (learners[l].name, AUCs[l])
            
@@ -297,7 +298,7 @@ problems as specifically described below.
    for all pairs of classes and return the average weighted by probabilities
    of pairs. Or, you can specify the averaging method yourself, like this::
    
-       AUCs = orngStat.AUC(resVeh, orngStat.AUC.WeightedOneAgainstAll)
+       AUCs = Orange.evaluation.scoring.AUC(resVeh, orngStat.AUC.WeightedOneAgainstAll)
    
    The following snippet tries out all four. (We don't claim that this is
    how the function needs to be used; it's better to stay with the default.)::
@@ -305,7 +306,7 @@ problems as specifically described below.
        methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. all"]
        print " " *25 + "  \tbayes\ttree\tmajority"
        for i in range(4):
-           AUCs = orngStat.AUC(resVeh, i)
+           AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
            print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
    
    As you can see from the output::
@@ -336,7 +337,7 @@ was not given at that time, 1 (that is, the second class) is used as default.
 
 We shall use the following code to prepare suitable experimental results::
 
-    ri2 = orange.MakeRandomIndices2(voting, 0.6)
+    ri2 = Orange.core.MakeRandomIndices2(voting, 0.6)
     train = voting.selectref(ri2, 0)
     test = voting.selectref(ri2, 1)
     res1 = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
@@ -717,10 +718,10 @@ def CA(res, reportSE = False, **argkw):
     of repetitions (e.g. number of folds).
     
     If results are from a single repetition, we assume independency of
-    examples and treat the classification accuracy as distributed according
+    instances and treat the classification accuracy as distributed according
     to binomial distribution. This can be approximated by normal distribution,
     so we report the SE of sqrt(CA*(1-CA)/N), where CA is classification
-    accuracy and N is number of test examples.
+    accuracy and N is number of test instances.
     
     Instead of ExperimentResults, this function can be given a list of
     confusion matrices (see below). Standard errors are in this case
@@ -872,9 +873,9 @@ def IS(res, apriori=None, reportSE = False, **argkw):
     """ Computes the information score as defined by 
     `Kononenko and Bratko (1991) \
     <http://www.springerlink.com/content/g5p7473160476612/>`_.
-    Argument 'apriori' gives the apriori class
+    Argument :obj:`apriori` gives the apriori class
     distribution; if it is omitted, the class distribution is computed from
-    the actual classes of examples in res.
+    the actual classes of examples in :obj:`res`.
     """
     if not apriori:
         apriori = classProbabilitiesFromRes(res)
@@ -1226,9 +1227,10 @@ def scottsPi(confm, bIsListOfMatrices=True):
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     """ Computes the area under ROC (AUC) and its standard error using
-    Wilcoxon's approach proposed by Hanley and McNeal (1982). If classIndex
-    is not specified, the first class is used as "the positive" and others
-    are negative. The result is a list of tuples (aROC, standard error).
+    Wilcoxon's approach proposed by Hanley and McNeal (1982). If 
+    :obj:`classIndex` is not specified, the first class is used as
+    "the positive" and others are negative. The result is a list of
+    tuples (aROC, standard error).
     """
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
@@ -1842,7 +1844,7 @@ def AUC_single(res, classIndex = -1, useWeights = True):
     classifiers are in distinguishing between vans and other vehicle, call
     the function like this::
     
-        orngStat.AUC_single(resVeh, \
+        Orange.evaluation.scoring.AUC_single(resVeh, \
 classIndex = vehicle.domain.classVar.values.index("van"))
     """
     if classIndex<0:
@@ -1859,7 +1861,7 @@ classIndex = vehicle.domain.classVar.values.index("van"))
 # Computes AUC for a pair of classes (as if there were no other classes)
 # Results over folds are averages; if some folds have examples from one class only, the folds are merged
 def AUC_pair(res, classIndex1, classIndex2, useWeights = True):
-    """ Computes AUC between a pair of examples, ignoring examples from all
+    """ Computes AUC between a pair of instances, ignoring instances from all
     other classes.
     """
     if res.numberOfIterations > 1:
