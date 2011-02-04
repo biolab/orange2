@@ -4,21 +4,22 @@
 .. index::
    single: projection; multidimensional scaling (mds)
 
-The functionality to perform multidimensional scaling.
+The functionality to perform multidimensional scaling
+(http://en.wikipedia.org/wiki/Multidimensional_scaling).
 
-========================
+************************
 Multidimensional Scaling
-========================
+************************
 
 The main class to perform multidimensional scaling is
 :class:`Orange.projection.mds.MDS`
 
 .. autoclass:: Orange.projection.mds.MDS
    :members:
-   :show-inheritance:
+   :exclude-members: Torgerson, getDistance, getStress
 
 Stress functions
-----------------
+================
 
 Stress functions that can be used for MDS have to be implemented as functions
 or callable classes:
@@ -43,77 +44,48 @@ This module provides the following stress functions:
    * Orange.projection.mds.SammonStress
    * Orange.projection.mds.SgnSammonStress
 
-==============
 Usage Examples
 ==============
 
 MDS Scatterplot
 ---------------
 
-In our first example, we will take iris data set, compute the Euclidean
-distance between the instances and then run MDS on a distance matrix.
+The following script computes the Euclidean distance between the data instances
+of the iris dataset and runs MDS on a distance matrix. Coordinates computed
+with MDS are plotted using matplotlib (not included with orange, 
+http://matplotlib.sourceforge.net/).
 
-..
-   Other distance functions that can be used are described in TODO.
-
-part of `mds-scatterplot.py`_ (uses `iris.tab`_)
+Example (`mds-scatterplot.py`_, uses `iris.tab`_)
 
 .. literalinclude:: code/mds-scatterplot.py
-    :lines: 7-21
+    :lines: 7-
 
 .. _mds-scatterplot.py: code/mds-scatterplot.py
 .. _iris.tab: code/iris.tab
 
-Notice that we are running MDS through 100 iterations. We will now use
-matplotlib to plot the data points using the coordinates computed with MDS (you
-need to install matplotlib, it does not come with Orange). Each data point in
-iris is classified in one of the three classes, so we will use colors to denote
-instance's class.
-
-part of `mds-scatterplot.py`_ (uses `iris.tab`_)
-
-.. literalinclude:: code/mds-scatterplot.py
-    :lines: 27-39
-
-After running this script, a file named *mds-scatterplot.py.png* appears on the
-filesystem:
+The script produces a file named *mds-scatterplot.py.png*. Color denotes
+point's class. Iris is a relatively simple data set with respect to
+classification; to no surprise we see that MDS finds such instance
+placement in 2D where instances of different classes are well separated.
+Note that MDS has no knowledge of points' classes.
 
 .. image:: files/mds-scatterplot.png
 
-Iris is a relatively simple data set with respect to classification, and to no
-surprise we see that MDS found such instance placement in 2D where instances of
-different classes are well separated. Notice also that MDS does this with no
-knowledge of the instance classes.
+
 
 A more advanced example
 -----------------------
 
-We are going to write a script that performs 10 steps of Smacof optimization
-before computing the stress. This is suitable if you have a large dataset and
-want to save some time. First we load the data and compute the distance matrix
-(just like in our previous example).
+The following script performs 10 steps of Smacof optimization before computing
+the stress. This is suitable if you have a large dataset and want to save some
+time.
 
-part of `mds-advanced.py`_ (uses `iris.tab`_)
+Example (`mds-advanced.py`_, uses `iris.tab`_)
 
 .. literalinclude:: code/mds-advanced.py
-    :lines: 7-18
+    :lines: 7-
 
 .. _mds-advanced.py: code/mds-advanced.py
-
-Then we construct the MDS instance and perform the initial Torgerson
-approximation, after which we update the stress matrix using the
-Orange.projection.mds.KruskalStress function.
-
-part of `mds-advanced.py`_ (uses `iris.tab`_)
-
-.. literalinclude:: code/mds-advanced.py
-    :lines: 20-23
-
-And finally the main optimization loop, after which we print the projected
-points along with the data:
-
-.. literalinclude:: code/mds-advanced.py
-    :lines: 25-37
 
 A few representative lines of the output are::
 
@@ -207,8 +179,6 @@ class MDS(object):
     """
     Main class for performing multidimensional scaling.
     
-    Constructor takes the following parameters:
-    
     :param distances: original dissimilarity - a distance matrix to operate on.
     :type distances: :class:`Orange.core.SymMatrix`
     
@@ -227,17 +197,17 @@ class MDS(object):
        
     .. attribute:: distances
     
-       An :class:`Orange.core.SymMatrix` that contains the distances that we
+       An :class:`Orange.core.SymMatrix` containing the distances that we
        want to achieve (LSMT changes these).
        
     .. attribute:: projectedDistances
 
-       An :class:`Orange.core.SymMatrix` that contains the distances between
+       An :class:`Orange.core.SymMatrix` containing the distances between
        projected points.
        
     .. attribute:: originalDistances
 
-       An :class:`Orange.core.SymMatrix` that contains the original distances
+       An :class:`Orange.core.SymMatrix` containing the original distances
        between points.
        
     .. attribute:: stress
@@ -246,7 +216,7 @@ class MDS(object):
     
     .. attribute:: dim
 
-       An int holding the dimension of the projected space.
+       An integer holding the dimension of the projected space.
        
     .. attribute:: n
 
@@ -301,7 +271,7 @@ class MDS(object):
 
     def calcDistance(self):
         """
-        Compute the distances between points and updates the
+        Compute the distances between points and update the
         :obj:`projectedDistances` matrix.
         
         """
@@ -312,7 +282,7 @@ class MDS(object):
     def calcStress(self, stressFunc=SgnRelStress):
         """
         Compute the stress between the current :obj:`projectedDistances` and
-        :obj:`distances` matrix using *stressFunc* and updates the
+        :obj:`distances` matrix using *stressFunc* and update the
         :obj:`stress` matrix and :obj:`avgStress` accordingly.
         
         """
@@ -328,23 +298,23 @@ class MDS(object):
     def run(self, iter, stressFunc=SgnRelStress, eps=1e-3,
             progressCallback=None):
         """
-        A convenience function that performs optimization until stopping
-        conditions are met. Stopping conditions are:
+        Perform optimization until stopping conditions are met.
+        Stopping conditions are:
            
            * optimization runs for *iter* iterations of SMACOFstep function, or
            * stress improvement (old stress minus new stress) is smaller than
              eps * old stress.
         
-        :param iter: maximal number of optimization iterations.
+        :param iter: maximum number of optimization iterations.
         :type iter: int
         
-        :param stressFunc: stress function
+        :param stressFunc: stress function.
         """
         self.optimize(iter, stressFunc, eps, progressCallback)
 
-    def Torgerson(self):
+    def torgerson(self):
         """
-        Run the torgerson algorithm that computes an initial analytical
+        Run the Torgerson algorithm that computes an initial analytical
         solution of the problem.
         
         """
@@ -386,7 +356,7 @@ class MDS(object):
 #        D = identity(self.n)*sqrt(L)  # make a diagonal matrix, with squarooted values
 #        X = matrixmultiply(U,D)
 #        self.X = take(X,idx,1)
-
+    Torgerson = torgerson
     # Kruskal's monotone transformation
     def LSMT(self):
         """
