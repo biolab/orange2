@@ -393,6 +393,10 @@ class FixChangedNames(fixer_base.BaseFix):
             node = member[0]
             head = head[0]
             
+            old_name = module + "." + node.value
+            if old_name not in self.mapping:
+                return
+             
             new_name = unicode(self.mapping[module + "." + node.value])
             
             syms = self.syms

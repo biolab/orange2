@@ -26,7 +26,6 @@ def build_pattern(mapping=MAPPING):
 from_import_pattern = """import_from<'from' module=(%s) 'import' star='*'>"""
 module_names = set(["'%s'" % key.split(".", 1)[0] for key in MAPPING.keys()])
 from_import_pattern = from_import_pattern % "|".join(module_names)
-print from_import_pattern
 
 from_import_expr = patcomp.compile_pattern(from_import_pattern)
  
