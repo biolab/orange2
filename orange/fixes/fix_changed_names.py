@@ -131,6 +131,21 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.TreeStopCriteria_Python":"Orange.classification.tree.StopCriteria_Python",
            "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common",
            
+           "orange.MajorityLearner":"Orange.classification.majority.MajorityLearner",
+           "orange.DefaultClassifier":"Orange.classification.ConstantClassifier",
+           
+           "orange.LookupLearner":"Orange.classification.lookup.LookupLearner",
+           "orange.ClassifierByLookupTable":"Orange.classification.lookup.ClassifierByLookupTable",
+           "orange.ClassifierByLookupTable1":"Orange.classification.lookup.ClassifierByLookupTable1",
+           "orange.ClassifierByLookupTable2":"Orange.classification.lookup.ClassifierByLookupTable2",
+           "orange.ClassifierByLookupTable3":"Orange.classification.lookup.ClassifierByLookupTable3",
+           "orange.ClassifierByExampleTable":"Orange.classification.lookup.ClassifierByDataTable",
+           
+           "orngLookup.lookupFromBound":"Orange.classification.lookup.lookupFromBound",
+           "orngLookup.lookupFromExamples":"Orange.classification.lookup.lookupFromData",
+           "orngLookup.lookupFromFunction":"Orange.classification.lookup.lookupFromFunction",
+           "orngLookup.printLookupFunction":"Orange.classification.lookup.printLookupFunction",
+           
            "orange.AssociationRule" : "Orange.associate.AssociationRule",
            "orange.AssociationRules" : "Orange.associate.AssociationRules",
            "orange.AssociationRulesInducer" : "Orange.associate.AssociationRulesInducer",
