@@ -51,20 +51,14 @@ We shall test the rule inducer on a dataset consisting of a brief description of
     
 The text needs to be cleaned of punctuation marks and capital letters at beginnings of the sentences, each sentence needs to be put in a new line and commas need to be inserted between the words.
 
-**inquisition.basket** ::
+.. _inquisition.basket: code/inquisition.basket
+.. _lenses.tab: code/lenses.tab
 
-    nobody, expects, the, Spanish, Inquisition
-    our, chief, weapon, is, surprise, surprise, and, fear,fear, and, surprise
-    our, two, weapons, are, fear, and, surprise, and, ruthless, efficiency
-    our, three, weapons, are, fear, surprise, and, ruthless, efficiency, and, an, almost, fanatical, devotion, to, the, Pope
-    our, four, no
-    amongst, our, weapons
-    amongst, our, weaponry, are, such, elements, as, fear, surprise
-    I'll, come, in, again
-    nobody, expects, the, Spanish, Inquisition
-    amongst, our, weaponry, are, such, diverse, elements, as, fear, surprise, ruthless, efficiency, an, almost, fanatical, devotion, to, the, Pope, and, nice, red, uniforms, oh damn
-    
-Inducing the rules is trivial (uses inquisition.basket): ::
+**inquisition.basket**
+
+.. literalinclude:: code/inquisition.basket
+   
+Inducing the rules is trivial (uses `inquisition.basket`_): ::
 
     import Orange
     data = Orange.data.Table("inquisition")
@@ -138,7 +132,7 @@ The other algorithm for association rules provided by Orange (AssociationRulesIn
     
     The maximal number of itemsets.
 
-Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of :ref:`maxItemSets <maxItemSets>` there. The example uses `lenses data table <http://orange.biolab.si/doc/reference/lenses.tab>`_. ::
+Meaning of all attributes (except the new one, classificationRules) is the same as for AssociationRulesSparseInducer. See the description of :ref:`maxItemSets <maxItemSets>` there. The example uses `lenses.tab`_: ::
 
     import Orange
 
@@ -248,7 +242,11 @@ Both classes for induction of association rules return the induced rules in Asso
     
     Given an association rule as the argument, constructor copies of the rule.
     
-    .. method:: appliesLeft(example), appliesRight(example), appliesBoth(example)
+    .. method:: appliesLeft(example)
+    
+    .. method:: appliesRight(example)
+    
+    .. method:: appliesBoth(example)
     
     Tells whether the example fits into the left, right or both sides of the rule, respectively. If the rule is represented by sparse examples, the given example must be sparse as well.
     
