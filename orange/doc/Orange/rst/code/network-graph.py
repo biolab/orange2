@@ -4,9 +4,9 @@
 # Uses:        
 # Referenced:  graph.htm
 
-import orange
+import Orange.network
 
-graph = orange.GraphAsMatrix(4, 0)
+graph = Orange.network.GraphAsMatrix(4, 0)
 graph.objects = ["Age", "Gender", "Height", "Weight"]
 
 graph["Age", "Gender"] = 0.1
@@ -33,7 +33,7 @@ graph.returnIndices = 1
 print graph.getNeighbours("Age")
 
 
-graph = orange.GraphAsMatrix(5, 0, 3)
+graph = Orange.network.GraphAsMatrix(5, 0, 3)
 print graph[4, 1]
 graph[4, 1, 1]=12
 print graph[4, 1, 1]
