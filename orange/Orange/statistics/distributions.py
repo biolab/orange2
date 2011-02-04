@@ -203,6 +203,7 @@ Here's what all contingency matrices share in common.
 
 Contingency matrix is a cross between dictionary and a list.
 It supports standard dictionary methods keys, values and items.::
+
     >> print cont.keys()
     ['1', '2', '3', '4']
     >>> print cont.values()
@@ -254,7 +255,7 @@ It doesn't change the innerDistribution or outerDistribution.::
     >>> for val, dist in cont.items():
            print val, dist
 
-The ouput: ::
+This outputs: ::
 
     1 <0.000, 1.000>
     2 <0.667, 0.333>
@@ -269,6 +270,7 @@ part of `distributions-contingency2`_ (uses monks-1.tab)
 The "reproduction" is not perfect. We didn't care about unknown values
 and haven't computed innerDistribution and outerDistribution.
 The better way to do it is by using the method add, so that the loop becomes: ::
+
     for ins in table:
         cont.add(ins["e"], ins.getclass()) 
 
@@ -411,6 +413,7 @@ Manual computation using add_attrclass is similar
 (to be precise: exactly the same) as computation using add.
 
 .. _distributions-contingency3.py: code/distributions-contingency3.py
+
 part of `distributions-contingency3.py`_ (uses monks-1.tab)
 
 .. literalinclude:: code/distributions-contingency3.py

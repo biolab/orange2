@@ -37,6 +37,13 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.VarList": "Orange.data.feature.Features",
           
            "orange.MeasureAttribute": "Orange.feature.scoring.Measure", 
+           "orange.BasicAttrStat": "Orange.statistics.distributions.BasicStatistics",
+           "orange.DomainBasicAttrStat": "Orange.statistics.distributions.DomainBasicStatistics",
+           "orange.ContingencyAttrAttr": "Orange.statistics.distributions.ContingencyVarVar",
+           "orange.ContingencyClass": "Orange.statistics.distributions.ContingencyClass",
+           "orange.ContingencyAttrClass": "Orange.statistics.distributions.ContingencyVarClass",
+           "orange.ContingencyClassAttr": "Orange.statistics.distributions.ContingencyClassVar",
+           
            "orange.MeasureAttribute_gainRatio": "Orange.feature.scoring.GainRatio",
            "orange.MeasureAttribute_relief": "Orange.feature.scoring.Relief",
            "orange.MeasureAttribute_info": "Orange.feature.scoring.InfoGain",
