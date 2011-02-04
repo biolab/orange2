@@ -37,7 +37,7 @@ Example (`bayes-mestimate.py`_, uses `iris.tab`_)
 .. literalinclude:: code/bayes-mestimate.py
     :lines: 7-
 
-Observing probabilities shows a shift towards the third, more frequent class -
+Observing probabilities shows a shift towards the second class -
 as compared to probabilities above, where relative frequencies were used.
 Note that the change in error estimation did not have any effect on apriori
 probabilities.
@@ -51,130 +51,10 @@ Setting adjustThreshold paramater can sometimes improve the results. ::
 
     [0.7901746265516516, 0.8280138859667578]
 
-Let us load the data, induce a classifier and see how it performs on the first
-five examples.
-
->>> from Orange import *
->>> table = data.Table("lenses")
->>> bayes = classification.bayes.NaiveLearner(table)
->>>
->>> for ex in table[:5]:
-...    print ex.getclass(), bayes(ex)
-no no
-no no
-soft soft
-no no
-hard hard
-
-The classifier is correct in all five cases. Interested in probabilities,
-maybe?
-
->>> for ex in table[:5]:
-...     print ex.getclass(), bayes(ex, \
-Orange.classification.Classifier.GetProbabilities)
-no <0.423, 0.000, 0.577>
-no <0.000, 0.000, 1.000>
-soft <0.000, 0.668, 0.332>
-no <0.000, 0.000, 1.000>
-hard <0.715, 0.000, 0.285>
-
-While very confident about the second and the fourth example, the classifier
-guessed the correct class of the first one only by a small margin of 42 vs.
-58 percents.
-
-Now, let us peek into the classifier.
-
->>> print bayes.estimator
-None
->>> print bayes.distribution
-<0.167, 0.208, 0.625>
->>> print bayes.conditionalEstimators
-None
->>> print bayes.conditionalDistributions[0]
-<'young': <0.250, 0.250, 0.500>, 'p_psby': <0.125, 0.250, 0.625>, (...)
->>> bayes.conditionalDistributions[0]["young"]
-<0.250, 0.250, 0.500>
-
-The classifier has no estimator since probabilities are stored in distribution.
-The probability of the first class is 0.167, of the second 0.208 and the
-probability of the third class is 0.625. Nor does it have 
-conditionalEstimators, probabilities are stored in conditionalDistributions.
-We printed the contingency matrix for the first attribute and, in the last
-line, conditional probabilities of the three classes when the value of the
-first attribute is "young".
-
-Let us now use m-estimate instead of relative frequencies.
-
->>> bayesl = classification.bayes.NaiveLearner(m=2.0)
->>> bayes = bayesl(table)
-
-The classifier is still correct for all examples.
-
->>> for ex in table[:5]:
-...     print ex.getclass(), bayes(ex, \
-Orange.classification.Classifier.GetBoth)
-no <0.375, 0.063, 0.562>;
-no <0.016, 0.003, 0.981>
-soft <0.021, 0.607, 0.372>
-no <0.001, 0.039, 0.960>
-hard <0.632, 0.030, 0.338>
-
-Observing probabilities shows a shift towards the third, more frequent class -
-as compared to probabilities above, where relative frequencies were used.
-
->>> print bayes.conditionalDistributions[0]
-<'young': <0.233, 0.242, 0.525>, 'p_psby': <0.133, 0.242, 0.625>, (...)
-
-Note that the change in error estimation did not have any effect on apriori
-probabilities:
-
->>> print bayes.distribution
-<0.167, 0.208, 0.625>
-
-The reason for this is that this same distribution was used as apriori
-distribution for m-estimation.
-
-Finally, let us show an example with continuous attributes. We will take iris
-dataset that contains four continuous and no discrete attributes.
-
->>> table = data.Table("iris")
->>> bayes = orange.BayesLearner(table)
->>> for exi in range(0, len(table), 20):
-...     print data[exi].getclass(), bayes(table[exi], \
-orange.Classifier.GetBoth)
-
-The classifier works well. To see a glimpse of how it works, let us observe
-conditional distributions for the first attribute. It is stored in
-conditionalDistributions, as before, except that it now behaves as a
-dictionary, not as a list like before (see information on distributions.
-
->>> print bayes.conditionalDistributions[0]
-<4.300: <0.837, 0.137, 0.026>;, 4.333: <0.834, 0.140, 0.026>, 4.367: <0.830, \
-(...)
-
-For a nicer picture, we can print out the probabilities, copy and paste it to
-some graph drawing program ... and get something like the figure below.
-
->>> for x, probs in bayes.conditionalDistributions[0].items():
-...     print "%5.3f\t%5.3f\t%5.3f\t%5.3f" % (x, probs[0], probs[1], probs[2])
-4.300   0.837   0.137   0.026
-4.333   0.834   0.140   0.026
-4.367   0.830   0.144   0.026
-4.400   0.826   0.147   0.027
-4.433   0.823   0.150   0.027
-(...)
-
-If petal lengths are shorter, the most probable class is "setosa". Irises with
-middle petal lengths belong to "versicolor", while longer petal lengths
-indicate for "virginica". Critical values where the decision would change are
-at about 5.4 and 6.3.
-
-It is important to stress that the curves are relatively smooth although no
-fitting (either manual or automatic) of parameters took place.
-
-
 .. _bayes-run.py: code/bayes-run.py
 .. _bayes-thresholdAdjustment.py: code/bayes-thresholdAdjustment.py
+.. _bayes-mestimate.py: code/bayes-mestimate.py
+.. _adult-sample.tab: code/adult-sample.tab
 .. _iris.tab: code/iris.tab
 
 ======================
