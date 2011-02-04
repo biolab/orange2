@@ -5,7 +5,7 @@
    single: classification; naive Bayes classifier
 
 **********************
-Naive Bayes Classifier
+Naive Bayes classifier
 **********************
 
 The most primitive bayesian classifier is :obj:`NaiveLearner` 
@@ -61,7 +61,7 @@ bayesian classifier, and one with an adjusted threshold::
 .. _iris.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
 
-Implementation Details
+Implementation details
 ======================
 
 The following two classes are implemented in C++ (*bayes.cpp*). They are not

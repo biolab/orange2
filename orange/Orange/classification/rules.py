@@ -5,6 +5,10 @@
 .. index:: 
    single: classification; rule induction
 
+**************
+Rule Induction
+**************
+
 Supervised rule induction algorithms and rule-based classification methods.
 
 First, the commonly used CN2 learner's description is given. That is followed
