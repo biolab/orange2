@@ -33,6 +33,9 @@ SVM learners
 .. autoclass:: Orange.classification.svm.SVMLearnerEasy
    :members:
    
+.. autoclass:: Orange.classification.svm.LinearLearner
+   :members:
+   
 Utility functions
 -----------------
 
