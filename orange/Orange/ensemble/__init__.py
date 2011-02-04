@@ -6,9 +6,9 @@ Module Orange.ensemble implements Breiman's bagging and Random Forest,
 and Freund and Schapire's boosting algorithms.
 
 
-=======
+*******
 Bagging
-=======
+*******
 
 .. index:: bagging
 .. index::
@@ -22,9 +22,9 @@ Bagging
    :members:
    :show-inheritance:
 
-========
+********
 Boosting
-========
+********
 
 .. index:: boosting
 .. index::
@@ -61,9 +61,9 @@ Running this script, we may get something like::
         bagged tree: 0.790
 
 
-=============
+*************
 Random Forest
-=============
+*************
 
 .. index:: random forest
 .. index::
@@ -104,7 +104,7 @@ Perhaps the sole purpose of the following example is to show how to access
 the individual classifiers once they are assembled into the forest, and to 
 show how we can assemble a tree learner to be used in random forests. The 
 tree induction uses the feature subset split constructor, which we have 
-borrowed from :class:`Orange.ensemble` and from which we have requested the
+borrowed from :class:`Orange.ensemble.forest` and from which we have requested the
 best feature for decision nodes to be selected from three randomly 
 chosen features.
 
@@ -118,12 +118,12 @@ chosen features.
 Running the above code would report on sizes (number of nodes) of the tree
 in a constructed random forest.
 
-================
-MeasureAttribute
-================
+    
+Score Feature
+=============
 
 L. Breiman (2001) suggested the possibility of using random forests as a
-non-myopic measure of attribute importance.
+non-myopic measure of feature importance.
 
 Assessing relevance of features with random forests is based on the
 idea that randomly changing the value of an important feature greatly
@@ -135,13 +135,13 @@ instances minus correctly classified OOB instances when the feature is
 randomly shuffled. The accumulated feature scores are divided by the
 number of used trees and multiplied by 100 before they are returned.
 
-.. autoclass:: Orange.ensemble.forest.MeasureAttribute_randomForests
+.. autoclass:: Orange.ensemble.forest.ScoreFeature
   :members:
 
 Computation of feature importance with random forests is rather slow. Also, 
 importances for all features need to be considered simultaneously. Since we
 normally compute feature importance with random forests for all features in
-the dataset, MeasureAttribute_randomForests caches the results. When it 
+the dataset, ScoreFeature caches the results. When it 
 is called to compute a quality of certain feature, it computes qualities
 for all features in the dataset. When called again, it uses the stored 
 results if the domain is still the same and the data table has not
@@ -151,7 +151,7 @@ but will notice adding and removing instances; see the page on
 :class:`Orange.data.Table` for details).
 
 Caching will only have an effect if you use the same
-:class:`Orange.ensemble.forest.MeasureAttribute_randomForests` object for all
+:class:`Orange.ensemble.forest.ScoreFeature` object for all
 features in the domain.
 
 `ensemble-forest-measure.py`_ (uses `iris.tab`_)
@@ -177,7 +177,7 @@ Corresponding output::
 
 
 References
-============
+-----------
 * L Breiman. Bagging Predictors. `Technical report No. 421 \
     <http://www.stat.berkeley.edu/tech-reports/421.ps.Z>`_. University of \
     California, Berkeley, 1994.

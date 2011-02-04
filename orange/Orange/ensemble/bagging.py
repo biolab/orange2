@@ -4,7 +4,6 @@ import random
 import Orange.core as orange
 import Orange
 
-
 class BaggedLearner(orange.Learner):
     """
     BaggedLearner takes a learner and returns a bagged learner, which is 
@@ -49,7 +48,7 @@ class BaggedLearner(orange.Learner):
         
         :param instances: data instances to learn from.
         :type instances: Orange.data.Table
-        :param weight: ID of meta attribute with weights of instances
+        :param weight: ID of meta feature with weights of instances
         :type weight: int
         :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier`
         
@@ -84,7 +83,7 @@ class BaggedClassifier(orange.Classifier):
     :param name: name of the resulting classifier.
     :type name: str
     
-    :param classVar: the class attribute.
+    :param classVar: the class feature.
     :type classVar: :class:`Orange.data.feature.Feature`
 
     """

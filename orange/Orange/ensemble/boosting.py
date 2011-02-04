@@ -107,7 +107,7 @@ class BoostedClassifier(orange.Classifier):
     :param name: name of the resulting classifier.
     :type name: str
     
-    :param classVar: the class attribute.
+    :param classVar: the class feature.
     :type classVar: :class:`Orange.data.feature.Feature`
     
     """

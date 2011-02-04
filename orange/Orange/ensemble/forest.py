@@ -2,7 +2,6 @@ from math import sqrt, floor
 import Orange.core as orange
 import Orange
 import Orange.feature.scoring
-import orngTree
 import random
 
 class RandomForestLearner(orange.Learner):
@@ -66,7 +65,7 @@ class RandomForestLearner(orange.Learner):
 
         if not learner:
             # tree learner assembled as suggested by Brieman (2001)
-            smallTreeLearner = orngTree.TreeLearner(
+            smallTreeLearner = Orange.classification.tree.TreeLearner(
             storeNodeClassifier = 0, storeContingencies=0, 
             storeDistributions=1, minExamples=5).instance()
             smallTreeLearner.split.discreteSplitConstructor.measure = \
@@ -81,11 +80,10 @@ class RandomForestLearner(orange.Learner):
         Learn from the given table of data instances.
         
         :param instances: data instances to learn from.
-        :type instances: Orange.data.Table
+        :type instances: class:`Orange.data.Table`
         :param origWeight: weight.
         :type origWeight: int
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
-        
         """
         # if number of features for subset is not set, use square root
         if hasattr(self.learner.split, 'attributes') and\
@@ -133,7 +131,7 @@ class RandomForestClassifier(orange.Classifier):
     :param domain: the domain of the learning set.
     :type domain: :class:`Orange.data.Domain`
     
-    :param classVar: the class attribute.
+    :param classVar: the class feature.
     :type classVar: :class:`Orange.data.feature.Feature`
 
     """
@@ -184,7 +182,7 @@ class RandomForestClassifier(orange.Classifier):
 
 ### MeasureAttribute_randomForests
 
-class MeasureAttribute_randomForests(orange.MeasureAttribute):
+class ScoreFeature(orange.MeasureAttribute):
     """
     :param learner: although not required, one can use this argument to pass
         one's own tree induction algorithm. If None is 
