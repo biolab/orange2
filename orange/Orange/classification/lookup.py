@@ -52,14 +52,15 @@ for instance::
 
     e2.getValueFrom = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
 
+
 ===========================
 Classifiers by Lookup Table
 ===========================
 
 Although the above example used :obj:`ClassifierByLookupTable` as if it
-was a concrete class, :obj:`ClassifierByLookupTable` is actually
+was a concrete class, ClassifierByLookupTable is actually
 abstract. Calling its constructor is a typical Orange trick: what you
-get, is never :obj:`ClassifierByLookupTable`, but either
+get, is never ClassifierByLookupTable, but either
 :obj:`ClassifierByLookupTable1`, :obj:`ClassifierByLookupTable2` or
 :obj:`ClassifierByLookupTable3`. As their names tell, the first
 classifies using a single feature (so that's what we had for e1),
@@ -75,155 +76,171 @@ most probably crash. To protect you somewhat, many of these classes'
 features are read-only and can only be set when the object is
 constructed.
 
-**Attributes:**
 
-.. attribute:: variable1[, variable2[, variable3]](read only)
+.. py:class:: Orange.classification.lookup.ClassifierByLookupTable(classVar, variable1[, variable2[, variable3]] [, lookupTable[, distributions]])
     
-    The feature(s) that the classifier uses for classification.
-    ClassifierByLookupTable1 only has variable1,
-    ClassifierByLookupTable2 also has variable2 and
-    ClassifierByLookupTable3 has all three.
-
-.. attribute:: variables (read only)
-    
-    The above variables, returned as a tuple.
-
-.. attribute:: noOfValues1, noOfValues2[, noOfValues3] (read only)
-    
-    The number of values for variable1, variable2 and variable3.
-    This is stored here to make the classifier faster. Those features
-    are defined only for ClassifierByLookupTable2 (the first two) and
-    ClassifierByLookupTable3 (all three).
-
-.. attribute:: lookupTable (read only)
-    
-    A list of values (ValueList), one for each possible combination of
-    features. For ClassifierByLookupTable1, there is an additional
-    element that is returned when the feature's value is unknown.
-    Values are ordered by values of features, with variable1 being the
-    most important. In case of two three valued features, the list
-    order is therefore 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3,
-    where the first digit corresponds to variable1 and the second to
-    variable2.
-    
-    The list is read-only in the sense that you cannot assign a new
-    list to this field. You can, however, change its elements. Don't
-    change its size, though. 
-
-.. attribute:: distributions (read only)
-    
-    Similar to :obj:`lookupTable`, but is of type DistributionList
-    and stores a distribution for each combination of values. 
-
-.. attribute:: dataDescription
-    
-    An object of type EFMDataDescription, defined only for
-    ClassifierByLookupTable2 and ClassifierByLookupTable3. They use
-    it to make predictions when one or more feature values are unknown.
-    ClassifierByLookupTable1 doesn't need it since this case is covered
-    by an additional element in lookupTable and distributions,
-    as told above. 
-
-**Methods:**
-
-.. method:: ClassifierByLookupTable(classVar, variable1[, variable2[, variable3]] [, lookupTable[, distributions]])
-
     A general constructor that, based on the number of attribute
     descriptors, constructs one of the three classes discussed.
     If lookupTable and distributions are omitted, constructor also
     initializes lookupTable and distributions to two lists of the
     right sizes, but their elements are don't knows and empty
     distributions. If they are given, they must be of correct size.
-
-.. method:: ClassifierByLookupTable1(classVar, variable1 [, lookupTable, distributions])
-            ClassifierByLookupTable2(classVar, variable1, variable2, [, lookupTable[, distributions]])
-            ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTable[, distributions]])
     
-    Class-specific constructors that you can call instead of the general constructor. The number of attributes must match the constructor called.
+    .. attribute:: variable1[, variable2[, variable3]](read only)
+        
+        The feature(s) that the classifier uses for classification.
+        ClassifierByLookupTable1 only has variable1,
+        ClassifierByLookupTable2 also has variable2 and
+        ClassifierByLookupTable3 has all three.
 
-.. method:: getindex(example)
-    
-    Returns an index into lookupTable or distributions. The formula
-    depends upon the type of the classifier. If value *i* is
-    int(example[variable*i*]), then the corresponding formulae are
+    .. attribute:: variables (read only)
+        
+        The above variables, returned as a tuple.
 
-    ClassifierByLookupTable1:
-        index = value1, or len(lookupTable)-1 if value is unknown
-    ClassifierByLookupTable2:
-        index = value1*noOfValues1 + value2, or -1 if any value is unknown 
-    ClassifierByLookupTable3:
-        index = (value1*noOfValues1 + value2) * noOfValues2 + value3, or -1 if any value is unknown
+    .. attribute:: noOfValues1, noOfValues2[, noOfValues3] (read only)
+        
+        The number of values for variable1, variable2 and variable3.
+        This is stored here to make the classifier faster. Those features
+        are defined only for ClassifierByLookupTable2 (the first two) and
+        ClassifierByLookupTable3 (all three).
 
-    Let's see some indices for randomly chosen examples from the original table.
-    
-    part of `lookup-lookup.py`_ (uses: `monks-1.tab`_):
+    .. attribute:: lookupTable (read only)
+        
+        A list of values (ValueList), one for each possible combination of
+        features. For ClassifierByLookupTable1, there is an additional
+        element that is returned when the feature's value is unknown.
+        Values are ordered by values of features, with variable1 being the
+        most important. In case of two three valued features, the list
+        order is therefore 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3,
+        where the first digit corresponds to variable1 and the second to
+        variable2.
+        
+        The list is read-only in the sense that you cannot assign a new
+        list to this field. You can, however, change its elements. Don't
+        change its size, though. 
 
-    .. literalinclude:: code/lookup-lookup.py
-        :lines: 26-29
+    .. attribute:: distributions (read only)
+        
+        Similar to :obj:`lookupTable`, but is of type DistributionList
+        and stores a distribution for each combination of values. 
+
+    .. attribute:: dataDescription
+        
+        An object of type EFMDataDescription, defined only for
+        ClassifierByLookupTable2 and ClassifierByLookupTable3. They use
+        it to make predictions when one or more feature values are unknown.
+        ClassifierByLookupTable1 doesn't need it since this case is covered
+        by an additional element in lookupTable and distributions,
+        as told above.
+        
+    .. method:: getindex(example)
     
-    Output::
+        Returns an index into lookupTable or distributions. The formula
+        depends upon the type of the classifier. If value\ *i* is
+        int(example[variable\ *i*]), then the corresponding formulae are
+
+        ClassifierByLookupTable1:
+            index = value1, or len(lookupTable)-1 if value is unknown
+        ClassifierByLookupTable2:
+            index = value1*noOfValues1 + value2, or -1 if any value is unknown 
+        ClassifierByLookupTable3:
+            index = (value1*noOfValues1 + value2) * noOfValues2 + value3, or -1 if any value is unknown
+
+        Let's see some indices for randomly chosen examples from the original table.
+        
+        part of `lookup-lookup.py`_ (uses: `monks-1.tab`_):
+
+        .. literalinclude:: code/lookup-lookup.py
+            :lines: 26-29
+        
+        Output::
+        
+            ['1', '1', '2', '2', '4', '1', '1']: ab 0, e1 3
+            ['3', '3', '1', '2', '2', '1', '1']: ab 8, e1 1
+            ['2', '1', '2', '3', '4', '2', '0']: ab 3, e1 3
+            ['2', '1', '1', '2', '1', '1', '1']: ab 3, e1 0
+            ['1', '1', '1', '2', '3', '1', '1']: ab 0, e1 2 
+
+
+
+.. py:class:: Orange.classification.lookup.ClassifierByLookupTable1(classVar, variable1 [, lookupTable, distributions])
     
-        ['1', '1', '2', '2', '4', '1', '1']: ab 0, e1 3
-        ['3', '3', '1', '2', '2', '1', '1']: ab 8, e1 1
-        ['2', '1', '2', '3', '4', '2', '0']: ab 3, e1 3
-        ['2', '1', '1', '2', '1', '1', '1']: ab 3, e1 0
-        ['1', '1', '1', '2', '3', '1', '1']: ab 0, e1 2 
+    Uses a single feature for lookup. See
+    :obj:`ClassifierByLookupTable` for more details.
+
+.. py:class:: Orange.classification.lookup.ClassifierByLookupTable2(classVar, variable1, variable2, [, lookupTable[, distributions]])
+    
+    Uses two features for lookup. See
+    :obj:`ClassifierByLookupTable` for more details.
+        
+.. py:class:: Orange.classification.lookup.ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTable[, distributions]])
+    
+    Uses three features for lookup. See
+    :obj:`ClassifierByLookupTable` for more details.
 
 
 ==========================
 Classifier by ExampleTable
 ==========================
 
-:obj:`ClassifierByExampleTable` is the alternative to
-:obj:`ClassifierByLookupTable`. It is to be used when the
-classification is based on more than three features. Instead of having
-a lookup table, it stores an :obj:`Orange.data.Table`, which is
-optimized for a faster access.
-
-This class is used in similar contexts as
+:obj:`ClassifierByExampleTable` is used in similar contexts as
 :obj:`ClassifierByLookupTable`. If you write, for instance, a
 constructive induction algorithm, it is recommendable that the values
 of the new feature are computed either by one of classifiers by lookup
-table or by :obj:`ClassifierByExampleTable`, depending on the number
-of bound features.
+table or by ClassifierByExampleTable, depending on the number of bound
+features.
 
-**Attributes:**
+.. py:class:: Orange.classification.lookup.ClassifierByExampleTable()
 
-.. attribute:: sortedExamples
+    :obj:`ClassifierByExampleTable` is the alternative to
+    :obj:`ClassifierByLookupTable`. It is to be used when the
+    classification is based on more than three features. Instead of having
+    a lookup table, it stores an :obj:`Orange.data.Table`, which is
+    optimized for a faster access.
     
-    A :obj:`Orange.data.Table` with sorted instances for lookup.
-    Instances in the table can be merged; if there were multiple
-    instances with the same feature values (but possibly different
-    classes), they are merged into a single instance. Regardless of
-    merging, class values in this table are distributed: their svalue
-    contains a :obj:`Distribution`.
 
-.. attribute:: classifierForUnknown
+    .. attribute:: sortedExamples
+        
+        A :obj:`Orange.data.Table` with sorted data instances for lookup.
+        Instances in the table can be merged; if there were multiple
+        instances with the same feature values (but possibly different
+        classes), they are merged into a single instance. Regardless of
+        merging, class values in this table are distributed: their svalue
+        contains a :obj:`Distribution`.
+
+    .. attribute:: classifierForUnknown
+        
+        This classifier is used to classify instances which were not found
+        in the table. If classifierForUnknown is not set, don't know's are
+        returned.
+
+    .. attribute:: variables (read only)
+        
+        A tuple with features in the domain. This field is here so that
+        :obj:`ClassifierByExampleTable` appears more similar to
+        :obj:`ClassifierByLookupTable`. If a constructive induction
+        algorithm returns the result in one of these classifiers, and you
+        would like to check which features are used, you can use variables
+        regardless of the class you actually got.
+
+    There are no specific methods for ClassifierByExampleTable.
+    Since this is a classifier, it can be called. When the instance to be
+    classified includes unknown values, :obj:`classifierForUnknown` will be
+    used if it is defined.
+
+
+
+.. py:class:: Orange.classification.lookup.LookupLearner()
     
-    This classifier is used to classify instances which were not found
-    in the table. If classifierForUnknown is not set, don't know's are
-    returned.
-
-.. attribute:: variables (read only)
+    Although :obj:`ClassifierByExampleTable` is not really a classifier in
+    the sense that you will use it to classify instances, but is rather a
+    function for computation of intermediate values, it has an associated
+    learner, :obj:`LookupLearner`. The learner's task is, basically, to
+    construct a Table for :obj:`sortedExamples`. It sorts them, merges them
+    and, of course, regards instance weights in the process as well.
     
-    A tuple with features in the domain. This field is here so that
-    :obj:`ClassifierByExampleTable` appears more similar to
-    :obj:`ClassifierByLookupTable`. If a constructive induction
-    algorithm returns the result in one of these classifiers, and you
-    would like to check which features are used, you can use variables
-    regardless of the class you actually got.
-
-There are no specific methods for :obj:`ClassifierByExampleTable`.
-Since this is a classifier, it can be called. When the instance to be
-classified includes unknown values, :obj:`classifierForUnknown` will be
-used if it is defined.
-
-Although :obj:`ClassifierByExampleTable` is not really a classifier in
-the sense that you will use it to classify instances, but is rather a
-function for computation of intermediate values, it has an associated
-learner, :obj:`LookupLearner`. The learner's task is, basically, to
-construct a Table for :obj:`sortedExamples`. It sorts them, merges them
-and, of course, regards instance weights in the process as well.
+    If data instances are provided to the constructor, the learning algorithm
+    is called and the resulting classifier is returned instead of the learner.
 
 part of `lookup-table.py`_ (uses: `monks-1.tab`_):
 
@@ -347,9 +364,6 @@ from Orange.core import \
               ClassifierByExampleTable as ClassifierByDataTable
 
 
-import orngMisc
-
-
 def lookupFromBound(attribute, bound):
     if not len(bound):
         raise TypeError, "no bound attributes"
@@ -369,19 +383,19 @@ def lookupFromFunction(attribute, bound, function):
     lookup = lookupFromBound(attribute, bound)
     if lookup:
         lookup.lookupTable = [Orange.data.Value(attribute, function(attributes))
-                              for attributes in orngMisc.LimitedCounter(
+                              for attributes in Orange.misc.counters.LimitedCounter(
                                   [len(attr.values) for attr in bound])]
         return lookup
     else:
         examples = Orange.data.Table(Orange.data.Domain(bound, attribute))
-        for attributes in orngMisc.LimitedCounter([len(attr.values)
+        for attributes in Orange.misc.counters.LimitedCounter([len(attr.values)
                                                    for attr in dom.attributes]):
             examples.append(Orange.data.Example(dom, attributes +
                                                 [function(attributes)]))
         return LookupLearner(examples)
       
 
-def lookupFromExamples(examples, weight = 0, learnerForUnknown = None):
+def lookupFromData(examples, weight = 0, learnerForUnknown = None):
     if len(examples.domain.attributes) <= 3:
         lookup = lookupFromBound(examples.domain.classVar,
                                  examples.domain.attributes)
@@ -426,9 +440,9 @@ def printLookupFunction(func):
         
         lc = 0
         if len(boundset)==1:
-            cnt = orngMisc.LimitedCounter([len(x.values)+1 for x in boundset])
+            cnt = Orange.misc.counters.LimitedCounter([len(x.values)+1 for x in boundset])
         else:
-            cnt = orngMisc.LimitedCounter([len(x.values) for x in boundset])
+            cnt = Orange.misc.counters.LimitedCounter([len(x.values) for x in boundset])
         for ex in cnt:
             for i in range(len(ex)):
                 if ex[i]<len(boundset[i].values):
