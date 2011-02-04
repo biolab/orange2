@@ -1,6 +1,9 @@
 """
 
-.. index:: rule learning
+.. index:: rule induction
+
+.. index:: 
+   single: classification; rule induction
 
 Supervised rule induction algorithms and rule-based classification methods.
 
@@ -12,7 +15,8 @@ of the rule induction process.
 CN2 Rule Induction Algorithm
 ============================
 
-.. index:: CN2
+.. index:: 
+   single: classification; CN2
 
 Several variations of well-known CN2 rule learning algorithms are implemented.
 All are implemented by wrapping the
@@ -56,7 +60,10 @@ This is the resulting printout::
    :show-inheritance:
    
 .. index:: Unordered CN2
-   
+
+.. index:: 
+   single: classification; Unordered CN2
+
 .. autoclass:: Orange.classification.rules.CN2UnorderedLearner
    :members:
    :show-inheritance:
@@ -67,6 +74,9 @@ This is the resulting printout::
    
 .. index:: CN2-SD
 .. index:: Subgroup discovery
+
+.. index:: 
+   single: classification; CN2-SD
    
 .. autoclass:: Orange.classification.rules.CN2SDUnorderedLearner
    :members:
@@ -675,18 +685,21 @@ class CN2Classifier(RuleClassifier):
     using an ordered set of rules. Usually the learner
     (:class:`Orange.classification.rules.CN2Learner`) is used to construct the
     classifier.
-        
-    :param instance: instance to be classified.
-    :type instance: :class:`Orange.data.Instance`
     
-    :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
-          :class:`Orange.classification.Classifier.GetProbabilities` or
-          :class:`Orange.classification.Classifier.GetBoth`
+    When constructing the classifier manually, the following parameters can
+    be passed:
     
-    :rtype: :class:`Orange.data.Value`, 
-          :class:`Orange.statistics.Distribution` or a tuple with both
+    :param rules: learned rules to be used for classification (mandatory).
+    :type rules: :class:`Orange.classification.rules.RuleList`
     
+    :param instances: data instances that were used for learning.
+    :type instances: :class:`Orange.data.Table`
+    
+    :param weightID: ID of the weight meta-attribute.
+    :type weightID: int
+
     """
+    
     def __init__(self, rules=None, instances=None, weightID = 0, **argkw):
         self.rules = rules
         self.examples = instances
@@ -697,6 +710,17 @@ class CN2Classifier(RuleClassifier):
             self.prior = Orange.core.Distribution(instances.domain.classVar,instances)
 
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
+        """
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
         classifier = None
         for r in self.rules:
          #   r.filter.domain = instance.domain
@@ -798,16 +822,19 @@ class CN2UnorderedClassifier(RuleClassifier):
     a set of unordered rules. Usually the learner
     (:class:`Orange.classification.rules.CN2UnorderedLearner`) is used to
     construct the classifier.
-        
-    :param instance: instance to be classified.
-    :type instance: :class:`Orange.data.Instance`
-    :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
-          :class:`Orange.classification.Classifier.GetProbabilities` or
-          :class:`Orange.classification.Classifier.GetBoth`
     
-    :rtype: :class:`Orange.data.Value`, 
-          :class:`Orange.statistics.Distribution` or a tuple with both
+    When constructing the classifier manually, the following parameters can
+    be passed:
     
+    :param rules: learned rules to be used for classification (mandatory).
+    :type rules: :class:`Orange.classification.rules.RuleList`
+    
+    :param instances: data instances that were used for learning.
+    :type instances: :class:`Orange.data.Table`
+    
+    :param weightID: ID of the weight meta-attribute.
+    :type weightID: int
+
     """
     def __init__(self, rules = None, instances = None, weightID = 0, **argkw):
         self.rules = rules
@@ -819,6 +846,17 @@ class CN2UnorderedClassifier(RuleClassifier):
             self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
 
     def __call__(self, instance, result_type=Orange.core.GetValue, retRules = False):
+        """
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        
+        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
         def add(disc1, disc2, sumd):
             disc = Orange.core.DiscDistribution(disc1)
             sumdisc = sumd
