@@ -312,7 +312,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngStat.splitByIterations" : "Orange.evaluation.scoring.splitByIterations",
            "orngStat.statc" : "Orange.evaluation.scoring.statc",
            "orngStat.statisticsByFolds" : "Orange.evaluation.scoring.statisticsByFolds",
-           "orngStat.x" : "Orange.evaluation.scoring.x"
+           "orngStat.x" : "Orange.evaluation.scoring.x",
            
            # Now use old orngMisc
            # Orange.selection
