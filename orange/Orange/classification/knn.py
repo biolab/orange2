@@ -2,12 +2,16 @@
 .. index: k-nearest neighbors (kNN)
 .. index:
    single: classification; k-nearest neighbors (kNN)
+   
+*******************
+k-nearest neighbors
+*******************
 
-The module includes implementation of `nearest neighbors algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes
+The module includes implementation of `nearest neighbors 
+algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes
 for finding nearest instances according to chosen distance metrics.
 
-============================
-k-Nearest Neighbor Algorithm
+k-nearest neighbor algorithm
 ============================
 
 Nearest neighbors algorithm is one of most basic, 
@@ -44,7 +48,7 @@ the data instance being classified:
 
     .. attribute:: k
     
-        Number of neighbours. If set to 0 (which is also the default value), 
+        Number of neighbors. If set to 0 (which is also the default value), 
         the square root of the number of instances is used.
     
     .. attribute:: rankWeight
@@ -82,7 +86,7 @@ nExamples)
         
     .. method:: findNearest(instance)
     
-    A component that finds nearest neighbours of a given instance.
+    A component that finds nearest neighbors of a given instance.
         
     :param instance: given instance
     :type instance: Orange.data.Instance
@@ -92,7 +96,7 @@ nExamples)
     
     .. attribute:: k
     
-        Number of neighbours. If set to 0 (which is also the default value), 
+        Number of neighbors. If set to 0 (which is also the default value), 
         the square root of the number of examples is used.
     
     .. attribute:: rankWeight
@@ -110,13 +114,13 @@ nExamples)
 
 When called to classify an instance, the classifier first calls 
 :meth:`kNNClassifier.findNearest` 
-to retrieve a list with :attr:`kNNClassifier.k` nearest neighbours. The
+to retrieve a list with :attr:`kNNClassifier.k` nearest neighbors. The
 component :meth:`kNNClassifier.findNearest` has 
 a stored table of instances (those that have been passed to the learner) 
 together with their weights. If instances are weighted (non-zero 
-:obj:`weightID`), weights are considered when counting the neighbours.
+:obj:`weightID`), weights are considered when counting the neighbors.
 
-If :meth:`kNNClassifier.findNearest` returns only one neighbour 
+If :meth:`kNNClassifier.findNearest` returns only one neighbor 
 (this is the case if :obj:`k=1`), :class:`kNNClassifier` returns the
 neighbour's class.
 
@@ -129,24 +133,24 @@ on the setting of :obj:`rankWeight`.
 
 * if :obj:`rankWeight` is :obj:`false`, :obj:`t` is a distance from the
   instance being classified
-* if :obj:`rankWeight` is :obj:`true`, neighbours are ordered and :obj:`t`
-  is the position of the neighbour on the list (a rank)
+* if :obj:`rankWeight` is :obj:`true`, neighbors are ordered and :obj:`t`
+  is the position of the neighbor on the list (a rank)
 
 
 In both cases, :obj:`s` is chosen so that the impact of the farthest instance
 is 0.001.
 
 Weighting gives the classifier certain insensitivity to the number of
-neighbours used, making it possible to use large :obj:`k`'s.
+neighbors used, making it possible to use large :obj:`k`'s.
 
 The classifier can treat continuous and discrete features, and can even
 distinguish between ordinal and nominal features. See information on
 distance measuring for details.
 
 Examples
-========
+--------
 
-We will test the learner on 'iris' dataset. We shall split it onto train
+We will test the learner on 'iris' data set. We shall split it onto train
 (80%) and test (20%) sets, learn on training instances and test on five
 randomly selected test instances, in part of 
 (`knnlearner.py`_, uses `iris.tab`_):
@@ -161,9 +165,9 @@ The output of this code is::
     Iris-setosa Iris-setosa
     Iris-setosa Iris-setosa
 
-The secret of kNN's success is that the instances in iris dataset appear in
-three well separated clusters. The classifier's accuraccy will remain
-excellent even with very large or small number of neighbours.
+The secret of kNN's success is that the instances in iris data set appear in
+three well separated clusters. The classifier's accuracy will remain
+excellent even with very large or small number of neighbors.
 
 As many experiments have shown, a selection of instances distance measure
 does not have a greater and predictable effect on the performance of kNN
@@ -189,14 +193,14 @@ The result is still perfect.
 
 .. index: fnn
 
-==========================
-Finding Nearest Neighbours
-==========================
 
-Orange provides classes for finding the nearest neighbours of the given
+Finding nearest neighbors
+=========================
+
+Orange provides classes for finding the nearest neighbors of the given
 reference instance. While we might add some smarter classes in future, we
-now have only two - abstract classes that defines the general behaviour of
-neighbour searching classes, and classes that implement brute force search.
+now have only two - abstract classes that defines the general behavior of
+neighbor searching classes, and classes that implement brute force search.
 
 As usually in Orange, there is a pair of classes: a class that does the work
 (:class:`FindNearest`) and a class that constructs it ("learning" - getting the
@@ -282,14 +286,12 @@ searching) (:class:`FindNearestConstructor`).
         
         :rtype: :class:`FindNearest`
 
-Example
-=======
+Examples
+--------
 
 The following script (`knnInstanceDistance.py`_, uses `lenses.tab`_) 
 shows how to find the five nearest neighbours of the first instance
 in the lenses dataset.
-
-
 
 .. literalinclude:: code/knnInstanceDistance.py
 
