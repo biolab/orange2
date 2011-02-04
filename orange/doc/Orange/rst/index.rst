@@ -37,6 +37,8 @@ Contents:
 
    Orange.evaluation.scoring
    Orange.evaluation.testing
+   
+   Orange.misc
 
 Indices and tables
 ==================
