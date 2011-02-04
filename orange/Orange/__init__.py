@@ -14,8 +14,6 @@ import data.feature
 
 import network
 
-import optimization
-
 import stat
 
 import statistics
@@ -32,6 +30,8 @@ import classification.svm
 import classification.logreg
 import classification.knn
 import classification.majority
+
+import optimization
 
 import projection
 import projection.mds
