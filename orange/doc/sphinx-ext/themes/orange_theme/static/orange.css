@@ -279,7 +279,7 @@ tt {
 
 tt.descname {
     margin-bottom: 0px;
-    
+    font-size: 12px;
 }
 
 H1 , div.body h1 {
@@ -356,8 +356,22 @@ dl.class > dt > em, dl.class > dt tt {
     font-family: Verdana, Arial;
 }
 
-dl.class > dt big {
+dl.class > dt > em {
+    font-weight: normal;
+}
+
+dl.class > dt > em.property {
+    font-weight: bold;
+}
+
+dl.class dt > tt.descclassname {
+/*    color: #999;*/
+    font-weight: normal;
+}
+
+dl.class > dt big, dl.class > dt .optional {
     font-size: inherit;
+    font-weight: normal;
 }
 
 div.body h1 {
