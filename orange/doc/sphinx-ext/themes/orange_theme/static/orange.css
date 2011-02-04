@@ -1,5 +1,7 @@
 @import url("default.css");
 
+/* http://colorschemedesigner.com/#0G21Tw0w0w0w0 */
+
 a, a:link, a:visited, a:hover, a:focus, a.active {
 	color: #2f31ff; /*#f95503;*/ /*#0e6cde; */
 	text-decoration: none;
@@ -153,6 +155,10 @@ div.body p, div.body dd, div.body li {
 }
 
 
+div.body li {
+    line-height: 160%;
+}
+
 div#main, div#footer {
     float: none; 
 	margin-top: 8px;
@@ -236,40 +242,65 @@ table#latest tr td {
 }
 
 
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+    font-family: inherit;
+    background-color: inherit;
+    font-weight: normal;
+    color: inherit;
+    border-bottom: 1px solid #ccc;
+    margin: 30px 0px 5px -5px;
+    padding: 1px 0 1px 3px;
+}
 
-H1 {
-/*	color: #FC9917;
-    background-color: #000000;*/
-/*	background-color: #F69810;*/
+H1, H2, H3  {
 	font-weight: bold;
 	font-family: Verdana;
-	font-size: 11px;
-	width: 204px;
-	/*height: 16px;*/
 	vertical-align: middle;
-	padding-left: 1px;
+	padding-left: 20px;
 	white-space: nowrap;
   padding-left: 0px; 
-  /*clear: both;*/
-	margin-top: 2em;
-	margin-bottom: 1.5em;
-	border-bottom: 2px #fe6612 solid;
+	border-bottom: 2px #ffdecb solid;
 }
 
 
+tt {
+    font-size: inherit;
+}
 
-H2 {
+tt.descname {
+    margin-bottom: 0px;
+    
+}
+
+H1 , div.body h1 {
+	font-size: 12px;
+    font-weight: bold;
+	border-bottom: 2px black solid;
+    padding-left: 5px;
+    background-color: #ffdecb;
+}
+
+div.body p, div.body dd, div.body.li {
+    line-height: 160%;
+}
+
+H2, div.body h2 {
 	font-weight: bold;
 	font-family: Verdana;
-    font-size: 11px;
-	width: 204px;
+    font-size: 12px;
+    padding-left: 5px;
+    padding-bottom: 2px;
+/*	width: 204px;*/
 /*	background-color: #F69810;*/
-/*	background-color: #ffdfcd;*/
+	background-color: #e0e0e0;
 	height: 16px;
 	vertical-align: middle;
 	white-space: nowrap;
-    margin-top: 2em;
-    padding-left: 0px;
     /*clear: both;*/
 	border-bottom: 2px black solid;
 }
@@ -280,7 +311,6 @@ H3 {
 	font-family: Verdana;
 	font-size: 11px;
 	white-space: nowrap;
-
 }
 
 H1, H2, H3 {
@@ -288,6 +318,7 @@ H1, H2, H3 {
     clear: none;
 }
 
+/*
 div.body h1, div.body h2, div.body h3 {
     text-aligh:left;
     padding: 0 0 0 0;
@@ -298,11 +329,27 @@ div.body h1, div.body h2, div.body h3 {
 	width: 204px;
 	vertical-align: middle;
 }
+*/
 
-div.body h1 {
-   	border-bottom: 2px #fe6612 solid;
+dl.class > dt {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    margin-top: 20px;
+    border-bottom: 2px solid black;
 }
 
+dl.class {
+    line-height: 180%;
+}
+
+div.body h1 {
+//   	background-color: #ff8e00; //#fe6612; // border-bottom: 2px #fe6612 solid;
+}
+
+div.body h2 {
+//    background-color: #ffc173;
+}
 
 P.section { font-weight: bold }
 
@@ -322,7 +369,7 @@ P.header {
  }
 
 XMP.code, PRE.code { 
-  background-color: #FFFFE8;
+  background-color: #36D88A; //#FFFFE8;
   margin-top: 3px;
   border-left: thin dotted #f69810;
   padding-left: 3px;
