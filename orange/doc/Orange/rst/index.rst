@@ -3,8 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Orange's documentation
-======================
+##########################
+Orange Scripting Reference
+##########################
 
 Contents:
 
@@ -38,21 +39,11 @@ Contents:
    
    Orange.misc
 
-Indices and tables
-==================
+****************
+Index and search
+****************
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-orange
-======
-
-Temporary: for referencing to work.
-
-..  automodule:: orange
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 
