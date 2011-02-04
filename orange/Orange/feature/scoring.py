@@ -40,29 +40,6 @@ The script should output this::
 
 .. automethod:: Orange.feature.scoring.attMeasure
 
-
-========================
-Different Score Measures
-========================
-
-.. note: add links to gain ratio, relief and other feature scores
-
-The following script reports on gain ratio and relief feature scores.
-
-`scoring-relief-gainRatio.py`_ (uses `voting.tab`_):
-
-.. literalinclude:: code/scoring-relief-gainRatio.py
-    :lines: 7-
-    
-Notice that on this data the ranks of features match rather well::
-    
-    Relief GainRt Feature
-    0.613  0.752  physician-fee-freeze
-    0.255  0.444  el-salvador-aid
-    0.228  0.414  synfuels-corporation-cutback
-    0.189  0.382  crime
-    0.166  0.345  adoption-of-the-budget-resolution
-
 ============
 Base Classes
 ============
@@ -281,41 +258,46 @@ the attribute values; in Orange, these are derived from
 Measures for Classification Problems
 ====================================
 
+This script scores features with gain ratio and relief.
+
+`scoring-relief-gainRatio.py`_ (uses `voting.tab`_):
+
+.. literalinclude:: code/scoring-relief-gainRatio.py
+    :lines: 7-
+
+Notice that on this data the ranks of features match rather well::
+    
+    Relief GainRt Feature
+    0.613  0.752  physician-fee-freeze
+    0.255  0.444  el-salvador-aid
+    0.228  0.414  synfuels-corporation-cutback
+    0.189  0.382  crime
+    0.166  0.345  adoption-of-the-budget-resolution
+
 The following section describes the attribute quality measures suitable for 
 discrete features and outcomes. 
 See  `scoring-info-lenses.py`_, `scoring-info-iris.py`_,
 `scoring-diff-measures.py`_ and `scoring-regression.py`_
 for more examples on their use.
 
-----------------
-Information Gain
-----------------
 .. index:: 
    single: feature scoring; information gain
 
-.. class:: Info
+.. class:: InfoGain
 
     The most popular measure, information gain :obj:`Info` measures the expected
     decrease of the entropy.
 
-----------
-Gain Ratio
-----------
-
 .. index:: 
    single: feature scoring; gain ratio
 
-.. class:: Gain
+.. class:: GainRatio
 
     Gain ratio :obj:`GainRatio` was introduced by Quinlan in order to avoid
     overestimation of multi-valued features. It is computed as information
     gain divided by the entropy of the attribute's value. (It has been shown,
     however, that such measure still overstimates the features with multiple
     values.)
-
-----------
-Gini index
-----------
 
 .. index:: 
    single: feature scoring; gini index
@@ -326,10 +308,6 @@ Gini index
     as the probability that two randomly chosen examples will have different
     classes.
 
----------
-Relevance
----------
-
 .. index:: 
    single: feature scoring; relevance
 
@@ -339,9 +317,8 @@ Relevance
     between features on the basis of their potential value in the formation of
     decision rules.
 
------
-Costs
------
+.. index:: 
+   single: feature scoring; cost
 
 .. class:: Cost
 
@@ -363,10 +340,6 @@ Costs
 
     This tells that knowing the value of attribute 3 would decrease the
     classification cost for appx 0.083 per example.
-
--------
-ReliefF
--------
 
 .. index:: 
    single: feature scoring; ReliefF
@@ -453,10 +426,6 @@ Measure for Attributes for Regression Problems
 
 Except for ReliefF, the only attribute quality measure available for regression
 problems is based on a mean square error.
-
------------------
-Mean Square Error
------------------
 
 .. index:: 
    single: feature scoring; mean square error

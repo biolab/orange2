@@ -10,7 +10,6 @@ Scoring
 .. index:: feature scoring
 
 .. automodule:: Orange.feature.scoring
-   :members:
 
 ==================
 Selection
@@ -27,7 +26,6 @@ Discretization
 .. index:: discretization
 
 .. automodule:: Orange.feature.discretization
-   :members:
 
 ==================
 Continuization
@@ -36,7 +34,6 @@ Continuization
 .. index:: continuization
 
 .. automodule:: Orange.feature.continuization
-   :members:
 
 ==================
 Imputation
@@ -45,7 +42,6 @@ Imputation
 .. index:: imputation
 
 .. automodule:: Orange.feature.imputation
-   :members:
 
 """
 

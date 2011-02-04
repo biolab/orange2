@@ -137,8 +137,9 @@ Experiment yourself to see, if only one attribute is retained for
 classifier, which attribute was the one most frequently selected over
 all the ten cross-validation tests!
 
+==========
 References
-----------
+==========
 
 * K. Kira and L. Rendell. A practical approach to feature selection. In
   D. Sleeman and P. Edwards, editors, Proc. 9th Int'l Conf. on Machine
