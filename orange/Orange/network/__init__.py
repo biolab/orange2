@@ -554,6 +554,7 @@ Community Detection in Graphs
 .. _network-graph-obj.py: code/network-graph-obj.py
 
 """
+import math
 import random
 import os
 
