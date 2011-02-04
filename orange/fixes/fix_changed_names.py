@@ -130,6 +130,13 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.TreeStopCriteria":"Orange.classification.tree.StopCriteria",
            "orange.TreeStopCriteria_Python":"Orange.classification.tree.StopCriteria_Python",
            "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common",
+           
+           "orange.AssociationRule" : "Orange.associate.AssociationRule",
+           "orange.AssociationRules" : "Orange.associate.AssociationRules",
+           "orange.AssociationRulesInducer" : "Orange.associate.AssociationRulesInducer",
+           "orange.AssociationRulesSparseInducer" : "Orange.associate.AssociationRulesSparseInducer",
+           "orange.ItemsetNodeProxy" : "Orange.associate.ItemsetNodeProxy",
+           "orange.ItemsetsSparseInducer" : "Orange.associate.ItemsetsSparseInducer",
 
            "orngCN2.ruleToString": "Orange.classification.rules.ruleToString",
            "orngCN2.LaplaceEvaluator": "Orange.classification.rules.LaplaceEvaluator",
