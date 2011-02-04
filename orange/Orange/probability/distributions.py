@@ -3,9 +3,9 @@
 Orange has several classes for computing and storing basic statistics about
 features, distributions and contingencies.
  
-=================
+========================================
 Basic Statistics for Continuous Features
-=================
+========================================
 
 The are two simple classes for computing basic statistics
 for continuous features, such as their minimal and maximal value
@@ -62,6 +62,26 @@ the above class for all features in the domain.
     The statistics does not include the median or any other statistics that can be computed on the fly, without remembering the data. Quantiles can be computed
     by :obj:`ContDistribution`. !!!TODO
 
+    Instances of this class are seldom constructed manually; they are more often
+    returned by :obj:`DomainBasicAttrStat` described below.
+
+.. class:: DomainBasicAttrStat
+
+    :param data: A table of instances
+    :type data: Orange.data.Table
+    :param weight: The id of the meta-attribute with weights
+    :type weight: `int` or none
+    
+    Constructor computes the statistics for all continuous features in the
+    give data, and puts `None` to the places corresponding to other types of
+    features.
+
+    .. method:: purge()
+    
+        Removes the `None`'s corresponding to non-continuous features.
+    
+    `DomainBasicAttrStat` behaves like a ordinary list, except that its
+    elements can also be indexed by feature descriptors or feature names.
 
     .. _distributions-basic-stat: code/distributions-basic-stat.py
     part of `distributions-basic-stat`_ (uses monks-1.tab)
@@ -77,53 +97,32 @@ the above class for all features in the domain.
             petal length 1.000 6.900 3.759
              petal width 0.100 2.500 1.199
 
-    Instances of this class are seldom constructed manually; they are more often
-    returned as elements of the class :class:`DomainBasicAttrStat`  described below.
 
-.. class:: DomainBasicAttrStat
-    :param data: A table of instances
-    :type data: Orange.data.Table
-    :param weight: The id of the meta-attribute with weights
-    :type data: `int` or none
-    
-    DomainBasicAttrStat behaves like a ordinary list, except that its
-    elements can also be indexed by feature descriptors or feature names.    
+    .. _distributions-basic-stat: code/distributions-basic-stat.py
+    part of `distributions-basic-stat`_ (uses iris.tab)
 
-    .. method:: purge()
-  
-    Noticed the "if a" in the script? It's needed because of discrete
-    features for which this statistics cannot be measured and are thus
-    represented by a None. Method purge gets rid of them by removing
-    the None's from the list.
+    .. literalinclude:: code/distributions-basic-stat.py
+        :lines: 11-
 
+    This code prints out::
 
-.. _distributions-basic-stat: code/distributions-basic-stat.py
-part of `distributions-basic-stat`_ (uses iris.tab)
-
-.. literalinclude:: code/distributions-basic-stat.py
-    :lines: 11-
-
-This code prints out::
-
-    5.84333467484 
+        5.84333467484 
 
 
 
-=================
+==================
 Contingency Matrix
-=================
+==================
 
 Contingency matrix contains conditional distributions. They can work for both,
-discrete and continuous features; although the examples on this page will be
-mostly limited to discrete features, the analogous could be done with
-continuous values.
+discrete and continuous variables; although examples on this page will mostly
+use discrete ones, similar code could be run for continuous variables.
 
 .. _distributions-contingency: code/distributions-contingency.py
 part of `distributions-contingency`_ (uses monks-1.tab)
 
 .. literalinclude:: code/distributions-contingency.py
     :lines: 1-8
-
 
 This code prints out::
 
@@ -132,14 +131,15 @@ This code prints out::
     3 <72.000, 36.000>
     4 <72.000, 36.000> 
 
+Contingencies behave like lists of distributions (in this case, class distributions) indexed by values (of `e`, in this example). Distributions are, in turn indexed
+by values (class values, here). The variable `e` from the above example is called
+the outer variable, and the class is the inner. This can also be reversed, and it
+is also possible to use features for both, outer and inner variable, so the
+matrix shows distributions of one variable's values given the value of another.
+There is a corresponding hierarchy of classes for handling hierarchies: :obj:`Contingency` is a base class for :obj:`ContingencyAttrAttr` (and
+:obj:`ContingencyClass`; the latter is 
 
-As this simple example shows, contingency is similar to a dictionary
-(or a list, it is a bit ambiguous), where feature values serve as
-keys and class distributions are the dictionary values.
-The feature e is here called the outer feature, and the class
-is the inner. That's not the only possible configuration of contingency
-matrix; class can also be outside or there can be no class at all and the
-matrix shows distributions of one feature values given the value of another.
+
 
 There is a hierarchy of classes with contingencies::
 
@@ -669,15 +669,17 @@ part of `distributions-contingency8`_ (uses monks-1.tab)
 """
 
 
+
 from orange import \
-     BasicAttrStat, \
-     DomainBasicAttrStat, \
      DomainContingency, \
      DomainDistributions, \
      DistributionList, \
      ComputeDomainContingency, \
-     Contingency, \
-     ContingencyAttrAttr, \
-     ContingencyClass, \
-     ContingencyAttrClass, \
-     ContingencyClassAttr
+     Contingency
+
+from orange import BasicAttrStat as BasicStatistics
+from orange import DomainBasicAttrStat as DomainBasicStatistics
+from orange import ContingencyAttrAttr as ContingencyVarVar
+from orange import ContingencyAttrAttr as ContingencyClass
+from orange import ContingencyAttrAttr as ContingencyVarClass
+from orange import ContingencyAttrAttr as ContingencyClassVar
