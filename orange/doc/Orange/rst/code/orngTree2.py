@@ -1,8 +1,8 @@
-import orange, orngTree, re
-reload(orngTree)
+import Orange
+import re
 
-data = orange.ExampleTable("iris")
-tree = orngTree.TreeLearner(data, maxDepth=3)
+data = Orange.data.Table("iris")
+tree = Orange.classification.tree.TreeLearner(data, maxDepth=3)
 
 def getMargin(dist):
     if dist.abs < 1e-30:
@@ -16,17 +16,18 @@ def replaceB(strg, mo, node, parent, tree):
 
     by = mo.group("by")
     if margin and by:
-        whom = orngTree.byWhom(by, parent, tree)
+        whom = Orange.classification.tree.byWhom(by, parent, tree)
         if whom and whom.distribution:
             divMargin = getMargin(whom.distribution)
             if divMargin > 1e-30:
                 margin /= divMargin
             else:
-                orngTree.insertDot(strg, mo)
+                Orange.classification.tree.insertDot(strg, mo)
         else:
-            return orngTree.insertDot(strg, mo)
-    return orngTree.insertNum(strg, mo, margin)
+            return Orange.classification.tree.insertDot(strg, mo)
+    return Orange.classification.tree.insertNum(strg, mo, margin)
     
-myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]
+myFormat = [(re.compile("%"+Orange.classification.tree.fs
+    +"B"+Orange.classification.tree.by), replaceB)]
             
-orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats=myFormat)
+Orange.classification.tree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats=myFormat)

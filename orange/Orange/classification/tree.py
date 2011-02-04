@@ -714,7 +714,8 @@ class (and derived classes).
 TreeStopCriteria and TreeStopCriteria_common
 ============================================
 
-obj:`TreeStopCriteria` determines when to stop the induction of subtrees, as described in detail in description of the learning process. XXXXXXXXXX
+obj:`TreeStopCriteria` determines when to stop the induction of subtrees, as 
+described in detail in description of the learning process. XXXXXXXXXX
 
 .. class:: TreeStopCriteria_common
 
@@ -1144,17 +1145,11 @@ the maximal proportion of majority class.
     >>> printTree(tree)
     --> none (<15.000, 5.000, 4.000>)
 
-References
-==========
 
-Bratko, I. (2002). `Prolog Programming for Artificial Intelligence`, Addison 
-Wesley, 2002.
+Undocumented
+============
 
 .. class:: TreeNodeList
-
-    Undocumented.
-
-.. class:: C45TreeNode
 
     Undocumented.
 
@@ -1419,6 +1414,24 @@ orngTree module
 .. autoclass:: TreeLearner
     :members:
 
+For a bit more complex example, here's how to write your own stop
+function. The example itself is more funny than useful. It constructs
+and prints two trees. For the first one we define the <code>defStop</code>
+function, which is used by default, and combine it with a random function
+so that the stop criteria will also be met in additional 20% of the cases
+when <code>defStop</code> is false. The second tree is build such that it
+considers only the random function as the stopping criteria. Note that in
+the second case lambda function still has three parameters, since this is
+a necessary number of parameters for the stop function XXXXX link (
+part of `tree3.py`_ (uses  `iris.tab`_):
+
+.. _tree3.py: code/tree3.py
+
+.. literalinclude:: code/tree3.py
+   :lines: 8-23
+
+The output is not shown here since the resulting trees are rather
+big.
 
 Tree size
 =========
@@ -1922,7 +1935,7 @@ second largest class in the node (part of `orngTree2.py`_):
 .. _orngTree2.py: code/orngTree2.py
 
 .. literalinclude:: code/orngTree2.py
-   :lines: 7-30
+   :lines: 7-31
 
 We first defined getMargin which gets the distribution and computes the
 margin. The callback replaces, replaceB, computes the margin for the node.
@@ -1938,7 +1951,7 @@ containing the regular expression and the callback function.
 We can now print out the iris tree:
 
 .. literalinclude:: code/orngTree2.py
-    :lines: 32
+    :lines: 33
 
 And we get::
 
@@ -1955,31 +1968,31 @@ And we get::
 Plotting the Tree using Dot
 ===========================
 
-Prints the tree to a file in a format used by 
-`GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
-Uses the same parameters as :func:`printTxt` defined above
-plus two parameters which define the shape used for internal
-nodes and laves of the tree:
+.. autofunction:: printDot
 
-:param leafShape: Shape of the outline around leves of the tree. 
-    If "plaintext", no outline is used (default: "plaintext").
-:type leafShape: string
-:param internalNodeShape: Shape of the outline around internal nodes 
-    of the tree. If "plaintext", no outline is used (default: "box")
-:type leafShape: string
+.. autofunction:: dotTree
 
-<p>Check <a
-href="http://www.graphviz.org/doc/info/shapes.html">Polygon-based
-Nodes</a> for various outlines supported by GraphViz.</p>
+Suppose you saved the tree in a file "tree5.dot". You can then
+print it out as a gif if you execute the following command line
 
-<P>Suppose you saved the tree in a file <code>tree5.dot</code>. You can then print it out as a gif if you execute the following command line
-<XMP class=code>dot -Tgif tree5.dot -otree5.gif
-</XMP>
-</P>
-GraphViz's dot has quite a few other output formats, check its documentation to learn which.</P>
+::
+    
+    dot -Tgif tree5.dot -otree5.gif
 
+GraphViz's dot has quite a few other output formats, check 
+its documentation to learn which.
 
+References
+==========
 
+Bratko, I. (2002). `Prolog Programming for Artificial Intelligence`, Addison 
+Wesley, 2002.
+
+E Koutsofios, SC North. Drawing Graphs with dot. AT&T Bell Laboratories,
+Murray Hill NJ, U.S.A., October 1993.
+
+`Graphviz - open source graph drawing software <http://www.research.att.com/sw/tools/graphviz/>`_
+A home page of AT&T's dot and similar software packages.
 
 """
 
@@ -1988,38 +2001,42 @@ from Orange.core import \
          TreeClassifier, \
          C45Learner, \
          C45Classifier, \
-         C45TreeNode, \
-         C45TreeNodeList, \
-         TreeDescender, \
-              TreeDescender_UnknownMergeAsBranchSizes, \
-              TreeDescender_UnknownMergeAsSelector, \
-              TreeDescender_UnknownToBranch, \
-              TreeDescender_UnknownToCommonBranch, \
-              TreeDescender_UnknownToCommonSelector, \
-         TreeExampleSplitter, \
-              TreeExampleSplitter_IgnoreUnknowns, \
-              TreeExampleSplitter_UnknownsAsBranchSizes, \
-              TreeExampleSplitter_UnknownsAsSelector, \
-              TreeExampleSplitter_UnknownsToAll, \
-              TreeExampleSplitter_UnknownsToBranch, \
-              TreeExampleSplitter_UnknownsToCommon, \
-              TreeExampleSplitter_UnknownsToRandom, \
-         TreeNode, \
-         TreeNodeList, \
-         TreePruner, \
-              TreePruner_SameMajority, \
-              TreePruner_m, \
-         TreeSplitConstructor, \
-              TreeSplitConstructor_Combined, \
-              TreeSplitConstructor_Measure, \
-                   TreeSplitConstructor_Attribute, \
-                   TreeSplitConstructor_ExhaustiveBinary, \
-                   TreeSplitConstructor_OneAgainstOthers, \
-                   TreeSplitConstructor_Threshold, \
-         TreeStopCriteria, \
-              TreeStopCriteria_Python, \
-              TreeStopCriteria_common
+         C45TreeNode as C45Node, \
+         C45TreeNodeList as C45NodeList, \
+         TreeDescender as Descender, \
+              TreeDescender_UnknownMergeAsBranchSizes as Descender_UnknownMergeAsBranchSizes, \
+              TreeDescender_UnknownMergeAsSelector as Descender_UnknownMergeAsSelector, \
+              TreeDescender_UnknownToBranch as Descender_UnknownToBranch, \
+              TreeDescender_UnknownToCommonBranch as Descender_UnknownToCommonBranch, \
+              TreeDescender_UnknownToCommonSelector as Descender_UnknownToCommonSelector, \
+         TreeExampleSplitter as Splitter, \
+              TreeExampleSplitter_IgnoreUnknowns as Splitter_IgnoreUnknowns, \
+              TreeExampleSplitter_UnknownsAsBranchSizes as Splitter_UnknownsAsBranchSizes, \
+              TreeExampleSplitter_UnknownsAsSelector as Splitter_UnknownsAsSelector, \
+              TreeExampleSplitter_UnknownsToAll as Splitter_UnknownsToAll, \
+              TreeExampleSplitter_UnknownsToBranch as Splitter_UnknownsToBranch, \
+              TreeExampleSplitter_UnknownsToCommon as Splitter_UnknownsToCommon, \
+              TreeExampleSplitter_UnknownsToRandom as Splitter_UnknownsToRandom, \
+         TreeNode as Node, \
+         TreeNodeList as NodeList, \
+         TreePruner as Pruner, \
+              TreePruner_SameMajority as Pruner_SameMajority, \
+              TreePruner_m as Pruner_m, \
+         TreeSplitConstructor as SplitConstructor, \
+              TreeSplitConstructor_Combined as SplitConstructor_Combined, \
+              TreeSplitConstructor_Measure as SplitConstructor_Score, \
+                   TreeSplitConstructor_Attribute as SplitConstructor_Feature, \
+                   TreeSplitConstructor_ExhaustiveBinary as SplitConstructor_ExhaustiveBinary, \
+                   TreeSplitConstructor_OneAgainstOthers as SplitConstructor_OneAgainstOthers, \
+                   TreeSplitConstructor_Threshold as SplitConstructor_Threshold, \
+         TreeStopCriteria as StopCriteria, \
+              TreeStopCriteria_Python as StopCriteria_Python, \
+              TreeStopCriteria_common as StopCriteria_common
 
+import orange
+import operator
+import base64
+import re
 
 def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
@@ -2104,62 +2121,6 @@ def printTreeC45(tree):
     """
     _c45_printTree0(tree.tree, tree.classVar, 0)
 
-
-
-
-#
-# From  orngTree
-#
-
-"""
-
-<P>For a bit more complex example, here's how to write your own stop function. The example itself is more funny than useful. It constructs and prints two trees. For the first one we define the <code>defStop</code> function, which is used by default, and combine it with a random function so that the stop criteria will also be met in additional 20% of the cases when <code>defStop</code> is false. The second tree is build such that it considers only the random function as the stopping criteria. Note that in the second case lambda function still has three parameters, since this is a necessary number of parameters for the stop function (for more, see section on <a href="../reference/TreeLearner.htm">Orange Trees</a> in Orange Reference).
-</p>
-
-<p class="header"><a href="tree3.py">tree3.py</a> (uses <a href=
-"iris.tab">iris.tab</a>)</p>
-
-<XMP class=code>import orange, orngTree
-from whrandom import randint, random
-
-data = orange.ExampleTable("iris.tab")
-
-defStop = orange.TreeStopCriteria()
-f = lambda examples, weightID, contingency: defStop(examples, weightID, contingency) or randint(1, 5)==1
-l = orngTree.TreeLearner(data, stop=f)
-orngTree.printTxt(l, leafFields=['major', 'contingency'])
-
-f = lambda x,y,z: randint(1, 5)==1
-l = orngTree.TreeLearner(data, stop=f)
-orngTree.printTxt(l, leafFields=['major', 'contingency'])
-</XMP>
-
-<p>The output is not shown here since the resulting trees are rather
-big.</p>
-
-
-
-
-
-
-
-<index name="classification trees/printing">
-
-References
-==========
-
-E Koutsofios, SC North. Drawing Graphs with dot. AT&T Bell Laboratories,
-Murray Hill NJ, U.S.A., October 1993.
-
-<p><a href="http://www.research.att.com/sw/tools/graphviz/">Graphviz -
-open source graph drawing software</a>. A home page of AT&T's dot and
-similar software packages.</p>
-
-"""
-
-import orange
-import base64
-from warnings import warn
 
 class TreeLearner(orange.Learner):
     """
@@ -2461,7 +2422,6 @@ def countLeaves(tree):
 
 # the following is for the output
 
-import re
 
 fs = r"(?P<m100>\^?)(?P<fs>(\d*\.?\d*)?)"
 """ Defines the multiplier by 100 (:samp:`^`) and the format
@@ -2617,7 +2577,6 @@ def replacecdisc(strg, mo, node, parent, tree):
     return insertNum(strg, mo, N)
 
 
-import operator
 __opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "=": operator.eq, "!=": operator.ne}
 
 def replaceCcont(strg, mo, node, parent, tree):
@@ -2984,14 +2943,29 @@ printTxt = printTree
 """ An alias for :func:`printTree`. Left for compatibility. """
 
 
-def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
+def printDot(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
+    """ Prints the tree to a file in a format used by 
+    `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
+    Uses the same parameters as :func:`printTxt` defined above
+    plus two parameters which define the shape used for internal
+    nodes and laves of the tree:
+
+    :param leafShape: Shape of the outline around leves of the tree. 
+        If "plaintext", no outline is used (default: "plaintext").
+    :type leafShape: string
+    :param internalNodeShape: Shape of the outline around internal nodes 
+        of the tree. If "plaintext", no outline is used (default: "box")
+    :type leafShape: string
+
+    Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
+    for various outlines supported by GraphViz.
+    """
     fle = type(fileName) == str and file(fileName, "wt") or fileName
 
-    __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
-                 argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
-                 tree,
-                 leafShape = leafShape, nodeShape = nodeShape, fle = fle).dotTree()
+    __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
+        __TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
+        argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True), tree,
+        leafShape=leafShape, nodeShape=nodeShape, fle=fle).dotTree()
                         
-printDot = dotTree
-        
-
+dotTree = printDot
+""" An alias for :func:`printDot`. Left for compatibility. """

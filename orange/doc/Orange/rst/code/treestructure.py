@@ -4,10 +4,10 @@
 # Uses:        lenses
 # Referenced:  TreeLearner.htm
 
-import orange
+import Orange
 
-data = orange.ExampleTable("lenses")
-treeClassifier = orange.TreeLearner(data)
+data = Orange.data.Table("lenses")
+treeClassifier = Orange.classification.tree.TreeLearnerBase(data)
 
 def treeSize(node):
     if not node:
@@ -41,9 +41,9 @@ def printTree0(node, level):
         print "--> %s (%s) " % (majorClass, nodeCont),
 
 def printTree(x):
-    if type(x) == orange.TreeClassifier:
+    if isinstance(x, Orange.classification.tree.TreeClassifier):
         printTree0(x.tree, 0)
-    elif type(x) == orange.TreeNode:
+    elif isinstance(x, Orange.classification.tree.Node):
         printTree0(x, 0)
     else:
         raise TypeError, "invalid parameter"
