@@ -219,15 +219,19 @@ class FixChangedNames(fixer_base.BaseFix):
         if member and module in self._modules_to_change:
             node = member[0]
             head = head[0]
-            tail = tail[0]
+#            if tail:
+#                tail = tail[0]
+#            else:
+#                tail = None
             
             new_name = unicode(self.mapping[module + "." + node.value])
             
             syms = self.syms
             
-            tail = tail.clone()
+            if tail:
+                tail = [t.clone() for t in  tail]
             new = self.package_tree(new_name)
-            new = pytree.Node(syms.power, new + [tail])
+            new = pytree.Node(syms.power, new + tail)
             
             # Make sure the proper package is imported
             package = new_name.rsplit(".", 1)[0]
