@@ -4,10 +4,11 @@
 # Uses:        measure-c
 # Referenced:  MeasureAttribute.htm
 
-import orange, random
-data = orange.ExampleTable("measure-c")
+import Orange
+import random
+data = Orange.data.Table("measure-c")
 
-data2 = orange.ExampleTable(data)
+data2 = Orange.data.Table(data)
 nulls = [(0, 1, 24, 25), (24, 25), range(24, 34), (24, 25)]
 for attr in range(len(nulls)):
     for e in nulls[attr]:
@@ -33,10 +34,10 @@ def printVariants(meas):
     print
     
 print "MSE"
-printVariants(orange.MeasureAttribute_MSE())
+printVariants(Orange.feature.scoring.MSE())
 
 print "Relief"
-meas = orange.MeasureAttribute_relief()
+meas = Orange.feature.scoring.Relief()
 print fstr % (("- no unknowns:",) + tuple([meas(i, data) for i in range(attrs)]))
 print fstr % (("- with unknowns:",) + tuple([meas(i, data2) for i in range(attrs)]))
 print

@@ -478,6 +478,7 @@ from orange import MeasureAttribute_gini as Gini
 from orange import MeasureAttribute_relevance as Relevance 
 from orange import MeasureAttribute_cost as Cost
 from orange import MeasureAttribute_relief as Relief
+from orange import MeasureAttribute_MSE as MSE
 
 ######
 # from orngEvalAttr.py

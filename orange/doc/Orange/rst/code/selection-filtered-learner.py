@@ -10,10 +10,10 @@
 import Orange, orngTest, orngStat
 table = Orange.data.Table("voting")
 
-nb = Orange.classification.bayes.NaiveBayesLearner()
+nb = Orange.classification.bayes.NaiveLearner()
 fl = Orange.feature.selection.FilteredLearner(nb, 
      filter=Orange.feature.selection.FilterBestNAtts(n=1), name='filtered')
-learners = (Orange.classification.bayes.NaiveBayesLearner(name='bayes'), fl)
+learners = (Orange.classification.bayes.NaiveLearner(name='bayes'), fl)
 results = orngTest.crossValidation(learners, table, storeClassifiers=1)
 
 # output the results

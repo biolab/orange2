@@ -20,8 +20,8 @@ class BayesFSS(object):
         self.N = 5
       
     def __call__(self, table, weight=None):
-        ma = orngFSS.attMeasure(table)
-        filtered = orngFSS.selectBestNAtts(table, ma, self.N)
+        ma = Orange.feature.scoring.attMeasure(table)
+        filtered = Orange.feature.selection.selectBestNAtts(table, ma, self.N)
         model = Orange.classification.bayes.NaiveLearner(filtered)
         return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
 
