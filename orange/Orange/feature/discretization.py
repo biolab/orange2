@@ -119,8 +119,9 @@ class DiscretizedLearner_Class:
     :param table: data whose continuous features need to be discretized
     :type table: Orange.data.Table
     
-    :param discretizer: a discretizer that converts. Defaults to 
-      :obj:`Orange.feature.discretization.EntropyDiscretization.
+    :param discretizer: a discretizer that converts continuous values into
+      discrete. Defaults to
+      :obj:`Orange.feature.discretization.EntropyDiscretization`.
     :type discretizer: Orange.feature.discretization.Discretization
     
     :param name: name to assign to learner 
