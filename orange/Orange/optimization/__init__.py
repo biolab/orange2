@@ -11,6 +11,18 @@ positive class.
 Tuning parameters
 =================
 
+Two classes support tuning parameters.
+:obj:`Orange.optimization.Tune1Parameter` for fitting a single parameter and
+:obj:`Orange.optimization.TuneMParameters` fitting multiple parameters at once,
+trying all possible combinations. When called with examples and, optionally, id
+of meta attribute with weights, they find the optimal setting of arguments
+using the cross validation. The classes can also be used as ordinary learning
+algorithms - they are in fact derived from
+:obj:`Orange.classification.Learner`.
+
+Both classes have a common parent, :obj:`Orange.optimization.TuneParameters`,
+and a few common attributes.
+
 .. autoclass:: Orange.optimization.TuneParameters
    :members:
 
@@ -37,16 +49,72 @@ Setting Optimal Thresholds
 
 import Orange.core
 
-# The class needs to be given
-#   object     - the learning algorithm to be fitted
-#   evaluate   - statistics to evaluate (default: orngStat.CA)
-#   folds      - the number of folds for internal cross validation
-#   compare    - function to compare (default: cmp - the bigger the better)
-#   returnWhat - tells whether to return values of parameters, a fitted
-#                learner, the best classifier or None. "object" is left
-#                with optimal parameters in any case
 class TuneParameters(Orange.core.Learner):
-    """Tune
+    
+    """.. attribute:: examples
+    
+        Data table with either discrete or continuous features
+    
+    .. attribute:: weightID
+    
+        The ID of the weight meta attribute
+    
+    .. attribute:: object
+    
+        The learning algorithm whose parameters are to be tuned. This can be, for
+        instance, orngTree.TreeLearner. You will usually use the wrapped learners
+        from modules, not the built-in classifiers, such as orange.TreeLearner
+        directly, since the arguments to be fitted are easier to address in the
+        wrapped versions. But in principle it doesn't matter. 
+    
+    .. attribute:: evaluate
+    
+        The statistics to evaluate. The default is orngStat.CA, so the learner will
+        be fit for the optimal classification accuracy. You can replace it with,
+        for instance, orngStat.AUC to optimize the AUC. Statistics can return
+        either a single value (classification accuracy), a list with a single value
+        (this is what orngStat.CA actually does), or arbitrary objects which the
+        compare function below must be able to compare.
+    
+    .. attribute:: folds
+    
+        The number of folds used in internal cross-validation. Default is 5.
+    
+    .. attribute:: compare
+    
+        The function used to compare the results. The function should accept two
+        arguments (e.g. two classification accuracies, AUCs or whatever the result
+        of evaluate is) and return a positive value if the first argument is
+        better, 0 if they are equal and a negative value if the first is worse than
+        the second. The default compare function is cmp. You don't need to change
+        this if evaluate is such that higher values mean a better classifier.
+    
+    .. attribute:: returnWhat
+    
+        Decides what should be result of tuning. Possible values are:
+    
+        * TuneParameters.returnNone (or 0): tuning will return nothing,
+        * TuneParameters.returnParameters (or 1): return the optimal value(s) of parameter(s),
+        * TuneParameters.returnLearner (or 2): return the learner set to optimal parameters,
+        * TuneParameters.returnClassifier (or 3): return a classifier trained with the optimal parameters on the entire data set. This is the default setting.
+        
+        Regardless of this, the learner (given as object) is left set to the
+        optimal parameters.
+    
+    .. attribute:: verbose
+    
+        If 0 (default), the class doesn't print anything. If set to 1, it will
+        print out the optimal value found, if set to 2, it will print out all tried
+        values and the related
+    
+    If tuner returns the classifier, it behaves as a learning algorithm. As the
+    examples below will demonstrate, it can be called, given the examples and
+    the result is a "trained" classifier. It can, for instance, be used in
+    cross-validation.
+
+    Out of these attributes, the only necessary argument is object. The real tuning
+    classes add two additional - the attributes that tell what parameter(s) to
+    optimize and which values to use.
     
     """
     
@@ -76,6 +144,64 @@ class TuneParameters(Orange.core.Learner):
 #   values     - possible values of the parameter
 #                (eg <object>.<parameter> = <value>[i])
 class Tune1Parameter(TuneParameters):
+    
+    """Class :obj:`Orange.optimization.Tune1Parameter` tunes a single parameter.
+    
+    .. attribute:: parameter
+    
+        The name of the parameter (or a list of names, if the same parameter is
+        stored at multiple places - see the examples) to be tuned.
+    
+    .. attribute:: values
+    
+        A list of parameter's values to be tried.
+    
+    To show how it works, we shall fit the minimal number of examples in a leaf
+    for a tree classifier.
+    
+    part of `optimization-tuning1.py`_
+
+    .. literalinclude:: code/optimization-tuning1.py
+        :lines: 7-15
+
+    Set up like this, when the tuner is called, set learner.minSubset to 1, 2,
+    3, 4, 5, 10, 15 and 20, and measure the AUC in 5-fold cross validation. It
+    will then reset the learner.minSubset to the optimal value found and, since
+    we left returnWhat at the default (returnClassifier), construct and return
+    the classifier from the entire data set. So, what we get is a classifier,
+    but if we'd also like to know what the optimal value was, we can get it
+    from learner.minSubset.
+
+    Tuning is of course not limited to setting numeric parameters. You can, for
+    instance, try to find the optimal criteria for assessing the quality of
+    attributes by tuning parameter="measure", trying settings like
+    values=[orange.MeasureAttribute_gainRatio(),
+    orange.MeasureAttribute_gini()].
+    
+    Since the tuner returns a classifier and thus behaves like a learner, it
+    can be used in a cross-validation. Let us see whether a tuning tree indeed
+    enhances the AUC or not. We shall reuse the tuner from above, add another
+    tree learner, and test them both.
+    
+    part of `optimization-tuning1.py`_
+
+    .. literalinclude:: code/optimization-tuning1.py
+        :lines: 17-22
+    
+    This will take some time: for each of 8 values for minSubset it will
+    perform 5-fold cross validation inside a 10-fold cross validation -
+    altogether 400 trees. Plus, it will learn the optimal tree afterwards for
+    each fold. Add a tree without tuning, and you get 420 trees build.
+    
+    Well, not that long, and the results are good::
+    
+        Untuned tree: 0.930
+        Tuned tree: 0.986
+    
+    .. _optimization-tuning1.py: code/optimization-tuning1.py
+    
+    """
+    
     def __call__(self, table, weight=None, verbose=0):
         import orngTest, orngStat, orngMisc
 
@@ -125,6 +251,30 @@ class Tune1Parameter(TuneParameters):
 #                corresponding possible values, [(parameter(s), values), ...]
 #                (eg <object>.<parameter[j]> = <value[j]>[i])
 class TuneMParameters(TuneParameters):
+    
+    """The use of :obj:`Orange.optimization.TuneMParameters differs from 
+    Tune1Parameter only in specification of tuning parameters.
+    
+    .. attribute:: parameters
+    
+        A list of two-element tuples, each containing the name of a parameter
+        and its possible values.
+    
+    For exercise we can try to tune both settings mentioned above, the minimal
+    number of examples in leaves and the splitting criteria by setting the
+    tuner as follows:
+    
+    part of `optimization-tuningm.py`_
+
+    .. literalinclude:: code/optimization-tuningm.py
+        :lines: 9-12
+        
+    Everything else stays like above, in examples for Tune1Parameter.
+    
+    .. _optimization-tuningm.py: code/optimization-tuningm.py
+        
+    """
+    
     def __call__(self, table, weight=None, verbose=0):
         import orngTest, orngStat, orngMisc
 
