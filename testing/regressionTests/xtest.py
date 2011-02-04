@@ -30,13 +30,14 @@ def test_scripts(complete, just_print, module="orange", root_directory=".",
 
     caller_directory = os.getcwd()
     os.chdir(root_directory) # directory to start the testing in
-    for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in [".svn", "cvs", "datasets", "widgets", "processed", "catalog"] or (directories and not dir in directories):
-            continue
-        
+    for dirname, dir in directories:
         os.chdir(dir)
-        outputsdir = "%s/results/%s/%s" % (regtestdir, module, dir)
-        print "DIR", dir
+        if module <> dirname:
+            outputsdir = "%s/results/%s/%s" % (regtestdir, module, dirname)
+        else:
+            outputsdir = "%s/results/%s" % (regtestdir, module)
+            
+        print "DIR %s (%s)" % (dirname, dir)
         if not os.path.exists(outputsdir):
             os.mkdir(outputsdir)
 
@@ -150,7 +151,7 @@ def main(argv):
             del argv[0]
 
     try:
-        opts, test_files = getopt.getopt(argv, "hs", ["single", "module=", "help", "dir=", "files=", "verbose="])
+        opts, test_files = getopt.getopt(argv, "hs", ["single", "module=", "help", "files=", "verbose="])
     except getopt.GetoptError:
         print "Warning: Wrong argument"
         usage()
@@ -161,14 +162,16 @@ def main(argv):
     if "--help" in opts or '-h' in opts:
         usage()
         sys.exit(0)
-    directories = [] 
-    if "--dir" in opts:
-        directories = opts["--dir"].split(",")
     
     module = opts.get("--module", "orange")
-    if module in ["orange", "orng"]:
+    if module in ["orange"]:
         root = "%s/doc" % orngEnviron.orangeDir
         module = "orange"
+        dirs = [("modules", "modules"), ("reference", "reference"), ("ofb", "ofb-rst/code")]
+    elif module in ["orange25"]:
+        root = "%s/doc" % orngEnviron.orangeDir
+        module = "orange25"
+        dirs = [("orange25", "Orange/rst/code")]
     elif module == "obi":
         root = orngEnviron.addOnsDirSys + "/Bioinformatics/doc"
     elif module == "text":
@@ -178,8 +181,8 @@ def main(argv):
         sys.exit(1)
     
     test_scripts(command=="test", command=="report" or (command=="report-html" and command or False), 
-                 module=module, root_directory=root, 
-                 test_files=test_files, directories=directories)
+                 module=module, root_directory=root,
+                 test_files=test_files, directories=dirs)
     # sys.exit(error_status)
     
 main(sys.argv[1:])
