@@ -1,34 +1,29 @@
 """
-.. index: logreg
+.. index: logistic regression
+.. index:
+   single: classification; logistic regression
 
-===================
-Logistic Regression
-===================
+*******************
+Logistic regression
+*******************
 
-Implements logistic regression and extends it's use to discrete features.
-It can handle various anomalies in features, such as constant variables
-and singularities, that make fitting logistic regression almost
-impossible. It also implements a function for constructing stepwise
-logistic regression, which is a good technique for prevent overfitting,
-and is a good feature subset selection technique as well.
+Implements `logistic regression <http://en.wikipedia.org/wiki/Logistic_regression>`_
+with an extension for proper treatment of discrete features.
+The algorithm can handle various anomalies in features, such as constant variables
+and singularities, that could make fitting of logistic regression almost
+impossible. Stepwise logistic regression, which iteratively selects the most informative features,
+is also supported.
 
-
-Useful Functions
-----------------
 
 .. autofunction:: LogRegLearner
 .. autofunction:: StepWiseFSS
 .. autofunction:: dump
 
-
-Class
------
-
 .. autoclass:: StepWiseFSS_class
    :members:
 
 Examples
---------
+========
 
 The first example shows a very simple induction of a logistic regression
 classifier (`logreg-run.py`_, uses `titanic.tab`_).
@@ -56,7 +51,7 @@ The next examples shows how to handle singularities in data sets
 
 .. literalinclude:: code/logreg-singularities.py
 
-Result::
+The first few lines of the output of this script are::
 
     <=50K <=50K
     <=50K <=50K
@@ -80,33 +75,8 @@ Result::
     marital-status=Married-spouse-absent       3.98       0.00        inf       0.00      53.63
         marital-status=Married-AF-spouse       4.01       0.00        inf       0.00      55.19
                  occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
-                 occupation=Craft-repair       0.37       0.00        inf       0.00       1.45
-                occupation=Other-service       2.68       0.00        inf       0.00      14.61
-                        occupation=Sales       0.22       0.00        inf       0.00       1.24
-               occupation=Prof-specialty       0.18       0.00        inf       0.00       1.19
-            occupation=Handlers-cleaners       1.29       0.00        inf       0.00       3.64
-            occupation=Machine-op-inspct       0.86       0.00        inf       0.00       2.37
-                 occupation=Adm-clerical       0.30       0.00        inf       0.00       1.35
-              occupation=Farming-fishing       1.12       0.00        inf       0.00       3.06
-             occupation=Transport-moving       0.62       0.00        inf       0.00       1.85
-              occupation=Priv-house-serv       3.46       0.00        inf       0.00      31.87
-              occupation=Protective-serv       0.11       0.00        inf       0.00       1.12
-                 occupation=Armed-Forces       0.59       0.00        inf       0.00       1.81
-                       relationship=Wife      -1.06      -0.00        inf       0.00       0.35
-                  relationship=Own-child      -1.04      60.00      -0.02       0.99       0.35
-              relationship=Not-in-family      -1.94  532845.00      -0.00       1.00       0.14
-             relationship=Other-relative      -2.42       0.00       -inf       0.00       0.09
-                  relationship=Unmarried      -1.92       0.00       -inf       0.00       0.15
-                 race=Asian-Pac-Islander      -0.19       0.00       -inf       0.00       0.83
-                 race=Amer-Indian-Eskimo       2.88       0.00        inf       0.00      17.78
-                              race=Other       3.93       0.00        inf       0.00      51.07
-                              race=Black       0.11       0.00        inf       0.00       1.12
-                              sex=Female       0.30       0.00        inf       0.00       1.36
-                            capital-gain      -0.00       0.00       -inf       0.00       1.00
-                            capital-loss      -0.00       0.00       -inf       0.00       1.00
-                          hours-per-week      -0.04       0.00       -inf       0.00       0.96
 
-In case we set :obj:`removeSingular` to 0, inducing a logistic regression
+If :obj:`removeSingular` is set to 0, inducing a logistic regression
 classifier would return an error::
 
     Traceback (most recent call last):
@@ -118,16 +88,14 @@ classifier would return an error::
         lr = learner(examples, weight)
     orange.KernelException: 'orange.LogRegLearner': singularity in workclass=Never-worked
 
-
 We can see that the attribute workclass is causing a singularity.
 
-The last example shows, how the use of stepwise logistic
-regression can help us achieve better classification
-(`logreg-stepwise.py`_, uses `ionosphere.tab`_):
+The example below shows, how the use of stepwise logistic regression can help to
+gain in classification performance (`logreg-stepwise.py`_, uses `ionosphere.tab`_):
 
 .. literalinclude:: code/logreg-stepwise.py
 
-Result::
+The output of this script is::
 
     Learner      CA
     logistic     0.841
@@ -165,12 +133,6 @@ Result::
     10 x a9
     10 x a8
 
-References
-----------
-
-David W. Hosmer, Stanley Lemeshow. Applied Logistic Regression - 2nd ed. Wiley, New York, 2000 
-
-
 .. _logreg-run.py: code/logreg-run.py
 .. _logreg-singularities.py: code/logreg-singularities.py
 .. _logreg-stepwise.py: code/logreg-stepwise.py
@@ -190,9 +152,9 @@ from numpy import *
 from numpy.linalg import *
 
 
-#######################
-## Print out methods ##
-#######################
+##########################################################################
+## Print out methods
+
 def dump(classifier):
     """ Formatted print to console of all major features in logistic
     regression classifier. 
@@ -799,8 +761,7 @@ class bayesianFitter(Orange.core.LogRegFitter):
         return (likelihood,betas)
     
 ############################################################
-####  Feature subset selection for logistic regression  ####
-############################################################
+#  Feature subset selection for logistic regression
 
 
 def StepWiseFSS(table=None, **kwds):
@@ -1026,16 +987,13 @@ class StepWiseFSS_Filter_class(object):
                 
 
 ####################################
-####  PROBABILITY CALCULATIONS  ####
-####################################
+##  PROBABILITY CALCULATIONS
 
 def lchisqprob(chisq,df):
     """
-Returns the (1-tailed) probability value associated with the provided
-chi-square value and df.  Adapted from chisq.c in Gary Perlman's |Stat.
-
-Usage:   lchisqprob(chisq,df)
-"""
+    Return the (1-tailed) probability value associated with the provided
+    chi-square value and df.  Adapted from chisq.c in Gary Perlman's |Stat.
+    """
     BIG = 20.0
     def ex(x):
     	BIG = 20.0
@@ -1090,15 +1048,15 @@ Usage:   lchisqprob(chisq,df)
 
 def zprob(z):
     """
-Returns the area under the normal curve 'to the left of' the given z value.
-Thus, 
+    Returns the area under the normal curve 'to the left of' the given z value.
+    Thus:: 
+
     for z<0, zprob(z) = 1-tail probability
     for z>0, 1.0-zprob(z) = 1-tail probability
     for any z, 2.0*(1.0-zprob(abs(z))) = 2-tail probability
-Adapted from z.c in Gary Perlman's |Stat.
 
-Usage:   lzprob(z)
-"""
+    Adapted from z.c in Gary Perlman's |Stat.
+    """
     Z_MAX = 6.0    # maximum meaningful z-value
     if z == 0.0:
 	x = 0.0
