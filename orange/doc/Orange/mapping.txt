@@ -349,20 +349,20 @@ distances
          ExampleDistBySorting
     ExampleDistVector
     ExamplesDistance
-         ExamplesDistance_Hamming
+         ExamplesDistance_Hamming -> Hamming
          ExamplesDistance_Normalized
-              ExamplesDistance_DTW
-              ExamplesDistance_Euclidean
-              ExamplesDistance_Manhattan
-              ExamplesDistance_Maximal
-         ExamplesDistance_Relief
+              ExamplesDistance_DTW -> DTW
+              ExamplesDistance_Euclidean -> Euclidean
+              ExamplesDistance_Manhattan -> Manhattan
+              ExamplesDistance_Maximal -> Maximal
+         ExamplesDistance_Relief -> Relief
     ExamplesDistanceConstructor
-         ExamplesDistanceConstructor_DTW
-         ExamplesDistanceConstructor_Euclidean
-         ExamplesDistanceConstructor_Hamming
-         ExamplesDistanceConstructor_Manhattan
-         ExamplesDistanceConstructor_Maximal
-         ExamplesDistanceConstructor_Relief
+         ExamplesDistanceConstructor_DTW -> DTWConstructur
+         ExamplesDistanceConstructor_Euclidean -> EuclideanConstructur
+         ExamplesDistanceConstructor_Hamming -> HammingConstructur
+         ExamplesDistanceConstructor_Manhattan -> ...
+         ExamplesDistanceConstructor_Maximal -> ..
+         ExamplesDistanceConstructor_Relief -> ..
 
 classification/wrappers
     CostWrapperClassifier
