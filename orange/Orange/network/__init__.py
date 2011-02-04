@@ -557,7 +557,6 @@ Community Detection in Graphs
 import random
 import os
 
-import orangeom
 import Orange.core
 import Orange.data
 
@@ -571,7 +570,7 @@ class MdsTypeClass():
 
 MdsType = MdsTypeClass()
 
-class Network(orangeom.Network):
+class Network(Orange.core.Network):
     
     """Bases: :obj:`Orange.network.GraphAsList`, :obj:`Orange.network.Graph` 
     
@@ -581,7 +580,7 @@ class Network(orangeom.Network):
     network analysis. Network class is inherited from
     :obj:`Orange.network.GraphAsList`. Refer to
     :obj:`Orange.network.GraphAsList` for more graph analysis tools. See the
-    orangeom.Pathfinder class for a way to simplify your network.
+    Orange.core.Pathfinder class for a way to simplify your network.
     
     .. attribute:: coors
    
@@ -836,7 +835,7 @@ class Network(orangeom.Network):
                 net.optimization = NetworkOptimization(net)
             return net 
 
-class NetworkOptimization(orangeom.NetworkOptimization):
+class NetworkOptimization(Orange.core.NetworkOptimization):
     
     """Perform network layout optimization. Network structure is defined in 
     :obj:`Orange.network.Network` class.
@@ -894,7 +893,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     
     def __init__(self, network=None, name="None"):
         if network is None:
-            network = orangeom.Network(2, 0)
+            network = Orange.core.Network(2, 0)
             
         self.setGraph(network)
         self.graph = network
@@ -965,7 +964,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                          set(self.graph.getNodes(1)))
                 
             if len(nodes) > 0:
-                subgraph = orangeom.Network(self.graph.getSubGraph(nodes))
+                subgraph = Orange.core.Network(self.graph.getSubGraph(nodes))
                 oldcoors = self.coors
                 self.setGraph(subgraph)
                 self.graph = subgraph
@@ -991,7 +990,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         
                 #print graphstomerge
                 #print used
-                subgraph = orangeom.Network(
+                subgraph = Orange.core.Network(
                             subgraph.getSubGraphMergeClusters(graphstomerge))
                                    
                 nodescomp = list(set(range(self.graph.nVertices)) - used)
