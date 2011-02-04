@@ -440,8 +440,8 @@ div.sphinxsidebar {
     text-align: left;
     z-index: 10;
     background-color: white;
-    float: left;
-    padding-right: 30px;
+    float: right;
+    padding-left: 30px;
 }
 
 div.sphinxsidebar ul {
