@@ -41,6 +41,8 @@ MAPPING = {"orange": "Orange.core",
            "orngClustering": "Orange.cluster",
            "orngBayes":"Orange.classification.bayes",
            "orngNetwork":"Orange.network",
+           "orngMisc":"Orange.misc",
+           "orngEnsemble":"Orange.ensemble"
            }
 
 
