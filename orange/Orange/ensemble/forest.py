@@ -7,21 +7,37 @@ import random
 
 
 class RandomForestLearner(orange.Learner):
+    """:param examples: If these are passed, the call returns 
+            RandomForestClassifier, that is, creates the required set of
+            decision trees, which, when presented with an examples, vote
+            for the predicted class.
+    :type examples: :class:`Orange.data.Table`
+    :param trees: Number of trees in the forest.
+    :type trees: int
+    :param learner: Although not required, one can use this argument
+            to pass one's own tree induction algorithm. If None is passed
+            , RandomForestLearner will use Orange's tree induction 
+            algorithm such that in induction nodes with less then 5 
+            examples will not be considered for (further) splitting.
+    :type learner: :class:`Orange.core.Learner`
+    :param attributes: Number of attributes used in a randomly drawn
+            subset when searching for best attribute to split the node
+            in tree growing (default: None, and if kept this way, this
+            is turned into square root of attributes in the training set,
+            when this is presented to learner).
+    :param rand: Random generator used in bootstrap sampling. 
+            If none is passed, then Python's Random from random library is 
+            used, with seed initialized to 0.
+    :type rand: function
+    :param callback:  A function to be called after every iteration of
+            induction of classifier. This is called with parameter 
+            (from 0.0 to 1.0) that gives estimates on learning progress.
+    :param name: The name of the learner.
+    :type name: string
+    :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier` or 
+            :class:`Orange.ensemble.forest.RandomForestLearner`
     """
-    Just like bagging, classifiers in random forests are trained from bootstrap
-    samples of training data. Here, classifiers are trees, but to increase
-    randomness build in the way that at each node the best attribute is chosen
-    from a subset of attributes in the training set. We closely follows the
-    original algorithm (Brieman, 2001) both in implementation and parameter
-    defaults.
 
-    .. note::
-        Random forest classifier uses decision trees induced from bootstrapped
-        training set to vote on class of presented example. Most frequent vote
-        is returned. However, in our implementation, if class probability is
-        requested from a classifier, this will return the averaged probabilities
-        from each of the trees.
-    """
     def __new__(cls, examples=None, weight = 0, **kwds):
         self = orange.Learner.__new__(cls, **kwds)
         if examples:
@@ -32,35 +48,6 @@ class RandomForestLearner(orange.Learner):
 
     def __init__(self, learner=None, trees=100, attributes=None,\
                     name='Random Forest', rand=None, callback=None):
-        """:param examples: If these are passed, the call returns 
-                RandomForestClassifier, that is, creates the required set of
-                decision trees, which, when presented with an examples, vote
-                for the predicted class.
-        :type examples: :class:`Orange.data.Table`
-        :param trees: Number of trees in the forest.
-        :type trees: int
-        :param learner: Although not required, one can use this argument
-                to pass one's own tree induction algorithm. If None is passed
-                , RandomForestLearner will use Orange's tree induction 
-                algorithm such that in induction nodes with less then 5 
-                examples will not be considered for (further) splitting.
-        :type learner: :class:`Orange.core.Learner`
-        :param attributes: Number of attributes used in a randomly drawn
-                subset when searching for best attribute to split the node
-                in tree growing (default: None, and if kept this way, this
-                is turned into square root of attributes in the training set,
-                when this is presented to learner).
-        :param rand: Random generator used in bootstrap sampling. 
-                If none is passed, then Python's Random from random library is 
-                used, with seed initialized to 0.
-        :type rand: function
-        :param callback:  A function to be called after every iteration of
-                induction of classifier. This is called with parameter 
-                (from 0.0 to 1.0) that gives estimates on learning progress.
-        :param name: The name of the learner.
-        :type name: string
-        :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier` or 
-                :class:`Orange.ensemble.forest.RandomForestLearner`"""
         self.trees = trees
         self.name = name
         self.learner = learner

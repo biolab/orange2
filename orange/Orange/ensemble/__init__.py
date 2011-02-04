@@ -7,18 +7,45 @@ and Freund and Schapire's boosting algorithms.
 
 
 ==================
-Boosting
+Bagging
 ==================
+BaggedLearner takes a learner and returns a bagged learner, which is 
+essentially a wrapper around the learner passed as an argument. If 
+examples are passed in arguments, BaggedLearner returns a bagged 
+classifiers. Both learner and classifier then behave just like any 
+other learner and classifier in Orange.
+
+Bagging, in essence, takes a training data and a learner, and builds t 
+classifiers each time presenting a learner a bootstrap sample from the 
+training data. When given a test example, classifiers vote on class, 
+and a bagged classifier returns a class with a highest number of votes. 
+As implemented in Orange, when class probabilities are requested, these 
+are proportional to the number of votes for a particular class.
+
 .. index:: ensembleboosting
 .. autoclass:: Orange.ensemble.bagging.BaggedLearner
    :members:
+   :show-inheritance:
 
 ==================
-Bagging
+Boosting
 ==================
+Instead of drawing a series of bootstrap samples from the training set,
+bootstrap maintains a weight for each instance. When classifier is 
+trained from the training set, the weights for misclassified instances 
+are increased. Just like in bagged learner, the class is decided based 
+on voting of classifiers, but in boosting votes are weighted by accuracy 
+obtained on training set.
+
+BoostedLearner is an implementation of AdaBoost.M1 (Freund and Shapire, 
+1996). From user's viewpoint, the use of the BoostedLearner is similar to 
+that of BaggedLearner. The learner passed as an argument needs to deal 
+with example weights.
+
 .. index:: ensemblebagging
 .. autoclass:: Orange.ensemble.boosting.BoostedLearner
   :members:
+  :show-inheritance:
 
 Example
 ========
@@ -45,10 +72,24 @@ Running this script, we may get something like::
 ==================
 Forest
 ==================
+Just like bagging, classifiers in random forests are trained from bootstrap
+samples of training data. Here, classifiers are trees, but to increase
+randomness build in the way that at each node the best attribute is chosen
+from a subset of attributes in the training set. We closely follows the
+original algorithm (Brieman, 2001) both in implementation and parameter
+defaults.
+
+.. note::
+    Random forest classifier uses decision trees induced from bootstrapped
+    training set to vote on class of presented example. Most frequent vote
+    is returned. However, in our implementation, if class probability is
+    requested from a classifier, this will return the averaged probabilities
+    from each of the trees.
 
 .. index:: randomforest
 .. autoclass:: Orange.ensemble.forest.RandomForestLearner
   :members:
+  :show-inheritance:
 
 
 Example

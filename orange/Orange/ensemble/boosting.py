@@ -12,18 +12,19 @@ _inf = 100000
 #        return learner
 
 class BoostedLearner(orange.Learner):
-    """
-    Instead of drawing a series of bootstrap samples from the training set,
-    bootstrap maintains a weight for each instance. When classifier is 
-    trained from the training set, the weights for misclassified instances 
-    are increased. Just like in bagged learner, the class is decided based 
-    on voting of classifiers, but in boosting votes are weighted by accuracy 
-    obtained on training set.
-
-    BoostedLearner is an implementation of AdaBoost.M1 (Freund and Shapire, 
-    1996). From user's viewpoint, the use of the BoostedLearner is similar to 
-    that of BaggedLearner. The learner passed as an argument needs to deal 
-    with example weights.
+    """:param learner: A learner to be bagged.
+    :type learner: :class:`Orange.core.Learner`
+    :param examples: If examples are passed to BoostedLearner,
+        this returns a BoostedClassifier, that is, creates t 
+        classifiers using learner and a subset of examples, 
+        as appropriate for AdaBoost.M1 (default: None).
+    :type examples: :class:`Orange.data.Table`
+    :param t: Number of boosted classifiers created from the example set.
+    :type t: int
+    :param name: The name of the learner.
+    :type name: string
+    :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
+            :class:`Orange.ensemble.boosting.BoostedLearner`
     """
     def __new__(cls, learner, examples=None, weightId=None, **kwargs):
         self = orange.Learner.__new__(cls, **kwargs)
@@ -34,19 +35,6 @@ class BoostedLearner(orange.Learner):
             return self
 
     def __init__(self, learner, t=10, name='AdaBoost.M1'):
-        """:param learner: A learner to be bagged.
-        :type learner: :class:`Orange.core.Learner`
-        :param examples: If examples are passed to BoostedLearner,
-            this returns a BoostedClassifier, that is, creates t 
-            classifiers using learner and a subset of examples, 
-            as appropriate for AdaBoost.M1 (default: None).
-        :type examples: :class:`Orange.data.Table`
-        :param t: Number of boosted classifiers created from the example set.
-        :type t: int
-        :param name: The name of the learner.
-        :type name: string
-        :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
-                :class:`Orange.ensemble.boosting.BoostedLearner`"""
         self.t = t
         self.name = name
         self.learner = learner
