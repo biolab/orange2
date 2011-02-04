@@ -15,16 +15,30 @@ import Orange
 #        return learner
 
 class BaggedLearner(orange.Learner):
-    """:param learner: A learner to be bagged.
+    """
+    BaggedLearner takes a learner and returns a bagged learner, which is 
+    essentially a wrapper around the learner passed as an argument. If 
+    examples are passed in arguments, BaggedLearner returns a bagged 
+    classifiers. Both learner and classifier then behave just like any 
+    other learner and classifier in Orange.
+
+    Bagging, in essence, takes a training data and a learner, and builds t 
+    classifiers each time presenting a learner a bootstrap sample from the 
+    training data. When given a test example, classifiers vote on class, 
+    and a bagged classifier returns a class with a highest number of votes. 
+    As implemented in Orange, when class probabilities are requested, these 
+    are proportional to the number of votes for a particular class.
+    
+    :param learner: learner to be bagged.
     :type learner: :class:`Orange.core.Learner`
-    :param examples: If examples are passed to BaggedLearner, this returns
+    :param examples: if examples are passed to BaggedLearner, this returns
         a BaggedClassifier, that is, creates t classifiers using learner 
         and a subset of examples, as appropriate for bagging.
     :type examples: :class:`Orange.data.Table`
-    :param t: Number of bagged classifiers, that is, classifiers created
+    :param t: number of bagged classifiers, that is, classifiers created
         when examples are passed to bagged learner.
     :type t: int
-    :param name: The name of the learner.
+    :param name: name of the learner.
     :type name: string
     :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier` or 
             :class:`Orange.ensemble.bagging.BaggedLearner`
@@ -45,9 +59,9 @@ class BaggedLearner(orange.Learner):
     def __call__(self, instances, weight=0):
         """Learn from the given table of data instances.
         
-        :param instances: Data instances to learn from.
+        :param instances: data instances to learn from.
         :type instances: Orange.data.Table
-        :param weight: Id of meta attribute with weights of instances
+        :param weight: ID of meta attribute with weights of instances
         :type weight: int
         :rtype: :class:`Orange.ensemble.bagging.BaggedClassifier`
         """
