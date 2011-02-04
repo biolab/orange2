@@ -1,6 +1,6 @@
 # Description: Shows how to "learn" the mean class and compare other classifiers to the default classification
 # Category:    default classification accuracy, statistics
-# Classes:     MeanLearner, Orange.evaluate.crossValidation
+# Classes:     MeanLearner, Orange.evaluation.testing.crossValidation
 # Uses:        monks-1
 # Referenced:  mean.htm
 
