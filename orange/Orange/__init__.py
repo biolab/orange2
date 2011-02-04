@@ -60,7 +60,7 @@ import evaluation
 import evaluation.scoring
 import evaluation.testing
 
-import cluster
+import clustering
 
 import misc
 import misc.counters
