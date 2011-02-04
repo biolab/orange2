@@ -8,7 +8,7 @@ The functionality to perform multidimensional scaling
 (http://en.wikipedia.org/wiki/Multidimensional_scaling).
 
 ************************
-Multidimensional Scaling
+Multidimensional scaling
 ************************
 
 The main class to perform multidimensional scaling is
@@ -44,7 +44,7 @@ This module provides the following stress functions:
    * Orange.projection.mds.SammonStress
    * Orange.projection.mds.SgnSammonStress
 
-Usage Examples
+Usage examples
 ==============
 
 MDS Scatterplot
