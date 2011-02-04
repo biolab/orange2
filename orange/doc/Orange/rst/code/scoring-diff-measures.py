@@ -1,8 +1,8 @@
-# Description: Tests various classes for attribute quality assessment
-# Category:    attribute quality
-# Classes:     MeasureAttribute, MeasureAttribute_info, MeasureAttribute_gainRatio, MeasureAttribute_gini, MeasureAttribute_relevance, MeasureAttribute_cost, MeasureAttribute_Relief
+# Description: Tests various classes for feature quality assessment
+# Category:    feature scoring
 # Uses:        measure
-# Referenced:  MeasureAttribute.htm
+# Referenced:  Orange.feature.html#scoring
+# Classes:     Orange.feature.scoring.attMeasure, Orange.features.scoring.Info, Orange.features.scoring.GainRatio, Orange.features.scoring.Gini, Orange.features.scoring.Relevance, Orange.features.scoring.Cost, Orange.features.scoring.Relief
 
 import Orange
 import random

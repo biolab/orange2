@@ -3,7 +3,7 @@
 #              important attribute is used. Shows how to find out which (in
 #              ten-fold cross validation) attributes was used the most.
 # Category:    feature selection
-# Uses:        voting.tab
+# Uses:        voting
 # Referenced:  Orange.feature.html#selection
 # Classes:     Orange.feature.selection.FilteredLearner
 

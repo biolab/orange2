@@ -1,6 +1,6 @@
 # Description: Ranking of features with two different measures (Relief and gain ratio)
 # Category:    feature scoring
-# Uses:        voting.tab
+# Uses:        voting
 # Referenced:  Orange.feature.html#scoring
 # Classes:     Orange.feature.scoring.attMeasure, Orange.features.scoring.GainRatio
 

@@ -1,6 +1,6 @@
 # Description: Compares naive Bayes with and without feature subset selection
 # Category:    feature selection
-# Uses:        voting.tab
+# Uses:        voting
 # Referenced:  Orange.feature.html#selection
 # Classes:     Orange.feature.scoring.attMeasure, Orange.feature.selection.bestNAtts
 

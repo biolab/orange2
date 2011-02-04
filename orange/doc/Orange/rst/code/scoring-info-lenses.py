@@ -1,8 +1,8 @@
 # Description: Shows how to assess the quality of attributes
-# Category:    attribute quality
+# Category:    feature scoring
 # Uses:        lenses
 # Referenced:  Orange.feature.html#scoring
-# Classes:     MeasureAttribute, MeasureAttribute_info, 
+# Classes:     Orange.feature.scoring.Measure, Orange.features.scoring.Info
 
 import Orange
 import random

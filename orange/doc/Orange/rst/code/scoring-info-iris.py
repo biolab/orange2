@@ -1,5 +1,5 @@
-# Description: Shows how to assess the quality of attributes not in the dataset
-# Category:    attribute quality
+# Description: Shows how to assess the quality of features not in the dataset
+# Category:    feature scoring
 # Uses:        iris
 # Referenced:  Orange.feature.html#scoring
 # Classes:     Orange.feature.scoring.EntropyDiscretization, Orange.feature.scoring.Measure, Orange.feature.scoring.InfoGain

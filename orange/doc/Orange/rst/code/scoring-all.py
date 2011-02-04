@@ -2,7 +2,7 @@
 # Category:    feature scoring
 # Uses:        voting
 # Referenced:  Orange.feature.html#scoring
-# Classes:     Orange.feature.scoring.attMeasure, Orange.features.scoring.gainRatio
+# Classes:     Orange.feature.scoring.attMeasure, Orange.features.scoring.GainRatio
 
 import Orange
 table = Orange.data.Table("voting")
