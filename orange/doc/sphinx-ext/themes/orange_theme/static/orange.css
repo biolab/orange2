@@ -337,10 +337,16 @@ dl.class > dt {
     margin-bottom: 10px;
     margin-top: 20px;
     border-bottom: 2px solid black;
+    font-style: normal;
 }
 
 dl.class {
     line-height: 180%;
+}
+
+dl.class > dt > em.property, dl.class > dt > tt {
+    font-style: normal;
+    font-style: Verdana, Arial;
 }
 
 div.body h1 {
