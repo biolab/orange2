@@ -21,7 +21,6 @@ AUCs = scoring.AUC(res)
 print "Untuned tree: %5.3f" % AUCs[0]
 print "Tuned tree: %5.3f" % AUCs[1]
 
-
 learner = Orange.classification.tree.TreeLearner(minSubset=10).instance()
 data = Orange.data.Table("voting")
 tuner = Orange.optimization.Tune1Parameter(object=learner,
