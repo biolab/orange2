@@ -73,6 +73,12 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.FindNearestConstructor_BruteForce":"Orange.classification.knn.FindNearestConstructor",
            "orange.P2NN":"Orange.classification.knn.P2NN",
            
+           "orange.BayesLearner":"Orange.classification.bayes.NaiveLearner",
+           "orange.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
+           "orngBayes.BayesLearner":"Orange.classification.bayes.NaiveLearner",
+           "orngBayes.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
+           
+           
            }
 
 def build_pattern(mapping=MAPPING):
