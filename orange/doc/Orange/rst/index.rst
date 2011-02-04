@@ -21,7 +21,8 @@ Contents:
    
    Orange.classification
    
-   Orange.regression.mean
+   Orange.regression
+   
    Orange.probability.distributions
    Orange.ensemble
 

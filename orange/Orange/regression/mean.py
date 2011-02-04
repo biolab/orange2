@@ -1,6 +1,11 @@
 """
 
+****
+Mean
+****
+
 .. index:: regression; mean
+
 
 Accuracy of classifiers is often compared to the "default accuracy".
 For regression, that is the accuracy of a classifier which predicts for
@@ -14,8 +19,7 @@ This is the regression counterpart of the
 :obj:`Orange.classification.majority.MajorityLearner`, which can be
 used for classification problems.
 
-Examples
-========
+.. rubric:: Examples
 
 This "learning algorithm" will most often be used to establish
 whether some other learning algorithm is better than "nothing".
