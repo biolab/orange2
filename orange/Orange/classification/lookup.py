@@ -1,6 +1,11 @@
 """
 
+******
+Lookup
+******
+
 .. index:: classification; lookup
+
 
 Lookup classifiers predict classes by looking into stored lists of
 cases. There are two kinds of such classifiers in Orange. The simpler
