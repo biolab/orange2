@@ -1,0 +1,1 @@
+.. automodule:: Orange.classification.tree
