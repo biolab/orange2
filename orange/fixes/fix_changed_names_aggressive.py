@@ -29,23 +29,7 @@ class FixChangedNamesAggressive(FixChangedNames):
         self._names_to_modules = name2mod
         
         fixer_base.BaseFix.compile_pattern(self)
-        
-#    def package_tree(self, package):
-#        """ Return pytree tree for asscesing the package
-#        
-#        Example:
-#            >>> package_tree("Orange.feature.scoring")
-#            [Name('Orange'), trailer('.' 'feature'), trailer('.', 'scoring')]
-#        """
-#        path = package.split('.')
-#        nodes = []
-#        nodes.append(Name(path[0]))
-#        for name in path[1:]:
-#            new = pytree.Node(self.syms.trailer, [Dot(), Name(name)])
-#            nodes.append(new)
-#        return nodes
-        
-        
+                
     def transform(self, node, results):
         local = results.get("local")
         tail = results.get("tail")

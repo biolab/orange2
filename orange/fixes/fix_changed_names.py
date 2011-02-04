@@ -1,3 +1,23 @@
+""" This fixer changes all occurrences of the form 'module.member' from the
+global dictionary MAPPING's keys and replaces them with the corresponding
+value. It adds the proper imports to make it available in the script
+
+For example this code::
+    import orange
+    import orngSVM
+    data = orange.ExampleTable("iris")
+    learner = orngSVM.SVMLearner(name='svm')
+    
+will be replaced with::
+    import Orange.data
+    import Orange.classification.svm
+    data =Orange.data.Table('iris')
+    learner =Orange.classification.svm.SVMLearner(name='svm')
+    
+Try to add as much name mappings as possible (This fixer is prefered 
+(and will run before) the fix_orange_imports  
+    
+"""
 from lib2to3 import fixer_base
 from lib2to3 import fixer_util
 from lib2to3 import pytree

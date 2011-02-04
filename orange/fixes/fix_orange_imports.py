@@ -1,25 +1,35 @@
+""" This fixer changes old orange imports (imports of orange, orngSVM,
+orngClustering ...) to the corresponding package in the new hierarchy. 
+It will also fix all occurrences of the module names in the script.
 
+For example it will replace this code::
+    import orange
+    learner = orange.SVMLearner(name='svm')
+
+with:
+    import Orange.core
+    learner = Orange.core.SVMLearner(name='svm')
+    
+.. note:: That this is possible only if the new package is a full
+    replacement for the old module (i.e. it exposes the same interface).
+    If this is not the case use the fix_changed_names fixer and list all
+    package content renames.
+    
+.. note:: This fixer runs last and should be used as a last resort. Use
+    fix_changed_names fixer for fain grain control of name mappings. (for
+    instance we might want to replace the orange.SVMLearner from the core
+    to the one in Orange.classification.svm).
+  
+"""
 from lib2to3 import fixer_base
 from lib2to3 import fixer_util
 from lib2to3.fixer_util import Name, attr_chain
 
 from lib2to3.fixes import fix_imports
+    
 
-#Why does this not work?? but the copy paste of FixImports class does
-
-#class FixOrangeImports(fix_imports.FixImports):
-#    mapping = {"orange": "Orange.core"}
-#    
-#    def transfrom(self, node, results):
-#        if "use" in results:
-#            nodes = [fixer_util.Node("core"),
-#                     fixer_util.Dot()
-#                     ]
-#        return fixer_util.FromImport("Orange", "core")
-#    
-
-"""Fix incompatible imports and module references."""
-# Authors: Collin Winter, Nick Edds
+"""Fix incompatible imports and module references. Modified from the
+fix_imports fixer in lib2to3 by Collin Winter, Nick Edds. """
 
 # Local imports
 from lib2to3 import fixer_base
