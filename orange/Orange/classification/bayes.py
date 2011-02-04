@@ -8,15 +8,13 @@
 Naive Bayes classifier
 **********************
 
-The most primitive bayesian classifier is :obj:`NaiveLearner` 
-(http://en.wikipedia.org/wiki/Naive_Bayes_classifier).
-The class estimates conditional probabilities from training data and uses them
-for classification of new data instances. 
-
-Example (`bayes-run.py`_, uses `iris.tab`_)
+The most primitive Bayesian classifier is :obj:`NaiveLearner`. 
+`Naive Bayes classification algorithm <http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ 
+estimates conditional probabilities from training data and uses them
+for classification of new data instances (`bayes-run.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/bayes-run.py
-    :lines: 7-
+   :lines: 7-
 
 .. index:: Naive Bayesian Learner
 .. autoclass:: Orange.classification.bayes.NaiveLearner
@@ -29,10 +27,8 @@ Example (`bayes-run.py`_, uses `iris.tab`_)
    
 Examples
 ========
-NaiveLearner can estimate probabilities using relative frequencies or
-m-estimate.
-
-Example (`bayes-mestimate.py`_, uses `lenses.tab`_)
+:obj:`NaiveLearner` can estimate probabilities using relative frequencies or
+m-estimate (`bayes-mestimate.py`_, uses `lenses.tab`_):
 
 .. literalinclude:: code/bayes-mestimate.py
     :lines: 7-
@@ -40,10 +36,8 @@ Example (`bayes-mestimate.py`_, uses `lenses.tab`_)
 Observing conditional probabilities in an m-estimate based classifier shows a
 shift towards the second class - as compared to probabilities above, where
 relative frequencies were used. Note that the change in error estimation did
-not have any effect on apriori
-probabilities.
-
-Example (`bayes-thresholdAdjustment.py`_, uses `adult-sample.tab`_)
+not have any effect on apriori probabilities
+(`bayes-thresholdAdjustment.py`_, uses `adult-sample.tab`_):
 
 .. literalinclude:: code/bayes-thresholdAdjustment.py
     :lines: 7-
