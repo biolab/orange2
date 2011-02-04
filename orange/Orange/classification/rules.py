@@ -59,10 +59,10 @@ This is the resulting printout::
    :members:
    :show-inheritance:
    
-.. index:: Unordered CN2
+.. index:: unordered CN2
 
 .. index:: 
-   single: classification; Unordered CN2
+   single: classification; unordered CN2
 
 .. autoclass:: Orange.classification.rules.CN2UnorderedLearner
    :members:
@@ -73,7 +73,7 @@ This is the resulting printout::
    :show-inheritance:
    
 .. index:: CN2-SD
-.. index:: Subgroup discovery
+.. index:: subgroup discovery
 
 .. index:: 
    single: classification; CN2-SD
