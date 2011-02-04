@@ -40,6 +40,7 @@ MAPPING = {"orange": "Orange.core",
            "orngSOM": "Orange.projection.som",
            "orngClustering": "Orange.cluster",
            "orngBayes":"Orange.classification.bayes",
+           "orngNetwork":"Orange.network",
            }
 
 
