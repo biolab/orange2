@@ -1,1 +1,1 @@
-from Orange.classification.tree import c45_printTree as printTree
+from Orange.classification.tree import printTreeC45 as printTree

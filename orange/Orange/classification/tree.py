@@ -2056,23 +2056,25 @@ def _c45_printTree0(node, classvar, lev):
             if branch.nodeType:
                 _c45_showBranch(node, classvar, lev, i)
 
-def c45_printTree(tree):
+def printTreeC45(tree):
     """
     Prints the tree given as an argument in the same form as Ross Quinlan's 
     C4.5 program.
 
     ::
 
-        import orange, orngC45
+        import orange
+        import Orange.classification.tree as tree
 
         data = orange.ExampleTable("voting")
-        c45 = orange.C45Learner(data)
-        orngC45.printTree(c45)
+        c45 = tree.C45Learner(data)
+        tree.printTreeC45(c45)
 
     will print out
 
     ::
 
+        physician-fee-freeze = n: democrat (253.4)
         physician-fee-freeze = y:
         |   synfuels-corporation-cutback = n: republican (145.7)
         |   synfuels-corporation-cutback = y:
@@ -2088,7 +2090,7 @@ def c45_printTree(tree):
 
     ::
 
-        <xmp class="printout">physician-fee-freeze = n: democrat (253.4/5.9)
+        physician-fee-freeze = n: democrat (253.4/5.9)
         physician-fee-freeze = y:
         |   synfuels-corporation-cutback = n: republican (145.7/6.2)
         |   synfuels-corporation-cutback = y:
@@ -2105,7 +2107,7 @@ def c45_printTree(tree):
     (nor is there any need it should).
 
     """
-    c45_printTree0(tree.tree, tree.classVar, 0)
+    _c45_printTree0(tree.tree, tree.classVar, 0)
 
 
 
