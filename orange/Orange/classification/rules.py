@@ -487,15 +487,6 @@ Instance Coverers and Removers
    Base class for rule coverers and removers that, when invoked, remove
    instances covered by the rule and return remaining instances.
 
-.. autoclass:: CovererAndRemover_MultWeights
-
-.. autoclass:: CovererAndRemover_AddWeights
-   
-Miscellaneous Functions
------------------------
-
-.. automethod:: Orange.classification.rules.ruleToString
-
    .. method:: __call__(rule, instances, weights, targetClass)
    
       Calculates a non-negative rule quality.
@@ -511,6 +502,15 @@ Miscellaneous Functions
       
       :param targetClass: index of target class of this rule.
       :type targetClass: int
+
+.. autoclass:: CovererAndRemover_MultWeights
+
+.. autoclass:: CovererAndRemover_AddWeights
+   
+Miscellaneous Functions
+-----------------------
+
+.. automethod:: Orange.classification.rules.ruleToString
 
 ..
     Undocumented are:
