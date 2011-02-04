@@ -1,6 +1,11 @@
 {% extends "basic/page.html" %}
 
 {% block body %}
-  {{ sidebar() }}
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+           <!--<h3><a href="index.html">Table Of Contents</a></h3>-->
+           {{ toc }}
+        </div>
+      </div>
   {{ super() }}
 {% endblock %} 

@@ -402,7 +402,7 @@ div.footer {
 /* -- sidebar --------------------------------------------------------------- */
 
 div.sphinxsidebarwrapper {
-    padding: 10px 5px 0 10px;
+    padding: 0px 0px 0 0px;
     border: 1px solid #ac9;
     background-color: #f8f8f8;
 }
@@ -419,12 +419,12 @@ div.sphinxsidebar {
     width: 230px;*/
     font-size: 90%;
     margin-left: 0;
-    float: left;
     padding: 10px;
     text-align: left;
     z-index: 10;
-    padding-right: 30px;
     background-color: white;
+    float: left;
+    padding-right: 30px;
 }
 
 div.sphinxsidebar ul {
