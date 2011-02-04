@@ -130,7 +130,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.TreeSplitConstructor_Threshold":"Orange.classification.tree.SplitConstructor_Threshold",
            "orange.TreeStopCriteria":"Orange.classification.tree.StopCriteria",
            "orange.TreeStopCriteria_Python":"Orange.classification.tree.StopCriteria_Python",
-           "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common"
+           "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common",
 
            "orngCN2.ruleToString": "Orange.classification.rules.ruleToString",
            "orngCN2.LaplaceEvaluator": "Orange.classification.rules.LaplaceEvaluator",
