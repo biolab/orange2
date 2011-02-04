@@ -26,7 +26,7 @@ Contents:
    orange.classification.knn
    
    Orange.regression.mean
-
+   Orange.probability.distributions
    Orange.ensemble
 
    Orange.feature
