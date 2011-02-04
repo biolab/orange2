@@ -16,4 +16,5 @@ except:
     pass
 
 
-from Orange.classify.svm import *
+from Orange.classification.svm import *
+from Orange.classification.svm.kernels import *
