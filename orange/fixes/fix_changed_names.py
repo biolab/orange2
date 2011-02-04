@@ -88,7 +88,10 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.Graph":"Orange.network.Graph",
            "orange.GraphAsList":"Orange.network.GraphAsList",
            "orange.GraphAsMatrix":"Orange.network.GraphAsMatrix",
-           "orange.GraphAsTree":"Orange.network.GraphAsTree"
+           "orange.GraphAsTree":"Orange.network.GraphAsTree",
+           
+           "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
+           
            
            }
 
