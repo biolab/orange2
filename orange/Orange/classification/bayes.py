@@ -8,8 +8,8 @@
 Naive Bayes Classifier
 ======================
 
-The most primitive bayesian classifier is :obj:`NaiveLearner`. 
-(http://en.wikipedia.org/wiki/Naive_Bayes_classifier)
+The most primitive bayesian classifier is :obj:`NaiveLearner` 
+(http://en.wikipedia.org/wiki/Naive_Bayes_classifier).
 The class estimates conditional probabilities from training data and uses them
 for classification of new examples. 
 
