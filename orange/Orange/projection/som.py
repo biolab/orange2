@@ -125,8 +125,6 @@ The output of this code is::
     [5.7, 2.6, 3.5, 1.0, 'Iris-versicolor']
     [5.5, 2.4, 3.7, 1.0, 'Iris-versicolor']
     [5.0, 2.3, 3.3, 1.0, 'Iris-versicolor']
-
-
 """
 
 import sys, os
