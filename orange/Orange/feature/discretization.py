@@ -76,7 +76,7 @@ def entropyDiscretization_wrapper(table):
     
     :param table: data to discretize.
     :type table: Orange.data.Table
-    :rtype: :obj:`Orange.data.Table` includes all categorical and discretized
+    :rtype: :obj:`Orange.data.Table` includes all categorical and discretized\
     continuous features from the original data table.
     
     After categorization, features that were categorized to a single interval
