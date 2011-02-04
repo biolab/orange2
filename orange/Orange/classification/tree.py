@@ -90,9 +90,9 @@ Classification trees are represented as a tree-like hierarchy of
         learning and classifying. The :obj:`branchSelector` is of
         type :obj:`orange.Classifier`, since its job is similar to that
         of a classifier: it gets an example and returns discrete
-        :obj:`orange.Value` in range :samp:`[0, len(branches)-1]`.
+        :obj:`Orange.data.Value` in range :samp:`[0, len(branches)-1]`.
         When an example cannot be classified to any branch, the selector
-        can return a :obj:`orange.Value` containing a special value
+        can return a :obj:`Orange.data.Value` containing a special value
         (sVal) which should be a discrete distribution
         (DiscDistribution). This should represent a
         :obj:`branchSelector`'s opinion of how to divide the
@@ -172,7 +172,7 @@ The rest of this section is only for those interested in the C++ code.
 
 If you'd like to understand how the classification works in C++, 
 start reading at :obj:`TTreeClassifier::vote`. It gets a 
-:obj:`Node`, an :obj:`orange.Example`> and a distribution of 
+:obj:`Node`, an :obj:`Orange.data.Instance`> and a distribution of 
 vote weights. For each node, it calls the 
 :obj:`TTreeClassifier::classDistribution` and then multiplies 
 and sums the distribution. :obj:`vote` returns a normalized 
@@ -414,7 +414,7 @@ type :obj:`StopCriteria` and :obj:`exampleSplitter`
 
         Induces a classifier from examples belonging to a node. The
         same learner is used for internal nodes and for leaves. The
-        default :obj:`nodeLearner` is :obj:`orange.MajorityLearner`.
+        default :obj:`nodeLearner` is :obj:`Orange.classification.majority.MajorityLearner`.
 
     .. attribute:: descender
 
@@ -483,7 +483,7 @@ type :obj:`StopCriteria` and :obj:`exampleSplitter`
     :obj:`nodeLearner`'s :obj:`smartLearn` function is called with 
     the given examples, weight ID and the just computed matrix. If 
     the learner can use the matrix (and the default, 
-    :obj:`MajorityLearner`, can), it won't touch the examples. Thus,
+    :obj:`Orange.classification.majority.MajorityLearner`, can), it won't touch the examples. Thus,
     a choice of :obj:`contingencyComputer` will, in many cases, 
     affect the :obj:`nodeClassifier`. The :obj:`nodeLearner` can
     return no classifier; if so and if the classifier would be 
@@ -553,7 +553,7 @@ Classes :obj:`SplitConstructor`, :obj:`StopCriteria`,
 and :obj:`Classifier` are among the Orange classes that can be subtyped 
 in Python and have the call operator overloadedd in such a way that it
 is callbacked from C++ code. You can thus program your own components
-for :obj:`orange.TreeLearnerBase` and :obj:`TreeClassifier`. The detailed 
+for :obj:`TreeLearnerBase` and :obj:`TreeClassifier`. The detailed 
 information on how this is done and what can go wrong, is given in a 
 separate page, dedicated to callbacks to Python XXXXXXXXXX.
 
@@ -584,17 +584,17 @@ class (and derived classes).
     Bases: :class:`SplitConstructor`
 
     An abstract base class for split constructors that employ 
-    a :obj:`orange.MeasureAttribute` to assess a quality of a split. At present,
+    a :obj:`Orange.feature.scoring.Measure` to assess a quality of a split. At present,
     all split constructors except for :obj:`SplitConstructor_Combined`
     are derived from this class.
 
     .. attribute:: measure
 
-        A component of type :obj:`orange.MeasureAttribute` used for
+        A component of type :obj:`Orange.feature.scoring.Measure` used for
         evaluation of a split. Note that you must select the subclass 
-        :obj:`MeasureAttribute` capable of handling your class type 
-        - you cannot use :obj:`orange.MeasureAttribute_gainRatio`
-        for building regression trees or :obj:`orange.MeasureAttribute_MSE`
+        :obj:`Orange.feature.scoring.Measure` capable of handling your class type 
+        - you cannot use :obj:`Orange.feature.scoring.GainRatio`
+        for building regression trees or :obj:`Orange.feature.scoring.MSE`
         for classification trees.
 
     .. attribute:: worstAcceptable
@@ -615,7 +615,7 @@ class (and derived classes).
 
     The constructed :obj:`branchSelector` is an instance of 
     :obj:`orange.ClassifierFromVarFD` that returns a value of the 
-    selected attribute. If the attribute is :obj:`orange.EnumVariable`,
+    selected attribute. If the attribute is :obj:`Orange.data.feature.Discrete`,
     :obj:`branchDescription`'s are the attribute's values. The 
     attribute is marked as spent, so that it cannot reappear in the 
     node's subtrees.
@@ -979,7 +979,7 @@ class derived from :obj:`orange.Classifier` (in fact, it is a
 suffice), and its :obj:`classVar` XXXXX points to the attribute we seek. 
 So we print its name. We will also assume that storing class distributions 
 has not been disabled and print them as well. A more able function for 
-printing trees (as one defined in orngTree XXXXXXXXXX) has an alternative 
+printing trees (as one defined in XXXXXXXXXX) has an alternative 
 means to get the distribution, when this fails. Then we iterate 
 through branches; for each we print a branch description and iteratively 
 call the :obj:`printTree0` with a level increased by 1 (to increase 
@@ -1007,17 +1007,17 @@ or a :obj:`Node`; just like Pruners XXXXXX, remember? Part of `treestructure.py`
    :lines: 43-49
 
 It's fairly straightforward: if :obj:`x` is of type derived from 
-:obj:`orange.TreeClassifier`, we print :obj:`x.tree`; if it's 
+:obj:`TreeClassifier`, we print :obj:`x.tree`; if it's 
 :obj:`Node` we just call :obj:`printTree0` with :obj:`x`. If it's 
 of some other type, we don't know how to handle it and thus raise 
 an exception. (Note that we could also use 
 
 ::
 
-    if type(x) == orange.TreeClassifier:
+    if isinstance(x, Orange.classification.tree.TreeClassifier)
 
 but this would only work if :obj:`x` would be of type 
-:obj:`orange.TreeClassifier` and not of any derived types. The latter, 
+:obj:`TreeClassifier` and not of any derived types. The latter, 
 however, do not exist yet...)
 
     >>> printTree(treeClassifier)
@@ -1104,7 +1104,7 @@ Stopping criteria
 The stop is trivial. The default is set by
 
 ::
-    >>> learner.stop = orange.TreeStopCriteria_common()
+    >>> learner.stop = Orange.classification.tree.StopCriteria_common()
 
 Well, this is actually done in C++ and it uses a global component
 that is constructed once for all, but apart from that we did
@@ -1210,7 +1210,8 @@ which it obviously can't if Orange isn't there yet.)
    average.c).
 #. Run buildC45.py, which will build the plug-in and put it next to 
    orange.pyd (or orange.so on Linux/Mac).
-#. Run python, import orange and create create :samp:`orange.C45Learner()`.
+#. Run python, type :samp:`import Orange` and 
+   create create :samp:`Orange.classification.tree.C45Learner()`.
    If this fails, something went wrong; see the diagnostic messages from
    buildC45.py and read the below paragraph.
 #. Finally, you can remove the Quinlan's stuff, along with everything
@@ -1343,7 +1344,7 @@ parse its command line. XXXXXXXXXXX
 
         Mapping for nodes of type :obj:`Subset`. Element :samp:`mapping[i]`
         gives the index for an example whose value of :obj:`tested` is *i*. 
-        Here, *i* denotes an index of value, not a :class:`orange.Value`.
+        Here, *i* denotes an index of value, not a :class:`Orange.data.Value`.
 
     .. attribute:: branch
         
@@ -1368,15 +1369,15 @@ variable names)
 
 ::
 
-    tree = orange.C45Learner(data, m=100)
-    tree = orange.C45Learner(data, minObjs=100)
+    tree = Orange.classification.tree.C45Learner(data, m=100)
+    tree = Orange.classification.tree.C45Learner(data, minObjs=100)
 
 The way that could be prefered by veteran C4.5 user might be through
 method `:obj:C45Learner.commandline`.
 
 ::
 
-    lrn = orange.C45Learner()
+    lrn = Orange.classification.tree..C45Learner()
     lrn.commandline("-m 1 -s")
     tree = lrn(data)
 
@@ -1407,9 +1408,9 @@ Printing out C45 Tree
 
 .. autofunction:: printTreeC45
 
-===============
-orngTree module
-===============
+=======================
+orngTree module XXXXXXX
+=======================
 
 .. autoclass:: TreeLearner
     :members:
@@ -1557,18 +1558,17 @@ Examples
 ========
 
 We shall build a small tree from the iris data set - we shall limit the
-depth to three levels.
+depth to three levels (part of `orngTree1.py`_, uses `iris.tab`_):
 
-<p class="header">part of <a href="orngTree1.py">orngTree1.py</a></p>
-<xmp class="code">import orange, orngTree
-data = Orange.data.Table("iris")
-tree = orngTree.TreeLearner(data, maxDepth=3)
-</xmp>
+.. literalinclude:: code/orngTree1.py
+   :lines: 0-4
+
+.. _orngTree1.py: code/orngTree1.py
 
 The easiest way to call the function is to pass the tree as the only 
 argument::
 
-    >>> orngTree.printTree(tree)
+    >>> Orange.classification.tree.printTree(tree)
     petal width<0.800: Iris-setosa (100.00%)
     petal width>=0.800
     |    petal width<1.750
@@ -1582,7 +1582,7 @@ Let's now print out the predicted class at each node, the number
 of examples in the majority class with the total number of examples
 in the node::
 
-    >>> orngTree.printTree(tree, leafStr="%V (%M out of %N)")
+    >>> Orange.classification.tree.printTree(tree, leafStr="%V (%M out of %N)")
     petal width<0.800: Iris-setosa (50.000 out of 50.000)
     petal width>=0.800
     |    petal width<1.750
@@ -1677,7 +1677,7 @@ at each node.
 
 ::
 
-    orngTree.printTree(tree, leafStr="%V", nodeStr=".")
+    Orange.classification.tree.printTree(tree, leafStr="%V", nodeStr=".")
     
 says that the nodeStr should be the same as leafStr (not very useful 
 here, since leafStr is trivial anyway).
@@ -1701,7 +1701,7 @@ needed to print out the data for that node to.
 Now for something more complicated: let us observe how the number
 of virginicas decreases down the tree::
 
-    orngTree.printTree(tree, leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')
+    Orange.classification.tree.printTree(tree, leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')
 
 Let's first interpret the format string: :samp:`CbA="Iris-virginica"` is 
 the number of examples from class virginica, divided by the total number
@@ -1736,7 +1736,7 @@ class. So now we'll have to call the function like this.
 
 ::
 
-    >>>orngTree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')
+    >>>Orange.classification.tree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')
     root: [50.000, 50.000, 50.000] . .
     |    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
     |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
@@ -1774,7 +1774,7 @@ only argument, :func:`printTree` prints the tree like this::
 Let us add the standard error in both internal nodes and leaves, and the
 90% confidence intervals in the leaves::
 
-    >>> orngTree.printTree(tree, leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")
+    >>> Orange.classification.tree.printTree(tree, leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")
     root: [SE: 0.409]
     |    RM<6.941: [SE: 0.306]
     |    |    LSTAT<14.400: [SE: 0.320]
@@ -1804,7 +1804,7 @@ What's the difference between :samp:`%V`, the predicted value and
 leaf average anyway? Not necessarily, the tree predict whatever the
 :attr:`TreeClassifier.nodeClassifier` in a leaf returns. 
 As :samp:`%V` uses the 
-:obj:`orange.FloatVariable`'s function for printing out the value, 
+:obj:`Orange.data.feature.Continuous`'s function for printing out the value, 
 therefore the printed number has the same number of decimals 
 as in the data file.
 
@@ -1814,7 +1814,7 @@ observing the number of examples within a certain range. For instance,
 let us check the number of examples with values below 22, and compare
 this number with values in the parent nodes::
 
-    >>> orngTree.printTree(tree, leafStr="%C<22 (%cbP<22)", nodeStr=".")
+    >>> Orange.classification.tree.printTree(tree, leafStr="%C<22 (%cbP<22)", nodeStr=".")
     root: 277.000 (.)
     |    RM<6.941: 273.000 (1.160)
     |    |    LSTAT<14.400: 107.000 (0.661)
@@ -1841,7 +1841,7 @@ And let us print out the proportions as percents.
 
 ::
 
-    >>> orngTree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")
+    >>> Orange.classification.tree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")
 
 OK, let's observe the format string for one last time. :samp:`%c![20, 22]`
 would be the proportion of examples (within the node) whose values are
@@ -2024,7 +2024,7 @@ from Orange.core import \
               TreePruner_m as Pruner_m, \
          TreeSplitConstructor as SplitConstructor, \
               TreeSplitConstructor_Combined as SplitConstructor_Combined, \
-              TreeSplitConstructor_Measure as SplitConstructor_Score, \
+              TreeSplitConstructor_Measure as SplitConstructor_Measure, \
                    TreeSplitConstructor_Attribute as SplitConstructor_Feature, \
                    TreeSplitConstructor_ExhaustiveBinary as SplitConstructor_ExhaustiveBinary, \
                    TreeSplitConstructor_OneAgainstOthers as SplitConstructor_OneAgainstOthers, \
@@ -2033,10 +2033,13 @@ from Orange.core import \
               TreeStopCriteria_Python as StopCriteria_Python, \
               TreeStopCriteria_common as StopCriteria_common
 
-import orange
+import Orange.core
 import operator
 import base64
 import re
+import Orange.data
+import Orange.feature.scoring
+import Orange.classification.tree
 
 def _c45_showBranch(node, classvar, lev, i):
     var = node.tested
@@ -2121,7 +2124,7 @@ def printTreeC45(tree):
     _c45_printTree0(tree.tree, tree.classVar, 0)
 
 
-class TreeLearner(orange.Learner):
+class TreeLearner(Orange.core.Learner):
     """
     Assembles the generic classification or regression tree learner 
     (from Orange's objects for induction of decision trees). 
@@ -2139,7 +2142,7 @@ class TreeLearner(orange.Learner):
 
         Induces a classifier from examples belonging to a node. The
         same learner is used for internal nodes and for leaves. The
-        default :obj:`nodeLearner` is :obj:`MajorityLearner`.
+        default :obj:`nodeLearner` is :obj:`Orange.classification.majority.MajorityLearner`.
 
     **Split construction**
 
@@ -2172,11 +2175,11 @@ class TreeLearner(orange.Learner):
         Measure for scoring of the attributes when deciding which of the
         attributes will be used for splitting of the example set in the node.
         Can be either a measure XXXXX or one of
-        "infoGain" (:class:`orange.MeasureAttribute_info`), 
-        "gainRatio" (:class:`orange.MeasureAttribute_gainRatio`), 
-        "gini" (:class:`orange.MeasureAttribute_gini`),
-        "relief" (:class:`orange.MeasureAttribute_relief`),
-        "retis" (:class: `orange.MeasureAttribute_MSE`). Default: "gainRatio".
+        "infoGain" (:class:`Orange.feature.scoring.InfoGain`), 
+        "gainRatio" (:class:`Orange.feature.scoring.GainRatio`), 
+        "gini" (:class:`Orange.feature.scoring.Gini`),
+        "relief" (:class:`Orange.feature.scoring.Relief`),
+        "retis" (:class: `Orange.feature.scoring.MSE`). Default: "gainRatio".
 
     .. attribute:: reliefM, reliefK
 
@@ -2192,7 +2195,7 @@ class TreeLearner(orange.Learner):
 
         So, to allow splitting only when gainRatio (the default measure)
         is greater than 0.6, one should run the learner like this:
-        :samp:`l = orngTree.TreeLearner(data, worstAcceptable=0.6)`
+        :samp:`l = Orange.classification.tree.TreeLearner(data, worstAcceptable=0.6)`
 
     .. attribute:: minSubset
 
@@ -2215,7 +2218,7 @@ class TreeLearner(orange.Learner):
         node exceeds the value set by this parameter(default: 1.0). E.g.
         to stop the induction as soon as the majority class reaches 70%,
         you should say 
-        :samp:`tree2 = orngTree.TreeLearner(data, maxMajority=0.7)`
+        :samp:`tree2 = Orange.classification.tree.TreeLearner(data, maxMajority=0.7)`
 
         This is an example of the tree on iris data set, built with
         XXXXXXXXX what above arguments XXXXXXXXX
@@ -2268,7 +2271,7 @@ class TreeLearner(orange.Learner):
     
     """
     def __new__(cls, examples = None, weightID = 0, **argkw):
-        self = orange.Learner.__new__(cls, **argkw)
+        self = Orange.core.Learner.__new__(cls, **argkw)
         if examples:
             self.__init__(**argkw)
             return self.__call__(examples, weightID)
@@ -2292,54 +2295,54 @@ class TreeLearner(orange.Learner):
         if not self.learner:
             self.learner = self.instance()
         if not hasattr(self, "split") and not hasattr(self, "measure"):
-            if examples.domain.classVar.varType == orange.VarTypes.Discrete:
-                measure = orange.MeasureAttribute_gainRatio()
+            if examples.domain.classVar.varType == Orange.data.Type.Discrete:
+                measure = Orange.feature.scoring.GainRatio()
             else:
-                measure = orange.MeasureAttribute_MSE()
+                measure = Orange.feature.scoring.MSE()
             self.learner.split.continuousSplitConstructor.measure = measure
             self.learner.split.discreteSplitConstructor.measure = measure
             
         tree = self.learner(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
-            tree = orange.TreePruner_SameMajority(tree)
+            tree = Orange.classification.tree.Pruner_SameMajority(tree)
         if getattr(self, "mForPruning", 0):
-            tree = orange.TreePruner_m(tree, m = self.mForPruning)
+            tree = Orange.classification.tree.Pruner_m(tree, m = self.mForPruning)
         return tree
 
     def instance(self):
         """
         Return the constructed learner - an object of :class:`TreeLearnerBase`.
         """
-        learner = orange.TreeLearner()
+        learner = Orange.classification.tree.TreeLearnerBase()
 
         hasSplit = hasattr(self, "split")
         if hasSplit:
             learner.split = self.split
         else:
-            learner.split = orange.TreeSplitConstructor_Combined()
-            learner.split.continuousSplitConstructor = orange.TreeSplitConstructor_Threshold()
+            learner.split = Orange.classification.tree.SplitConstructor_Combined()
+            learner.split.continuousSplitConstructor = Orange.classification.tree.SplitConstructor_Threshold()
             binarization = getattr(self, "binarization", 0)
             if binarization == 1:
-                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_ExhaustiveBinary()
+                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_ExhaustiveBinary()
             elif binarization == 2:
-                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_OneAgainstOthers()
+                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_OneAgainstOthers()
             else:
-                learner.split.discreteSplitConstructor = orange.TreeSplitConstructor_Attribute()
+                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_Feature()
 
-            measures = {"infoGain": orange.MeasureAttribute_info,
-                "gainRatio": orange.MeasureAttribute_gainRatio,
-                "gini": orange.MeasureAttribute_gini,
-                "relief": orange.MeasureAttribute_relief,
-                "retis": orange.MeasureAttribute_MSE
+            measures = {"infoGain": Orange.feature.scoring.InfoGain,
+                "gainRatio": Orange.feature.scoring.GainRatio,
+                "gini": Orange.feature.scoring.Gini,
+                "relief": Orange.feature.scoring.Relief,
+                "retis": Orange.feature.scoring.MSE
                 }
 
             measure = getattr(self, "measure", None)
             if type(measure) == str:
                 measure = measures[measure]()
             if not hasSplit and not measure:
-                measure = orange.MeasureAttribute_gainRatio()
+                measure = Orange.feature.scoring.GainRatio()
 
-            measureIsRelief = type(measure) == orange.MeasureAttribute_relief
+            measureIsRelief = type(measure) == Orange.feature.scoring.Relief
             relM = getattr(self, "reliefM", None)
             if relM and measureIsRelief:
                 measure.m = relM
@@ -2364,7 +2367,7 @@ class TreeLearner(orange.Learner):
         if hasattr(self, "stop"):
             learner.stop = self.stop
         else:
-            learner.stop = orange.TreeStopCriteria_common()
+            learner.stop = Orange.classification.tree.StopCriteria_common()
             mm = getattr(self, "maxMajority", 1.0)
             if mm < 1.0:
                 learner.stop.maxMajority = self.maxMajority
@@ -2396,7 +2399,7 @@ def countNodes(tree):
     :param tree: The tree for which to count the nodes.
     :type tree: :class:`TreeClassifier`
     """
-    return __countNodes(isinstance(tree == Orange.classification.tree.TreeClassifier) and tree.tree or tree)
+    return __countNodes(isinstance(tree, Orange.classification.tree.TreeClassifier) and tree.tree or tree)
 
 
 def __countLeaves(node):
@@ -2416,7 +2419,7 @@ def countLeaves(tree):
     :param tree: The tree for which to count the leaves.
     :type tree: :class:`TreeClassifier`
     """
-    return __countLeaves(isinstance(tree == Orange.classification.tree.TreeClassifier) and tree.tree or tree)
+    return __countLeaves(isinstance(tree, Orange.classification.tree.TreeClassifier) and tree.tree or tree)
 
 
 # the following is for the output
@@ -2539,7 +2542,7 @@ def replacem(strg, mo, node, parent, tree):
 
 
 def replaceCdisc(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Discrete:
+    if tree.classVar.varType != Orange.data.Type.Discrete:
         return insertDot(strg, mo)
     
     by, op, cls = mo.group("by", "op", "cls")
@@ -2557,7 +2560,7 @@ def replaceCdisc(strg, mo, node, parent, tree):
 
     
 def replacecdisc(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Discrete:
+    if tree.classVar.varType != Orange.data.Type.Discrete:
         return insertDot(strg, mo)
     
     op, by, cls = mo.group("op", "by", "cls")
@@ -2579,7 +2582,7 @@ def replacecdisc(strg, mo, node, parent, tree):
 __opdict = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "=": operator.eq, "!=": operator.ne}
 
 def replaceCcont(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
     
     by, op, num = mo.group("by", "op", "num")
@@ -2599,7 +2602,7 @@ def replaceCcont(strg, mo, node, parent, tree):
     
     
 def replaceccont(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
     
     by, op, num = mo.group("by", "op", "num")
@@ -2633,7 +2636,7 @@ def extractInterval(mo, dist):
 
     
 def replaceCconti(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
 
     by = mo.group("by")
@@ -2651,7 +2654,7 @@ def replaceCconti(strg, mo, node, parent, tree):
 
             
 def replacecconti(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
 
     N = sum([x[1] for x in extractInterval(mo, node.distribution)])
@@ -2673,7 +2676,7 @@ def replacecconti(strg, mo, node, parent, tree):
 
     
 def replaceD(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Discrete:
+    if tree.classVar.varType != Orange.data.Type.Discrete:
         return insertDot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
@@ -2692,7 +2695,7 @@ def replaceD(strg, mo, node, parent, tree):
 
 
 def replaced(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Discrete:
+    if tree.classVar.varType != Orange.data.Type.Discrete:
         return insertDot(strg, mo)
 
     fs, by, m100 = mo.group("fs", "by", "m100")
@@ -2714,7 +2717,7 @@ def replaced(strg, mo, node, parent, tree):
 
 
 def replaceAE(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
 
     AorE, bysub, by = mo.group("AorE", "bysub", "by")
@@ -2743,7 +2746,7 @@ def replaceAE(strg, mo, node, parent, tree):
 Z = { 0.75:1.15, 0.80:1.28, 0.85:1.44, 0.90:1.64, 0.95:1.96, 0.99:2.58 }
 
 def replaceI(strg, mo, node, parent, tree):
-    if tree.classVar.varType != orange.VarTypes.Continuous:
+    if tree.classVar.varType != Orange.data.Type.Continuous:
         return insertDot(strg, mo)
 
     fs = mo.group("fs") or "5.3"
@@ -2781,7 +2784,7 @@ class __TreeDumper:
         if leafStr:
             self.leafStr = leafStr
         else:
-            if tree.classVar.varType == orange.VarTypes.Discrete:
+            if tree.classVar.varType == Orange.data.Type.Discrete:
                 self.leafStr = "%V (%^.2m%)"
             else:
                 self.leafStr = "%V"
