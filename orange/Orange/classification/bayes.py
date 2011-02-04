@@ -174,25 +174,38 @@ class NaiveLearner(Orange.classification.Learner):
     
     All attributes can also be set as constructor parameters.
     
-    :var adjustTreshold: If set and the class is binary, the classifier's
-            threshold will be set as to optimize the classification accuracy.
-            The threshold is tuned by observing the probabilities predicted on
-            learning data. Setting it to True can increase the
-            accuracy considerably
-    :var m: m for m-estimate. If set, m-estimation of probabilities
-            will be used using :class:`orange.ProbabilityEstimatorConstructor_m`
-            This attribute is ignored if you also set estimatorConstructor.
-    :var estimatorConstructor: Probability estimator constructor for
-            prior class probabilities. Defaults to
-            :class:`orange.ProbabilityEstimatorConstructor_relative`
-            Setting this attribute disables the above described attribute m.
-    :var conditionalEstimatorConstructor: Probability estimator constructor
-            for conditional probabilities for discrete features. If omitted,
-            the estimator for prior probabilities will be used.
-    :var conditionalEstimatorConstructorContinuous: Probability estimator
-            constructor for conditional probabilities for continuous features.
-            Defaults to 
-            :class:`orange.ConditionalProbabilityEstimatorConstructor_loess` 
+    .. attribute:: adjustTreshold
+    
+        If set and the class is binary, the classifier's
+        threshold will be set as to optimize the classification accuracy.
+        The threshold is tuned by observing the probabilities predicted on
+        learning data. Setting it to True can increase the
+        accuracy considerably
+        
+    .. attribute:: m
+    
+        m for m-estimate. If set, m-estimation of probabilities
+        will be used using :class:`orange.ProbabilityEstimatorConstructor_m`
+        This attribute is ignored if you also set estimatorConstructor.
+        
+    .. attribute:: estimatorConstructor
+    
+        Probability estimator constructor for
+        prior class probabilities. Defaults to
+        :class:`orange.ProbabilityEstimatorConstructor_relative`
+        Setting this attribute disables the above described attribute m.
+        
+    .. attribute:: conditionalEstimatorConstructor
+    
+        Probability estimator constructor
+        for conditional probabilities for discrete features. If omitted,
+        the estimator for prior probabilities will be used.
+        
+    .. attribute:: conditionalEstimatorConstructorContinuous
+    
+        Probability estimator constructor for conditional probabilities for
+        continuous features. Defaults to 
+        :class:`orange.ConditionalProbabilityEstimatorConstructor_loess` 
     """
     
     def __new__(cls, instances = None, weightID = 0, **argkw):
@@ -252,19 +265,28 @@ class NaiveClassifier(Orange.classification.Classifier):
             not set, a new :class:`Orange.core.BayesLearner` is created.
     :type baseClassifier: :class:`Orange.core.BayesLearner`
     
-    :var distribution: Stores probabilities of classes, i.e. p(C) for each
-            class C.
-    :var estimator: An object that returns a probability of class p(C) for a
-            given class C.
-    :var conditionalDistributions: A list of conditional probabilities.
-    :var conditionalEstimators: A list of estimators for conditional
-            probabilities
-    :var normalize: Tells whether the returned probabilities should be
-            normalized (default: True)
-    :var adjustThreshold: For binary classes, this tells the learner to
-            determine the optimal threshold probability according to 0-1
-            loss on the training set. For multiple class problems, it has
-            no effect.
+    .. attribute:: distribution
+    
+        Stores probabilities of classes, i.e. p(C) for each class C.
+        
+    .. attribute:: estimator
+    
+        An object that returns a probability of class p(C) for a given class C.
+        
+    .. attribute:: conditionalDistributions
+    
+        A list of conditional probabilities.
+        
+    .. attribute:: conditionalEstimators
+    
+        A list of estimators for conditional probabilities
+        
+    .. attribute:: adjustThreshold
+    
+        For binary classes, this tells the learner to
+        determine the optimal threshold probability according to 0-1
+        loss on the training set. For multiple class problems, it has
+        no effect.
     """
     
     def __init__(self, baseClassifier=None):
