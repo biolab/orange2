@@ -14,8 +14,7 @@ print "Contingency values: ", cont.values()[:3]
 print "Contingency items: ", cont.items()[:3]
 print
 
-try:
-    midkey = (cont.keys()[0] + cont.keys()[1])/2.0
-    print "cont[%5.3f] =" % (midkey, cont[midkey])
-except Exception, v:
-    print "Error: ", v
+
+midkey = (cont.keys()[0] + cont.keys()[1])/2.0
+print "cont[%5.3f] =" % (midkey, cont[midkey])
+
