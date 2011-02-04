@@ -16,7 +16,7 @@ Contents:
    Orange.cluster
    Orange.data
    
-   orange.classification.bayes
+   Orange.classification.bayes
    Orange.classification.majority
    Orange.classification.lookup
    orange.classification.svm
