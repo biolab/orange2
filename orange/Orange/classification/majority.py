@@ -1,4 +1,7 @@
 """
+********
+Majority
+********
 
 .. index:: classification; majority
 
@@ -8,10 +11,6 @@ to the majority class. To fit into the standard schema, even this
 algorithm is provided in form of the usual learner-classifier pair.
 Learning is done by :obj:`MajorityLearner` and the classifier it
 constructs is an instance of :obj:`ConstantClassifier`.
-
-========
-Learning
-========
 
 .. class:: MajorityLearner
 
@@ -29,10 +28,6 @@ Learning
     
         Apriori class distribution that is passed to estimator
         constructor if one is given.
-
-==============
-Classification
-==============
 
 .. class:: ConstantClassifier
 
@@ -54,13 +49,11 @@ of a discrete value or a continuous value), its field variable is will
 either be used for initializing classVar if variable is not given as
 an argument, or checked against the variable argument, if it is given. 
 
-========
-Examples
-========
+.. rubric:: Examples
 
-This "learning algorithm" will most often be used to establish
-whether some other learning algorithm is better than "nothing".
-Here's a simple example.
+This "learning algorithm" will most often be used as a baseline,
+that is, to determine if some other learning algorithm provides
+any information about the class. Here's a simple example.
 
 `majority-classification.py`_ (uses: `monks-1.tab`_):
 
