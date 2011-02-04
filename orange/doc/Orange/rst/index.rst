@@ -23,7 +23,7 @@ Contents:
    
    Orange.regression
    
-   Orange.probability.distributions
+   Orange.statistics.distributions
    Orange.ensemble
 
    Orange.feature
