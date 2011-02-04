@@ -86,8 +86,6 @@ This code prints out::
         petal length 1.000 6.900 3.759
          petal width 0.100 2.500 1.199
 
-Methods
-
 .. class:: Orange.probability.distribution.DomainBasicAttrStat
 
     DomainBasicAttrStat behaves as a list of BasicAttrStat except
@@ -170,14 +168,15 @@ contingency matrices in which none of the feature is the class.
 The most common used of the above classes is ContingencyAttrClass which
 resembles conditional probabilities of classes given the feature value.
 
-
-=================
-General Contingency Matrix
-=================
-
 Here's what all contingency matrices share in common.
 
-Attributes
+.. class:: Orange.probability.distribution.Contingency
+
+    The base class is, once for a change, not abstract. Its constructor expects
+    two feature descriptors, the first one for the outer and the second for
+    the inner feature. It initializes empty distributions and it's up to you
+    to fill them. This is, for instance, how to manually reproduce results of
+    the script at the top of the page.
 
     .. attribute:: outerVariable
 
@@ -207,7 +206,7 @@ Attributes
         and the sum of all distributions in the matrix.
       
     .. attribute:: varType
-    
+
         The varType for the outer feature (discrete, continuous...);
         varType equals outerVariable.varType and outerDistribution.varType.
 
@@ -249,6 +248,8 @@ If cont behaved like a normal dictionary, the above script would print out strin
 
 Other methods
 
+.. class:: Orange.probability.distributions.Contingency
+
     .. method:: add(outer_value, inner_value[, weight])
 
        Adds an element to the contingency matrix.
@@ -269,17 +270,6 @@ The ouput: ::
     3 <0.667, 0.333>
     4 <0.667, 0.333>
 
-
-=================
-Contingency
-=================
-
-The base class is, once for a change, not abstract. Its constructor expects
-two feature descriptors, the first one for the outer and the second for
-the inner feature. It initializes empty distributions and it's up to you
-to fill them. This is, for instance, how to manually reproduce results of
-the script at the top of the page.
-
 .. _distributions-contingency2: code/distributions-contingency2.py
 part of `distributions-contingency2`_ (uses monks-1.tab)
 
@@ -294,29 +284,25 @@ The better way to do it is by using the method add, so that the loop becomes: ::
 It's not only simpler, but also correctly handles unknown values
 and updates innerDistribution and outerDistribution. 
 
-
-=================
-ContingencyClass
-=================
-
-ContingencyClass is an abstract base class for contingency matrices
-that contain the class, either as the inner or the outer
-feature. If offers a function for making filing the contingency clearer.
-
-After reading through the rest of this page you might ask yourself
-why do we need to separate the classes ContingencyAttrClass,
-ContingencyClassAttr and ContingencyAttrAttr,
-given that the underlying matrix is the same. This is to avoid confusion
-about what is in the inner and the outer variable.
-Contingency matrices are most often used to compute probabilities of conditional
-classes or features. By separating the classes and giving them specialized
-methods for computing the probabilities that are most suitable to compute
-from a particular class, the user (ie, you or the method that gets passed
-the matrix) is relieved from checking what kind of matrix it got, that is,
-where is the class and where's the feature.
-
-
 .. class:: Orange.probability.distribution.ContingencyClass
+
+    ContingencyClass is an abstract base class for contingency matrices
+    that contain the class, either as the inner or the outer
+    feature. If offers a function for making filing the contingency clearer.
+
+    After reading through the rest of this page you might ask yourself
+    why do we need to separate the classes ContingencyAttrClass,
+    ContingencyClassAttr and ContingencyAttrAttr,
+    given that the underlying matrix is the same. This is to avoid confusion
+    about what is in the inner and the outer variable.
+    Contingency matrices are most often used to compute probabilities of conditional
+    classes or features. By separating the classes and giving them specialized
+    methods for computing the probabilities that are most suitable to compute
+    from a particular class, the user (ie, you or the method that gets passed
+    the matrix) is relieved from checking what kind of matrix it got, that is,
+    where is the class and where's the feature.
+
+
 
     .. attribute:: classVar (read only)
     
@@ -336,21 +322,19 @@ where is the class and where's the feature.
         is actually the outer variable or the inner. 
 
 
-=================
-ContingencyAttrClass
-=================
-
-ContingencyAttrClass is derived from ContingencyClass.
-Here, feature is the outer variable (hence variable=outerVariable)
-and class is the inner (classVar=innerVariable), so this form of
-contingency matrix is suitable for computing the conditional probabilities
-of classes given a value of a feature.
-
-Calling add_attrclass(v, c) is here equivalent to calling add(v, c).
-In addition to this, the class supports computation of contingency from instances,
-as you have already seen in the example at the top of this page.
 
 .. class:: Orange.probability.distribution.ContingencyClass
+
+    ContingencyAttrClass is derived from ContingencyClass.
+    Here, feature is the outer variable (hence variable=outerVariable)
+    and class is the inner (classVar=innerVariable), so this form of
+    contingency matrix is suitable for computing the conditional probabilities
+    of classes given a value of a feature.
+
+    Calling add_attrclass(v, c) is here equivalent to calling add(v, c).
+    In addition to this, the class supports computation of contingency from instances,
+    as you have already seen in the example at the top of this page.
+
 
     .. method:: ContingencyAttrClass(feature, class_attribute)
 
@@ -442,20 +426,16 @@ part of `distributions-contingency3.py`_ (uses monks-1.tab)
     :lines: 27-
 
 
-=================
-ContingencyClassAttr
-=================
-
-ContingencyClassAttr is similar to ContingencyAttrClass except that here
-the class is the outer and the feature the inner variable.
-As a consequence, this form of contingency matrix is suitable
-for computing conditional probabilities of feature values given class.
-Constructor and add_attrclass nevertheless get the arguments
-in the same order as for ContingencyAttrClass, that is,
-feaure first, class second.
-
-
 .. class:: Orange.probability.distribution.ContingencyClassAttr
+
+    ContingencyClassAttr is similar to ContingencyAttrClass except that here
+    the class is the outer and the feature the inner variable.
+    As a consequence, this form of contingency matrix is suitable
+    for computing conditional probabilities of feature values given class.
+    Constructor and add_attrclass nevertheless get the arguments
+    in the same order as for ContingencyAttrClass, that is,
+    feaure first, class second.
+
 
     ..method:: ContingencyClassAttr(attribute, class_attribute)
 
@@ -523,16 +503,12 @@ If the class value is '1', e is '1' in exactly half of examples
 e is again distributed uniformly.
     
 
-=================
-ContingencyAttrAttr
-=================
-
-ContingencyAttrAttr stores contingency matrices in which none
-of the features is the class. This is rather similar to Contingency,
-except that it has an additional constructor and method for getting
-the conditional probabilities.
-
 .. class:: Orange.probability.distribution.ContingencyAttrAttr
+
+    ContingencyAttrAttr stores contingency matrices in which none
+    of the features is the class. This is rather similar to Contingency,
+    except that it has an additional constructor and method for getting
+    the conditional probabilities.
 
     .. method:: ContingencyAttrAttr(outer_variable, inner_variable)
 
@@ -654,27 +630,26 @@ DomainContingency is basically a list of contingencies,
 either of type ContingencyAttrClass or ContingencyClassAttr, with two
 additional fields and a constructor that computes the contingencies.
 
-
-.. attribute:: classIsOuter (read only)
-
-    Tells whether the class is the outer or the inner featue.
-    Effectively, this tells whether the elements of the list
-    are ContingencyAttrClass or ContingencyClassAttr.
-
-.. attribute:: classes
-
-    Contains the distribution of class values on the entire dataset.
-
-..method:: DomainContingency(instances[, weightID][, classIsOuter=0|1])
+.. class:: DomainContingency(instances[, weightID][, classIsOuter=0|1])
 
     Constructor needs to be given a list of instances.
     It constructs a list of contingencies; if classIsOuter is 0 (default),
     these will be ContingencyAttrClass, if 1, ContingencyClassAttr are used.
     It then iterates through instances and computes the contingencies.
 
-..method:: normalize
+    .. attribute:: classIsOuter (read only)
 
-    Calls normalize for each contingency.
+        Tells whether the class is the outer or the inner featue.
+        Effectively, this tells whether the elements of the list
+        are ContingencyAttrClass or ContingencyClassAttr.
+
+    .. attribute:: classes
+
+        Contains the distribution of class values on the entire dataset.
+
+    .. method:: normalize
+
+        Calls normalize for each contingency.
 
 The following script will print the contingencies for features
 "a", "b" and "e" for the dataset Monk 1.
@@ -690,8 +665,6 @@ The contingencies in the DomainContingency dc are of type ContingencyAttrClass
 and tell us conditional distributions of classes, given the value of the feature.
 To compute the distribution of feature values given the class,
 one needs to get a list of ContingencyClassAttr.
-
-part of **distributions-contingency8.py** (uses monk1.tab)::
 
 Note that classIsOuter cannot be given as positional argument,
 but needs to be passed by keyword.
@@ -712,13 +685,6 @@ from orange import \
      DomainDistributions, \
      DistributionList, \
      ComputeDomainContingency, \
-     ConditionalProbabilityEstimator, \
-     ConditionalProbabilityEstimator_ByRows, \
-     ConditionalProbabilityEstimator_FromDistribution, \
-     ConditionalProbabilityEstimatorConstructor, \
-     ConditionalProbabilityEstimatorConstructor_ByRows, \
-     ConditionalProbabilityEstimatorConstructor_loess, \
-     ConditionalProbabilityEstimatorList, \
      Contingency, \
      ContingencyAttrAttr, \
      ContingencyClass, \
