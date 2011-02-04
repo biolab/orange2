@@ -11,7 +11,12 @@ Naive Bayes classifier
 The most primitive Bayesian classifier is :obj:`NaiveLearner`. 
 `Naive Bayes classification algorithm <http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_ 
 estimates conditional probabilities from training data and uses them
-for classification of new data instances (`bayes-run.py`_, uses `iris.tab`_):
+for classification of new data instances. The algorithm learns very fast if all features
+in the training data set are discrete. If a number of features are continues, though, the 
+algorithm runs slower due to time spent to estimate continuous conditional distributions.
+
+The following example demonstrates a straightforward invocation of
+this algorithm (`bayes-run.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/bayes-run.py
    :lines: 7-
@@ -25,8 +30,10 @@ for classification of new data instances (`bayes-run.py`_, uses `iris.tab`_):
    :members:
    :show-inheritance:
    
+   
 Examples
 ========
+
 :obj:`NaiveLearner` can estimate probabilities using relative frequencies or
 m-estimate (`bayes-mestimate.py`_, uses `lenses.tab`_):
 
@@ -59,7 +66,7 @@ Implementation details
 ======================
 
 The following two classes are implemented in C++ (*bayes.cpp*). They are not
-intended to be used directly. Here we give implementation details for those
+intended to be used directly. Here we provide implementation details for those
 interested.
 
 Orange.core.BayesLearner
