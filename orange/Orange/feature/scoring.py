@@ -84,15 +84,19 @@ the attribute values; in Orange, these are derived from
     requires.
 
     .. attribute:: handlesDiscrete
+    
     Tells whether the measure can handle discrete attributes.
 
     .. attribute:: handlesContinuous
+    
     Tells whether the measure can handle continuous attributes.
 
     .. attribute:: computesThresholds
+    
     Tells whether the measure implements the :obj:`thresholdFunction`.
 
     .. attribute:: needs
+    
     Tells what kind of data the measure needs. This can be either 
     :obj:`NeedsGenerator`, :obj:`NeedsDomainContingency`, 
     :obj:`NeedsContingency_Class`. The first need an instance generator
@@ -179,6 +183,7 @@ the attribute values; in Orange, these are derived from
         estimates based on apriori class probabilities (such as m-estimate).
 
     .. method:: thresholdFunction(attribute, examples[, weightID])
+    
     This function computes the qualities for different binarizations of the
     continuous attribute :obj:`attribute`. The attribute should of course be
     continuous. The result of a function is a list of tuples, where the first
@@ -200,7 +205,7 @@ the attribute values; in Orange, these are derived from
     it on-the-fly. For instance, to measure the quality of attribute
     "tear_rate", you could write simply::
 
-        >>>> print orange.MeasureAttribute_info("tear_rate", data)
+        >>> print orange.MeasureAttribute_info("tear_rate", data)
         0.548794984818
 
     You shouldn't use this shortcut with ReliefF, though; see the explanation
@@ -258,10 +263,13 @@ the attribute values; in Orange, these are derived from
     set probability estimators. If none are given, probabilities and
     conditional probabilities of classes are estimated by relative frequencies.
 
-    .. attribute:: unknownsTreatment 
+    .. attribute:: unknownsTreatment
+     
     Defines what to do with unknown values. See the possibilities described above.
 
-    .. attribute:: estimatorConstructor, conditionalEstimatorConstructor
+    .. attribute:: estimatorConstructor
+    .. attribute:: conditionalEstimatorConstructor
+    
     The classes that are used to estimate unconditional and conditional
     probabilities of classes, respectively. You can set this to, for instance, 
     :obj:`ProbabilityEstimatorConstructor_m` and 
@@ -340,17 +348,18 @@ Costs
     Evaluates features based on the "saving" achieved by knowing the value of
     attribute, according to the specified cost matrix.
 
-    .. attribute:: cost 
+    .. attribute:: cost
+     
     Cost matrix, see :obj:`Orange.classification.CostMatrix` for details.
 
     If cost of predicting the first class for an example that is actually in
     the second is 5, and the cost of the opposite error is 1, than an appropriate
     measure can be constructed and used for attribute 3 as follows::
 
-    >>> meas = Orange.feature.scoring.Cost()
-    >>> meas.cost = ((0, 5), (1, 0))
-    >>> meas(3, data)
-    0.083333350718021393
+        >>> meas = Orange.feature.scoring.Cost()
+        >>> meas.cost = ((0, 5), (1, 0))
+        >>> meas(3, data)
+        0.083333350718021393
 
     This tells that knowing the value of attribute 3 would decrease the
     classification cost for appx 0.083 per example.
@@ -370,13 +379,16 @@ ReliefF
     examples belonging to different classes.
 
     .. attribute:: k
+    
     Number of neighbours for each example. Default is 5.
 
     .. attribute:: m
+    
     Number of reference examples. Default is 100. Set to -1 to take all the
     examples.
 
     .. attribute:: checkCachedData
+    
     A flag best left alone unless you know what you do.
 
 Computation of ReliefF is rather slow since it needs to find k nearest
@@ -412,11 +424,12 @@ faster to go like this::
 When called for the first time, meas will compute ReliefF for all attributes
 and the subsequent calls simply return the stored data.
 
-Class :obj:`Relief` works on discrete and continuous classes and thus
+Class :obj:`Relief` works on discrete and continuous classes and thus 
 implements functionality of algorithms ReliefF and RReliefF.
 
-.. note:: ReliefF can also compute the threshold function, that is, the 
-attribute quality at different thresholds for binarization.
+.. note::
+   ReliefF can also compute the threshold function, that is, the attribute
+   quality at different thresholds for binarization.
 
 Finally, here is an example which shows what can happen if you disable the 
 computation of checksums::
@@ -453,10 +466,12 @@ Mean Square Error
     Implements the mean square error measure.
 
     .. attribute:: unknownsTreatment
+    
     Tells what to do with unknown attribute values. See description on the top
     of this page.
 
     .. attribute:: m
+    
     Parameter for m-estimate of error. Default is 0 (no m-estimate).
 
 ==========
