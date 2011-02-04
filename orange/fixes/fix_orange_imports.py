@@ -44,7 +44,8 @@ MAPPING = {"orange": "Orange.core",
            "orngMisc":"Orange.misc",
            "orngEnsemble":"Orange.ensemble",
            "orngCN2": "Orange.classification.rules",
-           "orngMDS": "Orange.projection.mds"
+           "orngMDS": "Orange.projection.mds",
+           "orngStat": "Orange.evaluation.scoring"
            }
 
 
