@@ -1,7 +1,7 @@
 """
-==================
-k-Means clustering
-==================
+******************
+K-means clustering
+******************
 
 .. index::
    single: clustering, kmeans
@@ -14,7 +14,7 @@ k-Means clustering
 Examples
 ========
 
-The following code runs k-means clustering and prints out the cluster indexes
+XThe following code runs k-means clustering and prints out the cluster indexes
 for the last 10 data instances (`kmeans-run.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/kmeans-run.py
@@ -66,9 +66,8 @@ k-Means Utility Functions
 
 .. automethod:: Orange.clustering.kmeans.init_diversity
 
-.. automethod:: Orange.clustering.kmeans.init_hclustering
-
-.. automethod:: Orange.clustering.kmeans.data_center
+.. autoclass:: Orange.clustering.kmeans.init_hclustering
+   :members:
 
 .. automethod:: Orange.clustering.kmeans.data_center
 

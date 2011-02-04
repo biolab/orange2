@@ -1,7 +1,7 @@
 """
-=======================
-Hierarchical Clustering
-=======================
+***********************
+Hierarchical clustering
+***********************
 
 .. index::
    single: clustering, kmeans
@@ -11,17 +11,18 @@ Examples
 ========
 
 An example.
+
+.. automethod:: Orange.clustering.hierarchical.clustering
+
 """
 
 import orange
 
-# hierarhical clustering
-
 def clustering(data,
-                           distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
-                           linkage=orange.HierarchicalClustering.Average,
-                           order=False,
-                           progressCallback=None):
+               distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
+               linkage=orange.HierarchicalClustering.Average,
+               order=False,
+               progressCallback=None):
     """Return a hierarhical clustering of the data set."""
     distance = distanceConstructor(data)
     matrix = orange.SymMatrix(len(data))

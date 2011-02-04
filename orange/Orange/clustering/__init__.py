@@ -1,9 +1,7 @@
 """
-
 .. index:: clustering
 
 Everything about clustering, including agglomerative and hierarchical clustering.
-
 
 ================
 Other clustering
@@ -19,25 +17,6 @@ Other clustering
 
       :param n: katero fibonacijevo stevilo zelis
       :type n: integer
-   
-
-.. autoclass:: Orange.clustering.HierarchicalCluster
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-.. autoclass:: Orange.clustering.HierarchicalClusterList
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-.. autoclass:: Orange.clustering.HierarchicalClustering
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-
-
 """
 
 from __future__ import with_statement
