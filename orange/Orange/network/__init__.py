@@ -186,12 +186,12 @@ Examples
 An ordinary undirected graph with 10 vertices stored in a matrix would thus be
 constructed by::
 
-    >>> graph = orange.GraphAsMatrix(10, 0)
+    >>> graph = Orange.network.GraphAsMatrix(10, 0)
 
 A directed graph with 1000 vertices and edges of three types, stored with
 adjacency trees would be constructed by::
 
-    >>> graph = orange.GraphAsTree(1000, 1, 3)
+    >>> graph = Orange.network.GraphAsTree(1000, 1, 3)
 
 Usage
 =====
@@ -241,12 +241,12 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     
     If objects contains a dictionary, its keys are vertex identifiers and the
     values in the dictionary should be integers, eg.
-    
-    graph.objects = {}
-    graph.objects["Age"] = 0
-    graph.objects[None] = 1
-    graph.objects[orange] = 4
+       
+    part of `network-graph.py`_
 
+    .. literalinclude:: code/network-graph.py
+        :lines: 20-23
+ 
     If not a dictionary, objects can be any kind of sequence. Usually, you will
     give it a list of the same length as the number of vertices in the graph,
     so each element would identify a vertex. When indexing, the index is sought
@@ -437,6 +437,104 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     .. method:: getDiameter()
     
         Return a diameter of the graph.
+        
+Examples
+--------
+
+How to use graphs, part of `network-graph.py`_
+
+.. literalinclude:: code/network-graph.py
+    :lines: 9-56
+
+Results::
+
+    [(1, 0), (2, 0), (2, 1)]
+    0.3
+    0.3
+    0.1
+    0.3
+    ['Gender', 'Height']
+    [1, 2]
+    (None, None, None)
+    12.0
+    (None, 12, None)
+    1
+    0
+    1
+    0
+    0
+    1
+    (None, None, 3)
+    (None, None, None)
+
+How to use graphs with objects on edges, part of `network-graph-obj.py`_
+
+.. literalinclude:: code/network-graph-obj.py
+    :lines: 9-59
+    
+Results::
+
+    [(1, 0), (2, 1)]
+    [1, 2, 3]
+    [1, 2, 3]
+    a string
+    None
+    a string
+    [1, 2, 3]
+    ['Gender']
+    [1]
+    (None, None, None)
+    12.0
+    (None, 12, None)
+    1
+    0
+    1
+    0
+    0
+    1
+    (None, None, 3)
+    (None, None, None)
+
+An example of network analyses, part of `network-graph-analyses.py`_ (uses:
+`combination.net`_):
+
+.. literalinclude:: code/network-graph-analyses.py
+    :lines: 12-49
+    
+Results::
+
+    Connected components
+    [[0, 1, 2, 3, 4, 5, 6, 7, 8], [13, 14, 15, 16, 17, 18], [9, 10, 11, 12]]
+    
+    Degree distribution
+    {1: 5, 2: 4, 3: 8, 4: 1, 5: 1}
+    
+    Degrees
+    [4, 3, 3, 2, 2, 3, 2, 3, 2, 3, 3, 3, 3, 5, 1, 1, 1, 1, 1]
+    
+    Hubs
+    [13, 0, 1]
+    
+    Shortest path
+    [2, 0]
+    
+    Distance
+    1
+    
+    Diameter
+    4
+
+Subgraph image:
+
+.. image:: files/network-subgraph.png
+
+Additional functionality
+------------------------
+
+Should you need any additional functionality, just tell us. Many things are
+trivial to implement in C++ and will be much faster than the corresponding
+scripts in Python. (In this regard, minimal span trees, maximal flows, coloring
+and shortest path search are, of course, not considered basic functionality. :)
 
 =============================
 Community Detection in Graphs
@@ -449,7 +547,11 @@ Community Detection in Graphs
 .. _network-optimization.py: code/network-optimization.py
 .. _network-read.py: code/network-read.py
 .. _K5.net: code/K5.net
+.. _combination.net: code/combination.net
 .. _network-widget.py: code/network-widget.py
+.. _network-graph-analyses.py: code/network-graph-analyses.py
+.. _network-graph.py: code/network-graph.py
+.. _network-graph-obj.py: code/network-graph-obj.py
 
 """
 import random
