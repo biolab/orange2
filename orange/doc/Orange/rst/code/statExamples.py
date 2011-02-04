@@ -80,16 +80,13 @@ print "method\tsens\tspec"
 for l in range(len(learners)):
     print "%s\t%5.3f\t%5.3f" % (learners[l].name, orngStat.sens(cm[l]), orngStat.spec(cm[l]))
 
-
-
 print
 print "AUC (voting)"
 
 AUCs = orngStat.AUC(res)
 for l in range(len(learners)):
     print "%10s: %5.3f" % (learners[l].name, AUCs[l])
-    
-reload(orngStat)
+
 
 print
 print "AUC for vehicle using weighted single-out method"
