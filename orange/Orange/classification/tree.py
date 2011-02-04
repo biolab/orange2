@@ -1,8 +1,8 @@
 """
 
-**************
-XXXXXXXXXXXXXX
-**************
+*****************************
+XXXX (naj kar Matija popravi)
+*****************************
 
 This page describes the Orange trees. It first describes the basic
 components and procedures: it starts with the
