@@ -674,7 +674,7 @@ class CN2Classifier(RuleClassifier):
     """
     def __init__(self, rules=None, instances=None, weightID = 0, **argkw):
         self.rules = rules
-        self.instances = instances
+        self.examples = instances
         self.weightID = weightID
         self.classVar = None if instances is None else instances.domain.classVar
         self.__dict__.update(argkw)
@@ -791,7 +791,7 @@ class CN2UnorderedClassifier(RuleClassifier):
     """
     def __init__(self, rules = None, instances = None, weightID = 0, **argkw):
         self.rules = rules
-        self.instances = instances
+        self.examples = instances
         self.weightID = weightID
         self.classVar = instances.domain.classVar if instances is not None else None
         self.__dict__.update(argkw)
@@ -808,7 +808,7 @@ class CN2UnorderedClassifier(RuleClassifier):
             return disc, sumdisc
 
         # create empty distribution
-        retDist = Orange.core.DiscDistribution(self.instances.domain.classVar)
+        retDist = Orange.core.DiscDistribution(self.examples.domain.classVar)
         covRules = RuleList()
         # iterate through instances - add distributions
         sumdisc = 0.
@@ -821,7 +821,7 @@ class CN2UnorderedClassifier(RuleClassifier):
             sumdisc = self.prior.abs
             
         if sumdisc > 0.0:
-            for c in self.instances.domain.classVar:
+            for c in self.examples.domain.classVar:
                 retDist[c] /= sumdisc
         else:
             retDist.normalize()
@@ -982,7 +982,7 @@ class NoDuplicatesValidator(RuleValidator):
 class RuleClassifier_BestRule(RuleClassifier):
     def __init__(self, rules, instances, weightID = 0, **argkw):
         self.rules = rules
-        self.instances = instances
+        self.examples = instances
         self.classVar = instances.domain.classVar
         self.__dict__.update(argkw)
         self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
@@ -1001,7 +1001,7 @@ class RuleClassifier_BestRule(RuleClassifier):
             bestRule.used += 1
         sumdist = sum(retDist)
         if sumdist > 0.0:
-            for c in self.instances.domain.classVar:
+            for c in self.examples.domain.classVar:
                 retDist[c] /= sumdisc
         else:
             retDist.normalize()
