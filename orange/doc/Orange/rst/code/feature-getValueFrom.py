@@ -27,10 +27,10 @@ trainData = data.select(indices, 0)
 testData = data.select(indices, 1)
 
 # Convert the training set to a new domain
-newDomain = orange.Domain([data.domain["a"], data.domain["b"], e2, data.domain.classVar])
-newTrain = orange.ExampleTable(newDomain, trainData)
+newDomain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.classVar])
+newTrain = Orange.data.Table(newDomain, trainData)
 
 # Construct a tree and classify unmodified instances
-tree = orange.TreeLearner(newTrain)
+tree = Orange.core.TreeLearner(newTrain)
 for ex in testData[:10]:
     print ex.getclass(), tree(ex)

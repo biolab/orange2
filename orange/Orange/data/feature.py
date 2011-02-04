@@ -7,12 +7,13 @@ The names, types, values (where applicable), functions for computing the
 feature value from other features, and other properties of the
 features are stored in descriptors contained in this module.
 
-Feature Descriptors
+Feature descriptors
 -------------------
 
-Feature descriptors can be constructed directly, using constructors, or by a
-factory function :obj:`make`, which either retrieves an existing descriptor or
-constructs a new one.
+Feature descriptors can be constructed directly, using constructors and passing
+attributes as parameters, or by a factory function
+:func:`Orange.data.feature.make`, which either retrieves an existing descriptor
+or constructs a new one.
 
 .. class:: Feature
 
@@ -34,10 +35,10 @@ constructs a new one.
 
     .. attribute:: getValueFrom
 
-        A function (an instance of :obj:`Orange.core.Clasifier`) which computes a
-        value of the feature from values of one or more other features. This is
-        used, for instance, in discretization where the features describing the 
-        discretized feature are computed from the original feature. 
+        A function (an instance of :obj:`Orange.core.Clasifier`) which computes
+        a value of the feature from values of one or more other features. This
+        is used, for instance, in discretization where the features describing
+        the discretized feature are computed from the original feature. 
 
     .. attribute:: ordered
     
@@ -74,7 +75,7 @@ constructs a new one.
        
     .. method:: randomvalue()
 
-           Return a random value of the feature
+           Return a random value of the feature.
        
            :rtype: :class:`Orange.data.Value`
        
@@ -88,15 +89,17 @@ constructs a new one.
 
 .. _discrete:
 .. class:: Discrete
+
+    Bases: :class:`Feature`
    
     Descriptor for discrete features.
     
     .. attribute:: values
     
         A list with symbolic names for feature's values. Values are stored as
-        indices referring to this list. Therefore, modifying this list instantly
-        changes (symbolic) names of values as they are printed out or referred to
-        by user.
+        indices referring to this list. Therefore, modifying this list 
+        instantly changes (symbolic) names of values as they are printed out or
+        referred to by user.
     
         .. note::
         
@@ -105,7 +108,7 @@ constructs a new one.
             shrinking the list can have disastrous effects and is therefore not
             really recommendable. Also, do not add values to the list by
             calling its append or extend method: call the :obj:`addValue`
-            method instead described below.
+            method instead.
 
             It is also assumed that this attribute is always defined (but can
             be empty), so never set it to None.
@@ -113,7 +116,7 @@ constructs a new one.
     .. attribute:: baseValue
 
             Stores the base value for the feature as an index into `values`.
-            This can be, for instance a "normal" value, such as "no
+            This can be, for instance, a "normal" value, such as "no
             complications" as opposed to abnormal "low blood pressure". The
             base value is used by certain statistics, continuization etc.
             potentially, learning algorithms. Default is -1 and means that
@@ -121,23 +124,26 @@ constructs a new one.
     
     .. method:: addValue
     
-            Adds a value to values. Always call this function instead of
+            Add a value to values. Always call this function instead of
             appending to values.
 
 .. _continuous:
 .. class:: Continuous
+
+    Bases: :class:`Feature`
 
     Descriptor for continuous features.
     
     .. attribute:: numberOfDecimals
     
         The number of decimals used when the value is printed out, converted to
-        a string or saved to a file 
+        a string or saved to a file.
     
     .. attribute:: scientificFormat
     
-        If ``True``, the value is printed in scientific format whenever it would
-        have more than 5 digits. In this case, `numberOfDecimals` is ignored.
+        If ``True``, the value is printed in scientific format whenever it
+        would have more than 5 digits. In this case, `numberOfDecimals` is
+        ignored.
 
     .. attribute:: adjustDecimals
     
@@ -168,24 +174,29 @@ constructs a new one.
 .. _String:
 .. class:: String
 
+    Bases: :class:`Feature`
+
     Descriptor for features that contains strings. No method can use them for 
-    learning; some will complain and other will silently ignore them when the 
+    learning; some will complain and other will silently ignore them when they 
     encounter them. They can be, however, useful for meta-attributes; if 
-    instance in dataset have unique id's, the most efficient way to store them 
+    instances in dataset have unique id's, the most efficient way to store them 
     is to read them as meta-attributes. In general, never use discrete 
     attributes with many (say, more than 50) values. Such attributes are 
-    probably not of any use for learning and should be stored as string attributes.
+    probably not of any use for learning and should be stored as string
+    attributes.
 
     When converting strings into values and back, empty strings are treated 
     differently than usual. For other types, an empty string can be used to
-    denote undefined values, while :obj:`StringVariable` will take empty string as
-    an empty string -- that is, except when loading or saving into file. Empty
-    strings in files are interpreted as undefined; to specify an empty string,
-    enclose the string into double quotes; these get removed when the string is
-    loaded.
+    denote undefined values, while :obj:`StringVariable` will take empty string
+    as an empty string -- that is, except when loading or saving into file.
+    Empty strings in files are interpreted as undefined; to specify an empty
+    string, enclose the string into double quotes; these get removed when the
+    string is loaded.
 
 .. _Python:
 .. class:: Python
+
+    Bases: :class:`Feature`
 
     Base class for descriptors defined in Python. It is fully functional,
     and can be used as a descriptor for attributes that contain arbitrary Python
@@ -198,11 +209,11 @@ Features computed from other features
 
 Values of features are often computed from other features, such as in
 discretization. The mechanism described below usually occurs behind the scenes,
-so understanding it required only for implementing specific transformations.
+so understanding it is required only for implementing specific transformations.
 
-Monk 1 is a well-known dataset with target concept ``y := a==b`` or ``e==1``.
-It can help the learning algorithm if the four-valued 
-attribute ``e`` with a binary attribute having values `"1"` and `"not 1"`. The
+Monk 1 is a well-known dataset with target concept ``y := a==b or e==1``.
+It can help the learning algorithm if the four-valued attribute ``e`` is
+replaced with a binary attribute having values `"1"` and `"not 1"`. The
 new feature will be computed from the old one on the fly. 
 
 .. literalinclude:: code/feature-getValueFrom.py
@@ -218,7 +229,7 @@ needed, interpreted as ``False``). Finally, we tell e2 to use
 ``checkE`` is a function that is passed an instance and another argument we 
 don't care about here. If the instance's ``e`` equals ``1``, the function 
 returns value ``1``, otherwise it returns ``not 1``. Both are returned as 
-values, not plain strings . 
+values, not plain strings.
 
 In most circumstances, value of ``e2`` can be computed on the fly - we can 
 pretend that the feature exists in the data, although it doesn't (but 
@@ -233,8 +244,8 @@ There are methods which cannot compute values on the fly because it would be
 too complex or time consuming. In such cases, the data need to be converted
 to a new :obj:`Orange.data.Table`::
 
-    newDomain = orange.Domain([data.domain["a"], data.domain["b"], e2, data.domain.classVar])
-    newData = orange.ExampleTable(newDomain, data) 
+    newDomain = Orange.data.Domain([data.domain["a"], data.domain["b"], e2, data.domain.classVar])
+    newData = Orange.data.Table(newDomain, data) 
 
 Automatic computation is useful when the data is split onto training and 
 testing examples. Training instanced can be modified by adding, removing 
@@ -248,7 +259,7 @@ transformed features.
 .. literalinclude:: code/feature-getValueFrom.py
     :lines: 24-
 
-Reuse of Descriptors
+Reuse of descriptors
 --------------------
 
 There are situations when feature descriptors need to be reused. Typically, the 
@@ -259,7 +270,7 @@ the descriptors, not just the names, need to be the same.
 When constructing new descriptors for data read from a file or at unpickling,
 Orange checks whether an appropriate descriptor (with the same name and, in case
 of discrete features, also values) already exists and reuses it. When new
-descriptors are constructed by explicitly calling the above descriptors, this
+descriptors are constructed by explicitly calling the above constructors, this
 always creates new descriptors and thus new features, although the feature with
 the same name may already exist.
 
@@ -282,7 +293,7 @@ Orange.data.feature.Feature.MakeStatus.Incompatible (3)
     succeed. So will also the search for ["a"], since the extra existing value
     does not matter. The formal rule is thus that the values are compatible if ``existing_values[:len(ordered_values)] == ordered_values[:len(existing_values)]``.
 
-orange.data.feature.MakeStatus.NoRecognizedValues (2)
+Orange.data.feature.Feature.MakeStatus.NoRecognizedValues (2)
     There is a matching feature, yet it has none of the values that the new
     feature will have (this is obviously possible only if the new attribute has
     no prescribed ordered values). For instance, we search for a feature
@@ -293,43 +304,46 @@ orange.data.feature.MakeStatus.NoRecognizedValues (2)
     old feature will get some unneeded new values and the new one will inherit 
     some from the old.
 
-Orange.data.feature.MakeStatus.MissingValues (1)
-    there is a matching feature with some of the values that the new one 
+Orange.data.feature.Feature.MakeStatus.MissingValues (1)
+    There is a matching feature with some of the values that the new one 
     requires, but some values are missing. This situation is neither uncommon 
     nor suspicious: in case of separate training and testing data sets there may
     be values which occur in one set but not in the other.
 
-Orange.data.feature.MakeStatus.OK (0)
-    There is a perfect metch which contains all the prescribed values in the
+Orange.data.feature.Feature.MakeStatus.OK (0)
+    There is a perfect match which contains all the prescribed values in the
     correct order. The existing attribute may have some extra values, though.
 
-Continuous attributes can obviously have only two statuses, ``NotFound`` or ``OK``.
+Continuous attributes can obviously have only two statuses, ``NotFound`` or
+``OK``.
 
-When loading the data using :obj:``Orange.data.Table``, Orange takes the safest 
+When loading the data using :obj:`Orange.data.Table`, Orange takes the safest 
 approach and, by default, reuses everything that is compatible, that is, up to 
 and including ``NoRecognizedValues``. Unintended reuse would be obvious from the
 feature having too many values, which the user can notice and fix. More on that 
-in the page on `loading data`.
+in the page on `loading data`. !!TODO!!
 
 There are two functions for reusing the attributes instead of creating new ones.
 
-.. function:: Orange.data.feature.make(name, type, ordered_values, onordered_values[, createNewOn])
+.. function:: Orange.data.feature.make(name, type, ordered_values, unordered_values[, createNewOn])
 
     Find and return an existing feature or create a new one if none existing
     features matches the given name, type and values.
     
     The optional `createOnNew` specifies the status at which a new feature is
-    created. The status must be at most ``Incompatible`` since incompatible (or non-existing) features cannot be reused. If it is set lower, for instance 
+    created. The status must be at most ``Incompatible`` since incompatible (or
+    non-existing) features cannot be reused. If it is set lower, for instance 
     to ``MissingValues``, a new feature is created even if there exists
     a feature which only misses same values. If set to ``OK``, the function
     always creates a new feature.
     
     The function returns a tuple containing a feature descriptor and the
-    status of the best matching feature. So, if ``createOnNew`` is set to ``MissingValues``, and there exists a feature whose status is, say,
+    status of the best matching feature. So, if ``createOnNew`` is set to
+    ``MissingValues``, and there exists a feature whose status is, say,
     ``UnrecognizedValues``, a feature would be created, while the second 
     element of the tuple would contain ``UnrecognizedValues``. If, on the other
     hand, there exists a feature which is perfectly OK, its descriptor is 
-    returned and the returned status is <code>OK</code>. The function returns no 
+    returned and the returned status is ``OK``. The function returns no 
     indicator whether the returned feature is reused or not. This can be,
     however, read from the status code: if it is smaller than the specified
     ``createNewOn``, the feature is reused, otherwise we got a new descriptor.
@@ -342,70 +356,81 @@ There are two functions for reusing the attributes instead of creating new ones.
     :param type: Feature type
     :type type: Orange.data.feature.Type
     :param ordered_values: a list of ordered values
-    :param unordered_values: a list of values, for which the order does not matter
-    :param createNewOn: gives condition for constructing a new feature instead of using the new one
+    :param unordered_values: a list of values, for which the order does not
+        matter
+    :param createNewOn: gives condition for constructing a new feature instead
+        of using the new one
+    
+    :return_type: a tuple (:class:`Orange.data.feature.Feature`, int)
     
 .. function:: Orange.data.feature.retrieve(name, type, ordered_values, onordered_values[, createNewOn])
 
     Find and return an existing feature, or ``None`` if no match is found.
     
-    :param name: Feature name
-    :param type: Feature type
+    :param name: feature name.
+    :param type: feature type.
     :type type: Orange.data.feature.Type
     :param ordered_values: a list of ordered values
-    :param unordered_values: a list of values, for which the order does not matter
-    :param createNewOn: gives condition for constructing a new feature instead of using the new one
+    :param unordered_values: a list of values, for which the order does not
+        matter
+    :param createNewOn: gives condition for constructing a new feature instead
+        of using the new one
+
+    :return_type: :class:`Orange.data.feature.Feature`
     
 .. _`feature-reuse.py`: code/feature-reuse.py
 
-These following examples (from `feature-reuse.py`_) give the shown results if executed only once (in a Python session) and in this order.
+These following examples (from `feature-reuse.py`_) give the shown results if
+executed only once (in a Python session) and in this order.
 
-:py:func:`make` can be used for construction of new features.::
+:func:`Orange.data.feature.make` can be used for construction of new features. ::
     
     >>> v1, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, ["a", "b"])
     >>> print s, v1.values
     4 <a, b>
 
-No surprises here: new feature is created and the status is ``NotFound``.::
+No surprises here: new feature is created and the status is ``NotFound``. ::
 
-    >>> v2, s = Orange.data.feature.make("a", orange.data.Type.Discrete, ["a"], ["c"])
+    >>> v2, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, ["a"], ["c"])
     >>> print s, v2 is v1, v1.values
     1 True <a, b, c>
 
 The status is 1 (``MissingValues``), yet the feature is reused (``v2 is v1``).
 ``v1`` gets a new value, ``"c"``, which was given as an unordered value. It does
-not matter that the new variable does not need value ``b``.::
+not matter that the new variable does not need value ``b``. ::
 
-    >>> v3, s = Orange.data.feature.make("a", orange.data.Type.Discrete, ["a", "b", "c", "d"])
+    >>> v3, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, ["a", "b", "c", "d"])
     >>> print s, v3 is v1, v1.values
     1 True <a, b, c, d>
 
-This is similar as before, except that the new value, <code>d</code> is not among the ordered values.::
+This is similar as before, except that the new value, ``d`` is not among the
+ordered values. ::
 
-    >>> v4, s = Orange.data.feature.make("a", orange.data.Type.Discrete, ["b"])
+    >>> v4, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, ["b"])
     >>> print s, v4 is v1, v1.values, v4.values
     3, False, <b>, <a, b, c, d>
 
 The new feature needs to have ``b`` as the first value, so it is incompatible 
 with the existing features. The status is thus 3 (``Incompatible``), the two 
-features are not equal and have different lists of values.::
+features are not equal and have different lists of values. ::
 
-    >>> v5, s = Orange.data.feature.make("a", orange.data.Type.Discrete, None, ["c", "a"])
+    >>> v5, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, None, ["c", "a"])
     >>> print s, v5 is v1, v1.values, v5.values
     0 True <a, b, c, d> <a, b, c, d>
 
 The new feature has values ``c`` and ``a``, but does not
-mind about the order, so the existing attribute is ``OK``.::
+mind about the order, so the existing attribute is ``OK``. ::
 
-    >>> v6, s = Orange.data.feature.make("a", orange.data.Type.Discrete, None, ["e"]) "a"])
+    >>> v6, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, None, ["e"]) "a"])
     >>> print s, v6 is v1, v1.values, v6.values
     2 True <a, b, c, d, e> <a, b, c, d, e>
 
-The new feature has different values than the existing (status is 2, ``NoRecognizedValues``), but the existing is reused nevertheless. Note that we
+The new feature has different values than the existing (status is 2,
+``NoRecognizedValues``), but the existing is reused nevertheless. Note that we
 gave ``e`` in the list of unordered values. If it was among the ordered, the
-reuse would fail.::
+reuse would fail. ::
 
-    >>> v7, s = Orange.data.feature.make("a", orange.data.Type.Discrete, None,
+    >>> v7, s = Orange.data.feature.make("a", Orange.data.Type.Discrete, None,
             ["f"], Orange.data.feature.make.MakeStatus.NoRecognizedValues)))
     >>> print s, v7 is v1, v1.values, v7.values
     2 False <a, b, c, d, e> <f>
@@ -414,8 +439,8 @@ This is the same as before, except that we prohibited reuse when there are no
 recognized value. Hence a new feature is created, though the returned status is 
 the same as before::
 
-    >>> v8, s = Orange.data.feature.make("a", orange.data.Type.Discrete,
-            ["a", "b", "c", "d", "e"], None, Orange.data.feature.MakeStatus.OK)
+    >>> v8, s = Orange.data.feature.make("a", Orange.data.Type.Discrete,
+            ["a", "b", "c", "d", "e"], None, Orange.data.feature.Feature.MakeStatus.OK)
     >>> print s, v8 is v1, v1.values, v8.values
     0 False <a, b, c, d, e> <a, b, c, d, e>
 
