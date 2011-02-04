@@ -13,7 +13,7 @@ Contents:
 
    orange.data.feature
    Orange.associate   
-   Orange.cluster
+   Orange.clustering
    Orange.data
    
    Orange.classification.bayes
