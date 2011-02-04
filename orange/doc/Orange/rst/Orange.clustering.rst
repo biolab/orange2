@@ -5,7 +5,10 @@ Clustering
 .. automodule:: Orange.clustering
 
 .. toctree::
+   :glob:
    :maxdepth: 4
+   :hidden:
 
-   Orange.clustering.hierarchical
    Orange.clustering.kmeans
+   Orange.clustering.hierarchical
+   
