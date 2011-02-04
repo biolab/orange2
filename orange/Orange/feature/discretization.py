@@ -146,12 +146,13 @@ class DiscretizedLearner_Class:
     An example on how such learner is set and used in ten-fold cross validation
     is given below::
 
+        from Orange.feature import discretization
         bayes = Orange.classification.bayes.NaiveBayesLearner()
-        disc = orange.Preprocessor_discretize(method=Orange.feature.discretization.EquiNDiscretization(numberOfIntervals=10))
-        dBayes = Orange.feature.discretization.DiscretizedLearner(bayes, name='disc bayes')
-        dbayes2 = Orange.feature.discretization.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)
+        disc = orange.Preprocessor_discretize(method=discretization.EquiNDiscretization(numberOfIntervals=10))
+        dBayes = discretization.DiscretizedLearner(bayes, name='disc bayes')
+        dbayes2 = discretization.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)
         results = Orange.evaluation.testing.CrossValidation([dBayes], table)
-        classifier = Orange.feature.discretization.DiscretizedLearner(bayes, examples=table)
+        classifier = discretization.DiscretizedLearner(bayes, examples=table)
 
     """
     def __init__(self, baseLearner, discretizer=EntropyDiscretization(), **kwds):

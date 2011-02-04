@@ -470,8 +470,8 @@ References
 """
 
 import Orange.core as orange
-from orange import MeasureAttribute as Measure
 
+from orange import MeasureAttribute as Measure
 from orange import MeasureAttribute_info as InfoGain
 from orange import MeasureAttribute_gainRatio as GainRatio
 from orange import MeasureAttribute_gini as Gini
