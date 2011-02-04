@@ -10,8 +10,8 @@ bayes = Orange.classification.bayes.NaiveLearner(train)
 thresholds = [.2, .5, .8]
 models = [Orange.optimization.ThresholdClassifier(bayes, thr) for thr in thresholds]
 
-res = testing.testOnData(models, test)
-cm = scoring.confusionMatrices(res)
+res = Orange.evaluation.testing.testOnData(models, test)
+cm = Orange.evaluation.scoring.confusionMatrices(res)
 
 print
 for i, thr in enumerate(thresholds):
