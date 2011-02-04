@@ -172,15 +172,15 @@ vehicle.domain.classVar.values.index("van"))
    there were more examples misclassified as vans than correctly classified
    examples. The classifier is obviously quite biased to vans.
    
-.. method:: sens(confm) 
-.. method:: spec(confm)
-.. method:: PPV(confm)
-.. method:: NPV(confm)
-.. method:: precision(confm)
-.. method:: recall(confm)
-.. method:: F2(confm)
-.. method:: Falpha(confm, alpha=2.0)
-.. method:: MCC(conf)
+   .. method:: sens(confm) 
+   .. method:: spec(confm)
+   .. method:: PPV(confm)
+   .. method:: NPV(confm)
+   .. method:: precision(confm)
+   .. method:: recall(confm)
+   .. method:: F2(confm)
+   .. method:: Falpha(confm, alpha=2.0)
+   .. method:: MCC(conf)
 
    With the confusion matrix defined in terms of positive and negative
    classes, you can also compute the 
@@ -204,7 +204,7 @@ vehicle.domain.classVar.values.index("van"))
    as F1 [2*precision*recall/(precision+recall)] or, for a general case,
    Falpha [(1+alpha)*precision*recall / (alpha*precision + recall)].
    The `Matthews correlation coefficient \
-<http://en.wikipedia.org/wiki/Matthews_correlation_coefficient Matthews>`_
+<http://en.wikipedia.org/wiki/Matthews_correlation_coefficient>`_
    in essence a correlation coefficient between
    the observed and predicted binary classifications; it returns a value
    between -1 and +1. A coefficient of +1 represents a perfect prediction,
@@ -357,7 +357,7 @@ Comparison of Algorithms
 Regression
 ==========
 
-General measure of quality
+General Measure of Quality
 ==========================
 
 Several alternative measures, as given below, can be used to evaluate
@@ -441,12 +441,14 @@ def checkNonZero(x):
         raise ValueError, "Cannot compute the score: no examples or sum of weights is 0.0."
 
 def gettotweight(res):
+    """Sum all the weights"""
     totweight = reduce(lambda x, y: x+y.weight, res.results, 0)
     if totweight==0.0:
         raise ValueError, "Cannot compute the score: sum of weights is 0.0."
     return totweight
 
 def gettotsize(res):
+    """ Get number of result instances """
     if len(res.results):
         return len(res.results)
     else:
@@ -468,6 +470,7 @@ def splitByIterations(res):
 
 
 def classProbabilitiesFromRes(res, **argkw):
+    """Calculate class probabilities"""
     probs = [0.0] * len(res.classValues)
     if argkw.get("unweighted", 0) or not res.weights:
         for tex in res.results:
@@ -857,59 +860,6 @@ def BrierScore(res, reportSE = False, **argkw):
 
 def BSS(res, **argkw):
     return [1-x/2 for x in apply(BrierScore, (res, ), argkw)]
-
-##def _KL_div(actualClass, predicted):
-##    
-##def KL(res, **argkw):
-##    KLs = [0.0]*res.numberOfLearners
-##
-##    if argkw.get("unweighted", 0) or not res.weights:
-##        for tex in res.results:
-##            KLs = map(lambda res, predicted: res+KL(tex.actualClass, predicted), KLs, tex.probabilities)
-##        totweight = gettotsize(res)
-##    else:
-##        for tex in res.results:
-##            ## TEGA SE NISI!
-##            CAs = map(lambda res, cls: res+(cls==tex.actualClass and tex.weight), CAs, tex.classes)
-##        totweight = gettotweight(res)
-##
-##    return [x/totweight for x in CAs]
-
-    
-##def KL_se(res, **argkw):
-##    # Kullback-Leibler divergence
-##    if res.numberOfIterations==1:
-##        if argkw.get("unweighted", 0) or not res.weights:
-##            totweight = gettotsize(res)
-##        else:
-##            totweight = gettotweight(res)
-##        return [(x, x*(1-x)/math.sqrt(totweight)) for x in apply(CA, (res,), argkw)]
-##    else:
-##        KLsByFold = [[0.0]*res.numberOfIterations for i in range(res.numberOfLearners)]
-##        foldN = [0.0]*res.numberOfIterations
-##
-##        if argkw.get("unweighted", 0) or not res.weights:
-##            for tex in res.results:
-##                for lrn in range(res.numberOfLearners):
-##                    CAsByFold[lrn][tex.iterationNumber] += 
-##                foldN[tex.iterationNumber] += 1
-##        else:
-##            for tex in res.results:
-##                for lrn in range(res.numberOfLearners):
-##                    CAsByFold[lrn][tex.iterationNumber] += 
-##                foldN[tex.iterationNumber] += tex.weight
-##
-##        newFolds = []
-##        for lrn in range(res.numberOfLearners):
-##            newF = []
-##            for fold in range(res.numberOfIterations):
-##                if foldN[fold]>0.0:
-##                        newF.append(CAsByFold[lrn][fold]/foldN[fold])
-##            newFolds.append(newF)
-##
-##        checkNonZero(len(newFolds))
-##        return [(statc.mean(cas), statc.sterr(cas)) for cas in newFolds]
-##
 
 def IS_ex(Pc, P):
     "Pc aposterior probability, P aprior"
