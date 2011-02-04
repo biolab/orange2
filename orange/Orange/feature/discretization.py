@@ -31,11 +31,7 @@ categorization that can be used for learning.
 
 .. autoclass:: Orange.feature.discretization.DiscretizedLearner_Class
 
-
-
-========
-Examples
-========
+.. rubric:: Example
 
 A chapter on `feature subset selection <../ofb/o_fss.htm>`_ in Orange
 for Beginners tutorial shows the use of DiscretizedLearner. Other
