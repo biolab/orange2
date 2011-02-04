@@ -1,17 +1,12 @@
 {% extends "default/layout.html" %}
 
 {% block header %}
-{% if theme_orangeheaderfooter|tobool %}
-	{% set header_relbar = relbar() %}
 	{% include 'header.html' %}
-{% endif %}
 {% endblock %}
 	
 {% block footer %}
-{% if theme_orangeheaderfooter|tobool %}	
 	{{ super() }}
 	{% include 'footer.html' %}
-{% endif %}
 {% endblock %}
 
 {% block extrahead %}
@@ -22,5 +17,5 @@
 {% block relbar1 %} {{ super() }} {% endblock %}
 {% block relbar2 %} {{ super() }} {% endblock %}
 
-{% block sidebar1 %} {{ sidebar() }} {% endblock %}
+{% block sidebar1 %} {% endblock %}
 {% block sidebar2 %} {% endblock %}

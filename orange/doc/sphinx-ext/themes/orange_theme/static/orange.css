@@ -147,7 +147,7 @@ div.document {
 }
 
 div.bodywrapper {
-    margin-left: 230px;
+    margin-left: 0px;
 }
 
 div.body p, div.body dd, div.body li {
@@ -253,7 +253,7 @@ div.body h6 {
     font-weight: normal;
     color: inherit;
     border-bottom: 1px solid #ccc;
-    margin: 30px 0px 5px -5px;
+    margin: 30px 0px 5px 0px;
     padding: 1px 0 1px 3px;
 }
 
@@ -306,13 +306,13 @@ H2, div.body h2 {
 }
 
 
-H3 {
+/*H3 {
 	font-weight: bold;
 	font-family: Verdana;
 	font-size: 11px;
 	white-space: nowrap;
 }
-
+*/
 H1, H2, H3 {
     text-align: left;
     clear: none;
@@ -403,14 +403,28 @@ div.footer {
 
 div.sphinxsidebarwrapper {
     padding: 10px 5px 0 10px;
+    border: 1px solid #ac9;
+    background-color: #f8f8f8;
 }
 
+
+div.sphinxsidebarwrapper  h3 {
+    margin-top: 5px !important;
+}
+
+
 div.sphinxsidebar {
-    float: left;
-    width: 230px;
+/*    position: absolute;
+    right: -170px;
+    width: 230px;*/
     font-size: 90%;
     margin-left: 0;
+    float: left;
+    padding: 10px;
     text-align: left;
+    z-index: 10;
+    padding-right: 30px;
+    background-color: white;
 }
 
 div.sphinxsidebar ul {
