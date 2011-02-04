@@ -229,7 +229,7 @@ class MDS(object):
     .. attribute:: progressCallback
 
        A function that gets called after each optimization step in the
-       :obj:`run`\ () method.
+       :func:`run` method.
     
     """
     
