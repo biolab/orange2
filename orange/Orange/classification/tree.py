@@ -916,7 +916,7 @@ TreePruner and derived classes
     Prunes a tree by comparing m-estimates of static and dynamic 
     error as defined in (Bratko, 2002).
 
-    .. attributes:: m
+    .. attribute:: m
 
         Parameter m for m-estimation.
 
@@ -1425,6 +1425,565 @@ Tree size
 
 .. autofunction:: countLeaves
 
+Printing the Tree
+=================
+
+The included printing functions can
+print out practically anything you'd like to
+know, from the number of examples, proportion of examples of majority
+class in nodes and similar, to more complex statistics like the
+proportion of examples in a particular class divided by the proportion
+of examples of this class in a parent node. And even more, you can
+define your own callback functions to be used for printing.
+
+
+.. autofunction:: dumpTree
+
+.. autofunction:: printTree
+
+.. autofunction:: printTxt
+
+Before we go on: you can read all about the function and use it to its
+full extent, or you can just call it, giving it the tree as the sole
+argument and it will print out the usual textual representation of the
+tree. If you're satisfied with that, you can stop here.
+
+The magic is in the format string. It is a string which is printed
+out at every leaf or internal node with the certain format specifiers
+replaced by data from the tree node. Specifiers are generally of form
+**%[^]<precision><quantity><divisor>**.
+
+**^** at the start tells that the number should be multiplied by 100.
+It's useful for printing proportions like percentages.
+
+**<precision>** is in the same format as in Python (or C) string
+formatting. For instance, :samp:`%N` denotes the number of examples in the node,
+hence :samp:`%6.2N` would mean output to two decimal digits and six places
+altogether. If left out, a default format :samp:`5.3` is used, unless you 
+multiply the numbers by 100, in which case the default is :samp:`.0`
+(no decimals, the number is rounded to the nearest integer).
+
+**<divisor>** tells what to divide the quantity in that node with.
+:samp:`bP` means division by the same quantity in the parent node; for instance,
+:samp:`%NbP` will tell give the number of examples in the node divided by the
+number of examples in parent node. You can add use precision formatting,
+e.g. :samp:`%6.2NbP.` bA is division by the same quantity over the entire data 
+set, so :samp:`%NbA` will tell you the proportion of examples (out of the entire
+training data set) that fell into that node. If division is impossible
+since the parent node does not exist or some data is missing, a dot is
+printed out instead of the quantity.
+
+**<quantity>** is the only required element. It defines what to print.
+For instance, :samp:`%N` would print out the number of examples in the node.
+Possible quantities are
+
+:samp:`V`
+    The value predicted at that node. You cannot define the precision 
+    or divisor here.
+
+:samp:`N`
+    The number of examples in the node.
+
+:samp:`M`
+    The number of examples in the majority class (that is, the class 
+    predicted by the node).
+
+:samp:`m`
+    The proportion of examples in the majority class.
+
+:samp:`A`
+    The average class for examples the node; this is available only for 
+    regression trees.
+
+:samp:`E`
+    Standard error for class of examples in the node; available for
+    regression trees.
+
+:samp:`I`
+    Print out the confidence interval. The modifier is used as 
+    :samp:`%I(95)` of (more complicated) :samp:`%5.3I(95)bP`.
+
+:samp:`C`
+    The number of examples in the given class. For classification trees, 
+    this modifier is used as, for instance in, :samp:`%5.3C="Iris-virginica"bP` 
+    - this will tell the number of examples of Iris-virginica by the 
+    number of examples this class in the parent node. If you are 
+    interested in examples that are *not* Iris-virginica, say 
+    :samp:`%5.3CbP!="Iris-virginica"`
+
+    For regression trees, you can use operators =, !=, <, <=, >, and >=, 
+    as in :samp:`%C<22` - add the precision and divisor if you will. You can also
+    check the number of examples in a certain interval: :samp:`%C[20, 22]`
+    will give you the number of examples between 20 and 22 (inclusive)
+    and :samp:`%C(20, 22)` will give the number of such examples excluding the
+    boundaries. You can of course mix the parentheses, e.g. :samp:`%C(20, 22]`.
+    If you would like the examples outside the interval, add a :samp:`!`,
+    like :samp:`%C!(20, 22]`.
+ 
+:samp:`c`
+    Same as above, except that it computes the proportion of the class
+    instead of the number of examples.
+
+:samp:`D`
+    Prints out the number of examples in each class. You can use both,
+    precision (it is applied to each number in the distribution) or the
+    divisor. This quantity cannot be computed for regression trees.
+
+:samp:`d`
+    Same as above, except that it shows proportions of examples. This
+    again doesn't work with regression trees.
+
+<user defined formats>
+    You can add more, if you will. Instructions and examples are given at
+    the end of this section.
+
+
+Examples
+========
+
+We shall build a small tree from the iris data set - we shall limit the
+depth to three levels.
+
+<p class="header">part of <a href="orngTree1.py">orngTree1.py</a></p>
+<xmp class="code">import orange, orngTree
+data = orange.ExampleTable("iris")
+tree = orngTree.TreeLearner(data, maxDepth=3)
+</xmp>
+
+The easiest way to call the function is to pass the tree as the only 
+argument::
+
+    >>> orngTree.printTree(tree)
+    petal width<0.800: Iris-setosa (100.00%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (94.23%)
+    |    |    petal length>=5.350: Iris-virginica (100.00%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (66.67%)
+    |    |    petal length>=4.850: Iris-virginica (100.00%)
+
+Let's now print out the predicted class at each node, the number
+of examples in the majority class with the total number of examples
+in the node::
+
+    >>> orngTree.printTree(tree, leafStr="%V (%M out of %N)")
+    petal width<0.800: Iris-setosa (50.000 out of 50.000)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
+    |    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
+    |    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
+
+Would you like to know how the number of examples declines as
+compared to the entire data set and to the parent node? We find
+it with this::
+
+    >>> orng.printTree("%V (%^MbA%, %^MbP%)")
+    petal width<0.800: Iris-setosa (100%, 100%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor (98%, 100%)
+    |    |    petal length>=5.350: Iris-virginica (4%, 40%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica (4%, 4%)
+    |    |    petal length>=4.850: Iris-virginica (86%, 96%)
+
+Let us first read the format string. :samp:`%M` is the number of 
+examples in the majority class. We want it divided by the number of
+all examples from this class on the entire data set, hence :samp:`%MbA`.
+To have it multipied by 100, we say :samp:`%^MbA`. The percent sign *after*
+that is just printed out literally, just as the comma and parentheses
+(see the output). The string for showing the proportion of this class
+in the parent is the same except that we have :samp:`bP` instead 
+of :samp:`bA`.
+
+And now for the output: all examples of setosa for into the first node.
+For versicolor, we have 98% in one node; the rest is certainly
+not in the neighbouring node (petal length&gt;=5.350) since all
+versicolors from the node petal width<1.750 went to petal length<5.350
+(we know this from the 100% in that line). Virginica is the 
+majority class in the three nodes that together contain 94% of this
+class (4+4+86). The rest must had gone to the same node as versicolor.
+
+If you find this guesswork annoying - so do I. Let us print out the
+number of versicolors in each node, together with the proportion of
+versicolors among the examples in this particular node and among all
+versicolors. So,
+
+::
+
+    '%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)
+
+gives the following output::
+
+    petal width<0.800: 0.000 (0% of node, 0% of versicolors)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
+    |    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
+    |    petal width>=1.750
+    |    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
+    |    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
+
+Finally, we may want to print out the distributions, using a simple 
+string :samp:`%D`::
+
+    petal width<0.800: [50.000, 0.000, 0.000]
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: [0.000, 49.000, 3.000]
+    |    |    petal length>=5.350: [0.000, 0.000, 2.000]
+    |    petal width>=1.750
+    |    |    petal length<4.850: [0.000, 1.000, 2.000]
+    |    |    petal length>=4.850: [0.000, 0.000, 43.000]
+
+What is the order of numbers here? If you check 
+:samp:`data.domain.classVar.values` , you'll learn that the order is setosa, 
+versicolor, virginica; so in the node at peta length<5.350 we have 49
+versicolors and 3 virginicae. To print out the proportions, we can 
+:samp:`%.2d` - this gives us proportions within node, rounded on 
+two decimals::
+
+    petal width<0.800: [1.00, 0.00, 0.00]
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: [0.00, 0.94, 0.06]
+    |    |    petal length>=5.350: [0.00, 0.00, 1.00]
+    |    petal width>=1.750
+    |    |    petal length<4.850: [0.00, 0.33, 0.67]
+    |    |    petal length>=4.850: [0.00, 0.00, 1.00]
+
+We haven't tried printing out any information for internal nodes.
+To start with the most trivial case, we shall print the prediction
+at each node.
+
+::
+
+    orngTree.printTree(tree, leafStr="%V", nodeStr=".")
+    
+says that the nodeStr should be the same as leafStr (not very useful 
+here, since leafStr is trivial anyway).
+
+:: 
+
+    root: Iris-setosa
+    |    petal width<0.800: Iris-setosa
+    |    petal width>=0.800: Iris-versicolor
+    |    |    petal width<1.750: Iris-versicolor
+    |    |    |    petal length<5.350: Iris-versicolor
+    |    |    |    petal length>=5.350: Iris-virginica
+    |    |    petal width>=1.750: Iris-virginica
+    |    |    |    petal length<4.850: Iris-virginica
+    |    |    |    petal length>=4.850: Iris-virginica
+
+Note that the output is somewhat different now: there appeared another
+node called *root* and the tree looks one level deeper. This is
+needed to print out the data for that node to.
+
+Now for something more complicated: let us observe how the number
+of virginicas decreases down the tree::
+
+    orngTree.printTree(tree, leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')
+
+Let's first interpret the format string: :samp:`CbA="Iris-virginica"` is 
+the number of examples from class virginica, divided by the total number
+of examples in this class. Add :samp:`^.1` and the result will be
+multiplied and printed with one decimal. The trailing :samp:`%` is printed
+out. In parentheses we print the same thing except that we divide by the
+examples in the parent node. Note the use of single quotes, so we can
+use the double quotes inside the string, when we specify the class.
+
+::
+
+    root: 100.0% (.%)
+    |    petal width<0.800: 0.0% (0.0%)
+    |    petal width>=0.800: 100.0% (100.0%)
+    |    |    petal width<1.750: 10.0% (10.0%)
+    |    |    |    petal length<5.350: 6.0% (60.0%)
+    |    |    |    petal length>=5.350: 4.0% (40.0%)
+    |    |    petal width>=1.750: 90.0% (90.0%)
+    |    |    |    petal length<4.850: 4.0% (4.4%)
+    |    |    |    petal length>=4.850: 86.0% (95.6%)
+
+See what's in the parentheses in the root node? If :func:`printTree`
+cannot compute something (in this case it's because the root has no parent),
+it prints out a dot. You can also eplace :samp:`=` by :samp:`!=` and it 
+will count all classes *except* virginica.
+
+For one final example with classification trees, we shall print the
+distributions in that nodes, the distribution compared to the parent
+and the proportions compared to the parent (the latter things are not
+the same - think why). In the leaves we shall also add the predicted
+class. So now we'll have to call the function like this.
+
+::
+
+    >>>orngTree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')
+    root: [50.000, 50.000, 50.000] . .
+    |    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
+    |        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
+    |    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
+    |    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
+    |    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
+    |    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
+    |    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
+    |    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
+    |    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
+    |    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
+    |    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
+    |    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
+    |    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
+
+To explore the possibilities when printing regression trees, we are going 
+to induce a tree from the housing data set. Called with the tree as the
+only argument, :func:`printTree` prints the tree like this::
+
+    RM<6.941
+    |    LSTAT<14.400
+    |    |    DIS<1.385: 45.6
+    |    |    DIS>=1.385: 22.9
+    |    LSTAT>=14.400
+    |    |    CRIM<6.992: 17.1
+    |    |    CRIM>=6.992: 12.0
+    RM>=6.941
+    |    RM<7.437
+    |    |    CRIM<7.393: 33.3
+    |    |    CRIM>=7.393: 14.4
+    |    RM>=7.437
+    |    |    TAX<534.500: 45.9
+    |    |    TAX>=534.500: 21.9
+
+Let us add the standard error in both internal nodes and leaves, and the
+90% confidence intervals in the leaves::
+
+    >>> orngTree.printTree(tree, leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")
+    root: [SE: 0.409]
+    |    RM<6.941: [SE: 0.306]
+    |    |    LSTAT<14.400: [SE: 0.320]
+    |    |    |    DIS<1.385: [SE: 4.420]:
+    |    |    |        [SE: 4.420]   45.6 [38.331-52.829]
+    |    |    |    DIS>=1.385: [SE: 0.244]:
+    |    |    |        [SE: 0.244]   22.9 [22.504-23.306]
+    |    |    LSTAT>=14.400: [SE: 0.333]
+    |    |    |    CRIM<6.992: [SE: 0.338]:
+    |    |    |        [SE: 0.338]   17.1 [16.584-17.691]
+    |    |    |    CRIM>=6.992: [SE: 0.448]:
+    |    |    |        [SE: 0.448]   12.0 [11.243-12.714]
+    |    RM>=6.941: [SE: 1.031]
+    |    |    RM<7.437: [SE: 0.958]
+    |    |    |    CRIM<7.393: [SE: 0.692]:
+    |    |    |        [SE: 0.692]   33.3 [32.214-34.484]
+    |    |    |    CRIM>=7.393: [SE: 2.157]:
+    |    |    |        [SE: 2.157]   14.4 [10.862-17.938]
+    |    |    RM>=7.437: [SE: 1.124]
+    |    |    |    TAX<534.500: [SE: 0.817]:
+    |    |    |        [SE: 0.817]   45.9 [44.556-47.237]
+    |    |    |    TAX>=534.500: [SE: 0.000]:
+    |    |    |        [SE: 0.000]   21.9 [21.900-21.900]
+
+What's the difference between :samp:`%V`, the predicted value and 
+:samp:`%A` the average? Doesn't a regression tree always predict the
+leaf average anyway? Not necessarily, the tree predict whatever the
+:attr:`TreeClassifier.nodeClassifier` in a leaf returns. 
+As :samp:`%V` uses the 
+:obj:`orange.FloatVariable`'s function for printing out the value, 
+therefore the printed number has the same number of decimals 
+as in the data file.
+
+Regression trees cannot print the distributions in the same way
+as classification trees. They instead offer a set of operators for
+observing the number of examples within a certain range. For instance,
+let us check the number of examples with values below 22, and compare
+this number with values in the parent nodes::
+
+    >>> orngTree.printTree(tree, leafStr="%C<22 (%cbP<22)", nodeStr=".")
+    root: 277.000 (.)
+    |    RM<6.941: 273.000 (1.160)
+    |    |    LSTAT<14.400: 107.000 (0.661)
+    |    |    |    DIS<1.385: 0.000 (0.000)
+    |    |    |    DIS>=1.385: 107.000 (1.020)
+    |    |    LSTAT>=14.400: 166.000 (1.494)
+    |    |    |    CRIM<6.992: 93.000 (0.971)
+    |    |    |    CRIM>=6.992: 73.000 (1.040)
+    |    RM>=6.941: 4.000 (0.096)
+    |    |    RM<7.437: 3.000 (1.239)
+    |    |    |    CRIM<7.393: 0.000 (0.000)
+    |    |    |    CRIM>=7.393: 3.000 (15.333)
+    |    |    RM>=7.437: 1.000 (0.633)
+    |    |    |    TAX<534.500: 0.000 (0.000)
+    |    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
+
+The last line, for instance, says the the number of examples with the
+class below 22 is among those with tax above 534 is 30 times higher
+than the number of such examples in its parent node.
+
+For another exercise, let's count the same for all examples *outside*
+interval [20, 22] (given like this, the interval includes the bounds).
+And let us print out the proportions as percents.
+
+::
+
+    >>> orngTree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")
+
+OK, let's observe the format string for one last time. :samp:`%c![20, 22]`
+would be the proportion of examples (within the node) whose values are
+below 20 or above 22. By :samp:`%cbP![20, 22]` we derive this by the same
+statistics computed on the parent. Add a :samp:`^` and you have the percentages.
+
+::
+
+    root: 439.000 (.%)
+    |    RM<6.941: 364.000 (98%)
+    |    |    LSTAT<14.400: 200.000 (93%)
+    |    |    |    DIS<1.385: 5.000 (127%)
+    |    |    |    DIS>=1.385: 195.000 (99%)
+    |    |    LSTAT>=14.400: 164.000 (111%)
+    |    |    |    CRIM<6.992: 91.000 (96%)
+    |    |    |    CRIM>=6.992: 73.000 (105%)
+    |    RM>=6.941: 75.000 (114%)
+    |    |    RM<7.437: 46.000 (101%)
+    |    |    |    CRIM<7.393: 43.000 (100%)
+    |    |    |    CRIM>=7.393: 3.000 (100%)
+    |    |    RM>=7.437: 29.000 (98%)
+    |    |    |    TAX<534.500: 29.000 (103%)
+    |    |    |    TAX>=534.500: 0.000 (0%)
+
+
+Defining Your Own Printout functions
+====================================
+
+:func:`dumpTree`'s argument :obj:`userFormats` can be used to print out
+some other information in the leaves or nodes. If provided,
+:obj:`userFormats` should contain a list of tuples with a regular expression
+and a callback function to be called when that expression is found in the
+format string. Expressions from :obj:`userFormats` are checked before
+the built-in expressions discussed above, so you can override the built-ins
+if you want to.
+
+The regular expression should describe a string like those we used above,
+for instance the string :samp:`%.2DbP`. When a leaf or internal node
+is printed out, the format string (:obj:`leafStr` or :obj:`nodeStr`) 
+is checked for these regular expressions and when the match is found, 
+the corresponding callback function is called.
+
+The callback function will get five arguments: the format string 
+(:obj:`leafStr` or :obj:`nodeStr`), the match object, the node which is
+being printed, its parent (can be None) and the tree classifier.
+The function should return the format string in which the part described
+by the match object (that is, the part that is matched by the regular
+expression) is replaced by whatever information your callback function
+is supposed to give.
+
+The function can use several utility function provided in the module.
+
+.. autofunction:: insertStr
+
+.. autofunction:: insertDot
+
+.. autofunction:: insertNum
+
+.. autofunction:: byWhom
+
+
+There are also a few pieces of regular expression that you may want to reuse. 
+The two you are likely to use are:
+
+.. autodata:: fs
+
+<dt>fs</dt>
+
+<dt>by</dt>
+<dd>Defines <code>bP</code> or <code>bA</code> or nothing; the result is in groups <code>by</code>.</dd>
+</dl>
+
+<P>For a trivial example, "%V" is implemented like this. There is the following tuple in the list of built-in formats: <code>(re.compile("%V"), replaceV)</code>. <code>replaceV</code> is a function defined by:</P>
+<xmp class="code">def replaceV(strg, mo, node, parent, tree):
+    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))</xmp>
+<P>It therefore takes the value predicted at the node (<code>node.nodeClassifier.defaultValue</code>), converts it to a string and passes it to <code>insertStr</code> to do the replacement.</P>
+
+<P>A more complex regular expression is the one for the proportion of majority class, defined as <code>"%"+fs+"M"+by</code>. It uses the two partial expressions defined above.</P>
+
+<P>Let's say with like to print the classification margin for each node, that is, the difference between the proportion of the largest and the second largest class in the node.</P>
+
+<p class="header">part of <a href="orngTree2.py">orngTree2.py</a></p>
+<xmp class="code">def getMargin(dist):
+    if dist.abs < 1e-30:
+        return 0
+    l = list(dist)
+    l.sort()
+    return (l[-1] - l[-2]) / dist.abs
+
+def replaceB(strg, mo, node, parent, tree):
+    margin = getMargin(node.distribution)
+
+    by = mo.group("by")
+    if margin and by:
+        whom = orngTree.byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            divMargin = getMargin(whom.distribution)
+            if divMargin > 1e-30:
+                margin /= divMargin
+            else:
+                orngTree.insertDot(strg, mo)
+        else:
+            return orngTree.insertDot(strg, mo)
+    return orngTree.insertNum(strg, mo, margin)
+
+
+myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]</xmp>
+
+<P>We first defined <code>getMargin</code> which gets the distribution and computes the margin. The callback replaces, <code>replaceB</code>, computes the margin for the node. If we need to divided the quantity by something (that is, if the <code>by</code> group is present), we call <code>orngTree.byWhom</code> to get the node with whose margin this node's margin is to be divided. If this node (usually the parent) does not exist of if its margin is zero, we call <code>insertDot</code> to insert a dot, otherwise we call <code>insertNum</code> which will insert the number, obeying the format specified by the user.</P>
+
+<P><code>myFormat</code> is a list containing the regular expression and the callback function.</P>
+
+<P>We can now print out the iris tree, for instance using the following call.</P>
+<xmp class="code">orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats = myFormat)</xmp>
+
+<P>And this is what we get.</P>
+<xmp class="printout">petal width<0.800: Iris-setosa 100% (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica 33% (34.85%)
+|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
+</xmp>
+
+
+<h2>Plotting the Tree using Dot</h2>
+
+<p>Function <code>printDot</code> prints the tree to a file in a format used by <a
+href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>.
+Uses the same parameters as <code>printTxt</code> defined above, and
+in addition two parameters which define the shape used for internal
+nodes and laves of the tree:
+
+<p class=section>Arguments</p>
+<dl class=arguments>
+  <dt>leafShape</dt>
+  <dd>Shape of the outline around leves of the tree. If "plaintext",
+  no outline is used (default: "plaintext")</dd>
+
+  <dt>internalNodeShape</dt>
+  <dd>Shape of the outline around internal nodes of the tree. If "plaintext",
+  no outline is used (default: "box")</dd>
+</dl>
+
+<p>Check <a
+href="http://www.graphviz.org/doc/info/shapes.html">Polygon-based
+Nodes</a> for various outlines supported by GraphViz.</p>
+
+<P>Suppose you saved the tree in a file <code>tree5.dot</code>. You can then print it out as a gif if you execute the following command line
+<XMP class=code>dot -Tgif tree5.dot -otree5.gif
+</XMP>
+</P>
+GraphViz's dot has quite a few other output formats, check its documentation to learn which.</P>
+
+
 
 
 """
@@ -1557,16 +2116,6 @@ def c45_printTree(tree):
 
 """
 
-The module also contains functions for counting the number of nodes
-and leaves in the tree. It laso includes functions for 
-printing out the tree, which are
-rather versatile and can print out practically anything you'd like to
-know, from the number of examples, proportion of examples of majority
-class in nodes and similar, to more complex statistics like the
-proportion of examples in a particular class divided by the proportion
-of examples of this class in a parent node. And even more, you can
-define your own callback functions to be used for printing.
-
 <P>For a bit more complex example, here's how to write your own stop function. The example itself is more funny than useful. It constructs and prints two trees. For the first one we define the <code>defStop</code> function, which is used by default, and combine it with a random function so that the stop criteria will also be met in additional 20% of the cases when <code>defStop</code> is false. The second tree is build such that it considers only the random function as the stopping criteria. Note that in the second case lambda function still has three parameters, since this is a necessary number of parameters for the stop function (for more, see section on <a href="../reference/TreeLearner.htm">Orange Trees</a> in Orange Reference).
 </p>
 
@@ -1593,430 +2142,11 @@ big.</p>
 
 
 
-<h2>Tree Size</h2>
 
 
-<h2>Printing the Tree</h2>
+
+
 <index name="classification trees/printing">
-
-<P>Function <code>dumpTree</code> dumps a tree to a string, and <code>printTree</code> prints out the tree (<code>printTxt</code> is alias for <code>printTree</code>, and it's there for compatibility). Functions have same arguments.</P>
-
-<P>Before we go on: you can read all about the function and use it to its full extent, or you can just call it, giving it the tree as the sole argument and it will print out the usual textual representation of the tree. If you're satisfied with that, you can stop here.</P>
-
-<p class=section>Arguments</p>
-<dl class=arguments>
-  <dt>tree</dt>
-  <dd>The tree to be printed out.</dd>
-
-  <dt>leafStr</dt>
-  <dd>The format string for printing the tree leaves. If left empty, "%V (%^.2m%)" will be used for classification trees and "%V" for regression trees.</dd>
-
-  <dt>nodeStr</dt>
-  <dd>The string for printing out the internal nodes. If left empty (as it is by default), no data is printed out for internal nodes. If set to <code>"."</code>, the same string is used as for leaves.</dd>
-
-  <dt>maxDepth</dt>
-  <dd>If set, it limits the depth to which the tree is printed out.</dd>
-
-  <dt>minExamples</dt>
-  <dd>If set, the subtrees with less than the given number of examples are not printed.</dd>
-
-  <dt>simpleFirst</dt>
-  <dd>If <code>True</code> (default), the branches with a single node are printed before the branches with larger subtrees. If you set it to <code>False</code> (which I don't know why you would), the branches are printed in order of appearance.</dd>
-
-  <dt>userFormats</dt>
-  <dd>A list of regular expressions and callback function through which the user can print out other specific information in the nodes.
-</dl>
-
-<P>The magic is in the format string. It is a string which is printed out at every leaf or internal node with the certain format specifiers replaced by data from the tree node. Specifiers are generally of form
-<B><code>%<em>[^]</em><em>&lt;precision&gt;</em><em>&lt;quantity&gt;</em><em>&lt;divisor&gt;</em>.</code></B>
-</center>
-
-<P><B><EM>^</EM></B> at the start tells that the number should be multiplied by 100. It's useful for printing proportions like percentages, but it makes no sense to multiply, say, the number of examples at the node (although the function will allow it).</P>
-
-<P><B><em>&lt;precision&gt;</em></B> is in the same format as in Python (or C) string formatting. For instance, <code>%N</code> denotes the number of examples in the node, hence <code>%6.2N</code> would mean output to two decimal digits and six places altogether. If left out, a default format <code>5.3</code> is used, unless you multiply the numbers by 100, in which case the default is <code>.0</code> (no decimals, the number is rounded to the nearest integer).</code></P>
-
-<P><B><em>&lt;divisor&gt;</em></B> tells what to divide the quantity in that node with. <code>bP</code> means division by the same quantity in the parent node; for instance, <code>%NbP</code> will tell give the number of examples in the node divided by the number of examples in parent node. You can add use precision formatting, e.g. <code>%6.2NbP</code>. <code>bA</code> is division by the same quantity over the entire data set, so <code>%NbA</code> will tell you the proportion of examples (out of the entire training data set) that fell into that node. If division is impossible since the parent node does not exist or some data is missing, a dot is printed out instead of the quantity.</P>
-
-<P><B><em>&lt;quantity&gt;</em></B> is the only required element. It defines what to print. For instance, <code>%N</code> would print out the number of examples in the node. Possible quantities are
-<dl class=arguments_sm>
-<dt>V</dt>
-<dd>The value predicted at that node. You cannot define the precision or divisor here.</dd>
-
-<dt>N</dt>
-<dd>The number of examples in the node.</dd>
-
-<dt>M</dt>
-<dd>The number of examples in the majority class (that is, the class predicted by the node).</dd>
-
-<dt>m</dt>
-<dd>The proportion of examples in the majority class.</dd>
-
-<dt>A</dt>
-<dd>The average class for examples the node; this is available only for regression trees.</dd>
-
-<dt>E</dt>
-<dd>Standard error for class of examples in the node; available for regression trees.</dd>
-
-<dt>I</dt>
-<dd>Print out the confidence interval. The modifier is used as <code>%I(95)</code> of (more complicated) <code>%5.3I(95)bP</code>.</dd>
-
-<dt>C</dt>
-<dd>The number of examples in the given class. For classification trees, this modifier is used as, for instance in, <code>%5.3C="Iris-virginica"bP</code> - this will tell the number of examples of Iris-virginica by the number of examples this class in the parent node. If you are interested in examples that are <em>not</em> Iris-virginica, say <code>%5.3CbP!="Iris-virginica"</code>
-
-For regression trees, you can use operators =, !=, &lt;, &lt;=, &gt;, and &gt;=, as in <code>%C&lt;22</code> - add the precision and divisor if you will. You can also check the number of examples in a certain interval: <code>%C[20, 22]</code> will give you the number of examples between 20 and 22 (inclusive) and <code>%C(20, 22)</code> will give the number of such examples excluding the boundaries. You can of course mix the parentheses, e.g. <code>%C(20, 22]</code>. If you would like the examples outside the interval, add a <code>!</code>, like <code>%C!(20, 22]</code>.</dd>
-
-<dt>c</dt>
-<dd>Same as above, except that it computes the proportion of the class instead of the number of examples.</dd>
-
-<dt>D</dt>
-<dd>Prints out the number of examples in each class. You can use both, precision (it is applied to each number in the distribution) or the divisor. This quantity cannot be computed for regression trees.</dd>
-
-<dt>d</dt>
-<dd>Same as above, except that it shows proportions of examples. This again doesn't work with regression trees.</dd>
-</dl>
-
-<dt>&lt;user defined formats&gt;</dt>
-<dd>You can add more, if you will. Instructions and examples are given at the end of this section.</dd>
-</P>
-
-<P>Now for some examples. We shall build a small tree from the iris data set - we shall limit the depth to three levels.</P>
-
-<p class="header">part of <a href="orngTree1.py">orngTree1.py</a></p>
-<xmp class="code">import orange, orngTree
-data = orange.ExampleTable("iris")
-tree = orngTree.TreeLearner(data, maxDepth=3)
-</xmp>
-
-<P>The easiest way to call the function is to pass the tree as the only argument. Calling <code>orngTree.printTree(tree)</code> will print
-<xmp class="printout">petal width<0.800: Iris-setosa (100.00%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (94.23%)
-|    |    petal length>=5.350: Iris-virginica (100.00%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (66.67%)
-|    |    petal length>=4.850: Iris-virginica (100.00%)
-</xmp>
-</P>
-
-<P>Let's now print out the predicted class at each node, the number of examples in the majority class with the total number of examples in the node,
-<code>orngTree.printTree(tree, leafStr="%V (%M out of %N)")</code>.
-<xmp class="printout">petal width<0.800: Iris-setosa (50.000 out of 50.000)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (49.000 out of 52.000)
-|    |    petal length>=5.350: Iris-virginica (2.000 out of 2.000)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (2.000 out of 3.000)
-|    |    petal length>=4.850: Iris-virginica (43.000 out of 43.000)
-</xmp>
-</P>
-
-<P>Would you like to know how the number of examples declines as compared to the entire data set and to the parent node? We find it with this: <code>orng.printTree("%V (%^MbA%, %^MbP%)")</code>
-<xmp class="printout">petal width<0.800: Iris-setosa (100%, 100%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor (98%, 100%)
-|    |    petal length>=5.350: Iris-virginica (4%, 40%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica (4%, 4%)
-|    |    petal length>=4.850: Iris-virginica (86%, 96%)
-</xmp>
-<P>Let us first read the format string. <code>%M</code> is the number of examples in the majority class. We want it divided by the number of all examples from this class on the entire data set, hence <code>%MbA</code>. To have it multipied by 100, we say <code>%^MbA</code>. The percent sign <em>after</em> that is just printed out literally, just as the comma and parentheses (see the output). The string for showing the proportion of this class in the parent is the same except that we have <code>bP</code> instead of <code>bA</code>.</P>
-
-<P>And now for the output: all examples of setosa for into the first node. For versicolor, we have 98% in one node; the rest is certainly not in the neighbouring node (petal length&gt;=5.350) since all versicolors from the node petal width&lt;1.750 went to petal length&lt;5.350 (we know this from the <code>100%</code> in that line). Virginica is the majority class in the three nodes that together contain 94% of this class (4+4+86). The rest must had gone to the same node as versicolor.</P>
-
-<P>If you find this guesswork annoying - so do I. Let us print out the number of versicolors in each node, together with the proportion of versicolors among the examples in this particular node and among all versicolors. So,<br>
-<code>'%C="Iris-versicolor" (%^c="Iris-versicolor"% of node, %^CbA="Iris-versicolor"% of versicolors)</code><br>gives the following output:</P>
-
-<xmp class="printout">petal width<0.800: 0.000 (0% of node, 0% of versicolors)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: 49.000 (94% of node, 98% of versicolors)
-|    |    petal length>=5.350: 0.000 (0% of node, 0% of versicolors)
-|    petal width>=1.750
-|    |    petal length<4.850: 1.000 (33% of node, 2% of versicolors)
-|    |    petal length>=4.850: 0.000 (0% of node, 0% of versicolors)
-</xmp>
-
-<P>Finally, we may want to print out the distributions, using a simple string <code>%D</code>.</P>
-<xmp class="printout">petal width<0.800: [50.000, 0.000, 0.000]
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: [0.000, 49.000, 3.000]
-|    |    petal length>=5.350: [0.000, 0.000, 2.000]
-|    petal width>=1.750
-|    |    petal length<4.850: [0.000, 1.000, 2.000]
-|    |    petal length>=4.850: [0.000, 0.000, 43.000]
-</xmp>
-<P>What is the order of numbers here? If you check <code>data.domain.classVar.values</code>, you'll learn that the order is setosa, versicolor, virginica; so in the node at peta length&lt;5.350 we have 49 versicolors and 3 virginicae. To print out the proportions, we can use, for instance <code>%.2d</code> - this gives us proportions within node, rounded on two decimals.</P>
-<xmp class="printout">petal width<0.800: [1.00, 0.00, 0.00]
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: [0.00, 0.94, 0.06]
-|    |    petal length>=5.350: [0.00, 0.00, 1.00]
-|    petal width>=1.750
-|    |    petal length<4.850: [0.00, 0.33, 0.67]
-|    |    petal length>=4.850: [0.00, 0.00, 1.00]
-</xmp>
-
-<P>We haven't tried printing out some information for internal nodes. To start with the most trivial case, we shall print the prediction at each node
-<xmp class="code">orngTree.printTree(tree, leafStr="%V", nodeStr=".")</xmp> says that the <code>nodeStr</code> should be the same as <code>leafStr</code> (not very useful here, since <code>leafStr</code> is trivial anyway).</P>
-<xmp class="printout">root: Iris-setosa
-|    petal width<0.800: Iris-setosa
-|    petal width>=0.800: Iris-versicolor
-|    |    petal width<1.750: Iris-versicolor
-|    |    |    petal length<5.350: Iris-versicolor
-|    |    |    petal length>=5.350: Iris-virginica
-|    |    petal width>=1.750: Iris-virginica
-|    |    |    petal length<4.850: Iris-virginica
-|    |    |    petal length>=4.850: Iris-virginica
-</xmp>
-
-<P>Note that the output is somewhat different now: there appeared another node called <em>root</em> and the tree looks one level deeper. This is needed to print out the data for that node to.</P>
-
-<P>Now for something more complicated: let us observe how the number of virginicas decreases down the tree:</P>
-<xmp class="code>"orngTree.printTree(tree, leafStr='%^.1CbA="Iris-virginica"% (%^.1CbP="Iris-virginica"%)', nodeStr='.')</xmp>
-<P>Let's first interpret the format string: <code>CbA="Iris-virginica"</code> is the number of examples from class virginica, divided by the total number of examples in this class. Add <code>^.1</code> and the result will be multiplied and printed with one decimal. The trailing <code>%</code> is printed out. In parentheses we print the same thing except that we divide by the examples in the parent node. Note the use of single quotes, so we can use the double quotes inside the string, when we specify the class.</P>
-<xmp class="printout">root: 100.0% (.%)
-|    petal width<0.800: 0.0% (0.0%)
-|    petal width>=0.800: 100.0% (100.0%)
-|    |    petal width<1.750: 10.0% (10.0%)
-|    |    |    petal length<5.350: 6.0% (60.0%)
-|    |    |    petal length>=5.350: 4.0% (40.0%)
-|    |    petal width>=1.750: 90.0% (90.0%)
-|    |    |    petal length<4.850: 4.0% (4.4%)
-|    |    |    petal length>=4.850: 86.0% (95.6%)
-</xmp>
-<P>See what's in the parentheses in the root node? If <code>printTree</code> cannot compute something (in this case it's because the root has no parent), it prints out a dot. You can also replace <code>=</code> by <code>!=</code> and it will count all classes <em>except</em> virginica.</P>
-
-<P>For one final example with classification trees, we shall print the distributions in that nodes, the distribution compared to the parent and the proportions compared to the parent (the latter things are not the same - think why). In the leaves we shall also add the predicted class. So now we'll have to call the function like this.</P>
-<xmp class="code>"orngTree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')</xmp>
-<p>Here's the result:</p>
-<xmp class="printout">root: [50.000, 50.000, 50.000] . .
-|    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
-|        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
-|    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
-|    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
-|    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
-|    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
-|    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
-|    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
-|    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
-|    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
-|    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
-|    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
-|    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
-</xmp>
-
-<P>To explore the possibilities when printing regression trees, we are gonna induce a tree from the housing data set. Called with the tree as the only argument, <code>printTree</code> prints the tree like this:
-
-<xmp class="printout">RM<6.941
-|    LSTAT<14.400
-|    |    DIS<1.385: 45.6
-|    |    DIS>=1.385: 22.9
-|    LSTAT>=14.400
-|    |    CRIM<6.992: 17.1
-|    |    CRIM>=6.992: 12.0
-RM>=6.941
-|    RM<7.437
-|    |    CRIM<7.393: 33.3
-|    |    CRIM>=7.393: 14.4
-|    RM>=7.437
-|    |    TAX<534.500: 45.9
-|    |    TAX>=534.500: 21.9
-</xmp>
-
-<P>Let us add the standard error in both internal nodes and leaves, and the 90% confidence intervals in the leaves. So we want to call it like this:</P>
-<xmp class="code">orngTree.printTree(tree, leafStr="[SE: %E]\t %V %I(90)", nodeStr="[SE: %E]")</xmp>
-
-<xmp class="printout">root: [SE: 0.409]
-|    RM<6.941: [SE: 0.306]
-|    |    LSTAT<14.400: [SE: 0.320]
-|    |    |    DIS<1.385: [SE: 4.420]:
-|    |    |        [SE: 4.420]   45.6 [38.331-52.829]
-|    |    |    DIS>=1.385: [SE: 0.244]:
-|    |    |        [SE: 0.244]   22.9 [22.504-23.306]
-|    |    LSTAT>=14.400: [SE: 0.333]
-|    |    |    CRIM<6.992: [SE: 0.338]:
-|    |    |        [SE: 0.338]   17.1 [16.584-17.691]
-|    |    |    CRIM>=6.992: [SE: 0.448]:
-|    |    |        [SE: 0.448]   12.0 [11.243-12.714]
-|    RM>=6.941: [SE: 1.031]
-|    |    RM<7.437: [SE: 0.958]
-|    |    |    CRIM<7.393: [SE: 0.692]:
-|    |    |        [SE: 0.692]   33.3 [32.214-34.484]
-|    |    |    CRIM>=7.393: [SE: 2.157]:
-|    |    |        [SE: 2.157]   14.4 [10.862-17.938]
-|    |    RM>=7.437: [SE: 1.124]
-|    |    |    TAX<534.500: [SE: 0.817]:
-|    |    |        [SE: 0.817]   45.9 [44.556-47.237]
-|    |    |    TAX>=534.500: [SE: 0.000]:
-|    |    |        [SE: 0.000]   21.9 [21.900-21.900]
-</xmp>
-
-<P>What's the difference between <code>%V</code>, the predicted value and <code>%A</code> the average? Doesn't a regression tree always predict the leaf average anyway? Not necessarily, the tree predict whatever the <code>nodeClassifier</code> in a leaf returns. But you're mostly right. The difference is in the number of decimals: <code>%V</code> uses the <code>FloatVariable</code>'s function for printing out the value, which results the printed number to have the same number of decimals as in the original file from which the data was read.</P>
-
-<P>Regression trees cannot print the distributions in the same way as classification trees. They instead offer a set of operators for observing the number of examples within a certain range. For instance, let us check the number of examples with values below 22, and compare this number with values in the parent nodes.</P>
-<xmp class="code">orngTree.printTree(tree, leafStr="%C<22 (%cbP<22)", nodeStr=".")</xmp>
-
-<xmp class="printout">root: 277.000 (.)
-|    RM<6.941: 273.000 (1.160)
-|    |    LSTAT<14.400: 107.000 (0.661)
-|    |    |    DIS<1.385: 0.000 (0.000)
-|    |    |    DIS>=1.385: 107.000 (1.020)
-|    |    LSTAT>=14.400: 166.000 (1.494)
-|    |    |    CRIM<6.992: 93.000 (0.971)
-|    |    |    CRIM>=6.992: 73.000 (1.040)
-|    RM>=6.941: 4.000 (0.096)
-|    |    RM<7.437: 3.000 (1.239)
-|    |    |    CRIM<7.393: 0.000 (0.000)
-|    |    |    CRIM>=7.393: 3.000 (15.333)
-|    |    RM>=7.437: 1.000 (0.633)
-|    |    |    TAX<534.500: 0.000 (0.000)
-|    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
-
-<P>The last line, for instance, says the the number of examples with the class below 22 is among those with tax above 534 is 30 times higher than the number of such examples in its parent node.</P>
-
-<P>For another exercise, let's count the same for all examples <em>outside</em> interval [20, 22] (given like this, the interval includes the bounds). And let us print out the proportions as percents.</P>
-
-<xmp class="code">orngTree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")</xmp>
-
-<P>OK, let's observe the format string for one last time. <code>%c![20, 22]</code> would be the proportion of examples (within the node) whose values are below 20 or above 22. By <code>%cbP![20, 22]</code> we derive this by the same statistics computed on the parent. Add a <code>^</code> and you have the percentages.</P>
-
-<xmp class="printout">root: 439.000 (.%)
-|    RM<6.941: 364.000 (98%)
-|    |    LSTAT<14.400: 200.000 (93%)
-|    |    |    DIS<1.385: 5.000 (127%)
-|    |    |    DIS>=1.385: 195.000 (99%)
-|    |    LSTAT>=14.400: 164.000 (111%)
-|    |    |    CRIM<6.992: 91.000 (96%)
-|    |    |    CRIM>=6.992: 73.000 (105%)
-|    RM>=6.941: 75.000 (114%)
-|    |    RM<7.437: 46.000 (101%)
-|    |    |    CRIM<7.393: 43.000 (100%)
-|    |    |    CRIM>=7.393: 3.000 (100%)
-|    |    RM>=7.437: 29.000 (98%)
-|    |    |    TAX<534.500: 29.000 (103%)
-|    |    |    TAX>=534.500: 0.000 (0%)
-</xmp>
-
-
-<h3>Defining Your Own Printout functions</h3>
-
-<P><code>dumpTree</code>'s argument <code>userFormats</code> can be used to print out some other information in the leaves or nodes. If provided, <code>userFormat</code> should contain a list of tuples with a regular expression and a callback function to be called when that expression is found in the format string. Expressions from <code>userFormats</code> are checked before the built-in expressions discussed above, so you can override the built-ins if you want to.</P>
-
-<P>The regular expression should describe a string like those we used above, for instance the string <code>%.2DbP</code>. When a leaf or internal node is printed out, the format string (<code>leafStr</code> or <code>nodeStr</code>) is checked for these regular expressions and when the match is found, the corresponding callback function is called.</P>
-
-<P>The callback function will get five arguments: the format string (<code>leafStr</code> or <code>nodeStr</code>), the match object, the node which is being printed, its parent (can be <code>None</code>) and the tree classifier. The function should return the format string in which the part described by the match object (that is, the part that is matched by the regular expression) is replaced by whatever information your callback function is supposed to give.</P>
-
-<P>The function can use several utility function provided in the module.</P>
-<dl class="attributes">
-<dt>insertStr(s, mo, sub)</dt>
-<dd>Replaces the part of <code>s</code> which is covered by <code>mo</code> by the string <code>sub</code>.</dd>
-
-<dt>insertDot(s, mo)</dt>
-<dd>Calls <code>insertStr(s, mo, "."). You should use this when the function cannot compute the desired quantity; it is called, for instance, when it needs to divide by something in the parent, but the parent doesn't exist.</dd>
-
-<dt>insertNum(s, mo, n)</dt>
-<dd>Replaces the part of <code>s</code> matched by <code>mo</code> by the number <code>n</code>, formatted as specified by the user, that is, it multiplies it by 100, if needed, and prints with the right number of places and decimals. It does so by checking the <code>mo</code> for a group named <code>m100</code> (representing the <code>^</code> in the format string) and a group named <code>fs</code> represented the part giving the number of decimals (e.g. <code>5.3</code>).</dd>
-
-<dt>byWhom(by, parent, tree)</dt>
-<dd>If <code>by</code> equals <code>bp</code>, it returns <code>parent</code>, else it returns <code>tree.tree</code>. This is used to find what to divide the quantity with, when division is required.</dd>
-</dl>
-
-<P>There are also a few pieces of regular expression that you may want to reuse. The two you are likely to use are</P>
-<dl class="attributes-sm">
-<dt>fs</dt>
-<dd>Defines the multiplier by 100 (<code>^</code>) and the format for the number of decimals (e.g. <code>5.3</code>). The corresponding groups are named <code>m100</code> and <code>fs</code>.</dd>
-
-<dt>by</dt>
-<dd>Defines <code>bP</code> or <code>bA</code> or nothing; the result is in groups <code>by</code>.</dd>
-</dl>
-
-<P>For a trivial example, "%V" is implemented like this. There is the following tuple in the list of built-in formats: <code>(re.compile("%V"), replaceV)</code>. <code>replaceV</code> is a function defined by:</P>
-<xmp class="code">def replaceV(strg, mo, node, parent, tree):
-    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))</xmp>
-<P>It therefore takes the value predicted at the node (<code>node.nodeClassifier.defaultValue</code>), converts it to a string and passes it to <code>insertStr</code> to do the replacement.</P>
-
-<P>A more complex regular expression is the one for the proportion of majority class, defined as <code>"%"+fs+"M"+by</code>. It uses the two partial expressions defined above.</P>
-
-<P>Let's say with like to print the classification margin for each node, that is, the difference between the proportion of the largest and the second largest class in the node.</P>
-
-<p class="header">part of <a href="orngTree2.py">orngTree2.py</a></p>
-<xmp class="code">def getMargin(dist):
-    if dist.abs < 1e-30:
-        return 0
-    l = list(dist)
-    l.sort()
-    return (l[-1] - l[-2]) / dist.abs
-
-def replaceB(strg, mo, node, parent, tree):
-    margin = getMargin(node.distribution)
-
-    by = mo.group("by")
-    if margin and by:
-        whom = orngTree.byWhom(by, parent, tree)
-        if whom and whom.distribution:
-            divMargin = getMargin(whom.distribution)
-            if divMargin > 1e-30:
-                margin /= divMargin
-            else:
-                orngTree.insertDot(strg, mo)
-        else:
-            return orngTree.insertDot(strg, mo)
-    return orngTree.insertNum(strg, mo, margin)
-
-
-myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]</xmp>
-
-<P>We first defined <code>getMargin</code> which gets the distribution and computes the margin. The callback replaces, <code>replaceB</code>, computes the margin for the node. If we need to divided the quantity by something (that is, if the <code>by</code> group is present), we call <code>orngTree.byWhom</code> to get the node with whose margin this node's margin is to be divided. If this node (usually the parent) does not exist of if its margin is zero, we call <code>insertDot</code> to insert a dot, otherwise we call <code>insertNum</code> which will insert the number, obeying the format specified by the user.</P>
-
-<P><code>myFormat</code> is a list containing the regular expression and the callback function.</P>
-
-<P>We can now print out the iris tree, for instance using the following call.</P>
-<xmp class="code">orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats = myFormat)</xmp>
-
-<P>And this is what we get.</P>
-<xmp class="printout">petal width<0.800: Iris-setosa 100% (100.00%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
-|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica 33% (34.85%)
-|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
-</xmp>
-
-
-<h2>Plotting the Tree using Dot</h2>
-
-<p>Function <code>printDot</code> prints the tree to a file in a format used by <a
-href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>.
-Uses the same parameters as <code>printTxt</code> defined above, and
-in addition two parameters which define the shape used for internal
-nodes and laves of the tree:
-
-<p class=section>Arguments</p>
-<dl class=arguments>
-  <dt>leafShape</dt>
-  <dd>Shape of the outline around leves of the tree. If "plaintext",
-  no outline is used (default: "plaintext")</dd>
-
-  <dt>internalNodeShape</dt>
-  <dd>Shape of the outline around internal nodes of the tree. If "plaintext",
-  no outline is used (default: "box")</dd>
-</dl>
-
-<p>Check <a
-href="http://www.graphviz.org/doc/info/shapes.html">Polygon-based
-Nodes</a> for various outlines supported by GraphViz.</p>
-
-<P>Suppose you saved the tree in a file <code>tree5.dot</code>. You can then print it out as a gif if you execute the following command line
-<XMP class=code>dot -Tgif tree5.dot -otree5.gif
-</XMP>
-</P>
-GraphViz's dot has quite a few other output formats, check its documentation to learn which.</P>
 
 References
 ==========
@@ -2291,6 +2421,8 @@ class TreeLearner(orange.Learner):
 
         return learner
 
+#counting
+
 def __countNodes(node):
     count = 0
     if node:
@@ -2334,6 +2466,10 @@ def countLeaves(tree):
 
 import re
 fs = r"(?P<m100>\^?)(?P<fs>(\d*\.?\d*)?)"
+""" Defines the multiplier by 100 (:samp:`^`) and the format
+for the number of decimals (e.g. :samp:`5.3`). The corresponding 
+groups are named :samp:`m100` and :samp:`fs`. """
+
 by = r"(?P<by>(b(P|A)))?"
 bysub = r"((?P<bysub>b|s)(?P<by>P|A))?"
 opc = r"(?P<op>=|<|>|(<=)|(>=)|(!=))(?P<num>\d*\.?\d+)"
@@ -2355,13 +2491,30 @@ re_d = re.compile("%"+fs+"d"+by)
 re_AE = re.compile("%"+fs+"(?P<AorE>A|E)"+bysub)
 re_I = re.compile("%"+fs+"I"+intrvl)
 
-def insertDot(s, mo):
-    return s[:mo.start()] + "." + s[mo.end():]
-
 def insertStr(s, mo, sub):
+    """ Replace the part of s which is covered by mo 
+    with the string sub. """
     return s[:mo.start()] + sub + s[mo.end():]
 
+
+def insertDot(s, mo):
+    """ Replace the part of s which is covered by mo 
+    with a dot.  You should use this when the 
+    function cannot compute the desired quantity; it is called, for instance, 
+    when it needs to divide by something in the parent, but the parent 
+    doesn't exist.
+    """
+    return s[:mo.start()] + "." + s[mo.end():]
+
 def insertNum(s, mo, n):
+    """ Replace the part of s matched by mo with the number n, 
+    formatted as specified by the user, that is, it multiplies 
+    it by 100, if needed, and prints with the right number of 
+    places and decimals. It does so by checking the mo
+    for a group named m100 (representing the :samp:`^` in the format string) 
+    and a group named fs representing the part giving the number o
+    f decimals (e.g. :samp:`5.3`).
+    """
     grps = mo.groupdict()
     m100 = grps.get("m100", None)
     if m100:
@@ -2370,10 +2523,14 @@ def insertNum(s, mo, n):
     return s[:mo.start()] + ("%%%sf" % fs % n) + s[mo.end():]
 
 def byWhom(by, parent, tree):
-        if by=="bP":
-            return parent
-        else:
-            return tree.tree
+    """ If by equals bp, it returns parent, else it returns 
+    :samp:`tree.tree`. This is used to find what to divide the quantity 
+    with, when division is required.
+    """
+    if by=="bP":
+        return parent
+    else:
+        return tree.tree
 
 def replaceV(strg, mo, node, parent, tree):
     return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))
@@ -2781,15 +2938,50 @@ def _quoteName(x):
     return '"%s"' % (base64.b64encode(x))
 
 def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
-    return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
-                        argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
-                        tree).dumpTree()
+    """
+    Return a string representation of a tree.
+
+    :arg tree: The tree to dump to string.
+    :type tree: class:`TreeClassifier`
+    :arg leafStr: The format string for printing the tree leaves. If 
+      left empty, "%V (%^.2m%)" will be used for classification trees
+      and "%V" for regression trees.
+    :type leafStr: string
+    :arg nodeStr: The format string for printing out the internal nodes.
+      If left empty (as it is by default), no data is printed out for
+      internal nodes. If set to :samp:`"."`, the same string is
+      used as for leaves.
+    :type nodeStr: string
+    :arg maxDepth: If set, it limits the depth to which the tree is
+      printed out.
+    :type maxDepth: integer
+    :arg minExamples: If set, the subtrees with less than the given 
+      number of examples are not printed.
+    :type minExamples: integer
+    :arg simpleFirst: If True (default), the branches with a single 
+      node are printed before the branches with larger subtrees. 
+      If False, the branches are printed in order of
+      appearance.
+    :type simpleFirst: boolean
+    :arg userFormats: A list of regular expressions and callback 
+      function through which the user can print out other specific 
+      information in the nodes.
+    """
+    return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
+        __TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
+        argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+        tree).dumpTree()
 
 
 def printTree(*a, **aa):
+    """
+    Print out the tree (call :func:`dumpTree` with the same
+    arguments and print out the result).
+    """
     print dumpTree(*a, **aa)
 
 printTxt = printTree
+""" An alias for :func:`printTree`. Left for compatibility. """
 
 
 def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
@@ -2802,12 +2994,4 @@ def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", n
                         
 printDot = dotTree
         
-##import orange, orngTree, os
-##os.chdir("c:\\d\\ai\\orange\\doc\\datasets")
-##data = orange.ExampleTable("iris")
-###data = orange.ExampleTable("housing")
-##tree = orngTree.TreeLearner(data)
-##printTxt(tree)
-###print printTree(tree, '%V %4.2NbP %.3C!="Iris-virginica"')
-###print printTree(tree, '%A %I(95) %C![20,22)bP', ".", maxDepth=3)
-###dotTree("c:\\d\\ai\\orange\\x.dot", tree, '%A', maxDepth= 3)
+
