@@ -30,14 +30,23 @@ are available at the end of this page.
 Example scripts in this section suppose that the data is loaded and a
 list of learning algorithms is prepared.
 
+part of `testing-test.py`_ (uses `voting.tab`_)
+
 .. literalinclude:: code/testing-test.py
-    :start-after: # Read the data
+    :start-after: import random
+    :end-before: def printResults(res)
 
 After testing is done, classification accuracies can be computed and
 printed by the following function.
 
 .. literalinclude:: code/testing-test.py
     :pyobject: printResults
+
+.. _voting.tab: code/voting.tab
+.. _testing-test.py: code/testing-test.py
+
+Common Arguments
+================
 
 """
 
