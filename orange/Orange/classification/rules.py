@@ -22,8 +22,13 @@ the required behaviour.
 
 Usage is consistent with typical learner usage in Orange:
 
+`rules-cn2.py`_ (uses `titanic.tab`_)
+
 .. literalinclude:: code/rules-cn2.py
     :lines: 7-
+
+.. _rules-cn2.py: code/rules-cn2.py
+.. _titanic.tab: code/titanic.tab
 
 This is the resulting printout::
     
@@ -94,8 +99,12 @@ can in fact be fine-tuned to specific needs by replacing individual components.
 Here is a simple example, while a detailed architecture can be observed
 in description of classes that follows it:
 
+part of `rules-customized.py`_ (uses `titanic.tab`_)
+
 .. literalinclude:: code/rules-customized.py
     :lines: 7-17
+
+.. _rules-customized.py: code/rules-customized.py
 
 In the example, the rule evaluation function was set to an m-estimate of
 probability with m=50. The result is::
@@ -118,6 +127,8 @@ necessary and sets defaults. Similarly, when the learner finishes, it destructs
 all *default* components. Continuing with our example, assume that we wish to
 set a different validation function and a different bean width. This is simply
 written as:
+
+part of `rules-customized.py`_ (uses `titanic.tab`_)
 
 .. literalinclude:: code/rules-customized.py
     :lines: 19-23
@@ -604,7 +615,8 @@ class MEstimateEvaluator(RuleEvaluator):
             p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
             p = p / (rule.classDistribution.abs + self.m)
         else:
-            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
+            p = max(rule.classDistribution)+self.m*apriori[rule.\
+                classDistribution.modus()]/apriori.abs
             p = p / (rule.classDistribution.abs + self.m)      
         return p
 
@@ -641,7 +653,8 @@ class CN2Learner(RuleLearner):
         else:
             return self
         
-    def __init__(self, evaluator = RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
+    def __init__(self, evaluator = RuleEvaluator_Entropy(), beamWidth = 5,
+        alpha = 1.0, **kwds):
         self.__dict__.update(kwds)
         self.ruleFinder = RuleBeamFinder()
         self.ruleFinder.ruleFilter = RuleBeamFilter_Width(width = beamWidth)
@@ -663,7 +676,7 @@ class CN2Classifier(RuleClassifier):
     (:class:`Orange.classification.rules.CN2Learner`) is used to construct the
     classifier.
         
-    :param instance: instance to be classifier
+    :param instance: instance to be classified.
     :type instance: :class:`Orange.data.Instance`
     
     :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
@@ -681,7 +694,7 @@ class CN2Classifier(RuleClassifier):
         self.classVar = None if instances is None else instances.domain.classVar
         self.__dict__.update(argkw)
         if instances is not None:
-            self.prior = Orange.core.Distribution(instances.domain.classVar, instances)
+            self.prior = Orange.core.Distribution(instances.domain.classVar,instances)
 
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         classifier = None
@@ -692,7 +705,8 @@ class CN2Classifier(RuleClassifier):
                 classifier.defaultDistribution = r.classDistribution
                 break
         if not classifier:
-            classifier = Orange.core.DefaultClassifier(instance.domain.classVar, self.prior.modus())
+            classifier = Orange.core.DefaultClassifier(instance.domain.classVar,\
+                self.prior.modus())
             classifier.defaultDistribution = self.prior
 
         if result_type == Orange.classification.Classifier.GetValue:
@@ -702,7 +716,8 @@ class CN2Classifier(RuleClassifier):
         return (classifier(instance),classifier.defaultDistribution)
 
     def __str__(self):
-        retStr = ruleToString(self.rules[0])+" "+str(self.rules[0].classDistribution)+"\n"
+        retStr = ruleToString(self.rules[0])+" "+str(self.rules[0].\
+            classDistribution)+"\n"
         for r in self.rules[1:]:
             retStr += "ELSE "+ruleToString(r)+" "+str(r.classDistribution)+"\n"
         return retStr
@@ -740,7 +755,8 @@ class CN2UnorderedLearner(RuleLearner):
         else:
             return self
             
-    def __init__(self, evaluator = RuleEvaluator_Laplace(), beamWidth = 5, alpha = 1.0, **kwds):
+    def __init__(self, evaluator = RuleEvaluator_Laplace(), beamWidth = 5,
+        alpha = 1.0, **kwds):
         self.__dict__.update(kwds)
         self.ruleFinder = RuleBeamFinder()
         self.ruleFinder.ruleFilter = RuleBeamFilter_Width(width = beamWidth)
@@ -754,12 +770,14 @@ class CN2UnorderedLearner(RuleLearner):
         supervisedClassCheck(instances)
         
         rules = RuleList()
-        self.ruleStopping.apriori = Orange.core.Distribution(instances.domain.classVar,instances)
+        self.ruleStopping.apriori = Orange.core.Distribution(instances.\
+            domain.classVar,instances)
         progress=getattr(self,"progressCallback",None)
         if progress:
             progress.start = 0.0
             progress.end = 0.0
-            distrib = Orange.core.Distribution(instances.domain.classVar, instances, weight)
+            distrib = Orange.core.Distribution(instances.domain.classVar,\
+                instances, weight)
             distrib.normalize()
         for targetClass in instances.domain.classVar:
             if progress:
@@ -781,7 +799,7 @@ class CN2UnorderedClassifier(RuleClassifier):
     (:class:`Orange.classification.rules.CN2UnorderedLearner`) is used to
     construct the classifier.
         
-    :param instance: instance to be classifier
+    :param instance: instance to be classified.
     :type instance: :class:`Orange.data.Instance`
     :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
           :class:`Orange.classification.Classifier.GetProbabilities` or
@@ -885,7 +903,8 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         else:
             return self
         
-    def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
+    def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5,
+                alpha = 0.05, mult=0.7, **kwds):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_MultWeights(mult=mult)
@@ -925,9 +944,11 @@ class CN2EVCUnorderedLearner(ABCN2):
     :param mult: multiplicator for weights of covered instances.
     :type mult: float
     """
-    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
-        ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
-                       min_coverage=int(min_coverage), max_rule_complexity = int(max_rule_complexity))
+    def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0,\
+        min_coverage = 1., max_rule_complexity = 5.):
+        ABCN2.__init__(self, width=width, nsampling=nsampling,
+            rule_sig=rule_sig, att_sig=att_sig, min_coverage=int(min_coverage),
+            max_rule_complexity = int(max_rule_complexity))
 
 
 class RuleStopping_Apriori(RuleStoppingCriteria):
@@ -972,7 +993,8 @@ class LengthValidator(RuleValidator):
 class NoDuplicatesValidator(RuleValidator):
     def __init__(self,alpha=.05,min_coverage=0,max_rule_length=0,rules=RuleList()):
         self.rules = rules
-        self.validator = RuleValidator_LRS(alpha=alpha,min_coverage=min_coverage,max_rule_length=max_rule_length)
+        self.validator = RuleValidator_LRS(alpha=alpha,\
+            min_coverage=min_coverage,max_rule_length=max_rule_length)
         
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if rule_in_set(rule,self.rules):
@@ -1035,12 +1057,15 @@ class CovererAndRemover_MultWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.core.newmetaid()
             instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
+            instances.domain.addmeta(weights, Orange.data.feature.\
+                Continuous("weights-"+str(weights)), True)
         newWeightsID = Orange.core.newmetaid()
         instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
+        instances.domain.addmeta(newWeightsID, Orange.data.feature.\
+            Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.classification.Classifier.GetValue):
+            if rule(instance) and instance.getclass() == rule.classifier(\
+                instance,Orange.classification.Classifier.GetValue):
                 instance[newWeightsID]=instance[weights]*self.mult
             else:
                 instance[newWeightsID]=instance[weights]
@@ -1057,7 +1082,8 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.core.newmetaid()
             instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.Continuous("weights-"+str(weights)), True)
+            instances.domain.addmeta(weights, Orange.data.feature.\
+                Continuous("weights-"+str(weights)), True)
         try:
             coverage = instances.domain.getmeta("Coverage")
         except:
@@ -1066,9 +1092,11 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
             instances.addMetaAttribute(coverage,0.0)
         newWeightsID = Orange.core.newmetaid()
         instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.Continuous("weights-"+str(newWeightsID)), True)
+        instances.domain.addmeta(newWeightsID, Orange.data.feature.\
+            Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
-            if rule(instance) and instance.getclass() == rule.classifier(instance,Orange.classification.Classifier.GetValue):
+            if rule(instance) and instance.getclass() == rule.classifier(instance,\
+                    Orange.classification.Classifier.GetValue):
                 try:
                     instance[coverage]+=1.0
                 except:
@@ -1090,7 +1118,8 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
         self.bestRule = [None]*len(instances)
         self.probAttribute = Orange.core.newmetaid()
         instances.addMetaAttribute(self.probAttribute,-1.e-6)
-        instances.domain.addmeta(self.probAttribute, Orange.data.feature.Continuous("Probs"))
+        instances.domain.addmeta(self.probAttribute, \
+            Orange.data.feature.Continuous("Probs"))
         for instance in instances:
 ##            if targetClass<0 or (instance.getclass() == targetClass):
             instance[self.probAttribute] = apriori[targetClass]/apriori.abs
@@ -1102,7 +1131,8 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
             if hasattr(r.learner, "argumentRule") and not orngCN2.rule_in_set(r,bestRules):
                 bestRules.append(r)
         for r_i,r in enumerate(self.bestRule):
-            if r and not rule_in_set(r,bestRules) and instances[r_i].getclass()==r.classifier.defaultValue:
+            if r and not rule_in_set(r,bestRules) and instances[r_i].\
+                getclass()==r.classifier.defaultValue:
                 bestRules.append(r)
         return bestRules
 
@@ -1167,15 +1197,18 @@ def ruleToString(rule, showDistribution = True):
         if i > 0:
             ret += " AND "
         if type(c) == Orange.core.ValueFilter_discrete:
-            ret += domain[c.position].name + "=" + str([domain[c.position].values[int(v)] for v in c.values])
+            ret += domain[c.position].name + "=" + str([domain[c.position].\
+                values[int(v)] for v in c.values])
         elif type(c) == Orange.core.ValueFilter_continuous:
             ret += domain[c.position].name + selectSign(c.oper) + str(c.ref)
-    if rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and rule.classifier.defaultVal:
+    if rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier\
+            and rule.classifier.defaultVal:
         ret = ret + " THEN "+domain.classVar.name+"="+\
         str(rule.classifier.defaultValue)
         if showDistribution:
             ret += str(rule.classDistribution)
-    elif rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier and type(domain.classVar) == Orange.core.EnumVariable:
+    elif rule.classifier and type(rule.classifier) == Orange.core.DefaultClassifier\
+            and type(domain.classVar) == Orange.core.EnumVariable:
         ret = ret + " THEN "+domain.classVar.name+"="+\
         str(rule.classDistribution.modus())
         if showDistribution:
@@ -1269,7 +1302,7 @@ def compParameters(vals,oldMi=0.5,oldBeta=1.1):
     return mi, beta, percs
 
 def computeDists(data, weight=0, targetClass=0, N=100, learner=None):
-    """ Compute distributions of likelihood ratio statistics of extreme (best) rules.  """
+    """ Compute distributions of likelihood ratio statistics of extreme (best) rules."""
     if not learner:
         learner = createLearner()
 
@@ -1327,11 +1360,15 @@ def add_sub_rules(rules, instances, weight, learner, dists):
                 # evaluate tmpRule
                 oldREP = learner.ruleFinder.evaluator.returnExpectedProb
                 learner.ruleFinder.evaluator.returnExpectedProb = False
-                learner.ruleFinder.evaluator.evDistGetter.dists = createEVDistList(dists[int(r.classifier.defaultVal)])
-                tmpRule.quality = learner.ruleFinder.evaluator(tmpRule,instances,weight,r.classifier.defaultVal,apriori)
+                learner.ruleFinder.evaluator.evDistGetter.dists = createEVDistList(\
+                        dists[int(r.classifier.defaultVal)])
+                tmpRule.quality = learner.ruleFinder.evaluator(tmpRule,
+                        instances,weight,r.classifier.defaultVal,apriori)
                 learner.ruleFinder.evaluator.returnExpectedProb = oldREP
                 # if rule not in rules already, add it to the list
-                if not True in [rules_equal(ri,tmpRule) for ri in newRules] and len(tmpRule.filter.conditions)>0 and tmpRule.quality > apriori[r.classifier.defaultVal]/apriori.abs:
+                if not True in [rules_equal(ri,tmpRule) for ri in newRules] and\
+                        len(tmpRule.filter.conditions)>0 and tmpRule.quality >\
+                            apriori[r.classifier.defaultVal]/apriori.abs:
                     newRules.append(tmpRule)
                 # create new tmpRules, set parent Rule, append them to tmpList2
                 if not True in [rules_equal(ri,tmpRule) for ri in newRules]:
