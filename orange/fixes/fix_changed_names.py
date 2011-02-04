@@ -335,14 +335,14 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            #"orngMisc.compare2_bigger":"Orange.misc.selection.compareBigger",
            #"orngMisc.compare2_smaller":"Orange.misc.selection.compareSmaller",
            
-           "orngEnsemble.BaggedLearner":"Orange.bagging.BaggedLearner",
-           "orngEnsemble.BaggedClassifier":"Orange.bagging.BaggedClassifier",
+           "orngEnsemble.BaggedLearner":"Orange.ensemble.bagging.BaggedLearner",
+           "orngEnsemble.BaggedClassifier":"Orange.ensemble.bagging.BaggedClassifier",
            "orngEnsemble.BoostedLearner":"Orange.boosting.BoostedLearner",
-           "orngEnsemble.BoostedClassifier":"Orange.boosting.BoostedClassifier",
-           "orngEnsemble.RandomForestClassifier":"Orange.forest.RandomForestClassifier",
-           "orngEnsemble.RandomForestLearner":"Orange.forest.RandomForestLearner",
-           "orngEnsemble.MeasureAttribute_randomForests":"Orange.forest.ScoreFeature",
-           "orngEnsemble.SplitConstructor_AttributeSubset":"Orange.forest.SplitConstructor_AttributeSubset",
+           "orngEnsemble.BoostedClassifier":"Orange.ensemble.boosting.BoostedClassifier",
+           "orngEnsemble.RandomForestClassifier":"Orange.ensemble.forest.RandomForestClassifier",
+           "orngEnsemble.RandomForestLearner":"Orange.ensemble.forest.RandomForestLearner",
+           "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
+           "orngEnsemble.SplitConstructor_AttributeSubset":"Orange.ensemble.forest.SplitConstructor_AttributeSubset",
            
            }
 
