@@ -37,6 +37,7 @@ Contents:
    
    Orange.network
    
+   Orange.projection.mds
    orange.projection.som
 
    Orange.evaluation.scoring

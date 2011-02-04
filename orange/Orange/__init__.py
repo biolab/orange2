@@ -32,6 +32,7 @@ import classification.knn
 import classification.majority
 
 import projection
+import projection.mds
 import projection.som
 
 import ensemble
