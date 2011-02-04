@@ -9,4 +9,4 @@ for ex in table:
     if lr(ex) == ex.getclass():
         correct += 1
 print "Classification accuracy:", correct / len(table)
-classification.logreg.printOUT(lr)
+classification.logreg.dump(lr)

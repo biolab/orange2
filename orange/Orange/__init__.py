@@ -61,6 +61,7 @@ import featureConstruction.functionDecomposition
 
 import evaluation
 import evaluation.scoring
+import evaluation.testing
 
 import cluster
 

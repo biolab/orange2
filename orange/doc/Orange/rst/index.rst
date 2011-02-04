@@ -36,6 +36,7 @@ Contents:
    orange.projection.som
 
    Orange.evaluation.scoring
+   Orange.evaluation.testing
 
 Indices and tables
 ==================
