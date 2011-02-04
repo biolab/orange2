@@ -34,9 +34,9 @@ Classification trees are represented as a tree-like hierarchy of
         setting :obj:`TreeLearnerBase`'s :obj:`storeContingencies` 
         flag to true. Note that even when the flag is not 
         set, the contingencies get computed and stored to 
-        :obj:`TreeNone`, but are removed shortly afterwards. 
+        :obj:`TreeNode`, but are removed shortly afterwards. 
         The details are given in the 
-        description of the :obj:`TreeLearnerBase`object.
+        description of the :obj:`TreeLearnerBase` object.
 
     .. attribute:: examples, weightID
 
@@ -872,11 +872,10 @@ TreePruner and derived classes
 
 .. index::
     pair: classification trees; pruning
-.. index:: pruning classification trees
 
-    Classes derived from :obj:`TreePruner` prune the trees as a
-    described in the section pruning XXXXXXXX - make sure you read it 
-    to understand what the pruners will do to your trees.
+Classes derived from :obj:`TreePruner` prune the trees as a
+described in the section pruning XXXXXXXX - make sure you read it 
+to understand what the pruners will do to your trees.
 
 .. class:: TreePruner
 
@@ -1011,7 +1010,9 @@ It's fairly straightforward: if :obj:`x` is of type derived from
 :obj:`TreeNode` we just call :obj:`printTree0` with :obj:`x`. If it's 
 of some other type, we don't know how to handle it and thus raise 
 an exception. (Note that we could also use 
+
 ::
+
     if type(x) == orange.TreeClassifier:
 
 but this would only work if :obj:`x` would be of type 
@@ -1100,6 +1101,7 @@ Stopping criteria
 =================
 
 The stop is trivial. The default is set by
+
 ::
     >>> learner.stop = orange.TreeStopCriteria_common()
 
@@ -1356,7 +1358,7 @@ Examples
 ========
 
 .. _tree_c45.py: code/tree_c45.py
-.. _iris.tac: code/iris.tab
+.. _iris.tab: code/iris.tab
 
 The simplest way to use :class:`C45Learner` is to call it. This
 script constructs the same learner as you would get by calling
@@ -1408,7 +1410,7 @@ case when only a single value goes into the branch.
 Printing out C45 Tree
 =====================
 
-.. autofunction:: c45_printTree
+.. autofunction:: printTreeC45
 
 ===============
 orngTree module
@@ -1893,85 +1895,78 @@ The two you are likely to use are:
 
 .. autodata:: fs
 
-<dt>fs</dt>
+.. autodata:: by
 
-<dt>by</dt>
-<dd>Defines <code>bP</code> or <code>bA</code> or nothing; the result is in groups <code>by</code>.</dd>
-</dl>
+For a trivial example, :samp:`%V` is implemented like this. There is the
+following tuple in the list of built-in formats::
 
-<P>For a trivial example, "%V" is implemented like this. There is the following tuple in the list of built-in formats: <code>(re.compile("%V"), replaceV)</code>. <code>replaceV</code> is a function defined by:</P>
-<xmp class="code">def replaceV(strg, mo, node, parent, tree):
-    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))</xmp>
-<P>It therefore takes the value predicted at the node (<code>node.nodeClassifier.defaultValue</code>), converts it to a string and passes it to <code>insertStr</code> to do the replacement.</P>
+    (re.compile("%V"), replaceV)
 
-<P>A more complex regular expression is the one for the proportion of majority class, defined as <code>"%"+fs+"M"+by</code>. It uses the two partial expressions defined above.</P>
+:obj:`replaceV` is a function defined by::
 
-<P>Let's say with like to print the classification margin for each node, that is, the difference between the proportion of the largest and the second largest class in the node.</P>
+    def replaceV(strg, mo, node, parent, tree):
+        return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))
 
-<p class="header">part of <a href="orngTree2.py">orngTree2.py</a></p>
-<xmp class="code">def getMargin(dist):
-    if dist.abs < 1e-30:
-        return 0
-    l = list(dist)
-    l.sort()
-    return (l[-1] - l[-2]) / dist.abs
+It therefore takes the value predicted at the node 
+(:samp:`node.nodeClassifier.defaultValue` ), converts it to a string
+and passes it to <code>insertStr</code> to do the replacement.
 
-def replaceB(strg, mo, node, parent, tree):
-    margin = getMargin(node.distribution)
+A more complex regular expression is the one for the proportion of
+majority class, defined as :samp:`"%"+fs+"M"+by`. It uses the
+two partial expressions defined above.
 
-    by = mo.group("by")
-    if margin and by:
-        whom = orngTree.byWhom(by, parent, tree)
-        if whom and whom.distribution:
-            divMargin = getMargin(whom.distribution)
-            if divMargin > 1e-30:
-                margin /= divMargin
-            else:
-                orngTree.insertDot(strg, mo)
-        else:
-            return orngTree.insertDot(strg, mo)
-    return orngTree.insertNum(strg, mo, margin)
+Let's say with like to print the classification margin for each node,
+that is, the difference between the proportion of the largest and the
+second largest class in the node (part of `orngTree2.py`_):
 
+.. _orngTree2.py: code/orngTree2.py
 
-myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]</xmp>
+.. literalinclude:: code/orngTree2.py
+   :lines: 7-30
 
-<P>We first defined <code>getMargin</code> which gets the distribution and computes the margin. The callback replaces, <code>replaceB</code>, computes the margin for the node. If we need to divided the quantity by something (that is, if the <code>by</code> group is present), we call <code>orngTree.byWhom</code> to get the node with whose margin this node's margin is to be divided. If this node (usually the parent) does not exist of if its margin is zero, we call <code>insertDot</code> to insert a dot, otherwise we call <code>insertNum</code> which will insert the number, obeying the format specified by the user.</P>
-
-<P><code>myFormat</code> is a list containing the regular expression and the callback function.</P>
-
-<P>We can now print out the iris tree, for instance using the following call.</P>
-<xmp class="code">orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats = myFormat)</xmp>
-
-<P>And this is what we get.</P>
-<xmp class="printout">petal width<0.800: Iris-setosa 100% (100.00%)
-petal width>=0.800
-|    petal width<1.750
-|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
-|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
-|    petal width>=1.750
-|    |    petal length<4.850: Iris-virginica 33% (34.85%)
-|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
-</xmp>
+We first defined getMargin which gets the distribution and computes the
+margin. The callback replaces, replaceB, computes the margin for the node.
+If we need to divided the quantity by something (that is, if the :data:`by`
+group is present), we call :func:`byWhom` to get the node with whose margin
+this node's margin is to be divided. If this node (usually the parent)
+does not exist of if its margin is zero, we call :func:`insertDot`
+to insert a dot, otherwise we call :func:`insertNum` which will insert 
+the number, obeying the format specified by the user. myFormat is a list 
+containing the regular expression and the callback function.
 
 
-<h2>Plotting the Tree using Dot</h2>
+We can now print out the iris tree:
 
-<p>Function <code>printDot</code> prints the tree to a file in a format used by <a
-href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>.
-Uses the same parameters as <code>printTxt</code> defined above, and
-in addition two parameters which define the shape used for internal
+.. literalinclude:: code/orngTree2.py
+    :lines: 32
+
+And we get::
+
+    petal width<0.800: Iris-setosa 100% (100.00%)
+    petal width>=0.800
+    |    petal width<1.750
+    |    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+    |    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+    |    petal width>=1.750
+    |    |    petal length<4.850: Iris-virginica 33% (34.85%)
+    |    |    petal length>=4.850: Iris-virginica 100% (104.55%)
+
+
+Plotting the Tree using Dot
+===========================
+
+Prints the tree to a file in a format used by 
+`GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
+Uses the same parameters as :func:`printTxt` defined above
+plus two parameters which define the shape used for internal
 nodes and laves of the tree:
 
-<p class=section>Arguments</p>
-<dl class=arguments>
-  <dt>leafShape</dt>
-  <dd>Shape of the outline around leves of the tree. If "plaintext",
-  no outline is used (default: "plaintext")</dd>
-
-  <dt>internalNodeShape</dt>
-  <dd>Shape of the outline around internal nodes of the tree. If "plaintext",
-  no outline is used (default: "box")</dd>
-</dl>
+:param leafShape: Shape of the outline around leves of the tree. 
+    If "plaintext", no outline is used (default: "plaintext").
+:type leafShape: string
+:param internalNodeShape: Shape of the outline around internal nodes 
+    of the tree. If "plaintext", no outline is used (default: "box")
+:type leafShape: string
 
 <p>Check <a
 href="http://www.graphviz.org/doc/info/shapes.html">Polygon-based
@@ -2467,12 +2462,15 @@ def countLeaves(tree):
 # the following is for the output
 
 import re
+
 fs = r"(?P<m100>\^?)(?P<fs>(\d*\.?\d*)?)"
 """ Defines the multiplier by 100 (:samp:`^`) and the format
 for the number of decimals (e.g. :samp:`5.3`). The corresponding 
 groups are named :samp:`m100` and :samp:`fs`. """
 
 by = r"(?P<by>(b(P|A)))?"
+""" Defines bP or bA or nothing; the result is in groups by. """
+
 bysub = r"((?P<bysub>b|s)(?P<by>P|A))?"
 opc = r"(?P<op>=|<|>|(<=)|(>=)|(!=))(?P<num>\d*\.?\d+)"
 opd = r'(?P<op>=|(!=))"(?P<cls>[^"]*)"'
