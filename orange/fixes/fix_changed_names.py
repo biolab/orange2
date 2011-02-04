@@ -95,6 +95,22 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.FindNearestConstructor_BruteForce":"Orange.classification.knn.FindNearestConstructor",
            "orange.P2NN":"Orange.classification.knn.P2NN",
            
+           "orange.BayesLearner":"Orange.classification.bayes.NaiveLearner",
+           "orange.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
+           "orngBayes.BayesLearner":"Orange.classification.bayes.NaiveLearner",
+           "orngBayes.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
+           
+           "orngNetwork.MdsTypeClass":"Orange.network.MdsTypeClass",
+           "orngNetwork.Network":"Orange.network.Network",
+           "orngNetwork.NetworkOptimization":"Orange.network.NetworkOptimization",
+           "orngNetwork.NetworkClustering":"Orange.network.NetworkClustering",
+           "orange.Graph":"Orange.network.Graph",
+           "orange.GraphAsList":"Orange.network.GraphAsList",
+           "orange.GraphAsMatrix":"Orange.network.GraphAsMatrix",
+           "orange.GraphAsTree":"Orange.network.GraphAsTree",
+           
+           "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
+           
             "orange.TreeLearner": "Orange.classification.tree.TreeLearnerBase",
            "orange.TreeClassifier": "Orange.classification.tree.TreeClassifier",
            "orange.C45Learner": "Orange.classification.tree.C45Learner",
