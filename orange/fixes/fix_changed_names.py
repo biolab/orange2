@@ -70,6 +70,14 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngFSS.FilteredClassifier": "Orange.feature.selection.FilteredClassifier",
            "orngFSS.StepwiseLearner_Class": "Orange.classification.wrappers.StepwiseLearner_Class",
            "orngFSS.StepwiseLearner": "Orange.classification.wrappers.StepwiseLearner",
+           
+           "orange.ImputerConstructor_model": "Orange.feature.imputation.ImputerConstructor_model",
+           "orange.Imputer_model": "Orange.feature.imputation.Imputer_model",
+           "orange.Imputer_defaults": "Orange.feature.imputation.Imputer_defaults",
+           "orange.ImputerConstructor_asValue": "Orange.feature.imputation.ImputerConstructor_asValue",
+           "orange.ImputerConstructor_minimal": "Orange.feature.imputation.ImputerConstructor_minimal", 
+           "orange.ImputerConstructor_maximal": "Orange.feature.imputation.ImputerConstructor_maximal",
+           "orange.ImputerConstructor_average": "Orange.feature.imputation.ImputerConstructor_average",
  
            "orange.ExamplesDistance_Hamming": "Orange.distances.ExamplesDistance_Hamming",
            "orange.ExamplesDistance_Normalized": "Orange.distances.ExamplesDistance_Normalized",
@@ -118,7 +126,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            
            "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
            
-            "orange.TreeLearner": "Orange.classification.tree.TreeLearnerBase",
+           "orange.TreeLearner": "Orange.classification.tree.TreeLearnerBase",
            "orange.TreeClassifier": "Orange.classification.tree.TreeClassifier",
            "orange.C45Learner": "Orange.classification.tree.C45Learner",
            "orange.C45Classifier": "Orange.classification.tree.C45Classifier",
