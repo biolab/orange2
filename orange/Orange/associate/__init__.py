@@ -54,7 +54,7 @@ The text needs to be cleaned of punctuation marks and capital letters at beginni
 .. _inquisition.basket: code/inquisition.basket
 .. _lenses.tab: code/lenses.tab
 
-**inquisition.basket**
+Data example (`inquisition.basket`_):
 
 .. literalinclude:: code/inquisition.basket
    
@@ -250,7 +250,7 @@ Both classes for induction of association rules return the induced rules in Asso
     
     Tells whether the example fits into the left, right or both sides of the rule, respectively. If the rule is represented by sparse examples, the given example must be sparse as well.
     
-Association rule inducers do not store evidence about which example supports which rule (although this information is available during induction its discarded afterwards). Let us write a function that finds the examples that confirm the rule (fit both sides of it) and those that contradict it (fit the left-hand side but not the right). The example uses the `lenses data table <http://orange.biolab.si/doc/reference/lenses.tab>`_. ::
+Association rule inducers do not store evidence about which example supports which rule (although this information is available during induction its discarded afterwards). Let us write a function that finds the examples that confirm the rule (fit both sides of it) and those that contradict it (fit the left-hand side but not the right). The example uses the `lenses.tab`_: ::
 
     import Orange
 
