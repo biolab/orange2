@@ -394,7 +394,7 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
     cannot miss by using :obj:`Orange.Network.GraphAsTree` disregarding the
     size of the graph and the operations you perform on it.
 
-    **Graph Analyses**
+    **Graph analysis**
     
     .. method:: getSubGraph(vertices)
     
@@ -495,10 +495,10 @@ Results::
     (None, None, 3)
     (None, None, None)
 
-An example of network analyses, part of `network-graph-analyses.py`_ (uses:
+An example of network analysis, part of `network-graph-analysis.py`_ (uses:
 `combination.net`_):
 
-.. literalinclude:: code/network-graph-analyses.py
+.. literalinclude:: code/network-graph-analysis.py
     :lines: 12-49
     
 Results::
@@ -549,7 +549,7 @@ Community Detection in Graphs
 .. _K5.net: code/K5.net
 .. _combination.net: code/combination.net
 .. _network-widget.py: code/network-widget.py
-.. _network-graph-analyses.py: code/network-graph-analyses.py
+.. _network-graph-analysis.py: code/network-graph-analysis.py
 .. _network-graph.py: code/network-graph.py
 .. _network-graph-obj.py: code/network-graph-obj.py
 
@@ -557,10 +557,11 @@ Community Detection in Graphs
 import random
 import os
 
-import orange
 import orangeom
+import Orange.core
+import Orange.data
 
-from orange import Graph, GraphAsList, GraphAsMatrix, GraphAsTree
+from Orange.core import Graph, GraphAsList, GraphAsMatrix, GraphAsTree
 
 class MdsTypeClass():
     def __init__(self):
@@ -576,9 +577,10 @@ class Network(orangeom.Network):
     
     Data structure for representing directed and undirected networks.
     
-    Network class holds network structure information and supports basic 
-    network analysis. Network class is inherited from orange.GraphAsList. 
-    Refer to orange.GraphAsList for more graph analysis tools. See the 
+    Network class holds network structure information and supports basic
+    network analysis. Network class is inherited from
+    :obj:`Orange.network.GraphAsList`. Refer to
+    :obj:`Orange.network.GraphAsList` for more graph analysis tools. See the
     orangeom.Pathfinder class for a way to simplify your network.
     
     .. attribute:: coors
@@ -837,7 +839,7 @@ class Network(orangeom.Network):
 class NetworkOptimization(orangeom.NetworkOptimization):
     
     """Perform network layout optimization. Network structure is defined in 
-    :obj:Orange.network.Network class.
+    :obj:`Orange.network.Network` class.
     
     :param network: Network to optimize
     :type network: Orange.network.Network
@@ -1020,7 +1022,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         vars = []
         if (self.graph != None):
             if hasattr(self.graph, "items"):
-                if isinstance(self.graph.items, orange.ExampleTable):
+                if isinstance(self.graph.items, Orange.data.Table):
                     vars[:0] = self.graph.items.domain.variables
                 
                     metas = self.graph.items.domain.getmetas(0)
@@ -1033,7 +1035,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         vars = []
         if (self.graph != None):
             if hasattr(self.graph, "links"):
-                if isinstance(self.graph.links, orange.ExampleTable):
+                if isinstance(self.graph.links, Orange.data.Table):
                     vars[:0] = self.graph.links.domain.variables
                 
                     metas = self.graph.links.domain.getmetas(0)
@@ -1045,7 +1047,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     def getData(self, i, j):
         import warnings
         warnings.warn("Deprecated.", DeprecationWarning)
-        if self.graph.items is orange.ExampleTable:
+        if self.graph.items is Orange.data.Table:
             return self.data[i][j]
         elif self.graph.data is type([]):
             return self.data[i][j]
@@ -1437,7 +1439,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.mdsRefresh = mdsRefresh
         self.mdsStep = 0
         self.stopMDS = 0
-        self.vertexDistance.matrixType = orange.SymMatrix.Symmetric
+        self.vertexDistance.matrixType = Orange.core.SymMatrix.Symmetric
         self.diag_coors = math.sqrt((min(self.graph.coors[0]) -  \
                                      max(self.graph.coors[0]))**2 + \
                                      (min(self.graph.coors[1]) - \
@@ -1518,7 +1520,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
     def saveNetwork(self, fn):
         import warnings
-        warnings.warn("Deprecated. Use Orange.network.Network.saveNetwork", 
+        warnings.warn("Deprecated. Use Orange.network.Network.save", 
                       DeprecationWarning)
         name = ''
         try:
@@ -1594,7 +1596,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
     
     def readNetwork(self, fn, directed=0):
         import warnings
-        warnings.warn("Deprecated. Use Orange.network.Network.readNetwork", 
+        warnings.warn("Deprecated. Use Orange.network.Network.read", 
                       DeprecationWarning)
         network = Network(1,directed)
         net = network.readPajek(fn, directed)
@@ -1665,27 +1667,28 @@ class NetworkClustering():
                 if stop: break
                     
         if results2items and not resultHistory2items:
-            attrs = [orange.EnumVariable('clustering label propagation', \
-                                         values=list(set([l for l \
+            attrs = [Orange.data.feature.Discrete(
+                                        'clustering label propagation',
+                                        values=list(set([l for l \
                                                         in lblhistory[-1]])))]
-            dom = orange.Domain(attrs, 0)
-            data = orange.ExampleTable(dom, [[l] for l in lblhistory[-1]])
+            dom = Orange.data.Domain(attrs, 0)
+            data = Orange.data.Table(dom, [[l] for l in lblhistory[-1]])
             if self.net.items is None:
                 self.net.items = data  
             else: 
-                self.net.items = orange.ExampleTable([self.net.items, data])
+                self.net.items = Orange.data.Table([self.net.items, data])
         if resultHistory2items:
-            attrs = [orange.EnumVariable('c'+ str(i), \
+            attrs = [Orange.data.feature.Discrete('c'+ str(i),
                 values=list(set([l for l in lblhistory[0]]))) for i,labels \
                 in enumerate(lblhistory)]
-            dom = orange.Domain(attrs, 0)
+            dom = Orange.data.Domain(attrs, 0)
             # transpose history
             data = map(list, zip(*lblhistory))
-            data = orange.ExampleTable(dom, data)
+            data = Orange.data.Table(dom, data)
             if self.net.items is None:
                 self.net.items = data  
             else: 
-                self.net.items = orange.ExampleTable([self.net.items, data])
+                self.net.items = Orange.data.Table([self.net.items, data])
 
         return labels
     
