@@ -29,11 +29,28 @@ Example (`bayes-run.py`_, uses `iris.tab`_)
    
 Examples
 ========
-Example (`bayes-run.py`_, uses `iris.tab`_)
+NaiveLearner can estimate probabilities using relative frequencies or
+m-estimate.
 
-.. literalinclude:: code/bayes-run.py
+Example (`bayes-mestimate.py`_, uses `iris.tab`_)
+
+.. literalinclude:: code/bayes-mestimate.py
+    :lines: 7-
+
+Observing probabilities shows a shift towards the third, more frequent class -
+as compared to probabilities above, where relative frequencies were used.
+Note that the change in error estimation did not have any effect on apriori
+probabilities.
+
+Example (`bayes-thresholdAdjustment.py`_, uses `adult-sample.tab`_)
+
+.. literalinclude:: code/bayes-thresholdAdjustment.py
     :lines: 7-
     
+Setting adjustThreshold paramater can sometimes improve the results. ::
+
+    [0.7901746265516516, 0.8280138859667578]
+
 Let us load the data, induce a classifier and see how it performs on the first
 five examples.
 
@@ -157,6 +174,7 @@ fitting (either manual or automatic) of parameters took place.
 
 
 .. _bayes-run.py: code/bayes-run.py
+.. _bayes-thresholdAdjustment.py: code/bayes-thresholdAdjustment.py
 .. _iris.tab: code/iris.tab
 
 ======================
@@ -339,10 +357,10 @@ class NaiveLearner(Orange.classification.Learner):
         elif bayes.estimatorConstructor:
             bayes.conditionalEstimatorConstructor = Orange.core.ConditionalProbabilityEstimatorConstructor_ByRows()
             bayes.conditionalEstimatorConstructor.estimatorConstructor=bayes.estimatorConstructor
-            
         if self.conditionalEstimatorConstructorContinuous:
             bayes.conditionalEstimatorConstructorContinuous = self.conditionalEstimatorConstructorContinuous
-            
+        if self.adjustThreshold:
+            bayes.adjustThreshold = self.adjustThreshold
         return NaiveClassifier(bayes(instances, weight))
             
 class NaiveClassifier(Orange.classification.Classifier):
@@ -405,7 +423,7 @@ class NaiveClassifier(Orange.classification.Classifier):
         
         :param class_: class variable for which the probability should be
                 outputed
-        :type class_: :class:Orange.data.Variable`
+        :type class_: :class:`Orange.data.Variable`
         :param instance: instance to be classified
         :type instance: :class:`Orange.data.Instance`
         

@@ -1,14 +1,24 @@
-# Description: Naive Bayes Learner on iris data set
+# Description: Naive Bayes Learner with m-estimate
 # Category:    classification
 # Uses:        iris
 # Referenced:  Orange.classification.bayes
 # Classes:     Orange.classification.bayes.NaiveLearner, Orange.classification.bayes.NaiveClassifier
 
 import Orange
-table = Orange.data.Table("iris.tab")
 
-learner = Orange.classification.bayes.NaiveLearner()
-classifier = learner(table)
+table = Orange.data.Table("lenses.tab")
 
-for ex in table[:5]:
-    print ex.getclass(), classifier(ex)
+bayes_L = Orange.classification.bayes.NaiveLearner(name="Naive Bayes")
+bayesWithM_L = Orange.classification.bayes.NaiveLearner(m=2, name="Naive Bayes w/ m-estimate")
+bayes = bayes_L(table)
+bayesWithM = bayesWithM_L(table)
+
+print bayes.conditionalDistributions
+"""<<'pre-presbyopic': <0.625, 0.125, 0.250>, 'presbyopic': <0.750, 0.125, 0.125>, ...>>"""
+print bayesWithM.conditionalDistributions
+"""<<'pre-presbyopic': <0.625, 0.133, 0.242>, 'presbyopic': <0.725, 0.133, 0.142>, ...>>"""
+
+print bayes.distribution
+"""<0.625, 0.167, 0.208>"""
+print bayesWithM.distribution
+"""<0.625, 0.167, 0.208>"""
