@@ -208,7 +208,7 @@ of the outer feature - strings, numbers or instances of Value.::
     <0.000, 108.000>
     >>> print cont["1"]
     <0.000, 108.000>
-    >>> print cont[orange.Value(data.domain["e"], "1")] 
+    >>> print cont[Orange.data.Value(data.domain["e"], "1")] 
 
 Naturally, the length of Contingency equals the number of values of the outer
 feature. The only weird thing is that iterating through contingency
@@ -667,16 +667,16 @@ part of `distributions-contingency8`_ (uses monks-1.tab)
 
 
 
-from orange import \
+from Orange.core import \
      DomainContingency, \
      DomainDistributions, \
      DistributionList, \
      ComputeDomainContingency, \
      Contingency
 
-from orange import BasicAttrStat as BasicStatistics
-from orange import DomainBasicAttrStat as DomainBasicStatistics
-from orange import ContingencyAttrAttr as ContingencyVarVar
-from orange import ContingencyAttrAttr as ContingencyClass
-from orange import ContingencyAttrAttr as ContingencyVarClass
-from orange import ContingencyAttrAttr as ContingencyClassVar
+from Orange.core import BasicAttrStat as BasicStatistics
+from Orange.core import DomainBasicAttrStat as DomainBasicStatistics
+from Orange.core import ContingencyAttrAttr as ContingencyVarVar
+from Orange.core import ContingencyAttrAttr as ContingencyClass
+from Orange.core import ContingencyAttrAttr as ContingencyVarClass
+from Orange.core import ContingencyAttrAttr as ContingencyClassVar
