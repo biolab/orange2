@@ -6,14 +6,14 @@
 
 import Orange, orngTree
 
-data = Orange.data.Table('bupa.tab')
+table = Orange.data.Table('bupa.tab')
 forest = Orange.ensemble.forest.RandomForestLearner(trees=50, name="forest")
 tree = orngTree.TreeLearner(minExamples=2, mForPrunning=2, \
                             sameMajorityPruning=True, name='tree')
 learners = [tree, forest]
 
 import orngTest, orngStat
-results = orngTest.crossValidation(learners, data, folds=3)
+results = orngTest.crossValidation(learners, table, folds=3)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \

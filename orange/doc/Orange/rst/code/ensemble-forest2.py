@@ -6,7 +6,7 @@
 
 import Orange, orngTree
 
-data = Orange.data.Table('bupa.tab')
+table = Orange.data.Table('bupa.tab')
 
 tree = orngTree.TreeLearner(storeNodeClassifier = 0, storeContingencies=0, \
   storeDistributions=1, minExamples=5, ).instance()
@@ -17,7 +17,7 @@ tree.maxDepth = 5
 tree.split = Orange.ensemble.forest.SplitConstructor_AttributeSubset(tree.split, 3)
 
 forestLearner = Orange.ensemble.forest.RandomForestLearner(learner=tree, trees=50)
-forest = forestLearner(data)
+forest = forestLearner(table)
 
 for c in forest.classifiers:
     print orngTree.countNodes(c),

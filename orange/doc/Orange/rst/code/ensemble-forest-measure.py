@@ -1,3 +1,9 @@
+# Description: Demonstrates the use of random forests from Orange.ensemble.forest module
+# Category:    classification, ensembles
+# Classes:     RandomForestLearner
+# Uses:        iris.tab
+# Referenced:  orngEnsemble.htm
+
 import Orange
 import random
 
