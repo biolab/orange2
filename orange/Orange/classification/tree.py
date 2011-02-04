@@ -1,8 +1,13 @@
 """
 
-*****************************
-XXXX (naj kar Matija popravi)
-*****************************
+.. index:: classification tree
+
+.. index::
+   single: classification; tree
+
+********************
+Classification Trees
+********************
 
 This page describes the Orange trees. It first describes the basic
 components and procedures: it starts with the
