@@ -3,8 +3,8 @@
 .. index:: majority
 
 Accuracy of classifiers is often compared to the "default accuracy",
-that is, the accuracy of a classifier which classifies all examples to
-the majority class. To fit into the standard schema, even this
+that is, the accuracy of a classifier which classifies all instances
+to the majority class. To fit into the standard schema, even this
 algorithm is provided in form of the usual learner-classifier pair.
 Learning is done by :obj:`MajorityLearner` and the classifier it
 constructs is an instance of :obj:`ConstantClassifier`.
@@ -22,7 +22,7 @@ Learning
     
         An estimator constructor that can be used for estimation of
         class probabilities. If left None, probability of each class is
-        estimated as the relative frequency of examples belonging to
+        estimated as the relative frequency of instances belonging to
         this class.
         
     .. attribute:: aprioriDistribution
@@ -62,12 +62,12 @@ This "learning algorithm" will most often be used to establish
 whether some other learning algorithm is better than "nothing".
 Here's a simple example.
 
-`majority.py`_ (uses: `monks-1.tab`_):
+`majority-classification.py`_ (uses: `monks-1.tab`_):
 
-.. literalinclude:: code/majority.py
+.. literalinclude:: code/majority-classification.py
     :lines: 7-
 
-.. _majority.py: code/majority.py
+.. _majority-classification.py: code/majority-classification.py
 .. _monks-1.tab: code/monks-1.tab
 
 """

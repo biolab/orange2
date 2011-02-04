@@ -43,6 +43,7 @@ import ensemble.boosting
 import ensemble.forest
 
 import regression
+import regression.mean
 
 import associate
 

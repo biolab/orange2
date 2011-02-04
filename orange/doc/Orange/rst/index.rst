@@ -15,6 +15,7 @@ Contents:
    Orange.associate   
    Orange.cluster
    Orange.data
+   
    orange.classification.bayes
    Orange.classification.majority
    Orange.classification.lookup
@@ -23,6 +24,8 @@ Contents:
    Orange.classification.logreg
    Orange.classification.rules
    orange.classification.knn
+   
+   Orange.regression.mean
 
    Orange.ensemble
 
