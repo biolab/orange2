@@ -58,4 +58,7 @@ import featureConstruction
 import featureConstruction.univariate
 import featureConstruction.functionDecomposition
 
+import evaluation
+import evaluation.scoring
+
 import cluster
