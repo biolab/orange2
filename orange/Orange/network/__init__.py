@@ -3,9 +3,9 @@
 
 Network analysis and layout optimization.
 
-=======
+*******
 Network
-=======
+*******
 
 .. autoclass:: Orange.network.Network
    :members:
@@ -37,9 +37,9 @@ part of `network-widget.py`_
 .. image:: files/network-explorer.png
     :width: 100%
    
-===========================
+***************************
 Network Layout Optimization
-===========================
+***************************
 
     .. autoclass:: Orange.network.NetworkOptimization
        :members:
@@ -89,9 +89,9 @@ Spring forces layout optimization is the result of the above script:
 
 .. image:: files/network-K5-fr.png
    
-======
+******
 Graphs
-======
+******
 
 Orange offers a data structure for representing directed and undirected graphs 
 with various types of weighted connections.
@@ -536,9 +536,9 @@ trivial to implement in C++ and will be much faster than the corresponding
 scripts in Python. (In this regard, minimal span trees, maximal flows, coloring
 and shortest path search are, of course, not considered basic functionality. :)
 
-=============================
+*****************************
 Community Detection in Graphs
-=============================
+*****************************
 
 .. autoclass:: Orange.network.NetworkClustering
    :members:
