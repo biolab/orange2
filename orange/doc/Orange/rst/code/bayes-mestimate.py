@@ -14,11 +14,11 @@ bayes = bayes_L(table)
 bayesWithM = bayesWithM_L(table)
 
 print bayes.conditionalDistributions
-"""<<'pre-presbyopic': <0.625, 0.125, 0.250>, 'presbyopic': <0.750, 0.125, 0.125>, ...>>"""
+# prints: <<'pre-presbyopic': <0.625, 0.125, 0.250>, 'presbyopic': <0.750, 0.125, 0.125>, ...>>
 print bayesWithM.conditionalDistributions
-"""<<'pre-presbyopic': <0.625, 0.133, 0.242>, 'presbyopic': <0.725, 0.133, 0.142>, ...>>"""
+# prints: <<'pre-presbyopic': <0.625, 0.133, 0.242>, 'presbyopic': <0.725, 0.133, 0.142>, ...>>
 
 print bayes.distribution
-"""<0.625, 0.167, 0.208>"""
+# prints: <0.625, 0.167, 0.208>
 print bayesWithM.distribution
-"""<0.625, 0.167, 0.208>"""
+# prints: <0.625, 0.167, 0.208>

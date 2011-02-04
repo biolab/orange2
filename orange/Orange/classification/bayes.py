@@ -1,17 +1,17 @@
 """ 
-   index:: naive Bayes classifier
+.. index:: naive Bayes classifier
    
 .. index:: 
    single: classification; naive Bayes classifier
 
-======================
+**********************
 Naive Bayes Classifier
-======================
+**********************
 
 The most primitive bayesian classifier is :obj:`NaiveLearner` 
 (http://en.wikipedia.org/wiki/Naive_Bayes_classifier).
 The class estimates conditional probabilities from training data and uses them
-for classification of new examples. 
+for classification of new data instances. 
 
 Example (`bayes-run.py`_, uses `iris.tab`_)
 
@@ -32,14 +32,15 @@ Examples
 NaiveLearner can estimate probabilities using relative frequencies or
 m-estimate.
 
-Example (`bayes-mestimate.py`_, uses `iris.tab`_)
+Example (`bayes-mestimate.py`_, uses `lenses.tab`_)
 
 .. literalinclude:: code/bayes-mestimate.py
     :lines: 7-
 
-Observing probabilities shows a shift towards the second class -
-as compared to probabilities above, where relative frequencies were used.
-Note that the change in error estimation did not have any effect on apriori
+Observing conditional probabilities in an m-estimate based classifier shows a
+shift towards the second class - as compared to probabilities above, where
+relative frequencies were used. Note that the change in error estimation did
+not have any effect on apriori
 probabilities.
 
 Example (`bayes-thresholdAdjustment.py`_, uses `adult-sample.tab`_)
@@ -47,7 +48,9 @@ Example (`bayes-thresholdAdjustment.py`_, uses `adult-sample.tab`_)
 .. literalinclude:: code/bayes-thresholdAdjustment.py
     :lines: 7-
     
-Setting adjustThreshold paramater can sometimes improve the results. ::
+Setting adjustThreshold parameter can sometimes improve the results. Those are
+the classification accuracies of 10-fold cross-validation of a normal naive
+bayesian classifier, and one with an adjusted threshold::
 
     [0.7901746265516516, 0.8280138859667578]
 
@@ -56,25 +59,30 @@ Setting adjustThreshold paramater can sometimes improve the results. ::
 .. _bayes-mestimate.py: code/bayes-mestimate.py
 .. _adult-sample.tab: code/adult-sample.tab
 .. _iris.tab: code/iris.tab
+.. _lenses.tab: code/lenses.tab
 
-======================
 Implementation Details
 ======================
 
+The following two classes are implemented in C++ (*bayes.cpp*). They are not
+intended to be used directly. Here we give implementation details for those
+interested.
+
 Orange.core.BayesLearner
-========================
-The first three fields are empty (None) by default.
+------------------------
+Fields estimatorConstructor, conditionalEstimatorConstructor and
+conditionalEstimatorConstructorContinuous are empty (None) by default.
 
 If estimatorConstructor is left undefined, p(C) will be estimated by relative
 frequencies of examples (see ProbabilityEstimatorConstructor_relative).
 When conditionalEstimatorConstructor is left undefined, it will use the same
 constructor as for estimating unconditional probabilities (estimatorConstructor
-is used as an estimator in (ConditionalProbabilityEstimatorConstructor_ByRows).
+is used as an estimator in ConditionalProbabilityEstimatorConstructor_ByRows).
 That is, by default, both will use relative frequencies. But when
 estimatorConstructor is set to, for instance, estimate probabilities by
-m-estimate with m=2.0, m-estimates with m=2.0 will be used for estimation of
+m-estimate with m=2.0, the same estimator will be used for estimation of
 conditional probabilities, too.
-P(c|vi) for continuous attributes are, by default estimated with loess (a
+P(c|vi) for continuous attributes are, by default, estimated with loess (a
 variant of locally weighted linear regression), using
 ConditionalProbabilityEstimatorConstructor_loess.
 The learner first constructs an estimator for p(C). It tries to get a
@@ -95,8 +103,8 @@ stored as contingencies, the conditionalEstimators fields is None.
 Field normalizePredictions is copied to the resulting classifier.
 
 Orange.core.BayesClassifier
-===========================
-Class NaiveClassifier represents a naive Bayesian classifier. Probability of
+---------------------------
+Class NaiveClassifier represents a naive bayesian classifier. Probability of
 class C, knowing that values of features :math:`F_1, F_2, ..., F_n` are
 :math:`v_1, v_2, ..., v_n`, is computed as :math:`p(C|v_1, v_2, ..., v_n) = \
 p(C) \\cdot \\frac{p(C|v_1)}{p(C)} \\cdot \\frac{p(C|v_2)}{p(C)} \\cdot ... \
@@ -109,8 +117,8 @@ independency, as one could think at a first glance). The difference becomes
 important when using other ways to estimate probabilities, like, for instance,
 m-estimate. In this case, the above formula is much more appropriate. 
 
-When computing the formula, probabilities p(C) are read from distribution which
-is of type Distribution and stores a (normalized) probability of each class.
+When computing the formula, probabilities p(C) are read from distribution, which
+is of type Distribution, and stores a (normalized) probability of each class.
 When distribution is None, BayesClassifier calls estimator to assess the
 probability. The former method is faster and is actually used by all existing
 methods of probability estimation. The latter is more flexible.
@@ -131,7 +139,7 @@ if its value is undefined; this cannot be overriden by estimators.
 Any field (distribution, estimator, conditionalDistributions,
 conditionalEstimators) can be None. For instance, BayesLearner normally
 constructs a classifier which has either distribution or estimator defined.
-While it is not an error, to have both, only distribution will be used in that
+While it is not an error to have both, only distribution will be used in that
 case. As for the other two fields, they can be both defined and used
 complementarily; the elements which are missing in one are defined in the
 other. However, if there is no need for estimators, BayesLearner will not
@@ -155,24 +163,26 @@ class NaiveLearner(Orange.classification.Learner):
     If data instances are provided to the constructor, the learning algorithm
     is called and the resulting classifier is returned instead of the learner.
     
-    :param adjustTreshold: sets the corresponding attribute
-    :type adjustTreshold: boolean
-    :param m: sets the estimatorConstructor to \
-    :class:`orange.ProbabilityEstimatorConstructor_m` with specified m 
-    :type m: integer
-    :param estimatorConstructor: sets the corresponding attribute
-    :type estimatorConstructor: orange.ProbabilityEstimatorConstructor
-    :param conditionalEstimatorConstructor: sets the corresponding attribute
-    :type conditionalEstimatorConstructor:
-            :class:`orange.ConditionalProbabilityEstimatorConstructor`
-    :param conditionalEstimatorConstructorContinuous: sets the corresponding
-            attribute
-    :type conditionalEstimatorConstructorContinuous: 
-            :class:`orange.ConditionalProbabilityEstimatorConstructor`
-    :rtype: :class:`Orange.classification.bayes.NaiveBayesLearner` or
-            :class:`Orange.classification.bayes.NaiveBayesClassifier` 
-    
-    All attributes can also be set as constructor parameters.
+    ..
+        :param adjustTreshold: sets the corresponding attribute
+        :type adjustTreshold: boolean
+        :param m: sets the :obj:`estimatorConstructor` to
+            :class:`orange.ProbabilityEstimatorConstructor_m` with specified m
+        :type m: integer
+        :param estimatorConstructor: sets the corresponding attribute
+        :type estimatorConstructor: orange.ProbabilityEstimatorConstructor
+        :param conditionalEstimatorConstructor: sets the corresponding attribute
+        :type conditionalEstimatorConstructor:
+                :class:`orange.ConditionalProbabilityEstimatorConstructor`
+        :param conditionalEstimatorConstructorContinuous: sets the corresponding
+                attribute
+        :type conditionalEstimatorConstructorContinuous: 
+                :class:`orange.ConditionalProbabilityEstimatorConstructor`
+                
+    :rtype: :class:`Orange.classification.bayes.NaiveLearner` or
+            :class:`Orange.classification.bayes.NaiveClassifier`
+            
+    Constructor parameters set the corresponding attributes.
     
     .. attribute:: adjustTreshold
     
@@ -185,14 +195,14 @@ class NaiveLearner(Orange.classification.Learner):
     .. attribute:: m
     
         m for m-estimate. If set, m-estimation of probabilities
-        will be used using :class:`orange.ProbabilityEstimatorConstructor_m`
+        will be used using :class:`orange.ProbabilityEstimatorConstructor_m`.
         This attribute is ignored if you also set estimatorConstructor.
         
     .. attribute:: estimatorConstructor
     
         Probability estimator constructor for
         prior class probabilities. Defaults to
-        :class:`orange.ProbabilityEstimatorConstructor_relative`
+        :class:`orange.ProbabilityEstimatorConstructor_relative`.
         Setting this attribute disables the above described attribute m.
         
     .. attribute:: conditionalEstimatorConstructor
@@ -205,7 +215,7 @@ class NaiveLearner(Orange.classification.Learner):
     
         Probability estimator constructor for conditional probabilities for
         continuous features. Defaults to 
-        :class:`orange.ConditionalProbabilityEstimatorConstructor_loess` 
+        :class:`orange.ConditionalProbabilityEstimatorConstructor_loess`.
     """
     
     def __new__(cls, instances = None, weightID = 0, **argkw):
@@ -279,7 +289,7 @@ class NaiveClassifier(Orange.classification.Classifier):
         
     .. attribute:: conditionalEstimators
     
-        A list of estimators for conditional probabilities
+        A list of estimators for conditional probabilities.
         
     .. attribute:: adjustThreshold
     
@@ -297,9 +307,9 @@ class NaiveClassifier(Orange.classification.Classifier):
   
     def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
                  *args, **kwdargs):
-        """Classify a new instance
+        """Classify a new instance.
         
-        :param instance: instance to be classifier
+        :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
         :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
               :class:`Orange.classification.Classifier.GetProbabilities` or
@@ -319,21 +329,22 @@ class NaiveClassifier(Orange.classification.Classifier):
         self.__dict__[name] = value
     
     def p(self, class_, instance):
-        """Return probability of single class
+        """
+        Return probability of a single class.
         Probability is not normalized and can be different from probability
-        returned from __call__
+        returned from __call__.
         
         :param class_: class variable for which the probability should be
-                outputed
+                output.
         :type class_: :class:`Orange.data.Variable`
-        :param instance: instance to be classified
+        :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
         
         """
         return self.nativeBayesClassifier.p(class_, instance)
     
     def printModel(self):
-        """Print classificator in human friendly format"""
+        """Print classifier in human friendly format."""
         nValues=len(self.classVar.values)
         frmtStr=' %10.3f'*nValues
         classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in self.classVar.values]))
