@@ -314,6 +314,28 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngStat.statisticsByFolds" : "Orange.evaluation.scoring.statisticsByFolds",
            "orngStat.x" : "Orange.evaluation.scoring.x"
            
+           # Now use old orngMisc
+           # Orange.selection
+           #"orngMisc.BestOnTheFly":"Orange.misc.selection.BestOnTheFly",
+           #"orngMisc.selectBest":"Orange.misc.selection.selectBest",
+           #"orngMisc.selectBestIndex":"Orange.misc.selection.selectBestIndex",
+           #"orngMisc.compare2_firstBigger":"Orange.misc.selection.compareFirstBigger",
+           #"orngMisc.compare2_firstBigger":"Orange.misc.selection.compareFirstBigger",
+           #"orngMisc.compare2_firstSmaller":"Orange.misc.selection.compareFirstSmaller",
+           #"orngMisc.compare2_lastBigger":"Orange.misc.selection.compareLastBigger",
+           #"orngMisc.compare2_lastSmaller":"Orange.misc.selection.compareLastSmaller",
+           #"orngMisc.compare2_bigger":"Orange.misc.selection.compareBigger",
+           #"orngMisc.compare2_smaller":"Orange.misc.selection.compareSmaller",
+           
+           "orngEnsemble.BaggedLearner":"Orange.bagging.BaggedLearner",
+           "orngEnsemble.BaggedClassifier":"Orange.bagging.BaggedClassifier",
+           "orngEnsemble.BoostedLearner":"Orange.boosting.BoostedLearner",
+           "orngEnsemble.BoostedClassifier":"Orange.boosting.BoostedClassifier",
+           "orngEnsemble.RandomForestClassifier":"Orange.forest.RandomForestClassifier",
+           "orngEnsemble.RandomForestLearner":"Orange.forest.RandomForestLearner",
+           "orngEnsemble.MeasureAttribute_randomForests":"Orange.forest.ScoreFeature",
+           "orngEnsemble.SplitConstructor_AttributeSubset":"Orange.forest.SplitConstructor_AttributeSubset",
+           
            }
 
 def build_pattern(mapping=MAPPING):
