@@ -1,14 +1,13 @@
-import orange
-from orngNetwork import Network
-from orngNetwork import NetworkOptimization
+import Orange.network
+
 from pylab import *
 
         
 # vertices are placed randomly in NetworkOptimization constructor
-network = NetworkOptimization()
+network = Orange.network.NetworkOptimization()
 
 # read network from file
-net = Network.readNetwork("combination.net")
+net = Orange.network.Network.read("combination.net")
 
 components = net.getConnectedComponents()
 print "Connected components"
@@ -45,8 +44,8 @@ print "Diameter"
 print diameter
 print
 
-subnet = Network(net.getSubGraph([0, 1, 2, 3]))
-subNetOptimization = NetworkOptimization(subnet)
+subnet = Orange.network.Network(net.getSubGraph([0, 1, 2, 3]))
+subNetOptimization = Orange.network.NetworkOptimization(subnet)
 subNetOptimization.fruchtermanReingold(100, 1000)
 
 # read all edges in subnetwork and plot a line
