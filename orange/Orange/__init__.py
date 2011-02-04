@@ -18,10 +18,10 @@ import optimization
 
 import stat
 
-import probability
-import probability.estimate
-import probability.distributions
-import probability.evd
+import statistics
+import statistics.estimate
+import statistics.distributions
+import statistics.evd
 
 import classification
 import classification.tree

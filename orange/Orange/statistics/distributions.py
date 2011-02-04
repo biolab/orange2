@@ -161,7 +161,7 @@ resembles conditional probabilities of classes given the feature value.
 
 Here's what all contingency matrices share in common.
 
-.. class:: Orange.probability.distribution.Contingency
+.. class:: Orange.statistics.distribution.Contingency
 
     The base class is, once for a change, not abstract. Its constructor expects
     two feature descriptors, the first one for the outer and the second for
@@ -240,7 +240,7 @@ If cont behaved like a normal dictionary, the above script would print out strin
 
 Other methods
 
-.. class:: Orange.probability.distributions.Contingency
+.. class:: Orange.statistics.distributions.Contingency
 
     .. method:: add(outer_value, inner_value[, weight])
 
@@ -277,7 +277,7 @@ The better way to do it is by using the method add, so that the loop becomes: ::
 It's not only simpler, but also correctly handles unknown values
 and updates innerDistribution and outerDistribution. 
 
-.. class:: Orange.probability.distribution.ContingencyClass
+.. class:: Orange.statistics.distribution.ContingencyClass
 
     ContingencyClass is an abstract base class for contingency matrices
     that contain the class, either as the inner or the outer
@@ -316,7 +316,7 @@ and updates innerDistribution and outerDistribution.
 
 
 
-.. class:: Orange.probability.distribution.ContingencyClass
+.. class:: Orange.statistics.distribution.ContingencyClass
 
     ContingencyAttrClass is derived from ContingencyClass.
     Here, feature is the outer variable (hence variable=outerVariable)
@@ -420,7 +420,7 @@ part of `distributions-contingency3.py`_ (uses monks-1.tab)
     :lines: 27-
 
 
-.. class:: Orange.probability.distribution.ContingencyClassAttr
+.. class:: Orange.statistics.distribution.ContingencyClassAttr
 
     ContingencyClassAttr is similar to ContingencyAttrClass except that here
     the class is the outer and the feature the inner variable.
@@ -497,7 +497,7 @@ If the class value is '1', e is '1' in exactly half of examples
 e is again distributed uniformly.
     
 
-.. class:: Orange.probability.distribution.ContingencyAttrAttr
+.. class:: Orange.statistics.distribution.ContingencyAttrAttr
 
     ContingencyAttrAttr stores contingency matrices in which none
     of the features is the class. This is rather similar to Contingency,
