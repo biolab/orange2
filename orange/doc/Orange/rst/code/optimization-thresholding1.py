@@ -1,12 +1,13 @@
-import orange, orngWrap, orngTest, orngStat
+import Orange
 
-data = orange.ExampleTable("bupa")
+table = Orange.data.Table("bupa")
 
-learner = orange.BayesLearner()
-thresh = orngWrap.ThresholdLearner(learner = learner)
-thresh80 = orngWrap.ThresholdLearner_fixed(learner = learner, threshold = .8)
-res = orngTest.crossValidation([learner, thresh, thresh80], data)
-CAs = orngStat.CA(res)
+learner = Orange.classification.bayes.NaiveLearner()
+thresh = Orange.optimization.ThresholdLearner(learner=learner)
+thresh80 = Orange.optimization.ThresholdLearner_fixed(learner=learner, 
+                                                      threshold=0.8)
+res = testing.crossValidation([learner, thresh, thresh80], table)
+CAs = scoring.CA(res)
 
 print "W/out threshold adjustement: %5.3f" % CAs[0]
 print "With adjusted thredhold: %5.3f" % CAs[1]

@@ -1,17 +1,17 @@
-import orange, orngWrap, orngTest, orngStat
+import Orange
 
-data = orange.ExampleTable("bupa")
-ri2 = orange.MakeRandomIndices2(data, 0.7)
-train = data.select(ri2, 0)
-test = data.select(ri2, 1)
+table = Orange.data.Table("bupa")
+ri2 = Orange.core.MakeRandomIndices2(table, 0.7)
+train = table.select(ri2, 0)
+test = table.select(ri2, 1)
 
-bayes = orange.BayesLearner(train)
+bayes = Orange.classification.bayes.NaiveLearner(train)
 
 thresholds = [.2, .5, .8]
-models = [orngWrap.ThresholdClassifier(bayes, thr) for thr in thresholds]
+models = [Orange.optimization.ThresholdClassifier(bayes, thr) for thr in thresholds]
 
-res = orngTest.testOnData(models, test)
-cm = orngStat.confusionMatrices(res)
+res = testing.testOnData(models, test)
+cm = scoring.confusionMatrices(res)
 
 print
 for i, thr in enumerate(thresholds):

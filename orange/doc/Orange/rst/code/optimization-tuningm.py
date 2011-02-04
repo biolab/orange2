@@ -1,8 +1,4 @@
-import Orange.data
-import Orange.optimization
-import Orange.classification
-import Orange.evaluation.scoring as scoring
-import Orange.core
+import Orange
 
 learner = Orange.classification.tree.TreeLearner()
 data = Orange.data.Table("voting")
