@@ -5,10 +5,10 @@ k-Means clustering
 
 .. index::
    single: clustering, kmeans
-.. index:: aglomerative clustering
+.. index:: agglomerative clustering
 
 
-.. autoclass:: Orange.cluster.KMeans
+.. autoclass:: Orange.clustering.kmeans.Clustering
    :members:
 
 Examples
@@ -62,40 +62,48 @@ Only the first four scatterplots are shown below. Colors of the data instances i
 k-Means Utility Functions
 =========================
 
-.. automethod:: Orange.cluster.kmeans_init_random
+.. automethod:: Orange.clustering.kmeans.init_random
 
-.. automethod:: Orange.cluster.kmeans_init_diversity
+.. automethod:: Orange.clustering.kmeans.init_diversity
 
-.. automethod:: Orange.cluster.KMeans_init_hierarchicalClustering
+.. automethod:: Orange.clustering.kmeans.init_hclustering
 
-.. automethod:: Orange.cluster.data_center
+.. automethod:: Orange.clustering.kmeans.data_center
 
-.. automethod:: Orange.cluster.data_center
+.. automethod:: Orange.clustering.kmeans.data_center
 
-.. automethod:: Orange.cluster.plot_silhouette
+.. automethod:: Orange.clustering.kmeans.plot_silhouette
 
-.. automethod:: Orange.cluster.score_distance_to_centroids
+.. automethod:: Orange.clustering.kmeans.score_distance_to_centroids
 
-.. automethod:: Orange.cluster.score_silhouette
+.. automethod:: Orange.clustering.kmeans.score_silhouette
 
-.. automethod:: Orange.cluster.score_fastsilhouette
+.. automethod:: Orange.clustering.kmeans.score_fast_silhouette
 
-Typically, the choice of seeds has a large impact on the k-means clustering, with better initialization methods yielding a clustering that converges faster and finds more optimal centroids. The following code compares three different initialization methods (random, diversity-based and hierarchical clustering-based) in terms of how fast they converge (`kmeans-cmp-init.py`_, uses `iris.tab`_, `housing.tab`_, `vehicle.tab`_):
+Typically, the choice of seeds has a large impact on the k-means clustering, 
+with better initialization methods yielding a clustering that converges faster 
+and finds more optimal centroids. The following code compares three different 
+initialization methods (random, diversity-based and hierarchical clustering-based) 
+in terms of how fast they converge (`kmeans-cmp-init.py`_, uses `iris.tab`_, 
+`housing.tab`_, `vehicle.tab`_):
 
 .. literalinclude:: code/kmeans-cmp-init.py
 
-As expected, k-means converges faster with diversity and clustering-based initialization that with random seed selection::
+As expected, k-means converges faster with diversity and clustering-based 
+initialization that with random seed selection::
 
                Rnd Div  HC
           iris  12   3   4
        housing  14   6   4
        vehicle  11   4   3
 
-The following code computes the silhouette score for k=2..7 and plots a silhuette plot for k=3 (`kmeans-silhouette.py`_, uses `iris.tab`_):
+The following code computes the silhouette score for k=2..7 and plots a 
+silhuette plot for k=3 (`kmeans-silhouette.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/kmeans-silhouette.py
 
-The analysis suggests that k=2 is preferred as it yields the maximal silhouette coefficient::
+The analysis suggests that k=2 is preferred as it yields
+the maximal silhouette coefficient::
 
     2 0.629467553352
     3 0.504318855054
@@ -123,6 +131,8 @@ import sys
 import orange
 import random
 import statc
+
+import Orange.clustering.hierarchical
 
 # miscellaneous functions 
 
@@ -161,66 +171,6 @@ def avg(x):
 #
 # data distances
 #
-
-class ExamplesDistanceConstructor_PearsonR(orange.ExamplesDistanceConstructor):
-    def __new__(cls, data=None, **argkw):
-        self = orange.ExamplesDistanceConstructor.__new__(cls, **argkw)
-        self.__dict__.update(argkw)
-        if data:
-            return self.__call__(data)
-        else:
-            return self
-
-    def __call__(self, data):
-        indxs = [i for i, a in enumerate(data.domain.attributes) if a.varType==orange.VarTypes.Continuous]
-        return ExamplesDistance_PearsonR(domain=data.domain, indxs=indxs)
-
-class ExamplesDistance_PearsonR(orange.ExamplesDistance):
-    """ Pearson distance. (1 - R)/2, where R is the Pearson correlation between examples. In [0..1]. """
-
-    def __init__(self, **argkw):
-        self.__dict__.update(argkw)
-    def __call__(self, e1, e2):
-        X1 = []; X2 = []
-        for i in self.indxs:
-            if not(e1[i].isSpecial() or e2[i].isSpecial()):
-                X1.append(float(e1[i]))
-                X2.append(float(e2[i]))
-        if not X1:
-            return 1.0
-        try:
-            return (1.0 - statc.pearsonr(X1, X2)[0]) / 2.
-        except:
-            return 1.0
-
-class ExamplesDistanceConstructor_SpearmanR(orange.ExamplesDistanceConstructor):
-    def __new__(cls, data=None, **argkw):
-        self = orange.ExamplesDistanceConstructor.__new__(cls, **argkw)
-        self.__dict__.update(argkw)
-        if data:
-            return self.__call__(data)
-        else:
-            return self
-
-    def __call__(self, data):
-        indxs = [i for i, a in enumerate(data.domain.attributes) if a.varType==orange.VarTypes.Continuous]
-        return ExamplesDistance_SpearmanR(domain=data.domain, indxs=indxs)
-
-class ExamplesDistance_SpearmanR(orange.ExamplesDistance):
-    def __init__(self, **argkw):
-        self.__dict__.update(argkw)
-    def __call__(self, e1, e2):
-        X1 = []; X2 = []
-        for i in self.indxs:
-            if not(e1[i].isSpecial() or e2[i].isSpecial()):
-                X1.append(float(e1[i]))
-                X2.append(float(e2[i]))
-        if not X1:
-            return 1.0
-        try:
-            return (1.0 - statc.spearmanr(X1, X2)[0]) / 2.
-        except:
-            return 1.0
 
 # k-means clustering
 
@@ -270,7 +220,7 @@ def score_silhouette(km, index=None):
             for c in range(len(km.centroids)) if c != cind])
     return float(b - a) / max(a, b) if max(a, b) > 0 else 0.0
 
-def score_fastsilhouette(km, index=None):
+def score_fast_silhouette(km, index=None):
     """Same as score_silhouette, but computes an approximation and is faster.
     
     :param km: a k-means clustering object.
@@ -347,7 +297,7 @@ def plot_silhouette(km, filename='tmp.png', fast=False):
 # clustering initialization (seeds)
 # initialization functions should be of the type f(data, k, distfun)
 
-def kmeans_init_random(data, k, _):
+def init_random(data, k, _):
     """A function that can be used for initialization of k-means clustering returns k data instances from the data. This type of initialization is also known as Fory's initialization (Forgy, 1965; He et al., 2004).
     
     :param data: data instances.
@@ -359,7 +309,7 @@ def kmeans_init_random(data, k, _):
      """
     return data.getitems(random.sample(range(len(data)), k))
 
-def kmeans_init_diversity(data, k, distfun):
+def init_diversity(data, k, distfun):
     """A function that can be used for intialization of k-means clustering. Returns a set of centroids where the first one is a data point being the farthest away from the center of the data, and consequent centroids data points of which the minimal distance to the previous set of centroids is maximal. Differs from the initialization proposed by Katsavounidis et al. (1994) only in the selection of the first centroid (where they use a data instance with the highest norm).
 
     :param data: data instances.
@@ -377,8 +327,12 @@ def kmeans_init_diversity(data, k, distfun):
         seeds.append(max([(min([distfun(d, s) for s in seeds]), d) for d in data if d not in seeds])[1])
     return seeds
 
-class KMeans_init_hierarchicalClustering():
-    """A class that returns an clustering initialization function that performs hierarhical clustering, uses it to infer k clusters, and computes a list of cluster-based data centers."""
+class init_hclustering():
+    """
+    A class that returns an clustering initialization function that performs
+    hierarhical clustering, uses it to infer k clusters, and computes a
+    list of cluster-based data centers
+    """
 
     def __init__(self, n=100):
         """
@@ -397,18 +351,16 @@ class KMeans_init_hierarchicalClustering():
         :type distfun: :class:`orange.ExamplesDistance`
         """
         sample = orange.ExampleTable(random.sample(data, min(self.n, len(data))))
-        root = hierarchicalClustering(sample)
-        cmap = hierarchicalClustering_topClusters(root, k)
+        root = Orange.clustering.hierarchical.clustering(sample)
+        cmap = Orange.clustering.hierarchical.top_clusters(root, k)
         return [data_center(orange.ExampleTable([sample[e] for e in cl])) for cl in cmap]
 
 #    
 # k-means clustering, main implementation
 #
 
-class KMeans:
-    """
-
-    Implements a k-means clustering algorithm:
+class Clustering:
+    """Implements a k-means clustering algorithm:
 
     #. Choose the number of clusters, k.
     #. Choose a set of k initial centroids.
@@ -450,7 +402,7 @@ class KMeans:
     """
 
     def __init__(self, data=None, centroids=3, maxiters=None, minscorechange=None,
-                 stopchanges=0, nstart=1, initialization=kmeans_init_random,
+                 stopchanges=0, nstart=1, initialization=init_random,
                  distance=orange.ExamplesDistanceConstructor_Euclidean,
                  scoring=score_distance_to_centroids, inner_callback = None,
                  outer_callback = None):
@@ -463,7 +415,7 @@ class KMeans:
         :type nstart: integer
         :param distance: an example distance constructor, which measures the distance between two instances.
         :type distance: :class:`orange.ExamplesDistanceConstructor`
-        :param initialization: a function to select centroids given data instances, k and a example distance function. This module implements different approaches (:func:`kmeans_init_random`, :func:`kmeans_init_diversity`, :class:`KMeans_init_hierarchicalClustering`). 
+        :param initialization: a function to select centroids given data instances, k and a example distance function. This module implements different approaches (:func:`init_random`, :func:`init_diversity`, :class:`init_hclustering`). 
         :param scoring: a function that takes clustering object and returns the clustering score. It could be used, for instance, in procedure that repeats the clustering nstart times, returning the clustering with the lowest score.
         :param inner_callback: invoked after every clustering iteration.
         :param outer_callback: invoked after every clustering restart (if nstart is greater than 1).
