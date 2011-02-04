@@ -1,4 +1,4 @@
-{% extends "default/layout.html" %}
+{% extends "basic/layout.html" %}
 
 {% block header %}
 	{% include 'header.html' %}
@@ -15,8 +15,10 @@
 {% endblock %}
 
 
-{% block relbaritems %}
-        <a class="uplink" href="{{ pathto(master_doc) }}">{{ _('Contents') }}</a> 
+{% block relbar1 %}
+    <div class="related">
+      <ul>
+        <a class="uplink" href="{{ pathto(master_doc) }}">Orange Documentation</a> 
         
         <li class="right" >
 <form class="search" action="{{ pathto('search') }}" method="get">
@@ -25,11 +27,12 @@
             <input type="hidden" name="check_keywords" value="yes" />
             <input type="hidden" name="area" value="default" />
           </form></li>
+      </ul>
+   </div>
 {% endblock %}
 
 {% set rellinks = () %}
 
-{% block relbar1 %} {{ super() }}{% endblock %}
 {% block relbar2 %} {{ super() }} {% endblock %}
 
 {% block sidebar1 %} {% endblock %}

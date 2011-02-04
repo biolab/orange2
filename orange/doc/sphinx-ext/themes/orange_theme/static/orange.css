@@ -1,4 +1,4 @@
-@import url("default.css");
+@import url("basic.css");
 
 /* http://colorschemedesigner.com/#0G21Tw0w0w0w0 */
 
@@ -250,24 +250,29 @@ div.body h5,
 div.body h6 {
     font-family: inherit;
     background-color: inherit;
-    font-weight: normal;
     color: inherit;
     border-bottom: 1px solid #ccc;
     margin: 30px 0px 5px 0px;
     padding: 1px 0 1px 3px;
 }
 
-H1, H2, H3  {
+h1, h2, h3  {
 	font-weight: bold;
-	font-family: Verdana;
+	font-family: inherit;
 	vertical-align: middle;
 	padding-left: 20px;
 	white-space: nowrap;
-  padding-left: 0px; 
+    padding-left: 0px; 
 	border-bottom: 2px #ffdecb solid;
 }
 
+h3  {
+	border-bottom: 2px black solid; /*#ffdecb solid;*/
+}
 
+h1, h2, h3  {
+	border-bottom: 2px #ffdecb solid;
+}
 tt {
     font-size: inherit;
 }
@@ -336,17 +341,23 @@ dl.class > dt {
     font-weight: bold;
     margin-bottom: 10px;
     margin-top: 20px;
-    border-bottom: 2px solid black;
+    border-bottom: 1px solid #e0e0e0;
     font-style: normal;
 }
 
-dl.class {
+dl.class > dt {
     line-height: 180%;
+    text-indent: -30px;
+    padding-left: 30px;
 }
 
-dl.class > dt > em.property, dl.class > dt > tt {
+dl.class > dt > em, dl.class > dt tt {
     font-style: normal;
-    font-style: Verdana, Arial;
+    font-family: Verdana, Arial;
+}
+
+dl.class > dt big {
+    font-size: inherit;
 }
 
 div.body h1 {
@@ -459,7 +470,7 @@ div.sphinxsidebar input {
     font-size: 1em;
 }
 
-div.sphinxsidebar h3 a{
+div.sphinxsidebar h3 a {
     color: #2F31FF;
 }
 
@@ -483,8 +494,8 @@ div #sidebarbutton:hover {
 }
 
 table.field-list td, table.field-list th {
-    border-bottom: 1px solid #FFECE3;
-    border-top: 1px solid #FFECE3;
+    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
 }
 
 table.field-list th.field-name {
@@ -492,8 +503,8 @@ table.field-list th.field-name {
 }
 
 table.docutils {
-	border-bottom: 1px solid #FFECE3;
-    border-top: 1px solid #FFECE3;
+	border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
 }
    
 img.image-float-left {
