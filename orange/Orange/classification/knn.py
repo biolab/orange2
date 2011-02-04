@@ -41,17 +41,17 @@ similar instances of the instance to be classified:
 
     .. attribute:: k
     
-    Number of neighbours. If set to 0 (which is also the default value), the 
-    square root of the number of instances is used.
+        Number of neighbours. If set to 0 (which is also the default value), 
+        the square root of the number of instances is used.
     
     .. attribute:: rankWeight
     
-    Enables weighting by ranks (default: :obj:`true`)
+        Enables weighting by ranks (default: :obj:`true`)
     
     .. attribute:: distanceConstructor
     
-    A component that constructs the object for measuring distances between 
-    instances.
+        component that constructs the object for measuring distances between 
+        instances.
 
 kNNLearner first constructs an object for measuring distances between 
 instances. distanceConstructor is used if given; otherwise, Euclidean 
@@ -89,21 +89,21 @@ nExamples)
     
     .. attribute:: k
     
-    Number of neighbours. If set to 0 (which is also the default value), 
-    the square root of the number of examples is used.
+        Number of neighbours. If set to 0 (which is also the default value), 
+        the square root of the number of examples is used.
     
     .. attribute:: rankWeight
     
-    Enables weighting by ranks (default: :obj:`true`).
+        Enables weighting by ranks (default: :obj:`true`).
     
     .. attribute:: weightID
     
-    ID of meta attribute with weights of examples
+        ID of meta attribute with weights of examples
     
     .. attribute:: nExamples
     
-    The number of learning instances. It is used to compute the number of 
-    neighbours if :attr:`kNNClassifier.k` is zero.
+        The number of learning instances. It is used to compute the number of 
+        neighbours if :attr:`kNNClassifier.k` is zero.
 
 When called to classify an instance, the classifier first calls 
 :meth:`kNNClassifier.findNearest` 
@@ -145,9 +145,8 @@ Examples
 
 We will test the learner on 'iris' dataset. We shall split it onto train
 (80%) and test (20%) sets, learn on training instances and test on five
-randomly selected test instances.
-
-First part of (`knnlearner.py`_, uses `iris.tab`_)
+randomly selected test instances, in part of 
+(`knnlearner.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/knnExample1.py
 
@@ -167,9 +166,8 @@ As many experiments have shown, a selection of instances distance measure
 does not have a greater and predictable effect on the performance of kNN
 classifiers. So there is not much point in changing the default. If you
 decide to do so, you need to set the distanceConstructor to an instance
-of one of the classes for distance measuring.
-
-Second part of (`knnlearner.py`_, uses `iris.tab`_)
+of one of the classes for distance measuring. This can be seen in the following
+part of (`knnlearner.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/knnExample2.py
 
@@ -213,15 +211,15 @@ searching) (:class:`FindNearestConstructor`).
     
     .. attribute:: distance
     
-    a component that measures distance between examples
+        a component that measures distance between examples
     
     .. attribute:: examples
     
-    a stored list of instances
+        a stored list of instances
     
     .. attribute:: weightID
     
-    ID of meta attribute with weight
+        ID of meta attribute with weight
     
     .. method:: __call__(instance, n)
     
@@ -250,17 +248,18 @@ searching) (:class:`FindNearestConstructor`).
     
     .. attribute:: distanceConstructor
     
-    A component of class ExamplesDistanceConstructor that "learns" to measure
-    distances between instances. Learning can be, for instances, storing the
-    ranges of continuous features or the number of value of a discrete feature
-    (see the page about measuring distances for more information). The result
-    of learning is an instance of ExamplesDistance that should be used for
-    measuring distances between instances.
+        A component of class ExamplesDistanceConstructor that "learns" to
+        measure distances between instances. Learning can be, for instances,
+        storing the ranges of continuous features or the number of value of
+        a discrete feature (see the page about measuring distances for more
+        information). The result of learning is an instance of 
+        ExamplesDistance that should be used for measuring distances
+        between instances.
     
     .. attribute:: includeSame
     
-    Tells whether to include the examples that are same as the reference;
-    default is true.
+        Tells whether to include the examples that are same as the reference;
+        default is true.
     
     .. method:: __call__(table, weightID, distanceID)
     
@@ -283,10 +282,11 @@ searching) (:class:`FindNearestConstructor`).
 Example
 =======
 
-The following script shows how to find the five nearest neighbours of the
-first instance in the lenses dataset.
+The following script (`knnInstanceDistance.py`_, uses `lenses.tab`_) 
+shows how to find the five nearest neighbours of the first instance
+in the lenses dataset.
 
-(`knnInstanceDistance.py`_, uses `lenses.tab`_)
+
 
 .. literalinclude:: code/knnInstanceDistance.py
 
