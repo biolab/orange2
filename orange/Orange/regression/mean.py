@@ -1,6 +1,6 @@
 """
 
-.. index:: mean
+.. index:: regression; mean
 
 Accuracy of classifiers is often compared to the "default accuracy".
 For regression, that is the accuracy of a classifier which predicts for

@@ -1,6 +1,6 @@
 """
 
-.. index:: majority
+.. index:: classification; majority
 
 Accuracy of classifiers is often compared to the "default accuracy",
 that is, the accuracy of a classifier which classifies all instances
