@@ -426,9 +426,9 @@ The first print prints out the same number, 0.321 twice. Then we annulate the
 first feature. r1 notices it and returns -1 as it's ReliefF,
 while r2 does not and returns the same number, 0.321, which is now wrong.
 
-======================
-Measure for Regression
-======================
+=======================
+Measures for Regression
+=======================
 
 Except for ReliefF, the only feature quality measure available for regression
 problems is based on a mean square error.
@@ -453,7 +453,8 @@ problems is based on a mean square error.
 References
 ==========
 
-* Kononeko: Strojno ucenje. Zalozba FE in FRI, Ljubljana, 2005.
+* Igor Kononeko, Matjaz Kukar: Machine Learning and Data Mining, 
+  Woodhead Publishing, 2007.
 
 .. _iris.tab: code/iris.tab
 .. _lenses.tab: code/lenses.tab
