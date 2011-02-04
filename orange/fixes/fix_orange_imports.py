@@ -38,7 +38,6 @@ from lib2to3.fixer_util import Name, attr_chain
 MAPPING = {"orange": "Orange.core",
            "orngSVM": "Orange.classification.svm",
            "orngSOM": "Orange.projection.som",
-           "orngClustering": "Orange.cluster",
            "orngBayes":"Orange.classification.bayes",
            "orngNetwork":"Orange.network",
            "orngMisc":"Orange.misc",
