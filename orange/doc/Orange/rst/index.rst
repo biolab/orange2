@@ -32,6 +32,8 @@ Contents:
    
    orange.projection.som
 
+   Orange.evaluation.scoring
+
 Indices and tables
 ==================
 
