@@ -3,7 +3,8 @@
 Majority
 ********
 
-.. index:: classification; majority
+.. index:: majority classifier
+   pair: classification; majority classifier
 
 Accuracy of classifiers is often compared to the "default accuracy",
 that is, the accuracy of a classifier which classifies all instances
@@ -49,13 +50,13 @@ of a discrete value or a continuous value), its field variable is will
 either be used for initializing classVar if variable is not given as
 an argument, or checked against the variable argument, if it is given. 
 
-.. rubric:: Examples
+Examples
+========
 
 This "learning algorithm" will most often be used as a baseline,
 that is, to determine if some other learning algorithm provides
-any information about the class. Here's a simple example.
-
-`majority-classification.py`_ (uses: `monks-1.tab`_):
+any information about the class (`majority-classification.py`_, 
+uses: `monks-1.tab`_):
 
 .. literalinclude:: code/majority-classification.py
     :lines: 7-
