@@ -10,7 +10,7 @@ table = Orange.data.Table("monks-1")
 a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
 
 table_s = table.select([a, b, e, table.domain.classVar])
-abe = orange.LookupLearner(table_s)
+abe = Orange.classification.lookup.LookupLearner(table_s)
 
 print len(table_s)
 print len(abe.sortedExamples)
