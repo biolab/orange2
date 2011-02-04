@@ -1,4 +1,10 @@
 """
+
+.. index:: feature scoring
+
+.. index:: 
+   single: feature; feature scoring
+
 Feature scoring is used in feature subset selection for classification
 problems. The goal is to find "good" features that are relevant for the given
 classification task.

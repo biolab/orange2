@@ -1,5 +1,9 @@
 """
+
 .. index:: feature selection
+
+.. index:: 
+   single: feature; feature selection
 
 Some machine learning methods may perform better if they learn only from a 
 selected subset of "best" features. 
