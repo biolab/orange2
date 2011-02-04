@@ -1,13 +1,17 @@
 """ 
-   index:: naive bayes
+   index:: naive Bayes classifier
+   
+.. index:: 
+   single: classification; naive Bayes classifier
 
-=========================
-Naive Bayesian Classifier
-=========================
+======================
+Naive Bayes Classifier
+======================
 
-The most primitive bayesian classifier is :obj:`NaiveLearner`. The class
-estimates conditional probabilities from train data and uses them for
-prediction of new examples. 
+The most primitive bayesian classifier is :obj:`NaiveLearner`. 
+(http://en.wikipedia.org/wiki/Naive_Bayes_classifier)
+The class estimates conditional probabilities from training data and uses them
+for classification of new examples. 
 
 Example (`bayes-run.py`_, uses `iris.tab`_)
 
@@ -25,6 +29,11 @@ Example (`bayes-run.py`_, uses `iris.tab`_)
    
 Examples
 ========
+Example (`bayes-run.py`_, uses `iris.tab`_)
+
+.. literalinclude:: code/bayes-run.py
+    :lines: 7-
+    
 Let us load the data, induce a classifier and see how it performs on the first
 five examples.
 
@@ -44,7 +53,8 @@ The classifier is correct in all five cases. Interested in probabilities,
 maybe?
 
 >>> for ex in table[:5]:
-...     print ex.getclass(), bayes(ex, Orange.classification.Classifier.GetProbabilities)
+...     print ex.getclass(), bayes(ex, \
+Orange.classification.Classifier.GetProbabilities)
 no <0.423, 0.000, 0.577>
 no <0.000, 0.000, 1.000>
 soft <0.000, 0.668, 0.332>
@@ -84,7 +94,8 @@ Let us now use m-estimate instead of relative frequencies.
 The classifier is still correct for all examples.
 
 >>> for ex in table[:5]:
-...     print ex.getclass(), bayes(ex, Orange.classification.Classifier.GetBoth) 
+...     print ex.getclass(), bayes(ex, \
+Orange.classification.Classifier.GetBoth)
 no <0.375, 0.063, 0.562>;
 no <0.016, 0.003, 0.981>
 soft <0.021, 0.607, 0.372>
@@ -104,9 +115,7 @@ probabilities:
 <0.167, 0.208, 0.625>
 
 The reason for this is that this same distribution was used as apriori
-distribution for m-estimation. (How to enforce another apriori distribution?
-While the orange C++ core supports of it, this feature has not been exported
-to Python yet.)
+distribution for m-estimation.
 
 Finally, let us show an example with continuous attributes. We will take iris
 dataset that contains four continuous and no discrete attributes.
@@ -114,15 +123,17 @@ dataset that contains four continuous and no discrete attributes.
 >>> table = data.Table("iris")
 >>> bayes = orange.BayesLearner(table)
 >>> for exi in range(0, len(table), 20):
-...     print data[exi].getclass(), bayes(table[exi], orange.Classifier.GetBoth)
+...     print data[exi].getclass(), bayes(table[exi], \
+orange.Classifier.GetBoth)
 
 The classifier works well. To see a glimpse of how it works, let us observe
 conditional distributions for the first attribute. It is stored in
-conditionalDistributions, as before, except that it now behaves as a dictionary,
-not as a list like before (see information on distributions.
+conditionalDistributions, as before, except that it now behaves as a
+dictionary, not as a list like before (see information on distributions.
 
 >>> print bayes.conditionalDistributions[0]
-<4.300: <0.837, 0.137, 0.026>;, 4.333: <0.834, 0.140, 0.026>, 4.367: <0.830, (...)
+<4.300: <0.837, 0.137, 0.026>;, 4.333: <0.834, 0.140, 0.026>, 4.367: <0.830, \
+(...)
 
 For a nicer picture, we can print out the probabilities, copy and paste it to
 some graph drawing program ... and get something like the figure below.
@@ -136,13 +147,103 @@ some graph drawing program ... and get something like the figure below.
 4.433   0.823   0.150   0.027
 (...)
 
-If petal lengths are shorter, the most probable class is "setosa". Irises with middle petal lengths belong to "versicolor", while longer petal lengths indicate for "virginica". Critical values where the decision would change are at about 5.4 and 6.3.
+If petal lengths are shorter, the most probable class is "setosa". Irises with
+middle petal lengths belong to "versicolor", while longer petal lengths
+indicate for "virginica". Critical values where the decision would change are
+at about 5.4 and 6.3.
 
-It is important to stress that the curves are relatively smooth although no fitting (either manual or automatic) of parameters took place.
+It is important to stress that the curves are relatively smooth although no
+fitting (either manual or automatic) of parameters took place.
 
 
 .. _bayes-run.py: code/bayes-run.py
 .. _iris.tab: code/iris.tab
+
+======================
+Implementation Details
+======================
+
+Orange.core.BayesLearner
+========================
+The first three fields are empty (None) by default.
+
+If estimatorConstructor is left undefined, p(C) will be estimated by relative
+frequencies of examples (see ProbabilityEstimatorConstructor_relative).
+When conditionalEstimatorConstructor is left undefined, it will use the same
+constructor as for estimating unconditional probabilities (estimatorConstructor
+is used as an estimator in (ConditionalProbabilityEstimatorConstructor_ByRows).
+That is, by default, both will use relative frequencies. But when
+estimatorConstructor is set to, for instance, estimate probabilities by
+m-estimate with m=2.0, m-estimates with m=2.0 will be used for estimation of
+conditional probabilities, too.
+P(c|vi) for continuous attributes are, by default estimated with loess (a
+variant of locally weighted linear regression), using
+ConditionalProbabilityEstimatorConstructor_loess.
+The learner first constructs an estimator for p(C). It tries to get a
+precomputed distribution of probabilities; if the estimator is capable of
+returning it, the distribution is stored in the classifier's field distribution
+and the just constructed estimator is disposed. Otherwise, the estimator is
+stored in the classifier's field estimator, while the distribution is left
+empty.
+
+The same is then done for conditional probabilities. Different constructors are
+used for discrete and continuous attributes. If the constructed estimator can
+return all conditional probabilities in form of Contingency, the contingency is
+stored and the estimator disposed. If not, the estimator is stored. If there
+are no contingencies when the learning is finished, the resulting classifier's
+conditionalDistributions is None. Alternatively, if all probabilities are
+stored as contingencies, the conditionalEstimators fields is None.
+
+Field normalizePredictions is copied to the resulting classifier.
+
+Orange.core.BayesClassifier
+===========================
+Class NaiveClassifier represents a naive Bayesian classifier. Probability of
+class C, knowing that values of features :math:`F_1, F_2, ..., F_n` are
+:math:`v_1, v_2, ..., v_n`, is computed as :math:`p(C|v_1, v_2, ..., v_n) = \
+p(C) \\cdot \\frac{p(C|v_1)}{p(C)} \\cdot \\frac{p(C|v_2)}{p(C)} \\cdot ... \
+\\cdot \\frac{p(C|v_n)}{p(C)}`.
+
+Note that when relative frequencies are used to estimate probabilities, the
+more usual formula (with factors of form :math:`\\frac{p(v_i|C)}{p(v_i)}`) and
+the above formula are exactly equivalent (without any additional assumptions of
+independency, as one could think at a first glance). The difference becomes
+important when using other ways to estimate probabilities, like, for instance,
+m-estimate. In this case, the above formula is much more appropriate. 
+
+When computing the formula, probabilities p(C) are read from distribution which
+is of type Distribution and stores a (normalized) probability of each class.
+When distribution is None, BayesClassifier calls estimator to assess the
+probability. The former method is faster and is actually used by all existing
+methods of probability estimation. The latter is more flexible.
+
+Conditional probabilities are computed similarly. Field conditionalDistribution
+is of type DomainContingency which is basically a list of instances of
+Contingency, one for each attribute; the outer variable of the contingency is
+the attribute and the inner is the class. Contingency can be seen as a list of
+normalized probability distributions. For attributes for which there is no
+contingency in conditionalDistribution a corresponding estimator in
+conditionalEstimators is used. The estimator is given the attribute value and
+returns distributions of classes.
+
+If neither, nor pre-computed contingency nor conditional estimator exist, the
+attribute is ignored without issuing any warning. The attribute is also ignored
+if its value is undefined; this cannot be overriden by estimators.
+
+Any field (distribution, estimator, conditionalDistributions,
+conditionalEstimators) can be None. For instance, BayesLearner normally
+constructs a classifier which has either distribution or estimator defined.
+While it is not an error, to have both, only distribution will be used in that
+case. As for the other two fields, they can be both defined and used
+complementarily; the elements which are missing in one are defined in the
+other. However, if there is no need for estimators, BayesLearner will not
+construct an empty list; it will not construct a list at all, but leave the
+field conditionalEstimators empty.
+
+If you only need probabilities of individual class call BayesClassifier's
+method p(class, example) to compute the probability of this class only. Note
+that this probability will not be normalized and will thus, in general, not
+equal the probability returned by the call operator.
 """
 
 import Orange
@@ -196,11 +297,11 @@ class NaiveLearner(Orange.classification.Learner):
             :class:`orange.ConditionalProbabilityEstimatorConstructor_loess` 
     """
     
-    def __new__(cls, examples = None, weightID = 0, **argkw):
+    def __new__(cls, instances = None, weightID = 0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if examples:
+        if instances:
             self.__init__(**argkw)
-            return self.__call__(examples, weightID)
+            return self.__call__(instances, weightID)
         else:
             return self
         
@@ -246,10 +347,12 @@ class NaiveLearner(Orange.classification.Learner):
             
 class NaiveClassifier(Orange.classification.Classifier):
     """
-    Predictor based on calculated probabilities
+    Predictor based on calculated probabilities. It wraps an
+    :class:`Orange.core.BayesClassifier` that does the actual classification.
     
-    :param baseClassifier:
-    :type:
+    :param baseClassifier: an :class:`Orange.core.BayesLearner` to wrap. If
+            not set, a new :class:`Orange.core.BayesLearner` is created.
+    :type baseClassifier: :class:`Orange.core.BayesLearner`
     
     :var distribution: Stores probabilities of classes, i.e. p(C) for each
             class C.
@@ -300,8 +403,9 @@ class NaiveClassifier(Orange.classification.Classifier):
         Probability is not normalized and can be different from probability
         returned from __call__
         
-        :param class_:
-        :type class_:
+        :param class_: class variable for which the probability should be
+                outputed
+        :type class_: :class:Orange.data.Variable`
         :param instance: instance to be classified
         :type instance: :class:`Orange.data.Instance`
         

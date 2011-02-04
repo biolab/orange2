@@ -1,4 +1,4 @@
-# Description: Compares naive Bayes with and withouth feature subset selection
+# Description: Compares naive Bayes with and without feature subset selection
 # Category:    feature selection
 # Uses:        voting.tab
 # Referenced:  Orange.feature.html#selection
@@ -22,7 +22,7 @@ class BayesFSS(object):
     def __call__(self, table, weight=None):
         ma = orngFSS.attMeasure(table)
         filtered = orngFSS.selectBestNAtts(table, ma, self.N)
-        model = Orange.classification.bayes.NaiveBayesLearner(filtered)
+        model = Orange.classification.bayes.NaiveLearner(filtered)
         return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
 
 class BayesFSS_Classifier:
@@ -35,7 +35,7 @@ class BayesFSS_Classifier:
 # test above wraper on a data set
 import orngStat, orngTest
 table = Orange.data.Table("voting")
-learners = (Orange.classification.bayes.NaiveBayesLearner(name='Naive Bayes'),
+learners = (Orange.classification.bayes.NaiveLearner(name='Naive Bayes'),
             BayesFSS(name="with FSS"))
 results = orngTest.crossValidation(learners, table)
 

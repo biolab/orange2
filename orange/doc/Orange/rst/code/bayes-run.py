@@ -9,4 +9,6 @@ table = Orange.data.Table("iris.tab")
 
 learner = Orange.classification.bayes.NaiveLearner()
 classifier = learner(table)
-prediction = classifier(table[0])
+
+for ex in table[:5]:
+    print ex.getclass(), classifier(ex)
