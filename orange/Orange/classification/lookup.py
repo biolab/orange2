@@ -1,11 +1,10 @@
 """
 
-******
-Lookup
-******
-
 .. index:: classification; lookup
 
+******************
+Lookup classifiers
+******************
 
 Lookup classifiers predict classes by looking into stored lists of
 cases. There are two kinds of such classifiers in Orange. The simpler
@@ -15,15 +14,17 @@ class value. The more complex classifiers store a
 :obj:`Orange.data.Table` and predict the class by matching the instance
 to instances in the table.
 
-The natural habitat of these classifiers is feature construction:
+.. index::
+   single: feature construction; lookup classifiers
+
+A natural habitat for these classifiers is feature construction:
 they usually reside in :obj:`getValueFrom` fields of constructed
 features to facilitate their automatic computation. For instance,
 the following script shows how to translate the `monks-1.tab`_ dataset
 features into a more useful subset that will only include the features
 a, b, e, and features that will tell whether a and b are equal and
-whether e is 1 (don't bother about the details, they follow later).
-
-part of `lookup-lookup.py`_ (uses: `monks-1.tab`_):
+whether e is 1 (don't bother about the details, they follow later; 
+`lookup-lookup.py`_, uses: `monks-1.tab`_):
 
 .. literalinclude:: code/lookup-lookup.py
     :lines: 7-21
@@ -58,9 +59,11 @@ for instance::
     e2.getValueFrom = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
 
 
+Classifiers by lookup table
 ===========================
-Classifiers by Lookup Table
-===========================
+
+.. index::
+   single: classification; lookup table
 
 Although the above example used :obj:`ClassifierByLookupTable` as if it
 was a concrete class, ClassifierByLookupTable is actually
@@ -184,13 +187,15 @@ constructed.
     :obj:`ClassifierByLookupTable` for more details.
 
 
-==========================
-Classifier by ExampleTable
-==========================
+Classifier by data table
+========================
+
+.. index::
+   single: classification; data table
 
 :obj:`ClassifierByExampleTable` is used in similar contexts as
 :obj:`ClassifierByLookupTable`. If you write, for instance, a
-constructive induction algorithm, it is recommendable that the values
+constructive induction algorithm, it is recommended that the values
 of the new feature are computed either by one of classifiers by lookup
 table or by ClassifierByExampleTable, depending on the number of bound
 features.
@@ -304,7 +309,7 @@ classifier into its getValueFrom.
 
 There's something disturbing here. Although abe determines the value of
 y2, abe.classVar is still y. Orange doesn't bother (the whole example
-is artificial - you will seldom pack the entire dataset in an
+is artificial - you will seldom pack the entire data set in an
 ClassifierByExampleTable...), so shouldn't you. But still, for the sake
 of hygiene, you can conclude by
 
@@ -329,9 +334,7 @@ part of `lookup-table.py`_ (uses: `monks-1.tab`_)::
 Let us, for the end, show another use of LookupLearner. With the
 alternative call arguments, it offers an easy way to observe feature
 interactions. For this purpose, we shall omit e, and construct a
-ClassifierByExampleTable from a and b only.
-
-part of `lookup-table.py`_ (uses: `monks-1.tab`_):
+ClassifierByExampleTable from a and b only (part of `lookup-table.py`_; uses: `monks-1.tab`_):
 
 .. literalinclude:: code/lookup-table.py
     :lines: 32-35
