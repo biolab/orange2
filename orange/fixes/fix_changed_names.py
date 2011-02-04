@@ -112,7 +112,42 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            
            "orngEnsemble.MeasureAttribute_randomForests":"Orange.ensemble.forest.ScoreFeature",
            
-           
+           "orange.TreeLearner": "Orange.classification.tree.TreeLearnerBase",
+           "orange.TreeClassifier": "Orange.classification.tree.TreeClassifier",
+           "orange.C45Learner": "Orange.classification.tree.C45Learner",
+           "orange.C45Classifier": "Orange.classification.tree.C45Classifier",
+           "orange.C45TreeNode": "Orange.classification.tree.C45Node",
+           "orange.C45TreeNodeList": "C45NodeList",
+           "orange.TreeDescender": "Orange.classification.tree.Descender",
+           "orange.TreeDescender_UnknownMergeAsBranchSizes": "Orange.classification.tree.Descender_UnknownMergeAsBranchSizes",
+           "orange.TreeDescender_UnknownMergeAsSelector": "Orange.classification.tree.Descender_UnknownMergeAsSelector",
+           "orange.TreeDescender_UnknownToBranch": "Orange.classification.tree.Descender_UnknownToBranch",
+           "orange.TreeDescender_UnknownToCommonBranch": "Orange.classification.tree.Descender_UnknownToCommonBranch",
+           "orange.TreeDescender_UnknownToCommonSelector":"Orange.classification.tree.Descender_UnknownToCommonSelector",
+           "orange.TreeExampleSplitter":"Orange.classification.tree.Splitter",
+           "orange.TreeExampleSplitter_IgnoreUnknowns":"Orange.classification.tree.Splitter_IgnoreUnknowns",
+           "orange.TreeExampleSplitter_UnknownsAsBranchSizes":"Orange.classification.tree.Splitter_UnknownsAsBranchSizes",
+           "orange.TreeExampleSplitter_UnknownsAsSelecto":"Orange.classification.tree.Splitter_UnknownsAsSelector",
+           "orange.TreeExampleSplitter_UnknownsToAll":"Orange.classification.tree.Splitter_UnknownsToAll",
+           "orange.TreeExampleSplitter_UnknownsToBranch":"Orange.classification.tree.Splitter_UnknownsToBranch",
+           "orange.TreeExampleSplitter_UnknownsToCommon":"Orange.classification.tree.Splitter_UnknownsToCommon",
+           "orange.TreeExampleSplitter_UnknownsToRandom":"Orange.classification.tree.Splitter_UnknownsToRandom",
+           "orange.TreeNode":"Orange.classification.tree.Node",
+           "orange.TreeNodeList":"Orange.classification.tree.NodeList",
+           "orange.TreePruner":"Orange.classification.tree.Pruner",
+           "orange.TreePruner_SameMajority":"Orange.classification.tree.Pruner_SameMajority",
+           "orange.TreePruner_m":"Orange.classification.tree.Pruner_m",
+           "orange.TreeSplitConstructor":"Orange.classification.tree.SplitConstructor",
+           "orange.TreeSplitConstructor_Combined":"Orange.classification.tree.SplitConstructor_Combined",
+           "orange.TreeSplitConstructor_Measure":"Orange.classification.tree.SplitConstructor_Score",
+           "orange.TreeSplitConstructor_Attribute":"Orange.classification.tree.SplitConstructor_Feature",
+           "orange.TreeSplitConstructor_ExhaustiveBinary":"Orange.classification.tree.SplitConstructor_ExhaustiveBinary",
+           "orange.TreeSplitConstructor_OneAgainstOthers":"Orange.classification.tree.SplitConstructor_OneAgainstOthers",
+           "orange.TreeSplitConstructor_Threshold":"Orange.classification.tree.SplitConstructor_Threshold",
+           "orange.TreeStopCriteria":"Orange.classification.tree.StopCriteria",
+           "orange.TreeStopCriteria_Python":"Orange.classification.tree.StopCriteria_Python",
+           "orange.TreeStopCriteria_common":"Orange.classification.tree.StopCriteria_common"
+
            }
 
 def build_pattern(mapping=MAPPING):
