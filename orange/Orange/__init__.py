@@ -9,11 +9,8 @@ sys.modules["orange"] = orange
 
 import data
 import data.io
-import data.example
 import data.sample
-import data.value
 import data.feature
-import data.domain
 
 import network
 
