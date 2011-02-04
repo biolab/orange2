@@ -560,6 +560,7 @@ import os
 
 import Orange.core
 import Orange.data
+import Orange.projection
 
 from Orange.core import Graph, GraphAsList, GraphAsMatrix, GraphAsTree
 
@@ -1464,7 +1465,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
             matrix = self.vertexDistance
         
         #if self.mds == None: 
-        self.mds = orngMDS.MDS(matrix)
+        self.mds = Orange.projection.mds.MDS(matrix)
         
         if mdsFromCurrentPos:
             if avgLinkage:
@@ -1486,7 +1487,7 @@ class NetworkOptimization(Orange.core.NetworkOptimization):
         if torgerson:
             self.mds.Torgerson() 
 
-        self.mds.optimize(mdsSteps, orngMDS.SgnRelStress, self.minStressDelta,\
+        self.mds.optimize(mdsSteps, Orange.projection.mds.SgnRelStress, self.minStressDelta,\
                           progressCallback=self.mdsCallback)
         self.mdsUpdateData(self.mdsComponents, self.mds, callbackUpdateCanvas)
         
