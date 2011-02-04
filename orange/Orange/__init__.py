@@ -62,6 +62,8 @@ import evaluation.scoring
 import evaluation.testing
 
 import clustering
+import clustering.kmeans
+import clustering.hierarchical
 
 import misc
 import misc.counters
