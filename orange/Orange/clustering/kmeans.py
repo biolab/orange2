@@ -14,7 +14,7 @@ K-means clustering
 Examples
 ========
 
-XThe following code runs k-means clustering and prints out the cluster indexes
+The following code runs k-means clustering and prints out the cluster indexes
 for the last 10 data instances (`kmeans-run.py`_, uses `iris.tab`_):
 
 .. literalinclude:: code/kmeans-run.py
@@ -68,8 +68,6 @@ k-Means Utility Functions
 
 .. autoclass:: Orange.clustering.kmeans.init_hclustering
    :members:
-
-.. automethod:: Orange.clustering.kmeans.data_center
 
 .. automethod:: Orange.clustering.kmeans.plot_silhouette
 
