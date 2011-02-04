@@ -20,19 +20,21 @@ for i in range(3):
     res = Orange.evaluation.testing.proportionTest(learners, table, 0.7)
     printResults(res)
 
-print "\nproportionsTest that will give different results, but the same each \
-time the script is run"
+print "\nproportionsTest that will give different results, \
+but the same each time the script is run"
 myRandom = Orange.core.RandomGenerator()
 for i in range(3):
     res = Orange.evaluation.testing.proportionTest(learners, table, 0.7,
         randomGenerator=myRandom)
     printResults(res)
+# End
 
 print "\nproportionsTest that will give different results each time it is run"
 for i in range(3):
     res = Orange.evaluation.testing.proportionTest(learners, table, 0.7,
         randseed=random.randint(0, 100))
     printResults(res)
+# End
 
 print "\nproportionsTest + storing classifiers"
 res = Orange.evaluation.testing.proportionTest(learners, table, 0.7, 100,
@@ -51,6 +53,7 @@ res = Orange.evaluation.testing.learningCurveN(learners, table, folds=5,
 for i in range(len(prop)):
     print "%5.3f:" % prop[i],
     printResults(res[i])
+# End
 
 print "\nLearning curve with pre-separated data"
 indices = Orange.core.MakeRandomIndices2(table, p0=0.7)
@@ -61,6 +64,7 @@ res = Orange.evaluation.testing.learningCurveWithTestData(learners, train,
 for i in range(len(prop)):
     print "%5.3f:" % prop[i],
     printResults(res[i])
+# End
 
 print "\nLearning and testing on pre-separated data"
 res = Orange.evaluation.testing.learnAndTestOnTestData(learners, train, test)
