@@ -111,13 +111,13 @@ probability with m=50. The result is::
     IF sex=['female'] THEN survived=no<106.000, 90.000>
     IF TRUE THEN survived=yes<0.000, 5.000>
 
-Notice that we first need to set the ruleFinder
-component, because the default components are not constructed when the learner
-is constructed, but only when we run it on data. At that time, the algorithm
-checks which components are necessary and sets defaults. Similarly, when the
-learner finishes, it destructs all default components. Continuing with our
-example, assume that we wish to set a different validation function and a
-different bean width. This is simply written as:
+Notice that we first need to set the ruleFinder component, because the default
+components are not constructed when the learner is constructed, but only when
+we run it on data. At that time, the algorithm checks which components are
+necessary and sets defaults. Similarly, when the learner finishes, it destructs
+all *default* components. Continuing with our example, assume that we wish to
+set a different validation function and a different bean width. This is simply
+written as:
 
 .. literalinclude:: code/rules-customized.py
     :lines: 19-23
@@ -139,8 +139,8 @@ different bean width. This is simply written as:
    .. attribute:: classifier
       
       each rule can be used as a classical Orange like
-      classifier. Must be of type :class:`Orange.classification.Classifier`. By default,
-      an instance of :class:`Orange.core.DefaultClassifier` is used.
+      classifier. Must be of type :class:`Orange.classification.Classifier`.
+      By default, an instance of :class:`Orange.core.DefaultClassifier` is used.
    
    .. attribute:: learner
       
@@ -661,14 +661,15 @@ class CN2Classifier(RuleClassifier):
     (:class:`Orange.classification.rules.CN2Learner`) is used to construct the
     classifier.
         
-        :param instance: instance to be classifier
-        :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
-              :class:`Orange.classification.Classifier.GetProbabilities` or
-              :class:`Orange.classification.Classifier.GetBoth`
-        
-        :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
+    :param instance: instance to be classifier
+    :type instance: :class:`Orange.data.Instance`
+    
+    :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+          :class:`Orange.classification.Classifier.GetProbabilities` or
+          :class:`Orange.classification.Classifier.GetBoth`
+    
+    :rtype: :class:`Orange.data.Value`, 
+          :class:`Orange.statistics.Distribution` or a tuple with both
     
     """
     def __init__(self, rules=None, instances=None, weightID = 0, **argkw):
@@ -773,19 +774,19 @@ class CN2UnorderedLearner(RuleLearner):
 
 class CN2UnorderedClassifier(RuleClassifier):
     """
-    CN2 unordered (see Clark and Boswell; 1991) induces a set of unordered
-    rules. Usually the learner
+    CN2 unordered (see Clark and Boswell; 1991) classifies a new instance using
+    a set of unordered rules. Usually the learner
     (:class:`Orange.classification.rules.CN2UnorderedLearner`) is used to
     construct the classifier.
         
-        :param instance: instance to be classifier
-        :type instance: :class:`Orange.data.Instance`
-        :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
-              :class:`Orange.classification.Classifier.GetProbabilities` or
-              :class:`Orange.classification.Classifier.GetBoth`
-        
-        :rtype: :class:`Orange.data.Value`, 
-              :class:`Orange.statistics.Distribution` or a tuple with both
+    :param instance: instance to be classifier
+    :type instance: :class:`Orange.data.Instance`
+    :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
+          :class:`Orange.classification.Classifier.GetProbabilities` or
+          :class:`Orange.classification.Classifier.GetBoth`
+    
+    :rtype: :class:`Orange.data.Value`, 
+          :class:`Orange.statistics.Distribution` or a tuple with both
     
     """
     def __init__(self, rules = None, instances = None, weightID = 0, **argkw):
@@ -899,7 +900,28 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
 
 class CN2EVCUnorderedLearner(ABCN2):
     """
-    CN2 + EVC as evaluation + LRC classification.
+    CN2-SD (see Lavrac et al.; 2004) induces a set of unordered rules in a
+    simmilar manner as
+    :class:`Orange.classification.rules.CN2SDUnorderedLearner`. This
+    implementation uses the EVC rule evaluation.
+    
+    If data instances are provided to the constructor, the learning algorithm
+    is called and the resulting classifier is returned instead of the learner.
+
+    Constructor can be given the following parameters:
+    
+    :param evaluator: an object that evaluates a rule from covered instances.
+        By default, weighted relative accuracy is used.
+    :type evaluator: :class:`Orange.classification.rules.RuleEvaluator`
+    :param beamWidth: width of the search beam.
+    :type beamWidth: int
+    :param alpha: significance level of the statistical test to determine
+        whether rule is good enough to be returned by rulefinder. Likelihood
+        ratio statistics is used that gives an estimate if rule is
+        statistically better than the default rule.
+    :type alpha: float
+    :param mult: multiplicator for weights of covered instances.
+    :type mult: float
     """
     def __init__(self, width=5, nsampling=100, rule_sig=1.0, att_sig=1.0, min_coverage = 1., max_rule_complexity = 5.):
         ABCN2.__init__(self, width=width, nsampling=nsampling, rule_sig=rule_sig, att_sig=att_sig,
