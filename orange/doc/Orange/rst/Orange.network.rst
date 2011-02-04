@@ -1,5 +1,5 @@
-==============
-Orange.network
-==============
+#######
+Network
+#######
 
 .. automodule:: Orange.network
