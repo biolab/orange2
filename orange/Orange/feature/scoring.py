@@ -501,7 +501,7 @@ class OrderAttributesByMeasure:
 
         :param weight: meta feature that stores weights of individual data
           instances
-        :type weight: Orange.data.feature
+        :type weight: Orange.data.Feature
 
         """
         if self.measure:

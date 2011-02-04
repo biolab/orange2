@@ -11,9 +11,23 @@ can help in this task, we also provide a function that may help in
 entropy-based discretization (Fayyad & Irani), and a wrapper around classes for
 categorization that can be used for learning.
 
-.. automethod:: Orange.feature.discretization.entropyDiscretization
+.. class:: Orange.feature.discretization.EntropyDiscretization
+    
+    Discretize the given feature's and return a discretized feature. The new
+    attribute's values get computed automatically when they are needed.
+    
+    :param attribute: continuous feature to discretize
+    :type attribute: :obj:`Orange.data.feature.Feature`
+    :param examples: data to discretize
+    :type examples: :obj:`Orange.data.Table`
+    :param weight: meta feature that stores weights of individual data
+          instances
+    :type weight: Orange.data.feature.Feature
+    :rtype: :obj:`Orange.data.feature.Discrete`
+        
+.. automethod:: Orange.feature.discretization.entropyDiscretization_wrapper
 
-.. autoclass:: Orange.feature.discretization.EntropyDiscretization
+.. autoclass:: Orange.feature.discretization.EntropyDiscretization_wrapper
 
 .. autoclass:: Orange.feature.discretization.DiscretizedLearner_Class
 
@@ -50,26 +64,28 @@ from Orange.core import \
         BiModalDiscretizer, \
         EquiDistDiscretizer, \
         IntervalDiscretizer, \
-        ThresholdDiscretizer
+        ThresholdDiscretizer, \
+        EntropyDiscretization
 
 ######
 # from orngDics.py
-def entropyDiscretization(table):
+def entropyDiscretization_wrapper(table):
     """Take the classified table set (table) and categorize all continuous
-    features using the entropy based discretization 
+    features using the entropy based discretization
     :obj:`EntropyDiscretization`.
     
     :param table: data to discretize.
     :type table: Orange.data.Table
+    :rtype: :obj:`Orange.data.Table` includes all categorical and discretized
+    continuous features from the original data table.
     
     After categorization, features that were categorized to a single interval
     (to a constant value) are removed from table and prints their names.
-    Returns a table that includes all categorical and discretized
-    continuous features from the original data table.
+    Returns a table that 
 
     """
     orange.setrandseed(0)
-    tablen=orange.Preprocessor_discretize(table, method=orange.EntropyDiscretization())
+    tablen=orange.Preprocessor_discretize(table, method=EntropyDiscretization())
     
     attrlist=[]
     nrem=0
@@ -82,7 +98,7 @@ def entropyDiscretization(table):
     return tablen.select(attrlist)
 
 
-class EntropyDiscretization:
+class EntropyDiscretization_wrapper:
     """This is simple wrapper class around the function 
     :obj:`entropyDiscretization`. 
     

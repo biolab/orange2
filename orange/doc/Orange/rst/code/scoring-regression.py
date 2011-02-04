@@ -1,8 +1,8 @@
-# Description: Shows how to measure the attribute quality in regression problems
-# Category:    statistics
-# Classes:     MeasureAttribute, MeasureAttribute_MSE
+# Description: Shows how to measure the attribute quality in regression problems.
+# Category:    feature scoring
 # Uses:        measure-c
-# Referenced:  MeasureAttribute.htm
+# Referenced:  Orange.feature.html#scoring
+# Classes:     Orange.feature.scoring.MSE
 
 import Orange
 import random
@@ -35,9 +35,3 @@ def printVariants(meas):
     
 print "MSE"
 printVariants(Orange.feature.scoring.MSE())
-
-print "Relief"
-meas = Orange.feature.scoring.Relief()
-print fstr % (("- no unknowns:",) + tuple([meas(i, data) for i in range(attrs)]))
-print fstr % (("- with unknowns:",) + tuple([meas(i, data2) for i in range(attrs)]))
-print
