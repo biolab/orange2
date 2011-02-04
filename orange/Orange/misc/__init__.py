@@ -36,7 +36,7 @@ Selection
 
 Many machine learning techniques generate a set different solutions or have to
 choose, as for instance in classification tree induction, between different
-attributes. The most trivial solution is to iterate through the candidates,
+features. The most trivial solution is to iterate through the candidates,
 compare them and remember the optimal one. The problem occurs, however, when
 there are multiple candidates that are equally good, and the naive approaches
 would select the first or the last one, depending upon the formulation of
@@ -58,14 +58,14 @@ Example
 --------
 
 The following snippet loads the data set lymphography and prints out the
-attribute with the highest information gain.
+feature with the highest information gain.
 
 part of `misc-selection-bestonthefly.py`_ (uses `lymphography.tab`_)
 
 .. literalinclude:: code/misc-selection-bestonthefly.py
   :lines: 7-16
 
-Our candidates are tuples gain ratios and attributes, so we set
+Our candidates are tuples gain ratios and features, so we set
 :obj:`callCompareOn1st` to make the compare function compare the first element
 (gain ratios). We could achieve the same by initializing the object like this:
 
