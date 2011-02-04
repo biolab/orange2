@@ -2,13 +2,17 @@
 
 .. index:: classification, support vector machines (SVM)
 
-=======================
-Support Vector Machines
-=======================
+***********************
+Support vector machines
+***********************
 
 A collection of classes that wrap the 
-`LibSVM library <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_ (a library for 
-`support vector machines <http://en.wikipedia.org/wiki/Support_vector_machine>`_)
+`LibSVM library <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_, a library for 
+`support vector machines <http://en.wikipedia.org/wiki/Support_vector_machine>`_ (SVM).
+In this way SVM learners from LibSVM behave like ordinary Orange learners and can
+be used as Python objects in training, classification and evaluation tasks. The
+implementation supports the implementation of Python-based kernels, that can be
+plugged-in into LibSVM implementations.
 
 .. note:: On some data-sets SVM can perform very poorly. SVM can be very 
           sensitive to the proper choice of the parameters. If you are having 
@@ -16,6 +20,9 @@ A collection of classes that wrap the
           data and using different parameters or choose an easier approach
           and use the :obj:`SVMLearnerEasy` class which does this automatically
           (it is similar to the `svm-easy.py`_ script in the LibSVM distribution).
+          
+SVM learners
+============
 
 .. autoclass:: Orange.classification.svm.SVMLearner
    :members:
@@ -26,8 +33,8 @@ A collection of classes that wrap the
 .. autoclass:: Orange.classification.svm.SVMLearnerEasy
    :members:
    
-Usefull functions
-=================
+Utility functions
+-----------------
 
 .. automethod:: Orange.classification.svm.maxNu
 
@@ -35,16 +42,16 @@ Usefull functions
 
 .. automethod:: Orange.classification.svm.tableToSVMFormat
 
-SVM derived feature weights
-===========================
+SVM-derived feature weights
+---------------------------
 
 .. autoclass:: Orange.classification.svm.MeasureAttribute_SVMWeights
    :members:
 
 .. _kernel-wrapper:
 
-===============
-Kernel Wrappers
+
+Kernel wrappers
 ===============
 
 .. autoclass:: Orange.classification.svm.kernels.KernelWrapper
@@ -78,8 +85,9 @@ Example (`svm-custom-kernel.py`_ uses: `iris.tab`_)
 
 .. literalinclude:: code/svm-custom-kernel.py
 
-=======================================
-SVM-Based Recursive Feature Elimination
+
+
+SVM-based recursive feature elimination
 =======================================
 
 .. autoclass:: Orange.classification.svm.RFE
@@ -92,14 +100,8 @@ SVM-Based Recursive Feature Elimination
 .. _brown-selected.tab: code/brown-selected.tab
 .. _iris.tab: code/iris.tab
 .. _vehicle.tab: code/vehicle.tab
-
-References
-========== 
-
-C.-W. Hsu, C.-C. Chang, C.-J. Lin. A practical guide to support vector 
-classification
-
 """
+
 import math
 
 from collections import defaultdict
