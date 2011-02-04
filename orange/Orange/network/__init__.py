@@ -10,6 +10,33 @@ Network
 .. autoclass:: Orange.network.Network
    :members:
    
+Examples
+========
+
+Reading and saving a network
+----------------------------
+
+This example demonstrates reading a network. Network class can read or write 
+Pajek (.net) or GML file format.
+
+`network-read.py`_ (uses: `K5.net`_):
+
+.. literalinclude:: code/network-read.py
+    :lines: 4-5
+
+Visualize a network in NetExplorer widget
+-----------------------------------------
+
+This example demonstrates how to display a network in NetExplorer.
+
+part of `network-widget.py`_
+
+.. literalinclude:: code/network-widget.py
+    :lines: 10-16
+    
+.. image:: files/network-explorer.png
+    :width: 100%
+   
 ===========================
 Network Layout Optimization
 ===========================
@@ -17,21 +44,12 @@ Network Layout Optimization
     .. autoclass:: Orange.network.NetworkOptimization
        :members:
        :exclude-members: collapse 
-   
-=============================
-Community Detection in Graphs
-=============================
-
-.. autoclass:: Orange.network.NetworkClustering
-   :members:
-   
-   
-========
+       
 Examples
 ========
 
 Network constructor and random layout
-=====================================
+-------------------------------------
 
 In our first example we create a Network object with a simple full graph (K5). 
 Vertices are initially placed randomly. Graph is visualized using pylabs 
@@ -48,7 +66,7 @@ drawing:
 .. image:: files/network-K5-random.png
 
 Network layout optimization
-===========================
+---------------------------
 
 This example demonstrates how to optimize network layout using one of included 
 algorithms.
@@ -70,30 +88,329 @@ The following optimization algorithms are supported:
 Spring forces layout optimization is the result of the above script:
 
 .. image:: files/network-K5-fr.png
+   
+======
+Graphs
+======
 
-Reading and saving a network
-============================
+Orange offers a data structure for representing directed and undirected graphs 
+with various types of weighted connections.
 
-This example demonstrates reading a network. Network class can read or write 
-Pajek (.net) or GML file format.
+Basic graphs have only one type of edges. Each edge can have an associated 
+number, representing a strength of the edge - with whatever underlying 
+physical interpretation. Orange's graphs are more general and two vertices 
+can be connected by edges of various types. One use for this would be in 
+genetics, where one gene can excite or inhibit another - or both 
+simultaneously, which is why we can't simply assign negative numbers to the 
+edges. The number of edge types is unlimited, but needs to be set in advance.
 
-`network-read.py`_ (uses: `K5.net`_):
+Before constructing a graph, you will also need to decide for the underlying 
+data structure. The differences for smaller graphs (e.g. with less than 
+100 nodes) should be insignificant, while for the larger, the decision should 
+be based upon the expected number of edges ("density" of the graph) and 
+the operations you plan to execute. Graphs with large number of edges 
+(eg.>n2/4, where n is the number of vertices) should be represented with 
+adjacency matrices (class GraphAsMatrix), graphs with small number of edges 
+with adjacency lists (GraphAsList) and those in between with adjacency trees 
+(GraphAsTrees). Regarding the speed, matrices are generally the fastest, while 
+some operations, such as finding all edges leading from certain node, will 
+sometimes be faster with lists or trees.
 
-.. literalinclude:: code/network-read.py
-    :lines: 4-5
+One thing that is not supported (at the moment?) are multiple edges of the 
+same type between two vertices.
 
-Visualize a network in NetExplorer widget
-=========================================
+Construction
+============
 
-This example demonstrates how to display a network in NetExplorer.
+When constructing a graph, you will need to decide about the data structure for
+representation of edges, and call the corresponding constructor. All
+constructors take the same arguments: the number of vertices (needs to be given
+in advance, you cannot add additional vertices later), a flag telling whether
+the graph is directed or not, and the number of edge types. The default number
+of edge types is 1 (a normal graph), while the other two arguments are
+mandatory.
 
-part of `network-widget.py`_
+You can choose between three constructors, all derived from a single ancestor
+Graph:
 
-.. literalinclude:: code/network-widget.py
-    :lines: 10-16
+.. class:: GraphAsMatrix(nVertices, directed[, nEdgeTypes])
+
+    Edges are stored in a matrix with either n2 or n(n+1)/2 elements, depending
+    upon whether the graph is directed or not. (In C++, it is stored as float *
+    pointing to an array of length n*n*nEdgeTypes or (n*(n+1))/2*nEdgeTypes
+    elements, where nEdgeTypes is the number of edge types.) This
+    representation is suitable for smaller graphs and for dense large graphs.
+    For graph with only one edge type, this representation is more economical
+    than representation with lists or trees when the number of edges is larger
+    than n2/4. Inserting, deleting and checking the edges is fast; listing the
+    neighbours of a certain node is fast unless the graph is sparse, in which
+    case a graph represented with a list or a tree would be faster.
     
-.. image:: files/network-explorer.png
-    :width: 100%
+.. class:: GraphAsList(nVertices, directed[, nEdgeTypes]) 
+    
+    Edges are stored in an ordered lists of neighbours, one list for each node.
+    In C++, for each neighbour, the connection is stored in a structure with
+    the vertex number (int), a pointer to the next structure, and an array of
+    floats, one for each integer. With 16-byte alignment, this would take 16
+    bytes for graphs with one or two edge types on the usual 32-bit platforms.
+    For undirected graphs, each edge is stored only once, in the list of the
+    edge with the smaller index. This makes the structure smaller and insertion
+    and lookup faster; it slows down finding the neighbours of a given node.
+    This structure is convenient for graphs with a very small number of edges.
+    For them, inserting and removing edges is relatively fast; getting all
+    edges leading from a vertex is fast, while getting edges leading to a
+    vertex or getting all neighbours (in directed or undirected graph) is slow.
+    
+.. class:: GraphAsTree(nVertices, directed[, nEdgeTypes]) 
+    
+    This structure is similar to GraphAsTree except that the edges are stored
+    in trees instead of lists. This should be a structure of choice for all
+    graph between really sparse and those having one quarter of possible edges.
+    As expected, queries are fast, while insertion and removal of edges is
+    somewhat slower (though still faster than for GraphAsList unless the number
+    of edges is really small). Internally, nodes of the tree contain the vertex
+    number, two pointers and a list of floats. With one edge type, this should
+    be 16 bytes on 32-bit platforms. An ordinary undirected graph with 10
+    vertices stored in a matrix would thus be constructed by
+
+Examples
+--------
+
+graph = orange.GraphAsMatrix(10, 0)
+
+A directed graph with 1000 vertices and edges of three types, stored with
+adjacency trees would be constructed by
+
+graph = orange.GraphAsTree(1000, 1, 3)
+
+Usage
+=====
+
+All three graph types are used the same way, independent of the underlying
+structure. All methods are defined in basic class :obj:Orange.network.Graph.
+
+.. class:: Graph
+
+    .. attribute:: nVertices
+    
+        The number of vertices (read-only, set at construction)
+    
+    .. attribute:: nEdgeTypes
+    
+        The number of different edge types (read-only, set at construction)
+    
+    .. attribute:: directed
+    
+        Tells whether the graph is directed (read-only, set at construction)
+    
+    .. attribute:: objects
+    
+        A dictionary, list or other sequence of objects that correspond to
+        graph nodes. The use of this object is described in section on
+        indexing.
+
+    .. attribute:: forceMapping
+
+        Determines whether to map integer indices through 'objects'. Details are
+        described below.
+
+    .. attribute:: returnIndices
+
+        If set, the methods that return list of neighbours will return lists of
+        integers even when objects are given.
+
+    .. Basic Operations
+    .. ----------------
+
+    .. Indexing
+    .. --------
+    
+    Vertices are referred to by either integer indices or Python objects of any
+    type. In the latter case, a mapping should be provided by assigning the
+    'objects' attribute. For instance, if you set graph.objects to ["Age",
+    "Gender", "Height", "Weight"] then graph["Age", "Height"] would be equivalent
+    to graph[0, 2] and graph.getNeighbours("Weight") to graph.getNeighbours(3).
+    Vertex identifier doesn't need to be a string, , it can be any Python
+    object.
+    
+    If objects contains a dictionary, its keys are vertex identifiers and the
+    values in the dictionary should be integers, eg.
+    
+    graph.objects = {}
+    graph.objects["Age"] = 0
+    graph.objects[None] = 1
+    graph.objects[orange] = 4
+
+    If not a dictionary, objects can be any kind of sequence. Usually, you will
+    give it a list of the same length as the number of vertices in the graph,
+    so each element would identify a vertex. When indexing, the index is sought
+    for in the list. objects can also be a list of attributes, a domain, an
+    example table or even a single string; Orange will run a code equivalent to
+    "for o in graph.objects", so everything for which such a loop works, goes.
+    
+    Searching through the list is, of course, rather slow, so it is recommended
+    to use integer indices for larger graphs. So, if you request
+    graph.getNeighbours(0), the method will return the neighbours of the first
+    vertex, even if objects is given. But - what if you want to map all
+    indices, even integers, through objects? In this case, you need to set
+    graph.forceMapping to 1. If graph.forceMapping is set and graph.objects is
+    given, even getNeighbours(0) will search the graph.objects for 0 and return
+    the neighbours of the corresponding (not necessarily the first) node.
+
+    .. Getting and Setting Edges
+    .. -------------------------
+    
+    .. method:: graph[v1, v2]
+    
+        For ordinary graphs with a single edge type, graph[v1, v2] returns the
+        weight of the edge between v1 and v2, or None if there is no edge
+        (edge's weight can also be 0). Edges can also be set by assigning them
+        a weight, e.g.graph[2, 5]=1.5. As described above, if objects is set,
+        we can use other objects, such as names, as v1 and v2 (the same goes
+        for all other functions described below). For graphs with multiple edge
+        types, graph[v1, v2] returns a list of weights for various edge types.
+        Some (or all, if there is no edge) elements of the list can be None. If
+        the edge does not exist, graph[v1, v2] returns a list of Nones, not a
+        None. You can assign a list to graph[v1, v2]; in graph with three edge
+        types you can set graph[2, 5] = [1.5, None, -2.0]. After that, there
+        are two edges between vertices 2 and 5, one of the first type with
+        weight 1.5, and one of the third with weight -2.0. To remove an edge,
+        you can assign it a least of Nones or a single None, e.g. graph[2,
+        5]=None; this removes edges of all types between the two nodes. The
+        list returned for graphs with multiple edge types is actually a
+        reference to the edge, therefore you can set e = graph[v1, v2] and then
+        manipulate e, for instance e[1]=10 or e[0]=None. Edge will behave just
+        as an ordinary list (well, almost - no slicing ets). However, don't try
+        to assign a list to e, eg e=[1, None, 4]. This assigns a list to e, not
+        to the corresponding edge... graph[v1, v2, type] This is defined only
+        for graph with multiple edge types; it returns the weight for the edge
+        of type type between v1 and v2, or None if there is no such edge. You
+        can also establish an edge by assigning a weight (e.g. graph[2, 5, 2] =
+        -2.0) or remove it by assigning it a None (graph[2, 5, 2] = None).
+        edgeExists(v1, v2[, type]) Returns true if the edge between v1 and v2
+        exists. For multiple edge type graphs you can also specify the type of
+        the edge you check for. If the third argument is omitted, the method
+        returns true if there is any kind of edge between the two vertices. It
+        is recommended to use this method when you want to check for a node. In
+        single edge type graphs, if graph[v1, v2]: will fail when there is an
+        edge but it has a weight of zero. With multiple edge types, if
+        graph[v1, v2]: will always success since graph[v1, v2] returns a non-
+        empty list; if there is no edges, this will be a list of Nones, but
+        Python still treats it as "true". addCluster(list_of_vertices) Creates
+        a cluster - adds edges between all listed vertices. Queries
+        
+        Graph provides a set of function that return nodes connected to a
+        certain node.
+    
+    .. method:: getNeighbours(v1[, type])
+    
+        Returns all the nodes that are connected to v1. In directed graphs,
+        this includes vertices with edges toward or from v1. In graphs with
+        multiple edge types you can also specify the edge type you are
+        interested in: getNeighbours will the return only the vertices that are
+        connected to v1 by edges of that type.
+    
+    .. method:: getEdgesFrom(v1[, type])
+    
+        Return all the vertices which are connected to v1 by the edges leading
+        from v1. In edges with multiple edge types, you can specify the edge
+        type. In undirected graph, this function is equivalent to
+        getNeighbours.
+    
+    .. method:: getEdgesTo(v1[, type])
+    
+        Returns all the vertices with edges leading to v1. Again, you can
+        decide for a single edge type to observe, and, again again, in
+        undirected graphs this function is equivalent to getNeighbours.
+        
+        If objects is set, functions return a list of objects (names of
+        vertices or whatever objects you stored in objects). Otherwise, a list
+        of integer indices is returned. If you want to force Graph to return
+        integer indices even if objects is set, set graph.returnIndices to
+        True.
+        
+        Of the three operations, the expensive one is to look for the vertices
+        with edges pointing to the given edge. There is no problem when graph
+        is represented as a matrix (graphAsMatrix); these are always fast. On
+        directed graph, getEdgeFrom is always fast as well.
+        
+        In undirected graphs represented as lists or trees, the edge between
+        vertices with indices v1 and v2 is stored at the list/tree in the
+        smaller of the two indices. Therefore to list all neighbours of v1,
+        edges with v2<v1 are copied form v1's list, while for edges with v2>v1
+        the function needs to look for v1 in each v2's list/tree. Lookup in
+        trees is fast, while in representation with adjacency list, the
+        function is slower for v1 closer to nVertices/2. If v1 is small there
+        is a great number of v2>v1 whose lists are to be checked, but since the
+        lists are ordered, v1 is more to the beginning of these lists (and when
+        a vertex with index higher than v1 is encountered, we know that v1 is
+        not on the list). If v2 is great, there it is more toward the end of
+        the list, but there is smaller number of lists to be checked.
+        Generally, the average number of traversed list elements for
+        getNeighbours/getEdgesFrom/getEdgesTo on undirected graphs with
+        p*nVertices2 edges is p(nVertices-v1)v1.
+        
+        To sum up, if you have a large undirected graph and intend to query for 
+        neighbours (or, equivalently, edges to or from a node) a lot, don't use 
+        GraphAsList. If the graph is small or you won't use these functions, it 
+        doesn't matter.
+        
+        For directed graphs, getEdgesFrom is trivial. The other two functions
+        are even slower than for undirected graphs, since to find the edges
+        leading from any vertex to a given one, all lists/trees need to be
+        searched. So, if your algorithm will extensively use getEdgesTo or
+        getNeighbours and your graph is large but the number of edges is less
+        than nEdges2/2, you should use GraphAsTree or, to be faster but consume
+        more memory store the graph as GraphAsMatrix. If the number of edges is
+        greater, GraphAsMatrix is more economic anyway. (This calculation is
+        for graph with only one edge type; see the description of graph types
+        for details.
+        
+        However, this is all programmed in C++, so whatever you do, the
+        bottleneck will probably still be in your Python code and not in C++.
+        You probably cannot miss by using GraphAsTree disregarding the size of
+        the graph and the operations you perform on it.
+    
+    .. Graph Analyses
+    .. --------------
+    
+    .. method:: getConnectedComponents()
+    
+        Returns list of all connected components sorted descending by component
+        size.
+    
+    .. method:: getDegreeDistribution()
+    
+        Returns degree distribution as dictionary of type
+        {degree:number_of_vertices}.
+    
+    .. method:: getDegrees()
+    
+        Returns list of degrees. List size matches number of vertices. Index of
+        given degree matches index of corresponding vertex.
+    
+    .. method:: getHubs(n)
+    
+        Returns list of n largest hubs.
+    
+    .. method:: getShortestPaths(u, v)
+    
+        Returns list of vertices in the shortest path between u and v.
+    
+    .. method:: getDistance(u, v)
+    
+        Returns a distance between vertices u and v.
+    
+    .. method:: getDiameter()
+    
+        Returns a diameter of the graph.
+
+=============================
+Community Detection in Graphs
+=============================
+
+.. autoclass:: Orange.network.NetworkClustering
+   :members:
 
 .. _network-constructor.py: code/network-constructor.py
 .. _network-optimization.py: code/network-optimization.py
@@ -129,8 +446,8 @@ class Network(orangeom.Network):
     
     .. attribute:: coors
    
-        Coordinates for all vertices. They are initialized to random positions. 
-        You can modify them manually or use one of the optimization algorithms. 
+        Coordinates for all vertices. They are initialized to random positions.
+        You can modify them manually or use one of the optimization algorithms.
         Usage: coors[0][i], coors[1][i]; 0 for x-axis, 1 for y-axis
     
     
