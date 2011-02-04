@@ -396,6 +396,17 @@ structure. All methods are defined in basic class :obj:`Orange.network.Graph`.
 
     **Graph Analyses**
     
+    .. method:: getSubGraph(vertices)
+    
+        Return a new graph of type :obj:`Orange.network.Graph` that is a
+        subgraph of the original graph and consists of given vertices.
+    
+    .. method:: getClusteringCoefficient()
+    
+        Return the graph average local clustering coefficient, described in
+        Watts DJ, Strogatz SH: Collective dynamics of 'small-world' networks.
+        Nature 1998, 393(6684):440-442.
+    
     .. method:: getConnectedComponents()
     
         Return a list of all connected components sorted descending by
