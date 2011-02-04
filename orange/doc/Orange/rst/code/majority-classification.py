@@ -1,11 +1,11 @@
 # Description: Shows how to "learn" the majority class and compare other classifiers to the default classification
 # Category:    default classification accuracy, statistics
-# Classes:     MajorityLearner, Orange.evaluate.crossValidation
+# Classes:     MajorityLearner, Orange.evaluation.testing.crossValidation
 # Uses:        monks-1
 # Referenced:  majority.htm
 
 import Orange
-import orngTest, orngStat
+import orngStat
 
 table = Orange.data.Table("monks-1")
 
@@ -14,7 +14,7 @@ bayesLearner = Orange.classification.bayes.NaiveLearner()
 majorityLearner = Orange.classification.majority.MajorityLearner()
 learners = [treeLearner, bayesLearner, majorityLearner]
 
-res = orngTest.crossValidation(learners, table)
+res = Orange.evaluation.testing.crossValidation(learners, table)
 CAs = orngStat.CA(res, reportSE = 1)
 
 print "Tree:    %5.3f+-%5.3f" % CAs[0]

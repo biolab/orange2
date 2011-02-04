@@ -5,7 +5,7 @@
 # Referenced:  mean.htm
 
 import Orange
-import orngTest, orngStat
+import orngStat
 
 table = Orange.data.Table("housing")
 
@@ -13,7 +13,7 @@ treeLearner = Orange.classification.tree.TreeLearner() #Orange.regression.TreeLe
 meanLearner = Orange.regression.mean.MeanLearner()
 learners = [treeLearner, meanLearner]
 
-res = orngTest.crossValidation(learners, table)
+res = Orange.evaluation.testing.crossValidation(learners, table)
 MSEs = orngStat.MSE(res)
 
 print "Tree:    %5.3f" % MSEs[0]
