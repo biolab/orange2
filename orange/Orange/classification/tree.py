@@ -1,5 +1,9 @@
 """
 
+**************
+XXXXXXXXXXXXXX
+**************
+
 This page describes the Orange trees. It first describes the basic
 components and procedures: it starts with the
 structure that represents the tree, then it defines
