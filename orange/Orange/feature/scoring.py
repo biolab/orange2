@@ -464,11 +464,14 @@ References
 """
 
 import Orange.core as orange
-from orange import MeasureAttribute_gainRatio as GainRatio
 from orange import MeasureAttribute as Measure
-from orange import MeasureAttribute_relief as Relief
+
 from orange import MeasureAttribute_info as InfoGain
+from orange import MeasureAttribute_gainRatio as GainRatio
 from orange import MeasureAttribute_gini as Gini
+from orange import MeasureAttribute_relevance as Relevance 
+from orange import MeasureAttribute_cost as Cost
+from orange import MeasureAttribute_relief as Relief
 
 ######
 # from orngEvalAttr.py
