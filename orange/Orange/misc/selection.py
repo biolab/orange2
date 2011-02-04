@@ -56,19 +56,61 @@ def selectBestIndex(x, compare=cmp, seed = 0, callCompareOn1st = False):
     return bs.winnerIndex()
 
 def compare2_firstBigger(x, y):
+    """Function takes two lists and compares first elements.
+    
+    :param x: list of values
+    :type x: list
+    :param y: list of values
+    :type y: list
+    :rtype:  cmp(x[0], y[0])"""
     return cmp(x[0], y[0])
 
 def compare2_firstSmaller(x, y):
+    """Function takes two lists and compares first elements.
+    
+    :param x: list of values
+    :type x: list
+    :param y: list of values
+    :type y: list
+    :rtype:  -cmp(x[0], y[0])"""
     return -cmp(x[0], y[0])
 
 def compare2_lastBigger(x, y):
+    """Function takes two lists and compares last elements.
+    
+    :param x: list of values
+    :type x: list
+    :param y: list of values
+    :type y: list
+    :rtype:  cmp(x[0], y[0])"""
     return cmp(x[-1], y[-1])
 
 def compare2_lastSmaller(x, y):
+    """Function takes two lists and compares last elements.
+    
+    :param x: list of values
+    :type x: list
+    :param y: list of values
+    :type y: list
+    :rtype:  -cmp(x[0], y[0])"""
     return -cmp(x[-1], y[-1])
 
 def compare2_bigger(x, y):
+    """Function takes two numbers and compares first elements.
+    
+    :param x: value.
+    :type x: int
+    :param y: values.
+    :type y: int
+    :rtype:  cmp(x, y)"""
     return cmp(x, y)
 
 def compare2_smaller(x, y):
+    """Function takes two numbers and compares first elements.
+    
+    :param x: value.
+    :type x: int
+    :param y: values.
+    :type y: int
+    :rtype:  cmp(x, y)"""
     return -cmp(x, y)

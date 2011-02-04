@@ -1,3 +1,39 @@
+"""
+
+.. index:: misc
+
+Module Orange.misc contains common functions and classes which are used in other modules.
+
+
+==================
+Counters
+==================
+
+.. index:: misc
+.. index::
+   single: misc; counters
+
+
+==================
+Renders
+==================
+
+.. index:: misc
+.. index::
+   single: misc; Renders
+
+==================
+Renders
+==================
+
+.. index:: selection
+.. index::
+   single: misc; selection
+
+
+"""
+
+
 __all__ = ["counters", "selection", "render"]
 
 import random, types, sys

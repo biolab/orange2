@@ -1,6 +1,5 @@
 import Orange
 import Orange.core as orange
-import orngMisc
 
 _inf = 100000
 
@@ -134,7 +133,7 @@ class BoostedClassifier(orange.Classifier):
         votes = [0.] * len(self.classVar.values)
         for c, e in self.classifiers:
             votes[int(c(instance))] += e
-        index = orngMisc.selectBestIndex(votes)
+        index = Orange.misc.selection.selectBestIndex(votes)
         # TODO
         value = Orange.data.Value(self.classVar, index)
         if resultType == orange.GetValue:

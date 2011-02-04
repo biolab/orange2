@@ -2,7 +2,7 @@
 
 .. index:: ensemble
 
-Module orngEnsemble implements Breiman's bagging and Random Forest, 
+Module Orange.ensemble implements Breiman's bagging and Random Forest, 
 and Freund and Schapire's boosting algorithms.
 
 
@@ -10,7 +10,10 @@ and Freund and Schapire's boosting algorithms.
 Bagging
 =======
 
-.. index:: ensemble bagging
+.. index:: bagging
+.. index::
+   single: ensemble; ensemble
+
 .. autoclass:: Orange.ensemble.bagging.BaggedLearner
    :members:
    :show-inheritance:
@@ -23,7 +26,10 @@ Bagging
 Boosting
 ========
 
-.. index:: ensemble boosting
+.. index:: boosting
+.. index::
+   single: ensemble; boosting
+
 
 .. autoclass:: Orange.ensemble.boosting.BoostedLearner
   :members:
@@ -59,7 +65,10 @@ Running this script, we may get something like::
 Random Forest
 =============
 
-.. index:: ensemble randomforest
+.. index:: random forest
+.. index::
+   single: ensemble; random forest
+   
 .. autoclass:: Orange.ensemble.forest.RandomForestLearner
   :members:
   :show-inheritance:
