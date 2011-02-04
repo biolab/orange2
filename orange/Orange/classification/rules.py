@@ -219,21 +219,23 @@ written as:
    instances.
    
    The class' functionality can be best explained by showing its __call__
-   function::
+   function:
    
-        def __call__(self, instances, weightID=0):
-            ruleList = Orange.classification.rules.RuleList()
-            allInstances = Orange.data.Table(instances)
-            while not self.dataStopping(instances, weightID, self.targetClass):
-                newRule = self.ruleFinder(instances, weightID, self.targetClass,
-                                          self.baseRules)
-                if self.ruleStopping(ruleList, newRule, instances, weightID):
-                    break
-                instances, weightID = self.coverAndRemove(newRule, instances,
-                                                        weightID, self.targetClass)
-                ruleList.append(newRule)
-            return Orange.classification.rules..RuleClassifier_FirstRule(
-                rules=ruleList, instances=allInstances)
+   .. parsed-literal::
+
+      def \_\_call\_\_(self, instances, weightID=0):
+          ruleList = Orange.classification.rules.RuleList()
+          allInstances = Orange.data.Table(instances)
+          while not self.\ **dataStopping**\ (instances, weightID, self.targetClass):
+              newRule = self.\ **ruleFinder**\ (instances, weightID, self.targetClass,
+                                        self.baseRules)
+              if self.\ **ruleStopping**\ (ruleList, newRule, instances, weightID):
+                  break
+              instances, weightID = self.\ **coverAndRemove**\ (newRule, instances,
+                                                      weightID, self.targetClass)
+              ruleList.append(newRule)
+          return Orange.classification.rules.RuleClassifier_FirstRule(
+              rules=ruleList, instances=allInstances)
                 
    The four customizable components here are the invoked dataStopping,
    ruleFinder, coverAndRemove and ruleStopping objects. By default, components
