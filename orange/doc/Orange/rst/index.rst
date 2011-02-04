@@ -9,16 +9,25 @@ Orange's documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    orange.data.feature
    Orange.associate   
 
    Orange.clustering
+   Orange.clustering.kmeans
+   Orange.clustering.hierarchical
    
    Orange.data
    
-   Orange.classification
+   Orange.classification.bayes
+   Orange.classification.majority
+   Orange.classification.lookup
+   orange.classification.svm
+   orange.classification.tree
+   Orange.classification.logreg
+   Orange.classification.rules
+   orange.classification.knn
    
    Orange.regression.mean
    Orange.probability.distributions
@@ -27,6 +36,8 @@ Contents:
    Orange.feature
    
    Orange.network
+   
+   Orange.optimization
    
    Orange.projection.mds
    orange.projection.som
