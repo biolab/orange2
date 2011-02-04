@@ -7,6 +7,9 @@ The names, types, values (where applicable), functions for computing the
 feature value from other features, and other properties of the
 features are stored in descriptors contained in this module.
 
+Feature Descriptors
+-------------------
+
 Feature descriptors can be constructed directly, using constructors, or by a
 factory function :obj:`make`, which either retrieves an existing descriptor or
 constructs a new one.
@@ -16,68 +19,72 @@ constructs a new one.
     An abstract base class for feature descriptors.
 
     .. attribute:: name
-    
-    Each feature has a name. The names do not need to be unique since two
-    features are considered the same only if they have the same descriptor
-    (e.g. even multiple features in the same table can have the same name).
-    This should however be avoided since it may result in unpredictable
-    behaviour.
+
+        Each feature has a name. The names do not need to be unique since two
+        features are considered the same only if they have the same descriptor
+        (e.g. even multiple features in the same table can have the same name).
+        This should however be avoided since it may result in unpredictable
+        behaviour.
     
     .. attribute:: varType
        
-    Stores the feature type; it can be Orange.data.Type.Discrete,
-    Orange.data.Type.Continuous, Orange.data.Type.String or
-    Orange.data.Type.Other.  
+        Stores the feature type; it can be Orange.data.Type.Discrete,
+        Orange.data.Type.Continuous, Orange.data.Type.String or
+        Orange.data.Type.Other.  
 
     .. attribute:: getValueFrom
 
-    A function (an instance of :obj:`Orange.core.Clasifier`) which computes a
-    value of the feature from values of one or more other features. This is
-    used, for instance, in discretization where the features describing the 
-    discretized feature are computed from the original feature. 
+        A function (an instance of :obj:`Orange.core.Clasifier`) which computes a
+        value of the feature from values of one or more other features. This is
+        used, for instance, in discretization where the features describing the 
+        discretized feature are computed from the original feature. 
 
     .. attribute:: ordered
     
-    A flag telling whether the values of a discrete feature are ordered. At the 
-    moment, no builtin method treats ordinal features differently than nominal.
+        A flag telling whether the values of a discrete feature are ordered. At
+        the moment, no builtin method treats ordinal features differently than
+        nominal.
     
     .. attribute:: distributed
     
-    A flag telling whether the values of this features are distributions.
-    As for flag ordered, no methods treat such features in any special manner.
+        A flag telling whether the values of this features are distributions.
+        As for flag ordered, no methods treat such features in any special
+        manner.
     
     .. attribute:: randomGenerator
     
-    A local random number generator used by method :obj:`Feature.randomvalue`.
+        A local random number generator used by method
+        :obj:`Feature.randomvalue`.
     
     .. attribute:: defaultMetaId
     
-    A proposed (but not guaranteed) meta id to be used for that feature. This is 
-    used, for instance, by the data loader for tab-delimited file format instead 
-    of assigning an arbitrary new value, or by :obj:`Orange.core.newmetaid` if the
-    feature is passed as an argument. 
+        A proposed (but not guaranteed) meta id to be used for that feature.
+        This is used, for instance, by the data loader for tab-delimited file
+        format instead of assigning an arbitrary new value, or by
+        :obj:`Orange.core.newmetaid` if the feature is passed as an argument. 
         
     .. method:: __call__(obj)
     
-       Convert a string, number or other suitable object into a feature value.
-       
-       :param obj: An object to be converted into a feature value
-       :type o: any suitable
-       :rtype: :class:`Orange.data.Value`
+           Convert a string, number or other suitable object into a feature
+           value.
+           
+           :param obj: An object to be converted into a feature value
+           :type o: any suitable
+           :rtype: :class:`Orange.data.Value`
        
     .. method:: randomvalue()
 
-       Return a random value of the feature
+           Return a random value of the feature
        
-       :rtype: :class:`Orange.data.Value`
+           :rtype: :class:`Orange.data.Value`
        
     .. method:: computeValue(inst)
 
-       Compute the value of the feature given the instance by calling
-       `getValueFrom` through a mechanism that prevents deadlocks by
-       circular calls.
+           Compute the value of the feature given the instance by calling
+           `getValueFrom` through a mechanism that prevents deadlocks by
+           circular calls.
 
-       :rtype: :class:`Orange.data.Value`
+           :rtype: :class:`Orange.data.Value`
 
 .. _discrete:
 .. class:: Discrete
@@ -86,34 +93,36 @@ constructs a new one.
     
     .. attribute:: values
     
-    A list with symbolic names for feature's values. Values are stored as
-    indices referring to this list. Therefore, modifying this list instantly
-    changes (symbolic) names of values as they are printed out or referred to
-    by user.
+        A list with symbolic names for feature's values. Values are stored as
+        indices referring to this list. Therefore, modifying this list instantly
+        changes (symbolic) names of values as they are printed out or referred to
+        by user.
     
-    .. note::
-    
-        The size of the list is also used to indicate the number of possible values 
-        for this feature. Changing the size, especially shrinking the list can have 
-        disastrous effects and is therefore not really recommendable. Also, do not 
-        add values to the list by calling its append or extend method: call 
-        the :obj:`addValue` method instead described below.
+        .. note::
+        
+            The size of the list is also used to indicate the number of
+            possible values for this feature. Changing the size, especially
+            shrinking the list can have disastrous effects and is therefore not
+            really recommendable. Also, do not add values to the list by
+            calling its append or extend method: call the :obj:`addValue`
+            method instead described below.
 
-        It is also assumed that this attribute is always defined (but can be empty), 
-        so never set it to None.
+            It is also assumed that this attribute is always defined (but can
+            be empty), so never set it to None.
     
     .. attribute:: baseValue
 
-    Stores the base value for the feature as an index into `values`. This can
-    be, for instance a "normal" value, such as "no complications" as opposed to 
-    abnormal "low blood pressure". The base value is used by certain statistics, 
-    continuization etc. potentially, learning algorithms. Default is -1 and 
-    means that there is no base value.
+            Stores the base value for the feature as an index into `values`.
+            This can be, for instance a "normal" value, such as "no
+            complications" as opposed to abnormal "low blood pressure". The
+            base value is used by certain statistics, continuization etc.
+            potentially, learning algorithms. Default is -1 and means that
+            there is no base value.
     
     .. method:: addValue
     
-    Adds a value to values. Always call this function instead of appending to
-    values.
+            Adds a value to values. Always call this function instead of
+            appending to values.
 
 .. _continuous:
 .. class:: Continuous
@@ -122,38 +131,39 @@ constructs a new one.
     
     .. attribute:: numberOfDecimals
     
-    The number of decimals used when the value is printed out, converted to a
-    string or saved to a file 
+        The number of decimals used when the value is printed out, converted to
+        a string or saved to a file 
     
     .. attribute:: scientificFormat
     
-    If ``True``, the value is printed in scientific format whenever it would
-    have more than 5 digits. In this case, `numberOfDecimals` is ignored.
+        If ``True``, the value is printed in scientific format whenever it would
+        have more than 5 digits. In this case, `numberOfDecimals` is ignored.
 
     .. attribute:: adjustDecimals
     
-    Tells Orange to monitor the number of decimals when the value is converted
-    from a string (when the values are read from a file or converted by, e.g.
-    ``inst[0]="3.14"``). The value of ``0`` means that the number of decimals 
-    should not be adjusted, while 1 and 2 mean that adjustments are on, with 2 
-    denoting that no values have been converted yet.
+        Tells Orange to monitor the number of decimals when the value is
+        converted from a string (when the values are read from a file or
+        converted by, e.g. ``inst[0]="3.14"``). The value of ``0`` means that
+        the number of decimals should not be adjusted, while 1 and 2 mean that
+        adjustments are on, with 2 denoting that no values have been converted
+        yet.
 
-    By default, adjustment of number of decimals goes as follows.
+        By default, adjustment of number of decimals goes as follows.
     
-    If the feature was constructed when data was read from a file, it will be
-    printed with the same number of decimals as the largest number of decimals
-    encountered in the file. If scientific notation occurs in the file,
-    `scientificFormat` will be set to ``True`` and scientific format will be used
-    for values too large or too small.
+        If the feature was constructed when data was read from a file, it will 
+        be printed with the same number of decimals as the largest number of 
+        decimals encountered in the file. If scientific notation occurs in the 
+        file, `scientificFormat` will be set to ``True`` and scientific format 
+        will be used for values too large or too small. 
     
-    If the feature is created in a script, it will have, by default, three
-    decimals places. This can be changed either by setting the value
-    from a string (e.g. ``inst[0]="3.14"``, but not ``inst[0]=3.14``) or by
-    manually setting the `numberOfDecimals`.
+        If the feature is created in a script, it will have, by default, three
+        decimals places. This can be changed either by setting the value
+        from a string (e.g. ``inst[0]="3.14"``, but not ``inst[0]=3.14``) or by
+        manually setting the `numberOfDecimals`.
 
     .. attribute:: startValue, endValue, stepValue
     
-    The range used for :obj:`randomvalue`.
+        The range used for :obj:`randomvalue`.
 
 .. _String:
 .. class:: String
@@ -333,8 +343,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     :type type: Orange.data.feature.Type
     :param ordered_values: a list of ordered values
     :param unordered_values: a list of values, for which the order does not matter
-    :param createNewOn: gives condition for constructing a new feature instead
-    of using the new one
+    :param createNewOn: gives condition for constructing a new feature instead of using the new one
     
 .. function:: Orange.data.feature.retrieve(name, type, ordered_values, onordered_values[, createNewOn])
 
@@ -345,8 +354,7 @@ There are two functions for reusing the attributes instead of creating new ones.
     :type type: Orange.data.feature.Type
     :param ordered_values: a list of ordered values
     :param unordered_values: a list of values, for which the order does not matter
-    :param createNewOn: gives condition for constructing a new feature instead
-    of using the new one
+    :param createNewOn: gives condition for constructing a new feature instead of using the new one
     
 .. _`feature-reuse.py`: code/feature-reuse.py
 
