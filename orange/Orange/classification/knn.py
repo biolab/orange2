@@ -1,17 +1,20 @@
 """
-.. index: knn
+.. index: k-nearest neighbors (kNN)
+.. index:
+   single: classification; k-nearest neighbors (kNN)
 
-Module :mod:`orange.classification.knn` includes classes for classification
-based on nearest neighbours algorithm and also classes for finding instances
-near the given one. 
+The module includes implementation of `nearest neighbors algorithm <http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm>`_ and classes
+for finding nearest instances according to chosen distance metrics.
 
-====================
-k Nearest Neighbours
-====================
+============================
+k-Nearest Neighbor Algorithm
+============================
 
-kNN is one of the simplest learning techniques - the learner only needs to 
-store the instances, while the classifier does its work by observing the most 
-similar instances of the instance to be classified:
+Nearest neighbors algorithm is one of most basic, 
+`lazy <http://en.wikipedia.org/wiki/Lazy_learning>`_ machine learning algorithms.
+The learner only needs to store the training data instances, while the classifier
+does all the work by searching this list for the most similar instances for 
+the data instance being classified:
 
 .. literalinclude:: code/knnExample0.py
 
