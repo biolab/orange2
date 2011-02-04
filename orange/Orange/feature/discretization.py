@@ -23,40 +23,39 @@ categorization that can be used for learning.
     with the data set, would return a discretized data set::
 
         discretizer = Orange.feature.dicretization.EntropyDiscretization()
-        disc_data = discretizer(data)
-        another_disc_data = Orange.feature.dicretization.EntropyDiscretization(data)
+        disc_data = discretizer(table)
+        another_disc_data = Orange.feature.dicretization.EntropyDiscretization(table)
 
-.. class:: DiscretizedLearner([baseLearner[, examples[, discretizer[, name]]]])
+.. class:: DiscretizedLearner([baseLearner[, table[, discretizer[, name]]]])
 
-    :param baseLearner:
+    This class allows to set an learner object, such that before learning a
+    data passed to a learner is discretized. In this way we can prepare an 
+    object that lears without giving it the data, and, for instance, use it in
+    some standard testing procedure that repeats learning/testing on several
+    data samples. 
+
+    :param baseLearner: learner to which give discretized data
+    :type baseLearner: Orange.classification.Learner
     
-    :param instances:
+    :param table: data whose continuous features need to be discretized
+    :type table: Orange.data.Table
     
-    :param discretizer:
+    :param discretizer: a discretizer that converts. Defaults to 
+      :obj:`Orange.feature.discretization.EntropyDiscretization.
+    :type discretizer: Orange.feature.discretization.Discretization
     
-    :param name:
+    :param name: name to assign to learner 
+    :type name: string
 
-<dt>DiscretizedLearner</dt>
-<index name="classes/DiscretizedLearner (in orngDisc)">
-<index name="classifiers/with discretization">
+    An example on how such learner is set and used in ten-fold cross validation
+    is given below::
 
-This class allows to set an learner object, such that before learning a data 
-passed to a learner is discretized. In this way we can
-prepare an object that lears without giving it the data, and, for
-instance, use it in some standard testing procedure that repeats
-learning/testing on several data samples. Default procedure for
-discretization (<em>discretizer</em>) is
-<code>orngDisc.EntropyDiscretization</code>.  An example on how such
-learner is set and used in ten-fold cross validation is given
-below::
-
-    bayes = orange.BayesLearner()
-    disc = orange.Preprocessor_discretize(method=orange.EquiNDiscretization(numberOfIntervals=10))
-    dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')
-    dbayes2 = orngDisc.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)
-    results = orngEval.CrossValidation([dBayes], data)
-    classifier = orngDisc.DiscretizedLearner(bayes, examples=data)
-
+        bayes = Orange.classification.bayes.NaiveBayesLearner()
+        disc = orange.Preprocessor_discretize(method=Orange.feature.discretization.EquiNDiscretization(numberOfIntervals=10))
+        dBayes = Orange.feature.discretization.DiscretizedLearner(bayes, name='disc bayes')
+        dbayes2 = Orange.feature.discretization.DiscretizedLearner(bayes, name="EquiNBayes", discretizer=disc)
+        results = Orange.evaluation.testing.CrossValidation([dBayes], table)
+        classifier = Orange.feature.discretization.DiscretizedLearner(bayes, examples=table)
 
 ========
 Examples
@@ -68,14 +67,16 @@ discretization classes from core Orange are listed in chapter on
 `categorization <../ofb/o_categorization.htm>`_ of the same tutorial.
 
 
+.. note::
+    add from reference http://orange.biolab.si/doc/reference/discretization.htm
 
 ==========
 References
 ==========
 
 * UM Fayyad and KB Irani. Multi-interval discretization of continuous valued
-  attributes for classification learning. In <em>Proceedings of the 13th
-  International Joint Conference on Artificial Intelligence</em>, pages
+  attributes for classification learning. In Proceedings of the 13th
+  International Joint Conference on Artificial Intelligence, pages
   1022--1029, Chambery, France, 1993.
 
 """
