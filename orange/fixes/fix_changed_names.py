@@ -161,8 +161,17 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orngCN2.createEVDistList": "Orange.classification.rules.createEVDistList",
            "orngCN2.CovererAndRemover_Prob": "Orange.classification.rules.CovererAndRemover_Prob",
            "orngCN2.add_sub_rules": "Orange.classification.rules.add_sub_rules",
-           "orngCN2.CN2EVCUnorderedLearner": "Orange.classification.rules.CN2EVCUnorderedLearner"
+           "orngCN2.CN2EVCUnorderedLearner": "Orange.classification.rules.CN2EVCUnorderedLearner",
            
+           "orngMDS.KruskalStress": "Orange.projection.mds.KruskalStress",
+           "orngMDS.SammonStress": "Orange.projection.mds.SammonStress",
+           "orngMDS.SgnSammonStress": "Orange.projection.mds.SgnSammonStress",
+           "orngMDS.SgnRelStress": "Orange.projection.mds.SgnRelStress",
+           "orngMDS.PointList": "Orange.projection.mds.PointList",
+           "orngMDS.FloatListList": "Orange.projection.mds.FloatListList",
+           "orngMDS.PivotMDS": "Orange.projection.mds.PivotMDS",
+           "orngMDS.MDS": "Orange.projection.mds.MDS"
+
            }
 
 def build_pattern(mapping=MAPPING):

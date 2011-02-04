@@ -43,7 +43,8 @@ MAPPING = {"orange": "Orange.core",
            "orngNetwork":"Orange.network",
            "orngMisc":"Orange.misc",
            "orngEnsemble":"Orange.ensemble",
-           "orngCN2": "Orange.classification.rules"
+           "orngCN2": "Orange.classification.rules",
+           "orngMDS": "Orange.projection.mds"
            }
 
 
