@@ -45,28 +45,28 @@ Base Classes
 ============
 
 There are a number of different measures for assessing the relevance of 
-attributes with respect to much information they contain about the 
-corresponding class. These procedures are also known as attribute scoring. 
+features with respect to much information they contain about the 
+corresponding class. These procedures are also known as feature scoring. 
 Orange implements several methods that all stem from
 :obj:`Orange.feature.scoring.Measure`. The most of common ones compute
 certain statistics on conditional distributions of class values given
-the attribute values; in Orange, these are derived from
+the feature values; in Orange, these are derived from
 :obj:`Orange.feature.scoring.MeasureAttributeFromProbabilities`.
 
 .. class:: Measure
 
     This is the base class for a wide range of classes that measure quality of
-    attributes. The class itself is, naturally, abstract. Its fields merely
-    describe what kinds of attributes it can handle and what kind of data it 
+    features. The class itself is, naturally, abstract. Its fields merely
+    describe what kinds of features it can handle and what kind of data it 
     requires.
 
     .. attribute:: handlesDiscrete
     
-    Tells whether the measure can handle discrete attributes.
+    Tells whether the measure can handle discrete features.
 
     .. attribute:: handlesContinuous
     
-    Tells whether the measure can handle continuous attributes.
+    Tells whether the measure can handle continuous features.
 
     .. attribute:: computesThresholds
     
@@ -81,25 +81,25 @@ the attribute values; in Orange, these are derived from
     from :obj:`Orange.probability.distributions.DomainContingency` and the
     latter only needs the contingency
     (:obj:`Orange.probability.distributions.ContingencyAttrClass`) the 
-    attribute distribution and the apriori class distribution. Most measures
+    feature distribution and the apriori class distribution. Most measures
     only need the latter.
 
-    Several (but not all) measures can treat unknown attribute values in
+    Several (but not all) measures can treat unknown feature values in
     different ways, depending on field :obj:`unknownsTreatment` (this field is
     not defined in :obj:`Measure` but in many derived classes). Undefined 
     values can be:
     
     * ignored (:obj:`Measure.IgnoreUnknowns`); this has the same effect as if 
-      the example for which the attribute value is unknown are removed.
+      the example for which the feature value is unknown are removed.
 
-    * punished (:obj:`Measure.ReduceByUnknown`); the attribute quality is
+    * punished (:obj:`Measure.ReduceByUnknown`); the feature quality is
       reduced by the proportion of unknown values. In impurity measures, this
       can be interpreted as if the impurity is decreased only on examples for
       which the value is defined and stays the same for the others, and the
-      attribute quality is the average impurity decrease.
+      feature quality is the average impurity decrease.
       
     * imputed (:obj:`Measure.UnknownsToCommon`); here, undefined values are
-      replaced by the most common attribute value. If you want a more clever
+      replaced by the most common feature value. If you want a more clever
       imputation, you should do it in advance.
 
     * treated as a separate value (:obj:`MeasureAttribute.UnknownsAsValue`)
@@ -108,20 +108,20 @@ the attribute values; in Orange, these are derived from
     cases and does not make additional presumptions (as, for instance,
     :obj:`UnknownsToCommon` which supposes that missing values are not for
     instance, results of measurements that were not performed due to
-    information extracted from the other attributes). Use other treatments if
+    information extracted from the other features). Use other treatments if
     you know that they make better sense on your data.
 
     The only method supported by all measures is the call operator to which we
-    pass the data and get the number representing the quality of the attribute.
+    pass the data and get the number representing the quality of the feature.
     The number does not have any absolute meaning and can vary widely for
-    different attribute measures. The only common characteristic is that
-    higher the value, better the attribute. If the attribute is so bad that 
+    different feature measures. The only common characteristic is that
+    higher the value, better the feature. If the feature is so bad that 
     it's quality cannot be measured, the measure returns
     :obj:`Measure.Rejected`. None of the measures described here do so.
 
     There are different sets of arguments that the call operator can accept.
     Not all classes will accept all kinds of arguments. Relief, for instance,
-    cannot be computed from contingencies alone. Besides, the attribute and
+    cannot be computed from contingencies alone. Besides, the feature and
     the class need to be of the correct type for a particular measure.
 
     There are three call operators just to make your life simpler and faster.
@@ -130,28 +130,28 @@ the attribute values; in Orange, these are derived from
     OK with that (as most measures are), you can pass the contingency matrix
     and the measure will compute much faster. If, on the other hand, you only
     have examples and haven't computed any statistics on them, you can pass
-    examples (and, optionally, an id for meta-attribute with weights) and the
+    examples (and, optionally, an id for meta-feature with weights) and the
     measure will compute the contingency itself, if needed.
 
     .. method:: __call__(attribute, examples[, apriori class distribution][, weightID])
     .. method:: __call__(attribute, domain contingency[, apriori class distribution])
     .. method:: __call__(contingency, class distribution[, apriori class distribution])
 
-        :param attribute: gives the attribute whose quality is to be assessed.
-          This can be either a descriptor, an index into domain or a name. In the
-          first form, if the attribute is given by descriptor, it doesn't need
-          to be in the domain. It needs to be computable from the attribute in
-          the domain, though.
+        :param attribute: gives the feature whose quality is to be assessed.
+          This can be either a descriptor, an index into domain or a name. In
+          the first form, if the feature is given by descriptor, it doesn't
+          need to be in the domain. It needs to be computable from the
+          feature in the domain, though.
           
         Data is given either as examples (and, optionally, id for 
-        meta-attribute with weight), domain contingency
+        meta-feature with weight), domain contingency
         (:obj:`Orange.probability.distributions.DomainContingency`) (a list of
         contingencies) or distribution (:obj:`Orange.probability.distributions`)
         matrix and :obj:`Orange.probability.distributions.Distribution`. If 
         you use the latter form, what you should give as the class distribution
         depends upon what you do with unknown values (if there are any).
         If :obj:`unknownsTreatment` is :obj:`IgnoreUnknowns`, the class
-        distribution should be computed on examples for which the attribute
+        distribution should be computed on examples for which the feature
         value is defined. Otherwise, class distribution should be the overall
         class distribution.
 
@@ -162,24 +162,24 @@ the attribute values; in Orange, these are derived from
     .. method:: thresholdFunction(attribute, examples[, weightID])
     
     This function computes the qualities for different binarizations of the
-    continuous attribute :obj:`attribute`. The attribute should of course be
+    continuous feature :obj:`attribute`. The feature should of course be
     continuous. The result of a function is a list of tuples, where the first
     element represents a threshold (all splits in the middle between two
-    existing attribute values), the second is the measured quality for a
-    corresponding binary attribute and the last one is the distribution which
+    existing feature values), the second is the measured quality for a
+    corresponding binary feature and the last one is the distribution which
     gives the number of examples below and above the threshold. The last
     element, though, may be missing; generally, if the particular measure can
     get the distribution without any computational burden, it will do so and
     the caller can use it. If not, the caller needs to compute it itself.
 
     The script below shows different ways to assess the quality of astigmatic,
-    tear rate and the first attribute (whichever it is) in the dataset lenses.
+    tear rate and the first feature (whichever it is) in the dataset lenses.
 
     .. literalinclude:: code/scoring-info-lenses.py
         :lines: 7-21
 
     As for many other classes in Orange, you can construct the object and use
-    it on-the-fly. For instance, to measure the quality of attribute
+    it on-the-fly. For instance, to measure the quality of feature
     "tear_rate", you could write simply::
 
         >>> print orange.MeasureAttribute_info("tear_rate", data)
@@ -198,13 +198,13 @@ the attribute values; in Orange, these are derived from
     .. literalinclude:: code/scoring-info-iris.py
         :lines: 7-11
 
-    The quality of the new attribute d1 is assessed on data, which does not
-    include the new attribute at all. (Note that ReliefF won't do that since
-    it would be too slow. ReliefF requires the attribute to be present in the
+    The quality of the new feature d1 is assessed on data, which does not
+    include the new feature at all. (Note that ReliefF won't do that since
+    it would be too slow. ReliefF requires the feature to be present in the
     dataset.)
 
     Finally, you can compute the quality of meta-features. The following
-    script adds a meta-attribute to an example table, initializes it to random
+    script adds a meta-feature to an example table, initializes it to random
     values and measures its information gain.
 
     `scoring-info-lenses.py`_ (uses `lenses.tab`_):
@@ -219,20 +219,20 @@ the attribute values; in Orange, these are derived from
     .. literalinclude:: code/scoring-info-iris.py
         :lines: 7-15
 
-    If we hadn't constructed the attribute in advance, we could write 
+    If we hadn't constructed the feature in advance, we could write 
     `Orange.feature.scoring.Relief().thresholdFunction("petal length", data)`.
     This is not recommendable for ReliefF, since it may be a lot slower.
 
     The script below finds and prints out the best threshold for binarization
-    of an attribute, that is, the threshold with which the resulting binary
-    attribute will have the optimal ReliefF (or any other measure)::
+    of an feature, that is, the threshold with which the resulting binary
+    feature will have the optimal ReliefF (or any other measure)::
 
         thresh, score, distr = meas.bestThreshold("petal length", data)
         print "Best threshold: %5.3f (score %5.3f)" % (thresh, score)
 
 .. class:: MeasureAttributeFromProbabilities
 
-    This is the abstract base class for attribute quality measures that can be
+    This is the abstract base class for feature quality measures that can be
     computed from contingency matrices only. It relieves the derived classes
     from having to compute the contingency matrix by defining the first two
     forms of call operator. (Well, that's not something you need to know if
@@ -254,9 +254,9 @@ the attribute values; in Orange, these are derived from
     (with estimator constructor again set to 
     :obj:`ProbabilityEstimatorConstructor_m`), respectively.
 
-====================================
-Measures for Classification Problems
-====================================
+===========================
+Measures for Classification
+===========================
 
 This script scores features with gain ratio and relief.
 
@@ -274,7 +274,7 @@ Notice that on this data the ranks of features match rather well::
     0.189  0.382  crime
     0.166  0.345  adoption-of-the-budget-resolution
 
-The following section describes the attribute quality measures suitable for 
+The following section describes the feature quality measures suitable for 
 discrete features and outcomes. 
 See  `scoring-info-lenses.py`_, `scoring-info-iris.py`_,
 `scoring-diff-measures.py`_ and `scoring-regression.py`_
@@ -295,7 +295,7 @@ for more examples on their use.
 
     Gain ratio :obj:`GainRatio` was introduced by Quinlan in order to avoid
     overestimation of multi-valued features. It is computed as information
-    gain divided by the entropy of the attribute's value. (It has been shown,
+    gain divided by the entropy of the feature's value. (It has been shown,
     however, that such measure still overstimates the features with multiple
     values.)
 
@@ -323,7 +323,7 @@ for more examples on their use.
 .. class:: Cost
 
     Evaluates features based on the "saving" achieved by knowing the value of
-    attribute, according to the specified cost matrix.
+    feature, according to the specified cost matrix.
 
     .. attribute:: cost
      
@@ -331,14 +331,14 @@ for more examples on their use.
 
     If cost of predicting the first class for an example that is actually in
     the second is 5, and the cost of the opposite error is 1, than an appropriate
-    measure can be constructed and used for attribute 3 as follows::
+    measure can be constructed and used for feature 3 as follows::
 
         >>> meas = Orange.feature.scoring.Cost()
         >>> meas.cost = ((0, 5), (1, 0))
         >>> meas(3, data)
         0.083333350718021393
 
-    This tells that knowing the value of attribute 3 would decrease the
+    This tells that knowing the value of feature 3 would decrease the
     classification cost for appx 0.083 per example.
 
 .. index:: 
@@ -347,9 +347,9 @@ for more examples on their use.
 .. class:: Relief
 
     ReliefF :obj:`Relief` was first developed by Kira and Rendell and then
-    substantially generalized and improved by Kononenko. It measures the usefulness
-    of attributes based on their ability to distinguish between very similar
-    examples belonging to different classes.
+    substantially generalized and improved by Kononenko. It measures the
+    usefulness of features based on their ability to distinguish between
+    very similar examples belonging to different classes.
 
     .. attribute:: k
     
@@ -366,9 +366,9 @@ for more examples on their use.
 
 Computation of ReliefF is rather slow since it needs to find k nearest
 neighbours for each of m reference examples (or all examples, if m is set to
--1). Since we normally compute ReliefF for all attributes in the dataset,
+-1). Since we normally compute ReliefF for all features in the dataset,
 :obj:`Relief` caches the results. When it is called to compute a quality of
-certain attribute, it computes qualities for all attributes in the dataset.
+certain feature, it computes qualities for all features in the dataset.
 When called again, it uses the stored results if the data has not changeddomain
 is still the same and the example table has not changed. Checking is done by
 comparing the data table version :obj:`Orange.data.Table` for details) and then
@@ -381,27 +381,27 @@ disable it if you know that the data does not change or if you know what kind
 of changes are detected by the version control.
 
 Caching will only have an effect if you use the same instance for all
-attributes in the domain. So, don't do this::
+features in the domain. So, don't do this::
 
     for attr in data.domain.attributes:
         print Orange.feature.scoring.Relief(attr, data)
 
 In this script, cached data dies together with the instance of :obj:`Relief`,
-which is constructed and destructed for each attribute separately. It's way
+which is constructed and destructed for each feature separately. It's way
 faster to go like this::
 
     meas = Orange.feature.scoring.Relief()
     for attr in table.domain.attributes:
         print meas(attr, data)
 
-When called for the first time, meas will compute ReliefF for all attributes
+When called for the first time, meas will compute ReliefF for all features
 and the subsequent calls simply return the stored data.
 
 Class :obj:`Relief` works on discrete and continuous classes and thus 
 implements functionality of algorithms ReliefF and RReliefF.
 
 .. note::
-   ReliefF can also compute the threshold function, that is, the attribute
+   ReliefF can also compute the threshold function, that is, the feature
    quality at different thresholds for binarization.
 
 Finally, here is an example which shows what can happen if you disable the 
@@ -417,14 +417,14 @@ computation of checksums::
     print "%.3f\\t%.3f" % (r1(0, table), r2(0, table))
 
 The first print prints out the same number, 0.321 twice. Then we annulate the
-first attribute. r1 notices it and returns -1 as it's ReliefF,
+first feature. r1 notices it and returns -1 as it's ReliefF,
 while r2 does not and returns the same number, 0.321, which is now wrong.
 
-==============================================
-Measure for Attributes for Regression Problems
-==============================================
+======================
+Measure for Regression
+======================
 
-Except for ReliefF, the only attribute quality measure available for regression
+Except for ReliefF, the only feature quality measure available for regression
 problems is based on a mean square error.
 
 .. index:: 
@@ -436,7 +436,7 @@ problems is based on a mean square error.
 
     .. attribute:: unknownsTreatment
     
-    Tells what to do with unknown attribute values. See description on the top
+    Tells what to do with unknown feature values. See description on the top
     of this page.
 
     .. attribute:: m
