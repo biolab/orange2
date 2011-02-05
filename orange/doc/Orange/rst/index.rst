@@ -36,6 +36,8 @@ Orange Scripting Reference
    Orange.evaluation.scoring
    Orange.evaluation.testing
    
+   Orange.distances
+   
    Orange.misc
 
 ****************
