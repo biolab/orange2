@@ -6,7 +6,7 @@
    single: classification; tree
 
 ********************
-Classification Trees
+Classification trees
 ********************
 
 This page describes the Orange trees. It first describes the basic
