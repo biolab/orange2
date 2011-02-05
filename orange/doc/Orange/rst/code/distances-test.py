@@ -1,8 +1,4 @@
-import os
-os.chdir("C:\\Python26\\Lib\\site-packages\\orange\\Orange\\distances")
-
 import Orange
-reload(Orange.distances)
 
 # Read some data
 table = Orange.data.Table("iris.tab")
