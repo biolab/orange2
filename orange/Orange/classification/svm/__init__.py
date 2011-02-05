@@ -6,20 +6,20 @@
 Support vector machines
 ***********************
 
-A collection of classes that wrap the 
-`LibSVM library <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_, a library for 
-`support vector machines <http://en.wikipedia.org/wiki/Support_vector_machine>`_ (SVM).
-In this way SVM learners from LibSVM behave like ordinary Orange learners and can
-be used as Python objects in training, classification and evaluation tasks. The
+A collection of classes that wrap the `LibSVM library
+<http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`_, a library for `support vector
+machines <http://en.wikipedia.org/wiki/Support_vector_machine>`_ (SVM). In this
+way SVM learners from LibSVM behave like ordinary Orange learners and can be
+used as Python objects in training, classification and evaluation tasks. The
 implementation supports the implementation of Python-based kernels, that can be
 plugged-in into LibSVM implementations.
 
-.. note:: On some data-sets SVM can perform very poorly. SVM can be very 
-          sensitive to the proper choice of the parameters. If you are having 
-          problems with the learner's accuracy try scaling the
-          data and using different parameters or choose an easier approach
-          and use the :obj:`SVMLearnerEasy` class which does this automatically
-          (it is similar to the `svm-easy.py`_ script in the LibSVM distribution).
+.. note:: On some data-sets SVM can perform very poorly. SVM can be very
+          sensitive to the proper choice of the parameters. If you are having
+          problems with the learner's accuracy try scaling the data and using
+          different parameters or choose an easier approach and use the
+          :obj:`SVMLearnerEasy` class which does this automatically (it is
+          similar to the `svm-easy.py`_ script in the LibSVM distribution).
           
 SVM learners
 ============
@@ -399,10 +399,10 @@ class SVMLearnerSparse(SVMLearner):
 
 class SVMLearnerEasy(SVMLearner):
     
-    """Same as :obj:`SVMLearner` except that it will automatically scale the data
-    and perform parameter optimization using the :obj:`tuneParameters` method
-    similar to the easy.py script in LibSVM package. Use this if the
-    SVMLearner performs badly. 
+    """Same as :obj:`SVMLearner` except that it will automatically scale the 
+    data and perform parameter optimization using the :obj:`tuneParameters`
+    method similar to the easy.py script in LibSVM package. Use this if the
+    SVMLearner performs badly.
     
     Example (`svm-easy.py`_ uses: `vehicle.tab`_)
     
