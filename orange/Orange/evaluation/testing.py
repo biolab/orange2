@@ -1,5 +1,5 @@
 """
-.. index:: testing
+.. index:: Testing, Sampling
 
 ====================
 Sampling and Testing
@@ -61,7 +61,7 @@ Many function in this module use a set of common arguments, which we define here
     Examples, given as an :obj:`Orange.data.Table` (some functions need an undivided
     set of examples while others need examples that are already split
     into two sets). If examples are weighted, pass them as a tuple
-    (examples, weightID). Weights are respected by learning and testing,
+    ``(examples, weightID)``. Weights are respected by learning and testing,
     but not by sampling. When selecting 10% of examples, this means 10%
     by number, not by weights. There is also no guarantee that sums
     of example weights will be (at least roughly) equal for folds in
@@ -69,7 +69,7 @@ Many function in this module use a set of common arguments, which we define here
 
 *strat*
     Tells whether to stratify the random selections. Its default value is
-    :obj:`Orange.core.StratifiedIfPossible` which stratifies selections
+    :obj:`orange.StratifiedIfPossible` which stratifies selections
     if the class variable is discrete and has no unknown values.
 
 *randseed (obsolete: indicesrandseed), randomGenerator*
@@ -79,7 +79,7 @@ Many function in this module use a set of common arguments, which we define here
     set. There are various slightly different ways to randomize it.
 
     * 
-      Set ``randomGenerator`` to :obj:`Orange.core.globalRandom`. The function's
+      Set ``randomGenerator`` to :obj:`orange.globalRandom`. The function's
       selection will depend upon Orange's global random generator that
       is reset (with random seed 0) when Orange is imported. The Script's
       output will therefore depend upon what you did after Orange was
@@ -89,7 +89,7 @@ Many function in this module use a set of common arguments, which we define here
               randomGenerator=orange.globalRandom) 
 
     * 
-      Construct a new :obj:`Orange.core.RandomGenerator`. The code below,
+      Construct a new :obj:`orange.RandomGenerator`. The code below,
       for instance, will produce different results in each iteration,
       but overall the same results each time it's run.
 
@@ -171,7 +171,7 @@ Classes
 =======
 
 Knowing classes :obj:`TestedExample` that stores results of testing
-for a single test example and ExperimentResults that stores a list of
+for a single test example and :obj:`ExperimentResults` that stores a list of
 TestedExamples along with some other data on experimental procedures
 and classifiers used, is important if you would like to write your own
 measures of quality of models, compatible the sampling infrastructure
@@ -193,7 +193,7 @@ pages 317-328.
 """
 
 import Orange
-from orngMisc import demangleExamples, getobjectname, printVerbose
+from Orange.misc import demangleExamples, getobjectname, printVerbose
 import exceptions, cPickle, os, os.path
 
 #### Some private stuff
@@ -477,14 +477,14 @@ def proportionTest(learners, examples, learnProp, times=10,
 
     """
     
-    # randomGenerator is set either to what users provided or to Orange.core.RandomGenerator(0)
+    # randomGenerator is set either to what users provided or to orange.RandomGenerator(0)
     # If we left it None or if we set MakeRandomIndices2.randseed, it would give same indices each time it's called
     randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = Orange.core.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
     
     examples, weight = demangleExamples(examples)
     classVar = examples.domain.classVar
-    if classVar.varType == Orange.core.VarTypes.Discrete:
+    if classVar.varType == Orange.data.Type.Discrete:
         values = list(classVar.values)
         baseValue = classVar.baseValue
     else:
@@ -524,7 +524,7 @@ def learningCurveN(learners, examples, folds=10,
     A simpler interface for the function :obj:`learningCurve`. Instead
     of methods for preparing indices, it simply takes the number of folds
     and a flag telling whether we want a stratified cross-validation or
-    not. This function does not return a single ``ExperimentResults`` but
+    not. This function does not return a single :obj:`ExperimentResults` but
     a list of them, one for each proportion. ::
 
         prop = [0.2, 0.4, 0.6, 0.8, 1.0]
@@ -562,8 +562,8 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
 
     Arguments ``cv`` and ``pick`` give the methods for preparing
     indices for cross-validation and random selection of learning
-    examples. If they are not given, :obj:`Orange.core.MakeRandomIndicesCV` and
-    :obj:`Orange.core.MakeRandomIndices2` are used, both will be stratified and the
+    examples. If they are not given, :obj:`orange.MakeRandomIndicesCV` and
+    :obj:`orange.MakeRandomIndices2` are used, both will be stratified and the
     cross-validation will be 10-fold. Proportions is a list of proportions
     of learning examples.
 
@@ -611,7 +611,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
             if "*" in fnstr:
                 cache = 0
 
-        conv = examples.domain.classVar.varType == Orange.core.VarTypes.Discrete and int or float
+        conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float
         testResults = ExperimentResults(cv.folds, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
         testResults.results = [TestedExample(folds[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                                for i in range(len(examples))]
@@ -640,7 +640,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=Orange.cor
                 for i in range(len(examples)):
                     if (folds[i]==fold):
                         # This is to prevent cheating:
-                        ex = Orange.core.Example(examples[i])
+                        ex = Orange.data.Instance(examples[i])
                         ex.setclass("?")
                         for cl in range(nLrn):
                             if not cache or not testResults.loaded[cl]:
@@ -664,7 +664,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10,
     proportion of learning examples, it randomly select the requested
     number of learning examples, builds the models and tests them on the
     entire testset. The whole test is repeated for the given number of
-    times for each proportion. The result is a list of ExperimentResults,
+    times for each proportion. The result is a list of :obj:`ExperimentResults`,
     one for each proportion.
 
     In the following scripts, examples are pre-divided onto training
@@ -740,13 +740,13 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
 ##            raise SystemError, "cannot preprocess testing examples"
 
     nIterations = max(indices)+1
-    if examples.domain.classVar.varType == Orange.core.VarTypes.Discrete:
+    if examples.domain.classVar.varType == Orange.data.Type.Discrete:
         values = list(examples.domain.classVar.values)
         basevalue = examples.domain.classVar.baseValue
     else:
         basevalue = values = None
 
-    conv = examples.domain.classVar.varType == Orange.core.VarTypes.Discrete and int or float        
+    conv = examples.domain.classVar.varType == Orange.data.Type.Discrete and int or float        
     testResults = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, basevalue)
     testResults.results = [TestedExample(indices[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
@@ -803,7 +803,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
             for i in range(len(examples)):
                 if (indices[i]==fold):
                     # This is to prevent cheating:
-                    ex = Orange.core.Example(testset[tcn])
+                    ex = Orange.data.Instance(testset[tcn])
                     ex.setclass("?")
                     tcn += 1
                     for cl in range(nLrn):
@@ -900,7 +900,7 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
             hasLorT = 1
 
     if hasLorT:
-        testset = Orange.core.ExampleTable(learnset)
+        testset = Orange.data.Table(learnset)
         for pp in pps:
             if pp[0]=="L":
                 learnset = pp[1](learnset)
@@ -938,7 +938,7 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, storeE
 
     if not testResults:
         classVar = testset.domain.classVar
-        if testset.domain.classVar.varType == Orange.core.VarTypes.Discrete:
+        if testset.domain.classVar.varType == Orange.data.Type.Discrete:
             values = classVar.values.native()
             baseValue = classVar.baseValue
         else:
@@ -951,20 +951,20 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, storeE
         # We must not modify an example table we do not own, so we clone it the
         # first time we have to add to it
         if not getattr(testResults, "examplesCloned", False):
-            testResults.examples = Orange.core.ExampleTable(testResults.examples)
+            testResults.examples = Orange.data.Table(testResults.examples)
             testResults.examplesCloned = True
         testResults.examples.extend(testset)
     else:
         # We do not clone at the first iteration - cloning might never be needed at all...
         testResults.examples = testset
     
-    conv = testset.domain.classVar.varType == Orange.core.VarTypes.Discrete and int or float
+    conv = testset.domain.classVar.varType == Orange.data.Type.Discrete and int or float
     for ex in testset:
         te = TestedExample(iterationNumber, conv(ex.getclass()), 0, ex.getweight(testweight))
 
         for classifier in classifiers:
             # This is to prevent cheating:
-            ex2 = Orange.core.Example(ex)
+            ex2 = Orange.data.Instance(ex)
             ex2.setclass("?")
             cr = classifier(ex2, Orange.core.GetBoth)
             te.addResult(cr[0], cr[1])

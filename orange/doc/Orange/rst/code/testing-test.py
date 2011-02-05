@@ -1,16 +1,15 @@
 import Orange
-import orngStat
 import random
 
 table = Orange.data.Table("voting")
 
-bayes = Orange.core.BayesLearner(name="bayes")
-tree = Orange.core.TreeLearner(name="tree")
+bayes = Orange.classification.bayes.NaiveLearner(name="bayes")
+tree = Orange.classification.tree.TreeLearnerBase(name="tree")
 majority = Orange.classification.majority.MajorityLearner(name="default")
 learners = [bayes, tree, majority]
 
 def printResults(res):
-    CAs = orngStat.CA(res, reportSE=1)
+    CAs = Orange.evaluation.scoring.CA(res, reportSE=1)
     for name, ca in zip(res.classifierNames, CAs):
         print "%s: %5.3f+-%5.3f" % (name, ca[0], 1.96 * ca[1]),
     print
@@ -29,11 +28,12 @@ for i in range(3):
     printResults(res)
 # End
 
-print "\nproportionsTest that will give different results each time it is run"
-for i in range(3):
-    res = Orange.evaluation.testing.proportionTest(learners, table, 0.7,
-        randseed=random.randint(0, 100))
-    printResults(res)
+if "NO_RANDOMNESS" not in vars():
+    print "\nproportionsTest that will give different results each time it is run"
+    for i in range(3):
+        res = Orange.evaluation.testing.proportionTest(learners, table, 0.7,
+            randseed=random.randint(0, 100))
+        printResults(res)
 # End
 
 print "\nproportionsTest + storing classifiers"

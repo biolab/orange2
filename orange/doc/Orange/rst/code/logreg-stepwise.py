@@ -1,7 +1,7 @@
-import orngStat
 import orngTest
 import orngFSS
 from Orange import *
+import Orange.evaluation.testing
 
 
 def StepWiseFSS_Filter(examples=None, **kwds):
@@ -32,16 +32,16 @@ table = data.Table("ionosphere.tab")
 lr = classification.logreg.LogRegLearner(removeSingular=1)
 learners = (
   classification.logreg.LogRegLearner(name='logistic', removeSingular=1),
-  orngFSS.FilteredLearner(lr,
+  feature.selection.FilteredLearner(lr,
      filter=StepWiseFSS_Filter(addCrit=0.05, deleteCrit=0.9),
      name='filtered')
 )
-results = orngTest.crossValidation(learners, table, storeClassifiers=1)
+results = Orange.evaluation.testing.crossValidation(learners, table, storeClassifiers=1)
 
 # output the results
 print "Learner      CA"
 for i in range(len(learners)):
-    print "%-12s %5.3f" % (learners[i].name, orngStat.CA(results)[i])
+    print "%-12s %5.3f" % (learners[i].name, evaluation.scoring.CA(results)[i])
 
 # find out which features were retained by filtering
 
