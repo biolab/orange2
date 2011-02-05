@@ -6,18 +6,18 @@
    single: classification; rule induction
 
 **************
-Rule Induction
+Rule induction
 **************
 
-Supervised rule induction algorithms and rule-based classification methods.
+Orange implements several supervised rule induction algorithms
+and rule-based classification methods. First, there is an implementation of the classic 
+`CN2 induction algorithm <http://www.springerlink.com/content/k6q2v76736w5039r/>`_. 
+The implementation of CN2 is modular, providing the oportunity to change, specialize
+and improve the algorithm. The implementation is thus based on the rule induction 
+framework that we describe below.
 
-First, the commonly used CN2 learner's description is given. That is followed
-by documentation of the common framework of classes that enable customization
-of the rule induction process.
-
-============================
-CN2 Rule Induction Algorithm
-============================
+CN2 algorithm
+=============
 
 .. index:: 
    single: classification; CN2
@@ -26,7 +26,7 @@ Several variations of well-known CN2 rule learning algorithms are implemented.
 All are implemented by wrapping the
 :class:`Orange.classification.rules.RuleLearner` class. Each CN2 learner class
 in this module changes some of RuleLearner's replaceable components to reflect
-the required behaviour.
+the required behavior.
 
 Usage is consistent with typical learner usage in Orange:
 
@@ -104,9 +104,9 @@ References
   <http://jmlr.csail.mit.edu/papers/volume5/lavrac04a/lavrac04a.pdf>`_. Journal
   of Machine Learning Research 5: 153-188, 2004.
 
-=================
-General Framework
-=================
+
+Rule induction framework
+========================
 
 A general framework of classes supports the described CN2 implementation, and
 can in fact be fine-tuned to specific needs by replacing individual components.
@@ -316,7 +316,7 @@ part of `rules-customized.py`_ (uses `titanic.tab`_)
        containing only an empty rule.
    :type baseRules: :class:`Orange.classification.rules.RuleList`
 
-Rule Finders
+Rule finders
 ------------
 
 .. class:: Orange.classification.rules.RuleFinder
@@ -431,7 +431,7 @@ Rule Finders
    :param baseRules: existing rules.
    :type baseRules: :class:`Orange.classification.rules.RuleList`
 
-Rule Evaluators
+Rule evaluators
 ---------------
 
 .. class:: Orange.classification.rules.RuleEvaluator
@@ -483,8 +483,8 @@ Rule Evaluators
 
    Bases: :class:`Orange.classification.rules.RuleEvaluator`
    
-Instance Coverers and Removers
-------------------------------
+Instance covering and removal
+-----------------------------
 
 .. class:: RuleCovererAndRemover
 
@@ -511,7 +511,7 @@ Instance Coverers and Removers
 
 .. autoclass:: CovererAndRemover_AddWeights
    
-Miscellaneous Functions
+Miscellaneous functions
 -----------------------
 
 .. automethod:: Orange.classification.rules.ruleToString
