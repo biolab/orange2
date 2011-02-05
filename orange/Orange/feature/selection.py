@@ -64,10 +64,7 @@ classification problems.
 
 .. automethod:: Orange.feature.selection.filterRelieff
 
-
-========
-Examples
-========
+.. rubric:: Examples
 
 Following is a script that defines a new classifier that is based
 on naive Bayes and prior to learning selects five best features from
