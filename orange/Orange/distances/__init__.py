@@ -170,7 +170,7 @@ This class is derived directly from ExamplesDistance, not from ExamplesDistance_
 
 import Orange
 
-from orange import \
+from Orange.core import \
      AlignmentList, \
      DistanceMap, \
      DistanceMapConstructor, \
@@ -181,19 +181,19 @@ from orange import \
      ExamplesDistance_Normalized, \
      ExamplesDistanceConstructor
 
-from orange import ExamplesDistance_Hamming as Hamming
-from orange import ExamplesDistance_DTW as DTW
-from orange import ExamplesDistance_Euclidean as Euclidean
-from orange import ExamplesDistance_Manhattan as Manhattan
-from orange import ExamplesDistance_Maximal as Maximal
-from orange import ExamplesDistance_Relief as Relief
+from Orange.core import ExamplesDistance_Hamming as Hamming
+from Orange.core import ExamplesDistance_DTW as DTW
+from Orange.core import ExamplesDistance_Euclidean as Euclidean
+from Orange.core import ExamplesDistance_Manhattan as Manhattan
+from Orange.core import ExamplesDistance_Maximal as Maximal
+from Orange.core import ExamplesDistance_Relief as Relief
 
-from orange import ExamplesDistanceConstructor_DTW as DTWConstructor
-from orange import ExamplesDistanceConstructor_Euclidean as EuclideanConstructor
-from orange import ExamplesDistanceConstructor_Hamming as HammingConstructor
-from orange import ExamplesDistanceConstructor_Manhattan as ManhattanConstructor
-from orange import ExamplesDistanceConstructor_Maximal as MaximalConstructor
-from orange import ExamplesDistanceConstructor_Relief as ReliefConstructor
+from Orange.core import ExamplesDistanceConstructor_DTW as DTWConstructor
+from Orange.core import ExamplesDistanceConstructor_Euclidean as EuclideanConstructor
+from Orange.core import ExamplesDistanceConstructor_Hamming as HammingConstructor
+from Orange.core import ExamplesDistanceConstructor_Manhattan as ManhattanConstructor
+from Orange.core import ExamplesDistanceConstructor_Maximal as MaximalConstructor
+from Orange.core import ExamplesDistanceConstructor_Relief as ReliefConstructor
 
 import statc
 
