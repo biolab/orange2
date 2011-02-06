@@ -119,13 +119,17 @@ the above class for all features in the domain.
 .. _distributions-basic-stat.py: code/distributions-basic-stat.py
 
 
-==================
 Contingency Matrix
 ==================
 
-Contingency matrix contains conditional distributions. They can work for both,
-discrete and continuous variables; although examples on this page will mostly
-use discrete ones, similar code could be run for continuous variables.
+Contingency matrix contains conditional distributions. When initialized, they
+will typically contain absolute frequencies, that is, the number of instances
+with a particular combination of two variables' values. If they are normalized
+by dividing each cell by the row sum, the represent conditional probabilities
+of the column variable (here denoted as ``innerVariable``) conditioned by the
+row variable (``outerVariable``). 
+
+Contingencies work with both, discrete and continuous variables.
 
 .. _distributions-contingency: code/distributions-contingency.py
 
@@ -155,141 +159,122 @@ can compute and store conditional probabilities of classes given the feature val
 
 .. class:: Orange.statistics.distribution.Contingency
 
-    .. attribute:: outerVariable (`Orange.data.feature.Feature`_) 
+    .. attribute:: outerVariable
 
-       Descriptor of the outer variable.
+       Descriptor (:class:`Orange.data.feature.Feature`) of the outer variable.
 
-.. _`Orange.data.feature.Feature`: :obj:`Orange.data.feature.Feature`
+    .. attribute:: innerVariable
 
-    .. attribute:: innerVariable (:class:`Orange.data.feature.Feature`)
-
-        Descriptor of the inner variable.
-
+        Descriptor (:class:`Orange.data.feature.Feature`) of the inner variable.
+ 
     .. attribute:: outerDistribution
 
-        The distribution (`of the outer feature's values - sums of rows.
-        In the above case, distribution of ``e`` is
-        <108.000, 108.000, 108.000, 108.000>
+        The marginal distribution (:class:`Distribution`) of the outer variable.
 
     .. attribute:: innerDistribution
 
-        The distribution of the inner feature.
-        In the above case, it is the class distribution
-        which is <216.000, 216.000<. 
-
+        The marginal distribution (:class:`Distribution`) of the inner variable.
+        
     .. attribute:: innerDistributionUnknown
 
-        The distribution of the inner feature for the
-        instances where the outer feature was unknown.
-        This is the difference between the innerDistribution
-        and the sum of all distributions in the matrix.
+        The distribution (:class:`Distribution`) of the inner variable for 
+        instances for which the outer variable was undefined.
+        This is the difference between the ``innerDistribution``
+        and unconditional distribution of inner variable.
       
     .. attribute:: varType
 
-        The varType for the outer feature (discrete, continuous...);
-        varType equals outerVariable.varType and outerDistribution.varType.
+        The type of the outer feature (:obj:`Orange.data.Type`, usually
+        :obj:`Orange.data.feature.Discrete` or 
+        :obj:`Orange.data.feature.Continuous`). ``varType`` equals ``outerVariable.varType`` and ``outerDistribution.varType``.
 
-Contingency matrix is a cross between dictionary and a list.
-It supports standard dictionary methods keys, values and items.::
+    .. method:: __init__(outerVariable, innerVariable)
+     
+        :param outerVariable: Descriptor of the outer variable
+        :type outerVariable: Orange.data.feature.Feature
+        :param outerVariable: Descriptor of the inner variable
+        :type innerVariable: Orange.data.feature.Feature
+        
+        Construct an instance of ``Contingency``.
+     
+    .. method:: add(outer_value, inner_value[, weight=1])
+    
+        :param outer_value: The value for the outer variable
+        :type outer_value: int, float, string or :obj:`Orange.data.Value`
+        :param inner_value: The value for the inner variable
+        :type inner_value: int, float, string or :obj:`Orange.data.Value`
+        :param weight: Instance weight
+        :type weight: float
 
-    >> print cont.keys()
-    ['1', '2', '3', '4']
-    >>> print cont.values()
-    [<0.000, 108.000>, <72.000, 36.000>, <72.000, 36.000>, <72.000, 36.000>]
-    >>> print cont.items()
-    [('1', <0.000, 108.000>), ('2', <72.000, 36.000>),
-    ('3', <72.000, 36.000>), ('4', <72.000, 36.000>)] 
-
-Although keys returned by the above functions are strings,
-you can index the contingency with anything that converts into values
-of the outer feature - strings, numbers or instances of Value.::
-
-    >>> print cont[0]
-    <0.000, 108.000>
-    >>> print cont["1"]
-    <0.000, 108.000>
-    >>> print cont[Orange.data.Value(data.domain["e"], "1")] 
-
-Naturally, the length of Contingency equals the number of values of the outer
-feature. The only weird thing is that iterating through contingency
-(by using a for loop, for instance) doesn't return keys, as with dictionaries,
-but dictionary values.::
-
-    >>> for i in cont:
-        ... print i
-    <0.000, 108.000>
-    <72.000, 36.000>
-    <72.000, 36.000>
-    <72.000, 36.000>
-    <72.000, 36.000> 
-
-If cont behaved like a normal dictionary, the above script would print out strings from '0' to '3'.
-
-
-Other methods
-
-.. class:: Orange.statistics.distributions.Contingency
-
-    .. method:: add(outer_value, inner_value[, weight])
-
-       Adds an element to the contingency matrix.
+        Add an element to the contingency matrix by adding
+        ``weight`` to the corresponding cell.
 
     .. method:: normalize()
 
-Normalizes all distributions (rows) in the contingency to sum to 1.
-It doesn't change the innerDistribution or outerDistribution.::
+        Normalize all distributions (rows) in the contingency to sum to ``1``::
+        
+            >>> cont.normalize()
+            >>> for val, dist in cont.items():
+                   print val, dist
 
-    >>> cont.normalize()
-    >>> for val, dist in cont.items():
-           print val, dist
+        Output: ::
 
-This outputs: ::
+            1 <0.000, 1.000>
+            2 <0.667, 0.333>
+            3 <0.667, 0.333>
+            4 <0.667, 0.333>
 
-    1 <0.000, 1.000>
-    2 <0.667, 0.333>
-    3 <0.667, 0.333>
-    4 <0.667, 0.333>
+        .. note::
+       
+            This method doesn't change the ``innerDistribution`` or
+            ``outerDistribution``.
+        
+    With respect to indexing, contingency matrix is a cross between dictionary
+    and a list. It supports standard dictionary methods ``keys``, ``values`` and
+    ``items``.::
 
-.. _distributions-contingency2: code/distributions-contingency2.py
+        >> print cont.keys()
+        ['1', '2', '3', '4']
+        >>> print cont.values()
+        [<0.000, 108.000>, <72.000, 36.000>, <72.000, 36.000>, <72.000, 36.000>]
+        >>> print cont.items()
+        [('1', <0.000, 108.000>), ('2', <72.000, 36.000>),
+        ('3', <72.000, 36.000>), ('4', <72.000, 36.000>)] 
 
-part of `distributions-contingency2`_ (uses monks-1.tab)
+    Although keys returned by the above functions are strings, contingency
+    can be indexed with anything that converts into values
+    of the outer variable: strings, numbers or instances of ``Orange.data.Value``.::
 
-.. literalinclude:: code/distributions-contingency2.py
+        >>> print cont[0]
+        <0.000, 108.000>
+        >>> print cont["1"]
+        <0.000, 108.000>
+        >>> print cont[orange.Value(data.domain["e"], "1")] 
 
-The "reproduction" is not perfect. We didn't care about unknown values
-and haven't computed innerDistribution and outerDistribution.
-The better way to do it is by using the method add, so that the loop becomes: ::
+    The length of ``Contingency`` equals the number of values of the outer
+    variable. However, iterating through contingency
+    doesn't return keys, as with dictionaries, but distributions.::
 
-    for ins in table:
-        cont.add(ins["e"], ins.getclass()) 
+        >>> for i in cont:
+            ... print i
+        <0.000, 108.000>
+        <72.000, 36.000>
+        <72.000, 36.000>
+        <72.000, 36.000>
+        <72.000, 36.000> 
 
-It's not only simpler, but also correctly handles unknown values
-and updates innerDistribution and outerDistribution. 
 
 .. class:: Orange.statistics.distribution.ContingencyClass
 
-    ContingencyClass is an abstract base class for contingency matrices
+    ``ContingencyClass`` is an abstract base class for contingency matrices
     that contain the class, either as the inner or the outer
-    feature. If offers a function for making filing the contingency clearer.
-
-    After reading through the rest of this page you might ask yourself
-    why do we need to separate the classes ContingencyAttrClass,
-    ContingencyClassAttr and ContingencyAttrAttr,
-    given that the underlying matrix is the same. This is to avoid confusion
-    about what is in the inner and the outer variable.
-    Contingency matrices are most often used to compute probabilities of conditional
-    classes or features. By separating the classes and giving them specialized
-    methods for computing the probabilities that are most suitable to compute
-    from a particular class, the user (ie, you or the method that gets passed
-    the matrix) is relieved from checking what kind of matrix it got, that is,
-    where is the class and where's the feature.
-
-
+    variable.
 
     .. attribute:: classVar (read only)
     
         The class attribute descriptor.
-        This is always equal either to innerVariable or outerVariable
+        This is always equal either to :obj:`Contingency.innerVariable` or
+        ``outerVariable``.
 
     .. attribute:: variable
     
