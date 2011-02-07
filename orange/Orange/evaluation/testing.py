@@ -731,9 +731,9 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
     nLrn = len(learners)
 
     if not examples:
-        raise SystemError, "Test data set with no examples"
+        raise ValueError("Test data set with no examples")
     if not examples.domain.classVar:
-        raise "Test data set without class attribute"
+        raise ValueError("Test data set without class attribute")
     
 ##    for pp in pps:
 ##        if pp[0]!="L":

@@ -430,7 +430,7 @@ class ThresholdLearner(Orange.classification.Learner):
 
     def __call__(self, examples, weightID = 0):
         if not hasattr(self, "learner"):
-            raise "learner not set"
+            raise AttributeError("learner not set")
         
         classifier = self.learner(examples, weightID)
         threshold, optCA, curve = Orange.wrappers.ThresholdCA(classifier, 
@@ -523,11 +523,11 @@ class ThresholdLearner_fixed(Orange.classification.Learner):
 
     def __call__(self, examples, weightID = 0):
         if not hasattr(self, "learner"):
-            raise "learner not set"
+            raise AttributeError("learner not set")
         if not hasattr(self, "threshold"):
-            raise "threshold not set"
+            raise AttributeError("threshold not set")
         if len(examples.domain.classVar.values)!=2:
-            raise "ThresholdLearner handles binary classes only"
+            raise ValueError("ThresholdLearner handles binary classes only")
         
         return ThresholdClassifier(self.learner(examples, weightID), 
                                    self.threshold)

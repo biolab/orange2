@@ -14,7 +14,7 @@ class StepwiseLearner_Class:
     self.__dict__.update(kwds)
 
     if self.removeThreshold < self.addThreshold:
-        raise "'removeThreshold' should be larger or equal to 'addThreshold'"
+        raise ValueError("'removeThreshold' should be larger or equal to 'addThreshold'")
 
     classVar = examples.domain.classVar
     
