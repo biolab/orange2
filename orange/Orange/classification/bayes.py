@@ -359,3 +359,6 @@ class NaiveClassifier(Orange.classification.Classifier):
             for v in range(len(i.variable.values)):
                 print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
             print
+            
+
+printModel = NaiveClassifier.printModel

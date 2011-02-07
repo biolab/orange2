@@ -114,6 +114,7 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            "orange.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
            "orngBayes.BayesLearner":"Orange.classification.bayes.NaiveLearner",
            "orngBayes.BayesClassifier":"Orange.classification.bayes.NaiveClassifier",
+           "orngBayes.printModel": "Orange.classification.bayes.printModel",
            
            "orngNetwork.MdsTypeClass":"Orange.network.MdsTypeClass",
            "orngNetwork.Network":"Orange.network.Network",
@@ -383,13 +384,13 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
            
            }
 
-def build_pattern(mapping=MAPPING):
-    def split_dots(name):
-        return " '.' ".join(["'%s'" % n for n in name.split(".")])
-        
-    names = "(" + "|".join("%s" % split_dots(key) for key in mapping.keys()) + ")"
-    
-    yield "power< bare_with_attr = (%s) trailer< any*> any*>"% names
+#def build_pattern(mapping=MAPPING):
+#    def split_dots(name):
+#        return " '.' ".join(["'%s'" % n for n in name.split(".")])
+#        
+#    names = "(" + "|".join("%s" % split_dots(key) for key in mapping.keys()) + ")"
+#    
+#    yield "power< bare_with_attr = (%s) trailer< any*> any*>"% names
     
 def build_pattern(mapping=MAPPING):
     PATTERN = """
@@ -406,14 +407,12 @@ class FixChangedNames(fixer_base.BaseFix):
     run_order = 1
     
     def compile_pattern(self):
-        # We override this, so MAPPING can be pragmatically altered and the
-        # changes will be reflected in PATTERN.
         self.PATTERN = build_pattern(self.mapping)
         self._modules_to_change = [key.split(".", 1)[0] for key in self.mapping.keys()]
         super(FixChangedNames, self).compile_pattern()
         
     def package_tree(self, package):
-        """ Return pytree tree for asscesing the package
+        """ Return pytree tree for accessing the package
         
         Example:
             >>> package_tree("Orange.feature.scoring")
