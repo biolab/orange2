@@ -195,7 +195,8 @@ can compute and store conditional probabilities of classes given the feature val
         :param outerVariable: Descriptor of the inner variable
         :type innerVariable: Orange.data.feature.Feature
         
-        Construct an instance of ``Contingency``.
+        Construct an instance of ``Contingency`` for the given pair of
+        variables.
      
     .. method:: add(outer_value, inner_value[, weight=1])
     
@@ -290,296 +291,276 @@ can compute and store conditional probabilities of classes given the feature val
 
 
 
-.. class:: Orange.statistics.distribution.ContingencyClass
+.. class:: Orange.statistics.distribution.ContingencyVarClass
 
-    ContingencyAttrClass is derived from ContingencyClass.
-    Here, feature is the outer variable (hence variable=outerVariable)
-    and class is the inner (classVar=innerVariable), so this form of
-    contingency matrix is suitable for computing the conditional probabilities
-    of classes given a value of a feature.
-
-    Calling add_attrclass(v, c) is here equivalent to calling add(v, c).
-    In addition to this, the class supports computation of contingency from instances,
-    as you have already seen in the example at the top of this page.
-
-
-    .. method:: ContingencyAttrClass(feature, class_attribute)
-
-        The inherited constructor, which does exactly the same
-        as Contingency's constructor.
-
-    .. method:: ContingencyAttrClass(feaure, class_attribute)
-
-        The inherited constructor, which does exactly the same
-        as Contingency's constructor.
-
-    .. method::  ContingencyAttrClass(feature, instances[, weightID])
-
-        Constructor that constructs the contingency and computes the
-        data from the given instances. If these are weighted, the meta
-        attribute with instance weights can be specified.     
-
-    .. method:: p_class(attribute_value)
-
-        Returns the distribution of classes given the attribute_value.
-        If the matrix is normalized, this is equivalent to returning
-        self[attribute_value].
-        Result is returned as a normalized Distribution.
-
-    .. method:: p_class(attribute_value, class_value)
-
-        Returns the conditional probability of class_value given the
-        attribute_value. If the matrix is normalized, this is equivalent
-        to returning self[attribute_value][class_value].
-
-Don't confuse the order of arguments: feature value is the first,
-class value is the second, just as in add_attrclass. Although in this
-instance counterintuitive (since the returned value represents the conditional
-probability P(class_value|attribute_value), this order is uniform for all
-(applicable) methods of classes derived from ContingencyClass.
-
-You have seen this form of matrix used already at the top of the page.
-We shall only explore the new stuff we've learned about it.
-
-
-.. _distributions-contingency3.py: code/distributions-contingency3.py
-
-part of `distributions-contingency3.py`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency3.py
-    :lines: 1-25
-
-The inner and the outer variable and their relations to the class
-and the features are as expected.::
-
-    Inner variable:  y
-    Outer variable:  e
-
-    Class variable:  y
-    Feature:         e
-
-Distributions are normalized and probabilities are elements from the
-normalized distributions. Knowing that the target concept is
-y := (e=1) or (a=b), distributions are as expected: when e equals 1, class 1
-has a 100% probability, while for the rest, probability is one third, which
-agrees with a probability that two three-valued independent features
-have the same value.::
-
-    Distributions:
-      p(.|1) = <0.000, 1.000>
-      p(.|2) = <0.662, 0.338>
-      p(.|3) = <0.659, 0.341>
-      p(.|4) = <0.669, 0.331>
-
-    Probabilities of class '1'
-      p(1|1) = 1.000
-      p(1|2) = 0.338
-      p(1|3) = 0.341
-      p(1|4) = 0.331
-
-    Distributions from a matrix computed manually:
-      p(.|1) = <0.000, 1.000>
-      p(.|2) = <0.662, 0.338>
-      p(.|3) = <0.659, 0.341>
-      p(.|4) = <0.669, 0.331>
-
-
-Manual computation using add_attrclass is similar
-(to be precise: exactly the same) as computation using add.
-
-.. _distributions-contingency3.py: code/distributions-contingency3.py
-
-part of `distributions-contingency3.py`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency3.py
-    :lines: 27-
-
-
-.. class:: Orange.statistics.distribution.ContingencyClassAttr
-
-    ContingencyClassAttr is similar to ContingencyAttrClass except that here
-    the class is the outer and the feature the inner variable.
-    As a consequence, this form of contingency matrix is suitable
-    for computing conditional probabilities of feature values given class.
-    Constructor and add_attrclass nevertheless get the arguments
-    in the same order as for ContingencyAttrClass, that is,
-    feaure first, class second.
-
-
-    ..method:: ContingencyClassAttr(attribute, class_attribute)
-
-        The inherited constructor is exactly the same as Contingency's
-        constructor, except that the argument order is reversed
-        (in Contingency, the outer attribute is given first,
-        while here the first argument, attribute, is the inner attribute).
+    A class derived from :obj:`ContingencyVarClass`, which uses a given feature
+    as the :obj:`Contingency.outerVariable` and class as the
+    :obj:`Contingency.innerVariable` to provide a form suitable for computation
+    of conditional class probabilities given the variable value.
     
-    .. method:: ContingencyAttrClass(attribute, examples[, weightID])
+    Calling :obj:`ContingencyVarClass.add_attrclass(v, c)` is equivalent
+    to calling :obj:`Contingency.add(v, c)`. Similar as :obj:`Contingency`,
+    :obj:`ContingencyVarClass` can compute contingency from instances.
 
-        Constructs the contingency and computes the data from the given
-        examples. If these are weighted, the meta attribute with example
-        weights can be specified. 
+    .. method:: __init__(feature, class_attribute)
+
+        :param outerVariable: Descriptor of the outer variable
+        :type outerVariable: Orange.data.feature.Feature
+        :param outerVariable: Descriptor of the inner variable
+        :type innerVariable: Orange.data.feature.Feature
+        
+        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
+        variables. Inherited from :obj:`Contingency`.
+
+    .. method:: __init__(feature, data[, weightId])
+
+        :param feature: Descriptor of the outer variable
+        :type feature: Orange.data.feature.Feature
+        :param data: A set of instances
+        :type data: Orange.data.Table
+        :param weightId: meta attribute with weights of instances
+        :type weightId: int
+
+        Compute the contingency from the given instances.     
+
+    .. method:: p_class(value)
+
+        :param value: The value of the variable
+        :type value: int, float, string or :obj:`Orange.data.Value`
+
+        Return the probability distribution of classes given the value of the
+        variable. Equivalent to `self[value]`, except for normalization.
+
+    .. method:: p_class(value, class_value)
+
+        :param value: The value of the variable
+        :type value: int, float, string or :obj:`Orange.data.Value`
+        :param class_value: The class value
+        :type value: int, float, string or :obj:`Orange.data.Value`
+
+        Returns the conditional probability of the class_value given the
+        feature value, p(class_value|value) (note the order of arguments!)
+        Equivalent to `self[values][class_value]`, except for normalization.
+        
+    .. _distributions-contingency3.py: code/distributions-contingency3.py
+
+    part of `distributions-contingency3.py`_ (uses monks-1.tab)
+
+    .. literalinclude:: code/distributions-contingency3.py
+        :lines: 1-25
+
+    The inner and the outer variable and their relations to the class are
+    as follows::
+
+        Inner variable:  y
+        Outer variable:  e
     
+        Class variable:  y
+        Feature:         e
+
+    Distributions are normalized and probabilities are elements from the
+    normalized distributions. Knowing that the target concept is
+    y := (e=1) or (a=b), distributions are as expected: when e equals 1, class 1
+    has a 100% probability, while for the rest, probability is one third, which
+    agrees with a probability that two three-valued independent features
+    have the same value. ::
+
+        Distributions:
+          p(.|1) = <0.000, 1.000>
+          p(.|2) = <0.662, 0.338>
+          p(.|3) = <0.659, 0.341>
+          p(.|4) = <0.669, 0.331>
+    
+        Probabilities of class '1'
+          p(1|1) = 1.000
+          p(1|2) = 0.338
+          p(1|3) = 0.341
+          p(1|4) = 0.331
+    
+        Distributions from a matrix computed manually:
+          p(.|1) = <0.000, 1.000>
+          p(.|2) = <0.662, 0.338>
+          p(.|3) = <0.659, 0.341>
+          p(.|4) = <0.669, 0.331>
+
+
+.. class:: Orange.statistics.distribution.ContingencyClassVar
+
+    :obj:`ContingencyClassVar` is similar to :obj:`ContingencyVarClass` except
+    that here the class is outside and the variable is inside. This form of
+    contingency matrix is suitable for computing conditional probabilities of
+    variable given the class. All methods get the two arguments in the same
+    order as in :obj:`ContingencyVarClass`.
+
+    .. method:: __init__(feature, class_attribute)
+
+        :param outerVariable: Descriptor of the outer variable
+        :type outerVariable: Orange.data.feature.Feature
+        :param outerVariable: Descriptor of the inner variable
+        :type innerVariable: Orange.data.feature.Feature
+        
+        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
+        variables. Inherited from :obj:`Contingency`, except for the reversed
+        order.
+
+    .. method:: __init__(feature, instances[, weightId])
+
+        :param feature: Descriptor of the outer variable
+        :type feature: Orange.data.feature.Feature
+        :param data: A set of instances
+        :type data: Orange.data.Table
+        :param weightId: meta attribute with weights of instances
+        :type weightId: int
+
+        Compute the contingency from the given instances.     
+
     .. method:: p_attr(class_value)
 
-        Returns the distribution of attribute values given the class_value.
-        If the matrix is normalized, this is equivalent to returning
-        self[class_value]. Result is returned as a normalized Distribution.
+        :param class_value: The value of the variable
+        :type class_value: int, float, string or :obj:`Orange.data.Value`
 
-    .. method:: p_attr(attribute_value, class_value)
+        Return the probability distribution of variable given the class.
+        Equivalent to `self[class_value]`, except for normalization.
+
+    .. method:: p_attr(value, class_value)
+
+        :param value: The value of the variable
+        :type value: int, float, string or :obj:`Orange.data.Value`
+        :param class_value: The class value
+        :type value: int, float, string or :obj:`Orange.data.Value`
+
+        Returns the conditional probability of the value given the
+        class, p(value|class_value).
+        Equivalent to `self[class][value]`, except for normalization.
+
+    .. _distributions-contingency4.py: code/distributions-contingency4.py
     
-        Returns the conditional probability of attribute_value given the
-        class_value. If the matrix is normalized, this is equivalent to
-        returning self[class_value][attribute_value].
-  
-As you can see, the class is rather similar to ContingencyAttrClass,
-except that it has p_attr instead of p_class.
-If you, for instance, take the above script and replace the class name,
-the first bunch of prints print out
-
-
-.. _distributions-contingency4.py: code/distributions-contingency4.py
-
-part of the output from `distributions-contingency4.py`_ (uses monk1.tab)
-
-The inner and the outer variable and their relations to the class
-and the features are as expected.::
-
-    Inner variable:  e
-    Outer variable:  y
-
-    Class variable:  y
-    Feature:         e
-
-
-This is exactly the reverse of the printout from ContingencyAttrClass.
-To print out the distributions, the only difference now is that you need
-to iterate through values of the class attribute and call p_attr. For instance,
-
-part of `distributions-contingency4.py`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency4.py
-    :lines: 31-
-
-will print::
-    p(.|0) = <0.000, 0.333, 0.333, 0.333>
-    p(.|1) = <0.500, 0.167, 0.167, 0.167>
-
-
-If the class value is '0', then attribute e cannot be '1' (the first value),
-but can be anything else, with equal probabilities of 0.333.
-If the class value is '1', e is '1' in exactly half of examples
-(work-out why this is so); in the remaining cases,
-e is again distributed uniformly.
+    part of the output from `distributions-contingency4.py`_ (uses monk1.tab)
     
+    The inner and the outer variable and their relations to the class
+    and the features are exactly the reverse from :obj:`ContingencyClassVar`::
+    
+        Inner variable:  e
+        Outer variable:  y
+    
+        Class variable:  y
+        Feature:         e
+    
+    Distributions given the class can be printed out by calling :meth:`p_attr`.
+    
+    part of `distributions-contingency4.py`_ (uses monks-1.tab)
+    
+    .. literalinclude:: code/distributions-contingency4.py
+        :lines: 31-
+    
+    will print::
+        p(.|0) = <0.000, 0.333, 0.333, 0.333>
+        p(.|1) = <0.500, 0.167, 0.167, 0.167>
+    
+    If the class value is '0', the attribute e cannot be '1' (the first value),
+    while distribution across other values is uniform.
+    If the class value is '1', e is '1' in exactly half of examples, and
+    distribution of other values is again uniform.
 
-.. class:: Orange.statistics.distribution.ContingencyAttrAttr
+.. class:: Orange.statistics.distribution.ContingencyVarVar
 
-    ContingencyAttrAttr stores contingency matrices in which none
-    of the features is the class. This is rather similar to Contingency,
-    except that it has an additional constructor and method for getting
-    the conditional probabilities.
+    Contingency matrices in which none of the variables is the class. 
+    The class is similar to the parent class :obj:`Contingency`, except for
+    an additional constructor and method for getting conditional probabilities.
 
-    .. method:: ContingencyAttrAttr(outer_variable, inner_variable)
+    .. method:: ContingencyVarVar(outer_variable, inner_variable)
 
-        This constructor is exactly the same as that of Contingency.
+        Inherited from :obj:`Contingency`.
 
-    .. method:: ContingencyAttrAttr(outer_variable, inner_variable,  instances[, weightID])
+    .. method:: __init__(outer_variable, inner_variable, data[, weightId])
 
-        Computes the contingency from the given instances.
+        :param outer_variable: Descriptor of the outer variable
+        :type outer_variable: Orange.data.feature.Feature
+        :param inner_variable: Descriptor of the inner variable
+        :type inner_variable: Orange.data.feature.Feature
+        :param data: A set of instances
+        :type data: Orange.data.Table
+        :param weightId: meta attribute with weights of instances
+        :type weightId: int
+
+        Compute the contingency from the given instances.
 
     .. method:: p_attr(outer_value)
 
-        Returns the probability distribution of the inner
-        variable given the outer variable.
+        Return the probability distribution of the inner
+        variable given the outer variable value.
 
     .. method:: p_attr(outer_value, inner_value)
 
-        Returns the conditional probability of the inner_value
+        Return the conditional probability of the inner_value
         given the outer_value.
 
 
-In the following example, we shall use the ContingencyAttrAttr
-on dataset "bridges" to determine which material is used for
-bridges of different lengths.
-
-
-.. _distributions-contingency5: code/distributions-contingency5.py
-
-part of `distributions-contingency5`_ (uses bridges.tab)
-
-.. literalinclude:: code/distributions-contingency5.py
-    :lines: 1-19
-
-The output tells us that short bridges are mostly wooden or iron,
-and the longer (and the most of middle sized) are made from steel.::
-
-    SHORT:
-       WOOD (56%)
-       IRON (44%)
-
-    MEDIUM:
-       WOOD (9%)
-       IRON (11%)
-       STEEL (79%)
-
-    LONG:
-       STEEL (100%)
-
-As all other contingency matrices, this one can also be computed "manually".
-
-.. literalinclude:: code/distributions-contingency5.py
-    :lines: 20-
-
-
-====================================
-Contingencies with Continuous Values
-====================================
-
-What happens if one or both features are continuous?
-As first, contingencies can be built for such features as well.
-Just imagine a contingency as a dictionary with features values
-as keys and objects of type Distribution as values.
-
-If the outer feature is continuous, you can use either its values
-or ordinary floating point number for indexing. The index must be one
-of the values that do exist in the contingency matrix.
-
-The following script will query for a distribution in between
-the first two keys, which triggers an exception.
-
-
-.. _distributions-contingency6: code/distributions-contingency6.py
-
-part of `distributions-contingency6`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency6.py
-    :lines: 1-5,18,19
-
-If you still find such contingencies useful, you need to take care
-about what you pass for indices. Always use the values from keys()
-directly, instead of manually entering the keys' values you see printed.
-If, for instance, you print out the first key, see it's 4.500 and then
-request cont[4.500] this can give an index error due to rounding.
-
-Contingencies with continuous inner features are more useful.
-As first, indexing by discrete values is easier than with continuous.
-Secondly, class Distribution covers both, discrete and continuous
-distributions, so even the methods p_class and p_attr will work,
-except they won't return is not the probability but the density
-(interpolated, if necessary). See the page about Distribution
-for more information.
-
-For instance, if you build a ContingencyClassAttr on the iris dataset,
-you can enquire about the probability of the sepal length 5.5.
-
-.. _distributions-contingency7: code/distributions-contingency7.py
-
-part of `distributions-contingency7`_ (uses iris.tab)
-
-.. literalinclude:: code/distributions-contingency7.py
-
+    The following example investigates which material is used for
+    bridges of different lengths.
     
-The script's output is::
+    .. _distributions-contingency5: code/distributions-contingency5.py
+    
+    part of `distributions-contingency5`_ (uses bridges.tab)
+    
+    .. literalinclude:: code/distributions-contingency5.py
+        :lines: 1-19
+
+    Short bridges are mostly wooden or iron,
+    and the longer (and the most of middle sized) are made from steel::
+    
+        SHORT:
+           WOOD (56%)
+           IRON (44%)
+    
+        MEDIUM:
+           WOOD (9%)
+           IRON (11%)
+           STEEL (79%)
+    
+        LONG:
+           STEEL (100%)
+    
+    As all other contingency matrices, this one can also be computed "manually".
+    
+    .. literalinclude:: code/distributions-contingency5.py
+        :lines: 20-
+
+
+Contingency matrices for continuous variables
+---------------------------------------------
+
+The described classes can also be used for continuous values.
+
+If the outer feature is continuous, the index must be one
+of the values that do exist in the contingency matrix. Using other values
+triggers an exception::
+
+    .. _distributions-contingency6: code/distributions-contingency6.py
+    
+    part of `distributions-contingency6`_ (uses monks-1.tab)
+    
+    .. literalinclude:: code/distributions-contingency6.py
+        :lines: 1-5,18,19
+
+Since even rounding is a problem, the keys should generally come from the
+contingencies `keys`.
+
+Contingencies with discrete outer variable continuous inner variables are
+more useful, since methods :obj:`ContingencyClassVar.p_class` and 
+:obj:`ContingencyVarClass.p_attr` use the primitive density estimation
+provided by :obj:`Distribution`.
+
+For example, :obj:`ContingencyClassVar` on the iris dataset,
+you can enquire about the probability of the sepal length 5.5::
+
+    .. _distributions-contingency7: code/distributions-contingency7.py
+    
+    part of `distributions-contingency7`_ (uses iris.tab)
+    
+    .. literalinclude:: code/distributions-contingency7.py
+
+The script outputs::
 
     Estimated frequencies for e=5.5
       f(5.5|Iris-setosa) = 2.000
@@ -587,32 +568,33 @@ The script's output is::
       f(5.5|Iris-virginica) = 1.000
 
 
-========================================
-Computing Contingencies for All Features
-========================================
-
-Computing contingency matrices requires iteration through instances.
-We often need to compute ContingencyAttrClass or ContingencyClassAttr
-for all features in the dataset and it is obvious that this will be faster
-if we do it for all features at once. That's taken care of
-by class DomainContingency.
+Contingency matrices for the entire domain
+------------------------------------------
 
 DomainContingency is basically a list of contingencies,
-either of type ContingencyAttrClass or ContingencyClassAttr, with two
-additional fields and a constructor that computes the contingencies.
+either :obj:`ContingencyVarClass` or :obj:`ContingencyClassVar`.
 
-.. class:: DomainContingency(instances[, weightID][, classIsOuter=0|1])
+.. class:: DomainContingency
 
-    Constructor needs to be given a list of instances.
-    It constructs a list of contingencies; if classIsOuter is 0 (default),
-    these will be ContingencyAttrClass, if 1, ContingencyClassAttr are used.
-    It then iterates through instances and computes the contingencies.
+    .. method:: __init__(data[, weightId=0, classOuter=0|1])
+
+        :param data: A set of instances
+        :type data: Orange.data.Table
+        :param weightId: meta attribute with weights of instances
+        :type weightId: int
+        :param classOuter: `True`, if class is the outer variable
+        :type classOuter: bool
+
+        Compute a list of contingencies.
+
+        .. note::
+        
+            Note that classIsOuter cannot be given as positional argument,
+            but needs to be passed by keyword.
 
     .. attribute:: classIsOuter (read only)
 
-        Tells whether the class is the outer or the inner featue.
-        Effectively, this tells whether the elements of the list
-        are ContingencyAttrClass or ContingencyClassAttr.
+        Tells whether the class is the outer or the inner variable.
 
     .. attribute:: classes
 
@@ -620,33 +602,27 @@ additional fields and a constructor that computes the contingencies.
 
     .. method:: normalize
 
-        Calls normalize for each contingency.
+        Call normalize for all contingencies.
 
-The following script will print the contingencies for features
-"a", "b" and "e" for the dataset Monk 1.
+    The following script prints the contingencies for features
+    "a", "b" and "e" for the dataset Monk 1.
+    
+    .. _distributions-contingency8: code/distributions-contingency8.py
+    
+    part of `distributions-contingency8`_ (uses monks-1.tab)
+    
+    .. literalinclude:: code/distributions-contingency8.py
+        :lines: 1-11
 
-.. _distributions-contingency8: code/distributions-contingency8.py
-
-part of `distributions-contingency8`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency8.py
-    :lines: 1-11
-
-
-The contingencies in the DomainContingency dc are of type ContingencyAttrClass
-and tell us conditional distributions of classes, given the value of the feature.
-To compute the distribution of feature values given the class,
-one needs to get a list of ContingencyClassAttr.
-
-Note that classIsOuter cannot be given as positional argument,
-but needs to be passed by keyword.
-
-.. _distributions-contingency8: code/distributions-contingency8.py
-
-part of `distributions-contingency8`_ (uses monks-1.tab)
-
-.. literalinclude:: code/distributions-contingency8.py
-    :lines: 13- 
+    Contingencies are of type :obj:`ContingencyVarClass` give
+    the conditional distributions of classes, given the value of the variable.
+    
+    .. _distributions-contingency8: code/distributions-contingency8.py
+    
+    part of `distributions-contingency8`_ (uses monks-1.tab)
+    
+    .. literalinclude:: code/distributions-contingency8.py
+        :lines: 13- 
 
 """
 

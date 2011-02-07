@@ -16,7 +16,7 @@ a:hover {
 body, td {
     color: black;
     font-family: Verdana, Arial;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.5;
     padding: 0px;
 }
@@ -264,7 +264,7 @@ h1, h2, h3  {
 	padding-left: 20px;
 	white-space: nowrap;
     padding-left: 0px; 
-	border-bottom: 2px #ffdecb solid;
+	border-bottom: 1px #ffdecb solid;
 }
 
 h3  {
@@ -272,23 +272,24 @@ h3  {
 }
 
 h1, h2, h3  {
-	border-bottom: 2px #ffdecb solid;
+	border-bottom: 1px #ffdecb solid;
 }
 tt {
-    font-size: inherit;
+    font-size: 13px;
 }
 
 tt.descname {
     margin-bottom: 0px;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 H1 , div.body h1 {
-	font-size: 12px;
+	font-size: 13px;
     font-weight: bold;
-	border-bottom: 2px black solid;
+	border-bottom: 1px black solid;
     padding-left: 5px;
     background-color: #ffdecb;
+    margin-left: -5px;
 }
 
 div.body p, div.body dd, div.body.li {
@@ -298,24 +299,36 @@ div.body p, div.body dd, div.body.li {
 H2, div.body h2 {
 	font-weight: bold;
 	font-family: Verdana;
-    font-size: 12px;
+    font-size: 13px;
     padding-left: 5px;
-    padding-bottom: 2px;
+    padding-bottom: 3px;
 /*	width: 204px;*/
 /*	background-color: #F69810;*/
-	background-color: #e0e0e0;
+	background-color: #e8e8e8;
 	height: 16px;
 	vertical-align: middle;
 	white-space: nowrap;
     /*clear: both;*/
-	border-bottom: 2px black solid;
+	border-bottom: 1px black solid;
+    margin-left: -5px;
 }
 
+
+h3, div.body h3,
+h4, div.body h4 {
+    margin-left: -5px;
+    padding-left: 5px;
+    font-size: 14px;
+}
+
+h3, div.body h3 {
+    background-color: #f8f8f8;
+}
 
 /*H3 {
 	font-weight: bold;
 	font-family: Verdana;
-	font-size: 11px;
+	font-size: 13px;
 	white-space: nowrap;
 }
 */
@@ -330,7 +343,7 @@ div.body h1, div.body h2, div.body h3 {
     padding: 0 0 0 0;
     border-bottom: 2px #fffff solid;
     font-family: Verdana;
-	font-size: 11px;
+	font-size: 13px;
 	font-weight: bold;
 	width: 204px;
 	vertical-align: middle;
@@ -338,7 +351,7 @@ div.body h1, div.body h2, div.body h3 {
 */
 
 dl.class > dt {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: bold;
     margin-bottom: 10px;
     margin-top: 20px;
@@ -366,8 +379,9 @@ dl.class > dt > em.property {
 }
 
 dl.class dt > tt.descclassname {
-/*    color: #999;*/
+/*    color: #777;*/
     font-weight: normal;
+    font-size: 14px;
 }
 
 dl.class > dt big, dl.class > dt .optional {
@@ -397,7 +411,7 @@ P.header {
   margin-bottom: 0mm;
   margin-top: 1em;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 11px;
  }
 
 XMP.code, PRE.code { 
@@ -434,13 +448,17 @@ div.footer {
 div.note {
     background-color: #eee;
     border: 1px solid #ccc;
+    padding-bottom: 0px;
 } 
+
+
 /* -- sidebar --------------------------------------------------------------- */
 
 div.sphinxsidebarwrapper {
     padding: 0px 0px 0 0px;
-    border: 1px solid #ac9;
+    border: 1px solid #FFECE3; //#ac9;
     background-color: #f8f8f8;
+    padding-top: 0;
 }
 
 
@@ -450,12 +468,14 @@ div.sphinxsidebarwrapper  h3 {
 
 
 div.sphinxsidebar {
-/*    position: absolute;
-    right: -170px;
-    width: 230px;*/
+/*    position: relative;
+    top: -30px;*/
     font-size: 90%;
     margin-left: 0;
+    margin-top: 0;
     padding: 10px;
+    padding-top: 0;
+    padding-right: 0;
     text-align: left;
     z-index: 10;
     background-color: white;
