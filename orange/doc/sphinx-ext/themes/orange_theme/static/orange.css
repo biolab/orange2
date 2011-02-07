@@ -350,6 +350,16 @@ div.body h1, div.body h2, div.body h3 {
 }
 */
 
+
+table.field-list th.field-name {
+    font-weight: normal;
+}
+
+table.field-list td.field-body tt.xref {
+    font-weight: normal;
+}
+
+
 dl.class > dt {
     font-size: 13px;
     font-weight: bold;
@@ -455,12 +465,16 @@ div.note {
 /* -- sidebar --------------------------------------------------------------- */
 
 div.sphinxsidebarwrapper {
-    padding: 0px 0px 0 0px;
+    padding: 0px 0px 0px 10px;
     border: 1px solid #FFECE3; //#ac9;
     background-color: #f8f8f8;
     padding-top: 0;
 }
 
+
+div.sphinxsidebar ul {
+    padding-left: 0px;
+}
 
 div.sphinxsidebarwrapper  h3 {
     margin-top: 5px !important;
@@ -488,6 +502,14 @@ div.sphinxsidebar ul {
     padding-left: 15px;
 }
 
+div.sphinxsidebarwrapper > ul {
+    padding-left: 0px;
+}
+
+div.sphinxsidebarwrapper > ul > li > a {
+    font-weight: bold;
+}
+
 div.sphinxsidebar ul ul,
 div.sphinxsidebar ul.want-points {
     margin-left: 5px;
@@ -504,9 +526,9 @@ div.sphinxsidebar form {
 }
 
 div.sphinxsidebar input {
-    border: 1px solid #98dbcc;
+    border: 1px solid #e0e0e0;
     font-family: sans-serif;
-    font-size: 1em;
+    font-size: 13px;
 }
 
 div.sphinxsidebar h3 a {
