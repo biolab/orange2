@@ -196,6 +196,44 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_use_modindex = True
 
+# -- Options for Epub output ---------------------------------------------------
+
+# Bibliographic Dublin Core info.
+epub_title = u'Orange 2.5 Scripting Reference'
+epub_author = u'Biolab'
+epub_publisher = u'Biolab'
+epub_copyright = u'2011, Biolab'
+
+# The language of the text. It defaults to the language option
+# or en if the language is not set.
+epub_language = 'en'
+
+# The scheme of the identifier. Typical schemes are ISBN or URL.
+#epub_scheme = ''
+
+# The unique identifier of the text. This can be a ISBN number
+# or the project homepage.
+#epub_identifier = ''
+
+# A unique identification for the text.
+#epub_uid = ''
+
+# HTML files that should be inserted before the pages created by sphinx.
+# The format is a list of tuples containing the path and title.
+#epub_pre_files = []
+
+# HTML files that should be inserted after the pages created by sphinx.
+# The format is a list of tuples containing the path and title.
+#epub_post_files = []
+
+# A list of files that should not be packed into the epub file.
+epub_exclude_files = ["index.html", "genindex.html", "py-modindex.html", "search.html"]
+
+# The depth of the table of contents in toc.ncx.
+#epub_tocdepth = 3
+
+# Allow duplicate toc entries.
+#epub_tocdup = True
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
