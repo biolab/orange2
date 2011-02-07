@@ -83,7 +83,7 @@ div#orangeimg img {
 	margin-right: 10px;
 }
 
-form#cse-search-box {
+form#search-box {
     text-align: right;
 	margin-bottom: 16px;
 }
@@ -109,7 +109,7 @@ table#uplinks td {
    text-align: right;
    padding-left: 20px;
    font-size: 12px;
-   font-weight: bold;
+   font-weight: normal;
 }
 
 table#uplinks2  {
@@ -166,8 +166,8 @@ div#main, div#footer {
 
 div#maininner {
 	background-color: white;
-	padding-top: 20px;
-	padding: 10px;
+	padding: 20px;
+	padding-top: 5px;
 }
 
 div#footerinner {
@@ -242,6 +242,7 @@ table#latest tr td {
 }
 
 
+
 div.body h1,
 div.body h2,
 div.body h3,
@@ -284,12 +285,13 @@ tt.descname {
 }
 
 H1 , div.body h1 {
-	font-size: 13px;
-    font-weight: bold;
+	font-size: 20px;
+    font-weight: normal;
 	border-bottom: 1px black solid;
     padding-left: 5px;
-    background-color: #ffdecb;
+    /*background-color: #ffdecb;*/
     margin-left: -5px;
+    margin-bottom: 20px;
 }
 
 div.body p, div.body dd, div.body.li {
@@ -297,22 +299,25 @@ div.body p, div.body dd, div.body.li {
 }
 
 H2, div.body h2 {
-	font-weight: bold;
+	font-weight: normal;
 	font-family: Verdana;
-    font-size: 13px;
+    font-size: 18px;
     padding-left: 5px;
     padding-bottom: 3px;
 /*	width: 204px;*/
 /*	background-color: #F69810;*/
-	background-color: #e8e8e8;
-	height: 16px;
+/*	background-color: #e8e8e8;*/
 	vertical-align: middle;
 	white-space: nowrap;
     /*clear: both;*/
 	border-bottom: 1px black solid;
     margin-left: -5px;
+    margin-bottom: 20px;
 }
 
+h3, div.body h3 {
+    border-bottom-color: black;
+}
 
 h3, div.body h3,
 h4, div.body h4 {
@@ -321,9 +326,6 @@ h4, div.body h4 {
     font-size: 14px;
 }
 
-h3, div.body h3 {
-    background-color: #f8f8f8;
-}
 
 /*H3 {
 	font-weight: bold;
@@ -364,7 +366,7 @@ dl.class > dt {
     font-size: 13px;
     font-weight: bold;
     margin-bottom: 10px;
-    margin-top: 20px;
+    margin-top: 30px;
     border-bottom: 1px solid #e0e0e0;
     font-style: normal;
 }
@@ -433,7 +435,7 @@ XMP.code, PRE.code {
 
 pre {
     padding: 5px;
-    background-color: #eeffcc;
+    background-color: #f8f9f5; //#ecefe5; //#eeffcc;
     color: #333333;
     line-height: 120%;
     border: 1px solid #ac9;
@@ -456,8 +458,11 @@ div.footer {
 }
 
 div.note {
-    background-color: #eee;
-    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #c8c8c8; //#ac9;
+    border-left: 1px solid #c8c8c8; //#ac9;
+    border-top: 1px solid #e8e8e8; //#ac9;
+    border-right: 1px solid #e8e8e8; //#ac9;
     padding-bottom: 0px;
 } 
 
@@ -465,10 +470,14 @@ div.note {
 /* -- sidebar --------------------------------------------------------------- */
 
 div.sphinxsidebarwrapper {
-    padding: 0px 0px 0px 10px;
-    border: 1px solid #FFECE3; //#ac9;
+    padding: 0px 10px 0px 10px;
+    border-bottom: 1px solid #c8c8c8; //#ac9;
+    border-left: 1px solid #c8c8c8; //#ac9;
+    border-top: 1px solid #e8e8e8; //#ac9;
+    border-right: 1px solid #e8e8e8; //#ac9;
     background-color: #f8f8f8;
-    padding-top: 0;
+    padding-top: 2px;
+    margin: 10px 0px 20px 20px;
 }
 
 
@@ -495,6 +504,7 @@ div.sphinxsidebar {
     background-color: white;
     float: right;
     padding-left: 30px;
+    width: 250px;
 }
 
 div.sphinxsidebar ul {
@@ -507,7 +517,8 @@ div.sphinxsidebarwrapper > ul {
 }
 
 div.sphinxsidebarwrapper > ul > li > a {
-    font-weight: bold;
+    font-weight: normal;
+    font-size: 13px;
 }
 
 div.sphinxsidebar ul ul,
@@ -561,13 +572,24 @@ table.field-list td, table.field-list th {
 
 table.field-list th.field-name {
     background-color: #f8f8f8;
+    border-right: 1px solid #e8e8e8 !important; //#ac9;
 }
 
 table.docutils {
-	border-bottom: 1px solid #e0e0e0;
-    border-top: 1px solid #e0e0e0;
+/*	border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;*/
+    border-bottom: 1px solid #c8c8c8; //#ac9;
+    border-left: 1px solid #c8c8c8; //#ac9;
+    border-top: 1px solid #e8e8e8; //#ac9;
+    border-right: 1px solid #e8e8e8; //#ac9;
+    width: 100%;
 }
    
+table.field-list td,
+table.field-list th {
+    padding: 5px;
+}
+
 img.image-float-left {
 	float:left;
 }

@@ -11,14 +11,12 @@
 		<div id="header">
 			<div id="orangeimg"><a href="/orange"><img src="_static/orange-logo-w.png"></a></div>
 
-			<form action="http://www.ailab.si/orange/searchRes.html" id="cse-search-box">
-				<input type="hidden" name="cx" value="004435948024671398314:koge-dvl9sc" />
-				<input type="hidden" name="cof" value="FORID:10" />
-				<input type="hidden" name="ie" value="UTF-8" />
-				<img src="/orange/search.png" height="12"/>
-				<input type="text" name="q" size="25"/>
-				<input style="visibility: hidden; height: 1px;" type="submit" name="sa" value="." />
-			</form>
+			<form class="search" action="{{ pathto('search') }}" method="get" id="search-box">
+            Search: <input type="text" name="q" size="18" />
+            <input type="submit" value="." style="visibility: hidden; width: 0px;" />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
 
 			<div id="underimg"></div>
 

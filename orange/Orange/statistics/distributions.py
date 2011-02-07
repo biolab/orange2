@@ -578,6 +578,8 @@ either :obj:`ContingencyVarClass` or :obj:`ContingencyClassVar`.
 
     .. method:: __init__(data[, weightId=0, classOuter=0|1])
 
+        Compute a list of contingencies.
+
         :param data: A set of instances
         :type data: Orange.data.Table
         :param weightId: meta attribute with weights of instances
@@ -585,11 +587,9 @@ either :obj:`ContingencyVarClass` or :obj:`ContingencyClassVar`.
         :param classOuter: `True`, if class is the outer variable
         :type classOuter: bool
 
-        Compute a list of contingencies.
-
         .. note::
         
-            Note that classIsOuter cannot be given as positional argument,
+            ``classIsOuter`` cannot be given as positional argument,
             but needs to be passed by keyword.
 
     .. attribute:: classIsOuter (read only)
