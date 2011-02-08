@@ -36,6 +36,7 @@ from lib2to3 import fixer_base
 from lib2to3.fixer_util import Name, attr_chain
 
 MAPPING = {"orange": "Orange.core",
+           "orangeom": "Orange.core",
            "orngSVM": "Orange.classification.svm",
            "orngSOM": "Orange.projection.som",
            "orngBayes":"Orange.classification.bayes",
@@ -48,6 +49,7 @@ MAPPING = {"orange": "Orange.core",
            "orngTree": "Orange.classification.tree",
            "orngImpute": "Orange.feature.imputation",
            "orngStat": "Orange.evaluation.scoring",
+           "orngWrap": "Orange.optimization"
            }
 
 
