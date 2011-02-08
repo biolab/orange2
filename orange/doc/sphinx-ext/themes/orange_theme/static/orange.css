@@ -292,6 +292,7 @@ H1 , div.body h1 {
     /*background-color: #ffdecb;*/
     margin-left: -5px;
     margin-bottom: 20px;
+    margin-top: 40px;
 }
 
 div.body p, div.body dd, div.body.li {

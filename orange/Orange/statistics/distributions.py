@@ -20,12 +20,11 @@ the above class for all features in the domain.
 
     .. attribute:: variable
     
-        The descriptor for the feature to which the data applies.
+        Descriptor for the variable to which the data applies.
 
     .. attribute:: min, max
 
-        Minimal and maximal feature value encountered
-        in the data table.
+        Minimal and maximal variable value encountered.
 
     .. attribute:: avg, dev
 
@@ -49,17 +48,17 @@ the above class for all features in the domain.
 
     .. method:: add(value[, weight=1])
     
+        Add a value to the statistics.
+
         :param value: Value to be added to the statistics
         :type value: float
         :param weight: Weight assigned to the value
         :type weight: float
 
-        Adds a value to the statistics.
-
     ..
         .. method:: recompute()
 
-            Recomputes the average and deviation.
+            Recompute the average and deviation.
 
     The class works as follows. Values are added by :obj:`add`, for each value
     it checks and, if necessary, adjusts :obj:`min` and :obj:`max`, adds the value to
@@ -79,18 +78,17 @@ the above class for all features in the domain.
 
     .. method:: __init__(data[, weight=None])
 
+        Compute the statistics for all continuous features in the
+        give data, and put `None` to the places corresponding to features of other types.
+
         :param data: A table of instances
         :type data: Orange.data.Table
         :param weight: The id of the meta-attribute with weights
         :type weight: `int` or none
         
-        Constructor computes the statistics for all continuous features in the
-        give data, and puts `None` to the places corresponding to other types of
-        features.
-    
     .. method:: purge()
     
-        Removes the ``None``'s corresponding to non-continuous features.
+        Remove the ``None``'s corresponding to non-continuous features.
     
     part of `distributions-basic-stat.py`_ (uses monks-1.tab)
     
@@ -190,25 +188,25 @@ can compute and store conditional probabilities of classes given the feature val
 
     .. method:: __init__(outerVariable, innerVariable)
      
+        Construct an instance of ``Contingency`` for the given pair of
+        variables.
+     
         :param outerVariable: Descriptor of the outer variable
         :type outerVariable: Orange.data.feature.Feature
         :param outerVariable: Descriptor of the inner variable
         :type innerVariable: Orange.data.feature.Feature
         
-        Construct an instance of ``Contingency`` for the given pair of
-        variables.
-     
     .. method:: add(outer_value, inner_value[, weight=1])
     
+        Add an element to the contingency matrix by adding
+        ``weight`` to the corresponding cell.
+
         :param outer_value: The value for the outer variable
         :type outer_value: int, float, string or :obj:`Orange.data.Value`
         :param inner_value: The value for the inner variable
         :type inner_value: int, float, string or :obj:`Orange.data.Value`
         :param weight: Instance weight
         :type weight: float
-
-        Add an element to the contingency matrix by adding
-        ``weight`` to the corresponding cell.
 
     .. method:: normalize()
 
@@ -282,12 +280,19 @@ can compute and store conditional probabilities of classes given the feature val
         The class attribute descriptor.
         This is always equal either to innerVariable or outerVariable
 
-    .. method:: add_attrclass(attribute_value, class_value[, weight])
+    .. method:: add_attrclass(variable_value, class_value[, weight])
 
         Adds an element to contingency. The difference between this and
-        Contigency.add is that the feature value is always the first
-        argument and class value the second, regardless whether the feature
-        is actually the outer variable or the inner. 
+        Contigency.add is that the variable value is always the first
+        argument and class value the second, regardless of what is inner and
+        outer. 
+
+        :param attribute_value: Variable value
+        :type attribute_value: int, float, string or :obj:`Orange.data.Value`
+        :param class_value: Class value
+        :type class_value: int, float, string or :obj:`Orange.data.Value`
+        :param weight: Instance weight
+        :type weight: float
 
 
 
@@ -304,15 +309,17 @@ can compute and store conditional probabilities of classes given the feature val
 
     .. method:: __init__(feature, class_attribute)
 
+        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
+        variables. Inherited from :obj:`Contingency`.
+
         :param outerVariable: Descriptor of the outer variable
         :type outerVariable: Orange.data.feature.Feature
         :param outerVariable: Descriptor of the inner variable
         :type innerVariable: Orange.data.feature.Feature
         
-        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
-        variables. Inherited from :obj:`Contingency`.
-
     .. method:: __init__(feature, data[, weightId])
+
+        Compute the contingency from the given instances.     
 
         :param feature: Descriptor of the outer variable
         :type feature: Orange.data.feature.Feature
@@ -321,27 +328,25 @@ can compute and store conditional probabilities of classes given the feature val
         :param weightId: meta attribute with weights of instances
         :type weightId: int
 
-        Compute the contingency from the given instances.     
-
     .. method:: p_class(value)
-
-        :param value: The value of the variable
-        :type value: int, float, string or :obj:`Orange.data.Value`
 
         Return the probability distribution of classes given the value of the
         variable. Equivalent to `self[value]`, except for normalization.
 
-    .. method:: p_class(value, class_value)
-
         :param value: The value of the variable
         :type value: int, float, string or :obj:`Orange.data.Value`
-        :param class_value: The class value
-        :type value: int, float, string or :obj:`Orange.data.Value`
+
+    .. method:: p_class(value, class_value)
 
         Returns the conditional probability of the class_value given the
         feature value, p(class_value|value) (note the order of arguments!)
         Equivalent to `self[values][class_value]`, except for normalization.
         
+        :param value: The value of the variable
+        :type value: int, float, string or :obj:`Orange.data.Value`
+        :param class_value: The class value
+        :type value: int, float, string or :obj:`Orange.data.Value`
+
     .. _distributions-contingency3.py: code/distributions-contingency3.py
 
     part of `distributions-contingency3.py`_ (uses monks-1.tab)
@@ -394,16 +399,18 @@ can compute and store conditional probabilities of classes given the feature val
 
     .. method:: __init__(feature, class_attribute)
 
+        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
+        variables. Inherited from :obj:`Contingency`, except for the reversed
+        order.
+
         :param outerVariable: Descriptor of the outer variable
         :type outerVariable: Orange.data.feature.Feature
         :param outerVariable: Descriptor of the inner variable
         :type innerVariable: Orange.data.feature.Feature
         
-        Construct an instance of :obj:`ContingencyVarClass` for the given pair of
-        variables. Inherited from :obj:`Contingency`, except for the reversed
-        order.
-
     .. method:: __init__(feature, instances[, weightId])
+
+        Compute the contingency from the given instances.     
 
         :param feature: Descriptor of the outer variable
         :type feature: Orange.data.feature.Feature
@@ -412,26 +419,24 @@ can compute and store conditional probabilities of classes given the feature val
         :param weightId: meta attribute with weights of instances
         :type weightId: int
 
-        Compute the contingency from the given instances.     
-
     .. method:: p_attr(class_value)
-
-        :param class_value: The value of the variable
-        :type class_value: int, float, string or :obj:`Orange.data.Value`
 
         Return the probability distribution of variable given the class.
         Equivalent to `self[class_value]`, except for normalization.
 
+        :param class_value: The value of the variable
+        :type class_value: int, float, string or :obj:`Orange.data.Value`
+
     .. method:: p_attr(value, class_value)
+
+        Returns the conditional probability of the value given the
+        class, p(value|class_value).
+        Equivalent to `self[class][value]`, except for normalization.
 
         :param value: The value of the variable
         :type value: int, float, string or :obj:`Orange.data.Value`
         :param class_value: The class value
         :type value: int, float, string or :obj:`Orange.data.Value`
-
-        Returns the conditional probability of the value given the
-        class, p(value|class_value).
-        Equivalent to `self[class][value]`, except for normalization.
 
     .. _distributions-contingency4.py: code/distributions-contingency4.py
     
@@ -474,6 +479,8 @@ can compute and store conditional probabilities of classes given the feature val
 
     .. method:: __init__(outer_variable, inner_variable, data[, weightId])
 
+        Compute the contingency from the given instances.
+
         :param outer_variable: Descriptor of the outer variable
         :type outer_variable: Orange.data.feature.Feature
         :param inner_variable: Descriptor of the inner variable
@@ -483,18 +490,23 @@ can compute and store conditional probabilities of classes given the feature val
         :param weightId: meta attribute with weights of instances
         :type weightId: int
 
-        Compute the contingency from the given instances.
-
     .. method:: p_attr(outer_value)
 
         Return the probability distribution of the inner
         variable given the outer variable value.
 
+        :param outer_value: The value of the outer variable
+        :type outer_value: int, float, string or :obj:`Orange.data.Value`
+ 
     .. method:: p_attr(outer_value, inner_value)
 
         Return the conditional probability of the inner_value
         given the outer_value.
 
+        :param outer_value: The value of the outer variable
+        :type outer_value: int, float, string or :obj:`Orange.data.Value`
+        :param inner_value: The value of the inner variable
+        :type inner_value: int, float, string or :obj:`Orange.data.Value`
 
     The following example investigates which material is used for
     bridges of different lengths.
