@@ -1,5 +1,4 @@
-""" 
-
+"""
 .. index:: classification, support vector machines (SVM)
 
 ***********************
