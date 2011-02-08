@@ -5,7 +5,7 @@ features, distributions and contingencies.
 
     
 =========================================
-Basic Statistics for Continuous Variables
+Basic statistics for continuous variables
 =========================================
 
 The are two simple classes for computing basic statistics
@@ -127,7 +127,7 @@ the above class for all variables in the domain.
 
 
 ==================
-Contingency Matrix
+Contingency matrix
 ==================
 
 Contingency matrix contains conditional distributions. Unless explicitly
@@ -174,8 +174,8 @@ the class).  The latter is the base class for
 The most commonly used of the above classes is :obj:`ContingencyVarClass` which
 can compute and store conditional probabilities of classes given the feature value.
 
-Classes for storing contingency matrices
-========================================
+Contingency matrices
+====================
 
 .. class:: Contingency
 
@@ -569,8 +569,8 @@ Classes for storing contingency matrices
         :lines: 20-
 
 
-Contingency matrices for the entire domain
-==========================================
+Contingencies for entire domain
+===============================
 
 A list of contingencies, either :obj:`ContingencyVarClass` or
 :obj:`ContingencyClassVar`.
@@ -628,8 +628,8 @@ A list of contingencies, either :obj:`ContingencyVarClass` or
 
 .. _contcont:
 
-Contingency matrices for continuous variables
-=============================================
+Contingencies for continuous variables
+======================================
 
 If the outer variable is continuous, the index must be one of the values that do
 exist in the contingency matrix. Using other values raises an exception::
