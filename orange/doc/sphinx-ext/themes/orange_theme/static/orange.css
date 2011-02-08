@@ -436,6 +436,7 @@ XMP.code, PRE.code {
 
 pre {
     padding: 5px;
+    padding-left: 15px;
     background-color: #f8f9f5; //#ecefe5; //#eeffcc;
     color: #333333;
     line-height: 120%;
