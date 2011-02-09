@@ -375,10 +375,14 @@ statc_ext = Extension("statc", get_source_files("source/statc/"),
                       extra_link_args = extra_link_args,
                       libraries=libraries
                       )
- 
 
-pkg_re = re.compile("Orange/(.+?)/__init__.py")
-packages = ["Orange"] + ["Orange." + pkg_re.findall(p)[0] for p in glob.glob("Orange/*/__init__.py")]
+import fnmatch
+matches = []
+for root, dirnames, filenames in os.walk('Orange'): #Recursively find '__init__.py's
+  for filename in fnmatch.filter(filenames, '__init__.py'):
+      matches.append(os.path.join(root, filename))
+packages = [pkg.rpartition('/__init__.py')[0].replace('/','.') for pkg in matches]
+
 setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
       name ="Orange",
       version = "2.0.0b",
@@ -387,8 +391,8 @@ setup(cmdclass={"build_ext": pyxtract_build_ext, "install_lib": install_shared},
       author_email = "orange@fri.uni-lj.si",
       maintainer = "Ales Erjavec",
       maintainer_email = "ales.erjavec@fri.uni-lj.si",
-      url = "http://www.ailab.si/orange",
-      download_url = "http://www.ailab.si/svn/orange/trunk",
+      url = "http://orange.biolab.si",
+      download_url = "http://orange.biolab.si/svn/orange/trunk",
       packages = packages + [".",
                              "OrangeCanvas", 
                              "OrangeWidgets", 
