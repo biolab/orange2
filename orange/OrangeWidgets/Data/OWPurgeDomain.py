@@ -8,6 +8,8 @@
 from OWWidget import *
 import OWGUI
 
+import orange
+
 class OWPurgeDomain(OWWidget):
 
     def __init__(self, parent=None, signalManager=None):
