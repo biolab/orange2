@@ -1043,6 +1043,6 @@ from Orange.core import \
 from Orange.core import BasicAttrStat as BasicStatistics
 from Orange.core import DomainBasicAttrStat as DomainBasicStatistics
 from Orange.core import ContingencyAttrAttr as ContingencyVarVar
-from Orange.core import ContingencyAttrAttr as ContingencyClass
-from Orange.core import ContingencyAttrAttr as ContingencyVarClass
-from Orange.core import ContingencyAttrAttr as ContingencyClassVar
+from Orange.core import ContingencyClass as ContingencyClass
+from Orange.core import ContingencyAttrClass as ContingencyVarClass
+from Orange.core import ContingencyClassAttr as ContingencyClassVar
