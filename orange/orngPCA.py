@@ -92,7 +92,7 @@ class PCA(object):
                  maxNumberOfComponents = 10, varianceCovered = 0.95,
                  useGeneralizedVectors = 0):
         
-        learner = object.__new__(cls, {})
+        learner = object.__new__(cls)
         
         if dataset:
             learner.__init__(attributes, rows, standardize, imputer, continuizer,
