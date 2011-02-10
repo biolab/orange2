@@ -36,7 +36,7 @@ d = data[0][0]
 example[age] = (int(example[age])+1) % 3
 print data[0]
 if d == data[0][0]:
-    raise "Error in Example: not a reference, but a copy"
+    raise Exception("Error in Example: not a reference, but a copy")
 
 print example.native()
 print example.native(0)
