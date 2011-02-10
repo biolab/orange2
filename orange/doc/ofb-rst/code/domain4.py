@@ -13,7 +13,7 @@ def report_prob(header, data):
       n = n + 1
   print "p(%s)=%5.3f" % (data.domain.classVar.values[0], float(n)/len(data))
 
-filename = "../datasets/adult_sample.tab"
+filename = "../../datasets/adult_sample.tab"
 data = orange.ExampleTable(filename)
 report_prob('original data set', data)
 

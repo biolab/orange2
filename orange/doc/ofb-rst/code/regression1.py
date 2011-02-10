@@ -6,6 +6,6 @@
 
 import orange, orngTree
 
-data = orange.ExampleTable("../datasets/housing.tab")
+data = orange.ExampleTable("housing")
 rt = orngTree.TreeLearner(data, measure="retis", mForPruning=2, minExamples=20)
 orngTree.printTxt(rt, leafStr="%V %I")

@@ -6,7 +6,7 @@
 
 import orange, orngTree, orngTest, orngStat
 
-data = orange.ExampleTable("../datasets/housing.tab")
+data = orange.ExampleTable("housing.tab")
 selection = orange.MakeRandomIndices2(data, 0.5)
 train_data = data.select(selection, 0)
 test_data = data.select(selection, 1)

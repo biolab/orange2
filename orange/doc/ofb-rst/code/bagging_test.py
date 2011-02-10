@@ -5,7 +5,7 @@
 # Classes:     orngTest.crossValidation
 
 import orange, orngTree, orngStat, orngTest, orngStat, bagging
-data = orange.ExampleTable("../datasets/adult_sample")
+data = orange.ExampleTable("../../datasets/adult_sample")
 
 tree = orngTree.TreeLearner(mForPrunning=10, minExamples=30)
 tree.name = "tree"

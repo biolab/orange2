@@ -5,7 +5,7 @@
 # Referenced:  domain.htm
 
 import orange
-data = orange.ExampleTable('../datasets/car')
+data = orange.ExampleTable('../../datasets/car')
 
 # add attribute price = f(buying, maint)
 # see also http://www.ailab.si/hint/car_dataset.asp

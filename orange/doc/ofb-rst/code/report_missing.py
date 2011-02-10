@@ -4,7 +4,7 @@
 # Referenced:  basic_exploration.htm
 
 import orange
-data = orange.ExampleTable("../datasets/adult_sample")
+data = orange.ExampleTable("../../datasets/adult_sample")
 
 natt = len(data.domain.attributes)
 missing = [0.] * natt

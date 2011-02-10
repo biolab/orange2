@@ -4,7 +4,7 @@
 # Referenced:  basic_exploration.htm
 
 import orange
-data = orange.ExampleTable("../datasets/adult_sample")
+data = orange.ExampleTable("../../datasets/adult_sample")
 print "Classes:", len(data.domain.classVar.values)
 print "Attributes:", len(data.domain.attributes), ",",
 

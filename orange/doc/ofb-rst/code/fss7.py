@@ -13,7 +13,7 @@
 
 import orange, orngDisc, orngTest, orngStat, orngFSS
 
-data = orange.ExampleTable("../datasets/crx")
+data = orange.ExampleTable("../../datasets/crx")
 
 bayes = orange.BayesLearner()
 dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')

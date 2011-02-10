@@ -17,7 +17,7 @@ def report_prob(header, data):
   else:
     print
 
-filename = "../datasets/adult_sample.tab"
+filename = "../../datasets/adult_sample.tab"
 data = orange.ExampleTable(filename)
 report_prob('data', data)
 

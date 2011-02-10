@@ -6,7 +6,7 @@
 
 import orange, orngTree, orngTest, orngStat
 
-data = orange.ExampleTable("../datasets/housing.tab")
+data = orange.ExampleTable("housing.tab")
 
 maj = orange.MajorityLearner()
 maj.name = "default"
@@ -17,7 +17,7 @@ knn = orange.kNNLearner(k=k)
 knn.name = "k-NN (k=%i)" % k
 learners = [maj, rt, knn]
 
-data = orange.ExampleTable("../datasets/housing.tab")
+data = orange.ExampleTable("housing.tab")
 results = orngTest.crossValidation(learners, data, folds=10)
 mse = orngStat.MSE(results)
 
