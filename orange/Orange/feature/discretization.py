@@ -159,7 +159,8 @@ class DiscretizedLearner_Class:
         self.__dict__.update(kwds)
     def __call__(self, data, weight=None):
         # filter the data and then learn
-        ddata = self.discretizer(data)
+        from Orange.preprocess import Preprocessor_discretize
+        ddata = Preprocessor_discretize(data, method=self.discretizer)
         if weight<>None:
             model = self.baseLearner(ddata, weight)
         else:
