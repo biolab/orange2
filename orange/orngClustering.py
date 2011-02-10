@@ -49,5 +49,6 @@ from Orange.clustering.hierarchical import top_clusters as hierarchicalClusterin
 from Orange.clustering.hierarchical import top_cluster_membership as hierarhicalClustering_topClustersMembership
 from Orange.clustering.hierarchical import order_leaves as orderLeaves
 
+from Orange.clustering.hierarchical import dendrogram_draw, DendrogramPlotPylab, DendrogramPlot
 #left for backward compatibility
 hierarchicalClustering_attributes
