@@ -15,8 +15,11 @@ An example.
 .. automethod:: Orange.clustering.hierarchical.clustering
 
 """
-
 import orange
+from Orange.core import HierarchicalClustering, \
+                        HierarchicalCluster, \
+                        HierarchicalClusterList
+
 
 def clustering(data,
                distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean,
@@ -404,6 +407,7 @@ class DendrogramPlotPylab(object):
         labelsAxes.yaxis.set_major_locator(ticker.NullLocator())
         labelsAxes.yaxis.set_minor_locator(ticker.NullLocator())
         if filename:
+            import matplotlib.backends.backend_agg
             canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(self.fig)
             canvas.print_figure(filename)
         if show:
