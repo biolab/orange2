@@ -16,9 +16,7 @@ with:
     package content renames.
     
 .. note:: This fixer runs last and should be used as a last resort. Use
-    fix_changed_names fixer for fain grain control of name mappings. (for
-    instance we might want to replace the orange.SVMLearner from the core
-    to the one in Orange.classification.svm).
+    fix_changed_names fixer for fine grain control of name mappings.
   
 """
 from lib2to3 import fixer_base
@@ -36,7 +34,6 @@ from lib2to3 import fixer_base
 from lib2to3.fixer_util import Name, attr_chain
 
 MAPPING = {"orange": "Orange.core",
-           "orangeom": "Orange.core",
            "orngSVM": "Orange.classification.svm",
            "orngSOM": "Orange.projection.som",
            "orngBayes":"Orange.classification.bayes",
@@ -49,7 +46,8 @@ MAPPING = {"orange": "Orange.core",
            "orngTree": "Orange.classification.tree",
            "orngImpute": "Orange.feature.imputation",
            "orngStat": "Orange.evaluation.scoring",
-           "orngWrap": "Orange.optimization"
+           "orngWrap": "Orange.optimization",
+           "orngClustering": "Orange.clustering",
            }
 
 

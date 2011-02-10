@@ -67,7 +67,7 @@ class FixChangedNamesAggressive(FixChangedNames):
             module = list(modules)[0]
             
             if all("module" not in res for res in self._import_matches): 
-                self.warning(node, "Aggressive name matched '%s' but no corresponding import! Fix manualy." % local)
+                self.warning(node, "Aggressive name matched '%s' but no corresponding import! Fix manually." % local_name)
                 return
                 
             new_name = unicode(self.mapping[module + "." + local_name])
