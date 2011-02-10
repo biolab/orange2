@@ -1,3 +1,4 @@
 from orange import \
      MakeRandomIndices, MakeRandomIndicesN, \
-     MakeRandomIndicesCV, MakeRandomIndicesMultiple
+     MakeRandomIndicesCV, MakeRandomIndicesMultiple, \
+     MakeRandomIndices2
