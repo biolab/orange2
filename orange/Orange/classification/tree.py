@@ -10,15 +10,13 @@ Classification trees
 ********************
 
 This page describes the Orange trees. It first describes the basic
-components and procedures: it starts with the
-structure that represents the tree, then it defines
-how the tree is used for classification XXXXXXXXXX,
-then how it is built XXXXXXXX and
-pruned XXXXXXXXXX. The order might seem strange,
+components and procedures: it starts with the structure that represents 
+the tree, then it defines how the tree is used for classification,
+how it is built and pruned. The order might seem strange,
 but the things are rather complex and this order is perhaps a
 bit easier to follow. After you have some idea about what the
 principal components do, we described the
-concrete classes XXXXXXXXXX that you can use as
+concrete classes that you can use as
 components for a tree learner.
 
 Classification trees are represented as a tree-like hierarchy of
@@ -126,6 +124,10 @@ Classification
 
     Classifies examples according to a tree stored in :obj:`tree`.
 
+    .. attribute:: tree
+
+        The root of the tree, represented as a :class:`Node`.
+    
     Classification would be straightforward if there were no unknown 
     values or, in general, examples that cannot be placed into a 
     single branch. The response in such cases is determined by a
@@ -174,6 +176,9 @@ Classification
     of classes. The predictions are multiplied by weights, summed and 
     the most probable class is returned.
 
+    .. method:: vote()
+
+    .. method:: classDistribution()
 
 
 The rest of this section is only for those interested in the C++ code.
