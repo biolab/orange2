@@ -9,7 +9,7 @@ import orange
 def printTabDelimContingency(c):
     if c.innerVariable.varType != orange.VarTypes.Discrete or \
        c.outerVariable.varType != orange.VarTypes.Discrete:
-        raise "printTabDelimContingency can only handle discrete contingencies"
+        raise Exception("printTabDelimContingency can only handle discrete contingencies")
     
     res = ""
     for v in c.innerVariable.values:

@@ -7,7 +7,7 @@
 import orange
 
 def err():
-    raise "Error"
+    raise Exception("Error")
 
 fruit = orange.EnumVariable("fruit", values = ["plum", "apple", "lemon"])
 iq = orange.FloatVariable("iq")

@@ -16,13 +16,13 @@ def testnonref(mid):
     pd0 = data[0][1]
     mid[0][1] += 1
     if pd0 != data[0][1]:
-        raise "reference when there shouldn't be"
+        raise Exception("reference when there shouldn't be")
 
 def testref(mid):
     pd0 = data[0][1]
     mid[0][1] += 1
     if pd0 == data[0][1]:
-        raise "not reference when there should be"
+        raise Exception("not reference when there should be")
 
 filterany = orange.Filter_values()
 filterany.domain = data.domain
