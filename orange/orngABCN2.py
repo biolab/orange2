@@ -1,13 +1,23 @@
 """ This module implements argument based rule learning.
 The main learner class is ABCN2. The first few classes are some variants of ABCN2 with reasonable settings.  """
 
-import Orange.core
-import Orange.classification.rules
-from orngABML import *
+
 import operator
 import random
 import numpy
 import math
+
+# The following is an ugly hack to make the cyclic dependencies work.
+# Cyclic dependencies are introduced by Orange's __init__.py importing all
+# its submodules, one of which currently depends on this module.
+import sys
+if "Orange" not in sys.modules:
+    del sys.modules['orngABCN2']
+    import Orange
+
+import Orange.core
+import Orange.classification.rules
+from orngABML import *
 
 # Default learner - returns     #
 # default classifier with pre-  #
