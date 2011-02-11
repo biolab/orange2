@@ -1,0 +1,81 @@
+PCA on all data:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8433            3.0540            3.7587            1.1987  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8253            0.4321            1.7585            0.7606  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       3.1416         0.7854         0.7854
+       0.7317         0.1829         0.9683
+
+Loadings:
+
+      PC1      PC2
+   0.5045  -0.3742   sepal length                  
+  -0.2826  -0.9222   sepal width                   
+   0.5833  -0.0340   petal length                  
+   0.5705  -0.0912   petal width                   
+
+PCA on attributes sepal.length, sepal.width, petal.length, petal.width:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8433            3.0540            3.7587            1.1987  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8253            0.4321            1.7585            0.7606  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       2.9108         0.7277         0.7277
+       0.9212         0.2303         0.9580
+
+Loadings:
+
+      PC1      PC2
+   0.5224  -0.3723   sepal length                  
+  -0.2634  -0.9256   sepal width                   
+   0.5813  -0.0211   petal length                  
+   0.5656  -0.0654   petal width                   
+
+PCA on every second row:
+PCA SUMMARY
+
+Center:
+
+    sepal length       sepal width      petal length       petal width  
+          5.8400            3.0640            3.7760            1.2173  
+
+Deviation:
+
+    sepal length       sepal width      petal length       petal width  
+          0.8005            0.4326            1.7710            0.7873  
+
+Importance of components:
+
+  eigenvalues     proportion     cumulative
+       3.2310         0.8078         0.8078
+       0.6101         0.1525         0.9603
+
+Loadings:
+
+      PC1      PC2
+   0.4872  -0.3967   sepal length                  
+  -0.3539  -0.9020   sepal width                   
+   0.5726  -0.0682   petal length                  
+   0.5564  -0.1562   petal width                   
+
