@@ -732,7 +732,7 @@ bool ContingencyClass_getValuePair(TContingencyClass *cont, PyObject *args, char
 }
 
 
-PyObject *ContingencyClass_add_attrclass(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(attribute_value, class_value[, w=1]) -> None")
+PyObject *ContingencyClass_add_var_class(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(attribute_value, class_value[, w=1]) -> None")
 {
 	PyTRY
 		CAST_TO(TContingencyClass, cont)
@@ -3305,14 +3305,14 @@ PyObject *SymMatrix_normalize(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 	PyCATCH
 }
 
-PyObject *SymMatrix_getitems(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(List of items -> SymMatrix)")
+PyObject *SymMatrix_get_items(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(List of items -> SymMatrix)")
 {
 	PyTRY
 	CAST_TO(TSymMatrix, matrix);
 
 	PyObject *items;
 
-	if (!PyArg_ParseTuple(args, "O:SymMatrix.getitems", &items))
+	if (!PyArg_ParseTuple(args, "O:SymMatrix.get_items", &items))
 		return PYNULL;
 
 	int size = PyList_Size(items);

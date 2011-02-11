@@ -143,6 +143,26 @@ if 1:
                  "int ccn_func_%(type)s(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<T%(type)s> *)(ptr) = GCPtr<T%(type)s>(); return 1; }      if (!PyOr%(type)s_Check(obj)) return 0;      *(GCPtr<T%(type)s> *)(ptr) = PyOrange_As%(type)s(obj); return 1; }\n\n\n"
 
 
+f_underscored = open("..\_underscored", "a")
+hump = re.compile("([a-z])([A-Z])")
+
+def camelChange(mo):
+    if mo.end() == len(mo.string) or not 'A'<=mo.string[mo.end()]<='Z':
+        sg = mo.group(2).lower()
+    else:
+        sg = mo.group(2)
+    return "%s_%s" % (mo.group(1), sg)
+    
+def camel2underscore(s):
+    if s[0].isupper():
+        return s
+    else:
+        u = hump.sub(camelChange, s)
+        if u != s:
+            f_underscored.write("%-40s %s\n" % (s, u))
+        return u
+
+
 def detectConstructors(line, classdefs):
   found=constrdef_mac.search(line)
   if not found:
@@ -228,7 +248,7 @@ def detectAttrs(line, classdefs):
 
 def detectMethods(line, classdefs):
   # The below if is to avoid methods, like, for instance, map's clear to be recognized
-  # also as a special method. Special methods never include PYARGS...
+  # also as a special method. Special methods never include PYARGS.
   if line.find("PYARGS")<0:
     found=specialmethoddef.search(line)
     if found:
@@ -253,12 +273,16 @@ def detectMethods(line, classdefs):
   if typename:  
     if not classdefs.has_key(typename) and "_" in typename:
       com = typename.split("_")
-      if len(com)==2 and classdefs.has_key(com[0]):
-        typename = com[0]
-        cname = com[1] + "_" + cname
+      for i in range(1, len(com)):
+          subname = "_".join(com[:-i]) 
+          if subname in classdefs:
+              typename = subname
+              cname = "_".join(com[-i:])+"_"+cname
+              break
 
     if not methodname:
-      methodname = cname
+      methodname = camel2underscore(cname)
+
       
     addClassDef(classdefs, typename, parsedFile)
     classdefs[typename].methods[methodname]=MethodDefinition(argkw=argkw, arguments=doc, cname=cname)
@@ -387,7 +411,8 @@ def parseFiles():
       if line.strip().startswith("PYXTRACT_IGNORE"):
         continue
       detectHierarchy(line, classdefs) # BASED_ON, DATASTRUCTURE those lines get detected twice!
-      for i in [detectConstructors, detectAttrs, detectMethods, detectCallDoc]:
+      # detectMethods must be before detectAttrs to allow for methods named get_something, set_something
+      for i in [detectConstructors, detectMethods, detectAttrs, detectCallDoc]:
         if i(line, classdefs):
           break
       else:
@@ -545,7 +570,8 @@ def writeAppendix(filename, targetname, classdefs, aliases):
       properties.sort(lambda x,y:cmp(x[0], y[0]))
       outfile.write("PyGetSetDef "+type+"_getset[]=  {\n")
       for (name, definition) in properties:
-        outfile.write('  {"%s"' % name)
+        camelname = camel2underscore(name)
+        outfile.write('  {"%s"' % camelname)
         if definition.hasget:
           outfile.write(", (getter)%s_get_%s" % (type, name))
         else:

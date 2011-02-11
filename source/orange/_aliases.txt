@@ -15,3 +15,40 @@ supp support
 
 EquiDistDiscretizer
 firstVal firstCut
+firstVal first_cut
+
+SymMatrix
+getitems get_items
+
+ExampleGenerator
+getitems get_items
+
+ExampleTable
+getitemsref get_items_ref
+selectlist select_list
+selectref select_ref
+selectbool select_bool
+filterlist filter_list
+filterref filter_ref
+filterbool filter_bool
+randomexample random_example
+
+ClassifierByExampleTable
+boundset bound_set
+
+ClassifierByLookupTable
+boundset bound_set
+getindex get_index
+
+ContingencyClass
+add_attrclass add_var_class
+
+TreeNode
+treesize tree_size
+removestoredinfo remove_stored_info
+
+TreeClassifier
+treesize tree_size
+
+C45Learner
+commandline command_line

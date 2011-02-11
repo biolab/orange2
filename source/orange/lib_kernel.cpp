@@ -2560,7 +2560,7 @@ PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference)
 }
 
 
-PyObject *ExampleGenerator_getitems(TPyOrange *self, PyObject *pylist)  PYARGS(METH_O, "(indices) -> ExampleTable")
+PyObject *ExampleGenerator_get_items(TPyOrange *self, PyObject *pylist)  PYARGS(METH_O, "(indices) -> ExampleTable")
 { return multipleSelectLow(self, pylist, false); }
 
 
@@ -3738,7 +3738,7 @@ PyObject *applyFilterB(PFilter filter, PExampleTable gen)
 }
 
 
-PyObject *ExampleTable_getitemsref(TPyOrange *self, PyObject *pylist)   PYARGS(METH_O, "(indices) -> ExampleTable")
+PyObject *ExampleTable_get_items_ref(TPyOrange *self, PyObject *pylist)   PYARGS(METH_O, "(indices) -> ExampleTable")
 { return multipleSelectLow(self, pylist, true); }
 
 
@@ -3912,28 +3912,28 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
 }
 
 
-PyObject *ExampleTable_selectlist(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
+PyObject *ExampleTable_select_list(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
     return ExampleTable_selectLow(self, args, keywords, 1);
   PyCATCH
 }
 
 
-PyObject *ExampleTable_selectref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
+PyObject *ExampleTable_select_ref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
     return ExampleTable_selectLow(self, args, keywords, 0);
   PyCATCH
 }
 
 
-PyObject *ExampleTable_selectbool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
+PyObject *ExampleTable_select_bool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
     return ExampleTable_selectLow(self, args, keywords, 2);
   PyCATCH
 }
 
 
-PyObject *ExampleTable_filterlist(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+PyObject *ExampleTable_filter_list(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
 {
   PyTRY
     CAST_TO(TExampleGenerator, eg);
@@ -3953,12 +3953,12 @@ PyObject *ExampleTable_filterlist(TPyOrange *self, PyObject *args, PyObject *key
           return applyFilterL(PyOrange_AsFilter(arg), weg);
     }
 
-    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filter_list expects a list of conditions or orange.Filter", PYNULL)
   PyCATCH
 }
 
 
-PyObject *ExampleTable_filterref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+PyObject *ExampleTable_filter_ref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
 {
   PyTRY
     CAST_TO(TExampleGenerator, eg);
@@ -3978,12 +3978,12 @@ PyObject *ExampleTable_filterref(TPyOrange *self, PyObject *args, PyObject *keyw
           return applyFilterP(PyOrange_AsFilter(arg), weg);
     }
 
-    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filter_ref expects a list of conditions or orange.Filter", PYNULL)
   PyCATCH
 }
 
 
-PyObject *ExampleTable_filterbool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+PyObject *ExampleTable_filter_bool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
 {
   PyTRY
     CAST_TO(TExampleGenerator, eg);
@@ -4003,12 +4003,12 @@ PyObject *ExampleTable_filterbool(TPyOrange *self, PyObject *args, PyObject *key
           return applyFilterB(PyOrange_AsFilter(arg), weg);
     }
 
-    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filter_bool expects a list of conditions or orange.Filter", PYNULL)
   PyCATCH
 }
 
 
-PyObject *ExampleTable_randomexample(TPyOrange *self) PYARGS(0, "() -> Example")
+PyObject *ExampleTable_random_example(TPyOrange *self) PYARGS(0, "() -> Example")
 { PyTRY
     CAST_TO(TExampleTable, table);
     TExample example(table->domain);
@@ -5471,7 +5471,7 @@ PyObject *LookupLearner_call(PyObject *self, PyObject *targs, PyObject *keywords
   PyCATCH
 }
 
-PyObject *ClassifierByExampleTable_boundset(PyObject *self) PYARGS(0, "() -> variables")
+PyObject *ClassifierByExampleTable_bound_set(PyObject *self) PYARGS(0, "() -> variables")
 { PyTRY
     TVarList &attributes=SELF_AS(TClassifierByExampleTable).domain->attributes.getReference();
     PyObject *list=PyList_New(attributes.size());
@@ -5483,10 +5483,18 @@ PyObject *ClassifierByExampleTable_boundset(PyObject *self) PYARGS(0, "() -> var
 
 
 PyObject *ClassifierByExampleTable_get_variables(PyObject *self)
-{ return ClassifierByExampleTable_boundset(self); }
+{ return ClassifierByExampleTable_bound_set(self); }
 
 
-PyObject *ClassifierByLookupTable_boundset(PyObject *self) PYARGS(0, "() -> (variables)")
+/* pyxtract must see ClassifierByLookupTable_get_variables before
+    ClassifierByLookupTable_bound_set, since the former gives the class
+    unambiguously, so the latter can find it */
+PyObject *ClassifierByLookupTable_bound_set(PyObject *self);
+
+PyObject *ClassifierByLookupTable_get_variables(PyObject *self)
+{ return ClassifierByLookupTable_bound_set(self); }
+
+PyObject *ClassifierByLookupTable_bound_set(PyObject *self) PYARGS(0, "() -> (variables)")
 { PyTRY
     TVarList vlist;
     SELF_AS(TClassifierByLookupTable).giveBoundSet(vlist);
@@ -5499,11 +5507,7 @@ PyObject *ClassifierByLookupTable_boundset(PyObject *self) PYARGS(0, "() -> (var
 }
 
 
-PyObject *ClassifierByLookupTable_get_variables(PyObject *self)
-{ return ClassifierByLookupTable_boundset(self); }
-
-
-PyObject *ClassifierByLookupTable_getindex(PyObject *self, PyObject *pyexample) PYARGS(METH_O, "(example) -> int")
+PyObject *ClassifierByLookupTable_get_index(PyObject *self, PyObject *pyexample) PYARGS(METH_O, "(example) -> int")
 { PyTRY
     if (!PyOrExample_Check(pyexample))
       PYERROR(PyExc_TypeError, "invalid arguments; an example expected", PYNULL);

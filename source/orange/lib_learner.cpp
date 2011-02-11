@@ -572,14 +572,14 @@ C_CALL (TreePruner_SameMajority, TreePruner, "([tree]) -/-> tree")
 C_CALL (TreePruner_m, TreePruner, "([tree]) -/-> tree")
 
 
-PyObject *TreeNode_treesize(PyObject *self, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> int")
+PyObject *TreeNode_tree_size(PyObject *self, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> int")
 { PyTRY
     return PyInt_FromLong(PyOrange_AsTreeNode(self)->treeSize());
   PyCATCH
 }
 
 
-PyObject *TreeNode_removestoredinfo(PyObject *self, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> None")
+PyObject *TreeNode_remove_stored_info(PyObject *self, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> None")
 { PyTRY
     PyOrange_AsTreeNode(self)->removeStoredInfo();
     RETURN_NONE;
@@ -897,7 +897,7 @@ PyObject *TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOfWra
 C_CALL(C45Learner, Learner, "([examples] [, weight=, gainRatio=, subset=, batch=, probThresh=, minObjs=, window=, increment=, cf=, trials=]) -/-> Classifier")
 C_NAMED(C45Classifier, Classifier, "()")
 
-PyObject *C45Learner_commandline(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(line) -> None")
+PyObject *C45Learner_command_line(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(line) -> None")
 { PyTRY
     char *line;
     if (!PyArg_ParseTuple(args, "s", &line))

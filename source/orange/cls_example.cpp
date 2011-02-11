@@ -305,7 +305,7 @@ PyObject *Example_reference(TPyExample *pex) PYARGS(METH_NOARGS, "unique referen
 }
 
 
-PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id) -> weight; Returns example's weight")
+PyObject *Example_get_weight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id) -> weight; Returns example's weight")
 {
   PyTRY
     const TExample &example = PyExample_AS_ExampleReference(pex);
@@ -325,7 +325,7 @@ PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "
 }
 
 
-PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(id[, weight]); Sets example's weight to given value")
+PyObject *Example_set_weight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(id[, weight]); Sets example's weight to given value")
 { PyTRY
     PyObject *pyindex;
     float weight = 1;
@@ -350,7 +350,7 @@ PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS
 }
 
 
-PyObject *Example_removeweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id); Removes examples's weight")
+PyObject *Example_remove_weight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id); Removes examples's weight")
 { PyTRY
     TExample &example = PyExample_AS_ExampleReference(pex);
     int index = weightIndex(example, pyindex);
@@ -369,7 +369,7 @@ PyObject *Example_removeweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O
 }
 
 
-PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> Value; Gets a meta-value")
+PyObject *Example_get_meta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> Value; Gets a meta-value")
 { PyTRY
     PVariable var;
     int idx = getMetaIdFromPy(PyExample_AS_Example(pex), index, var);
@@ -384,7 +384,7 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
 }
 
 
-PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "([key-type]) -> dictionary with a copy of example's meta attributes")
+PyObject *Example_get_metas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "([key-type]) -> dictionary with a copy of example's meta attributes")
 {
   PyTRY
     PyObject *pyoptional = NULL;
@@ -458,7 +458,7 @@ PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS,
 }
 
 
-PyObject *Example_hasmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> bool")
+PyObject *Example_has_meta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> bool")
 { PyTRY
     PVariable var;
     int idx = getMetaIdFromPy(PyExample_AS_Example(pex), index, var);
@@ -468,7 +468,7 @@ PyObject *Example_hasmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
 }
 
 
-PyObject *Example_setvalue(TPyExample *pex, PyObject *vala) PYARGS(METH_O, "(Value) -> None")
+PyObject *Example_set_value(TPyExample *pex, PyObject *vala) PYARGS(METH_O, "(Value) -> None")
 { PyTRY
     if (!PyOrValue_Check(vala))
       PYERROR(PyExc_TypeError, "Example.setvalue: orange.Value expected", PYNULL);
@@ -490,7 +490,7 @@ PyObject *Example_setvalue(TPyExample *pex, PyObject *vala) PYARGS(METH_O, "(Val
 }
 
 
-PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(Value, int) | (variable, value); Sets a meta-value")
+PyObject *Example_set_meta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(Value, int) | (variable, value); Sets a meta-value")
 { PyTRY
     PExample example=PyExample_AS_Example(pex);
   
@@ -566,7 +566,7 @@ PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, 
 }
   
 
-PyObject *Example_removemeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id); Removes a meta-value")
+PyObject *Example_remove_meta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id); Removes a meta-value")
 { PyTRY
     PVariable var;
     int idx = getMetaIdFromPy(PyExample_AS_Example(pex), index, var);
@@ -580,7 +580,7 @@ PyObject *Example_removemeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(
 
 
 
-PyObject *Example_getclass(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> Value; Returns example's class")
+PyObject *Example_get_class(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> Value; Returns example's class")
 { PyTRY
       const TExample &example = PyExample_AS_ExampleReference(pex);
       const PVariable &classVar = example.domain->classVar;
@@ -593,7 +593,7 @@ PyObject *Example_getclass(TPyExample *pex) PYARGS(METH_NOARGS, "()  -> Value; R
 }
 
 
-PyObject *Example_setclass(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(value); Sets example's class")
+PyObject *Example_set_class(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(value); Sets example's class")
 { PyTRY
     PExample &example=PyExample_AS_Example(pex);
     PVariable &classVar = example->domain->classVar;
@@ -1021,9 +1021,34 @@ int Example_len(TPyExample *pex)
 }
 
 
+char *example_underscores[][2] = {
+    {"getweight", "get_weight"},
+    {"setweight", "set_weight"},
+    {"removeweight", "remove_weight"},
+    {"getmeta", "get_meta"},
+    {"getmetas", "get_metas"},
+    {"hasmetas", "has_meta"},
+    {"setvalue", "set_value"},
+    {"setmeta", "set_meta"},
+    {"removemeta", "remove_meta"},
+    {"getclass", "get_class"},
+    {"setclass", "set_class"},
+    {NULL, NULL}
+};
+
 PyObject *Example_getattr(TPyExample *self, PyObject *name)
 {
-  if (!PyString_Check(name) || strcmp(PyString_AsString(name), "name"))
+  char *orig = PyString_AsString(name);
+  for(char *(*ei)[2] = example_underscores; **ei; ei++) {
+      if (!strcmp(orig, **ei)) {
+          PyObject *trans = PyString_FromString((*ei)[1]);
+          PyObject *value = PyObject_GenericGetAttr((PyObject *)self, trans);
+          Py_DECREF(trans);
+          return value;
+      }
+  }
+
+  if (!PyString_Check(name) || strcmp(orig, "name"))
     return PyObject_GenericGetAttr((PyObject *)self, name);
 
   const string *ename = self->example->name;

@@ -278,14 +278,56 @@ PyObject *PyOrange__members__(TPyOrange *self)
 }
 
 
+char *camel2underscore(const char *camel)
+{
+    const char *ci = camel;
+    if ((*ci >= 'A') && (*ci <= 'Z')) {
+        return NULL;
+    }
+
+    char *underscored = (char *)malloc(2*strlen(camel)+1);
+    char *ui = underscored;
+    bool changed = false;
+    *ui = *ci;
+    while(*ci) { // just copied
+        if (   (*ci >= 'a') && (*ci <= 'z')       // a small letter
+            && (ci[1] >= 'A') && (ci[1] <= 'Z')   // followed by capital
+            && ((ci[2] < 'A') || (ci[2] > 'Z'))) { // not followed by capital 
+            *++ui = '_';
+            *++ui = *++ci + 32;
+            changed = true;
+        }
+        else {
+            *++ui = *++ci;
+        }
+    }
+    if (!changed) {
+        free(underscored);
+        underscored = NULL;
+    }
+    return underscored;
+}
+
+
 PyObject *PyOrange_translateObsolete(PyObject *self, PyObject *pyname)
 { 
-  char *name=PyString_AsString(pyname);
-  for(TOrangeType *selftype = PyOrange_OrangeBaseClass(self->ob_type); PyOrange_CheckType((PyTypeObject *)selftype); selftype=(TOrangeType *)(selftype->ot_inherited.tp_base))
-    if (selftype->ot_aliases)
-      for(TAttributeAlias *aliases=selftype->ot_aliases; aliases->alias; aliases++)
-        if (!strcmp(name, aliases->alias))
-          return PyString_FromString(aliases->realName);
+  char *name = PyString_AsString(pyname);
+  char *underscored = camel2underscore(name);
+  for(TOrangeType *selftype = PyOrange_OrangeBaseClass(self->ob_type); PyOrange_CheckType((PyTypeObject *)selftype); selftype=(TOrangeType *)(selftype->ot_inherited.tp_base)) {
+      if (selftype->ot_aliases) {
+          for(TAttributeAlias *aliases=selftype->ot_aliases; aliases->alias; aliases++) {
+              if (!strcmp(name, aliases->alias) || (underscored && !strcmp(underscored, aliases->alias))) {
+                  if (underscored) {
+                      free(underscored);
+                  }
+                  return PyString_FromString(aliases->realName);
+              }
+          }
+      }
+  }
+  if (underscored) {
+      free(underscored);
+  }
   return NULL;
 }    
 
@@ -730,15 +772,41 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
 { 
   PyTRY
     PyObject *res = Orange_getattr1(self, name);
+    char *underscored = NULL;
     if (!res) {
-      PyObject *translation = PyOrange_translateObsolete((PyObject *)self, name);
-      if (translation) {
-        PyErr_Clear();
-        res = Orange_getattr1(self, translation);
-        Py_DECREF(translation);
-      }
+        char *camel = PyString_AsString(name);
+        underscored = camel2underscore(camel);
+        if (underscored) {
+            PyObject *translation = PyString_FromString(underscored);
+            PyErr_Clear();
+            res = Orange_getattr1(self, translation);
+            Py_DECREF(translation);
+        }
+    }
+    if (!res) {
+        PyObject *translation = PyOrange_translateObsolete((PyObject *)self, name);
+        if (translation) {
+            PyErr_Clear();
+            res = Orange_getattr1(self, translation);
+            Py_DECREF(translation);
+        }
     }
 
+    if (!res && underscored) {
+        PyMethodDef *mi = self->ob_type->tp_methods;
+        if (mi) {
+            for(; mi->ml_name; mi++) {
+                if (!strcmp(underscored, mi->ml_name)) {
+                    res = PyMethod_New((PyObject *)mi->ml_meth, (PyObject *)self, (PyObject *)(self->ob_type));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (underscored) {
+        free(underscored);
+    }
     return res;
   PyCATCH
 }
@@ -801,6 +869,18 @@ int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool wa
     if (res!=1)
       return res;
     
+    PyErr_Clear();
+    char *camel = PyString_AsString(pyname);
+    char *underscored = camel2underscore(camel);
+    if (underscored) {
+        PyObject *translation = PyString_FromString(underscored);
+        free(underscored);
+        res = Orange_setattr1(self, translation, args);
+        Py_DECREF(translation);
+    }
+    if (res!=1)
+      return res;
+
     PyErr_Clear();
     // Try to translate it as an obsolete alias for C++ class member
     PyObject *translation = PyOrange_translateObsolete((PyObject *)self, pyname);

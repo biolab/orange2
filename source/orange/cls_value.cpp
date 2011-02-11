@@ -903,7 +903,35 @@ PyObject *Value_get_varType(TPyValue *self)
 
 
 
-PyObject *Value_randomvalue(TPyValue *self) PYARGS(METH_NOARGS, "(); Sets the value to a random")
+char *value_underscores[][2] = {
+    {"firstvalue", "first_value"},
+    {"nextvalue", "next_value"},
+    {"randomvalue", "random_value"},
+    {"isDC", "is_DC"},
+    {"isDK", "is_DK"},
+    {"isSpecial", "is_special"},
+    {"varType", "var_type"},
+    {"valueType", "value_type"},    
+    {NULL, NULL}
+};
+
+PyObject *Value_getattr(PyObject *self, PyObject *name)
+{
+  char *orig = PyString_AsString(name);
+  for(char *(*ei)[2] = value_underscores; **ei; ei++) {
+      if (!strcmp(orig, **ei)) {
+          PyObject *trans = PyString_FromString((*ei)[1]);
+          PyObject *value = PyObject_GenericGetAttr((PyObject *)self, trans);
+          Py_DECREF(trans);
+          return value;
+      }
+  }
+
+  return PyObject_GenericGetAttr((PyObject *)self, name);
+
+}
+
+PyObject *Value_random_value(TPyValue *self) PYARGS(METH_NOARGS, "(); Sets the value to a random")
 { PyTRY
     CHECK_VARIABLE
     self->value = self->variable->randomValue();
@@ -912,7 +940,7 @@ PyObject *Value_randomvalue(TPyValue *self) PYARGS(METH_NOARGS, "(); Sets the va
 }
 
 
-PyObject *Value_firstvalue(TPyValue *self)  PYARGS(METH_NOARGS, "() -> bool; Sets the value to the first value")
+PyObject *Value_first_value(TPyValue *self)  PYARGS(METH_NOARGS, "() -> bool; Sets the value to the first value")
 { PyTRY
     CHECK_VARIABLE
     return PyInt_FromLong(self->variable->firstValue(self->value) ? 1 : 0);
@@ -920,7 +948,7 @@ PyObject *Value_firstvalue(TPyValue *self)  PYARGS(METH_NOARGS, "() -> bool; Set
 }
 
 
-PyObject *Value_nextvalue(TPyValue *self)  PYARGS(METH_NOARGS, "() -> bool; Increases the value (if possible)")
+PyObject *Value_next_value(TPyValue *self)  PYARGS(METH_NOARGS, "() -> bool; Increases the value (if possible)")
 { PyTRY
     CHECK_VARIABLE
     return PyInt_FromLong(self->variable->nextValue(self->value) ? 1 : 0);

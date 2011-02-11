@@ -25,6 +25,7 @@ notice = \
 
 win32 = sys.platform == "win32"
 
+
 def printNQ(str):
   if not quiet:
     print str
@@ -67,6 +68,18 @@ class ClassDefinition:
 def tf(x):
     return x and "true" or "false"
 
+f_underscored = open("..\_underscored", "a")
+hump = re.compile("([a-z])([A-Z])")
+def camel2underscore(s):
+    if s[0].isupper():
+        return s
+    else:
+        u = hump.sub(lambda mo: "%s_%s" % (mo.group(1),
+                        mo.group(2).lower() if mo.end()==len(s) or not 'A'<=s[mo.end()]<='Z'
+                           else mo.group(2)), s)
+        if u != s:
+            f_underscored.write("%-40s %s\n" % (s, u))
+        return u
 
 def storeClass(currentClass, hppfile):
   if currentClass:
@@ -142,7 +155,7 @@ def detectBuiltInProperties(hppfile):
               if pnameflag=="+":
                 pname = (cname, pname)
             else:
-              pname = cname
+              pname = camel2underscore(cname)
             
             currentClass.properties.append((ctype, cname, pname, pdesc, flags and ("R" in flags) or 0, flags and ("O" in flags) or 0, normal, proptype))
         continue

@@ -440,6 +440,10 @@ bool TPythonVariable::firstValue(TValue &val) const
     val = toValue(PyObject_CallMethod(MYSELF, "firstvalue", NULL));
     return true;
   }
+  if (isOverloaded("first_value")) {
+    val = toValue(PyObject_CallMethod(MYSELF, "first_value", NULL));
+    return true;
+  }
 
   else
     return TVariable::firstValue(val);
@@ -454,6 +458,12 @@ bool TPythonVariable::nextValue(TValue &val) const
     Py_DECREF(pyvalue);
     return true;
   }
+  if (isOverloaded("next_value")) {
+    PyObject *pyvalue = toPyObject(val);
+    toValue(PyObject_CallMethod(MYSELF, "next_value", "O", pyvalue), val);
+    Py_DECREF(pyvalue);
+    return true;
+  }
 
   else
     return TVariable::nextValue(val);
@@ -464,6 +474,9 @@ TValue TPythonVariable::randomValue(const int &rand)
 {
   if (isOverloaded("randomvalue")) {
     return toValue(PyObject_CallMethod(MYSELF, "randomvalue", "i", rand));
+  }
+  if (isOverloaded("random_value")) {
+    return toValue(PyObject_CallMethod(MYSELF, "random_value", "i", rand));
   }
 
   else

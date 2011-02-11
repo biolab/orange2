@@ -155,6 +155,22 @@ PyObject *codeMetaIDs(int *&metaIDs, const int &size)
   return pyMetaIDs;
 }
 
+PyObject *DomainDepot_getattr(PyObject *self, PyObject *name)
+{
+  char *orig = PyString_AsString(name);
+  PyObject *trans = NULL;
+  if (!strcmp(orig, "checkDomain")) {
+      trans = PyString_FromString("check_domain");
+  }
+  else if (!strcmp(orig, "prepareDomain")) {
+      trans = PyString_FromString("prepare_domain");
+  }
+
+  PyObject *value = PyObject_GenericGetAttr(self, trans ? trans : name);
+  Py_XDECREF(trans);
+  return value;
+}
+
 PyObject *DomainDepot_checkDomain(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(domain, list-of-names)")
 {
   PyTRY
