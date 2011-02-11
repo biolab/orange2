@@ -225,7 +225,7 @@ def score_fast_silhouette(km, index=None):
     """
 
     if index == None:
-        return avg([score_fastsilhouette(km, i) for i in range(len(km.data))])
+        return avg([score_fast_silhouette(km, i) for i in range(len(km.data))])
     cind = km.clusters[index]
     a = km.distance(km.data[index], km.centroids[km.clusters[index]])
     b = min([km.distance(km.data[index], c) for i,c in enumerate(km.centroids) if i != cind])
@@ -265,19 +265,19 @@ def compute_bic(km):
 #
 
 def plot_silhouette(km, filename='tmp.png', fast=False):
-    """ Saves a silhuette plot to filename, showing the distributions of silhouette scores in clusters. kmeans is a k-means clustering object. If fast is True use score_fastsilhouette to compute scores instead of score_silhouette.
+    """ Saves a silhuette plot to filename, showing the distributions of silhouette scores in clusters. kmeans is a k-means clustering object. If fast is True use score_fast_silhouette to compute scores instead of score_silhouette.
 
     :param km: a k-means clustering object.
     :type km: :class:`KMeans`
     :param filename: name of output plot.
     :type filename: string
-    :param fast: if True use :func:`score_fastsilhouette` to compute scores instead of :func:`score_silhouette`
+    :param fast: if True use :func:`score_fast_silhouette` to compute scores instead of :func:`score_silhouette`
     :type fast: boolean.
 
     """
     import matplotlib.pyplot as plt
     plt.figure()
-    scoring = score_fastsilhouette if fast else score_silhouette
+    scoring = score_fast_silhouette if fast else score_silhouette
     scores = [[] for i in range(km.k)]
     for i, c in enumerate(km.clusters):
         scores[c].append(scoring(km, i))
