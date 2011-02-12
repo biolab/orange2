@@ -10,7 +10,7 @@ sys.modules["orange"] = orange
 import data
 import data.io
 import data.sample
-import data.feature
+import data.variable
 
 import network
 

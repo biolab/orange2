@@ -17,13 +17,13 @@ categorization that can be used for learning.
     attribute's values get computed automatically when they are needed.
     
     :param attribute: continuous feature to discretize
-    :type attribute: :obj:`Orange.data.feature.Feature`
+    :type attribute: :obj:`Orange.data.variable.Variable`
     :param examples: data to discretize
     :type examples: :obj:`Orange.data.Table`
     :param weight: meta feature that stores weights of individual data
           instances
-    :type weight: Orange.data.feature.Feature
-    :rtype: :obj:`Orange.data.feature.Discrete`
+    :type weight: Orange.data.variable.Variable
+    :rtype: :obj:`Orange.data.variable.Discrete`
         
 .. automethod:: Orange.feature.discretization.entropyDiscretization_wrapper
 

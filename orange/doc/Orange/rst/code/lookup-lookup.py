@@ -10,11 +10,11 @@ table = Orange.data.Table("monks-1")
 
 a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
 
-ab = Orange.data.feature.Discrete("a==b", values = ["no", "yes"])
+ab = Orange.data.variable.Discrete("a==b", values = ["no", "yes"])
 ab.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(ab, a, b,
                     ["yes", "no", "no",  "no", "yes", "no",  "no", "no", "yes"])
 
-e1 = Orange.data.feature.Discrete("e==1", values = ["no", "yes"])
+e1 = Orange.data.variable.Discrete("e==1", values = ["no", "yes"])
 e1.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(e1, e,
                     ["yes", "no", "no", "no", "?"])
 

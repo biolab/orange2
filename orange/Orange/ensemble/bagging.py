@@ -84,7 +84,7 @@ class BaggedClassifier(orange.Classifier):
     :type name: str
     
     :param classVar: the class feature.
-    :type classVar: :class:`Orange.data.feature.Feature`
+    :type classVar: :class:`Orange.data.variable.Variable`
 
     """
 

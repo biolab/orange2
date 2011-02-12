@@ -500,7 +500,7 @@ class OrderAttributesByMeasure:
 
         :param weight: meta feature that stores weights of individual data
           instances
-        :type weight: Orange.data.Feature
+        :type weight: Orange.data.variable
 
         """
         if self.measure:
@@ -517,7 +517,7 @@ def MeasureAttribute_Distance(attr = None, data = None):
     the score of a given feature on given data.
     
     :param attr: feature to score
-    :type attr: Orange.data.feature
+    :type attr: Orange.data.variable
     
     :param data: data table used for feature scoring
     :type data: Orange.data.table 
@@ -533,10 +533,10 @@ class MeasureAttribute_DistanceClass(orange.MeasureAttribute):
     """Implement the 1-D feature distance measure described in Kononenko."""
     def __call__(self, attr, data, aprioriDist = None, weightID = None):
         """Take :obj:`Orange.data.table` data table and score the given 
-        :obj:`Orange.data.feature`.
+        :obj:`Orange.data.variable`.
 
         :param attr: feature to score
-        :type attr: Orange.data.feature
+        :type attr: Orange.data.variable
 
         :param data: a data table used to score features
         :type data: Orange.data.table
@@ -545,7 +545,7 @@ class MeasureAttribute_DistanceClass(orange.MeasureAttribute):
         :type aprioriDist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.feature
+        :type weightID: Orange.data.variable
 
         """
         import numpy
@@ -576,10 +576,10 @@ class MeasureAttribute_MDLClass(orange.MeasureAttribute):
     """Score feature based on the minimum description length principle."""
     def __call__(self, attr, data, aprioriDist = None, weightID = None):
         """Take :obj:`Orange.data.table` data table and score the given 
-        :obj:`Orange.data.feature`.
+        :obj:`Orange.data.variable`.
 
         :param attr: feature to score
-        :type attr: Orange.data.feature
+        :type attr: Orange.data.variable
 
         :param data: a data table used to score the feature
         :type data: Orange.data.table
@@ -588,7 +588,7 @@ class MeasureAttribute_MDLClass(orange.MeasureAttribute):
         :type aprioriDist:
         
         :param weightID: meta feature used to weight individual data instances
-        :type weightID: Orange.data.feature
+        :type weightID: Orange.data.variable
 
         """
         attrClassCont = orange.ContingencyAttrClass(attr, data)

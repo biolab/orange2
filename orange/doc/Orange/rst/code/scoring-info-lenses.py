@@ -52,13 +52,13 @@ print fstr % (("- by attribute descriptor:",) + tuple([meas(Orange.probability.d
 print
 
 values = ["v%i" % i for i in range(len(table.domain[2].values)*len(table.domain[3].values))]
-cartesian = Orange.data.feature.Discrete("cart", values = values)
+cartesian = Orange.data.variable.Discrete("cart", values = values)
 cartesian.getValueFrom = Orange.classification.lookup.ClassifierByLookupTable(cartesian, table.domain[2], table.domain[3], values)
 
 print "Information gain of Cartesian product of %s and %s: %6.4f" % (table.domain[2].name, table.domain[3].name, meas(cartesian, table))
 
 mid = Orange.core.newmetaid()
-table.domain.addmeta(mid, Orange.data.feature.Discrete(values = ["v0", "v1"]))
+table.domain.addmeta(mid, Orange.data.variable.Discrete(values = ["v0", "v1"]))
 table.addMetaAttribute(mid)
 
 rg = random.Random()

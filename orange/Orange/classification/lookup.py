@@ -328,7 +328,7 @@ part of `lookup-table.py`_ (uses: `monks-1.tab`_)::
     table = Orange.data.Table("monks-1")
     a, b, e = table.domain["a"], table.domain["b"], table.domain["e"]
 
-    y2 = Orange.data.feature.Discrete("y2", values = ["0", "1"])
+    y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
     abe2 = Orange.classification.lookup.LookupLearner(y2, [a, b, e], table)
 
 Let us, for the end, show another use of LookupLearner. With the
@@ -428,7 +428,7 @@ def lookupFromData(examples, weight = 0, learnerForUnknown = None):
         
         
 def printLookupFunction(func):
-    if isinstance(func, Orange.data.feature.Feature):
+    if isinstance(func, Orange.data.variable.Variable):
         if not func.getValueFrom:
             raise TypeError, "attribute '%s' does not have an associated function" % func.name
         else:

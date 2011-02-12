@@ -1099,11 +1099,11 @@ class CovererAndRemover_MultWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.core.newmetaid()
             instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.\
+            instances.domain.addmeta(weights, Orange.data.variable.\
                 Continuous("weights-"+str(weights)), True)
         newWeightsID = Orange.core.newmetaid()
         instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.\
+        instances.domain.addmeta(newWeightsID, Orange.data.variable.\
             Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
             if rule(instance) and instance.getclass() == rule.classifier(\
@@ -1124,17 +1124,17 @@ class CovererAndRemover_AddWeights(RuleCovererAndRemover):
         if not weights:
             weights = Orange.core.newmetaid()
             instances.addMetaAttribute(weights,1.)
-            instances.domain.addmeta(weights, Orange.data.feature.\
+            instances.domain.addmeta(weights, Orange.data.variable.\
                 Continuous("weights-"+str(weights)), True)
         try:
             coverage = instances.domain.getmeta("Coverage")
         except:
-            coverage = Orange.data.feature.Continuous("Coverage")
+            coverage = Orange.data.variable.Continuous("Coverage")
             instances.domain.addmeta(Orange.core.newmetaid(),coverage, True)
             instances.addMetaAttribute(coverage,0.0)
         newWeightsID = Orange.core.newmetaid()
         instances.addMetaAttribute(newWeightsID,1.)
-        instances.domain.addmeta(newWeightsID, Orange.data.feature.\
+        instances.domain.addmeta(newWeightsID, Orange.data.variable.\
             Continuous("weights-"+str(newWeightsID)), True)
         for instance in instances:
             if rule(instance) and instance.getclass() == rule.classifier(instance,\
@@ -1161,7 +1161,7 @@ class CovererAndRemover_Prob(RuleCovererAndRemover):
         self.probAttribute = Orange.core.newmetaid()
         instances.addMetaAttribute(self.probAttribute,-1.e-6)
         instances.domain.addmeta(self.probAttribute, \
-            Orange.data.feature.Continuous("Probs"))
+            Orange.data.variable.Continuous("Probs"))
         for instance in instances:
 ##            if targetClass<0 or (instance.getclass() == targetClass):
             instance[self.probAttribute] = apriori[targetClass]/apriori.abs

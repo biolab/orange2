@@ -132,7 +132,7 @@ class RandomForestClassifier(orange.Classifier):
     :type domain: :class:`Orange.data.Domain`
     
     :param classVar: the class feature.
-    :type classVar: :class:`Orange.data.feature.Feature`
+    :type classVar: :class:`Orange.data.variable.Variable`
 
     """
     def __init__(self, classifiers, name, domain, classVar, **kwds):
@@ -228,8 +228,8 @@ class ScoreFeature(orange.MeasureAttribute):
         Return importance of a given feature.
         
         :param feature: feature to evaluate (by index, name or
-            :class:`Orange.data.feature.Feature` object).
-        :type feature: int, str or :class:`Orange.data.feature.Feature`.
+            :class:`Orange.data.variable.Variable` object).
+        :type feature: int, str or :class:`Orange.data.variable.Variable`.
         
         :param instances: data instances to use for importance evaluation.
         :type instances: :class:`Orange.data.Table`
@@ -244,7 +244,7 @@ class ScoreFeature(orange.MeasureAttribute):
         elif type(feature) == type("a"): #by attr. name
           attrName = feature
           attrNo = instances.domain.index(attrName)
-        elif isinstance(feature, Orange.data.feature.Feature):
+        elif isinstance(feature, Orange.data.variable.Variable):
           atrs = [a for a in instances.domain.attributes]
           attrNo = atrs.index(feature)
         else:

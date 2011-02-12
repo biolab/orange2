@@ -23,13 +23,13 @@ for i in abe.sortedExamples[:10]:
     print i, i.getclass().svalue
 print
 
-y2 = Orange.data.feature.Discrete("y2", values = ["0", "1"])
+y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
 abe2 = Orange.classification.lookup.LookupLearner(y2, [a, b, e], table)
 for i in abe2.sortedExamples[:10]:
     print i, i.getclass().svalue
 print
 
-y2 = Orange.data.feature.Discrete("y2", values = ["0", "1"])
+y2 = Orange.data.variable.Discrete("y2", values = ["0", "1"])
 abe2 = Orange.classification.lookup.LookupLearner(y2, [a, b], table)
 for i in abe2.sortedExamples:
     print i, i.getclass().svalue

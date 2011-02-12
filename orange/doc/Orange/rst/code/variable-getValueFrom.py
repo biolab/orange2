@@ -1,8 +1,8 @@
 # Description: Construction and computation of new features
 # Category:    core
 # Uses:        monks-1
-# Referenced:  Orange.data.feature
-# Classes:     Orange.data.feature.Discrete
+# Referenced:  Orange.data.variable
+# Classes:     Orange.data.variable.Discrete
 
 import Orange
 
@@ -13,7 +13,7 @@ def checkE(inst, returnWhat):
         return e2("not 1") 
 
 data = Orange.data.Table("monks-1")
-e2 = Orange.data.feature.Discrete("e2", values=["not 1", "1"])    
+e2 = Orange.data.variable.Discrete("e2", values=["not 1", "1"])    
 e2.getValueFrom = checkE 
 
 print Orange.core.MeasureAttribute_info(e2, data)

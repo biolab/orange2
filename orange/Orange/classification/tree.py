@@ -629,7 +629,7 @@ class (and derived classes).
 
     The constructed :obj:`branchSelector` is an instance of 
     :obj:`orange.ClassifierFromVarFD` that returns a value of the 
-    selected attribute. If the attribute is :obj:`Orange.data.feature.Discrete`,
+    selected attribute. If the attribute is :obj:`Orange.data.variable.Discrete`,
     :obj:`branchDescription`'s are the attribute's values. The 
     attribute is marked as spent, so that it cannot reappear in the 
     node's subtrees.
@@ -1818,7 +1818,7 @@ What's the difference between :samp:`%V`, the predicted value and
 leaf average anyway? Not necessarily, the tree predict whatever the
 :attr:`TreeClassifier.nodeClassifier` in a leaf returns. 
 As :samp:`%V` uses the 
-:obj:`Orange.data.feature.Continuous`'s function for printing out the value, 
+:obj:`Orange.data.variable.Continuous`' function for printing out the value, 
 therefore the printed number has the same number of decimals 
 as in the data file.
 
