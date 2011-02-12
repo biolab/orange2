@@ -21,7 +21,7 @@ Orange Scripting Reference
    
    Orange.regression
    
-   Orange.statistics.distributions
+   Orange.statistics
    Orange.ensemble
 
    Orange.feature

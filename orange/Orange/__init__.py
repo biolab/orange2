@@ -18,7 +18,9 @@ import stat
 
 import statistics
 import statistics.estimate
-import statistics.distributions
+import statistics.contingency
+import statistics.distribution
+import statistics.basic
 import statistics.evd
 
 import classification

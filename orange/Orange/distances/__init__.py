@@ -37,12 +37,12 @@ two unknown values is always 0.5.
 
 .. class:: ExamplesDistanceConstructor
 
-    .. method:: __call__([instances, weightID][, DomainDistributions][, DomainBasicAttrStat])
+    .. method:: __call__([instances, weightID][, distributions][, basic_var_stat])
 
         Constructs an instance of ExamplesDistance.
         Not all the data needs to be given. Most measures can be constructed
-        from DomainBasicAttrStat; if it is not given, they can help themselves
-        either by instances or DomainDistributions.
+        from basic_var_stat; if it is not given, they can help themselves
+        either by instances or distributions.
         Some (e.g. ExamplesDistance_Hamming) even do not need any arguments.
 
 .. class:: ExamplesDistance_Normalized
@@ -117,9 +117,10 @@ two unknown values is always 0.5.
 
     .. method:: distributions 
 
-        An object of type DomainDistributions that holds the distributions
-        for all discrete features. This is needed to compute distances between
-        known and unknown values.
+        An object of type
+        :obj:`Orange.statistics.distribution.Distribution` that holds
+        the distributions for all discrete features used for
+        computation of distances between known and unknown values.
 
     .. method:: bothSpecialDist
 

@@ -80,15 +80,14 @@ the feature values; in Orange, these are derived from
 
     .. attribute:: needs
     
-    Tells what kind of data the measure needs. This can be either 
-    :obj:`NeedsGenerator`, :obj:`NeedsDomainContingency`, 
-    :obj:`NeedsContingency_Class`. The first need an instance generator
-    (Relief is an example of such measure), the second can compute the quality
-    from :obj:`Orange.statistics.distributions.DomainContingency` and the
-    latter only needs the contingency
-    (:obj:`Orange.statistics.distributions.ContingencyAttrClass`) the 
-    feature distribution and the apriori class distribution. Most measures
-    only need the latter.
+    Tells what kind of data the measure needs. This can be either
+    :obj:`NeedsGenerator`, :obj:`NeedsDomainContingency`,
+    :obj:`NeedsContingency_Class`. The first need an instance generator (Relief
+    is an example of such measure), the second can compute the quality from
+    :obj:`Orange.statistics.contingency.Domain` and the latter only needs the
+    contingency (:obj:`Orange.statistics.contingency.VarClass`) the feature
+    distribution and the apriori class distribution. Most measures only need the
+    latter.
 
     Several (but not all) measures can treat unknown feature values in
     different ways, depending on field :obj:`unknownsTreatment` (this field is
@@ -149,17 +148,16 @@ the feature values; in Orange, these are derived from
           need to be in the domain. It needs to be computable from the
           feature in the domain, though.
           
-        Data is given either as examples (and, optionally, id for 
-        meta-feature with weight), domain contingency
-        (:obj:`Orange.statistics.distributions.DomainContingency`) (a list of
-        contingencies) or distribution (:obj:`Orange.statistics.distributions`)
-        matrix and :obj:`Orange.statistics.distributions.Distribution`. If 
-        you use the latter form, what you should give as the class distribution
-        depends upon what you do with unknown values (if there are any).
-        If :obj:`unknownsTreatment` is :obj:`IgnoreUnknowns`, the class
-        distribution should be computed on examples for which the feature
-        value is defined. Otherwise, class distribution should be the overall
-        class distribution.
+        Data is given either as examples (and, optionally, id for meta-feature
+        with weight), contingency tables
+        (:obj:`Orange.statistics.contingency.Domain`) or distributions
+        (:obj:`Orange.statistics.distribution.Distribution`) for all
+        attributes. In the latter for, what is given as the class distribution
+        depends upon what you do with unknown values (if there are any).  If
+        :obj:`unknownsTreatment` is :obj:`IgnoreUnknowns`, the class
+        distribution should be computed on examples for which the feature value
+        is defined. Otherwise, class distribution should be the overall class
+        distribution.
 
         The optional argument with apriori class distribution is
         most often ignored. It comes handy if the measure makes any probability
