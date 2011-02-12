@@ -458,5 +458,5 @@ from orange import VarList as Features
 
 import orange
 make = orange.Variable.make
-retrieve = orange.Variable.getExisting
+retrieve = orange.Variable.get_existing
 del orange
