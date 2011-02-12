@@ -1,8 +1,7 @@
 import Orange
-import distributions
 
 table = Orange.data.Table("monks-1.tab")
-cont = distributions.Contingency(table.domain["e"], table.domain.classVar)
+cont = Orange.statistics.contingency.Table(table.domain["e"], table.domain.classVar)
 for ins in table:
     cont [ins["e"]] [ins.getclass()] += 1
 

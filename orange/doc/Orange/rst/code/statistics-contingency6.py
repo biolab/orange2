@@ -1,8 +1,7 @@
 import Orange
-import distributions
 
 table = Orange.data.Table("iris.tab")
-cont = distributions.ContingencyAttrClass(0, table)
+cont = Orange.statistics.contingency.VarClass(0, table)
 
 print "Contingency items:"
 for val, dist in cont.items()[:5]:

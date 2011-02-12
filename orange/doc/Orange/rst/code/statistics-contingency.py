@@ -1,8 +1,7 @@
-import Orange
-import distributions
+import Orange.statistics.contingency
 
 table = Orange.data.Table("monks-1.tab")
-cont = distributions.ContingencyAttrClass("e", table)
+cont = Orange.statistics.contingency.VarClass("e", table)
 for val, dist in cont.items():
     print val, dist
 

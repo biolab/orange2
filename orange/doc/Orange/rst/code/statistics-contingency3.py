@@ -1,8 +1,7 @@
-import Orange
-import distributions
+import Orange.statistics.contingency
 
 table = Orange.data.Table("monks-1.tab")
-cont = distributions.ContingencyAttrClass("e", table)
+cont = Orange.statistics.contingency.VarClass("e", table)
 
 print "Inner variable: ", cont.innerVariable.name
 print "Outer variable: ", cont.outerVariable.name
@@ -23,7 +22,7 @@ for val in cont.variable:
     print "  p(%s|%s) = %5.3f" % (firstnative, val.native(), cont.p_class(val, firstclass))
 print
 
-cont = distributions.ContingencyAttrClass(table.domain["e"], table.domain.classVar)
+cont = Orange.statistics.contingency.VarClass(table.domain["e"], table.domain.classVar)
 for ins in table:
     cont.add_attrclass(ins["e"], ins.getclass())
 
