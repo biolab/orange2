@@ -983,7 +983,8 @@ void TClassifierByExampleTable::predictionAndDistribution(const TExample &exam, 
 
 void TClassifierByExampleTable::afterSet(const char *name)
 {
-  if (!strcmp(name, "sortedExamples")) {
+  if (   !strcmp(name, "sortedExamples")
+      || !strcmp(name, "sorted_examples")) {
     domain = sortedExamples->domain; 
     classVar = sortedExamples->domain->classVar;
   }

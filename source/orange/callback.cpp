@@ -121,8 +121,9 @@ bool TFilter_Python::operator()(const TExample &ex)
 }
 
 PFilter TFilter_Python::deepCopy() const
-{
-    PyObject *result = PyObject_CallMethod((PyObject *) myWrapper, "deepCopy",
+{   
+    PyObject *result = PyObject_CallMethod((PyObject *) myWrapper,
+            PyObject_HasAttrString((PyObject *)myWrapper, "deep_copy") ? "deep_copy" : "deepCopy",
             NULL);
     if (!result)
         raiseError("An exception has been thrown in method deepCopy!");
@@ -236,8 +237,10 @@ void TMeasureAttribute_Python::thresholdFunction(TFloatFloatList &res,
 
     PyObject *args = Py_BuildValue("NNNi", WrapOrange(var), WrapOrange(gen),
             WrapOrange(apriorClass), weightID);
-    PyObject *pyres = callMethod("thresholdFunction", (PyObject *) myWrapper,
-            args);
+    PyObject *pyres = callMethod(
+        PyObject_HasAttrString((PyObject *)myWrapper, "threshold_function") ? "threshold_function" : "thresholdFunction",
+        (PyObject *) myWrapper,
+        args);
     Py_DECREF(args);
 
     if (!PyList_Check(pyres)) {

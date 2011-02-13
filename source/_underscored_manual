@@ -15,3 +15,19 @@ Value
 firstvalue first_value
 nextvalue next_value
 randomvalue random_value
+
+
+Filter_Python
+*deepCopy deep_copy
+
+MeasureAttribute_Python
+*thresholdFunction threshold_function
+
+Example
+*filterMetas filter_metas
+
+Example.native
+*substituteDC substitute_DC
+*substituteDK substitute_DK
+*substituteOther substitute_other
+

@@ -1167,7 +1167,7 @@ PyObject *DomainContingency_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VA
 PyObject *DomainContingency__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_reduce(self); }
 
 
-CONSTRUCTOR_KEYWORDS(DomainContingency, "classIsOuter")
+CONSTRUCTOR_KEYWORDS(DomainContingency, "classIsOuter class_is_outer")
 
 PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples [, weightID] | <list of Contingency>) -> DomainContingency") ALLOWS_EMPTY
 { PyTRY
@@ -1179,7 +1179,10 @@ PExampleGenerator gen = exampleGenFromArgs(args, weightID);
 if (gen) {
 	bool classOuter = false;
 	if (keywds) {
-		PyObject *couter = PyDict_GetItemString(keywds, "classIsOuter");
+		PyObject *couter = PyDict_GetItemString(keywds, "class_is_outer");
+        if (!couter) {
+            couter = PyDict_GetItemString(keywds, "classIsOuter");
+        }
 		if (couter) {
 			classOuter = (PyObject_IsTrue(couter) != 0);
 			Py_DECREF(couter);
@@ -4259,21 +4262,39 @@ PYXTRACT_IGNORE void Orange_dealloc(TPyOrange *self);
 inline bool hasObjectsOnEdges(PyObject *graph)
 {
 	PyObject *dict = ((TPyOrange *)graph)->orange_dict;
-	PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : PYNULL;
+    PyObject *ooe = NULL;
+    if (dict) {
+	    ooe = PyDict_GetItemString(dict, "objects_on_edges");
+        if (!ooe) {
+    	    ooe = PyDict_GetItemString(dict, "objectsOnEdges");
+        }
+    }
 	return ooe && (PyObject_IsTrue(ooe) != 0);
 }
 
 inline bool hasObjectsOnEdges(PGraph graph)
 {
 	PyObject *dict = graph->myWrapper->orange_dict;
-	PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : NULL;
+    PyObject *ooe = NULL;
+    if (dict) {
+	    ooe = PyDict_GetItemString(dict, "objects_on_edges");
+        if (!ooe) {
+    	    ooe = PyDict_GetItemString(dict, "objectsOnEdges");
+        }
+    }
 	return ooe && (PyObject_IsTrue(ooe) != 0);
 }
 
 inline bool hasObjectsOnEdges(const TGraph *graph)
 {
 	PyObject *dict = graph->myWrapper->orange_dict;
-	PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : NULL;
+    PyObject *ooe = NULL;
+    if (dict) {
+	    ooe = PyDict_GetItemString(dict, "objects_on_edges");
+        if (!ooe) {
+    	    ooe = PyDict_GetItemString(dict, "objectsOnEdges");
+        }
+    }
 	return ooe && (PyObject_IsTrue(ooe) != 0);
 }
 
@@ -4307,14 +4328,17 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, double *weights
 
 
 ABSTRACT(Graph, Orange)
-RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices objectsOnEdges")
+RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping force_mapping returnIndices return_indices objectsOnEdges object_on_edges")
 
 int Graph_getindex(TGraph *graph, PyObject *index)
 {
 	if (PyInt_Check(index)) {
 		if (!graph->myWrapper->orange_dict)
 			return PyInt_AsLong(index);
-		PyObject *fmap = PyDict_GetItemString(graph->myWrapper->orange_dict, "forceMapping");
+		PyObject *fmap = PyDict_GetItemString(graph->myWrapper->orange_dict, "force_mapping");
+        if (!fmap) {
+            fmap = PyDict_GetItemString(graph->myWrapper->orange_dict, "forceMapping");
+        }
 		if (!fmap || PyObject_IsTrue(fmap))
 			return PyInt_AsLong(index);
 	}

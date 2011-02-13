@@ -242,12 +242,15 @@ PyObject *tabDelimBasedWrite(PyObject *args, PyObject *keyws, const char *defaul
 }
 
 
-PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename, examples[, listDiscreteValues=1]) -> None")
+PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename, examples[, list_discrete_values=1]) -> None")
 {
   bool listDiscrete = true;
 
   if (keyws) {
-    PyObject *ldv = PyDict_GetItemString(keyws, "listDiscreteValues");
+    PyObject *ldv = PyDict_GetItemString(keyws, "list_discrete_values");
+    if (!ldv) {
+        ldv = PyDict_GetItemString(keyws, "listDiscreteValues");
+    }
     listDiscrete = !ldv || (PyObject_IsTrue(ldv)!=0);
   }
 

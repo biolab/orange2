@@ -354,7 +354,7 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
 
   if (!PyObject_TypeCheck(var, (PyTypeObject *)&PyOrVariable_Type)) {
     Py_DECREF(var);
-    ::raiseErrorWho("makeVariable", "PythonVariable's constructor is expected to return a 'PythonVariable', not '%s'", var->ob_type->tp_name);
+    ::raiseErrorWho("make_variable", "PythonVariable's constructor is expected to return a 'PythonVariable', not '%s'", var->ob_type->tp_name);
   }
 
   PVariable pvar = GCPtr<TOrange>((TPyOrange *)var, true);
@@ -382,7 +382,7 @@ PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &status, c
     }
 
     if (!var)
-      ::raiseErrorWho("makeVariable", "unknown type for attribute '%s'", desc.name.c_str());
+      ::raiseErrorWho("make_variable", "unknown type for attribute '%s'", desc.name.c_str());
   }
   
   if (var && desc.ordered)

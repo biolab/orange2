@@ -193,7 +193,7 @@ int Example_clear(TPyExample *self)
 
 bool readBoolFlag(PyObject *keywords, char *flag);
 
-CONSTRUCTOR_KEYWORDS(Example, "filterMetas")
+CONSTRUCTOR_KEYWORDS(Example, "filterMetas filter_metas")
 
 
 PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ROOT, "(domain, [list of values])")
@@ -203,7 +203,7 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BA
 
     if (PyArg_ParseTuple(args, "O&|O", cc_Domain, &dom, &list)) {
       if (list && PyOrExample_Check(list)) {
-        PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference(), readBoolFlag(keywords, "filterMetas"));
+        PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference(), readBoolFlag(keywords, "filterMetas") || readBoolFlag(keywords, "filter_metas"));
         return Example_FromWrappedExample(ex);
       }
 
@@ -800,7 +800,7 @@ PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples,
 }
 
 
-PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=, substituteDC=, substituteDK=, substituteOther=])  -> list; Converts an example to a list")
+PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=, substitute_DC=, substitute_DK=, substitute_Other=])  -> list; Converts an example to a list")
 { PyTRY
     int natvt=1;
     if (args && !PyArg_ParseTuple(args, "|i", &natvt))
@@ -810,10 +810,21 @@ PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARG
     PyObject *pytuples = keyws ? PyDict_GetItemString(keyws, "tuple") : PYNULL;
     tuples = pytuples && (PyObject_IsTrue(pytuples) != 0);
 
-    PyObject *forDC = keyws ? PyDict_GetItemString(keyws, "substituteDC") : PYNULL;
-    PyObject *forDK = keyws ? PyDict_GetItemString(keyws, "substituteDK") : PYNULL;
-    PyObject *forSpecial = keyws ? PyDict_GetItemString(keyws, "substituteOther") : PYNULL;
-
+    PyObject *forDC = NULL, *forDK = NULL, *forSpecial = NULL;
+    if (keyws) {
+        forDC = PyDict_GetItemString(keyws, "substitute_DC");
+        if (!forDC) {
+            forDC = PyDict_GetItemString(keyws, "substituteDC");
+        }
+        forDC = PyDict_GetItemString(keyws, "substitute_DK");
+        if (!forDC) {
+            forDC = PyDict_GetItemString(keyws, "substituteDK");
+        }
+        forDC = PyDict_GetItemString(keyws, "substitute_other");
+        if (!forDC) {
+            forDC = PyDict_GetItemString(keyws, "substituteOther");
+        }
+    }
     return convertToPythonNative(PyExample_AS_ExampleReference(pex), natvt, tuples, forDK, forDC, forSpecial);
   PyCATCH
 }

@@ -1947,10 +1947,14 @@ PyObject *loadDataFromFileNoSearch(PyTypeObject *type, char *filename, PyObject 
       PyObject *pygen = PyTuple_GetItem(res, 0);
       Py_INCREF(pygen);
 
-      if (PyTuple_Size(res) >= 2)
+      if (PyTuple_Size(res) >= 2) {
         Orange_setattrDictionary((TPyOrange *)pygen, "attributeLoadStatus", PyTuple_GET_ITEM(res, 1), false);
-      if (PyTuple_Size(res) >= 3)
+        Orange_setattrDictionary((TPyOrange *)pygen, "attribute_load_status", PyTuple_GET_ITEM(res, 1), false);
+      }
+      if (PyTuple_Size(res) >= 3) {
         Orange_setattrDictionary((TPyOrange *)pygen, "metaAttributeLoadStatus", PyTuple_GET_ITEM(res, 2), false);
+        Orange_setattrDictionary((TPyOrange *)pygen, "meta_attribute_load_status", PyTuple_GET_ITEM(res, 2), false);
+      }
       return pygen;
     }
 
@@ -2199,9 +2203,18 @@ PyObject *ExampleGenerator_native(PyObject *self, PyObject *args, PyObject *keyw
       PyObject *pytuples = PyDict_GetItemString(keyws, "tuple");
       tuples = pytuples && (PyObject_IsTrue(pytuples) != 0);
 
-      forDC = PyDict_GetItemString(keyws, "substituteDC");
-      forDK = PyDict_GetItemString(keyws, "substituteDK");
-      forSpecial = PyDict_GetItemString(keyws, "substituteOther");
+      forDC = PyDict_GetItemString(keyws, "substitute_DC");
+      if (!forDC) {
+          forDC = PyDict_GetItemString(keyws, "substituteDC");
+      }
+      forDC = PyDict_GetItemString(keyws, "substitute_DK");
+      if (!forDC) {
+          forDC = PyDict_GetItemString(keyws, "substituteDK");
+      }
+      forDC = PyDict_GetItemString(keyws, "substitute_other");
+      if (!forDC) {
+          forDC = PyDict_GetItemString(keyws, "substituteOther");
+      }
     }
 
     int natvt=2;
@@ -2895,7 +2908,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 }
 
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete createNewOn")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas filter_metas DC DK NA noClass noCodedDiscrete createNewOn")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {
@@ -2948,7 +2961,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     PDomain domain;
     if (PyArg_ParseTuple(argstuple, "O&O", cc_Domain, &domain, &args)) {
-      bool filterMetas = readBoolFlag(keywords, "filterMetas");
+      bool filterMetas = readBoolFlag(keywords, "filterMetas") || readBoolFlag(keywords, "filter_metas");
 
       if (PyOrExampleGenerator_Check(args))
         return WrapNewOrange(mlnew TExampleTable(domain, PyOrange_AsExampleGenerator(args), filterMetas), type);

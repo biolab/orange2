@@ -124,7 +124,8 @@ void TDomain::domainHasChanged()
 
 void TDomain::afterSet(const char *name)
 { 
-  if (!strcmp(name, "classVar")) {
+  if (!strcmp(name, "class_var") 
+      || !strcmp(name, "classVar")) {
     if (attributes->size()==variables->size())
       variables->push_back(classVar);
     else
