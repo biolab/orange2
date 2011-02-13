@@ -2,13 +2,13 @@ Info3: <<
 Package: orange-gui-svn-py%type_pkg[python]
 Type: python (2.4 2.5 2.6 2.7)
 Version: 0.0.__DAILY_REVISION__
-Revision: 19
-Source: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-svn-%v.tgz
+Revision: 20
+Source: http://orange.biolab.si/fink/dists/10.5/main/source/orange-svn-%v.tgz
 Source-MD5: __DAILY_MD5SUM_ORANGE__
-Source2: http://www.ailab.si/orange/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
+Source2: http://orange.biolab.si/fink/dists/10.5/main/source/orange-bundlelite-svn-%v.tgz
 Source2-MD5: __DAILY_MD5SUM_BUNDLELITE__
 Maintainer: Mitar <mitar@tnode.com>
-HomePage: http://www.ailab.si/orange/
+HomePage: http://orange.biolab.si/
 License: GPL
 Distribution: (%type_pkg[python] = 24) 10.4, (%type_pkg[python] = 24) 10.5
 Depends: <<
