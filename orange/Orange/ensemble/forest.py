@@ -63,18 +63,6 @@ class RandomForestLearner(orange.Learner):
             
         self.randstate = self.rand.getstate() #original state
 
-        if not learner:
-            # tree learner assembled as suggested by Brieman (2001)
-            smallTreeLearner = Orange.classification.tree.TreeLearner(
-            storeNodeClassifier = 0, storeContingencies=0, 
-            storeDistributions=1, minExamples=5).instance()
-            smallTreeLearner.split.discreteSplitConstructor.measure = \
-                    smallTreeLearner.split.continuousSplitConstructor.measure =\
-                        Orange.feature.scoring.Gini()
-            smallTreeLearner.split = SplitConstructor_AttributeSubset(\
-                    smallTreeLearner.split, attributes, self.rand)
-            self.learner = smallTreeLearner
-
     def __call__(self, instances, weight=0):
         """
         Learn from the given table of data instances.
@@ -85,6 +73,31 @@ class RandomForestLearner(orange.Learner):
         :type origWeight: int
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
         """
+        
+        
+        # If there is no learner we create our own
+        
+        if not self.learner:
+            
+            # tree learner assembled as suggested by Brieman (2001)
+            smallTreeLearner = Orange.classification.tree.TreeLearner(
+            storeNodeClassifier = 0, storeContingencies=0, 
+            storeDistributions=1, minExamples=5).instance()
+            
+            # Use MSE on continuous class and Gini on discreete
+            if instances.domain.class_var.var_type == Orange.data.variable.Continuous.Continuous:
+                smallTreeLearner.split.discreteSplitConstructor.measure = \
+                    smallTreeLearner.split.continuousSplitConstructor.measure =\
+                        Orange.feature.scoring.MSE()
+            else:
+                smallTreeLearner.split.discreteSplitConstructor.measure = \
+                    smallTreeLearner.split.continuousSplitConstructor.measure =\
+                        Orange.feature.scoring.Gini()
+            
+            smallTreeLearner.split = SplitConstructor_AttributeSubset(\
+                    smallTreeLearner.split, self.attributes, self.rand)
+            self.learner = smallTreeLearner
+        
         # if number of features for subset is not set, use square root
         if hasattr(self.learner.split, 'attributes') and\
                     not self.learner.split.attributes:
@@ -155,30 +168,59 @@ class RandomForestClassifier(orange.Classifier):
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
         from operator import add
-
-        # voting for class probabilities
-        if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
-            cprob = [0.] * len(self.domain.classVar.values)
-            for c in self.classifiers:
-                a = [x for x in c(instance, orange.GetProbabilities)]
-                cprob = map(add, cprob, a)
-            norm = sum(cprob)
-            for i in range(len(cprob)):
-                cprob[i] = cprob[i]/norm
-
-        # voting for crisp class membership, notice that
-        # this may not be the same class as one obtaining the
-        # highest probability through probability voting
-        if resultType == orange.GetValue or resultType == orange.GetBoth:
-            cfreq = [0] * len(self.domain.classVar.values)
-            for c in self.classifiers:
-                cfreq[int(c(instance))] += 1
-            index = cfreq.index(max(cfreq))
-            cvalue = Orange.data.Value(self.domain.classVar, index)
-
-        if resultType == orange.GetValue: return cvalue
-        elif resultType == orange.GetProbabilities: return cprob
-        else: return (cvalue, cprob)
+        
+        # handle discreete class
+        
+        if self.class_var.var_type == Orange.data.variable.Discrete.Discrete:
+        
+            # voting for class probabilities
+            if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
+                prob = [0.] * len(self.domain.classVar.values)
+                for c in self.classifiers:
+                    a = [x for x in c(instance, orange.GetProbabilities)]
+                    prob = map(add, prob, a)
+                norm = sum(prob)
+                cprob = Orange.statistics.distributions.Discrete(self.classVar)
+                for i in range(len(prob)):
+                    cprob[i] = prob[i]/norm
+                
+                
+    
+            # voting for crisp class membership, notice that
+            # this may not be the same class as one obtaining the
+            # highest probability through probability voting
+            if resultType == orange.GetValue or resultType == orange.GetBoth:
+                cfreq = [0] * len(self.domain.classVar.values)
+                for c in self.classifiers:
+                    cfreq[int(c(instance))] += 1
+                index = cfreq.index(max(cfreq))
+                cvalue = Orange.data.Value(self.domain.classVar, index)
+    
+            if resultType == orange.GetValue: return cvalue
+            elif resultType == orange.GetProbabilities: return cprob
+            else: return (cvalue, cprob)
+        
+        else:
+            # Handle continuous class
+            
+            # voting for class probabilities
+            if resultType == orange.GetProbabilities or resultType == orange.GetBoth:
+                probs = [c(instance, orange.GetProbabilities) for c in self.classifiers]
+                cprob = dict()
+                for prob in probs:
+                    a = dict(prob.items())
+                    cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
+                cprob = Orange.statistics.distributions.Continuous(cprob)
+                cprob.normalize()
+                
+            # gather average class value
+            if resultType == orange.GetValue or resultType == orange.GetBoth:
+                values = [c(instance).value for c in self.classifiers]
+                cvalue = Orange.data.Value(self.domain.classVar, sum(values) / len(self.classifiers))
+            
+            if resultType == orange.GetValue: return cvalue
+            elif resultType == orange.GetProbabilities: return cprob
+            else: return (cvalue, cprob)
 
 ### MeasureAttribute_randomForests
 
