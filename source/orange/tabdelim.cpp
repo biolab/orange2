@@ -434,7 +434,7 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
   }
   
   /* Check whether this is a string attribute:
-     - has more at least 20 values
+     - has more than 20 values
      - less than half of the values appear more than once */
   if ((status==0) && (desc.values.size() > 20)) {
       int more2 = 0;
@@ -502,19 +502,23 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
     for(di = db, ati = atb, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++, ati++) {
       if (!*atb)
         continue;
-        
-      const char *ceni = ai->c_str();
-      if (   !*ceni
-          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
-          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
-         continue;
+   
+      //skip the attribute if it is a FLOATVAR or STRINGVAR
+      if ((di->varType != TValue::FLOATVAR) && (di->varType != STRINGVAR)) {
 
-      map<string, int>::iterator vf = di->values.lower_bound(*ai);
-      if ((vf != di->values.end()) && (vf->first == *ai)) {
-        vf->second++;
-      }
-      else {
-        di->values.insert(vf, make_pair(*ai, 1));
+        const char *ceni = ai->c_str();
+        if (   !*ceni
+            || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+            || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
+           continue;
+
+        map<string, int>::iterator vf = di->values.lower_bound(*ai);
+        if ((vf != di->values.end()) && (vf->first == *ai)) {
+          vf->second++;
+        }
+        else {
+          di->values.insert(vf, make_pair(*ai, 1));
+        }
       }
     }
   }
@@ -795,13 +799,13 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
 
       case '\t':
         atoms.push_back(trim(atom));
-        atom = string();
+        atom.clear();
         break;
 
       case ',':
         if (csv) {
           atoms.push_back(trim(atom));
-          atom = string();
+          atom.clear();
           break;
         }
         // else fallthrough
