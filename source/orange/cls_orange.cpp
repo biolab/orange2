@@ -291,10 +291,10 @@ char *camel2underscore(const char *camel)
     *ui = *ci;
     while(*ci) { // just copied
         if (   (*ci >= 'a') && (*ci <= 'z')       // a small letter
-            && (ci[1] >= 'A') && (ci[1] <= 'Z')   // followed by capital
-            && ((ci[2] < 'A') || (ci[2] > 'Z'))) { // not followed by capital 
+            && (ci[1] >= 'A') && (ci[1] <= 'Z')) {  // followed by capital
             *++ui = '_';
-            *++ui = *++ci + 32;
+            const char of = (ci[2] < 'A') || (ci[2] > 'Z') ? 32 : 0; // 32, if not followed by capital 
+            *++ui = *++ci + of;
             changed = true;
         }
         else {

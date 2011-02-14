@@ -14,7 +14,6 @@ conf confidence
 supp support
 
 EquiDistDiscretizer
-firstVal firstCut
 firstVal first_cut
 
 SymMatrix
