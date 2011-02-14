@@ -48,12 +48,12 @@
 
 #include "vars.ppp"
 
+typedef multimap<string, TVariable *> MMV;
 
 DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
 
-list<TVariable *> TVariable::allVariables;
-
+MMV TVariable::allVariablesMap;
 
 const char *sortedDaNe[] = {"da", "ne", 0 };
 const char *resortedDaNe[] = {"ne", "da", 0};
@@ -78,13 +78,18 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
   vector<pair<TVariable *, int> > candidates;
   TStringList::const_iterator vvi, vve;
 
-  ITERATE(list<TVariable *>, vi, TVariable::allVariables) {
-    if (((*vi)->varType == varType) && ((*vi)->get_name() == name)) {
+   pair<MMV::iterator,MMV::iterator> rp = allVariablesMap.equal_range(name);
+   MMV::iterator it;
+ 
+   for (it=rp.first; it!=rp.second; ++it) {
+ 
+     if ((it->second)->varType == varType) {
+
       int tempStat = TVariable::OK;
 
       // non-discrete attributes are always ok,
       // discrete ones need further checking if they have any defined values
-      TEnumVariable *evar = dynamic_cast<TEnumVariable *>(*vi);
+      TEnumVariable *evar = dynamic_cast<TEnumVariable *>(it->second);
       if (evar && evar->values->size()) {
 
         if (fixedOrderValues && !evar->checkValuesOrder(*fixedOrderValues))
@@ -117,7 +122,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
          }
        }
 
-      candidates.push_back(make_pair(*vi, tempStat));
+      candidates.push_back(make_pair(it->second, tempStat));
       if (tempStat == TVariable::OK)
         break;
     }
@@ -215,6 +220,33 @@ bool TVariable::isEquivalentTo(const TVariable &old) const {
 }
 
 
+void TVariable::registerVariable() {
+  allVariablesMap.insert(pair<string, TVariable *>(name, this));
+}
+
+void TVariable::removeVariable() {
+      pair<MMV::iterator,MMV::iterator> rp = allVariablesMap.equal_range(name);
+      MMV::iterator it;
+
+      for (it=rp.first; it!=rp.second; ++it) {
+          if (it->second == this) {
+              allVariablesMap.erase(it);
+              break;
+          }
+      }
+}
+
+void TVariable::operator delete(void *t)
+{
+    /* When the program shuts down, it may happen that the list is destroyed before
+       the variables. We do nothing in this case. */
+    if (allVariablesMap.size()) {
+        ((TVariable *)t)->removeVariable();
+    }
+      
+    ::operator delete(t);
+}
+
 TVariable::TVariable(const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
@@ -223,7 +255,9 @@ TVariable::TVariable(const int &avarType, const bool &ord)
   DC_value(varType, valueDC),
   DK_value(varType, valueDK),
   defaultMetaId(0)
-{}
+{
+  registerVariable();
+}
 
 
 TVariable::TVariable(const string &aname, const int &avarType, const bool &ord)
@@ -234,7 +268,9 @@ TVariable::TVariable(const string &aname, const int &avarType, const bool &ord)
   DC_value(varType, valueDC),
   DK_value(varType, valueDK),
   defaultMetaId(0)
-{ name = aname; };
+{ name = aname; 
+  registerVariable();
+};
 
 
 const TValue &TVariable::DC() const

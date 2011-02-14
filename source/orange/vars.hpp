@@ -25,6 +25,7 @@
 #include <string>
 #include <list>
 #include <set>
+#include <map>
 #include "orvector.hpp"
 
 using namespace std;
@@ -78,6 +79,9 @@ protected:
 private:
   string name;
 
+  void registerVariable();
+  void removeVariable();
+
 public:
 
   string get_name() const {
@@ -86,27 +90,14 @@ public:
 
   void set_name(const string &a) {
     //update the map
+    removeVariable();
     name = a;
+    registerVariable();
   }
 
-  static list<TVariable *> allVariables;
+  static multimap<string, TVariable *> allVariablesMap;
 
-  void *operator new(size_t s) throw(bad_alloc)
-  {
-    void *t = ::operator new(s);
-    TVariable::allVariables.push_back((TVariable *)t);
-    return t;
-  }
-
-  void operator delete(void *t)
-  {
-    /* When the program shuts down, it may happen that the list is destroyed before
-       the variables. We do nothing in this case. */
-    if (allVariables.size())
-      allVariables.remove((TVariable *)t);
-      
-    ::operator delete(t);
-  }
+  void operator delete(void *t);
 
   /* Status codes for getExisting and make. The codes refer to the difference between
      the requested and the existing variable.
