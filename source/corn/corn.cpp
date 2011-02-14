@@ -141,9 +141,11 @@ exception CornException(const string &anerr, const long i)
 int getIntegerAttr(PyObject *self, char *name, char *altername=NULL)
 { 
   PyObject *temp = PyObject_GetAttrString(self, name);
-  
-  if (!temp && altername)
+
+  if (!temp && altername) {
+      PyErr_Clear();
       temp = PyObject_GetAttrString(self, altername);
+  }
   if (!temp)
     throw CornException("no attribute '%s'", name);
   if (!PyInt_Check(temp)) {
@@ -160,8 +162,10 @@ float getFloatAttr(PyObject *self, char *name, char *altername=NULL)
 { 
   PyObject *temp = PyObject_GetAttrString(self, name);
 
-  if (!temp && altername)
+  if (!temp && altername) {
+      PyErr_Clear();
       temp = PyObject_GetAttrString(self, altername);
+  }
   if (!temp)
     throw CornException("no attribute '%s'", name);
   if (!PyFloat_Check(temp)) {
@@ -212,7 +216,7 @@ TestedExample::TestedExample(const int &ac, const int &it, const vector<int> &c,
 
 
 TestedExample::TestedExample(PyObject *obj)
-: actualClass(getIntegerAttr(obj, "actual_class", "actualClass")),
+: actualClass(getIntegerAttr(obj, "actualClass", "actual_class")),
   iterationNumber(getIntegerAttr(obj, "iteration_number", "iterationNumber")),
   weight(getFloatAttr(obj, "weight"))
 
@@ -271,22 +275,24 @@ ExperimentResults::ExperimentResults(const int &ni, const int &nl, const int &nc
 
 
 ExperimentResults::ExperimentResults(PyObject *obj)
-: numberOfIterations(getIntegerAttr(obj, "number_of_iterations", "numberOfIterations")),
-  numberOfLearners(getIntegerAttr(obj, "number_of_learners", "numberOfLearners"))
+: numberOfIterations(getIntegerAttr(obj, "numberOfIterations", "number_of_iterations")),
+  numberOfLearners(getIntegerAttr(obj, "numberOfLearners", "number_of_learners"))
 { 
   PyObject *temp = PyObject_GetAttrString(obj, "weights");
   weights = temp && (PyObject_IsTrue(temp)!=0);
   Py_XDECREF(temp);
 
-  temp = PyObject_GetAttrString(obj, "base_class");
+  temp = PyObject_GetAttrString(obj, "baseClass");
+  PyErr_Clear();
   if (!temp)
-      temp = PyObject_GetAttrString(obj, "baseClass");
+      temp = PyObject_GetAttrString(obj, "base_class");
   baseClass = temp ? PyInt_AsLong(temp) : -1;
   Py_XDECREF(temp);
 
-  temp = PyObject_GetAttrString(obj, "class_values");
+  temp = PyObject_GetAttrString(obj, "classValues");
+  PyErr_Clear();
   if (!temp)
-      temp = PyObject_GetAttrString(obj, "classValues");
+      temp = PyObject_GetAttrString(obj, "class_values");
   if (!temp)
     throw CornException("no 'classValues' attribute");
   numberOfClasses = PySequence_Size(temp);
