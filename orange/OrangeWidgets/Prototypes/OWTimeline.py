@@ -6,8 +6,6 @@
 
 from OWWidget import *
 from OWGUI import *
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
 from OWDlgs import OWChooseImageSizeDlg
 import sip
 from math import ceil, log
@@ -139,7 +137,9 @@ class OWTimeline(OWWidget):
                           ]
         self.wrapScales = [[(str(i+1), 3600*24*sum([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30][:i])) for i in range(12)],
                            [(str(i+1), i*24*3600) for i in range(31)],
-                           [(time.asctime((0, 0, 0, 0, 0, 0, i, 0, 0)), i*24*3600) for i in range(7)],
+                           [(str(i+1), i*24*3600) for i in range(31)],
+                           [(time.strftime("%a %b %d %H:%M:%S %Y", (0, 0, 0, 0, 0, 0, i, 0, 0)), i*24*3600) for i in range(7)],
+#                           [(time.asctime((0, 0, 0, 0, 0, 0, i, 0, 0)), i*24*3600) for i in range(7)],
                            [(str(i), i*3600) for i in range(24)],
                            [(str(i), i*60) for i in range(60)]
                           ]
