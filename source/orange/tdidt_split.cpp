@@ -400,7 +400,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
         const TDistributionVector &distr = *(*dci)->discrete;
 
         if (distr.size()>16)
-          raiseError("'%s' has more than 16 values, cannot exhaustively binarize", gen->domain->attributes->at(thisAttr)->name.c_str());
+          raiseError("'%s' has more than 16 values, cannot exhaustively binarize", gen->domain->attributes->at(thisAttr)->get_name().c_str());
 
         // If the attribute is binary, we check subsetSizes and assess the quality if they are OK
         if (distr.size()==2) {
@@ -542,7 +542,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
   descriptions->push_back(ns0>1 ? "in ["+s0+"]" : s0);
   descriptions->push_back(ns1>1 ? "in ["+s1+"]" : s1);
 
-  bvar->name = gen->domain->attributes->at(bestAttr)->name;
+  bvar->set_name(gen->domain->attributes->at(bestAttr)->get_name());
   spentAttribute = (ns0==1) && (ns1==1) ? bestAttr : -1;
   return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TMapIntValue(bestMapping));
 }
@@ -749,7 +749,7 @@ PClassifier TTreeSplitConstructor_OneAgainstOthers::operator()(
   descriptions->push_back(string("not ") + bestValueS);
   descriptions->push_back(bestValueS);
   
-  bvar->name = gen->domain->attributes->at(bestAttr)->name;
+  bvar->set_name(gen->domain->attributes->at(bestAttr)->get_name());
 
   TIntList *bestMapping = mlnew TIntList(attribute.AS(TEnumVariable)->values->size(), 0);
   PIntList wb = bestMapping;
@@ -861,7 +861,7 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
   sprintf(str, ">%3.3f", bestThreshold);
   descriptions->push_back(str);
 
-  bvar->name = gen->domain->attributes->at(bestAttr)->name;
+  bvar->set_name(gen->domain->attributes->at(bestAttr)->get_name());
   spentAttribute = -1;
   return mlnew TClassifierFromVarFD(bvar, gen->domain, bestAttr, subsetSizes, mlnew TThresholdDiscretizer(bestThreshold));
 }

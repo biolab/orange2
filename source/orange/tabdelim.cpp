@@ -907,10 +907,10 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
               fprintf(file, " ");
 
             if (mval.floatV == 1.0)
-              fprintf(file, checkCtrl(var.name.c_str()));
+              fprintf(file, checkCtrl(var.get_name().c_str()));
             else {
               var.val2filestr(mval, st, *ex);
-              fprintf(file, "%s=%s", checkCtrl(var.name.c_str()), checkCtrl(st.c_str()));
+              fprintf(file, "%s=%s", checkCtrl(var.get_name().c_str()), checkCtrl(st.c_str()));
             }
           }
         }
@@ -1000,7 +1000,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   // First line: attribute names
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
-    fprintf(file, "%s", checkCtrl((*vi)->name.c_str()));
+    fprintf(file, "%s", checkCtrl((*vi)->get_name().c_str()));
   }
   for(mi = mb; mi!=me; mi++) {
     if (mi->optional) {
@@ -1009,7 +1009,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     }
     else {
       PUTDELIM;
-      fprintf(file, "%s", checkCtrl((*mi).variable->name.c_str()));
+      fprintf(file, "%s", checkCtrl((*mi).variable->get_name().c_str()));
     }
   }
 
@@ -1122,12 +1122,12 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
   bool ho = false;
   const_PITERATE(TVarList, vi, dom->attributes) {
     PUTDELIM;
-    fprintf(file, "%s%s", (tabDelim_checkNeedsD(*vi) ? "D#" : ""), checkCtrl((*vi)->name.c_str()));
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(*vi) ? "D#" : ""), checkCtrl((*vi)->get_name().c_str()));
   }
   
   if (dom->classVar) {
     PUTDELIM;
-    fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), checkCtrl(dom->classVar->name.c_str()));
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), checkCtrl(dom->classVar->get_name().c_str()));
   }
 
 
@@ -1140,7 +1140,7 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
     }
     else {
       PUTDELIM;
-      fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), checkCtrl((*mi).variable->name.c_str()));
+      fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), checkCtrl((*mi).variable->get_name().c_str()));
     }
   }
 

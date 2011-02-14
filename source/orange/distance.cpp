@@ -491,7 +491,7 @@ PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenera
 
   PVariable otherAttribute = domain.hasOtherAttributes();
   if (otherAttribute)
-    raiseError("domain has attributes whose type is not supported by ReliefF (e.g. '%s')", otherAttribute->name.c_str());
+    raiseError("domain has attributes whose type is not supported by ReliefF (e.g. '%s')", otherAttribute->get_name().c_str());
 
   // for continuous attributes BasicAttrStat suffices; for discrete it does not
   const bool hasDiscrete = domain.hasDiscreteAttributes() || domain.classVar && (domain.classVar->varType == TValue::INTVAR);

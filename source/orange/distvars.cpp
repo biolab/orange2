@@ -237,7 +237,7 @@ float TDistribution::operator || (const TSomeValue &v) const
 const float &TDistribution::operator[](const TValue &val) const 
 { if (val.isSpecial()) {
     if (variable)
-      raiseError("undefined value of attribute '%s'", variable->name.c_str());
+      raiseError("undefined value of attribute '%s'", variable->get_name().c_str());
     else
       raiseError("undefined attribute value");
   }
@@ -249,7 +249,7 @@ const float &TDistribution::operator[](const TValue &val) const
 const float &TDistribution::operator[](const TValue &val)
 { if (val.isSpecial()) {
     if (variable)
-      raiseError("undefined value of attribute '%s'", variable->name.c_str());
+      raiseError("undefined value of attribute '%s'", variable->get_name().c_str());
     else
       raiseError("undefined attribute value");
   }
@@ -366,7 +366,7 @@ TValue TDistribution::randomValue(const long &random)
 float TDistribution::p(const TValue &val) const
 { if (val.isSpecial()) {
     if (variable)
-      raiseError("undefined value of attribute '%s'", variable->name.c_str());
+      raiseError("undefined value of attribute '%s'", variable->get_name().c_str());
     else
       raiseError("undefined attribute value");
   }
@@ -384,7 +384,7 @@ TDiscDistribution::TDiscDistribution()
 TDiscDistribution::TDiscDistribution(PVariable var) 
 : TDistribution(var)
 { if (var->varType!=TValue::INTVAR)
-     raiseError("attribute '%s' is not discrete", var->name.c_str());
+     raiseError("attribute '%s' is not discrete", var->get_name().c_str());
   distribution = vector<float>(var->noOfValues(), 0.0);
   supportsDiscrete = true;
 }
@@ -434,7 +434,7 @@ TDiscDistribution::TDiscDistribution(PExampleGenerator gen, const int &position,
 
   variable = gen->domain->variables->at(position);
   if (variable->varType != TValue::INTVAR)
-    raiseError("attribute '%s' is not discrete", variable->name.c_str());
+    raiseError("attribute '%s' is not discrete", variable->get_name().c_str());
 
   distribution = vector<float>(variable->noOfValues(), 0.0);
 
@@ -449,7 +449,7 @@ TDiscDistribution::TDiscDistribution(PExampleGenerator gen, PVariable var, const
   supportsDiscrete = true;
 
   if (variable->varType != TValue::INTVAR)
-    raiseError("attribute '%s' is not discrete", variable->name.c_str());
+    raiseError("attribute '%s' is not discrete", variable->get_name().c_str());
 
   distribution = vector<float>(var->noOfValues(), 0.0);
 
@@ -462,7 +462,7 @@ TDiscDistribution::TDiscDistribution(PExampleGenerator gen, PVariable var, const
       PEITERATE(ei, gen)
         add(variable->computeValue(*ei), WEIGHT(*ei));
     else
-      raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
+      raiseError("attribute '%s' not in domain and cannot be computed", variable->get_name().c_str());
 }
 
 
@@ -945,7 +945,7 @@ TContDistribution::TContDistribution(PVariable var)
   sum(0.0),
   sum2(0.0)
 { if (var->varType!=TValue::FLOATVAR)
-     raiseError("attribute '%s' is not continuous", var->name.c_str());
+     raiseError("attribute '%s' is not continuous", var->get_name().c_str());
   supportsContinuous = true; 
 }
 
@@ -961,7 +961,7 @@ TContDistribution::TContDistribution(PExampleGenerator gen, const int &position,
 
   variable = gen->domain->variables->at(position);
   if (variable->varType != TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", variable->name.c_str());
+    raiseError("attribute '%s' is not continuous", variable->get_name().c_str());
 
   PEITERATE(ei, gen)
     add((*ei)[position], WEIGHT(*ei));
@@ -976,7 +976,7 @@ TContDistribution::TContDistribution(PExampleGenerator gen, PVariable var, const
   supportsContinuous = true;
 
   if (variable->varType != TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", variable->name.c_str());
+    raiseError("attribute '%s' is not continuous", variable->get_name().c_str());
 
   int position = gen->domain->getVarNum(variable, false);
   if (position != ILLEGAL_INT)
@@ -987,7 +987,7 @@ TContDistribution::TContDistribution(PExampleGenerator gen, PVariable var, const
       PEITERATE(ei, gen)
         add(variable->computeValue(*ei), WEIGHT(*ei));
     else
-      raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
+      raiseError("attribute '%s' not in domain and cannot be computed", variable->get_name().c_str());
 }
 
 
@@ -1151,7 +1151,7 @@ bool TContDistribution::noDeviation() const
 float TContDistribution::average() const
 { if (!abs)
     if (variable)
-      raiseError("cannot compute average ('%s' has no defined values)", variable->name.c_str());
+      raiseError("cannot compute average ('%s' has no defined values)", variable->get_name().c_str());
     else
       raiseError("cannot compute average (attribute has no defined values)");
 
@@ -1163,7 +1163,7 @@ float TContDistribution::dev() const
 { 
   if (abs<=1e-7)
     if (variable)
-      raiseError("cannot compute standard deviation ('%s' has no defined values)", variable->name.c_str());
+      raiseError("cannot compute standard deviation ('%s' has no defined values)", variable->get_name().c_str());
     else
       raiseError("cannot compute standard deviation (attribute has no defined values)");
 
@@ -1175,7 +1175,7 @@ float TContDistribution::var() const
 {
   if (!abs)
     if (variable)
-      raiseError("cannot compute variance ('%s' has no defined values)", variable->name.c_str());
+      raiseError("cannot compute variance ('%s' has no defined values)", variable->get_name().c_str());
     else
       raiseError("cannot compute variance (attribute has no defined values)");
 

@@ -280,8 +280,8 @@ bool TC45Learner::convertDomain(PDomain dom)
   PITERATE(TVarList, vi, dom->attributes) {
     *(SpecialStatusi++) = NULL;
 
-    *AttNamei = mlnew char[(*vi)->name.length()+1];
-    strcpy(*(AttNamei++), (*vi)->name.c_str());
+    *AttNamei = mlnew char[(*vi)->get_name().length()+1];
+    strcpy(*(AttNamei++), (*vi)->get_name().c_str());
 
     if ((*vi)->varType==TValue::INTVAR) {
       int noOfValues = (*vi).AS(TEnumVariable)->noOfValues();
@@ -704,7 +704,7 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
     branchSizes->addint(i++, (*li)->items);
   newNode->branchSizes = branchSizes;
     
-  TEnumVariable *dummyVar = mlnew TEnumVariable(tested->name);
+  TEnumVariable *dummyVar = mlnew TEnumVariable(tested->get_name());
   PVariable wdummyVar = dummyVar;
 
   switch (nodeType) {

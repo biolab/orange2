@@ -209,7 +209,7 @@ int TDomain::getVarNum(PVariable var, bool throwExc) const
 
   pos = getMetaNum(var, false);
   if ((pos == ILLEGAL_INT) && throwExc)
-    raiseError("attribute '%s' not found", var->name.c_str());
+    raiseError("attribute '%s' not found", var->get_name().c_str());
 
   return pos;
 }
@@ -218,7 +218,7 @@ int TDomain::getVarNum(PVariable var, bool throwExc) const
 int TDomain::getVarNum(const string &name, bool throwExc) const
 { int pos = 0;
   for(TVarList::const_iterator vi(variables->begin()), ve(variables->end()); vi!=ve; vi++, pos++)
-    if ((*vi)->name == name)
+    if ((*vi)->get_name()== name)
       return pos;
 
   pos = getMetaNum(name, false);
@@ -291,12 +291,12 @@ PVariable TDomain::getVar(int num, bool throwExc)
 
 PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
 { PITERATE(TVarList, vi, variables)
-    if ((*vi)->name==name)
+    if ((*vi)->get_name()==name)
       return *vi;
 
   if (takeMetas)
     ITERATE(TMetaVector, mi, metas)
-      if ((*mi).variable->name==name)
+      if ((*mi).variable->get_name()==name)
         return (*mi).variable;
 
   if (throwExc)
@@ -308,12 +308,12 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
 
 PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) const
 { const_PITERATE(TVarList, vi, variables)
-    if ((*vi)->name==name)
+    if ((*vi)->get_name()==name)
       return *vi;
 
   if (takeMetas)
     const_ITERATE(TMetaVector, mi, metas)
-      if ((*mi).variable->name==name)
+      if ((*mi).variable->get_name()==name)
         return (*mi).variable;
 
   if (throwExc)
@@ -325,7 +325,7 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) con
 
 const TMetaDescriptor *TDomain::getMetaDescriptor(const string &wname, bool throwExc) const
 { const_ITERATE(TMetaVector, mi, metas)
-    if ((*mi).variable->name==wname)
+    if ((*mi).variable->get_name()==wname)
       return &*mi;
 
   if (throwExc)
@@ -340,7 +340,7 @@ const TMetaDescriptor *TDomain::getMetaDescriptor(PVariable var, bool throwExc) 
       return &*mi;
 
   if (throwExc)
-    raiseError("meta attribute '%s' not found", var->name.c_str());
+    raiseError("meta attribute '%s' not found", var->get_name().c_str());
   
   return NULL;
 }
@@ -371,7 +371,7 @@ long TDomain::getMetaNum(PVariable var, bool throwExc) const
       return (*mi).id;
 
   if (throwExc)
-    raiseError("meta attribute '%s' not found", var->name.c_str());
+    raiseError("meta attribute '%s' not found", var->get_name().c_str());
 
   return ILLEGAL_INT;
 }
@@ -403,7 +403,7 @@ PVariable TDomain::getMetaVar(const int &idx, bool throwExc) const
 
 PVariable TDomain::getMetaVar(const string &wname, bool throwExc) const
 { const_ITERATE(TMetaVector, mi, metas)
-    if ((*mi).variable->name==wname)
+    if ((*mi).variable->get_name()==wname)
       return (*mi).variable;
 
   if (throwExc)
@@ -415,7 +415,7 @@ PVariable TDomain::getMetaVar(const string &wname, bool throwExc) const
 
 PVariable TDomain::getMetaVar(const string &wname, bool throwExc)
 { ITERATE(TMetaVector, mi, metas)
-    if ((*mi).variable->name==wname)
+    if ((*mi).variable->get_name()==wname)
       return (*mi).variable;
 
   if (throwExc)
@@ -582,7 +582,7 @@ PVariable TDomain::hasContinuousAttributes(bool checkClass) const
 void TDomain::addToCRC(unsigned long &crc) const
 {
   const_PITERATE(TVarList, vi, variables) {
-    add_CRC((*vi)->name.c_str(), crc);
+    add_CRC((*vi)->get_name().c_str(), crc);
     add_CRC((const unsigned char)(*vi)->varType, crc);
     if ((*vi)->varType == TValue::INTVAR)
       PITERATE(TStringList, vli, dynamic_cast<TEnumVariable &>(vi->getReference()).values)

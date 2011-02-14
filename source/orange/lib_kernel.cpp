@@ -302,6 +302,25 @@ PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_S
   PyCATCH
 }
 
+//set and get name
+int Variable_set_name(PyObject *self, PyObject *name)
+{ 
+   char *varName;
+   if (!PyString_Check(name))
+       PYERROR(PyExc_AttributeError, "string expected", PYNULL);
+    varName = PyString_AsString(name);
+    PVariable var = PyOrange_AsVariable(self);
+    var->set_name(string(varName));
+    return 0;
+}
+
+
+PyObject *Variable_get_name(PyObject *self) 
+{
+    PVariable var = PyOrange_AsVariable(self);
+    return Py_BuildValue("s", var->get_name().c_str());
+}
+
 
 #include "stringvars.hpp"
 C_NAMED(StringVariable, Variable, "([name=])")
@@ -478,7 +497,7 @@ PyObject *replaceVarWithEquivalent(PyObject *pyvar)
 {
   PVariable newVar = PyOrange_AsVariable(pyvar);
   TEnumVariable *enewVar = newVar.AS(TEnumVariable);
-  TVariable *oldVar = TVariable::getExisting(newVar->name, newVar->varType, enewVar ? enewVar->values.getUnwrappedPtr() : NULL, NULL, TVariable::Incompatible);
+  TVariable *oldVar = TVariable::getExisting(newVar->get_name(), newVar->varType, enewVar ? enewVar->values.getUnwrappedPtr() : NULL, NULL, TVariable::Incompatible);
   if (oldVar && oldVar->isEquivalentTo(newVar.getReference())) {
     if (newVar->sourceVariable)
       oldVar->sourceVariable = newVar->sourceVariable;
@@ -612,7 +631,7 @@ bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, 
     if (checkForIncludance)
       const_PITERATE(TVarList, vi, variables)
         if (!domain || (domain->getVarNum(*vi, false)==ILLEGAL_INT)) {
-          PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", (*vi)->name.c_str());
+          PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", (*vi)->get_name().c_str());
           return false;
         }
     boundSet=variables.getReference();
@@ -699,7 +718,7 @@ bool varListFromVarList(PyObject *boundList, PVarList varlist, TVarList &boundSe
         TVarList::const_iterator fi(varlist->begin()), fe(varlist->end());
         for(; (fi!=fe) && (*fi != *vi); fi++);
         if (fi==fe) {
-          PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", (*vi)->name.c_str());
+          PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", (*vi)->get_name().c_str());
           return false;
         }
       }
@@ -740,7 +759,7 @@ PVariable varFromArg_byVarList(PyObject *obj, PVarList varlist, bool checkForInc
       if (PyString_Check(obj)) {
         char *s = PyString_AS_STRING(obj);
         TVarList::const_iterator fi(varlist->begin()), fe(varlist->end());
-        for(; (fi!=fe) && ((*fi)->name != s); fi++);
+        for(; (fi!=fe) && ((*fi)->get_name() != s); fi++);
         if (fi==fe) {
           PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", s);
           return PVariable();
@@ -887,7 +906,7 @@ int AttributedList_getIndex(const int &listsize, PVarList attributes, PyObject *
         }
 
       if (vi == ve) {
-        PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->name.c_str());
+        PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->get_name().c_str());
         return ILLEGAL_INT;
       }
     }
@@ -897,7 +916,7 @@ int AttributedList_getIndex(const int &listsize, PVarList attributes, PyObject *
       TVarList::const_iterator vi(attributes->begin()), ve(attributes->end());
       int ind = 0;
       for(; vi!=ve; vi++, ind++)
-        if ((*vi)->name == name) {
+        if ((*vi)->get_name() == name) {
           res = ind;
           break;
         }
@@ -1016,7 +1035,7 @@ const TMetaDescriptor *metaDescriptorFromArg(TDomain &domain, PyObject *rar)
     desc = domain.metas[string(PyString_AsString(rar))];
 
   else if (PyOrVariable_Check(rar))
-    desc = domain.metas[PyOrange_AsVariable(rar)->name];
+    desc = domain.metas[PyOrange_AsVariable(rar)->get_name()];
 
   else if (PyInt_Check(rar))
     desc = domain.metas[PyInt_AsLong(rar)];
@@ -1060,7 +1079,7 @@ PyObject *Domain_hasmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name |
       desc = domain->metas[string(PyString_AsString(rar))];
 
     else if (PyOrVariable_Check(rar))
-      desc = domain->metas[PyOrange_AsVariable(rar)->name];
+      desc = domain->metas[PyOrange_AsVariable(rar)->get_name()];
 
     else if (PyInt_Check(rar))
       desc = domain->metas[PyInt_AsLong(rar)];
@@ -1193,7 +1212,7 @@ bool removeMeta(PyObject *rar, TMetaVector &metas)
       mvi++;
   else if (PyString_Check(rar)) {
     char *metaname = PyString_AsString(rar);
-    while((mvi!=mve) && ((*mvi).variable->name!=metaname))
+    while((mvi!=mve) && ((*mvi).variable->get_name()!=metaname))
       mvi++;
   }
   else
@@ -1563,7 +1582,7 @@ string TDomain2string(TPyOrange *self)
 
   int added=0;
   PITERATE(TVarList, vi, domain->variables)
-    res+=(added++ ? ", " : "[") + namefrom((*vi)->name);
+    res+=(added++ ? ", " : "[") + namefrom((*vi)->get_name());
 
   if (added) {
     res+="]";
@@ -1577,7 +1596,7 @@ string TDomain2string(TPyOrange *self)
   added=0;
   ITERATE(TMetaVector, mi, domain->metas) {
     char pls[256];
-    sprintf(pls, "%s%i:%s", (added++) ? ", " : "", int((*mi).id), namefrom((*mi).variable->name).c_str());
+    sprintf(pls, "%s%i:%s", (added++) ? ", " : "", int((*mi).id), namefrom((*mi).variable->get_name()).c_str());
     res+=pls;
   }
   if (added)
@@ -3195,7 +3214,7 @@ inline bool storeNumPyValue(double *&p, const TValue &val, signed char *&m, cons
       *m++ = 1;
     }
     else {
-      PyErr_Format(PyExc_TypeError, "value of attribute '%s' in example '%i' is undefined", attr->name.c_str(), row);
+      PyErr_Format(PyExc_TypeError, "value of attribute '%s' in example '%i' is undefined", attr->get_name().c_str(), row);
       return false;
     }
   }
@@ -5112,7 +5131,7 @@ int DomainDistributions_getItemIndex(PyObject *self, PyObject *args)
   if (PyString_Check(args)) {
     char *s=PyString_AsString(args);
     PITERATE(TDomainDistributions, ci, bas)
-      if ((*ci)->variable && ((*ci)->variable->name==s))
+      if ((*ci)->variable && ((*ci)->variable->get_name()==s))
         return ci - bas->begin();
 
     PyErr_Format(PyExc_IndexError, "attribute '%s' not found in domain", s);
@@ -5125,7 +5144,7 @@ int DomainDistributions_getItemIndex(PyObject *self, PyObject *args)
       if ((*ci)->variable && ((*ci)->variable==var))
         return ci - bas->begin();
 
-    PyErr_Format(PyExc_IndexError, "attribute '%s' not found in domain", var->name.length() ? var->name.c_str() : "<no name>");
+    PyErr_Format(PyExc_IndexError, "attribute '%s' not found in domain", var->get_name().length() ? var->get_name().c_str() : "<no name>");
     return -1;
   }
 

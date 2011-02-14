@@ -20,7 +20,7 @@
 
 
 // to include Python.h before STL defines a template set (doesn't work with VC 6.0)
-#include "garbage.hpp"
+#include "garbage.hpp" 
 
 #include <set>
 #include <stack>
@@ -79,7 +79,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
   TStringList::const_iterator vvi, vve;
 
   ITERATE(list<TVariable *>, vi, TVariable::allVariables) {
-    if (((*vi)->varType == varType) && ((*vi)->name == name)) {
+    if (((*vi)->varType == varType) && ((*vi)->get_name() == name)) {
       int tempStat = TVariable::OK;
 
       // non-discrete attributes are always ok,
@@ -247,7 +247,6 @@ const TValue &TVariable::DK() const
 
 TValue  TVariable::specialValue(int spec) const
 { return TValue(varType, spec); }
-
 
 /*  Converts a human-readable string, representing the value (as read from the file, for example) to TValue.
     TVariable::str2val_add interprets ? as DK and ~ as DC; otherwise it sets val.varType to varType, other fields
@@ -463,7 +462,7 @@ void TEnumVariable::addValue(const string &val)
       }
 
       if (vi==ve)
-        raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", name.c_str(), values->front().c_str());
+        raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", get_name().c_str(), values->front().c_str());
     }
   }
 }
@@ -524,7 +523,7 @@ void TEnumVariable::str2val(const string &valname, TValue &valu)
     if (vi != valuesTree.end())
       valu = TValue(vi->second);
     else if (!str2special(valname, valu))
-      raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
+      raiseError("attribute '%s' does not have value '%s'", get_name().c_str(), valname.c_str());
   }
 
   else {
@@ -532,7 +531,7 @@ void TEnumVariable::str2val(const string &valname, TValue &valu)
     if (vi!=values->end())
       valu = TValue(int(vi - values->begin()));
     else if (!str2special(valname, valu))
-      raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
+      raiseError("attribute '%s' does not have value '%s'", get_name().c_str(), valname.c_str());
   }
 }
 
@@ -786,7 +785,7 @@ int TFloatVariable::str2val_low(const string &valname, TValue &valu)
 void TFloatVariable::str2val(const string &valname, TValue &valu)
 {
   switch (str2val_low(valname, valu)) {
-    case -1: raiseError("'%s' is not a legal value for continuous attribute '%s'", valname.c_str(), name.c_str());
+    case -1: raiseError("'%s' is not a legal value for continuous attribute '%s'", valname.c_str(), get_name().c_str());
     case -2: raiseError("value %5.3f out of range %5.3f-%5.3f", valu.floatV, startValue, endValue);
   }
 }

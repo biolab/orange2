@@ -44,7 +44,7 @@ PDomainContingency TComputeDomainContingency_DomainTransformation::operator()(PE
       while((si!=be) && (*si!=*bi) && ((*si)->sourceVariable!=*bi))
         si++;
       if (si==be)
-        raiseError("the transformed domain misses the attribute '%s'", (*bi)->name.c_str());
+        raiseError("the transformed domain misses the attribute '%s'", (*bi)->get_name().c_str());
       orderedList.push_back(*si);
     }
     PDomain domain=mlnew TDomain(domain->classVar, orderedList);
@@ -172,7 +172,7 @@ PDomainContingency TComputeDomainContingency_Preprocessor::operator()(PExampleGe
       while((dci!=dce) && ((*sci)->outerVariable!=(*dci)->outerVariable) && ((*sci)->outerVariable->sourceVariable!=(*dci)->outerVariable))
         sci++;
       if (dci==dce)
-        raiseError("preprocessed examples miss the attribute '%s'", (*dci)->outerVariable->name.c_str());
+        raiseError("preprocessed examples miss the attribute '%s'", (*dci)->outerVariable->get_name().c_str());
       else if ((*sci)->outerVariable->sourceVariable==(*dci)->outerVariable) {
         (*sci)->outerVariable = (*dci)->outerVariable;
         PDomainContingency tempc = *dci;

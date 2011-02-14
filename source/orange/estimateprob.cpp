@@ -262,7 +262,7 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistri
 { TContDistribution *cdist = frequencies.AS(TContDistribution);
   if (!cdist)
     if (frequencies && frequencies->variable)
-      raiseError("attribute '%s' is not continuous", frequencies->variable->name.c_str());
+      raiseError("attribute '%s' is not continuous", frequencies->variable->get_name().c_str());
     else
       raiseError("continuous distribution expected");
   if (!cdist->size())
@@ -406,7 +406,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_ByR
     frequencies = mlnew TContingencyAttrClass(gen, weightID, attrNo);
   if (frequencies->varType != TValue::INTVAR)
     if (frequencies->outerVariable)
-      raiseError("attribute '%s' is not discrete", frequencies->outerVariable->name.c_str());
+      raiseError("attribute '%s' is not discrete", frequencies->outerVariable->get_name().c_str());
     else
       raiseError("discrete attribute for condition expected");
 
@@ -457,7 +457,7 @@ TConditionalProbabilityEstimatorConstructor_loess::TConditionalProbabilityEstima
 PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loess::operator()(PContingency frequencies, PDistribution, PExampleGenerator, const long &, const int &) const
 { if (frequencies->varType != TValue::FLOATVAR)
     if (frequencies->outerVariable)
-      raiseError("attribute '%s' is not continuous", frequencies->outerVariable->name.c_str());
+      raiseError("attribute '%s' is not continuous", frequencies->outerVariable->get_name().c_str());
     else
       raiseError("continuous attribute expected for condition");
 

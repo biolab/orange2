@@ -106,7 +106,7 @@ PExampleDistVector TExampleDistBySorting::operator()(PExampleGenerator gen, TVar
   vector<int> bound;
   { ITERATE(TVarList, evi, aboundSet) {
       if ((*evi)->varType != TValue::INTVAR)
-        raiseError("attribute '%s' is not discrete", (*evi)->name.c_str());
+        raiseError("attribute '%s' is not discrete", (*evi)->get_name().c_str());
       bound.push_back(gen->domain->getVarNum(*evi));
     }
   }
@@ -316,7 +316,7 @@ PVariable TFeatureByDistributions::operator()(PExampleGenerator egen, TVarList &
     return PVariable();
 
   quality = clusters->quality;
-  feat->name = name;
+  feat->get_name()= name;
 
   return feat;
 }

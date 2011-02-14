@@ -49,13 +49,13 @@
 void checkDiscrete(const PContingency &cont, char *measure)
 { if (cont->varType!=TValue::INTVAR)
     if (cont->outerVariable)
-      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->get_name().c_str());
     else
       raiseErrorWho(measure, "cannot evaluate continuous attributes");
 
   if (cont->innerVariable) {
     if (cont->innerVariable->varType != TValue::INTVAR)
-      raiseErrorWho(measure, "cannot work with continuous outcome '%s'", cont->innerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot work with continuous outcome '%s'", cont->innerVariable->get_name().c_str());
   }
   else
     if (!cont->innerDistribution.is_derived_from(TDiscDistribution))
@@ -66,13 +66,13 @@ void checkDiscrete(const PContingency &cont, char *measure)
 void checkDiscreteContinuous(const PContingency &cont, char *measure)
 { if (cont->varType!=TValue::INTVAR)
     if (cont->outerVariable)
-      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->get_name().c_str());
     else
       raiseErrorWho(measure, "cannot evaluate continuous attributes");
 
   if (cont->innerVariable) {
     if (cont->innerVariable->varType != TValue::FLOATVAR)
-      raiseErrorWho(measure, "cannot work with discrete outcome '%s'", cont->innerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot work with discrete outcome '%s'", cont->innerVariable->get_name().c_str());
   }
   else
     if (!cont->innerDistribution.is_derived_from(TContDistribution))

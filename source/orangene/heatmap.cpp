@@ -274,7 +274,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
 
   PITERATE(TVarList, ai, etable.domain->attributes)
     if ((*ai)->varType != TValue::FLOATVAR)
-      raiseError("data contains a discrete attribute '%s'", (*ai)->name.c_str());
+      raiseError("data contains a discrete attribute '%s'", (*ai)->get_name().c_str());
 
   if (etable.domain->classVar && !disregardClass) {
     if (etable.domain->classVar->varType != TValue::INTVAR)

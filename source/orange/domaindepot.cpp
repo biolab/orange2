@@ -131,7 +131,7 @@ PDomain combineDomains(PDomainList sources, TDomainMultiMapping &mapping)
         newDomain->metas.push_back(*mi);
       else
         if (metavar != (*mi).variable)
-          raiseError("Id %i represents two different attributes ('%s' and '%s')", (*mi).id, metavar->name.c_str(), (*mi).variable->name.c_str());
+          raiseError("Id %i represents two different attributes ('%s' and '%s')", (*mi).id, metavar->get_name().c_str(), (*mi).variable->get_name().c_str());
     }
 
   return wdomain;
@@ -241,7 +241,7 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
   TVarList::const_iterator vi(domain->variables->begin());
   TPAttributeDescriptions::const_iterator ai(attributes->begin()), ae(attributes->end());
   for(; ai != ae; ai++, vi++)
-    if (    ((**ai).name != (*vi)->name)
+    if (    ((**ai).name != (*vi)->get_name())
          || ((**ai).varType>0) && ((**ai).varType != (*vi)->varType)
          || (((**ai).varType==PYTHONVAR) && !pythonDeclarationMatches((**ai).typeDeclaration, *vi))
          || !checkValueOrder(*vi, **ai)
@@ -314,7 +314,7 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
 {
   if (typeDeclaration.size() == 6) {
     TPythonVariable *var = mlnew TPythonVariable();
-    var->name = name;
+    var->set_name(name);
     return var;
   }
 
@@ -360,7 +360,7 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
   PVariable pvar = GCPtr<TOrange>((TPyOrange *)var, true);
   Py_DECREF(var);
 
-  pvar->name = name;
+  pvar->set_name(name);
   return pvar;
 }
 

@@ -107,7 +107,7 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID, vect
     // Check if this is an ordinary attribute
     if (position >= 0) {
       if (!mergeTwoValues(values[position], srcval, defined[position]))
-        raiseError("ambiguous value of attribute '%s'", var->name.c_str());
+        raiseError("ambiguous value of attribute '%s'", var->get_name().c_str());
       else
         defined[position] = true;
     }
@@ -116,7 +116,7 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID, vect
       // Is it meta?
       if (hasMeta(position)) {
         if (!mergeTwoValues(meta[metaID], srcval, true))
-          raiseError("ambiguous value for meta-attribute '%s'", var->name.c_str());
+          raiseError("ambiguous value for meta-attribute '%s'", var->get_name().c_str());
       }
       else
         setMeta(position, srcval);
@@ -290,8 +290,8 @@ const TValue &TExample::missingMeta(const int &i) const
     if (md->optional)
       return md->variable->DK();
     else
-      if (md->variable->name.size())
-        raiseError("the value of meta attribute '%s' is missing", md->variable->name.c_str());
+      if (md->variable->get_name().size())
+        raiseError("the value of meta attribute '%s' is missing", md->variable->get_name().c_str());
 
   // no descriptor or no name
   raiseError("meta value with id %i is missing", i);

@@ -151,7 +151,7 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
 {
   if (PyOrValue_Check(args)) {
     if (var && PyValue_AS_Variable(args) && (PyValue_AS_Variable(args)!=var)) {
-      PyErr_Format(PyExc_TypeError, "wrong attribute value (expected value of '%s', got value of '%s')", var->name.c_str(), PyValue_AS_Variable(args)->name.c_str());
+      PyErr_Format(PyExc_TypeError, "wrong attribute value (expected value of '%s', got value of '%s')", var->get_name().c_str(), PyValue_AS_Variable(args)->get_name().c_str());
       return false;
     }
     else
@@ -162,11 +162,11 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
   if (PyOrSomeValue_Check(args)) {
     if (var) {
       if ((var->varType==TValue::INTVAR) && !PyOrDiscDistribution_Check(args)) {
-        PyErr_Format(PyExc_TypeError, "attribute '%s' expects DiscDistribution, '%s' given", var->name.c_str(), args->ob_type->tp_name);
+        PyErr_Format(PyExc_TypeError, "attribute '%s' expects DiscDistribution, '%s' given", var->get_name().c_str(), args->ob_type->tp_name);
         return false;
       }
       if ((var->varType==TValue::FLOATVAR) && !PyOrContDistribution_Check(args)) {
-        PyErr_Format(PyExc_TypeError, "attribute '%s' expects ContDistribution, '%s' given", var->name.c_str(), args->ob_type->tp_name);
+        PyErr_Format(PyExc_TypeError, "attribute '%s' expects ContDistribution, '%s' given", var->get_name().c_str(), args->ob_type->tp_name);
         return false;
       }
     }
@@ -234,7 +234,7 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
         return true;
       }
 
-      PyErr_Format(PyExc_TypeError,  "cannot convert an integer to a value of attribute '%s'", var->name.c_str());
+      PyErr_Format(PyExc_TypeError,  "cannot convert an integer to a value of attribute '%s'", var->get_name().c_str());
       return false;
     }
 
@@ -244,7 +244,7 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
 
   if (PyFloat_Check(args)) {
     if (var && (var->varType != TValue::FLOATVAR)) {
-      PyErr_Format(PyExc_TypeError,  "cannot convert a float to a value of attribute '%s'", var->name.c_str());
+      PyErr_Format(PyExc_TypeError,  "cannot convert a float to a value of attribute '%s'", var->get_name().c_str());
       return false;
     }
 
@@ -255,7 +255,7 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
   if (var && (var->varType == TValue::FLOATVAR)) {
     PyObject *pyfloat = PyNumber_Float(args);
     if (!pyfloat) {
-      PyErr_Format(PyExc_TypeError, "cannot convert an object of type '%s' to value of attribute '%s'", args->ob_type->tp_name, var->name.c_str());
+      PyErr_Format(PyExc_TypeError, "cannot convert an object of type '%s' to value of attribute '%s'", args->ob_type->tp_name, var->get_name().c_str());
       return false;
     }
 
@@ -265,7 +265,7 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
   }
 
   if (var)
-    PyErr_Format(PyExc_TypeError,  "cannot convert an object of type '%s' to value of attribute '%s'", args->ob_type->tp_name, var->name.c_str());
+    PyErr_Format(PyExc_TypeError,  "cannot convert an object of type '%s' to value of attribute '%s'", args->ob_type->tp_name, var->get_name().c_str());
   else
     PyErr_Format(PyExc_TypeError,  "cannot convert an object of type '%s' to value of attribute", args->ob_type->tp_name);
 
@@ -622,7 +622,7 @@ PyObject *Value_str(TPyValue *self)
 PyObject *Value_repr(TPyValue *self)
 { PyTRY
     if (self->variable)
-      return PyString_FromFormat("<orange.Value '%s'='%s'>", self->variable->name.c_str(), TPyValue2string(self));
+      return PyString_FromFormat("<orange.Value '%s'='%s'>", self->variable->get_name().c_str(), TPyValue2string(self));
     else
       return PyString_FromFormat("<orange.Value '%s'>", TPyValue2string(self)); 
   PyCATCH
@@ -632,8 +632,8 @@ PyObject *Value_repr(TPyValue *self)
 bool checkSpecial(TPyValue *self, char *casttype)
 {
   if (self->value.isSpecial()) {
-    if (self->variable && self->variable->name.length())
-      PyErr_Format(PyExc_TypeError, "value of '%s' is unknown and cannot be %s", self->variable->name.c_str(), casttype);
+    if (self->variable && self->variable->get_name().length())
+      PyErr_Format(PyExc_TypeError, "value of '%s' is unknown and cannot be %s", self->variable->get_name().c_str(), casttype);
     else
       PyErr_Format(PyExc_TypeError, "attribute value is unknown and cannot be %s", casttype);
     return false;
@@ -747,8 +747,8 @@ PyObject *Value_neg(TPyValue *self)
 PyObject *Value_abs(TPyValue *self)
 { PyTRY
     if (self->value.isSpecial())
-      if (self->variable && self->variable->name.length()) {
-        PyErr_Format(PyExc_TypeError, "cannot compute an absolute value of '%s' since its value is unknown", self->variable->name.c_str());
+      if (self->variable && self->variable->get_name().length()) {
+        PyErr_Format(PyExc_TypeError, "cannot compute an absolute value of '%s' since its value is unknown", self->variable->get_name().c_str());
         return PYNULL;
       }
       else

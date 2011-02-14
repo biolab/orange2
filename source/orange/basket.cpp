@@ -212,16 +212,16 @@ void basket_writeExamples(FILE *fle, PExampleGenerator gen, set<int> &missing)
       if (metaVar) {
         if ((*mi).second.floatV == 1.0)
           if (comma)
-            fprintf(fle, ", %s", metaVar->name.c_str());
+            fprintf(fle, ", %s", metaVar->get_name().c_str());
           else {
-            fprintf(fle, metaVar->name.c_str());
+            fprintf(fle, metaVar->get_name().c_str());
             comma = true;
           }
         else
           if (comma)
-            fprintf(fle, ", %s=%5.3f", metaVar->name.c_str(), (*mi).second.floatV);
+            fprintf(fle, ", %s=%5.3f", metaVar->get_name().c_str(), (*mi).second.floatV);
           else {
-            fprintf(fle, "%5s=%5.3f", metaVar->name.c_str(), (*mi).second.floatV);
+            fprintf(fle, "%5s=%5.3f", metaVar->get_name().c_str(), (*mi).second.floatV);
             comma = true;
           }
       }

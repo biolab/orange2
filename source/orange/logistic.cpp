@@ -75,7 +75,7 @@ PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
   PClassifier cl = fitModel(gen, weight, error, var);
 
   if (error >= TLogRegFitter::Constant)
-    raiseError("%s in %s", error==TLogRegFitter::Constant ? "constant" : "singularity", var->name.c_str());
+    raiseError("%s in %s", error==TLogRegFitter::Constant ? "constant" : "singularity", var->get_name().c_str());
 
   return cl;
 }
@@ -189,7 +189,7 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
     TExample::const_iterator ei(example->begin()), ee(example->end());
     for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
       if ((*ei).isSpecial())
-        raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
+        raiseError("unknown value in attribute '%s'", (*vi)->get_name().c_str());
       prob1 += (*ei).floatV * (*b); 
     }
 

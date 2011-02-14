@@ -457,7 +457,7 @@ string side2string(PExample ex)
     ITERATE(TMetaValues, mi, ex->meta) {
       if (res.length())
         res += " ";
-      res += ex->domain->getMetaVar((*mi).first)->name;
+      res += ex->domain->getMetaVar((*mi).first)->get_name();
     }
 
   else {
@@ -469,7 +469,7 @@ string side2string(PExample ex)
         if (res.length())
           res += " ";
         (*vi)->val2str(*ei, val);
-        res += (*vi)->name + "=" + val;
+        res += (*vi)->get_name() + "=" + val;
       }
   }
 

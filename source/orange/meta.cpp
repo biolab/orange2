@@ -77,7 +77,7 @@ TMetaDescriptor const *TMetaVector::operator[](PVariable var) const
 
 TMetaDescriptor *TMetaVector::operator[](const string &sna) 
 { this_ITERATE(mi)
-    if ((*mi).variable->name==sna)
+    if ((*mi).variable->get_name()==sna)
       return &*mi;
   return (TMetaDescriptor *)NULL; 
 }
@@ -85,7 +85,7 @@ TMetaDescriptor *TMetaVector::operator[](const string &sna)
 
 TMetaDescriptor const *TMetaVector::operator[](const string &sna) const
 { const_this_ITERATE(mi)
-    if ((*mi).variable->name==sna)
+    if ((*mi).variable->get_name()==sna)
       return &*mi;
   return (TMetaDescriptor const *)NULL; 
 }

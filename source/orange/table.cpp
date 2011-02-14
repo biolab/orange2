@@ -118,7 +118,7 @@ TExampleTable::TExampleTable(PExampleGeneratorList tables)
       bool notfirst = 0;
       for(vector<pair<int, int> >::const_iterator sdmmi((*dmmi).begin()), sdmme((*dmmi).end()); sdmmi!=sdmme; sdmmi++) {
         if (!mergeTwoValues(*ei, (*iterators[(*sdmmi).first])[(*sdmmi).second], notfirst++ != 0))
-          raiseError("mismatching value of attribute '%s' in example #%i", (*vi)->name.c_str(), exno);
+          raiseError("mismatching value of attribute '%s' in example #%i", (*vi)->get_name().c_str(), exno);
       }
     }
 
@@ -128,8 +128,8 @@ TExampleTable::TExampleTable(PExampleGeneratorList tables)
         if (example->hasMeta((*mvi).first)) {
           if (!mergeTwoValues(example->getMeta((*mvi).first), (*mvi).second, true)) {
             PVariable metavar = domain->getMetaVar((*mvi).first, false);
-            if (metavar && metavar->name.length())
-              raiseError("Meta attribute '%s' has ambiguous values on example #%i", metavar->name.c_str(), exno);
+            if (metavar && metavar->get_name().length())
+              raiseError("Meta attribute '%s' has ambiguous values on example #%i", metavar->get_name().c_str(), exno);
             else
               raiseError("Meta attribute %i has ambiguous values on example #%i", (*mvi).first, exno);
           }
@@ -752,7 +752,7 @@ void TExampleTable::sort(vector<int> &sortOrder)
           const int intV = val.isSpecial() ? noVal : val.intV;
           if (intV > noVal) {
             free(temp);
-            raiseError("value out attribute '%s' of range", domain->variables->operator[](*bi)->name.c_str());
+            raiseError("value out attribute '%s' of range", domain->variables->operator[](*bi)->get_name().c_str());
           }
           valf[intV]++;
         }

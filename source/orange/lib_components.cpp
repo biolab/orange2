@@ -425,7 +425,7 @@ if (PyInt_Check(args)) {
 if (PyString_Check(args)) {
 	char *s=PyString_AsString(args);
 	PITERATE(TDomainBasicAttrStat, ci, bas)
-		if (*ci && (*ci)->variable && ((*ci)->variable->name==s))
+		if (*ci && (*ci)->variable && ((*ci)->variable->get_name()==s))
 			return ci - bas->begin();
 
 	PyErr_Format(PyExc_IndexError, "attribute '%s' not found", s);
@@ -438,7 +438,7 @@ if (PyOrVariable_Check(args)) {
 		if (*ci && (*ci)->variable && ((*ci)->variable==var))
 			return ci - bas->begin();
 
-	PyErr_Format(PyExc_IndexError, "attribute '%s' not found", var->name.length() ? var->name.c_str() : "<no name>");
+	PyErr_Format(PyExc_IndexError, "attribute '%s' not found", var->get_name().length() ? var->get_name().c_str() : "<no name>");
 	return -1;
 }
 
@@ -1249,8 +1249,8 @@ if (PyInt_Check(args)) {
 if (PyString_Check(args)) {
 	char *s=PyString_AsString(args);
 	PITERATE(TDomainContingency, ci, cont)
-		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable->name==s)
-			: (*ci)->outerVariable && ((*ci)->outerVariable->name==s))
+		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable->get_name()==s)
+			: (*ci)->outerVariable && ((*ci)->outerVariable->get_name()==s))
 			return ci - cont->begin();
   PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", s);
   return -1;
@@ -1262,7 +1262,7 @@ if (PyOrVariable_Check(args)) {
 		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable==var)
 			: (*ci)->outerVariable && ((*ci)->outerVariable==var))
 			return ci - cont->begin();
-  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", var->name.c_str());
+  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", var->get_name().c_str());
   return -1;
 }
 
@@ -1305,7 +1305,7 @@ string convertToString(const PDomainContingency &cont)
 	string res=string("{");
 	const_PITERATE(TDomainContingency, di, cont) {
 		if (di!=cont->begin()) res+=", ";
-		res += (*di)->outerVariable->name+": "+convertToString(*di);
+		res += (*di)->outerVariable->get_name()+": "+convertToString(*di);
 	}
 	return res+"}";
 }
@@ -1789,7 +1789,7 @@ int Filter_isDefined_set_check(PyObject *self, PyObject *arg)
 				TVarList::const_iterator fci(cli->attributes->begin()), fce(cli->attributes->end());
 				for(; (di!=de) && (fci!=fce); di++, fci++)
 					if (*di!=*fci) {
-						PyErr_Format(PyExc_AttributeError, "attribute %s in the list does not match the filter's domain", (*fci)->name.c_str());
+						PyErr_Format(PyExc_AttributeError, "attribute %s in the list does not match the filter's domain", (*fci)->get_name().c_str());
 						return -1;
 					}
 					if (fci!=fce)
@@ -1874,7 +1874,7 @@ int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
 		else {
 			float f;
 			if (!PyNumber_ToFloat(args, f)) {
-				PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->name.c_str());
+				PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->get_name().c_str());
 				return -1;
 			}
 			filter->addCondition(var, TValueFilter::Equal, f, f);
@@ -1904,7 +1904,7 @@ int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
 		}
 
 		else {
-			PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->name.c_str());
+			PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->get_name().c_str());
 			return -1;
 		}
 	}
@@ -1929,7 +1929,7 @@ PyObject *Filter_values_getitem(PyObject *self, PyObject *args)
 	int position;
 	TValueFilterList::iterator condi = filter->findCondition(var, 0, position);
 	if (condi == filter->conditions->end()) {
-		PyErr_Format(PyExc_IndexError, "no condition on '%s'", var->name.c_str());
+		PyErr_Format(PyExc_IndexError, "no condition on '%s'", var->get_name().c_str());
 		return PYNULL;
 	}
 
@@ -2666,14 +2666,14 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
 					for(attrNo = 0; (ci!=ce) && (couter ? ((*ci)->innerVariable != var) : ((*ci)->outerVariable != var)); ci++, attrNo++);
 
 					if (ci==ce) {
-						PyErr_Format(PyExc_IndexError, "attribute '%s' not in the given DomainContingency", var->name.c_str());
+						PyErr_Format(PyExc_IndexError, "attribute '%s' not in the given DomainContingency", var->get_name().c_str());
 						return PYNULL;
 					}
 				}
 
 				else if (PyString_Check(arg1)) {
 					char *attrName = PyString_AsString(arg1);
-					for(attrNo = 0; (ci!=ce) && (couter ? ((*ci)->innerVariable->name != attrName) : ((*ci)->outerVariable->name!=attrName)); ci++, attrNo++);
+					for(attrNo = 0; (ci!=ce) && (couter ? ((*ci)->innerVariable->get_name()!= attrName) : ((*ci)->outerVariable->get_name()!=attrName)); ci++, attrNo++);
 
 					if (ci==ce) {
 						PyErr_Format(PyExc_IndexError, "attribute '%s' not in the given DomainContingency", attrName);
@@ -5866,5 +5866,6 @@ void GraphAsTree_dealloc(PyObject *self)
 
 	Orange_dealloc((TPyOrange *)  self);
 }
+
 
 #include "lib_components.px"

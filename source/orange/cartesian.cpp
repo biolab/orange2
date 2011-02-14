@@ -57,11 +57,11 @@ void TCartesianClassifier::domainHasChanged()
   vector<int>::reverse_iterator mi(mults.rbegin());
   for(TVarList::reverse_iterator vi(domain->attributes->rbegin()), ve(domain->attributes->rend()); vi!=ve; vi++) {
     if ((*vi)->varType!=TValue::INTVAR)
-      raiseError("invalid attribute '%s' (discrete attributes expected)", (*vi)->name.c_str());
+      raiseError("invalid attribute '%s' (discrete attributes expected)", (*vi)->get_name().c_str());
 
     *li = (*vi)->noOfValues();
     if (!*li)
-      raiseError("invalid attribute '%s' (no values)", (*vi)->name.c_str());
+      raiseError("invalid attribute '%s' (no values)", (*vi)->get_name().c_str());
 
     (*(mi++)) = mult;
     mult *= *(li++);

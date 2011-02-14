@@ -98,7 +98,7 @@ PExampleGenerator TPreprocessor_ignore::operator()(PExampleGenerator gen, const 
       if (*vi == outDomain->classVar)
         outDomain->removeClass();
       else
-        raiseError("attribute '%s' not found", (*vi)->name.c_str());
+        raiseError("attribute '%s' not found", (*vi)->get_name().c_str());
 
   newWeight = weightID;
   return PExampleGenerator(mlnew TExampleTable(outDomain, gen));
@@ -284,7 +284,7 @@ PExampleGenerator TPreprocessor_shuffle::operator()(PExampleGenerator gen, const
   PITERATE(TVarList, vi, attributes) {
     const int idx = gen->domain->getVarNum(*vi, false);
     if (idx == ILLEGAL_INT)
-      raiseError("attribute '%s' not found", (*vi)->name.c_str());
+      raiseError("attribute '%s' not found", (*vi)->get_name().c_str());
     indices.push_back(idx);
   }
     
@@ -413,7 +413,7 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
     if (*pi > 0.0) {
       const PVariable &var = domain.variables->at(idx);
       if (var->varType != TValue::INTVAR)
-        raiseError("Cannot add noise to non-discrete attribute '%s'", var->name.c_str());
+        raiseError("Cannot add noise to non-discrete attribute '%s'", var->get_name().c_str());
       addNoise(idx, *pi, makerind, table);
     }
   }
@@ -460,7 +460,7 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
     PITERATE(TVariableFloatMap, vi, deviations) {
       PVariable var = (*vi).first;
       if (var->varType != TValue::FLOATVAR)
-        raiseError("attribute '%s' is not continuous", var->name.c_str());
+        raiseError("attribute '%s' is not continuous", var->get_name().c_str());
 
       const int pos = domain.getVarNum(var);
       ps.push_back(pair<int, float>(pos, (*vi).second));
@@ -552,7 +552,7 @@ PExampleGenerator TPreprocessor_addGaussianClassNoise::operator()(PExampleGenera
   if (!classVar)
     raiseError("Class-less domain");
   if (classVar->varType != TValue::FLOATVAR)
-    raiseError("Class '%s' is not continuous", gen->domain->classVar->name.c_str());
+    raiseError("Class '%s' is not continuous", gen->domain->classVar->get_name().c_str());
 
   newWeight = weightID;
 
@@ -888,9 +888,9 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
       if (!exists(discretized.begin(), discretized.end(), *ai)) {
         long varNum = domain.getVarNum(*ai);
         if (varNum == ILLEGAL_INT)
-          raiseError("Attribute '%s' is not found", (*ai)->name.c_str());
+          raiseError("Attribute '%s' is not found", (*ai)->get_name().c_str());
         else if ((varNum >= 0) || ((*ai)->varType != TValue::FLOATVAR))
-          raiseError("Attribute '%s' is not continuous", (*ai)->name.c_str());
+          raiseError("Attribute '%s' is not continuous", (*ai)->get_name().c_str());
         else {
           PVariable evar = method->operator()(gen, *ai);
           TMetaDescriptor ndsc(varNum, evar);

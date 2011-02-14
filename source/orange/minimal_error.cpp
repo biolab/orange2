@@ -820,7 +820,7 @@ PVariable TFeatureByIM::operator()(PExampleGenerator egen, TVarList &boundSet, c
     return PVariable();
 
   quality = clusters->quality;
-  feat->name=name;
+  feat->set_name(name);
 
   return feat;
 }

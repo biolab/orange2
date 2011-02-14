@@ -258,13 +258,13 @@ PyObject *__arrayDistance(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(tab
   TVarList::const_iterator vi, ve;
   for(vi = g1->domain->attributes->begin(), ve = g1->domain->attributes->end(); vi!=ve; vi++)
     if ((*vi)->varType != TValue::FLOATVAR) {
-      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->name.c_str());
+      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->get_name().c_str());
       return PYNULL;
     }
   if (g1->domain != g2->domain)
   for(vi = g2->domain->attributes->begin(), ve = g2->domain->attributes->end(); vi!=ve; vi++)
     if ((*vi)->varType != TValue::FLOATVAR) {
-      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->name.c_str());
+      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->get_name().c_str());
       return PYNULL;
     }
 

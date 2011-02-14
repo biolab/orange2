@@ -73,7 +73,7 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
 
     if (PyOrValue_Check(li))
       if (PyValue_AS_Variable(li) ? (PyValue_AS_Variable(li) != *vi) : (PyValue_AS_Value(li).varType=!(*vi)->varType) ) {
-        PyErr_Format(PyExc_TypeError, "wrong value type for attribute no. %i (%s)", pos, (*vi)->name.c_str());
+        PyErr_Format(PyExc_TypeError, "wrong value type for attribute no. %i (%s)", pos, (*vi)->get_name().c_str());
         return false;
       }
       else
@@ -91,7 +91,7 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
         if (PyInt_Check(li))
           *(ei++)=TValue(int(PyInt_AsLong(li)));
         else {
-          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string value expected", pos, (*vi)->name.c_str());
+          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string value expected", pos, (*vi)->get_name().c_str());
           return false;
         }
       }
@@ -100,7 +100,7 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
         if (PyNumber_ToFloat(li, f))
           *(ei++) = TValue(f);
         else {
-          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is continuous, float value expected", pos, (*vi)->name.c_str());
+          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is continuous, float value expected", pos, (*vi)->get_name().c_str());
           return false;
         }
       }
@@ -435,7 +435,7 @@ PyObject *Example_get_metas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS
           if (!variable)
             continue;
           if (keytype == &PyString_Type)
-            key = PyString_FromString(variable->name.c_str());
+            key = PyString_FromString(variable->get_name().c_str());
           else
             key = WrapOrange(variable);
         }
@@ -541,7 +541,7 @@ PyObject *Example_set_meta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS,
 
       else {
         TMetaDescriptor *desc=example->domain->metas[
-            PyOrVariable_Check(par1) ? PyOrange_AsVariable(par1)->name
+            PyOrVariable_Check(par1) ? PyOrange_AsVariable(par1)->get_name()
                                      : string(PyString_AsString(par1))];
         if (!desc)
           PYERROR(PyExc_TypeError, "invalid variable", PYNULL);
@@ -961,7 +961,7 @@ string TPyExample2string(TPyExample *pex)
     
     TMetaDescriptor *desc=example->domain->metas[(*mi).first];
     if (desc) {
-      res+="\""+desc->variable->name+"\":";
+      res+="\""+desc->variable->get_name()+"\":";
       addValue(res, (*mi).second, desc->variable);
     }
     else

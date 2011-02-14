@@ -151,7 +151,7 @@ TDomainContinuizer::TDomainContinuizer()
 
 PVariable TDomainContinuizer::discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val, bool inv) const
 {
-  PVariable newvar = mlnew TFloatVariable(evar->name+"="+evar->values->at(val));
+  PVariable newvar = mlnew TFloatVariable(evar->get_name()+"="+evar->values->at(val));
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, wevar);
   cfv->transformer = mlnew TDiscrete2Continuous(val, inv, zeroBased);
   newvar->getValueFrom = cfv;
@@ -161,7 +161,7 @@ PVariable TDomainContinuizer::discrete2continuous(TEnumVariable *evar, PVariable
 
 PVariable TDomainContinuizer::ordinal2continuous(TEnumVariable *evar, PVariable wevar, const float &factor) const
 {
-  PVariable newvar = mlnew TFloatVariable("C_"+evar->name);
+  PVariable newvar = mlnew TFloatVariable("C_"+evar->get_name());
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, wevar);
   TOrdinal2Continuous *transf = mlnew TOrdinal2Continuous(1.0/evar->values->size());
   cfv->transformer = transf;
@@ -192,7 +192,7 @@ void TDomainContinuizer::discrete2continuous(PVariable var, TVarList &vars, cons
         vars.push_back(discrete2continuous(evar, var, 1));
         return;
       }
-      raiseError("attribute '%s' is multinomial", var->name.c_str());
+      raiseError("attribute '%s' is multinomial", var->get_name().c_str());
 
     case AsOrdinal:
       vars.push_back(ordinal2continuous(evar, var, 1));
@@ -222,7 +222,7 @@ void TDomainContinuizer::discrete2continuous(PVariable var, TVarList &vars, cons
 
 PVariable TDomainContinuizer::continuous2normalized(PVariable var, const float &avg, const float &span) const
 { 
-  PVariable newvar = mlnew TFloatVariable("N_"+var->name);
+  PVariable newvar = mlnew TFloatVariable("N_"+var->get_name());
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, var);
   cfv->transformer = mlnew TNormalizeContinuous(avg, span);
   newvar->getValueFrom = cfv;
@@ -239,7 +239,7 @@ PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const 
     if (classBase >= int(eclass->values->size()))
         raiseError("base class value out of range");
 
-    PVariable newClassVar = mlnew TFloatVariable(eclass->name+"="+eclass->values->at(classBase));
+    PVariable newClassVar = mlnew TFloatVariable(eclass->get_name()+"="+eclass->values->at(classBase));
     TClassifierFromVar *cfv = mlnew TClassifierFromVar(newClassVar, classVar);
     cfv->transformer = mlnew TDiscrete2Continuous(classBase, false, zeroBased);
     newClassVar->getValueFrom = cfv;
@@ -258,7 +258,7 @@ PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const 
   if (classTreatment == AsNormalizedOrdinal)
     return ordinal2continuous(eclass, classVar, 1.0 / (eclass->values->size() - 1));
 
-  raiseError("class '%s' is multinomial", eclass->name.c_str());
+  raiseError("class '%s' is multinomial", eclass->get_name().c_str());
   return PVariable();
 }
 
@@ -267,7 +267,7 @@ PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) cons
 { 
   PVariable otherAttr = dom->hasOtherAttributes((targetClass>=0) || (classTreatment != Ignore));
   if (otherAttr)
-    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->name.c_str());
+    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->get_name().c_str());
   
   if (continuousTreatment)
     raiseError("cannot normalize continuous attributes without seeing the data");
@@ -307,7 +307,7 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
 
   PVariable otherAttr = domain.hasOtherAttributes(convertClass);
   if (otherAttr)
-    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->name.c_str());
+    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->get_name().c_str());
 
 
   vector<float> avgs, spans;

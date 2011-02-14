@@ -56,11 +56,11 @@ TCostMatrix::TCostMatrix(PVariable acv, const float &inside)
 { 
   TEnumVariable *dcv = classVar.AS(TEnumVariable);
   if (!dcv)
-    raiseError("attribute '%s' is not discrete", classVar->name.c_str());
+    raiseError("attribute '%s' is not discrete", classVar->get_name().c_str());
 
   dimension = dcv->noOfValues();
   if (!dimension)
-    raiseError("attribute '%s' has no values", classVar->name.c_str());
+    raiseError("attribute '%s' has no values", classVar->get_name().c_str());
 
   init(inside);
 }

@@ -58,7 +58,8 @@ public:
 
   CLASSCONSTANTS(Type: None=(int)TValue::NONE; Discrete=(int)TValue::INTVAR; Continuous=(int)TValue::FLOATVAR; Other=(int)(TValue::FLOATVAR+1); String=(int)STRINGVAR);
   
-  string name; //P variable's name
+  //string name; //variable's name - hiding it!
+
   int  varType; //P(&Variable_Type) variable type
   bool ordered; //P variable values are ordered
   bool distributed; //P variable values are distributions
@@ -74,7 +75,20 @@ protected:
   TValue DC_value;
   TValue DK_value;
 
+private:
+  string name;
+
 public:
+
+  string get_name() const {
+    return name;
+  }
+
+  void set_name(const string &a) {
+    //update the map
+    name = a;
+  }
+
   static list<TVariable *> allVariables;
 
   void *operator new(size_t s) throw(bad_alloc)

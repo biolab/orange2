@@ -515,7 +515,7 @@ void TFilter_values::removeCondition(PVariable var)
   TValueFilterList::iterator condi = findCondition(var, 0, position);
 
   if (condi==conditions->end())
-    raiseError("there is no condition on value of '%s' in the filter", var->name.c_str());
+    raiseError("there is no condition on value of '%s' in the filter", var->get_name().c_str());
 
   conditions->erase(condi);
 }

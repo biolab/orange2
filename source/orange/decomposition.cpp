@@ -70,11 +70,11 @@ TSortedExamples_nodeIndices::TSortedExamples_nodeIndices(PExampleGenerator eg, c
       const_ITERATE(vector<bool>, bi, bound) {
         if (*bi) {
           if ((*attr)->varType!=TValue::INTVAR)
-            raiseError("bound attribute '%s' is not discrete", (*attr)->name.c_str());
+            raiseError("bound attribute '%s' is not discrete", (*attr)->get_name().c_str());
 
           int values=(*attr)->noOfValues();
           if (values<=0)
-            raiseError("attribute '%s' has invalid number of values", (*attr)->name.c_str());
+            raiseError("attribute '%s' has invalid number of values", (*attr)->get_name().c_str());
 
           sortByAttr_Mult(bi-bound.begin(), sorting, values);
           mult *= values;
@@ -89,7 +89,7 @@ TSortedExamples_nodeIndices::TSortedExamples_nodeIndices(PExampleGenerator eg, c
       const_ITERATE(vector<bool>, fi, free) {
         if (*fi) {
           if ((*attr)->varType != TValue::INTVAR)
-            raiseError("free attribute '%s' is not discrete", (*attr)->name.c_str());
+            raiseError("free attribute '%s' is not discrete", (*attr)->get_name().c_str());
           sortByAttr(fi-free.begin(), sorting, (*attr)->noOfValues());
         }
         attr++;
@@ -126,7 +126,7 @@ void TSortedExamples_nodeIndices::sortByAttr_Mult(int attrNo, vector<TEnIIterato
   ITERATE(vector<TEnIIterator>, ii, *sorting) {
     TValue &val = (*ii)->example->operator[](attrNo);
     if (val.isSpecial())
-      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->name.c_str());
+      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->get_name().c_str());
     valf[val.intV]++;
   }
 
@@ -150,7 +150,7 @@ void TSortedExamples_nodeIndices::sortByAttr(int attrNo, vector<TEnIIterator> *&
   ITERATE(vector<TEnIIterator>, ii, *sorting) {
     TValue &val = (*ii)->example->operator[](attrNo);
     if (val.isSpecial())
-      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->name.c_str());
+      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->get_name().c_str());
     valf[val.intV]++;
   }
 
@@ -745,7 +745,7 @@ PIMByRows TIMByRowsByRelief::operator()(PExampleGenerator gen, const vector<bool
       int ci = 0;
       for (int i = 0, vsize = values.size(); i<vsize; i++)
         if (boundExample[i].isSpecial())
-          raiseError("attribute '%s' has undefined values", aboundSet[i]->name.c_str());
+          raiseError("attribute '%s' has undefined values", aboundSet[i]->get_name().c_str());
         else
           ci = ci*values[i]+boundExample[i].intV;
 
@@ -950,7 +950,7 @@ bool TIMBlurer::operator()(PIMByRows im)
     ITERATE(vector<TDIMRow *>, ii, *sortedRows) {
       TValue &val=(*ii)->example->operator[](attr);
       if (val.isSpecial())
-        raiseError("attribute '%s' has undefined values", attributes[attr]->name.c_str());
+        raiseError("attribute '%s' has undefined values", attributes[attr]->get_name().c_str());
       valf[val.intV]++;
     }
 

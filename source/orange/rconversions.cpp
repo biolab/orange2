@@ -63,7 +63,7 @@ void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char 
             for(; vi != ve; eei++, vi++, bi++)
               if (*bi) {
                 if ((*eei).isSpecial())
-                  raiseErrorWho("exampleGenerator2r", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                  raiseErrorWho("exampleGenerator2r", "value of attribute '%s' in example '%i' is undefined", (*vi)->get_name().c_str(), row);
                 *Xi = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
                 Xi += rows;
               }

@@ -126,13 +126,13 @@ TExample *TImputer_model::operator ()(TExample &example)
       if ((*ei).isSpecial() && *mi) {
         if ((*mi)->classVar) {
           if ((*mi)->classVar != *di)
-            raiseError("wrong domain (wrong model for '%s')", (*di)->name.c_str());
+            raiseError("wrong domain (wrong model for '%s')", (*di)->get_name().c_str());
           *ei = (*mi)->call(example);
         }
         else {
           TValue val = (*mi)->call(example);
           if (val.varType != (*di)->varType)
-            raiseError("wrong domain (wrong model for '%s')", (*di)->name.c_str());
+            raiseError("wrong domain (wrong model for '%s')", (*di)->get_name().c_str());
           *ei = val;
         }
       }
@@ -287,7 +287,7 @@ TTransformValue_IsDefined staticTransform_IsDefined;
 PVariable TImputerConstructor_asValue::createImputedVar(PVariable var)
 {
   if (var->varType == TValue::INTVAR) {
-    TEnumVariable *newvar = mlnew TEnumVariable(var->name);
+    TEnumVariable *newvar = mlnew TEnumVariable(var->get_name());
     PVariable res = newvar;
     newvar->values = mlnew TStringList(var.AS(TEnumVariable)->values.getReference());
     newvar->values->push_back("NA");
@@ -302,7 +302,7 @@ PVariable TImputerConstructor_asValue::createImputedVar(PVariable var)
   }
 
   if (var->varType == TValue::FLOATVAR) {
-    TEnumVariable *newvar = mlnew TEnumVariable(var->name + "_def");
+    TEnumVariable *newvar = mlnew TEnumVariable(var->get_name()+ "_def");
     PVariable res = newvar;
     newvar->values->push_back("def");
     newvar->values->push_back("undef");

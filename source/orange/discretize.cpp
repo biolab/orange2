@@ -111,7 +111,7 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var, float mindiff)
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
 
-  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
+  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->get_name());
   PVariable revar(evar);
 
   evar->ordered = true;
@@ -183,7 +183,7 @@ void TThresholdDiscretizer::transform(TValue &val)
 PVariable TThresholdDiscretizer::constructVar(PVariable var, float mindiff)
 { 
   mindiff = 1.0; // Ignores the given mindiff; see http://www.ailab.si/orange/trac/ticket/576
-  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
+  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->get_name());
   PVariable revar(evar);
 
   evar->ordered = true;
@@ -234,7 +234,7 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var, float mindiff)
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
 
-  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
+  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->get_name());
   PVariable revar(evar);
 
   evar->ordered = true;
@@ -313,10 +313,10 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var, float mindiff )
   if (!fvar)
     raiseError("invalid attribute type (continuous attribute expected)");
 
-  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
+  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->get_name());
   PVariable revar(evar);
 
-  TEnumVariable *cl_evar=mlnew TEnumVariable("D_"+var->name);
+  TEnumVariable *cl_evar=mlnew TEnumVariable("D_"+var->get_name());
   PVariable cl_revar(cl_evar);
 
   evar->ordered = true;
@@ -394,7 +394,7 @@ PVariable TEquiDistDiscretization::operator()(PBasicAttrStat valStat, PVariable 
 // Sets the firstCut and step according to the range of values that occur in gen for variable var.
 PVariable TEquiDistDiscretization::operator()(PExampleGenerator gen, PVariable var, const long &)
 { if (var->varType!=TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", var->name.c_str());
+    raiseError("attribute '%s' is not continuous", var->get_name().c_str());
 
   if (numberOfIntervals<=0)
     raiseError("invalid number of intervals (%i)", numberOfIntervals);
@@ -405,7 +405,7 @@ PVariable TEquiDistDiscretization::operator()(PExampleGenerator gen, PVariable v
   while( first && (*first)[varPos].isSpecial() )
     ++first;
   if (!first)
-    raiseError("attribute '%s' has no known values", var->name.c_str());
+    raiseError("attribute '%s' has no known values", var->get_name().c_str());
 
   float max, min;
   max = min = (*first)[varPos].floatV;
@@ -603,7 +603,7 @@ void TEquiNDiscretization::cutoffsByDivision(const int &, TFloatList &,
 
 PVariable TEquiNDiscretization::operator()(PExampleGenerator gen, PVariable var, const long &weightID)
 { if (var->varType!=TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", var->name.c_str());
+    raiseError("attribute '%s' is not continuous", var->get_name().c_str());
 
   int varPos=gen->domain->getVarNum(var);
 
@@ -612,7 +612,7 @@ PVariable TEquiNDiscretization::operator()(PExampleGenerator gen, PVariable var,
     ++first;
 
   if (!first)
-    raiseError("attribute '%s' has no known values.", var->name.c_str());
+    raiseError("attribute '%s' has no known values.", var->get_name().c_str());
 
   TContDistribution distr(var);
   do {
@@ -641,10 +641,10 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
     raiseError("class-less domain");
 
   if (gen->domain->classVar!=TValue::INTVAR)
-    raiseError("class '%s' is not discrete", gen->domain->classVar->name.c_str());
+    raiseError("class '%s' is not discrete", gen->domain->classVar->get_name().c_str());
 
   if (var->varType!=TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", var->name.c_str());
+    raiseError("attribute '%s' is not continuous", var->get_name().c_str());
 
   int varPos=gen->domain->getVarNum(var);
 
@@ -678,7 +678,7 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
       k++;
 
   if (!k)
-    raiseError("no examples or all values of attribute '%s' are unknown", var->name.c_str());
+    raiseError("no examples or all values of attribute '%s' are unknown", var->get_name().c_str());
 
   float mindiff = 1.0;
 
@@ -788,9 +788,9 @@ TBiModalDiscretization::TBiModalDiscretization(const bool sit)
 
 PVariable TBiModalDiscretization::operator()(PExampleGenerator gen, PVariable var, const long &weightID)
 { if (var->varType!=TValue::FLOATVAR)
-    raiseError("attribute '%s' is not continuous", var->name.c_str());
+    raiseError("attribute '%s' is not continuous", var->get_name().c_str());
   if (gen->domain->classVar!=TValue::INTVAR)
-    raiseError("class '%s' is not discrete", gen->domain->classVar->name.c_str());
+    raiseError("class '%s' is not discrete", gen->domain->classVar->get_name().c_str());
   
   TContingencyAttrClass ccont(gen, var, weightID);
   int nClasses = gen->domain->classVar->noOfValues();

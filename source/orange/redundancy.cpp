@@ -105,7 +105,7 @@ PDomain TRemoveRedundantByInduction::operator()(PExampleGenerator gen, PVarList 
             TVarList boundSet;
             boundSet.push_back(attr);
             float foo;
-            newVar = featureReducer->operator()(PExampleGenerator(*newGen), boundSet, attr->name+"_r", foo);
+            newVar = featureReducer->operator()(PExampleGenerator(*newGen), boundSet, attr->get_name()+"_r", foo);
           }
 
           candidates.erase(remove(candidates.begin(), candidates.end(), attr), candidates.end());
@@ -159,7 +159,7 @@ PDomain TRemoveRedundantByInduction::operator()(PExampleGenerator gen, PVarList 
         TVarList boundSet;
         boundSet.push_back(attr);
         float foo;
-        PVariable newVar(featureReducer->operator()(PExampleGenerator(*newGen), boundSet, attr->name+"_r", foo));
+        PVariable newVar(featureReducer->operator()(PExampleGenerator(*newGen), boundSet, attr->get_name()+"_r", foo));
 
         if (   newVar
             && (   (newVar->noOfValues()==1)
@@ -380,7 +380,7 @@ PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, 
 {
   TEnumVariable *evar = var.AS(TEnumVariable);
   if (!evar)
-    raiseError("'%s' is not a discrete attribute", var->name.c_str());
+    raiseError("'%s' is not a discrete attribute", var->get_name().c_str());
 
   TDiscDistribution dist(gen, var, weightID);
   TDiscDistribution::const_iterator dvi, dve;
@@ -396,7 +396,7 @@ PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, 
   if (nonull==int(evar->values->size()))
     return var;
 
-  TEnumVariable *enewVar = mlnew TEnumVariable("R_"+evar->name);
+  TEnumVariable *enewVar = mlnew TEnumVariable("R_"+evar->get_name());
   enewVar->values = PStringList(mlnew TStringList(nonull, ""));
   PVariable newVar(enewVar);
 

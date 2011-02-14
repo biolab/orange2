@@ -144,13 +144,13 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
               break;
 
             default:
-              raiseErrorWho("parseMatrixContents", "attribute '%s' is multinomial", (*vi)->name.c_str());
+              raiseErrorWho("parseMatrixContents", "attribute '%s' is multinomial", (*vi)->get_name().c_str());
           }
       }
       else {
         attrs_in++;
         include.push_back(true);
-        raiseWarning(PyExc_OrangeKernelWarning, "attribute '%s' is of unsupported type", (*vi)->name.c_str());
+        raiseWarning(PyExc_OrangeKernelWarning, "attribute '%s' is of unsupported type", (*vi)->get_name().c_str());
       }
     }
 

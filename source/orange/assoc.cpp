@@ -298,7 +298,7 @@ PAssociationRules TAssociationRulesInducer::operator()(PExampleGenerator example
 
   PITERATE(TVarList, vi, examples->domain->variables)
     if ((*vi)->varType != TValue::INTVAR)
-      raiseError("cannot induce rules with non-discrete attributes (such as '%s')", (*vi)->name.c_str());
+      raiseError("cannot induce rules with non-discrete attributes (such as '%s')", (*vi)->get_name().c_str());
 
   TItemSetNode *tree = NULL;
   PAssociationRules rules;
@@ -385,7 +385,7 @@ int TAssociationRulesInducer::buildTree1(PExampleGenerator gen, const int &weigh
       if (!(*exi).isSpecial()) {
         const int exv = (*exi).intV;
         if (exv >= (int)(ip->values.size()))
-          raiseError("invalid value of attribute '%s'", gen->domain->variables->at(exi-(*ei).begin())->name.c_str());
+          raiseError("invalid value of attribute '%s'", gen->domain->variables->at(exi-(*ei).begin())->get_name().c_str());
         ip->values[(*exi).intV].examples.push_back(TExWei(index, wex));
       }
     }

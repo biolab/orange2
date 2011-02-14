@@ -260,7 +260,7 @@ TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it
     PITERATE(TIntFloatList, pi, replaceProbabilities) {
       if (((*pi).second>0) && (randomGenerator->randfloat() < (*pi).second))
         if ( ( example[(*pi).first] = varlist[(*pi).first]->randomValue(randomGenerator->randint()) ).isDC())
-          raiseError("attribute '%s' cannot give randomValues.", varlist[(*pi).first]->name.c_str());
+          raiseError("attribute '%s' cannot give randomValues.", varlist[(*pi).first]->get_name().c_str());
     }
   }
   return it;
@@ -306,7 +306,7 @@ TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &
           if (pos >= domain->variables->size())
             raiseError("attribute index %i out of range", pos);
           if (domain->variables->at(pos)->varType != TValue::FLOATVAR)
-            raiseError("attribute '%s' is not continuous", domain->variables->at(pos)->name.c_str());
+            raiseError("attribute '%s' is not continuous", domain->variables->at(pos)->get_name().c_str());
         }
       }
     }
@@ -317,7 +317,7 @@ TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &
       if (!val.isSpecial())
         if (val.varType != TValue::FLOATVAR)
           if ((*pi).first > 0)
-            raiseError("attribute '%s' is not continuous", domain->variables->at((*pi).first)->name.c_str());
+            raiseError("attribute '%s' is not continuous", domain->variables->at((*pi).first)->get_name().c_str());
           else
             raiseError("attribute with id %i is not continuous", (*pi).first);
 

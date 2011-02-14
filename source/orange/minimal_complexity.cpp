@@ -430,7 +430,7 @@ PVariable TFeatureByMinComplexity::operator()(PExampleGenerator gen, TVarList &b
   if (!feat)
     return PVariable();
 
-  feat->name = name;
+  feat->set_name(name);
 
   quality = -feat->noOfValues();
   if (quality==1)
