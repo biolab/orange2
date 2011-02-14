@@ -86,7 +86,7 @@ distributions of discrete and continuous variables.
 
         Construct either :obj:`DiscDistribution` or :obj:`ContDistribution`,
         depending on the variable type. If the variable is the only argument, it
-        must be an instance of :obj:`Orange.data.feature.Feature`. In that case,
+        must be an instance of :obj:`Orange.data.variable.Variable`. In that case,
         an empty distribution is constructed. If data is given as well, the
         variable can also be specified by name or index in the
         domain. Constructor then computes the distribution of the specified
@@ -159,7 +159,7 @@ distributions of discrete and continuous variables.
         attribute.
 
         :param variable: A discrete variable
-        :type variable: Orange.data.feature.Discrete
+        :type variable: Orange.data.variable.Discrete
 
     .. method:: __init__(frequencies)
 
@@ -172,7 +172,7 @@ distributions of discrete and continuous variables.
         Distribution constructed in this way can be used, for instance, to
 	generate random numbers from a given discrete distribution::
 
-            disc = Orange.statistics.distribution.Discrete([0.5, 0.3, 0.2])
+            disc = Orange.statistics.distributions.Discrete([0.5, 0.3, 0.2])
             for i in range(20):
                 print disc.random(),
 
@@ -201,7 +201,7 @@ distributions of discrete and continuous variables.
         attribute.
 
         :param variable: A continuous variable
-        :type variable: Orange.data.feature.Continuous
+        :type variable: Orange.data.variable.Continuous
 
     .. method:: __init__(frequencies)
 
@@ -353,7 +353,6 @@ prints out distributions for discrete and averages for continuous attributes. ::
 	    if d.variable.varType == orange.VarTypes.Discrete:
                  print "%30s: %s" % (d.variable.name, d)
 	    else:
-                
                  print "%30s: avg. %5.3f" % (d.variable.name, d.average())
 
 The distribution for, say, attribute `age` can be obtained by its index and also
