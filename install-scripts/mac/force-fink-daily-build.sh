@@ -5,10 +5,10 @@
 # Supplies fink daily build with latest revision so that source archives are also built
 #
 
-STABLE_REVISION_1=`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+STABLE_REVISION_1=`svn info --non-interactive http://orange.biolab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_1" ] || exit 1
-STABLE_REVISION_2=`svn info --non-interactive http://www.ailab.si/svn/orange/externals/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+STABLE_REVISION_2=`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_2" ] || exit 1
 
@@ -18,10 +18,10 @@ else
     STABLE_REVISION=$STABLE_REVISION_2
 fi
 
-DAILY_REVISION_1=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+DAILY_REVISION_1=`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_1" ] || exit 1
-DAILY_REVISION_2=`svn info --non-interactive http://www.ailab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+DAILY_REVISION_2=`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_2" ] || exit 1
 
@@ -33,8 +33,14 @@ fi
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-[ -e /Volumes/fink/ ] || { open "smb://orange@193.2.72.35/fink/"; sleep 30; }
-[ -e /Volumes/download/ ] || { open "smb://orange@193.2.72.35/download/"; sleep 30; }
+if [ ! -e /Volumes/fink/ ]; then
+	mkdir -p /Volumes/fink/
+	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) fink@biolab.si: /Volumes/fink/
+fi
+if [ ! -e /Volumes/download/ ]; then
+	mkdir -p /Volumes/download/
+	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) download@biolab.si: /Volumes/download/
+fi
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION
 

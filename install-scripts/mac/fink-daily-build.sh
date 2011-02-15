@@ -91,41 +91,41 @@ fi
 
 if [ $PACKAGE_SOURCE ]; then
 	# Defaults are current latest revisions in stable branch and trunk
-	STABLE_REVISION=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+	STABLE_REVISION=${1:-`svn info --non-interactive http://orange.biolab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 	# svn info does not return proper exit status on an error so we check it this way
 	[ "$STABLE_REVISION" ] || exit 9
-	DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+	DAILY_REVISION=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 	# svn info does not return proper exit status on an error so we check it this way
 	[ "$DAILY_REVISION" ] || exit 10
 fi
 
-echo "Preparing local ailab Fink info files repository."
-mkdir -p $FINK_ROOT/fink/dists/ailab/main/finkinfo/
-rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/*
+echo "Preparing local biolab Fink info files repository."
+mkdir -p $FINK_ROOT/fink/dists/biolab/main/finkinfo/
+rm -f $FINK_ROOT/fink/dists/biolab/main/finkinfo/*
 if [ $PACKAGE_SOURCE ]; then	
 	# Gets Fink package info files from SVN
-	svn export --force --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/ailab/main/finkinfo/
+	svn export --force --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink/ $FINK_ROOT/fink/dists/biolab/main/finkinfo/
 	
 	# Injects revision versions into templates
-	perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
-	perl -pi -e "s/__DAILY_REVISION__/$DAILY_REVISION/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	perl -pi -e "s/__STABLE_REVISION__/$STABLE_REVISION/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
+	perl -pi -e "s/__DAILY_REVISION__/$DAILY_REVISION/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
 else
 	# Gets current (daily) info files from SVN
-	echo "Updating local ailab Fink info files repository."
-	curl "http://www.ailab.si/orange/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
-	tar -xzf $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/ailab/main/finkinfo/
-	rm -f $FINK_ROOT/fink/dists/ailab/main/finkinfo/all.tgz
+	echo "Updating local biolab Fink info files repository."
+	curl "http://orange.biolab.si/orange/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
+	tar -xzf $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/biolab/main/finkinfo/
+	rm -f $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
 fi
 
-if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'ailab/main'; then
-	echo "Adding local ailab Fink info files repository to Fink configuration."
-	perl -p -i -l -e '$_ = "$_ ailab/main" if /^Trees/' $FINK_ROOT/etc/fink.conf
+if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'biolab/main'; then
+	echo "Adding local biolab Fink info files repository to Fink configuration."
+	perl -p -i -l -e '$_ = "$_ biolab/main" if /^Trees/' $FINK_ROOT/etc/fink.conf
 fi
 
 # Adds our binary repository to local Fink (APT) configuration
-if ! grep -q "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
-	echo "Adding ailab Fink binary packages repository to Fink configuration."
-	echo "deb http://www.ailab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
+if ! grep -q "deb http://orange.biolab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
+	echo "Adding biolab Fink binary packages repository to Fink configuration."
+	echo "deb http://orange.biolab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
 
 if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
@@ -142,11 +142,11 @@ if [ $PACKAGE_SOURCE ]; then
 		
 		rm -rf /tmp/orange-1.0b.$STABLE_REVISION/ /tmp/orange-1.0b.$STABLE_REVISION.tgz
 		
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/orange/ /tmp/orange-1.0b.$STABLE_REVISION/
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/source/ /tmp/orange-1.0b.$STABLE_REVISION/source/
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /tmp/orange-1.0b.$STABLE_REVISION/source/crs/
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/orange-1.0b.$STABLE_REVISION/COPYING
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/LICENSES
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/orange/ /tmp/orange-1.0b.$STABLE_REVISION/
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/source/ /tmp/orange-1.0b.$STABLE_REVISION/source/
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /tmp/orange-1.0b.$STABLE_REVISION/source/crs/
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/COPYING /tmp/orange-1.0b.$STABLE_REVISION/COPYING
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/LICENSES
 		
 		[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/COPYING /tmp/orange-1.0b.$STABLE_REVISION/
 		[ -e /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES ] && mv /tmp/orange-1.0b.$STABLE_REVISION/doc/LICENSES /tmp/orange-1.0b.$STABLE_REVISION/
@@ -169,18 +169,18 @@ if [ $PACKAGE_SOURCE ]; then
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-1.0b.$STABLE_REVISION.tgz`
 	fi
 	
-	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	perl -pi -e "s/__STABLE_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
 	
 	if [ ! -e /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-svn-0.0.$DAILY_REVISION.tgz ]; then
 		echo "Making source archive orange-svn-0.0.$DAILY_REVISION."
 		
 		rm -rf /tmp/orange-svn-0.0.$DAILY_REVISION/ /tmp/orange-svn-0.0.$DAILY_REVISION.tgz
 		
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ /tmp/orange-svn-0.0.$DAILY_REVISION/
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/source/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/crs/
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/COPYING
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/LICENSES
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ /tmp/orange-svn-0.0.$DAILY_REVISION/
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ /tmp/orange-svn-0.0.$DAILY_REVISION/source/crs/
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/COPYING
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/LICENSES
 		
 		[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/COPYING /tmp/orange-svn-0.0.$DAILY_REVISION/
 		[ -e /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv /tmp/orange-svn-0.0.$DAILY_REVISION/doc/LICENSES /tmp/orange-svn-0.0.$DAILY_REVISION/
@@ -203,7 +203,7 @@ if [ $PACKAGE_SOURCE ]; then
 		MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/orange-svn-0.0.$DAILY_REVISION.tgz`
 	fi
 	
-	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+	perl -pi -e "s/__DAILY_MD5SUM_ORANGE__/$MD5SUM/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
 	
 	for dir in $STABLE_SOURCE_DIRS ; do
 		# Gets only the last part of the directory name, converts to lower case and removes dashes
@@ -216,9 +216,9 @@ if [ $PACKAGE_SOURCE ]; then
 			
 			rm -rf /tmp/$STABLE_SOURCE_NAME/ /tmp/$STABLE_SOURCE_NAME.tgz
 			
-			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/$dir /tmp/$STABLE_SOURCE_NAME/
-			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /tmp/$STABLE_SOURCE_NAME/COPYING
-			svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /tmp/$STABLE_SOURCE_NAME/LICENSES
+			svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/$dir /tmp/$STABLE_SOURCE_NAME/
+			svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/COPYING /tmp/$STABLE_SOURCE_NAME/COPYING
+			svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/LICENSES /tmp/$STABLE_SOURCE_NAME/LICENSES
 			
 			[ -e /tmp/$STABLE_SOURCE_NAME/doc/COPYING ] && mv /tmp/$STABLE_SOURCE_NAME/doc/COPYING /tmp/$STABLE_SOURCE_NAME/
 			[ -e /tmp/$STABLE_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$STABLE_SOURCE_NAME/doc/LICENSES /tmp/$STABLE_SOURCE_NAME/
@@ -239,7 +239,7 @@ if [ $PACKAGE_SOURCE ]; then
 			MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/$STABLE_SOURCE_NAME.tgz`
 		fi
 		
-		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+		perl -pi -e "s/__STABLE_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
 	done
 	
 	for dir in $DAILY_SOURCE_DIRS ; do
@@ -253,9 +253,9 @@ if [ $PACKAGE_SOURCE ]; then
 			
 			rm -rf /tmp/$DAILY_SOURCE_NAME/ /tmp/$DAILY_SOURCE_NAME.tgz
 			
-			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/$dir /tmp/$DAILY_SOURCE_NAME/
-			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /tmp/$DAILY_SOURCE_NAME/COPYING
-			svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /tmp/$DAILY_SOURCE_NAME/LICENSES
+			svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/$dir /tmp/$DAILY_SOURCE_NAME/
+			svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /tmp/$DAILY_SOURCE_NAME/COPYING
+			svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /tmp/$DAILY_SOURCE_NAME/LICENSES
 			
 			[ -e /tmp/$DAILY_SOURCE_NAME/doc/COPYING ] && mv /tmp/$DAILY_SOURCE_NAME/doc/COPYING /tmp/$DAILY_SOURCE_NAME/
 			[ -e /tmp/$DAILY_SOURCE_NAME/doc/LICENSES ] && mv /tmp/$DAILY_SOURCE_NAME/doc/LICENSES /tmp/$DAILY_SOURCE_NAME/
@@ -276,7 +276,7 @@ if [ $PACKAGE_SOURCE ]; then
 			MD5SUM=`md5 -q /Volumes/fink/dists/10.$MAC_VERSION/main/source/$DAILY_SOURCE_NAME.tgz`
 		fi
 		
-		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/ailab/main/finkinfo/*.info
+		perl -pi -e "s/__DAILY_MD5SUM_\U$SOURCE_NAME\E__/$MD5SUM/g" $FINK_ROOT/fink/dists/biolab/main/finkinfo/*.info
 	done
 fi
 
@@ -367,7 +367,7 @@ rm -f /tmp/dpkg-selections.list
 echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
-echo "Preparing public ailab Fink info and binary files repository."
+echo "Preparing public biolab Fink info and binary files repository."
 mkdir -p /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 chmod +rx /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 mkdir -p /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
@@ -410,7 +410,7 @@ echo "Making packages list."
 cd /Volumes/fink/
 perl -MFink::Scanpackages -e "Fink::Scanpackages->scan('dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/');" | gzip - > dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/Packages.gz
 
-echo "Archive: ailab
+echo "Archive: biolab
 Origin: Fink
 Component: main
 Architecture: darwin-$ARCH
@@ -421,10 +421,10 @@ chmod -R +r /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/
 
 echo "Copying to repository all info files."
 rm -f /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/*
-cp $FINK_ROOT/fink/dists/ailab/main/finkinfo/* /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
+cp $FINK_ROOT/fink/dists/biolab/main/finkinfo/* /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/
 
 echo "Making an archive of all info files."
-cd $FINK_ROOT/fink/dists/ailab/main/finkinfo/
+cd $FINK_ROOT/fink/dists/biolab/main/finkinfo/
 tar -czf /Volumes/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz *
 
 echo "Setting permissions."

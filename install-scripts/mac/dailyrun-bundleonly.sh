@@ -7,7 +7,10 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-[ -e /Volumes/download/ ] || { open "smb://orange@193.2.72.35/download/"; sleep 30; }
+if [ ! -e /Volumes/download/ ]; then
+	mkdir -p /Volumes/download/
+	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) download@biolab.si: /Volumes/download/
+fi
 
 /Users/ailabc/bundle-daily-build.sh &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?

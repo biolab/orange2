@@ -20,10 +20,10 @@ if [ ! -x /usr/bin/xcodebuild ]; then
 fi
 
 # Defaults are current latest revisions in stable branch and trunk
-STABLE_REVISION_1=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+STABLE_REVISION_1=${1:-`svn info --non-interactive http://orange.biolab.si/svn/orange/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_1" ] || exit 3
-STABLE_REVISION_2=${1:-`svn info --non-interactive http://www.ailab.si/svn/orange/externals/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+STABLE_REVISION_2=${1:-`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/branches/ver1.0/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_2" ] || exit 3
 if [[ $STABLE_REVISION_1 > $STABLE_REVISION_2 ]]; then
@@ -31,10 +31,10 @@ if [[ $STABLE_REVISION_1 > $STABLE_REVISION_2 ]]; then
 else
     STABLE_REVISION=$STABLE_REVISION_2
 fi
-DAILY_REVISION_1=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+DAILY_REVISION_1=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_1" ] || exit 4
-DAILY_REVISION_2=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+DAILY_REVISION_2=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_2" ] || exit 4
 if [[ $DAILY_REVISION_1 > $DAILY_REVISION_2 ]]; then
@@ -56,15 +56,15 @@ export LDFLAGS="-arch ppc -arch i386"
 
 if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	echo "Downloading bundle template."
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/externals/branches/ver1.0/install-scripts/mac/bundle/ /private/tmp/bundle/
+	svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/externals/branches/ver1.0/install-scripts/mac/bundle/ /private/tmp/bundle/
 	
 	echo "Downloading Orange stable source code revision $STABLE_REVISION."
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/source/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/source/
-	svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/source/crs/
+	svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/
+	svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/source/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/source/
+	svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/add-ons/orngCRS/src/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/source/crs/
 	
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/COPYING ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/COPYING
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/LICENSES ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/LICENSES
+	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/COPYING ] || svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/COPYING
+	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/LICENSES ] || svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/LICENSES
 	
 	ln -s ../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/ /private/tmp/bundle/Orange.app/Contents/Resources/orange
 	ln -s ../Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/doc/ /private/tmp/bundle/Orange.app/Contents/Resources/doc
@@ -99,10 +99,10 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	
 	for addon in $STABLE_ADDONS ; do
 		echo "Downloading Orange add-on $addon stable source code revision $STABLE_REVISION."
-		svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
+		svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/
 		
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $STABLE_REVISION http://www.ailab.si/svn/orange/branches/ver1.0/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES
+		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/COPYING
+		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $STABLE_REVISION http://orange.biolab.si/svn/orange/branches/ver1.0/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/doc/LICENSES
 		
 		if [ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages/orange/add-ons/$addon/source/ ]; then
 			echo "Compiling add-on."
@@ -169,17 +169,17 @@ fi
 
 if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Downloading bundle template."
-	#svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
+	#svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
 	mkdir /private/tmp/bundle
 	tar -xf /Volumes/download/bundle-templates/Orange.app.tar.gz -C /private/tmp/bundle
 	
 	echo "Downloading Orange daily source code revision $DAILY_REVISION."
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/source/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/crs/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/source/crs/
 	
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING
-	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES
+	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/COPYING
+	[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/LICENSES
 	
 	ln -s ../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/ /private/tmp/bundle/Orange.app/Contents/Resources/orange
 	ln -s ../Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/doc/ /private/tmp/bundle/Orange.app/Contents/Resources/doc
@@ -214,10 +214,10 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	
 	for addon in $DAILY_ADDONS ; do
 		echo "Downloading Orange add-on $addon daily source code revision $DAILY_REVISION."
-		svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/
+		svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/$addon/ /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/
 		
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING
-		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES
+		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/COPYING
+		[ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES ] || svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/doc/LICENSES
 		
 		if [ -e /private/tmp/bundle/Orange.app/Contents/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/orange/add-ons/$addon/source/ ]; then
 			echo "Compiling add-on."
