@@ -112,7 +112,7 @@ if [ $PACKAGE_SOURCE ]; then
 else
 	# Gets current (daily) info files from SVN
 	echo "Updating local biolab Fink info files repository."
-	curl "http://orange.biolab.si/orange/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
+	curl "http://orange.biolab.si/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" --output $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
 	tar -xzf $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/biolab/main/finkinfo/
 	rm -f $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
 fi
@@ -123,9 +123,9 @@ if ! grep '^Trees:' $FINK_ROOT/etc/fink.conf | grep -q 'biolab/main'; then
 fi
 
 # Adds our binary repository to local Fink (APT) configuration
-if ! grep -q "deb http://orange.biolab.si/orange/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
+if ! grep -q "deb http://orange.biolab.si/fink 10.$MAC_VERSION main" $FINK_ROOT/etc/apt/sources.list; then
 	echo "Adding biolab Fink binary packages repository to Fink configuration."
-	echo "deb http://orange.biolab.si/orange/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
+	echo "deb http://orange.biolab.si/fink 10.$MAC_VERSION main" >> $FINK_ROOT/etc/apt/sources.list
 fi
 
 if [ ! -e $FINK_ROOT/etc/apt/apt.conf.d/daily-build ]; then
