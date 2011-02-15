@@ -305,9 +305,9 @@ PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_S
 //set and get name
 int Variable_set_name(PyObject *self, PyObject *name)
 { 
-   char *varName;
-   if (!PyString_Check(name))
-       PYERROR(PyExc_AttributeError, "string expected", PYNULL);
+    char *varName;
+    if (!PyString_Check(name))
+        PYERROR(PyExc_AttributeError, "string expected", 0);
     varName = PyString_AsString(name);
     PVariable var = PyOrange_AsVariable(self);
     var->set_name(string(varName));
