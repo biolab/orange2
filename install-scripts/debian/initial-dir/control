@@ -4,7 +4,7 @@ Maintainer: Mitar <mitar@tnode.com>
 Build-Depends: debhelper (>= 7), python-all-dev, python-numpy (>= 1:1.1.0-3)
 Standards-Version: 3.8.0
 Section: python
-Homepage: http://www.ailab.si/orange/
+Homepage: http://orange.biolab.si/
 
 Package: orange-svn
 Architecture: any

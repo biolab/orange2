@@ -17,15 +17,15 @@ trap "echo \"Script failed\"" ERR
 [ -e /mnt/debian/ ] || { echo "/mnt/debian/ not mounted."; exit 2; }
 
 # Default is current latest revision in trunk
-DAILY_REVISION=${2:-`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
+DAILY_REVISION=${2:-`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`}
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION" ] || exit 3
 
 # Adds our repository to APT configuration
-if ! grep -q "deb http://www.ailab.si/orange/debian lenny main" /etc/apt/sources.list; then
-	echo "Adding ailab packages repository to APT configuration."
-	echo "deb http://www.ailab.si/orange/debian lenny main" >> /etc/apt/sources.list
-	echo "deb-src http://www.ailab.si/orange/debian lenny main" >> /etc/apt/sources.list
+if ! grep -q "deb http://orange.biolab.si/debian lenny main" /etc/apt/sources.list; then
+	echo "Adding biolab packages repository to APT configuration."
+	echo "deb http://orange.biolab.si/debian lenny main" >> /etc/apt/sources.list
+	echo "deb-src http://orange.biolab.si/debian lenny main" >> /etc/apt/sources.list
 fi
 
 if [ -e "/mnt/debian/dists/lenny/main/binary-$ARCH/python-orange-svn_0.0.$DAILY_REVISION-1_$ARCH.deb" ]; then
@@ -47,11 +47,11 @@ if [ -e "python-orange-svn-0.0.$DAILY_REVISION" ]; then
 	echo "Package for $DAILY_REVISION revision already exists, just building it."
 else
 	echo "Making source archive python-orange-svn-0.0.$DAILY_REVISION."
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/orange/ python-orange-svn-0.0.$DAILY_REVISION/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/source/ python-orange-svn-0.0.$DAILY_REVISION/source/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/add-ons/orngCRS/src/ python-orange-svn-0.0.$DAILY_REVISION/source/crs/
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/COPYING python-orange-svn-0.0.$DAILY_REVISION/COPYING
-	svn export --non-interactive --revision $DAILY_REVISION http://www.ailab.si/svn/orange/trunk/LICENSES python-orange-svn-0.0.$DAILY_REVISION/LICENSES
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/orange/ python-orange-svn-0.0.$DAILY_REVISION/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/source/ python-orange-svn-0.0.$DAILY_REVISION/source/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/add-ons/orngCRS/src/ python-orange-svn-0.0.$DAILY_REVISION/source/crs/
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/COPYING python-orange-svn-0.0.$DAILY_REVISION/COPYING
+	svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/trunk/LICENSES python-orange-svn-0.0.$DAILY_REVISION/LICENSES
 	
 	[ -e python-orange-svn-0.0.$DAILY_REVISION/doc/COPYING ] && mv python-orange-svn-0.0.$DAILY_REVISION/doc/COPYING python-orange-svn-0.0.$DAILY_REVISION/
 	[ -e python-orange-svn-0.0.$DAILY_REVISION/doc/LICENSES ] && mv python-orange-svn-0.0.$DAILY_REVISION/doc/LICENSES python-orange-svn-0.0.$DAILY_REVISION/
@@ -73,7 +73,7 @@ fi
 cd python-orange-svn-0.0.$DAILY_REVISION/
 dpkg-buildpackage -D -E -sa -us -uc
 
-echo "Preparing public ailab Debian repository."
+echo "Preparing public biolab Debian repository."
 mkdir -p /mnt/debian/dists/lenny/main/binary-$ARCH/
 mkdir -p /mnt/debian/dists/lenny/main/source/
 

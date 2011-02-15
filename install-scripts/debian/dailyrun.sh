@@ -3,7 +3,7 @@
 # Should be run as: sudo ./dailyrun.sh
 #
 
-DAILY_REVISION=`svn info --non-interactive http://www.ailab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
+DAILY_REVISION=`svn info --non-interactive http://orange.biolab.si/svn/orange/trunk/ | grep 'Last Changed Rev:' | cut -d ' ' -f 4`
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION" ] || exit 1
 
