@@ -51,3 +51,12 @@ treesize tree_size
 
 C45Learner
 commandline command_line
+
+Domain
+metaid meta_id
+hasmeta has_meta
+getmeta get_meta
+getmetas get_metas
+addmeta add_meta
+addmetas add_metas
+removemeta remove_meta

@@ -1050,14 +1050,6 @@ const TMetaDescriptor *metaDescriptorFromArg(TDomain &domain, PyObject *rar)
 }
 
 
-PyObject *Domain_metaid(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | descriptor) -> int")
-{ PyTRY
-    const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
-    return desc ? PyInt_FromLong(desc->id) : NULL;
-  PyCATCH
-}
-
-
 PyObject *Domain_isOptionalMeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int | descriptor) -> bool")
 {
   PyTRY
@@ -1068,7 +1060,15 @@ PyObject *Domain_isOptionalMeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "
 }
 
 
-PyObject *Domain_hasmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int | descriptor) -> bool")
+PyObject *Domain_meta_id(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | descriptor) -> int")
+{ PyTRY
+    const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
+    return desc ? PyInt_FromLong(desc->id) : NULL;
+  PyCATCH
+}
+
+
+PyObject *Domain_has_meta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int | descriptor) -> bool")
 {
   PyTRY
     CAST_TO(TDomain, domain)
@@ -1092,7 +1092,7 @@ PyObject *Domain_hasmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name |
 }
 
 
-PyObject *Domain_getmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int) -> Variable")
+PyObject *Domain_get_meta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int) -> Variable")
 { PyTRY
     const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
     return desc ? WrapOrange(desc->variable) : NULL;
@@ -1119,7 +1119,7 @@ PyObject *Domain_getmetasLow(const TDomain &domain, const int optional)
 }
 
 
-PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([optional]) -> {int: Variable}")
+PyObject *Domain_get_metas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([optional]) -> {int: Variable}")
 { PyTRY
     if (PyTuple_Size(args) && (PyTuple_GET_ITEM(args, 0) != Py_None)) {
       int opt;
@@ -1134,7 +1134,7 @@ PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, 
 }
 
 
-PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(id, descriptor[, optional]) -> None")
+PyObject *Domain_add_meta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(id, descriptor[, optional]) -> None")
 { PyTRY
     CAST_TO(TDomain, domain);
 
@@ -1187,7 +1187,7 @@ PyObject *Domain_addmetasLow(TDomain &domain, PyObject *dict, const int opt = 0)
 }
 
 
-PyObject *Domain_addmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id: descriptor, id: descriptor, ...}[, optional]) -> None")
+PyObject *Domain_add_metas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id: descriptor, id: descriptor, ...}[, optional]) -> None")
 { PyTRY
     PyObject *pymetadict;
     int opt = 0;
@@ -1226,7 +1226,7 @@ bool removeMeta(PyObject *rar, TMetaVector &metas)
 }
 
 
-PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id0:desc0, id1:desc1, ...}) | ([id0|desc0, id1|desc1, ...]) -> None")
+PyObject *Domain_remove_meta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id0:desc0, id1:desc1, ...}) | ([id0|desc0, id1|desc1, ...]) -> None")
 { PyTRY
     CAST_TO(TDomain, domain);
 
