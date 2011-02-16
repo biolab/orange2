@@ -8,10 +8,10 @@ the above class for all variables in the domain.
 
 .. class:: Variable
 
-    ``statistics.basic.Variable`` computes and stores minimal, maximal, average and
+    Computes and stores minimal, maximal, average and
     standard deviation of a variable. It does not include the median or any
     other statistics that can be computed on the fly, without remembering the
-    data; such statistics can be obtained classes from module :module:`Orange.statistics.distribution`.
+    data; such statistics can be obtained classes from module :obj:`Orange.statistics.distribution`.
 
     Instances of this class are seldom constructed manually; they are more often
     returned by :obj:`Domain` described below.

@@ -15,13 +15,13 @@ attributes as parameters, or by a factory function
 :func:`Orange.data.variable.make`, which either retrieves an existing descriptor
 or constructs a new one.
 
-.. class:: variable
+.. class:: Variable
 
     An abstract base class for variable descriptors.
 
     .. attribute:: name
 
-        Each variable has a name. The names do not need to be unique since two
+        The name of the variable. Variable names do not need to be unique since two
         variables are considered the same only if they have the same descriptor
         (e.g. even multiple variables in the same table can have the same name).
         This should however be avoided since it may result in unpredictable
@@ -29,7 +29,7 @@ or constructs a new one.
     
     .. attribute:: varType
        
-        Stores the variable type; it can be Orange.data.Type.Discrete,
+        Variable type; it can be Orange.data.Type.Discrete,
         Orange.data.Type.Continuous, Orange.data.Type.String or
         Orange.data.Type.Other.  
 

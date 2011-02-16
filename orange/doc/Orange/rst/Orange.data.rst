@@ -1,5 +1,8 @@
-===========
-Orange.data
-===========
+================
+Data description
+================
 
-.. automodule:: Orange.data
+.. toctree::
+
+    orange.data.feature
+    Orange.data.domain

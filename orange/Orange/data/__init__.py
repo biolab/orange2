@@ -7,3 +7,5 @@ from orange import Example as Instance
 from orange import Value, Domain
 
 from orange import VarTypes as Type
+
+from orange import newmetaid as new_meta_id

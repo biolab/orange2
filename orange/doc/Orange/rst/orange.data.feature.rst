@@ -1,5 +1,5 @@
-====================
-Orange.data.variable
-====================
+=========
+Variables
+=========
 
 .. automodule:: Orange.data.variable
