@@ -946,7 +946,7 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         
     def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5,
                 alpha = 0.05, mult=0.7, **kwds):
-        CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
+        CN2UnorderedLearner.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_MultWeights(mult=mult)
 
@@ -954,7 +954,7 @@ class CN2SDUnorderedLearner(CN2UnorderedLearner):
         supervisedClassCheck(instances)
         
         oldInstances = Orange.data.Table(instances)
-        classifier = CN2UnorderedLearnerClass.__call__(self,instances,weight)
+        classifier = CN2UnorderedLearner.__call__(self,instances,weight)
         for r in classifier.rules:
             r.filterAndStore(oldInstances,weight,r.classifier.defaultVal)
         return classifier
