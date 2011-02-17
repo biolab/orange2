@@ -104,19 +104,36 @@ class OWRandomForest(OWWidget):
         rand = random.Random(self.rseed)
 
         attrs = None
-        if self.attributes: attrs = self.attributesP
+        if self.attributes:
+            attrs = self.attributesP
 
-        learner = orngEnsemble.RandomForestLearner(trees = self.trees, rand=rand, attributes=attrs)
+        smallLearner = orngEnsemble.default_small_learner(rand=rand, attributes=attrs)
+        
+        if self.preNodeInst:
+            smallLearner.stop.minExamples = self.preNodeInstP 
+        else:
+            smallLearner.stop.minExamples = 0
 
-        if self.preNodeInst: learner.learner.stop.minExamples = self.preNodeInstP 
-        else: learner.learner.stop.minExamples = 0
+        smallLearner.storeExamples = 1
+        smallLearner.storeNodeClassifier = 1
+        smallLearner.storeContingencies = 1
+        smallLearner.storeDistributions = 1
 
-        learner.learner.storeExamples = 1
-        learner.learner.storeNodeClassifier = 1
-        learner.learner.storeContingencies = 1
-        learner.learner.storeDistributions = 1
+        if self.limitDepth:
+            smallLearner.maxDepth = self.limitDepthP
+        
+        learner = orngEnsemble.RandomForestLearner(learner=smallLearner, 
+                            trees = self.trees, rand=rand, attributes=attrs)
 
-        if self.limitDepth: learner.learner.maxDepth = self.limitDepthP
+#        if self.preNodeInst: learner.learner.stop.minExamples = self.preNodeInstP 
+#        else: learner.learner.stop.minExamples = 0
+#
+#        learner.learner.storeExamples = 1
+#        learner.learner.storeNodeClassifier = 1
+#        learner.learner.storeContingencies = 1
+#        learner.learner.storeDistributions = 1
+
+#        if self.limitDepth: learner.learner.maxDepth = self.limitDepthP
         if self.preprocessor:
             learner = self.preprocessor.wrapLearner(learner)
         learner.name = self.name

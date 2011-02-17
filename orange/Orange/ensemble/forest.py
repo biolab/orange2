@@ -4,6 +4,33 @@ import Orange
 import Orange.feature.scoring
 import random
 
+def default_small_learner(measure=Orange.feature.scoring.Gini(), attributes=None, rand=None):
+    """ A helper function for constructing a small tree learner for use
+    in the RandomForestLearner.
+    :param measure: Feature scoring method for split construction
+    :type measure: :class:`Orange.feature.scoring.Measure`
+    param attributes: number of features used in a randomly drawn
+            subset when searching for best feature to split the node
+            in tree growing
+    :type attributes: int
+    :param rand: random generator used in feature subset selection in split constructor. 
+            If None is passed, then Python's Random from random library is 
+            used, with seed initialized to 0.
+    :type rand: function
+    """
+    # tree learner assembled as suggested by Brieman (2001)
+    smallTreeLearner = Orange.classification.tree.TreeLearner(
+    storeNodeClassifier = 0, storeContingencies=0, 
+    storeDistributions=1, minExamples=5).instance()
+    
+    smallTreeLearner.split.discreteSplitConstructor.measure = measure
+    smallTreeLearner.split.continuousSplitConstructor.measure = measure
+    
+    smallTreeLearner.split = SplitConstructor_AttributeSubset(\
+            smallTreeLearner.split, attributes, rand)
+    return smallTreeLearner
+    
+
 class RandomForestLearner(orange.Learner):
     """
     Just like bagging, classifiers in random forests are trained from bootstrap
@@ -55,6 +82,7 @@ class RandomForestLearner(orange.Learner):
         self.learner = learner
         self.attributes = attributes
         self.callback = callback
+        
         if rand:
             self.rand = rand
         else:
@@ -77,31 +105,39 @@ class RandomForestLearner(orange.Learner):
         
         # If there is no learner we create our own
         
+#        if not self.learner:
+#            
+#            # tree learner assembled as suggested by Brieman (2001)
+#            smallTreeLearner = Orange.classification.tree.TreeLearner(
+#            storeNodeClassifier = 0, storeContingencies=0, 
+#            storeDistributions=1, minExamples=5).instance()
+#            
+#            # Use MSE on continuous class and Gini on discreete
+#            if instances.domain.class_var.var_type == Orange.data.variable.Continuous.Continuous:
+#                smallTreeLearner.split.discreteSplitConstructor.measure = \
+#                    smallTreeLearner.split.continuousSplitConstructor.measure =\
+#                        Orange.feature.scoring.MSE()
+#            else:
+#                smallTreeLearner.split.discreteSplitConstructor.measure = \
+#                    smallTreeLearner.split.continuousSplitConstructor.measure =\
+#                        Orange.feature.scoring.Gini()
+#            
+#            smallTreeLearner.split = SplitConstructor_AttributeSubset(\
+#                    smallTreeLearner.split, self.attributes, self.rand)
+#            self.learner = smallTreeLearner
         if not self.learner:
-            
-            # tree learner assembled as suggested by Brieman (2001)
-            smallTreeLearner = Orange.classification.tree.TreeLearner(
-            storeNodeClassifier = 0, storeContingencies=0, 
-            storeDistributions=1, minExamples=5).instance()
-            
             # Use MSE on continuous class and Gini on discreete
-            if instances.domain.class_var.var_type == Orange.data.variable.Continuous.Continuous:
-                smallTreeLearner.split.discreteSplitConstructor.measure = \
-                    smallTreeLearner.split.continuousSplitConstructor.measure =\
-                        Orange.feature.scoring.MSE()
+            if isinstance(instances.domain.class_var, Orange.data.variable.Discrete):
+                learner = default_small_learner(Orange.feature.scoring.Gini(), self.attributes, self.rand)
             else:
-                smallTreeLearner.split.discreteSplitConstructor.measure = \
-                    smallTreeLearner.split.continuousSplitConstructor.measure =\
-                        Orange.feature.scoring.Gini()
-            
-            smallTreeLearner.split = SplitConstructor_AttributeSubset(\
-                    smallTreeLearner.split, self.attributes, self.rand)
-            self.learner = smallTreeLearner
+                learner = default_small_learner(Orange.feature.scoring.MSE(), self.attributes, self.rand)
+        else:
+            learner = self.learner
         
         # if number of features for subset is not set, use square root
-        if hasattr(self.learner.split, 'attributes') and\
-                    not self.learner.split.attributes:
-            self.learner.split.attributes = int(sqrt(\
+        if hasattr(learner.split, 'attributes') and\
+                    not learner.split.attributes:
+            learner.split.attributes = int(sqrt(\
                     len(instances.domain.attributes)))
 
         self.rand.setstate(self.randstate) #when learning again, set the same state
@@ -116,7 +152,7 @@ class RandomForestLearner(orange.Learner):
                 selection.append(self.rand.randrange(n))
             data = instances.getitems(selection)
             # build the model from the bootstrap sample
-            classifiers.append(self.learner(data))
+            classifiers.append(learner(data))
             if self.callback:
                 self.callback()
             # if self.callback: self.callback((i+1.)/self.trees)
@@ -180,7 +216,7 @@ class RandomForestClassifier(orange.Classifier):
                     a = [x for x in c(instance, orange.GetProbabilities)]
                     prob = map(add, prob, a)
                 norm = sum(prob)
-                cprob = Orange.statistics.distributions.Discrete(self.classVar)
+                cprob = Orange.statistics.distribution.Discrete(self.classVar)
                 for i in range(len(prob)):
                     cprob[i] = prob[i]/norm
                 
@@ -210,7 +246,7 @@ class RandomForestClassifier(orange.Classifier):
                 for prob in probs:
                     a = dict(prob.items())
                     cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
-                cprob = Orange.statistics.distributions.Continuous(cprob)
+                cprob = Orange.statistics.distribution.Continuous(cprob)
                 cprob.normalize()
                 
             # gather average class value
@@ -253,8 +289,10 @@ class ScoreFeature(orange.MeasureAttribute):
         self.attributes = attributes
     
         if self.learner == None:
-          temp = RandomForestLearner(attributes=self.attributes)
-          self.learner = temp.learner
+#          temp = RandomForestLearner(attributes=self.attributes)
+#          self.learner = temp.learner
+            self.learner = default_small_learner(attributes=self.attributes)
+          
     
         if hasattr(self.learner.split, 'attributes'):
           self.origattr = self.learner.split.attributes
