@@ -1,7 +1,7 @@
 net use o: \\ailab.si\download
 cdd e:\orange\scripts
 svn update -N
-svn export http://www.ailab.si/svn/orange/trunk/orange/doc/LICENSES license.txt
+svn export http://orange.biolab.si/svn/orange/trunk/orange/doc/LICENSES license.txt
 svn 
 call callCreateSnapshot.btm
 shutdown -s

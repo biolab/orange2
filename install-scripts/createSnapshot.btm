@@ -33,10 +33,10 @@ cdd %TMPDIR
 del /syeqtx sourcestopack
 mkdir sourcestopack
 cd sourcestopack
-svn export --native-eol LF -q http://www.ailab.si/svn/orange/trunk/orange
+svn export --native-eol LF -q http://orange.biolab.si/svn/orange/trunk/orange
 cd orange
 del *.pyd *.dll *.bat
-svn export --native-eol LF -q http://www.ailab.si/svn/orange/trunk/source 
+svn export --native-eol LF -q http://orange.biolab.si/svn/orange/trunk/source 
 copy doc\LICENSES .
 copy doc\COPYING .
 copy doc\LICENSES source
