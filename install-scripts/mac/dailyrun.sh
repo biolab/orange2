@@ -33,17 +33,13 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-if ! mount | grep -q /Volumes/fink; then
-	mkdir -p /Volumes/fink/
-	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) fink@biolab.si:/files /Volumes/fink/
-fi
-if ! mount | grep -q /Volumes/download; then
-	mkdir -p /Volumes/download/
-	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) download@biolab.si:/files /Volumes/download/
-fi
+./mount-dirs.sh
 
 /Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?
+
+./mount-dirs.sh
+
 echo "Orange (bundle) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
@@ -51,6 +47,9 @@ cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bund
 
 /Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
 EXIT_VALUE=$?
+
+./mount-dirs.sh
+
 echo "Orange (bundle-64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
@@ -58,6 +57,9 @@ cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/os
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log
 EXIT_VALUE=$?
+
+./mount-dirs.sh
+
 echo "Orange (fink) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
 cat /private/tmp/fink-daily-build.log >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"

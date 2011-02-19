@@ -33,14 +33,7 @@ fi
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-if ! mount | grep -q /Volumes/fink; then
-	mkdir -p /Volumes/fink/
-	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) fink@biolab.si:/files /Volumes/fink/
-fi
-if ! mount | grep -q /Volumes/download; then
-	mkdir -p /Volumes/download/
-	/Users/ailabc/Downloads/sshfs-binaries/sshfs-static-leopard -o reconnect,workaround=nonodelay,uid=$(id -u),gid=$(id -g) download@biolab.si:/files /Volumes/download/
-fi
+./mount-dirs.sh
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION
 

@@ -14,6 +14,7 @@ curl --silent --output fink-daily-build.sh http://orange.biolab.si/svn/orange/tr
 curl --silent --output fink-restore-selections.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-restore-selections.sh
 curl --silent --output fink-selfupdate-orange.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/fink-selfupdate-orange.sh
 curl --silent --output force-fink-daily-build.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/force-fink-daily-build.sh
+curl --silent --output mount-dirs.sh http://orange.biolab.si/svn/orange/trunk/install-scripts/mac/mount-dirs.sh
 
 chmod +x *.sh
 

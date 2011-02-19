@@ -167,6 +167,9 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	rm -rf /private/tmp/bundle/
 fi
 
+# TODO: Should be called only on a daily build server and not if building locally
+./mount-dirs.sh
+
 if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Downloading bundle template."
 	#svn export --non-interactive --revision $DAILY_REVISION http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ /private/tmp/bundle/
@@ -281,6 +284,9 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	rm -f /private/tmp/bundle.dmg
 	rm -rf /private/tmp/bundle/
 fi
+
+# TODO: Should be called only on a daily build server and not if building locally
+./mount-dirs.sh
 
 echo "Removing old versions of bundles."
 # (Keeps last 5 versions.)
