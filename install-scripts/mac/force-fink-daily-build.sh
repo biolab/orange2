@@ -12,7 +12,7 @@ STABLE_REVISION_2=`svn info --non-interactive http://orange.biolab.si/svn/orange
 # svn info does not return proper exit status on an error so we check it this way
 [ "$STABLE_REVISION_2" ] || exit 1
 
-if [[ $STABLE_REVISION_1 > $STABLE_REVISION_2 ]]; then
+if [[ $STABLE_REVISION_1 -gt $STABLE_REVISION_2 ]]; then
     STABLE_REVISION=$STABLE_REVISION_1
 else
     STABLE_REVISION=$STABLE_REVISION_2
@@ -25,7 +25,7 @@ DAILY_REVISION_2=`svn info --non-interactive http://orange.biolab.si/svn/orange/
 # svn info does not return proper exit status on an error so we check it this way
 [ "$DAILY_REVISION_2" ] || exit 1
 
-if [[ $DAILY_REVISION_1 > $DAILY_REVISION_2 ]]; then
+if [[ $DAILY_REVISION_1 -gt $DAILY_REVISION_2 ]]; then
     DAILY_REVISION=$DAILY_REVISION_1
 else
     DAILY_REVISION=$DAILY_REVISION_2
