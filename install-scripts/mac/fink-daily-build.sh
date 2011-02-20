@@ -368,7 +368,7 @@ echo "Cleaning."
 fink $FINK_ARGS cleanup --all
 
 # TODO: Should be called only on a daily build server and not if building locally
-./mount-dirs.sh
+/Users/ailabc/mount-dirs.sh
 
 echo "Preparing public biolab Fink info and binary files repository."
 mkdir -p /Volumes/fink/dists/10.$MAC_VERSION/main/binary-darwin-$ARCH/

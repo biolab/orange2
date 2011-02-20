@@ -33,12 +33,12 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 /Users/ailabc/bundle-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/bundle-daily-build.log
 EXIT_VALUE=$?
 
-./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 echo "Orange (bundle) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-daily-build.log"
@@ -48,7 +48,7 @@ cat /private/tmp/bundle-daily-build.log >> "/Volumes/download/buildLogs/osx/bund
 /Users/ailabc/bundle-64bit-daily-build.sh $DAILY_REVISION &> /private/tmp/bundle-64bit-daily-build.log
 EXIT_VALUE=$?
 
-./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 echo "Orange (bundle-64bit) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/bundle-$MAC_VERSION-64bit-daily-build.log"
@@ -58,7 +58,7 @@ cat /private/tmp/bundle-64bit-daily-build.log >> "/Volumes/download/buildLogs/os
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log
 EXIT_VALUE=$?
 
-./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
+/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 echo "Orange (fink) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"

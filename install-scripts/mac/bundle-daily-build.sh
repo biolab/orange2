@@ -168,7 +168,7 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 fi
 
 # TODO: Should be called only on a daily build server and not if building locally
-./mount-dirs.sh
+/Users/ailabc/mount-dirs.sh
 
 if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 	echo "Downloading bundle template."
@@ -286,7 +286,7 @@ if [ ! -e /Volumes/download/orange-bundle-svn-0.0.$DAILY_REVISION.dmg ]; then
 fi
 
 # TODO: Should be called only on a daily build server and not if building locally
-./mount-dirs.sh
+/Users/ailabc/mount-dirs.sh
 
 echo "Removing old versions of bundles."
 # (Keeps last 5 versions.)

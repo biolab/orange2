@@ -33,7 +33,7 @@ fi
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-./mount-dirs.sh
+/Users/ailabc/mount-dirs.sh
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION
 
