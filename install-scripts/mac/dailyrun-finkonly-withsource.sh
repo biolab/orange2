@@ -33,12 +33,12 @@ MAC_VERSION=`sw_vers -productVersion | cut -d '.' -f 2`
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
-./mount-dirs.sh
+./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 /Users/ailabc/fink-daily-build.sh $STABLE_REVISION $DAILY_REVISION &> /private/tmp/fink-daily-build.log
 EXIT_VALUE=$?
 
-./mount-dirs.sh
+./mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
 echo "Orange (fink) [$EXIT_VALUE]" > "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
 date >> "/Volumes/download/buildLogs/osx/fink-$MAC_VERSION-daily-build.log"
