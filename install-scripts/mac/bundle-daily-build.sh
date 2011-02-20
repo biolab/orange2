@@ -138,6 +138,9 @@ if [ ! -e /Volumes/download/orange-bundle-1.0b.$STABLE_REVISION.dmg ]; then
 	# Makes a link to Applications folder
 	ln -s /Applications/ /private/tmp/bundle/Applications
 	
+	echo "Fixing bundle permissions."
+	chown -Rh root:wheel /private/tmp/bundle/
+	
 	echo "Creating temporary image with the bundle."
 	rm -f /private/tmp/bundle.dmg
 	hdiutil detach /Volumes/Orange -force || true
