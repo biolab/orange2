@@ -197,6 +197,8 @@ from Orange.core import ExamplesDistanceConstructor_Maximal as MaximalConstructo
 from Orange.core import ExamplesDistanceConstructor_Relief as ReliefConstructor
 
 import statc
+import numpy
+from numpy import linalg
 
 class PearsonRConstructor(ExamplesDistanceConstructor):
     """Constructs an instance of PearsonR. Not all the data needs to be given."""
@@ -290,3 +292,57 @@ class SpearmanR(ExamplesDistance):
         except:
             return 1.0
 
+class MahalanobisConstructor(ExamplesDistanceConstructor):
+    """ Construct instance of Mahalanobis. """
+    
+    def __new__(cls, data=None, **argkw):
+        self = ExamplesDistanceConstructor.__new__(cls, **argkw)
+        self.__dict__.update(argkw)
+        if data:
+            return self.__call__(data)
+        else:
+            return self
+    
+    # Check attributtes a, b, c
+    def __call__(self, table, a=None, b=None, c=None, **argkw):
+        # Process data
+        dc = Orange.core.DomainContinuizer()
+        dc.classTreatment = Orange.core.DomainContinuizer.Ignore
+        dc.continuousTreatment = Orange.core.DomainContinuizer.NormalizeBySpan
+        dc.multinomialTreatment = Orange.core.DomainContinuizer.NValues
+        
+        newdomain = dc(table)
+        newtable = table.translate(newdomain)
+        
+        data, cls, _ = newtable.to_numpy()
+        
+        covariance_matrix = numpy.cov(data, rowvar=0)
+        inverse_covariance_matrix = linalg.pinv(covariance_matrix, rcond=1e-10)
+        
+        return Mahalanobis(domain=newdomain, icm=inverse_covariance_matrix)
+
+class Mahalanobis(ExamplesDistance):
+    """`Mahalanobis distance
+    <http://en.wikipedia.org/wiki/Mahalanobis_distance>`_"""
+
+    def __init__(self, domain, icm, **argkw):
+        self.domain = domain
+        self.icm = icm
+        self.__dict__.update(argkw)
+        
+    def __call__(self, e1, e2):
+        """
+        :param e1: data instances.
+        :param e2: data instances.
+        
+        Returns Mahalanobis distance between e1 and e2.
+        """
+        e1 = Orange.data.Instance(self.domain, e1)
+        e2 = Orange.data.Instance(self.domain, e2)
+        
+        diff = []
+        for i in range(len(self.domain.attributes)):
+            diff.append(e1[i].value - e2[i].value) if not(e1[i].isSpecial() or e2[i].isSpecial()) else 0.0
+        diff = numpy.asmatrix(diff)
+        res = diff * self.icm * diff.transpose()
+        return res[0,0]**0.5
