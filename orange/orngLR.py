@@ -1,3 +1,3 @@
 from Orange.classification.logreg import *
 
-printOut = dump
+printOUT = printOut = dump
