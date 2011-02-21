@@ -143,7 +143,7 @@ if 1:
                  "int ccn_func_%(type)s(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<T%(type)s> *)(ptr) = GCPtr<T%(type)s>(); return 1; }      if (!PyOr%(type)s_Check(obj)) return 0;      *(GCPtr<T%(type)s> *)(ptr) = PyOrange_As%(type)s(obj); return 1; }\n\n\n"
 
 
-f_underscored = open("..\_underscored", "a")
+f_underscored = open("../_underscored", "a")
 hump = re.compile("([a-z])([A-Z])")
 
 def camelChange(mo):

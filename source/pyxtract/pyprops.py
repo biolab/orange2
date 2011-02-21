@@ -68,7 +68,7 @@ class ClassDefinition:
 def tf(x):
     return x and "true" or "false"
 
-f_underscored = open("..\_underscored", "a")
+f_underscored = open("../_underscored", "a")
 hump = re.compile("([a-z])([A-Z])")
 def camel2underscore(s):
     if s[0].isupper():
