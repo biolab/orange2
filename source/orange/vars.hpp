@@ -97,7 +97,7 @@ public:
 
   static multimap<string, TVariable *> allVariablesMap;
 
-  void operator delete(void *t);
+  ~TVariable();
 
   /* Status codes for getExisting and make. The codes refer to the difference between
      the requested and the existing variable.

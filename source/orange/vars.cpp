@@ -81,8 +81,7 @@ TVariable *TVariable::getExisting(const string &name, const int &varType, TStrin
    pair<MMV::iterator,MMV::iterator> rp = allVariablesMap.equal_range(name);
    MMV::iterator it;
  
-   for (it=rp.first; it!=rp.second; ++it) {
- 
+   for (it=rp.first; it!=rp.second; ++it) {	
      if ((it->second)->varType == varType) {
 
       int tempStat = TVariable::OK;
@@ -226,25 +225,23 @@ void TVariable::registerVariable() {
 
 void TVariable::removeVariable() {
       pair<MMV::iterator,MMV::iterator> rp = allVariablesMap.equal_range(name);
-      MMV::iterator it;
+	  MMV::iterator it;
 
       for (it=rp.first; it!=rp.second; ++it) {
-          if (it->second == this) {
-              allVariablesMap.erase(it);
+		  if (it->second == this) {
+			  allVariablesMap.erase(it);
               break;
           }
       }
 }
 
-void TVariable::operator delete(void *t)
+TVariable::~TVariable()
 {
     /* When the program shuts down, it may happen that the list is destroyed before
        the variables. We do nothing in this case. */
     if (allVariablesMap.size()) {
-        ((TVariable *)t)->removeVariable();
+        removeVariable();
     }
-      
-    ::operator delete(t);
 }
 
 TVariable::TVariable(const int &avarType, const bool &ord)
