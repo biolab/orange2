@@ -345,7 +345,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetPopup.addSeparator()
         self.renameActiveWidgetAction = rename = self.widgetPopup.addAction("&Rename", self.schema.canvasView.renameActiveWidget, Qt.Key_F2)
         self.removeActiveWidgetAction = delete = self.widgetPopup.addAction("Remove", self.schema.canvasView.removeActiveWidget, Qt.Key_Delete)
-        delete.setShortcuts([Qt.Key_Delete, Qt.CTRL + Qt.Key_Backspace, Qt.CTRL + Qt.Key_Delete])
+        if sys.platform != "darwin":
+            delete.setShortcuts([Qt.Key_Delete, Qt.CTRL + Qt.Key_Backspace, Qt.CTRL + Qt.Key_Delete])
+        else:
+            delete.setShortcuts([Qt.CTRL + Qt.Key_Backspace, Qt.Key_Delete, Qt.CTRL + Qt.Key_Delete])
         self.widgetPopup.addSeparator()
         self.helpActiveWidgetAction = self.widgetPopup.addAction("Help", self.schema.canvasView.helpOnActiveWidget, Qt.Key_F1)
         self.widgetPopup.setEnabled(0)
