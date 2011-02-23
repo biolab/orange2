@@ -133,6 +133,7 @@ class ReportWindow(OWWidget):
             </div>
         </div>
         """ % (widnode.elementId, widnode.elementId, widnode.name, widnode.time, widnode.data)
+        widnode.content = newEntry
         self.javascript("document.body.innerHTML += '%s'" % escape(newEntry))
         if scrollIntoView:
             self.javascript("document.getElementById('%s').scrollIntoView();" % widnode.elementId)
