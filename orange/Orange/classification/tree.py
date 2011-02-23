@@ -598,7 +598,8 @@ class (and derived classes).
     Bases: :class:`SplitConstructor`
 
     An abstract base class for split constructors that employ 
-    a :obj:`Orange.feature.scoring.Measure` to assess a quality of a split. At present,
+    a :obj:`Orange.feature.scoring.Measure` to assess a quality of a split. 
+    At present,
     all split constructors except for :obj:`SplitConstructor_Combined`
     are derived from this class.
 
@@ -606,7 +607,8 @@ class (and derived classes).
 
         A component of type :obj:`Orange.feature.scoring.Measure` used for
         evaluation of a split. Note that you must select the subclass 
-        :obj:`Orange.feature.scoring.Measure` capable of handling your class type 
+        :obj:`Orange.feature.scoring.Measure` capable of handling your 
+        class type 
         - you cannot use :obj:`Orange.feature.scoring.GainRatio`
         for building regression trees or :obj:`Orange.feature.scoring.MSE`
         for classification trees.
@@ -629,7 +631,8 @@ class (and derived classes).
 
     The constructed :obj:`branchSelector` is an instance of 
     :obj:`orange.ClassifierFromVarFD` that returns a value of the 
-    selected attribute. If the attribute is :obj:`Orange.data.variable.Discrete`,
+    selected attribute. If the attribute is 
+    :obj:`Orange.data.variable.Discrete`,
     :obj:`branchDescription`'s are the attribute's values. The 
     attribute is marked as spent, so that it cannot reappear in the 
     node's subtrees.
@@ -2012,7 +2015,7 @@ A home page of AT&T's dot and similar software packages.
 
 from Orange.core import \
      TreeLearner as TreeLearnerBase, \
-         TreeClassifier, \
+         TreeClassifier as _TreeClassifier, \
          C45Learner, \
          C45Classifier, \
          C45TreeNode as C45Node, \
@@ -2296,52 +2299,55 @@ class TreeLearner(Orange.core.Learner):
         self.learner = None
         self.__dict__.update(kw)
       
-    def __setattr__(self, name, value):
-        if name in ["split", "binarization", "measure", "worstAcceptable", "minSubset",
-              "stop", "maxMajority", "minExamples", "nodeLearner", "maxDepth", "reliefM", "reliefK"]:
-            self.learner = None
-        self.__dict__[name] = value
-
     def __call__(self, examples, weight=0):
         """
         Return a classifier from the given examples.
         """
-        if not self.learner:
-            self.learner = self.instance()
+        bl = self._base_learner()
+
+        #build second part of the split
         if not hasattr(self, "split") and not hasattr(self, "measure"):
             if examples.domain.classVar.varType == Orange.data.Type.Discrete:
                 measure = Orange.feature.scoring.GainRatio()
             else:
                 measure = Orange.feature.scoring.MSE()
-            self.learner.split.continuousSplitConstructor.measure = measure
-            self.learner.split.discreteSplitConstructor.measure = measure
+            bl.split.continuousSplitConstructor.measure = measure
+            bl.split.discreteSplitConstructor.measure = measure
             
-        tree = self.learner(examples, weight)
+        tree = bl(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
-            tree = Orange.classification.tree.Pruner_SameMajority(tree)
+            tree = Pruner_SameMajority(tree)
         if getattr(self, "mForPruning", 0):
-            tree = Orange.classification.tree.Pruner_m(tree, m = self.mForPruning)
-        return tree
+            tree = Pruner_m(tree, m = self.mForPruning)
+
+        return TreeClassifier(baseClassifier=tree) 
 
     def instance(self):
         """
-        Return the constructed learner - an object of :class:`TreeLearnerBase`.
+        DEPRECATED. Return a base learner - an object 
+        of :class:`TreeLearnerBase`. 
+        This method is left for backwards compatibility.
         """
-        learner = Orange.classification.tree.TreeLearnerBase()
+        return self._base_learner()
 
-        hasSplit = hasattr(self, "split")
-        if hasSplit:
+    def _build_split(self, learner):
+
+        if hasattr(self, "split"):
             learner.split = self.split
         else:
-            learner.split = Orange.classification.tree.SplitConstructor_Combined()
-            learner.split.continuousSplitConstructor = Orange.classification.tree.SplitConstructor_Threshold()
+            learner.split = SplitConstructor_Combined()
+            learner.split.continuousSplitConstructor = \
+                SplitConstructor_Threshold()
             binarization = getattr(self, "binarization", 0)
             if binarization == 1:
-                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_ExhaustiveBinary()
+                learner.split.discreteSplitConstructor = \
+                    SplitConstructor_ExhaustiveBinary()
             elif binarization == 2:
-                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_OneAgainstOthers()
+                learner.split.discreteSplitConstructor = \
+                    SplitConstructor_OneAgainstOthers()
             else:
-                learner.split.discreteSplitConstructor = Orange.classification.tree.SplitConstructor_Feature()
+                learner.split.discreteSplitConstructor = \
+                    SplitConstructor_Feature()
 
             measures = {"infoGain": Orange.feature.scoring.InfoGain,
                 "gainRatio": Orange.feature.scoring.GainRatio,
@@ -2351,12 +2357,12 @@ class TreeLearner(Orange.core.Learner):
                 }
 
             measure = getattr(self, "measure", None)
-            if type(measure) == str:
+            if isinstance(measure, str):
                 measure = measures[measure]()
-            if not hasSplit and not measure:
+            if not measure:
                 measure = Orange.feature.scoring.GainRatio()
 
-            measureIsRelief = type(measure) == Orange.feature.scoring.Relief
+            measureIsRelief = isinstance(measure, Orange.feature.scoring.Relief)
             relM = getattr(self, "reliefM", None)
             if relM and measureIsRelief:
                 measure.m = relM
@@ -2378,6 +2384,11 @@ class TreeLearner(Orange.core.Learner):
                 learner.split.continuousSplitConstructor.minSubset = ms
                 learner.split.discreteSplitConstructor.minSubset = ms
 
+    def _base_learner(self):
+        learner = TreeLearnerBase()
+
+        self._build_split(learner)
+
         if hasattr(self, "stop"):
             learner.stop = self.stop
         else:
@@ -2389,7 +2400,8 @@ class TreeLearner(Orange.core.Learner):
             if me:
                 learner.stop.minExamples = self.minExamples
 
-        for a in ["storeDistributions", "storeContingencies", "storeExamples", "storeNodeClassifier", "nodeLearner", "maxDepth"]:
+        for a in ["storeDistributions", "storeContingencies", "storeExamples", 
+            "storeNodeClassifier", "nodeLearner", "maxDepth"]:
             if hasattr(self, a):
                 setattr(learner, a, getattr(self, a))
 
@@ -2413,7 +2425,8 @@ def countNodes(tree):
     :param tree: The tree for which to count the nodes.
     :type tree: :class:`TreeClassifier`
     """
-    return __countNodes(isinstance(tree, Orange.classification.tree.TreeClassifier) and tree.tree or tree)
+    return __countNodes(tree.tree if isinstance(tree, _TreeClassifier) or \
+        isinstance(tree, TreeClassifier) else tree)
 
 
 def __countLeaves(node):
@@ -2433,8 +2446,8 @@ def countLeaves(tree):
     :param tree: The tree for which to count the leaves.
     :type tree: :class:`TreeClassifier`
     """
-    return __countLeaves(isinstance(tree, Orange.classification.tree.TreeClassifier) and tree.tree or tree)
-
+    return __countLeaves(tree.tree if isinstance(tree, _TreeClassifier) or \
+        isinstance(tree, TreeClassifier) else tree)
 
 # the following is for the output
 
@@ -2999,6 +3012,43 @@ def printDot(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", 
         __TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
         argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True), tree,
         leafShape=leafShape, nodeShape=nodeShape, fle=fle).dotTree()
-                        
+ 
+class TreeClassifier(Orange.classification.Classifier):
+    """
+    Wraps :class:`Orange.core.TreeClassifier`.
+    """
+    
+    def __init__(self, baseClassifier=None):
+        if not baseClassifier: baseClassifier = _TreeClassifier()
+        self.nativeClassifier = baseClassifier
+        for k, v in self.nativeClassifier.__dict__.items():
+            self.__dict__[k] = v
+  
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue,
+                 *args, **kwdargs):
+        """Classify a new instance.
+        
+        :param instance: instance to be classified.
+        :type instance: :class:`Orange.data.Instance`
+        :param result_type: 
+              :class:`Orange.classification.Classifier.GetValue` or \
+              :class:`Orange.classification.Classifier.GetProbabilities` or
+              :class:`Orange.classification.Classifier.GetBoth`
+        
+        :rtype: :class:`Orange.data.Value`, 
+              :class:`Orange.statistics.Distribution` or a tuple with both
+        """
+        return self.nativeClassifier(instance, result_type, *args, **kwdargs)
+
+    def __setattr__(self, name, value):
+        if name == "nativeClassifier":
+            self.__dict__[name] = value
+            return
+        if name in self.nativeClassifier.__dict__:
+            self.nativeClassifier.__dict__[name] = value
+        self.__dict__[name] = value
+    
+   
+
 dotTree = printDot
 """ An alias for :func:`printDot`. Left for compatibility. """
