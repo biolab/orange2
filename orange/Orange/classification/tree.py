@@ -120,7 +120,7 @@ Classification trees are represented as a tree-like hierarchy of
 Classification
 ==============
 
-.. class:: TreeClassifier
+.. class:: _TreeClassifier
 
     Classifies examples according to a tree stored in :obj:`tree`.
 
@@ -1432,6 +1432,9 @@ orngTree module XXXXXXX
 .. autoclass:: TreeLearner
     :members:
 
+.. autoclass:: TreeClassifier
+    :members:
+
 For a bit more complex example, here's how to write your own stop
 function. The example itself is more funny than useful. It constructs
 and prints two trees. For the first one we define the *defStop*
@@ -1451,13 +1454,6 @@ part of `tree3.py`_ (uses  `iris.tab`_):
 The output is not shown here since the resulting trees are rather
 big.
 
-Tree size
-=========
-
-.. autofunction:: countNodes
-
-.. autofunction:: countLeaves
-
 Printing the Tree
 =================
 
@@ -1468,13 +1464,6 @@ class in nodes and similar, to more complex statistics like the
 proportion of examples in a particular class divided by the proportion
 of examples of this class in a parent node. And even more, you can
 define your own callback functions to be used for printing.
-
-
-.. autofunction:: dumpTree
-
-.. autofunction:: printTree
-
-.. autofunction:: printTxt
 
 Before we go on: you can read all about the function and use it to its
 full extent, or you can just call it, giving it the tree as the sole
@@ -2407,48 +2396,6 @@ class TreeLearner(Orange.core.Learner):
 
         return learner
 
-#counting
-
-def __countNodes(node):
-    count = 0
-    if node:
-        count += 1
-        if node.branches:
-            for node in node.branches:
-                count += __countNodes(node)
-    return count
-
-def countNodes(tree):
-    """
-    Return the number of nodes of tree.
-
-    :param tree: The tree for which to count the nodes.
-    :type tree: :class:`TreeClassifier`
-    """
-    return __countNodes(tree.tree if isinstance(tree, _TreeClassifier) or \
-        isinstance(tree, TreeClassifier) else tree)
-
-
-def __countLeaves(node):
-    count = 0
-    if node:
-        if node.branches: # internal node
-            for node in node.branches:
-                count += __countLeaves(node)
-        else:
-            count += 1
-    return count
-
-def countLeaves(tree):
-    """
-    Return the number of leaves in the tree.
-
-    :param tree: The tree for which to count the leaves.
-    :type tree: :class:`TreeClassifier`
-    """
-    return __countLeaves(tree.tree if isinstance(tree, _TreeClassifier) or \
-        isinstance(tree, TreeClassifier) else tree)
-
 # the following is for the output
 
 
@@ -2791,7 +2738,7 @@ def replaceI(strg, mo, node, parent, tree):
 # This class is more a collection of function, merged into a class so 
 # that they don't need to transfer too many arguments. It will be 
 # constructed, used and discarded, it is not meant to store any information.
-class __TreeDumper:
+class _TreeDumper:
     defaultStringFormats = [(re_V, replaceV), (re_N, replaceN),
          (re_M, replaceM), (re_m, replacem), 
          (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
@@ -2943,79 +2890,9 @@ class __TreeDumper:
 def _quoteName(x):
     return '"%s"' % (base64.b64encode(x))
 
-def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
-    """
-    Return a string representation of a tree.
-
-    :arg tree: The tree to dump to string.
-    :type tree: class:`TreeClassifier`
-    :arg leafStr: The format string for printing the tree leaves. If 
-      left empty, "%V (%^.2m%)" will be used for classification trees
-      and "%V" for regression trees.
-    :type leafStr: string
-    :arg nodeStr: The format string for printing out the internal nodes.
-      If left empty (as it is by default), no data is printed out for
-      internal nodes. If set to :samp:`"."`, the same string is
-      used as for leaves.
-    :type nodeStr: string
-    :arg maxDepth: If set, it limits the depth to which the tree is
-      printed out.
-    :type maxDepth: integer
-    :arg minExamples: If set, the subtrees with less than the given 
-      number of examples are not printed.
-    :type minExamples: integer
-    :arg simpleFirst: If True (default), the branches with a single 
-      node are printed before the branches with larger subtrees. 
-      If False, the branches are printed in order of
-      appearance.
-    :type simpleFirst: boolean
-    :arg userFormats: A list of regular expressions and callback 
-      function through which the user can print out other specific 
-      information in the nodes.
-    """
-    return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
-        __TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
-        argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
-        tree).dumpTree()
-
-
-def printTree(*a, **aa):
-    """
-    Print out the tree (call :func:`dumpTree` with the same
-    arguments and print out the result).
-    """
-    print dumpTree(*a, **aa)
-
-printTxt = printTree
-""" An alias for :func:`printTree`. Left for compatibility. """
-
-def printDot(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
-    """ Prints the tree to a file in a format used by 
-    `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
-    Uses the same parameters as :func:`printTxt` defined above
-    plus two parameters which define the shape used for internal
-    nodes and laves of the tree:
-
-    :param leafShape: Shape of the outline around leves of the tree. 
-        If "plaintext", no outline is used (default: "plaintext").
-    :type leafShape: string
-    :param internalNodeShape: Shape of the outline around internal nodes 
-        of the tree. If "plaintext", no outline is used (default: "box")
-    :type leafShape: string
-
-    Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
-    for various outlines supported by GraphViz.
-    """
-    fle = type(fileName) == str and file(fileName, "wt") or fileName
-
-    __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
-        __TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
-        argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True), tree,
-        leafShape=leafShape, nodeShape=nodeShape, fle=fle).dotTree()
- 
 class TreeClassifier(Orange.classification.Classifier):
     """
-    Wraps :class:`Orange.core.TreeClassifier`.
+    Wraps :class:`_TreeClassifier`.
     """
     
     def __init__(self, baseClassifier=None):
@@ -3048,7 +2925,117 @@ class TreeClassifier(Orange.classification.Classifier):
             self.nativeClassifier.__dict__[name] = value
         self.__dict__[name] = value
     
-   
+    def dump(self, leafStr = "", nodeStr = "", **argkw):  
+        """
+        Return a string representation of a tree.
+
+        :arg tree: The tree to dump to string.
+        :type tree: class:`TreeClassifier`
+        :arg leafStr: The format string for printing the tree leaves. If 
+          left empty, "%V (%^.2m%)" will be used for classification trees
+          and "%V" for regression trees.
+        :type leafStr: string
+        :arg nodeStr: The format string for printing out the internal nodes.
+          If left empty (as it is by default), no data is printed out for
+          internal nodes. If set to :samp:`"."`, the same string is
+          used as for leaves.
+        :type nodeStr: string
+        :arg maxDepth: If set, it limits the depth to which the tree is
+          printed out.
+        :type maxDepth: integer
+        :arg minExamples: If set, the subtrees with less than the given 
+          number of examples are not printed.
+        :type minExamples: integer
+        :arg simpleFirst: If True (default), the branches with a single 
+          node are printed before the branches with larger subtrees. 
+          If False, the branches are printed in order of
+          appearance.
+        :type simpleFirst: boolean
+        :arg userFormats: A list of regular expressions and callback 
+          function through which the user can print out other specific 
+          information in the nodes.
+        """
+        return _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
+            _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
+            argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+            self).dumpTree()
+
+    def dot(self, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
+        """ Prints the tree to a file in a format used by 
+        `GraphViz <http://www.research.att.com/sw/tools/graphviz>`_.
+        Uses the same parameters as :func:`printTxt` defined above
+        plus two parameters which define the shape used for internal
+        nodes and laves of the tree:
+
+        :param leafShape: Shape of the outline around leves of the tree. 
+            If "plaintext", no outline is used (default: "plaintext").
+        :type leafShape: string
+        :param internalNodeShape: Shape of the outline around internal nodes 
+            of the tree. If "plaintext", no outline is used (default: "box")
+        :type leafShape: string
+
+        Check `Polygon-based Nodes <http://www.graphviz.org/doc/info/shapes.html>`_ 
+        for various outlines supported by GraphViz.
+        """
+        fle = type(fileName) == str and file(fileName, "wt") or fileName
+
+        _TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + 
+            _TreeDumper.defaultStringFormats, argkw.get("minExamples", 0), 
+            argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True), self,
+            leafShape=leafShape, nodeShape=nodeShape, fle=fle).dotTree()
+
+    def count_nodes(self):
+        """
+        Return the number of nodes of tree.
+        """
+        return _countNodes(self.tree if isinstance(self, _TreeClassifier) or \
+            isinstance(self, TreeClassifier) else self)
+
+    def count_leaves(self):
+        """
+        Return the number of leaves in the tree.
+        """
+        return _countLeaves(self.tree if isinstance(self, _TreeClassifier) or \
+            isinstance(self, TreeClassifier) else self)
+
+dumpTree = TreeClassifier.dump
+""" An alias for :obj:`TreeClassifier.dump`. """
+
+def printTree(*a, **aa):
+    """
+    Print out the tree (call :func:`dumpTree` with the same
+    arguments and print out the result).
+    """
+    print dumpTree(*a, **aa)
+
+printTxt = printTree
+""" An alias for :func:`printTree`. Left for compatibility. """
+
+printDot = TreeClassifier.dot
+""" An alias for :obj:`TreeClassifier.dot` """
 
 dotTree = printDot
 """ An alias for :func:`printDot`. Left for compatibility. """
+
+countNodes = TreeClassifier.count_nodes
+countLeaves = TreeClassifier.count_leaves
+
+def _countNodes(node):
+    count = 0
+    if node:
+        count += 1
+        if node.branches:
+            for node in node.branches:
+                count += _countNodes(node)
+    return count
+
+def _countLeaves(node):
+    count = 0
+    if node:
+        if node.branches: # internal node
+            for node in node.branches:
+                count += _countLeaves(node)
+        else:
+            count += 1
+    return count
+
