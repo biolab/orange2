@@ -2775,19 +2775,20 @@ def replaceI(strg, mo, node, parent, tree):
     return insertStr(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
 
 
-# This class is more a collection of function, merged into a class so that they don't
-# need to transfer too many arguments. It will be constructed, used and discarded,
-# it is not meant to store any information.
+# This class is more a collection of function, merged into a class so 
+# that they don't need to transfer too many arguments. It will be 
+# constructed, used and discarded, it is not meant to store any information.
 class __TreeDumper:
-    defaultStringFormats = [(re_V, replaceV), (re_N, replaceN), (re_M, replaceM), (re_m, replacem),
-                              (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
-                              (re_Ccont, replaceCcont), (re_ccont, replaceccont),
-                              (re_Cconti, replaceCconti), (re_cconti, replacecconti),
-                              (re_D, replaceD), (re_d, replaced),
-                              (re_AE, replaceAE), (re_I, replaceI)
-                             ]
+    defaultStringFormats = [(re_V, replaceV), (re_N, replaceN),
+         (re_M, replaceM), (re_m, replacem), 
+         (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
+         (re_Ccont, replaceCcont), (re_ccont, replaceccont),
+         (re_Cconti, replaceCconti), (re_cconti, replacecconti),
+         (re_D, replaceD), (re_d, replaced), (re_AE, replaceAE), 
+         (re_I, replaceI) ]
 
-    def __init__(self, leafStr, nodeStr, stringFormats, minExamples, maxDepth, simpleFirst, tree, **kw):
+    def __init__(self, leafStr, nodeStr, stringFormats, minExamples, 
+        maxDepth, simpleFirst, tree, **kw):
         self.stringFormats = stringFormats
         self.minExamples = minExamples
         self.maxDepth = maxDepth
@@ -2833,9 +2834,11 @@ class __TreeDumper:
 
     def showBranch(self, node, parent, lev, i):
         bdes = node.branchDescriptions[i]
-        bdes = node.branchSelector.classVar.name + (bdes[0] not in "<=>" and "=" or "") + bdes
+        bdes = node.branchSelector.classVar.name + \
+            (bdes[0] not in "<=>" and "=" or "") + bdes
         if node.branches[i]:
-            nodedes = self.nodeStr and ": "+self.formatString(self.nodeStr, node.branches[i], node) or ""
+            nodedes = self.nodeStr and ": " + \
+                self.formatString(self.nodeStr, node.branches[i], node) or ""
         else:
             nodedes = "<null node>"
         return "|    "*lev + bdes + nodedes
@@ -2843,7 +2846,8 @@ class __TreeDumper:
         
     def dumpTree0(self, node, parent, lev):
         if node.branches:
-            if node.distribution.abs < self.minExamples or lev > self.maxDepth:
+            if node.distribution.abs < self.minExamples or \
+                lev > self.maxDepth:
                 return "|    "*lev + ". . .\n"
             
             res = ""
@@ -2855,10 +2859,13 @@ class __TreeDumper:
                 for i, branch in enumerate(node.branches):
                     if not branch or not branch.branches:
                         if self.leafStr == self.nodeStr:
-                            res += "%s\n" % self.showBranch(node, parent, lev, i)
+                            res += "%s\n" % \
+                                self.showBranch(node, parent, lev, i)
                         else:
-                            res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
-                                                 leafsep + self.formatString(self.leafStr, branch, node))
+                            res += "%s: %s\n" % \
+                                (self.showBranch(node, parent, lev, i),
+                                 leafsep + 
+                                 self.formatString(self.leafStr, branch, node))
             for i, branch in enumerate(node.branches):
                 if branch and branch.branches:
                     res += "%s\n%s" % (self.showBranch(node, parent, lev, i),
@@ -2867,8 +2874,10 @@ class __TreeDumper:
                     if self.leafStr == self.nodeStr:
                         res += "%s\n" % self.showBranch(node, parent, lev, i)
                     else:
-                        res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
-                                             leafsep+self.formatString(self.leafStr, branch, node))
+                        res += "%s: %s\n" % \
+                            (self.showBranch(node, parent, lev, i),
+                             leafsep + 
+                             self.formatString(self.leafStr, branch, node))
             return res
         else:
             return self.formatString(self.leafStr, node, parent)
@@ -2876,7 +2885,8 @@ class __TreeDumper:
 
     def dumpTree(self):
         if self.nodeStr:
-            lev, res = 1, "root: %s\n" % self.formatString(self.nodeStr, self.tree.tree, None)
+            lev, res = 1, "root: %s\n" % \
+                self.formatString(self.nodeStr, self.tree.tree, None)
             self.maxDepth += 1
         else:
             lev, res = 0, ""
@@ -2885,23 +2895,31 @@ class __TreeDumper:
 
     def dotTree0(self, node, parent, internalName):
         if node.branches:
-            if node.distribution.abs < self.minExamples or len(internalName)-1 > self.maxDepth:
-                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % _quoteName(internalName))
+            if node.distribution.abs < self.minExamples or \
+                len(internalName)-1 > self.maxDepth:
+                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % \
+                    _quoteName(internalName))
                 return
                 
             label = node.branchSelector.classVar.name
             if self.nodeStr:
                 label += "\\n" + self.formatString(self.nodeStr, node, parent)
-            self.fle.write('%s [ shape=%s label="%s"]\n' % (_quoteName(internalName), self.nodeShape, label))
+            self.fle.write('%s [ shape=%s label="%s"]\n' % \
+                (_quoteName(internalName), self.nodeShape, label))
             
             for i, branch in enumerate(node.branches):
                 if branch:
                     internalBranchName = internalName+chr(i+65)
-                    self.fle.write('%s -> %s [ label="%s" ]\n' % (_quoteName(internalName), _quoteName(internalBranchName), node.branchDescriptions[i]))
+                    self.fle.write('%s -> %s [ label="%s" ]\n' % \
+                        (_quoteName(internalName), 
+                         _quoteName(internalBranchName), 
+                         node.branchDescriptions[i]))
                     self.dotTree0(branch, node, internalBranchName)
                     
         else:
-            self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.leafShape, self.formatString(self.leafStr, node, parent)))
+            self.fle.write('%s [ shape=%s label="%s"]\n' % \
+                (internalName, self.leafShape, 
+                self.formatString(self.leafStr, node, parent)))
 
 
     def dotTree(self, internalName="n"):
@@ -2957,7 +2975,6 @@ def printTree(*a, **aa):
 
 printTxt = printTree
 """ An alias for :func:`printTree`. Left for compatibility. """
-
 
 def printDot(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
     """ Prints the tree to a file in a format used by 
