@@ -13,4 +13,5 @@ pade.py
 network_constructor.py
 network_optimization.py
 network_read.py
+network_widget.py
 PCA5.py
