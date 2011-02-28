@@ -2929,8 +2929,6 @@ class TreeClassifier(Orange.classification.Classifier):
         """
         Return a string representation of a tree.
 
-        :arg tree: The tree to dump to string.
-        :type tree: class:`TreeClassifier`
         :arg leafStr: The format string for printing the tree leaves. If 
           left empty, "%V (%^.2m%)" will be used for classification trees
           and "%V" for regression trees.
@@ -2988,37 +2986,13 @@ class TreeClassifier(Orange.classification.Classifier):
         """
         Return the number of nodes of tree.
         """
-        return _countNodes(self.tree if isinstance(self, _TreeClassifier) or \
-            isinstance(self, TreeClassifier) else self)
+        return _countNodes(self.tree)
 
     def count_leaves(self):
         """
         Return the number of leaves in the tree.
         """
-        return _countLeaves(self.tree if isinstance(self, _TreeClassifier) or \
-            isinstance(self, TreeClassifier) else self)
-
-dumpTree = TreeClassifier.dump
-""" An alias for :obj:`TreeClassifier.dump`. """
-
-def printTree(*a, **aa):
-    """
-    Print out the tree (call :func:`dumpTree` with the same
-    arguments and print out the result).
-    """
-    print dumpTree(*a, **aa)
-
-printTxt = printTree
-""" An alias for :func:`printTree`. Left for compatibility. """
-
-printDot = TreeClassifier.dot
-""" An alias for :obj:`TreeClassifier.dot` """
-
-dotTree = printDot
-""" An alias for :func:`printDot`. Left for compatibility. """
-
-countNodes = TreeClassifier.count_nodes
-countLeaves = TreeClassifier.count_leaves
+        return _countLeaves(self.tree)
 
 def _countNodes(node):
     count = 0
