@@ -7,7 +7,7 @@
 import Orange
 
 data = Orange.data.Table("lenses")
-treeClassifier = Orange.classification.tree.TreeLearnerBase(data)
+treeClassifier = Orange.classification.tree.TreeLearner(data)
 
 def treeSize(node):
     if not node:
@@ -49,7 +49,7 @@ def printTree(x):
         raise TypeError, "invalid parameter"
 
 print "\n\nUnpruned tree"
-printTree(treeClassifier)
+print treeClassifier.dump()
 
 def cutTree(node, level):
     if node and node.branchSelector:
@@ -63,5 +63,5 @@ def cutTree(node, level):
 
 print "\n\nPruned tree"
 cutTree(treeClassifier.tree, 2)
-printTree(treeClassifier)
+print treeClassifier.dump()
 

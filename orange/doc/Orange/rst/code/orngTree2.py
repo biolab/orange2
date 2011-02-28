@@ -30,4 +30,4 @@ def replaceB(strg, mo, node, parent, tree):
 myFormat = [(re.compile("%"+Orange.classification.tree.fs
     +"B"+Orange.classification.tree.by), replaceB)]
             
-Orange.classification.tree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats=myFormat)
+print tree.dump(leafStr="%V %^B% (%^3.2BbP%)", userFormats=myFormat)

@@ -7,7 +7,7 @@
 import Orange
 
 data = Orange.data.Table("lenses")
-learner = Orange.classification.tree.TreeLearnerBase()
+learner = Orange.classification.tree.TreeLearner()
 
 def printTree0(node, level):
     if not node:
@@ -34,19 +34,15 @@ def printTree(x):
     else:
         raise TypeError, "invalid parameter"
 
-print learner.split
-learner(data)
-print learner.split
-
 learner.stop = Orange.classification.tree.StopCriteria_common()
 print learner.stop.maxMajority, learner.stop.minExamples
 
 print "\n\nTree with minExamples = 5.0"
 learner.stop.minExamples = 5.0
 tree = learner(data)
-Orange.classification.tree.printTree(tree)
+print tree.dump()
 
 print "\n\nTree with maxMajority = 0.5"
 learner.stop.maxMajority = 0.5
 tree = learner(data)
-Orange.classification.tree.printTree(tree)
+print tree.dump()
