@@ -2120,6 +2120,8 @@ def printTreeC45(tree):
     _c45_printTree0(tree.tree, tree.classVar, 0)
 
 
+import Orange.feature.scoring as fscoring
+
 class TreeLearner(Orange.core.Learner):
     """
     Assembles the generic classification or regression tree learner 
@@ -2273,6 +2275,9 @@ class TreeLearner(Orange.core.Learner):
             return self
       
     def __init__(self, **kw):
+        self.split = None
+        self.stop = None
+        self.measure = None
         self.__dict__.update(kw)
       
     def __call__(self, examples, weight=0):
@@ -2281,20 +2286,21 @@ class TreeLearner(Orange.core.Learner):
         """
         bl = self._base_learner()
 
-        #build second part of the split
-        if not hasattr(self, "split") and not hasattr(self, "measure"):
-            if examples.domain.classVar.varType == Orange.data.Type.Discrete:
-                measure = Orange.feature.scoring.GainRatio()
-            else:
-                measure = Orange.feature.scoring.MSE()
+        #set the scoring criteria for regression if it was not
+        #set by the user
+        if not self.split and not self.measure:
+            measure = fscoring.GainRatio() \
+                if examples.domain.classVar.varType == Orange.data.Type.Discrete \
+                else fscoring.MSE()
             bl.split.continuousSplitConstructor.measure = measure
             bl.split.discreteSplitConstructor.measure = measure
-            
+         
+        #post pruning
         tree = bl(examples, weight)
         if getattr(self, "sameMajorityPruning", 0):
             tree = Pruner_SameMajority(tree)
         if getattr(self, "mForPruning", 0):
-            tree = Pruner_m(tree, m = self.mForPruning)
+            tree = Pruner_m(tree, m=self.mForPruning)
 
         return TreeClassifier(baseClassifier=tree) 
 
@@ -2306,39 +2312,42 @@ class TreeLearner(Orange.core.Learner):
         """
         return self._base_learner()
 
-    def _build_split(self, learner):
+    def build_split(self):
+        """
+        Return the split constructor built according to object attributes.
+        """
+        
+        split = self.split
 
-        if hasattr(self, "split"):
-            learner.split = self.split
-        else:
-            learner.split = SplitConstructor_Combined()
-            learner.split.continuousSplitConstructor = \
+        if not split:
+            split = SplitConstructor_Combined()
+            split.continuousSplitConstructor = \
                 SplitConstructor_Threshold()
             binarization = getattr(self, "binarization", 0)
             if binarization == 1:
-                learner.split.discreteSplitConstructor = \
+                split.discreteSplitConstructor = \
                     SplitConstructor_ExhaustiveBinary()
             elif binarization == 2:
-                learner.split.discreteSplitConstructor = \
+                split.discreteSplitConstructor = \
                     SplitConstructor_OneAgainstOthers()
             else:
-                learner.split.discreteSplitConstructor = \
+                split.discreteSplitConstructor = \
                     SplitConstructor_Feature()
 
-            measures = {"infoGain": Orange.feature.scoring.InfoGain,
-                "gainRatio": Orange.feature.scoring.GainRatio,
-                "gini": Orange.feature.scoring.Gini,
-                "relief": Orange.feature.scoring.Relief,
-                "retis": Orange.feature.scoring.MSE
+            measures = {"infoGain": fscoring.InfoGain,
+                "gainRatio": fscoring.GainRatio,
+                "gini": fscoring.Gini,
+                "relief": fscoring.Relief,
+                "retis": fscoring.MSE
                 }
 
-            measure = getattr(self, "measure", None)
+            measure = self.measure
             if isinstance(measure, str):
                 measure = measures[measure]()
             if not measure:
-                measure = Orange.feature.scoring.GainRatio()
+                measure = fscoring.GainRatio()
 
-            measureIsRelief = isinstance(measure, Orange.feature.scoring.Relief)
+            measureIsRelief = isinstance(measure, fscoring.Relief)
             relM = getattr(self, "reliefM", None)
             if relM and measureIsRelief:
                 measure.m = relM
@@ -2347,34 +2356,41 @@ class TreeLearner(Orange.core.Learner):
             if relK and measureIsRelief:
                 measure.k = relK
 
-            learner.split.continuousSplitConstructor.measure = measure
-            learner.split.discreteSplitConstructor.measure = measure
+            split.continuousSplitConstructor.measure = measure
+            split.discreteSplitConstructor.measure = measure
 
             wa = getattr(self, "worstAcceptable", 0)
             if wa:
-                learner.split.continuousSplitConstructor.worstAcceptable = wa
-                learner.split.discreteSplitConstructor.worstAcceptable = wa
+                split.continuousSplitConstructor.worstAcceptable = wa
+                split.discreteSplitConstructor.worstAcceptable = wa
 
             ms = getattr(self, "minSubset", 0)
             if ms:
-                learner.split.continuousSplitConstructor.minSubset = ms
-                learner.split.discreteSplitConstructor.minSubset = ms
+                split.continuousSplitConstructor.minSubset = ms
+                split.discreteSplitConstructor.minSubset = ms
+
+        return split
+
+    def build_stop(self):
+        """
+        Return the stop criteria built according to object's attributes.
+        """
+        stop = self.stop
+        if not stop:
+            stop = Orange.classification.tree.StopCriteria_common()
+            mm = getattr(self, "maxMajority", 1.0)
+            if mm < 1.0:
+                stop.maxMajority = self.maxMajority
+            me = getattr(self, "minExamples", 0)
+            if me:
+                stop.minExamples = self.minExamples
+        return stop
 
     def _base_learner(self):
         learner = TreeLearnerBase()
 
-        self._build_split(learner)
-
-        if hasattr(self, "stop"):
-            learner.stop = self.stop
-        else:
-            learner.stop = Orange.classification.tree.StopCriteria_common()
-            mm = getattr(self, "maxMajority", 1.0)
-            if mm < 1.0:
-                learner.stop.maxMajority = self.maxMajority
-            me = getattr(self, "minExamples", 0)
-            if me:
-                learner.stop.minExamples = self.minExamples
+        learner.split = self.build_split()
+        learner.stop = self.build_stop()
 
         for a in ["storeDistributions", "storeContingencies", "storeExamples", 
             "storeNodeClassifier", "nodeLearner", "maxDepth"]:
