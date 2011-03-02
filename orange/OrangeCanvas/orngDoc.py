@@ -61,7 +61,7 @@ class SchemaDoc(QWidget):
     # we are about to close document
     # ask the user if he is sure
     def closeEvent(self,ce):
-        newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+        newSettings = self.isSchemaChanged()
 
         self.synchronizeContexts()
         #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
@@ -453,7 +453,6 @@ class SchemaDoc(QWidget):
 
     # save the file
     def save(self, filename = None):
-        print "Saving to", filename
         if filename == None:
             filename = os.path.join(self.schemaPath, self.schemaName)
             # Update the loaded settings dict so we now if the widget
@@ -581,6 +580,10 @@ class SchemaDoc(QWidget):
 
         if self.widgets:
             self.signalManager.processNewSignals(self.widgets[0].instance)
+            
+        # Store the loaded settings dict again 
+        self.loadedSettingsDict = dict((widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets)
+        self.canvasDlg.setWindowModified(False)
 
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
