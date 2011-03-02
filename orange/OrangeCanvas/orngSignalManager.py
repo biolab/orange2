@@ -229,16 +229,19 @@ class SignalManager(object):
         
         """
         self.freezing = max(freeze, 0)
-        if freeze:
-            self.addEvent("Freezing signal processing (%s)" % str(freeze))
+        if freeze > 0:
+            self.addEvent("Freezing signal processing (%s)" % str(freeze), startWidget)
+        elif freeze == 0:
+            self.addEvent("Unfreezing signal processing", startWidget)
         else:
-            self.addEvent("Unfreezing signal processing")
+            self.addEvent("Invalid freeze value! (by %s)", startWidget, eventVerbosity=0)
             
-        if not freeze and self.widgets != []:
-            if startWidget:
-                self.processNewSignals(startWidget)
-            else:
-                self.processNewSignals(self.widgets[0])
+        if self.freezing == 0 and self.widgets != []:
+            self.processNewSignals(self.widgets[0]) # always start processing from the first 
+#            if startWidget:
+#                self.processNewSignals(startWidget)
+#            else:
+#                self.processNewSignals(self.widgets[0])
 
     def addWidget(self, widget):
         """ Add `widget` to the `widgets` list 
@@ -513,7 +516,6 @@ class SignalManager(object):
         if link.enabled:
             if link.dynamic:
                 dyn_enable = link.canEnableDynamic(value)
-                print "Dynamic signal enabled", dyn_enable
                 self.setDynamicLinkEnabled(link, dyn_enable)
                 if not dyn_enable:
                     value = None
