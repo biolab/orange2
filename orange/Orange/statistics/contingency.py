@@ -6,7 +6,7 @@ normalized by dividing each cell by the row sum, the represent conditional
 probabilities of the column variable (here denoted as ``innerVariable``)
 conditioned by the row variable (``outerVariable``).
 
-Contingency matrices are usually constructed for discrete variables. Matrices
+Contingency tables are usually constructed for discrete variables. Tables
 for continuous variables have certain limitations described in a :ref:`separate
 section <contcont>`.
 
@@ -43,13 +43,13 @@ the class).  The latter is the base class for
 The most commonly used of the above classes is :obj:`VarClass` which
 can compute and store conditional probabilities of classes given the feature value.
 
-Contingency matrices
-====================
+Contingency tables
+==================
 
 .. class:: Table
 
     Provides a base class for storing and manipulating contingency
-    matrices. Although it is not abstract, it is seldom used directly but rather
+    tables. Although it is not abstract, it is seldom used directly but rather
     through more convenient derived classes described below.
 
     .. attribute:: outerVariable
@@ -163,7 +163,7 @@ Contingency matrices
 
 .. class:: Class
 
-    An abstract base class for contingency matrices that contain the class,
+    An abstract base class for contingency tables that contain the class,
     either as the inner or the outer variable.
 
     .. attribute:: classVar (read only)
