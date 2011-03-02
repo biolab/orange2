@@ -20,8 +20,10 @@ def default_small_learner(measure=Orange.feature.scoring.Gini(), attributes=None
     """
     # tree learner assembled as suggested by Brieman (2001)
     smallTreeLearner = Orange.classification.tree.TreeLearner(
-    storeNodeClassifier = 0, storeContingencies=0, 
-    storeDistributions=1, minExamples=5).instance()
+    storeNodeClassifier=0, storeContingencies=0, 
+    storeDistributions=1, minExamples=5)
+
+    smallTreeLearner.split = smallTreeLearner.build_split()
     
     smallTreeLearner.split.discreteSplitConstructor.measure = measure
     smallTreeLearner.split.continuousSplitConstructor.measure = measure
@@ -102,29 +104,6 @@ class RandomForestLearner(orange.Learner):
         :rtype: :class:`Orange.ensemble.forest.RandomForestClassifier`
         """
         
-        
-        # If there is no learner we create our own
-        
-#        if not self.learner:
-#            
-#            # tree learner assembled as suggested by Brieman (2001)
-#            smallTreeLearner = Orange.classification.tree.TreeLearner(
-#            storeNodeClassifier = 0, storeContingencies=0, 
-#            storeDistributions=1, minExamples=5).instance()
-#            
-#            # Use MSE on continuous class and Gini on discreete
-#            if instances.domain.class_var.var_type == Orange.data.variable.Continuous.Continuous:
-#                smallTreeLearner.split.discreteSplitConstructor.measure = \
-#                    smallTreeLearner.split.continuousSplitConstructor.measure =\
-#                        Orange.feature.scoring.MSE()
-#            else:
-#                smallTreeLearner.split.discreteSplitConstructor.measure = \
-#                    smallTreeLearner.split.continuousSplitConstructor.measure =\
-#                        Orange.feature.scoring.Gini()
-#            
-#            smallTreeLearner.split = SplitConstructor_AttributeSubset(\
-#                    smallTreeLearner.split, self.attributes, self.rand)
-#            self.learner = smallTreeLearner
         if not self.learner:
             # Use MSE on continuous class and Gini on discreete
             if isinstance(instances.domain.class_var, Orange.data.variable.Discrete):
@@ -135,10 +114,11 @@ class RandomForestLearner(orange.Learner):
             learner = self.learner
         
         # if number of features for subset is not set, use square root
-        if hasattr(learner.split, 'attributes') and\
-                    not learner.split.attributes:
-            learner.split.attributes = int(sqrt(\
-                    len(instances.domain.attributes)))
+
+        if hasattr(learner.split, 'attributes') and \
+            not learner.split.attributes:
+            learner.split.attributes = \
+                int(sqrt(len(instances.domain.attributes)))
 
         self.rand.setstate(self.randstate) #when learning again, set the same state
 
