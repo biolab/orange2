@@ -74,12 +74,14 @@ class SchemaDoc(QWidget):
             self.clear()
             self.removeTempDoc()
             ce.accept()
-        else:
+        elif newSettings:
             res = QMessageBox.question(self, 'Orange Canvas','Do you wish to save the schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
             if res == QMessageBox.Yes:
                 self.saveDocument()
-                ce.accept()
                 self.clear()
+                self.removeTempDoc()
+                ce.accept()
+                
             elif res == QMessageBox.No:
                 self.clear()
                 self.removeTempDoc()
@@ -87,6 +89,9 @@ class SchemaDoc(QWidget):
             else:
                 ce.ignore()     # we pressed cancel - we don't want to close the document
                 return
+        else:
+            self.clear()
+            self.removeTempDoc()
         
         QWidget.closeEvent(self, ce)
         orngHistory.logCloseSchema(self.schemaID)
@@ -110,13 +115,13 @@ class SchemaDoc(QWidget):
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
-    def addLine(self, outWidget, inWidget, enabled = True):
+    def addLine(self, outWidget, inWidget, enabled=True, saveTempDoc=True):
         if outWidget == inWidget: 
             return None
         # check if line already exists
         line = self.getLine(outWidget, inWidget)
         if line:
-            self.resetActiveSignals(outWidget, inWidget, None, enabled)
+            self.resetActiveSignals(outWidget, inWidget, None, enabled, saveTempDoc)
             return None
 
         if self.signalManager.existsPath(inWidget.instance, outWidget.instance):
@@ -139,7 +144,7 @@ class SchemaDoc(QWidget):
         with self.signalManager.freeze(outWidget.instance):
             linkCount = 0
             for (outName, inName) in dialog.getLinks():
-                linkCount += self.addLink(outWidget, inWidget, outName, inName, enabled)
+                linkCount += self.addLink(outWidget, inWidget, outName, inName, enabled, saveTempDoc=False)
 
 #        self.signalManager.setFreeze(0, outWidget.instance)
 
@@ -149,12 +154,13 @@ class SchemaDoc(QWidget):
             outWidget.updateTooltip()
             inWidget.updateTooltip()
             
-        self.saveTempDoc()
+        if saveTempDoc:
+            self.saveTempDoc()
         return line
 
 
     # reset signals of an already created line
-    def resetActiveSignals(self, outWidget, inWidget, newSignals = None, enabled = 1):
+    def resetActiveSignals(self, outWidget, inWidget, newSignals = None, enabled = 1, saveTempDoc=True):
         #print "<extra>orngDoc.py - resetActiveSignals() - ", outWidget, inWidget, newSignals
         signals = []
         for line in self.lines:
@@ -176,21 +182,24 @@ class SchemaDoc(QWidget):
 
         for (outName, inName) in signals:
             if (outName, inName) not in newSignals:
-                self.removeLink(outWidget, inWidget, outName, inName)
+                self.removeLink(outWidget, inWidget, outName, inName, saveTempDoc=False)
                 signals.remove((outName, inName))
 
         with self.signalManager.freeze(outWidget.instance):
             for (outName, inName) in newSignals:
                 if (outName, inName) not in signals:
-                    self.addLink(outWidget, inWidget, outName, inName, enabled)
+                    self.addLink(outWidget, inWidget, outName, inName, enabled, saveTempDoc=False)
 
         outWidget.updateTooltip()
         inWidget.updateTooltip()
+        
+        if saveTempDoc:
+            self.saveTempDoc() 
 
 
 
     # add one link (signal) from outWidget to inWidget. if line doesn't exist yet, we create it
-    def addLink(self, outWidget, inWidget, outSignalName, inSignalName, enabled = 1):
+    def addLink(self, outWidget, inWidget, outSignalName, inSignalName, enabled=1, saveTempDoc=True):
         #print "<extra>orngDoc - addLink() - ", outWidget, inWidget, outSignalName, inSignalName
         # in case there already exists link to inSignalName in inWidget that is single, we first delete it
         widgetInstance = inWidget.instance.removeExistingSingleLink(inSignalName)
@@ -231,20 +240,21 @@ class SchemaDoc(QWidget):
 
 
     # remove only one signal from connected two widgets. If no signals are left, delete the line
-    def removeLink(self, outWidget, inWidget, outSignalName, inSignalName):
+    def removeLink(self, outWidget, inWidget, outSignalName, inSignalName, saveTempDoc=True):
         #print "<extra> orngDoc.py - removeLink() - ", outWidget, inWidget, outSignalName, inSignalName
         self.signalManager.removeLink(outWidget.instance, inWidget.instance, outSignalName, inSignalName)
 
         
         otherSignals = self.signalManager.getLinks(outWidget.instance, inWidget.instance, outSignalName, inSignalName)
         if not otherSignals:
-            self.removeLine(outWidget, inWidget)
+            self.removeLine(outWidget, inWidget, saveTempDoc=False)
 
-        self.saveTempDoc()
+        if saveTempDoc:
+            self.saveTempDoc()
 
 
     # remove line line
-    def removeLine1(self, line):
+    def removeLine1(self, line, saveTempDoc=True):
         for (outName, inName) in line.getSignals():
             self.signalManager.removeLink(line.outWidget.instance, line.inWidget.instance, outName, inName)   # update SignalManager
 
@@ -254,16 +264,17 @@ class SchemaDoc(QWidget):
         line.inWidget.updateTooltip()
         line.outWidget.updateTooltip()
         line.remove()
-        self.saveTempDoc()
+        if saveTempDoc:
+            self.saveTempDoc()
 
     # remove line, connecting two widgets
-    def removeLine(self, outWidget, inWidget):
+    def removeLine(self, outWidget, inWidget, saveTempDoc=True):
         """ Remove the line connecting two widgets
         """
         #print "<extra> orngDoc.py - removeLine() - ", outWidget, inWidget
         line = self.getLine(outWidget, inWidget)
         if line:
-            self.removeLine1(line)
+            self.removeLine1(line, saveTempDoc)
 
     # add new widget
     def addWidget(self, widgetInfo, x= -1, y=-1, caption = "", widgetSettings = {}, saveTempDoc = True):
@@ -359,18 +370,22 @@ class SchemaDoc(QWidget):
         for widget in self.widgets[::-1]:   
             self.removeWidget(widget, saveTempDoc = False)   # remove widgets from last to first
         self.canvas.update()
+        self.schemaPath = self.canvasDlg.settings["saveSchemaDir"]
+        self.schemaName = ""
+        self.loadedSettingsDict = {}
         self.saveTempDoc()
 
     def enableAllLines(self):
         with self.signalManager.freeze():
             for line in self.lines:
                 self.signalManager.setLinkEnabled(line.outWidget.instance, line.inWidget.instance, 1)
+                line.update()
         self.canvas.update()
 
     def disableAllLines(self):
         for line in self.lines:
             self.signalManager.setLinkEnabled(line.outWidget.instance, line.inWidget.instance, 0)
-            
+            line.update()
         self.canvas.update()
         
     def setFreeze(self, bool):
@@ -438,8 +453,13 @@ class SchemaDoc(QWidget):
 
     # save the file
     def save(self, filename = None):
+        print "Saving to", filename
         if filename == None:
             filename = os.path.join(self.schemaPath, self.schemaName)
+            # Update the loaded settings dict so we now if the widget
+            # settings have chenged from the last save when we quit 
+            # the application (see closeEvent handler)
+            self.loadedSettingsDict = dict((widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets)
             
         # create xml document
         doc = Document()
@@ -544,13 +564,14 @@ class SchemaDoc(QWidget):
 
                 signalList = eval(signals)
                 for (outName, inName) in signalList:
-                    self.addLink(outWidget, inWidget, outName, inName, enabled)
+                    self.addLink(outWidget, inWidget, outName, inName, enabled, saveTempDoc=False)
                 #qApp.processEvents()
         finally:
             qApp.restoreOverrideCursor()
             self.signalManager.freeze().pop()
 
-        for widget in self.widgets: widget.updateTooltip()
+        for widget in self.widgets:
+            widget.updateTooltip()
         self.canvas.update()
 
         self.saveTempDoc()
