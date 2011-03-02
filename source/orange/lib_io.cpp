@@ -41,7 +41,7 @@ PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
 /* ************ FILE EXAMPLE GENERATORS ************ */
 
 #include "filegen.hpp"
-BASED_ON(FileExampleGenerator, ExampleGenerator)
+BASED_ON(FileExampleGenerator - Orange.data.io.FileExampleGenerator, ExampleGenerator)
 
 #include "tabdelim.hpp"
 #include "c45inter.hpp"
@@ -64,12 +64,12 @@ NO_PICKLE(FileExampleGenerator)
 NO_PICKLE(TabDelimExampleGenerator)
 NO_PICKLE(BasketFeeder)
 
-BASED_ON(BasketFeeder, Orange)
+BASED_ON(BasketFeeder - Orange.data.io.BasketFeeder, Orange)
 
 
 
 
-PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
+PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator - Orange.data.io.TabDelimExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
     char *fileName;
     int createNewOn = TVariable::Incompatible;
@@ -88,7 +88,7 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
 }
 
 
-PyObject *BasketExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain])")
+PyObject *BasketExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator - Orange.data.io.BasketExampleGenerator, "(examples[, use=domain])")
 { PyTRY
     char *fileName;
     int createNewOn = TVariable::Incompatible;
@@ -116,7 +116,7 @@ PyObject *BasketFeeder_clearCache(PyObject *, PyObject *) PYARGS(METH_O, "() -> 
 
 
 
-PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
+PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator - Orange.data.io.C45ExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
     char *stem;
     int createNewOn = TVariable::Incompatible;

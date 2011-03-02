@@ -123,7 +123,7 @@ PyObject *ProgressCallback_call(PyObject *self, PyObject *targs, PyObject *keywo
 
 PVarList PVarList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::P_FromArguments(arg); }
 PyObject *VarList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_FromArguments(type, arg); }
-PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Variable>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
+PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.data.variable.Variables, "(<list of Variable>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
 PyObject *VarList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getitem(self, index); }
 int       VarList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_setitem(self, index, item); }
 PyObject *VarList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getslice(self, start, stop); }
@@ -237,9 +237,9 @@ TMetaVector *knownMetas(PyObject *keywords)
   return NULL;
 }
 
-ABSTRACT(Variable, Orange)
-C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
-C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
+ABSTRACT(Variable - Orange.data.variable.Variable, Orange)
+C_NAMED(EnumVariable - Orange.data.variable.Discrete, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
+C_NAMED(FloatVariable - Orange.data.variable.Continuous, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
 PyObject *PyVariable_MakeStatus_FromLong(long ok);
 
@@ -323,10 +323,10 @@ PyObject *Variable_get_name(PyObject *self)
 
 
 #include "stringvars.hpp"
-C_NAMED(StringVariable, Variable, "([name=])")
+C_NAMED(StringVariable - Orange.data.variable.String, Variable, "([name=])")
 
 #include "pythonvars.hpp"
-C_NAMED(PythonVariable, Variable, "([name=])")
+C_NAMED(PythonVariable - Orange.data.variable.Python, Variable, "([name=])")
 
 PyObject *PythonValue_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(SomeValue, "([object])")
 {
@@ -1337,7 +1337,7 @@ int Domain_contains(PyObject *self, PyObject *arg)
 
 CONSTRUCTOR_KEYWORDS(Domain, "source")
 
-PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
+PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange - Orange.data.Domain, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
 { PyTRY
     PyObject *list;
     PyObject *arg1 = PYNULL;
@@ -2929,7 +2929,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas filter_metas DC DK NA noClass noCodedDiscrete createNewOn")
 
-PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
+PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator - Orange.data.Table, "(filename | domain[, examples] | examples)")
 {
   PyTRY
 
@@ -4302,7 +4302,7 @@ PyObject *convertToPythonNative(const TDistribution &dist, int)
 
 NO_PICKLE(Distribution)
 
-PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(attribute[, examples[, weightID]])")
+PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue - Orange.statistics.distribution.Distribution, "(attribute[, examples[, weightID]])")
 {
   PyTRY
     PExampleGenerator gen;
@@ -4554,7 +4554,7 @@ PDiscDistribution list2discdistr(PyObject *args, PyTypeObject *type = NULL)
 }
 
 
-PyObject *DiscDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) BASED_ON(Distribution, "[list of floats] | DiscDistribution")
+PyObject *DiscDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) BASED_ON(Distribution - Orange.statistics.distribution.Discrete, "[list of floats] | DiscDistribution")
 { PyTRY {
     if (!PyTuple_Size(targs)) {
       return WrapNewOrange(mlnew TDiscDistribution(), type);
@@ -4732,7 +4732,7 @@ PyObject *DiscDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 }
 
 
-PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) BASED_ON(Distribution, "[dist of float:float] | DiscDistribution")
+PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) BASED_ON(Distribution - Orange.statistics.distribution.Continuous, "[dist of float:float] | DiscDistribution")
 { PyTRY {
 
     if (!PyTuple_Size(targs))
@@ -4984,7 +4984,7 @@ PyObject *ContDistribution_density(PyObject *self, PyObject *args) PYARGS(METH_V
 }
 
 
-PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma) | (distribution) | () -> distribution") ALLOWS_EMPTY
+PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution - Orange.statistics.distribution.Gaussian, "(mean, sigma) | (distribution) | () -> distribution") ALLOWS_EMPTY
 { PyTRY
     float mean = 0.0, sigma = 1.0;
 
@@ -5088,7 +5088,7 @@ PyObject *DomainDistributions__reduce__(TPyOrange *self, PyObject *) { return Li
 /* Note that this is not like callable-constructors. They return different type when given
    parameters, while this one returns the same type, disregarding whether it was given examples or not.
 */
-PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID, skipDiscrete, skipContinuous] | <list of Distribution>) -> DomainDistributions") ALLOWS_EMPTY
+PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange - Orange.statistics.distribution.Domain, "(examples[, weightID, skipDiscrete, skipContinuous] | <list of Distribution>) -> DomainDistributions") ALLOWS_EMPTY
 { PyTRY
     if (!args || !PyTuple_Size(args))
       return WrapNewOrange(mlnew TDomainDistributions(), type);
@@ -5256,9 +5256,9 @@ PyObject *__pickleLoaderEFMDataDescription(PyObject *, PyObject *args) PYARGS(ME
 }
 
 
-ABSTRACT(LearnerFD, Learner)
+ABSTRACT(LearnerFD - Orange.classification.LearnerFD, Learner)
 
-PyObject *Learner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *Learner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.Learner, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrLearner_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TLearner_Python(), type), args);
   else
@@ -5312,9 +5312,9 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
 #include "classify.hpp"
 #include "majority.hpp"
 
-ABSTRACT(ClassifierFD, Classifier)
+ABSTRACT(ClassifierFD - Orange.classification.ClassifierFD, Classifier)
 
-PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw) BASED_ON(Classifier, "([defaultVal])") ALLOWS_EMPTY
+PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw) BASED_ON(Classifier - Orange.classification.ConstantClassifier, "([defaultVal])") ALLOWS_EMPTY
 {
   PyObject *arg1 = NULL, *arg2 = NULL;
   if (!PyArg_UnpackTuple(args, "DefaultClassifier.__new__", 0, 2, &arg1, &arg2))
@@ -5344,12 +5344,12 @@ PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw)
   PYERROR(PyExc_TypeError, "DefaultClassifier's constructor expects a Variable, a Value or both", PYNULL);
 }
 
-C_NAMED(RandomLearner, Learner, "([probabilities=])")
-C_NAMED(RandomClassifier, Classifier, "([probabilities=])")
+C_NAMED(RandomLearner - Orange.classification.RandomLearner, Learner, "([probabilities=])")
+C_NAMED(RandomClassifier - Orange.classification.RandomClassifier, Classifier, "([probabilities=])")
 
 PClassifierList PClassifierList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::P_FromArguments(arg); }
 PyObject *ClassifierList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_FromArguments(type, arg); }
-PyObject *ClassifierList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Classifier>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_new(type, arg, kwds); }
+PyObject *ClassifierList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.classification.ClassifierList, "(<list of Classifier>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_new(type, arg, kwds); }
 PyObject *ClassifierList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_getitem(self, index); }
 int       ClassifierList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_setitem(self, index, item); }
 PyObject *ClassifierList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_getslice(self, start, stop); }
@@ -5387,7 +5387,7 @@ PYCLASSCONSTANT_INT(Classifier, GetProbabilities, 1)
 PYCLASSCONSTANT_INT(Classifier, GetBoth, 2)
 
 
-PyObject *Classifier_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *Classifier_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.Classifier, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrClassifier_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TClassifier_Python(), type), args);
   else
@@ -5460,19 +5460,19 @@ PyObject *DefaultClassifier_get_defaultValue(PyObject *self)
 /* ************ CLASSIFIERS FROM VAR ************ */
 
 #include "classfromvar.hpp"
-C_NAMED(ClassifierFromVar, Classifier, "([whichVar=, transformer=])")
-C_NAMED(ClassifierFromVarFD, ClassifierFD, "([position=, transformer=])")
+C_NAMED(ClassifierFromVar - Orange.classification.ClassifierFromVar, Classifier, "([whichVar=, transformer=])")
+C_NAMED(ClassifierFromVarFD - Orange.classification.ClassifierFromVarFD, ClassifierFD, "([position=, transformer=])")
 
 #include "cartesian.hpp"
-C_NAMED(CartesianClassifier, ClassifierFD, "()")
+C_NAMED(CartesianClassifier - Orange.classification.CartesianClassifier, ClassifierFD, "()")
 
 
 /* ************ LOOKUP ************ */
 
 #include "lookup.hpp"
 
-C_CALL(LookupLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
-C_NAMED(ClassifierByExampleTable, ClassifierFD, "([examples=])")
+C_CALL(LookupLearner - Orange.classification.lookup.LookupLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
+C_NAMED(ClassifierByExampleTable - Orange.classification.lookup.ClassifierByDataTable, ClassifierFD, "([examples=])")
 
 
 PyObject *LookupLearner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier | (classVar, attributes, examples) -> Classifier")
@@ -5594,7 +5594,7 @@ bool initializeTables(PyObject *pyvlist, PyObject *pydlist, TClassifierByLookupT
 }
 
 
-PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")
+PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable - Orange.classification.lookup.ClassifierByLookupTable1, "(class-descriptor, descriptor)")
 { PyTRY
     PVariable vcl, vvl;
     PyObject *pyvlist = PYNULL;
@@ -5620,7 +5620,7 @@ PyObject *ClassifierByLookupTable1__reduce__(PyObject *self)
 }
 
 
-PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, desc0, desc1)")
+PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable - Orange.classification.lookup.ClassifierByLookupTable2, "(class-descriptor, desc0, desc1)")
 { PyTRY
     PVariable vcl, vvl1, vvl2;
     PyObject *pyvlist = PYNULL;
@@ -5647,7 +5647,7 @@ PyObject *ClassifierByLookupTable2__reduce__(PyObject *self)
 }
 
 
-PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, desc0, desc1, desc2)")
+PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable - Orange.classification.lookup.ClassifierByLookupTable3, "(class-descriptor, desc0, desc1, desc2)")
 { PyTRY
     PVariable vcl, vvl1, vvl2, vvl3;
     PyObject *pyvlist = PYNULL;
@@ -5675,7 +5675,7 @@ PyObject *ClassifierByLookupTable3__reduce__(PyObject *self)
 
 
 
-PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Classifier, "(class-descriptor, descriptor)")
+PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Classifier - Orange.classification.lookup.ClassifierByLookupTable, "(class-descriptor, descriptor)")
 {
   static newfunc constructors[] = {ClassifierByLookupTable1_new, ClassifierByLookupTable2_new, ClassifierByLookupTable3_new};
   static TOrangeType *types[] = {&PyOrClassifierByLookupTable1_Type, &PyOrClassifierByLookupTable2_Type, &PyOrClassifierByLookupTable3_Type};

@@ -52,25 +52,25 @@
 /* ************ MAJORITY AND COST ************ */
 
 #include "majority.hpp"
-C_CALL(MajorityLearner, Learner, "([examples] [, weight=, estimate=]) -/-> Classifier")
-C_CALL(CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> Classifier")
+C_CALL(MajorityLearner - Orange.classification.majority.MajorityLearner, Learner, "([examples] [, weight=, estimate=]) -/-> Classifier")
+C_CALL(CostLearner - Orange.wrappers.CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> Classifier")
 
 
 #include "costwrapper.hpp"
-C_CALL(CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
-C_NAMED(CostWrapperClassifier, Classifier, "([classifier=, costs=])")
+C_CALL(CostWrapperLearner - Orange.wrappers.CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
+C_NAMED(CostWrapperClassifier - Orange.wrappers.CostWrapperClassifier, Classifier, "([classifier=, costs=])")
 
 
 /************* ASSOCIATION RULES ************/
 
 #include "assoc.hpp"
-C_CALL(AssociationLearner, Learner, "([examples] [, weight=, conf=, supp=, voteWeight=]) -/-> Classifier")
-C_NAMED(AssociationClassifier, ClassifierFD, "([rules=, voteWeight=])")
-C_CALL3(AssociationRulesInducer, AssociationRulesInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
-C_CALL3(AssociationRulesSparseInducer, AssociationRulesSparseInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
-C_CALL3(ItemsetsSparseInducer, ItemsetsSparseInducer, Orange, "([examples[, weightID]], support=]) -/-> AssociationRules")
+C_CALL(AssociationLearner - Orange.classification.rules.AssociationLearner, Learner, "([examples] [, weight=, conf=, supp=, voteWeight=]) -/-> Classifier")
+C_NAMED(AssociationClassifier - Orange.classification.rules.AssociationClassifier, ClassifierFD, "([rules=, voteWeight=])")
+C_CALL3(AssociationRulesInducer - Orange.associate.AssociationRulesInducer, AssociationRulesInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
+C_CALL3(AssociationRulesSparseInducer - Orange.associate.AssociationRulesSparseInducer, AssociationRulesSparseInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
+C_CALL3(ItemsetsSparseInducer - Orange.associate.ItemsSparseInducer, ItemsetsSparseInducer, Orange, "([examples[, weightID]], support=]) -/-> AssociationRules")
 
-BASED_ON(ItemsetNodeProxy, Orange)
+BASED_ON(ItemsetNodeProxy - Orange.associate.ItemsetNodeProxy, Orange)
 
 bool operator < (const TAssociationRule &, const TAssociationRule &) { return false; }
 bool operator > (const TAssociationRule &, const TAssociationRule &) { return false; }
@@ -339,7 +339,7 @@ PyObject *ItemsetNodeProxy_get_itemId(PyObject *self)
 
 bool convertFromPython(PyObject *, PAssociationRule &);
 
-PyObject *AssociationRule_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(left, right, support, confidence)")
+PyObject *AssociationRule_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange - Orange.associate.AssociationRule, "(left, right, support, confidence)")
 { PyTRY
     PAssociationRule rule;
     return  convertFromPython(args, rule) ? WrapOrange(rule) : PYNULL;
@@ -500,7 +500,7 @@ PyObject *AssociationRule_repr(TPyOrange *self)
 
 PAssociationRules PAssociationRules_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::P_FromArguments(arg); }
 PyObject *AssociationRules_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_FromArguments(type, arg); }
-PyObject *AssociationRules_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of AssociationRule>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_new(type, arg, kwds); }
+PyObject *AssociationRules_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.associate.AssociationRules, "(<list of AssociationRule>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_new(type, arg, kwds); }
 PyObject *AssociationRules_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_getitem(self, index); }
 int       AssociationRules_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_setitem(self, index, item); }
 PyObject *AssociationRules_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_getslice(self, start, stop); }
@@ -532,44 +532,44 @@ PyObject *AssociationRules__reduce__(TPyOrange *self, PyObject *) { return ListO
 #include "tdidt_stop.hpp"
 #include "callback.hpp"
 
-C_CALL(TreeLearner, Learner, "([examples] [, weight=, split=, stop=, nodeLearner=, lookDownOnUnknown=]) -/-> Classifier")
+C_CALL(TreeLearner - Orange.core.TreeLearner, Learner, "([examples] [, weight=, split=, stop=, nodeLearner=, lookDownOnUnknown=]) -/-> Classifier")
 
-C_NAMED(TreeNode, Orange, "([lookDownOnUnknown=, branchSelector=, nodeClassifier=, branches=, contingency=])")
-C_NAMED(TreeClassifier, ClassifierFD, "([domain=, tree=, descender=])")
+C_NAMED(TreeNode - Orange.classification.tree.Node, Orange, "([lookDownOnUnknown=, branchSelector=, nodeClassifier=, branches=, contingency=])")
+C_NAMED(TreeClassifier - Orange.classification.tree.TreeClassifier, ClassifierFD, "([domain=, tree=, descender=])")
 
-C_NAMED(TreeStopCriteria_common, TreeStopCriteria, "([maxMajority=, minExamples=])")
-HIDDEN(TreeStopCriteria_Python, TreeStopCriteria)
+C_NAMED(TreeStopCriteria_common - Orange.classification.tree.StopCriteria_common, TreeStopCriteria, "([maxMajority=, minExamples=])")
+HIDDEN(TreeStopCriteria_Python - Orange.classification.tree.StopCriteria_Python, TreeStopCriteria)
 NO_PICKLE(TreeStopCriteria_Python)
 
-C_CALL(TreeSplitConstructor_Combined, TreeSplitConstructor, "([examples, [weight, domainContingency, apriorClass, candidates] [discreteTreeSplitConstructor=, continuousTreeSplitConstructor=]) -/-> (Classifier, descriptions, sizes, quality)")
+C_CALL(TreeSplitConstructor_Combined - Orange.classification.tree.SplitConstructor_Combined, TreeSplitConstructor, "([examples, [weight, domainContingency, apriorClass, candidates] [discreteTreeSplitConstructor=, continuousTreeSplitConstructor=]) -/-> (Classifier, descriptions, sizes, quality)")
 
-ABSTRACT(TreeSplitConstructor_Measure, TreeSplitConstructor)
-C_CALL(TreeSplitConstructor_Attribute, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
-C_CALL(TreeSplitConstructor_ExhaustiveBinary, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
-C_CALL(TreeSplitConstructor_OneAgainstOthers, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
-C_CALL(TreeSplitConstructor_Threshold, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
-PYXTRACT_IGNORE C_CALL(TreeSplitConstructor_LR, TreeSplitConstructor, "([minSubset=])")
+ABSTRACT(TreeSplitConstructor_Measure - Orange.classification.tree.SplitConstructor_Measure, TreeSplitConstructor)
+C_CALL(TreeSplitConstructor_Attribute - Orange.classification.tree.SplitConstructor_Attribute, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
+C_CALL(TreeSplitConstructor_ExhaustiveBinary - Orange.classification.tree.SplitConstructor_ExhaustiveBinary, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
+C_CALL(TreeSplitConstructor_OneAgainstOthers - Orange.classification.tree.SplitConstructor_OneAgainstOthers, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
+C_CALL(TreeSplitConstructor_Threshold - Orange.classification.tree.SplitConstructor_Threshold, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
+PYXTRACT_IGNORE C_CALL(TreeSplitConstructor_LR - Orange.classification.tree.SplitConstructor_LR, TreeSplitConstructor, "([minSubset=])")
 
-BASED_ON(TreeExampleSplitter, Orange)
+BASED_ON(TreeExampleSplitter - Orange.classification.tree.Splitter, Orange)
 
-C_CALL(TreeExampleSplitter_IgnoreUnknowns, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
-C_CALL(TreeExampleSplitter_UnknownsToCommon, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
-C_CALL(TreeExampleSplitter_UnknownsToAll, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
-C_CALL(TreeExampleSplitter_UnknownsToRandom, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
-C_CALL(TreeExampleSplitter_UnknownsToBranch, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_IgnoreUnknowns - Orange.classification.tree.Splitter_IgnoreUnknowns, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsToCommon - Orange.classification.tree.Splitter_UnknownsToCommon, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsToAll - Orange.classification.tree.Splitter_UnknownsToAll, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsToRandom - Orange.classification.tree.Splitter_UnknownsToRandom, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsToBranch - Orange.classification.tree.Splitter_UnknownsToBranch, TreeExampleSplitter, "([node, examples[, weight]]) -/-> (ExampleGeneratorList, [list of weight ID's])")
 
-C_CALL(TreeExampleSplitter_UnknownsAsBranchSizes, TreeExampleSplitter, "([branchIndex, node, examples[, weight]]) -/-> (ExampleGenerator, [list of weight ID's])")
-C_CALL(TreeExampleSplitter_UnknownsAsSelector, TreeExampleSplitter, "([branchIndex, node, examples[, weight]]) -/-> (ExampleGenerator, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsAsBranchSizes - Orange.classification.tree.Splitter_UnknownsAsBranchSizes, TreeExampleSplitter, "([branchIndex, node, examples[, weight]]) -/-> (ExampleGenerator, [list of weight ID's])")
+C_CALL(TreeExampleSplitter_UnknownsAsSelector - Orange.classification.tree.Splitter_UnknownsAsSelector, TreeExampleSplitter, "([branchIndex, node, examples[, weight]]) -/-> (ExampleGenerator, [list of weight ID's])")
 
-C_CALL(TreeDescender_UnknownToBranch, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
-C_CALL(TreeDescender_UnknownToCommonBranch, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
-C_CALL(TreeDescender_UnknownToCommonSelector, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
-C_CALL(TreeDescender_UnknownMergeAsBranchSizes, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
-C_CALL(TreeDescender_UnknownMergeAsSelector, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
+C_CALL(TreeDescender_UnknownToBranch - Orange.classification.tree.Descender_Unknown, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
+C_CALL(TreeDescender_UnknownToCommonBranch - Orange.classification.tree.Descender_UnknownToCommonBranch, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
+C_CALL(TreeDescender_UnknownToCommonSelector - Orange.classification.tree.Descender_UnknownToCommonSelector, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
+C_CALL(TreeDescender_UnknownMergeAsBranchSizes - Orange.classification.tree.Descender_UnknownMergeAsBranchSizes, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
+C_CALL(TreeDescender_UnknownMergeAsSelector - Orange.classification.tree.Descender_UnknownMergeAsSelector, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
 
-ABSTRACT(TreePruner, Orange)
-C_CALL (TreePruner_SameMajority, TreePruner, "([tree]) -/-> tree")
-C_CALL (TreePruner_m, TreePruner, "([tree]) -/-> tree")
+ABSTRACT(TreePruner - Orange.classification.tree.Pruner, Orange)
+C_CALL (TreePruner_SameMajority - Orange.classification.tree.Pruner_SameMajority, TreePruner, "([tree]) -/-> tree")
+C_CALL (TreePruner_m - Orange.classification.tree.Pruner_m, TreePruner, "([tree]) -/-> tree")
 
 
 PyObject *TreeNode_tree_size(PyObject *self, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> int")
@@ -587,7 +587,7 @@ PyObject *TreeNode_remove_stored_info(PyObject *self, PyObject *, PyObject *) PY
 }
 
 
-PyObject *TreeStopCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "()")
+PyObject *TreeStopCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.tree.StopCriteria, "()")
 { if (type == (PyTypeObject *)&PyOrTreeStopCriteria_Type) {
       PyObject *name=NULL;
       if (args && !PyArg_ParseTuple(args, "|O", &name))
@@ -671,7 +671,7 @@ PyObject *TreeStopCriteria_Python_call(PyObject *self, PyObject *args, PyObject 
 
 
 
-PyObject *TreeSplitConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *TreeSplitConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.tree.SplitConstructor, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrTreeSplitConstructor_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TTreeSplitConstructor_Python(), type), args);
   else
@@ -733,7 +733,7 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
 }
 
 
-PyObject *TreeExampleSplitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *TreeExampleSplitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.tree.Splitter, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrTreeExampleSplitter_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TTreeExampleSplitter_Python(), type), args);
   else
@@ -784,7 +784,7 @@ PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *key
 
 
 
-PyObject *TreeDescender_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *TreeDescender_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.tree.Descender, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrTreeDescender_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TMeasureAttribute_Python(), type), args);
   else
@@ -864,7 +864,7 @@ PyObject *TreeClassifier_treesize(PyObject *self, PyObject *, PyObject *) PYARGS
 
 PTreeNodeList PTreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::P_FromArguments(arg); }
 PyObject *TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_FromArguments(type, arg); }
-PyObject *TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of TreeNode>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_new(type, arg, kwds); }
+PyObject *TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.classification.tree.NodeList, "(<list of TreeNode>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_new(type, arg, kwds); }
 PyObject *TreeNodeList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_getitem(self, index); }
 int       TreeNodeList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_setitem(self, index, item); }
 PyObject *TreeNodeList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_getslice(self, start, stop); }
@@ -894,8 +894,8 @@ PyObject *TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOfWra
 
 #include "c4.5.hpp"
 
-C_CALL(C45Learner, Learner, "([examples] [, weight=, gainRatio=, subset=, batch=, probThresh=, minObjs=, window=, increment=, cf=, trials=]) -/-> Classifier")
-C_NAMED(C45Classifier, Classifier, "()")
+C_CALL(C45Learner - Orange.classification.tree.C45Learner, Learner, "([examples] [, weight=, gainRatio=, subset=, batch=, probThresh=, minObjs=, window=, increment=, cf=, trials=]) -/-> Classifier")
+C_NAMED(C45Classifier - Orange.classification.tree.C45Classifier, Classifier, "()")
 
 PyObject *C45Learner_command_line(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(line) -> None")
 { PyTRY
@@ -908,11 +908,11 @@ PyObject *C45Learner_command_line(PyObject *self, PyObject *args) PYARGS(METH_VA
   PyCATCH
 }
 
-C_NAMED(C45TreeNode, Orange, "")
+C_NAMED(C45TreeNode - Orange.classification.tree.C45Node, Orange, "")
 
 PC45TreeNodeList PC45TreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::P_FromArguments(arg); }
 PyObject *C45TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_FromArguments(type, arg); }
-PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
+PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.classification.tree.C45NodeList, "(<list of C45TreeNode>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
 PyObject *C45TreeNodeList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_getitem(self, index); }
 int       C45TreeNodeList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_setitem(self, index, item); }
 PyObject *C45TreeNodeList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_getslice(self, start, stop); }
@@ -941,8 +941,8 @@ PyObject *C45TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOf
 /************* kNN ************/
 
 #include "knn.hpp"
-C_CALL(kNNLearner, Learner, "([examples] [k=, weightID=, findNearest=] -/-> Classifier")
-C_NAMED(kNNClassifier, ClassifierFD, "(example[, returnWhat]) -> prediction")
+C_CALL(kNNLearner - Orange.classification.knn.kNNLearner, Learner, "([examples] [k=, weightID=, findNearest=] -/-> Classifier")
+C_NAMED(kNNClassifier - Orange.classification.knn.kNNClassifier, ClassifierFD, "(example[, returnWhat]) -> prediction")
 
 
 /************* PNN ************/
@@ -951,7 +951,7 @@ C_NAMED(kNNClassifier, ClassifierFD, "(example[, returnWhat]) -> prediction")
 
 #include "pnn.hpp"
 
-PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ClassifierFD, "(examples, anchors[, domain]) -> PNN")
+PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ClassifierFD - Orange.classification.knn.P2NN, "(examples, anchors[, domain]) -> PNN")
 {
   PyTRY
     PDomain domain;
@@ -1178,11 +1178,11 @@ C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 /************* Logistic Regression ************/
 
 #include "logistic.hpp"
-C_CALL(LogRegLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
-C_NAMED(LogRegClassifier, ClassifierFD, "([probabilities=])")
+C_CALL(LogRegLearner - Orange.classification.logreg.LogRegLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
+C_NAMED(LogRegClassifier - Orange.classification.logreg.LogRegClassifier, ClassifierFD, "([probabilities=])")
 
 
-PyObject *LogRegFitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *LogRegFitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.logreg.LogRegFitter, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrLogRegFitter_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TLogRegFitter_Python(), type), args);
   else
@@ -1195,7 +1195,7 @@ PyObject *LogRegFitter__reduce__(PyObject *self)
 }
 
 
-C_CALL(LogRegFitter_Cholesky, LogRegFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
+C_CALL(LogRegFitter_Cholesky - Orange.classification.logreg.LogRegFitter_Cholesky, LogRegFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
 PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
 {
@@ -1251,8 +1251,8 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 
 /************ Linear **********/
 #include "linear.hpp"
-C_CALL(LinearLearner, Learner, "([examples] -/-> Classifier)")
-C_NAMED(LinearClassifier, ClassifierFD, " ")
+C_CALL(LinearLearner - Orange.classification.svm.LinearLearner, Learner, "([examples] -/-> Classifier)")
+C_NAMED(LinearClassifier - Orange.classification.svm.LinearClassifier, ClassifierFD, " ")
 
 
 
@@ -1288,10 +1288,10 @@ PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH
 /************* SVM ************/
 
 #include "svm.hpp"
-C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
-C_CALL(SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
-C_NAMED(SVMClassifier, ClassifierFD," ")
-C_NAMED(SVMClassifierSparse, SVMClassifier," ")
+C_CALL(SVMLearner - Orange.core.SVMLearner, Learner, "([examples] -/-> Classifier)")
+C_CALL(SVMLearnerSparse - Orange.core.SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
+C_NAMED(SVMClassifier - Orange.classification.svm.SVMClassifier, ClassifierFD," ")
+C_NAMED(SVMClassifierSparse - Orange.classification.svm.SVMClassifierSparse, SVMClassifier," ")
 
 PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "('list of tuple pairs') -> None")
 {
@@ -1335,7 +1335,7 @@ PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywor
 	PyCATCH
 }
 
-PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.kernels.KernelFunc, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrKernelFunc_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TKernelFunc_Python(), type), args);
   else
@@ -1501,8 +1501,8 @@ PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject*
 /************* BAYES ************/
 
 #include "bayes.hpp"
-C_CALL(BayesLearner, Learner, "([examples], [weight=, estimate=] -/-> Classifier")
-C_NAMED(BayesClassifier, ClassifierFD, "([probabilities=])")
+C_CALL(BayesLearner - Orange.core.BayesLearner, Learner, "([examples], [weight=, estimate=] -/-> Classifier")
+C_NAMED(BayesClassifier - Orange.core.BayesClassifier, ClassifierFD, "([probabilities=])")
 
 PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(class, example) -> float")
 { PyTRY
@@ -1526,38 +1526,38 @@ PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 
 #include "rulelearner.hpp"
 
-C_NAMED(Rule, Orange, "()")
+C_NAMED(Rule - Orange.classification.rules.Rule, Orange, "()")
 
-C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0,min_quality=numeric_limits<float>::min()])")
+C_NAMED(RuleValidator_LRS - Orange.classification.rules.RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0,min_quality=numeric_limits<float>::min()])")
 
-C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_Laplace, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_LRS, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_mEVC, RuleEvaluator, "(ruleAlpha=1.0,attributeAlpha=1.0)")
+C_NAMED(RuleEvaluator_Entropy - Orange.classification.rules.RuleEvaluator_Entropy, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_Laplace - Orange.classification.rules.RuleEvaluator_Laplace, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_LRS - Orange.classification.rules.RuleEvaluator_LRS, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_mEVC - Orange.classification.rules.RuleEvaluator_mEVC, RuleEvaluator, "(ruleAlpha=1.0,attributeAlpha=1.0)")
 
 C_NAMED(EVDist, Orange, "()")
 C_NAMED(EVDistGetter_Standard, EVDistGetter, "()")
 
-C_NAMED(RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
+C_NAMED(RuleBeamFinder - Orange.classification.rules.RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
 
-C_NAMED(RuleBeamInitializer_Default, RuleBeamInitializer, "()")
+C_NAMED(RuleBeamInitializer_Default - Orange.classification.rules.RuleBeamInitializer_Default, RuleBeamInitializer, "()")
 
-C_NAMED(RuleBeamRefiner_Selector, RuleBeamRefiner, "([discretization=])")
+C_NAMED(RuleBeamRefiner_Selector - Orange.classification.rules.RuleBeamRefiner_Selector, RuleBeamRefiner, "([discretization=])")
 
-C_NAMED(RuleBeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
+C_NAMED(RuleBeamCandidateSelector_TakeAll - Orange.classification.rules.RuleBeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
 
-C_NAMED(RuleBeamFilter_Width, RuleBeamFilter, "([width=5])")
+C_NAMED(RuleBeamFilter_Width - Orange.classification.rules.RuleBeamFilter_Width, RuleBeamFilter, "([width=5])")
 
-C_NAMED(RuleDataStoppingCriteria_NoPositives, RuleDataStoppingCriteria, "()")
+C_NAMED(RuleDataStoppingCriteria_NoPositives - Orange.classification.rules.RuleDataStoppingCriteria_NoPositives, RuleDataStoppingCriteria, "()")
 
-C_NAMED(RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
+C_NAMED(RuleCovererAndRemover_Default - Orange.classification.rules.RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
 
-C_NAMED(RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
-C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
+C_NAMED(RuleStoppingCriteria_NegativeDistribution - Orange.classification.rules.RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
+C_CALL(RuleLearner - Orange.classification.rules.RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
 
-ABSTRACT(RuleClassifier, Classifier)
-C_NAMED(RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
-C_NAMED(RuleClassifier_logit, RuleClassifier, "([rules,minSig,minBeta,examples[,weightID]])")
+ABSTRACT(RuleClassifier - Orange.classification.rules.RuleClassifier, Classifier)
+C_NAMED(RuleClassifier_firstRule - Orange.classification.rules.RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
+C_NAMED(RuleClassifier_logit - Orange.classification.rules.RuleClassifier_logit, RuleClassifier, "([rules,minSig,minBeta,examples[,weightID]])")
 
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -1598,7 +1598,7 @@ PyObject *Rule_filterAndStore(PyObject *self, PyObject *args) PYARGS(METH_VARARG
  PyCATCH
 }
 
-PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleEvaluator, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleEvaluator_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleEvaluator_Python(), type), args);
   else
@@ -1662,7 +1662,7 @@ PyObject *EVDistGetter_call(PyObject *self, PyObject *args, PyObject *keywords) 
   PyCATCH
 }
 
-PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleValidator, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleValidator_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleValidator_Python(), type), args);
   else
@@ -1697,7 +1697,7 @@ PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords)
   PyCATCH
 }
 
-PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleCovererAndRemover, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleCovererAndRemover_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type), args);
   else
@@ -1730,7 +1730,7 @@ PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *k
   PyCATCH
 }
 
-PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleStoppingCriteria, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleStoppingCriteria_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleStoppingCriteria_Python(), type), args);
   else
@@ -1762,7 +1762,7 @@ PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *ke
   PyCATCH
 }
 
-PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleDataStoppingCriteria, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleDataStoppingCriteria_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleDataStoppingCriteria_Python(), type), args);
   else
@@ -1793,7 +1793,7 @@ PyObject *RuleDataStoppingCriteria_call(PyObject *self, PyObject *args, PyObject
   PyCATCH
 }
 
-PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleFinder, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleFinder_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleFinder_Python(), type), args);
   else
@@ -1825,7 +1825,7 @@ PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PY
   PyCATCH
 }
 
-PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamRefiner, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamRefiner_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamRefiner_Python(), type), args);
   else
@@ -1857,7 +1857,7 @@ PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keyword
   PyCATCH
 }
 
-PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamInitializer, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamInitializer_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamInitializer_Python(), type), args);
   else
@@ -1893,7 +1893,7 @@ PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *key
   PyCATCH
 }
 
-PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamCandidateSelector, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamCandidateSelector_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamCandidateSelector_Python(), type), args);
   else
@@ -1925,7 +1925,7 @@ PyObject *RuleBeamCandidateSelector_call(PyObject *self, PyObject *args, PyObjec
   PyCATCH
 }
 
-PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleBeamFilter, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamFilter_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamFilter_Python(), type), args);
   else
@@ -1956,7 +1956,7 @@ PyObject *RuleBeamFilter_call(PyObject *self, PyObject *args, PyObject *keywords
   PyCATCH
 }
 
-PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange - Orange.classification.rules.RuleClassifierConstructor, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleClassifierConstructor_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type), args);
   else

@@ -100,16 +100,16 @@ if 1: ### Definitions of method slots
                
 if 1: ### Definitions of regular expressions
 
-  constrdef_mac=re.compile(r'(?P<constype>ABSTRACT|C_UNNAMED|C_NAMED|C_CALL)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
-  constrdef_mac_call3=re.compile(r'(?P<constype>C_CALL3)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<callname>\w*\s*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
+  constrdef_mac=re.compile(r'(?P<constype>ABSTRACT|C_UNNAMED|C_NAMED|C_CALL)\s*\(\s*(?P<typename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
+  constrdef_mac_call3=re.compile(r'(?P<constype>C_CALL3)\s*\(\s*(?P<typename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*(?P<callname>\w*\s*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
   constrkeywords = re.compile(r'CONSTRUCTOR_KEYWORDS\s*\(\s*(?P<typename>\w*)\s*, \s*"(?P<keywords>[^"]*)"\s*\)')
   nopickle=re.compile(r"NO_PICKLE\s*\(\s*(?P<typename>\w*)\s*\)")
   constrwarndef=re.compile(r"[^\w](ABSTRACT|CONS|C_UNNAMED|C_NAMED|C_CALL)[^\w]")
 
-  datastructuredef=re.compile(r'DATASTRUCTURE\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<structurename>\w*)\s*,\s*(?P<dictfield>\w*)\s*\)')
-  newbasedondef=re.compile(r'(inline)?\s*PyObject\s*\*(?P<typename>\w*)_new\s*\([^)]*\)\s*BASED_ON\s*\(\s*(?P<basename>\w*)\s*,\s*"(?P<doc>[^"]*)"\s*\)\s*(?P<allows_empty_args>ALLOWS_EMPTY)?')
-  basedondef=re.compile(r'BASED_ON\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*)\s*\)')
-  hiddendef=re.compile(r'HIDDEN\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*)\s*\)')
+  datastructuredef=re.compile(r'DATASTRUCTURE\s*\(\s*(?P<typename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*(?P<structurename>\w*)\s*,\s*(?P<dictfield>\w*)\s*\)')
+  newbasedondef=re.compile(r'(inline)?\s*PyObject\s*\*(?P<typename>\w*)_new\s*\([^)]*\)\s*BASED_ON\s*\(\s*(?P<basename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*"(?P<doc>[^"]*)"\s*\)\s*(?P<allows_empty_args>ALLOWS_EMPTY)?')
+  basedondef=re.compile(r'BASED_ON\s*\(\s*(?P<typename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*(?P<basename>\w*)\s*\)')
+  hiddendef=re.compile(r'HIDDEN\s*\(\s*(?P<typename>\w*)\s*(-\s*(?P<displayname>\S*))?,\s*(?P<basename>\w*)\s*\)')
   
 
   allspecial=['('+m[0]+')' for m in specialmethods+specialnumericmethods+specialsequencemethods+specialmappingmethods]
@@ -168,9 +168,9 @@ def detectConstructors(line, classdefs):
   if not found:
     found=constrdef_mac_call3.search(line)
   if found:
-    typename, basename, constype, doc=found.group("typename", "basename", "constype", "doc")
+    typename, basename, constype, doc, displayname =found.group("typename", "basename", "constype", "doc", "displayname")
     printV2("%s (%s): Macro constructor %s", (typename, basename, constype))
-    addClassDef(classdefs, typename, parsedFile, "basetype", basename)
+    addClassDef(classdefs, typename, parsedFile, "basetype", basename, displayname=displayname)
     if constype=="ABSTRACT":
       classdefs[typename].abstract = True
     else:
@@ -291,30 +291,30 @@ def detectMethods(line, classdefs):
 def detectHierarchy(line, classdefs):
   found=datastructuredef.search(line)
   if found:
-    typename, structurename, dictfield = found.group("typename", "structurename", "dictfield")
-    addClassDef(classdefs, typename, parsedFile, "datastructure", structurename)
+    typename, structurename, dictfield, displayname = found.group("typename", "structurename", "dictfield", "displayname")
+    addClassDef(classdefs, typename, parsedFile, "datastructure", structurename, displayname=displayname)
     addClassDef(classdefs, typename, parsedFile, "dictfield", dictfield, 0)
     printV2("%s: definition/declaration of datastructure", typename)
     return 1
   
   found=newbasedondef.match(line)
   if found:
-    typename, basename, doc = found.group("typename", "basename", "doc")
+    typename, basename, doc, displayname = found.group("typename", "basename", "doc", "displayname")
     allows_empty_args = bool(found.group("allows_empty_args"))
-    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0)
+    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0, displayname)
     addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type="MANUAL", allows_empty_args=allows_empty_args))
     return 1
 
   found=basedondef.match(line)
   if found:
-    typename, basename = found.group("typename", "basename")
-    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0)
+    typename, basename, displayname = found.group("typename", "basename", "displayname")
+    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0, displayname)
     return 1
 
   found=hiddendef.match(line)
   if found:
-    typename, basename = found.group("typename", "basename")
-    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0)
+    typename, basename, displayname = found.group("typename", "basename", "displayname")
+    addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0, displayname=displayname)
     classdefs[typename].hidden = 1
     return 1
 
@@ -744,7 +744,10 @@ PyObject *%(wholename)s__reduce__(PyObject *self) { return Py_BuildValue("O(s(i)
     outfile.write('PyTypeObject PyOr'+type+'_Type_inh = {\n')
     outfile.write('  PyObject_HEAD_INIT((_typeobject *)&PyType_Type)\n')
     outfile.write('  0,\n')
-    outfile.write('  "%s.%s",\n' % (modulename, type))
+    if getattr(fields, "displayname", None):
+        outfile.write('  "%s",\n' % fields.displayname)
+    else:
+        outfile.write('  "%s.%s",\n' % (modulename, type))
     outfile.write('  sizeof(%s), 0,\n' % fields.datastructure)
     innulls=writeslots(specialmethods, 1)
     outfile.write((innulls and '\n' or '') + '};\n\n')

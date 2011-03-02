@@ -51,17 +51,17 @@
 #include "discretize.hpp"
 
 
-ABSTRACT(Discretizer, TransformValue)
-C_NAMED(EquiDistDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
-C_NAMED(IntervalDiscretizer, Discretizer, "([points=])")
-C_NAMED(ThresholdDiscretizer, Discretizer, "([threshold=])")
-C_NAMED(BiModalDiscretizer, Discretizer, "([low=, high=])")
+ABSTRACT(Discretizer - Orange.feature.discretization.Discretizer, TransformValue)
+C_NAMED(EquiDistDiscretizer - Orange.feature.discretization.EquiDistDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
+C_NAMED(IntervalDiscretizer - Orange.feature.discretization.IntervalDiscretizer, Discretizer, "([points=])")
+C_NAMED(ThresholdDiscretizer - Orange.feature.discretization.ThresholdDiscretizer, Discretizer, "([threshold=])")
+C_NAMED(BiModalDiscretizer - Orange.feature.discretization.BiModalDiscretizer, Discretizer, "([low=, high=])")
 
-ABSTRACT(Discretization, Orange)
-C_CALL (EquiDistDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
-C_CALL (   EquiNDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
-C_CALL ( EntropyDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
-C_CALL ( BiModalDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
+ABSTRACT(Discretization - Orange.feature.discretization.Discretization, Orange)
+C_CALL (EquiDistDiscretization - Orange.feature.discretization.EquiDistDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
+C_CALL (   EquiNDiscretization - Orange.feature.discretization.EquiNDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
+C_CALL ( EntropyDiscretization - Orange.feature.discretization.EntropyDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
+C_CALL ( BiModalDiscretization - Orange.feature.discretization.BiModalDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
 
 
 PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weight]) -> Variable")
@@ -115,11 +115,11 @@ PyObject *EquiDistDiscretizer_get_points(PyObject *self)
 #include "transval.hpp"
 
 C_NAMED(MapIntValue, TransformValue, "([mapping=])")
-C_NAMED(Discrete2Continuous, TransformValue, "([value=])")
+C_NAMED(Discrete2Continuous - Orange.feature.discretization.Discrete2Continuous, TransformValue, "([value=])")
 C_NAMED(Ordinal2Continuous, TransformValue, "([nvalues=])")
 C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
 
-C_NAMED(DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
+C_NAMED(DomainContinuizer - Orange.feature.DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
 
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
@@ -1396,9 +1396,9 @@ PyObject *AssessIMQuality_call(PyObject *self, PyObject *args, PyObject *keyword
 
 #include "dist_clustering.hpp"
 
-ABSTRACT(ExampleDistConstructor, Orange)
-C_CALL(ExampleDistBySorting, ExampleDistConstructor, "([examples, bound-attrs[, weightID]]) -/-> ExampleDistVector")
-BASED_ON(ExampleDistVector, Orange)
+ABSTRACT(ExampleDistConstructor - Orange.distances.ExampleDistConstructor, Orange)
+C_CALL(ExampleDistBySorting - Orange.distances.ExampleDistBySorting, ExampleDistConstructor, "([examples, bound-attrs[, weightID]]) -/-> ExampleDistVector")
+BASED_ON(ExampleDistVector - Orange.distances.ExampleDistVector, Orange)
 ABSTRACT(ClustersFromDistributions, Orange)
 C_CALL(ClustersFromDistributionsByAssessor, ClustersFromDistributions, "([example-dist-vector] [minProfitProportion=, distributionAssessor=, stopCriterion=]) -/-> DistClustering")
 C_CALL(FeatureByDistributions, FeatureInducer, "() | ([examples, bound-attrs, name], [constructExampleDist=, completion=]) -/-> Variable")

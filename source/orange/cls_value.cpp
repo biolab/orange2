@@ -46,8 +46,8 @@
 
 
 
-DATASTRUCTURE(Value, TPyValue, 0)
-ABSTRACT(SomeValue, Orange)
+DATASTRUCTURE(Value - Orange.data.Value, TPyValue, 0)
+ABSTRACT(SomeValue - Orange.core.SomeValue, Orange)
 
 /* Converts a value into an appropriate python variable.
    Behaves as convertToPythonNative(const TValue &, PVariable)
@@ -1142,7 +1142,7 @@ PyObject *ValueList__reduce__(TPyOrange *self, PyObject *) { return TValueListMe
 
 
 PyObject *VarTypes()
-{ PyObject *vartypes=PyModule_New("VarTypes");
+{ PyObject *vartypes=PyModule_New("Orange.data.Type");
   PyModule_AddObject(vartypes, "None", PyVariable_Type_FromLong((int)TValue::NONE));
   PyModule_AddObject(vartypes, "Discrete", PyVariable_Type_FromLong((int)TValue::INTVAR));
   PyModule_AddObject(vartypes, "Continuous", PyVariable_Type_FromLong((int)TValue::FLOATVAR));

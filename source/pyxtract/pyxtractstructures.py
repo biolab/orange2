@@ -58,7 +58,7 @@ class ConstantDefinition:
     self.__dict__.update(argkw)
     
 
-def addClassDef(cds, typename, parsedFile, str="", val=1, warn=1):
+def addClassDef(cds, typename, parsedFile, str="", val=1, warn=1, displayname=None):
   """
   If class is not been encountered yet, it creates a new class definition.
   It sets the attribute str to value val.
@@ -67,7 +67,7 @@ def addClassDef(cds, typename, parsedFile, str="", val=1, warn=1):
   
   if not cds.has_key(typename):
     if str:
-      cds[typename]=apply(ClassDefinition, (), {str:val, 'infile':parsedFile})
+      cds[typename]=ClassDefinition(**{str:val, 'infile':parsedFile})
     else:
       cds[typename]=ClassDefinition(infile=parsedFile)
   elif str:
@@ -76,3 +76,5 @@ def addClassDef(cds, typename, parsedFile, str="", val=1, warn=1):
     setattr(cds[typename], str, val)
     if parsedFile and cds[typename].infile!=parsedFile:
       print ("Warning: %s appears in different files (%s, %s)" % (typename, cds[typename].infile, parsedFile))
+  if displayname:
+      cds[typename].displayname = displayname

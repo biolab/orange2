@@ -38,7 +38,7 @@ extern TMLClassDefinition MLDef_Variable;
 #include "externs.px"
 
 
-DATASTRUCTURE(Example, TPyExample, 0)
+DATASTRUCTURE(Example - Orange.data.Instance, TPyExample, 0)
 
 
 bool convertFromPythonExisting(PyObject *lst, TExample &example)

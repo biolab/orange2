@@ -32,7 +32,7 @@ PyObject *convertToPython(const bool &);
 
 PBoolList PBoolList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::P_FromArguments(arg); }
 PyObject *BoolList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_FromArguments(type, arg); }
-PyObject *BoolList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of bool>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_new(type, arg, kwds); }
+PyObject *BoolList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.BoolList, "(<list of bool>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_new(type, arg, kwds); }
 PyObject *BoolList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_getitem(self, index); }
 int       BoolList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_setitem(self, index, item); }
 PyObject *BoolList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_getslice(self, start, stop); }
@@ -64,7 +64,7 @@ PyObject *convertToPython(const int &);
 
 PIntList PIntList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::P_FromArguments(arg); }
 PyObject *IntList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_FromArguments(type, arg); }
-PyObject *IntList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of int>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_new(type, arg, kwds); }
+PyObject *IntList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.IntList, "(<list of int>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_new(type, arg, kwds); }
 PyObject *IntList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_getitem(self, index); }
 int       IntList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_setitem(self, index, item); }
 PyObject *IntList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_getslice(self, start, stop); }
@@ -96,7 +96,7 @@ PyObject *convertToPython(const float &);
 
 PFloatList PFloatList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(arg); }
 PyObject *FloatList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_FromArguments(type, arg); }
-PyObject *FloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of float>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_new(type, arg, kwds); }
+PyObject *FloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.FloatList, "(<list of float>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_new(type, arg, kwds); }
 PyObject *FloatList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_getitem(self, index); }
 int       FloatList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_setitem(self, index, item); }
 PyObject *FloatList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_getslice(self, start, stop); }
@@ -127,7 +127,7 @@ extern PyTypeObject PyOrFloatList_Type_inh;
 
 PFloatListList PFloatListList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::P_FromArguments(arg); }
 PyObject *FloatListList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_FromArguments(type, arg); }
-PyObject *FloatListList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of FloatList>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_new(type, arg, kwds); }
+PyObject *FloatListList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.FloatListList, "(<list of FloatList>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_new(type, arg, kwds); }
 PyObject *FloatListList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_getitem(self, index); }
 int       FloatListList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_setitem(self, index, item); }
 PyObject *FloatListList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_getslice(self, start, stop); }
@@ -159,7 +159,7 @@ PyObject *convertToPython(const string &);
 
 PStringList PStringList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::P_FromArguments(arg); }
 PyObject *StringList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_FromArguments(type, arg); }
-PyObject *StringList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of string>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_new(type, arg, kwds); }
+PyObject *StringList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.StringList, "(<list of string>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_new(type, arg, kwds); }
 PyObject *StringList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_getitem(self, index); }
 int       StringList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_setitem(self, index, item); }
 PyObject *StringList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_getslice(self, start, stop); }
@@ -191,7 +191,7 @@ PyObject *convertToPython(const long &);
 
 PLongList PLongList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::P_FromArguments(arg); }
 PyObject *LongList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_FromArguments(type, arg); }
-PyObject *LongList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of int>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_new(type, arg, kwds); }
+PyObject *LongList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.LongList, "(<list of int>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_new(type, arg, kwds); }
 PyObject *LongList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_getitem(self, index); }
 int       LongList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_setitem(self, index, item); }
 PyObject *LongList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_getslice(self, start, stop); }
@@ -223,7 +223,7 @@ PyObject *convertToPython(const TAlignment &);
 
 PAlignmentList PAlignmentList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::P_FromArguments(arg); }
 PyObject *AlignmentList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_FromArguments(type, arg); }
-PyObject *AlignmentList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Alignment>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_new(type, arg, kwds); }
+PyObject *AlignmentList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.AlignmentList, "(<list of Alignment>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_new(type, arg, kwds); }
 PyObject *AlignmentList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_getitem(self, index); }
 int       AlignmentList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_setitem(self, index, item); }
 PyObject *AlignmentList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_getslice(self, start, stop); }
@@ -255,7 +255,7 @@ PyObject *convertToPython(const pair<int, float> &);
 
 PIntFloatList PIntFloatList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::P_FromArguments(arg); }
 PyObject *IntFloatList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_FromArguments(type, arg); }
-PyObject *IntFloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of tuple(int, float)>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_new(type, arg, kwds); }
+PyObject *IntFloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.IntFloatList, "(<list of tuple(int, float)>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_new(type, arg, kwds); }
 PyObject *IntFloatList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_getitem(self, index); }
 int       IntFloatList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_setitem(self, index, item); }
 PyObject *IntFloatList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PIntFloatList, TIntFloatList, pair<int, float> >::_getslice(self, start, stop); }
@@ -287,7 +287,7 @@ PyObject *convertToPython(const pair<float, float> &);
 
 PFloatFloatList PFloatFloatList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::P_FromArguments(arg); }
 PyObject *FloatFloatList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_FromArguments(type, arg); }
-PyObject *FloatFloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of tuple(float, float)>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_new(type, arg, kwds); }
+PyObject *FloatFloatList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange - Orange.core.FloatFloatList, "(<list of tuple(float, float)>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_new(type, arg, kwds); }
 PyObject *FloatFloatList_getitem_sq(TPyOrange *self, Py_ssize_t index) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_getitem(self, index); }
 int       FloatFloatList_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_setitem(self, index, item); }
 PyObject *FloatFloatList_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return ListOfUnwrappedMethods<PFloatFloatList, TFloatFloatList, pair<float, float> >::_getslice(self, start, stop); }

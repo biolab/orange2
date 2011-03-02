@@ -6,7 +6,7 @@ classes = {None: None}
 definition ="""
 $wrappedlistname$ P$pyname$_FromArguments(PyObject *arg) { return $classname$::P_FromArguments(arg); }
 PyObject *$pyname$_FromArguments(PyTypeObject *type, PyObject *arg) { return $classname$::_FromArguments(type, arg); }
-PyObject *$pyname$_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of $pyelement$>)") ALLOWS_EMPTY { return $classname$::_new(type, arg, kwds); }
+PyObject *$pyname$_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange$displayname, "(<list of $pyelement$>)") ALLOWS_EMPTY { return $classname$::_new(type, arg, kwds); }
 PyObject *$pyname$_getitem_sq(TPyOrange *self, Py_ssize_t index) { return $classname$::_getitem(self, index); }
 int       $pyname$_setitem_sq(TPyOrange *self, Py_ssize_t index, PyObject *item) { return $classname$::_setitem(self, index, item); }
 PyObject *$pyname$_getslice(TPyOrange *self, Py_ssize_t start, Py_ssize_t stop) { return $classname$::_getslice(self, start, stop); }
@@ -46,43 +46,44 @@ PyObject *convertToPython(const $elementname$ &);
 
 outf = open("lib_vectors_auto.txt", "wt")
 
-def normalList(name, goesto):
-  return tuple([x % name for x in ("%sList", "%s", "P%sList", "T%sList", "P%s")] + [goesto])
+def normalList(displayname, name, goesto):
+  return (displayname,) + tuple([x % name for x in ("%sList", "%s", "P%sList", "T%sList", "P%s")] + [goesto])
 
 
 #  list name in Python,    element name in Py, wrapped list name in C, list name in C,         list element name in C, interface file
-for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
-  [("ValueList",           "Value",            "PValueList",           "TValueList",           "TValue",               "cls_value.cpp"),
-   ("VarList",             "Variable",         "PVarList",             "TVarList",             "PVariable",            "lib_kernel.cpp"),
-   ("VarListList",         "VarList",          "PVarListList",         "TVarListList",         "PVarList",             "lib_kernel.cpp"),
-   ("DomainDistributions", "Distribution",     "PDomainDistributions", "TDomainDistributions", "PDistribution",        "lib_kernel.cpp"),
-   normalList("Distribution", "lib_kernel.cpp"),
-   normalList("ExampleGenerator", "lib_kernel.cpp"),
-   normalList("Classifier", "lib_kernel.cpp"),
+for (displayname, pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
+  [("",                               "ValueList",           "Value",            "PValueList",           "TValueList",           "TValue",               "cls_value.cpp"),
+   ("Orange.data.variable.Variables", "VarList",             "Variable",         "PVarList",             "TVarList",             "PVariable",            "lib_kernel.cpp"),
+   ("",                               "VarListList",         "VarList",          "PVarListList",         "TVarListList",         "PVarList",             "lib_kernel.cpp"),
+   ("",                               "DomainDistributions", "Distribution",     "PDomainDistributions", "TDomainDistributions", "PDistribution",        "lib_kernel.cpp"),
+   normalList("", "Distribution", "lib_kernel.cpp"),
+   normalList("", "ExampleGenerator", "lib_kernel.cpp"),
+   normalList("Orange.classification.ClassifierList", "Classifier", "lib_kernel.cpp"),
    
-   ("DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
-   ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
-   normalList("ValueFilter", "lib_components.cpp"),
-   normalList("Filter", "lib_components.cpp"),
-   normalList("HierarchicalCluster", "lib_components.cpp"),
+   ("",                               "DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
+   ("",                               "DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
+   normalList("", "ValueFilter", "lib_components.cpp"),
+   normalList("", "Filter", "lib_components.cpp"),
+   normalList("Orange.clustering.hierarchical.HierarchicalClusterList", "HierarchicalCluster", "lib_components.cpp"),
    
-   ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
-   normalList("TreeNode", "lib_learner.cpp"),
-   normalList("C45TreeNode", "lib_learner.cpp"),
-   normalList("Rule", "lib_learner.cpp"),
-   normalList("ConditionalProbabilityEstimator", "lib_components.cpp"),
-   normalList("ProbabilityEstimator", "lib_components.cpp"),
-   normalList("EVDist", "lib_learner.cpp"),
+   ("Orange.associate.AssociationRules",  "AssociationRules", "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
+   normalList("Orange.classification.tree.NodeList", "TreeNode", "lib_learner.cpp"),
+   normalList("Orange.classification.tree.C45NodeList", "C45TreeNode", "lib_learner.cpp"),
+   normalList("Orange.classification.rules.RuleList", "Rule", "lib_learner.cpp"),
+   normalList("", "ConditionalProbabilityEstimator", "lib_components.cpp"),
+   normalList("", "ProbabilityEstimator", "lib_components.cpp"),
+   normalList("", "EVDist", "lib_learner.cpp"),
 
-   normalList("Heatmap", "orangene.cpp"),
-   normalList("SOMNode", "som.cpp")
+   normalList("", "Heatmap", "orangene.cpp"),
+   normalList("", "SOMNode", "som.cpp")
    ]:
   outf.write("**** This goes to '%s' ****\n" % goesto)
-  outf.write(wdefinition.replace("$pyname$", pyname)
+  outf.write(wdefinition.replace("$displayname", ((" - "+displayname) if displayname else ""))
+                        .replace("$pyname$", pyname)
                         .replace("$classname$", "ListOfWrappedMethods<%s, %s, %s, &PyOr%s_Type>" % (wrappedlistname, listname, elementname, pyelementname))
-                       .replace("$pyelement$", pyelementname)
-                       .replace("$wrappedlistname$", wrappedlistname)
-                       .replace(">>", "> >")
+                        .replace("$pyelement$", pyelementname)
+                        .replace("$wrappedlistname$", wrappedlistname)
+                        .replace(">>", "> >")
              +"\n\n"
             )
 
@@ -146,6 +147,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, wrapped) in 
     classname = "ListOfUnwrappedMethods<%s, %s, %s>" % (wrappedlistname, listname, elementname)
 
   outfile.write((wrapped and wdefinition or udefinition)
+                       .replace("$displayname", " - Orange.core."+pyname)
                        .replace("$pyname$", pyname)
                        .replace("$classname$", classname)
                        .replace("$pyelement$", pyelementname)
